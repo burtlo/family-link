@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#e9e2d4" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Desk link" />
+    <title>Desk link</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to desk</a>
+
+    <header class="mast">
+      <p class="mast-mark">Desk link</p>
+      <p class="mast-who" id="who-label">You · the box</p>
+    </header>
+
+    <form class="settings" id="settings" autocomplete="off">
+      <div class="field origin-field">
+        <label for="origin">Server origin</label>
+        <input
+          id="origin"
+          name="origin"
+          type="url"
+          spellcheck="false"
+          autocapitalize="off"
+          placeholder="http://localhost:8080"
+        />
+      </div>
+      <div class="field">
+        <label for="device-id">Device id</label>
+        <input
+          id="device-id"
+          name="device_id"
+          type="text"
+          spellcheck="false"
+          autocapitalize="off"
+          autocorrect="off"
+        />
+      </div>
+      <div class="field">
+        <label for="token">Token</label>
+        <input
+          id="token"
+          name="token"
+          type="text"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+        />
+      </div>
+      <button type="submit" class="btn connect" id="connect">Connect</button>
+    </form>
+
+    <main id="main">
+      <section class="panel status-panel" aria-labelledby="status-heading">
+        <h2 id="status-heading">Box</h2>
+        <dl class="stats" id="stats">
+          <div>
+            <dt>Peer</dt>
+            <dd id="stat-peer">—</dd>
+          </div>
+          <div>
+            <dt>Reachable</dt>
+            <dd id="stat-online">
+              <span class="lamp" id="lamp-online" aria-hidden="true"></span>
+              <span id="stat-online-text">unknown</span>
+            </dd>
+          </div>
+          <div>
+            <dt>Unread</dt>
+            <dd id="stat-unread">—</dd>
+          </div>
+          <div>
+            <dt>Playhead</dt>
+            <dd id="stat-playhead">—</dd>
+          </div>
+        </dl>
+        <p class="line" id="status-line" role="status">Not connected.</p>
+        <p class="note hidden" id="mic-note" role="note"></p>
+      </section>
+
+      <section class="panel hangout-panel" aria-labelledby="hangout-heading">
+        <h2 id="hangout-heading">Hangout</h2>
+        <p class="line" id="hangout-line">Idle. Half-duplex — one mouth at a time.</p>
+        <div class="hangout-actions">
+          <button type="button" class="btn" id="invite" disabled>Invite</button>
+          <button type="button" class="btn accent" id="accept" disabled>
+            Accept
+          </button>
+          <button type="button" class="btn quiet" id="hangup" disabled>
+            Hang up
+          </button>
+        </div>
+        <button
+          type="button"
+          class="ptt"
+          id="ptt"
+          disabled
+          aria-pressed="false"
+          aria-label="Hold to talk"
+        >
+          <span class="ptt-kicker">Hold to talk</span>
+          <span class="ptt-state" id="ptt-state">release = listen</span>
+        </button>
+      </section>
+
+      <section class="panel compose-panel" aria-labelledby="compose-heading">
+        <h2 id="compose-heading">Leave a note</h2>
+        <form class="compose-text" id="text-form">
+          <label class="sr-only" for="note-text">Text to the box</label>
+          <textarea
+            id="note-text"
+            rows="2"
+            maxlength="500"
+            placeholder="A short note for the box"
+          ></textarea>
+          <button type="submit" class="btn" id="send-text" disabled>Send text</button>
+        </form>
+        <div class="compose-row">
+          <button type="button" class="btn" id="record" disabled>
+            Record voicemail
+          </button>
+          <label class="btn file-btn">
+            WAV file
+            <input
+              id="wav-file"
+              type="file"
+              accept=".wav,audio/wav,audio/wave,audio/x-wav,audio/*"
+              disabled
+            />
+          </label>
+          <label class="btn file-btn">
+            Photo
+            <input id="photo-file" type="file" accept="image/*" disabled />
+          </label>
+        </div>
+        <p class="line quiet-line" id="compose-line">
+          Voicemail and photos go to the box inbox. Live talk is the hangout above.
+        </p>
+      </section>
+
+      <section class="panel inbox-panel" aria-labelledby="inbox-heading">
+        <div class="inbox-head">
+          <h2 id="inbox-heading">Inbox</h2>
+          <button type="button" class="btn quiet" id="refresh" disabled>
+            Refresh
+          </button>
+        </div>
+        <p class="line quiet-line">Messages from the box, to you.</p>
+        <ol class="inbox" id="inbox" aria-live="polite"></ol>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

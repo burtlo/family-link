@@ -1,0 +1,15 @@
+# Copy to devices.local.yaml (gitignored) if you want different tokens.
+# Demos load devices.local.yaml when present, else this file.
+#
+# Two "child" peers so we can hangout without a phone UI yet. The parent
+# Mac tools (demos/parent/) speak as box-b; flash the kit as box-a.
+# A real parent-a device can be added later without changing routes.
+devices:
+  - id: box-a
+    token: change-me-a
+    role: child
+    peer: box-b
+  - id: box-b
+    token: change-me-b
+    role: child
+    peer: box-a
