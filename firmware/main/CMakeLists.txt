@@ -37,3 +37,12 @@ idf_component_register(
 
 # secrets.h is gitignored; demos that need SSID/PIN include it.
 target_compile_definitions(${COMPONENT_LIB} PRIVATE FAMILY_DEMO_NAME="${FAMILY_DEMO}")
+if(FAMILY_SERVER_HOST)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE FAMILY_SERVER_HOST="${FAMILY_SERVER_HOST}")
+endif()
+if(NOT FAMILY_SERVER_PORT STREQUAL "")
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE FAMILY_SERVER_PORT=${FAMILY_SERVER_PORT})
+endif()
+if(NOT FAMILY_SERVER_TLS STREQUAL "")
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE FAMILY_SERVER_TLS=${FAMILY_SERVER_TLS})
+endif()

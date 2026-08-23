@@ -21,6 +21,14 @@ typedef struct {
 int http_bearer_do(const char *host, int port, const char *method, const char *path,
                    const char *token, const char *json, http_buf_t *out, int timeout_ms);
 
+/**
+ * Same as http_bearer_do, but https:// when use_tls is non-zero.
+ * TLS skip-verify (LAN / trycloudflare demo). Production should pin a CA.
+ */
+int http_bearer_do_ex(const char *host, int port, const char *method, const char *path,
+                      const char *token, const char *json, http_buf_t *out, int timeout_ms,
+                      int use_tls);
+
 #ifdef __cplusplus
 }
 #endif

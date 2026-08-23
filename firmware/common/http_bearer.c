@@ -30,6 +30,13 @@ static esp_err_t on_http(esp_http_client_event_t *evt)
 int http_bearer_do(const char *host, int port, const char *method, const char *path,
                    const char *token, const char *json, http_buf_t *out, int timeout_ms)
 {
+    return http_bearer_do_ex(host, port, method, path, token, json, out, timeout_ms, 0);
+}
+
+int http_bearer_do_ex(const char *host, int port, const char *method, const char *path,
+                      const char *token, const char *json, http_buf_t *out, int timeout_ms,
+                      int use_tls)
+{
     if (out) {
         out->len = 0;
         if (out->buf && out->cap > 0) {
@@ -37,8 +44,9 @@ int http_bearer_do(const char *host, int port, const char *method, const char *p
         }
     }
 
-    char url[160];
-    snprintf(url, sizeof(url), "http://%s:%d%s", host ? host : "", port, path ? path : "/");
+    char url[256];
+    snprintf(url, sizeof(url), "%s://%s:%d%s", use_tls ? "https" : "http",
+             host ? host : "", port, path ? path : "/");
 
     esp_http_client_config_t cfg = {
         .url = url,
@@ -47,6 +55,11 @@ int http_bearer_do(const char *host, int port, const char *method, const char *p
         .timeout_ms = timeout_ms > 0 ? timeout_ms : 8000,
         .buffer_size = 2048,
     };
+    if (use_tls) {
+        cfg.transport_type = HTTP_TRANSPORT_OVER_SSL;
+        cfg.crt_bundle_attach = NULL; /* skip-verify: LAN / tunnel demo */
+        cfg.skip_cert_common_name_check = true;
+    }
     if (method && strcmp(method, "POST") == 0) {
         cfg.method = HTTP_METHOD_POST;
     } else if (method && strcmp(method, "PUT") == 0) {

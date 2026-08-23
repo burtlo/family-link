@@ -9,7 +9,9 @@
 
 #define DEMO_SERVER_HOST "192.168.1.10"
 #define DEMO_SERVER_PORT 8080
-/* 0 = HTTP demos (h07–h15). h16 always uses https:// and ignores this. */
+/* 0 = HTTP (h07–h15, h17 unless make demo-cross-heartbeat injects TLS).
+ * h16 always uses https:// and ignores this. make demo-cross-heartbeat
+ * overrides HOST/PORT/TLS at compile time; SSID/password still come from here. */
 #define DEMO_SERVER_TLS 0
 #define DEMO_DEVICE_ID "box-a"
 #define DEMO_DEVICE_TOKEN "change-me-a"

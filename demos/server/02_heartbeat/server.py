@@ -7,7 +7,7 @@ import argparse
 import time
 
 import uvicorn
-from fastapi import Body, FastAPI, Header
+from fastapi import Body, FastAPI, Header, Request
 from fastapi.responses import JSONResponse
 
 from demos.server._shared.registry import device_for_token, load_devices, parse_bearer
@@ -16,6 +16,8 @@ STALE_S = 10.0
 DEVICES = load_devices()
 # device_id -> unix timestamp of last successful heartbeat
 LAST_SEEN: dict[str, float] = {}
+# device_id -> client IP from the last heartbeat (proves which network hit us)
+LAST_CLIENT: dict[str, str] = {}
 app = FastAPI()
 
 
@@ -38,8 +40,18 @@ def peer_online(peer_id: str, now: float) -> bool:
     return (now - ts) < STALE_S
 
 
+def client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "?"
+
+
 @app.post("/v1/heartbeat", response_model=None)
 def heartbeat(
+    request: Request,
     authorization: str | None = Header(default=None),
     body: dict | None = Body(default=None),
 ) -> dict | JSONResponse:
@@ -49,9 +61,16 @@ def heartbeat(
     _ = body  # optional {uptime_s, rssi}; presence does not persist them
     now = time.time()
     LAST_SEEN[device.id] = now
+    ip = client_ip(request)
+    LAST_CLIENT[device.id] = ip
+    online = peer_online(device.peer, now)
+    print(
+        f"-- heartbeat {device.id} from {ip} peer_online={str(online).lower()}",
+        flush=True,
+    )
     return {
         "ok": True,
-        "peer_online": peer_online(device.peer, now),
+        "peer_online": online,
         "server_time": now,
     }
 
@@ -68,6 +87,24 @@ def me(authorization: str | None = Header(default=None)) -> dict | JSONResponse:
         "peer_online": peer_online(device.peer, now),
         "last_seen": LAST_SEEN.get(device.id),
     }
+
+
+@app.get("/v1/status", response_model=None)
+def status() -> dict:
+    now = time.time()
+    devices = []
+    for dev in DEVICES.values():
+        ts = LAST_SEEN.get(dev.id)
+        devices.append(
+            {
+                "id": dev.id,
+                "online": ts is not None and (now - ts) < STALE_S,
+                "last_seen": ts,
+                "age_s": None if ts is None else round(now - ts, 2),
+                "client": LAST_CLIENT.get(dev.id),
+            }
+        )
+    return {"ok": True, "now": now, "stale_s": STALE_S, "devices": devices}
 
 
 def main() -> None:

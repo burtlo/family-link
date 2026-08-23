@@ -46,6 +46,7 @@ DEMOS = {
     "h14": "h14_heartbeat_inbox",
     "h15": "h15_text_after_pin",
     "h16": "h16_https_me",
+    "h17": "h17_cross_heartbeat",
     "x01": "x01_product_shell",
     "p01": "p01_static_face",
     "p02": "p02_idle_life",
@@ -180,7 +181,15 @@ def ensure_secrets() -> None:
     print(f"-> copied {example.name} → secrets.h (edit SSID/token; gitignored)")
 
 
-def cmd_flash(demo: str, monitor: bool, port: str | None, build_only: bool) -> int:
+def cmd_flash(
+    demo: str,
+    monitor: bool,
+    port: str | None,
+    build_only: bool,
+    server_host: str | None = None,
+    server_port: int | None = None,
+    server_tls: int | None = None,
+) -> int:
     if demo == "h01":
         return cmd_flash_h01(monitor=monitor, port=port)
 
@@ -196,7 +205,15 @@ def cmd_flash(demo: str, monitor: bool, port: str | None, build_only: bool) -> i
     build_dir = FIRMWARE / "build" / name
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    opts = f'-D FAMILY_DEMO={name} -B "{build_dir}" -C "{FIRMWARE}"'
+    extra = []
+    if server_host:
+        extra.append(f"-D FAMILY_SERVER_HOST={server_host}")
+    if server_port is not None:
+        extra.append(f"-D FAMILY_SERVER_PORT={int(server_port)}")
+    if server_tls is not None:
+        extra.append(f"-D FAMILY_SERVER_TLS={int(server_tls)}")
+    extra_s = (" " + " ".join(extra)) if extra else ""
+    opts = f'-D FAMILY_DEMO={name}{extra_s} -B "{build_dir}" -C "{FIRMWARE}"'
     if build_only:
         inner = f"idf.py {opts} build"
     else:
@@ -286,6 +303,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--idf-dir", type=Path, default=IDF_CLONE_DEFAULT, help="Clone destination")
     parser.add_argument("--list", action="store_true", help="List demo ids")
     parser.add_argument("--port", help="Override serial port (or PORT= / ESPPORT=)")
+    parser.add_argument("--server-host", help="Compile-time override for DEMO_SERVER_HOST")
+    parser.add_argument("--server-port", type=int, help="Compile-time override for DEMO_SERVER_PORT")
+    parser.add_argument(
+        "--server-tls",
+        type=int,
+        choices=(0, 1),
+        help="Compile-time override for DEMO_SERVER_TLS (0=http, 1=https skip-verify)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -304,6 +329,9 @@ def main(argv: list[str] | None = None) -> int:
                 monitor=args.monitor,
                 port=args.port,
                 build_only=args.build_only,
+                server_host=args.server_host,
+                server_port=args.server_port,
+                server_tls=args.server_tls,
             )
         parser.print_help()
         print("\nDemos:\n" + known_demos())

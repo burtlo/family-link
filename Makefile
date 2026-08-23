@@ -21,6 +21,7 @@ INSTALL := $(ROOT)/scripts/install.py
 FLASH := $(ROOT)/scripts/flash.py
 RUN_SERVER_DEMO := $(ROOT)/scripts/run_server_demo.py
 RUN_PERSONA_DEMO := $(ROOT)/scripts/run_persona_demo.py
+RUN_CROSS_HEARTBEAT := $(ROOT)/scripts/run_cross_heartbeat.py
 
 # Device firmware demo id (h02, h05, p01, …). See `make flash-list`.
 DEMO ?= h02
@@ -38,11 +39,12 @@ export PYTHONUNBUFFERED := 1
 	device-os device-software device-env \
 	device-flash device-partitions device-fs device-data \
 	idf-install flash flash-list flash-monitor build-firmware monitor \
-	h01 h02 h03 h04 h05 h06 h07 h08 h09 h10 h11 h12 h13 h14 h15 h16 \
+	h01 h02 h03 h04 h05 h06 h07 h08 h09 h10 h11 h12 h13 h14 h15 h16 h17 \
 	x01 \
 	p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 \
 	demo-auth demo-heartbeat demo-messages demo-cursor \
 	demo-hangout demo-relay demo-combined demos-server \
+	demo-cross-heartbeat \
 	install-persona demo-capture demo-cut demo-record demo-ideas demo-pack \
 	demos-persona
 
@@ -69,7 +71,7 @@ help:
 	'  make build-firmware DEMO=h02  compile only' \
 	'  make monitor         serial monitor (115200 / idf.py)' \
 	'  make flash-list      which demo .c files exist' \
-	'  make h01 … h16       aliases (h01 = Espressif BSP example; h16 = HTTPS)' \
+	'  make h01 … h17       aliases (h01 = Espressif BSP example; h16 = HTTPS; h17 = cross-Wi-Fi heartbeat)' \
 	'  make x01             product shell (locked / PIN / inbox / hangout)' \
 	'  make p01 … p11       personality / face / packed portrait' \
 	'' \
@@ -82,6 +84,12 @@ help:
 	'  make demo-relay      06 PCM copy-through' \
 	'  make demo-combined   glue host (REST + hangout WS + /app)' \
 	'  make demos-server    run 01–06 in order' \
+	'' \
+	'Box + server on different Wi-Fi (heartbeat):' \
+	'  make demo-cross-heartbeat     bind 0.0.0.0, flash h17, beat both ways' \
+	'  make demo-cross-heartbeat TUNNEL=1          public HTTPS via cloudflared' \
+	'  make demo-cross-heartbeat SERVER_HOST=IP    bake a Tailscale/LAN host' \
+	'  Box joins 2.4 GHz (firmware/secrets.h). This Mac can sit on another SSID.' \
 	'' \
 	'Parent likeness (no family media required; stand-ins until you pass --in):' \
 	'  make demo-capture    still: generated SAMPLE, or --in / --webcam' \
@@ -224,6 +232,9 @@ h15:
 h16:
 	@$(PYTHON) "$(FLASH)" --demo h16
 
+h17:
+	@$(PYTHON) "$(FLASH)" --demo h17
+
 x01:
 	@$(PYTHON) "$(FLASH)" --demo x01
 
@@ -280,6 +291,33 @@ demo-relay:
 
 demo-combined:
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" combined
+
+# Box on 2.4 GHz, server on this Mac (possibly another SSID). See scripts/run_cross_heartbeat.py.
+CROSS_HEARTBEAT_ARGS :=
+ifeq ($(TUNNEL),1)
+CROSS_HEARTBEAT_ARGS += --tunnel
+endif
+ifdef SERVER_HOST
+CROSS_HEARTBEAT_ARGS += --host $(SERVER_HOST)
+endif
+ifdef SERVER_PORT
+CROSS_HEARTBEAT_ARGS += --port $(SERVER_PORT)
+endif
+ifeq ($(SKIP_FLASH),1)
+CROSS_HEARTBEAT_ARGS += --skip-flash
+endif
+ifeq ($(NO_PEER),1)
+CROSS_HEARTBEAT_ARGS += --no-peer
+endif
+ifdef BIND_PORT
+CROSS_HEARTBEAT_ARGS += --bind-port $(BIND_PORT)
+endif
+ifdef PORT
+CROSS_HEARTBEAT_ARGS += --serial $(PORT)
+endif
+
+demo-cross-heartbeat:
+	@$(PYTHON) "$(RUN_CROSS_HEARTBEAT)" $(CROSS_HEARTBEAT_ARGS)
 
 demos-server: demo-auth demo-heartbeat demo-messages demo-cursor demo-hangout demo-relay
 	@echo '-- PASS demos-server'

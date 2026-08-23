@@ -63,6 +63,7 @@ firmware/
     h14_heartbeat_inbox.c
     h15_text_after_pin.c
     h16_https_me.c
+    h17_cross_heartbeat.c
 ```
 
 Select with `-D FAMILY_DEMO=h05` (or equivalent). Shared `common/` is board bring-up only. Demo `.c` files do not call each other.
@@ -269,6 +270,19 @@ Same as h07 (`GET /v1/me` good token then bad) over `https://DEMO_SERVER_HOST:DE
 **Feasibility:** ESP-IDF HTTPS client to this Mac. Production still needs SNTP + a real CA (or mkcert trusted on the phone). h07 stays HTTP.
 
 **Reuse later:** HTTPS URL + TLS transport; drop skip-verify when time + CA exist.
+
+### h17 — Cross-Wi-Fi heartbeat
+
+**App:** `h17_cross_heartbeat.c`  
+**Needs:** `make demo-cross-heartbeat` (starts 02_heartbeat on `0.0.0.0:8080` and flashes this demo). Box SSID/password in `firmware/secrets.h` must be **2.4 GHz**.
+
+The box is only a client: it joins 2.4 GHz and POSTs `/v1/heartbeat` every 4 s. The Mac running the server can sit on another SSID (5 GHz is fine). Same router without client isolation is enough. Isolated networks: `TUNNEL=1` (cloudflared) or `SERVER_HOST=` a Tailscale/public name.
+
+LCD shows beat count + peer line. This Mac also heartbeats as `box-b`, so the box should see `peer_online`. UART `-- PASS h17` after the first HTTP 200. Server logs `-- heartbeat box-a from <box-ip>`.
+
+**Pass:** `-- PASS h17` and a non-loopback client IP on the server. **Fail:** 5 GHz-only SSID (h06), or AP isolation so the box cannot route to the Mac.
+
+**Reuse later:** the production path is the same: box dials a reachable HTTPS host; no inbound ports at their house.
 
 ### x01 — product shell
 

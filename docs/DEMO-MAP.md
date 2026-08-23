@@ -64,6 +64,7 @@ Numbered **01–06** stay island proofs (`make demos-server`). Glue is **`make d
 | h11–h12 | Live PTT through server; h12 paints LIVE while PCM moves |
 | h13–h15 | Photo preview, heartbeat + inbox WS, text after PIN |
 | h16 | HTTPS GET /v1/me (skip-verify LAN). Host: `scripts/dev_https.py`. [`TLS.md`](TLS.md) |
+| h17 | Cross-Wi-Fi heartbeat. Host: `make demo-cross-heartbeat` |
 | x01 | Product shell: locked / PIN / inbox / record / hangout against combined |
 | p01–p09 | Geometric face, blink, moods, SFX, pet loop, notice, talk-or-freeze |
 | p10–p11 | Packed portrait + greeting (persona pipeline) |
@@ -101,9 +102,10 @@ Do **not** start by merging all `.c` files. Import the helper that passed. **x01
 ## Suggested next (highest leverage first)
 
 1. **Desk tryout** — combined on `0.0.0.0:8080`, parent `http://MAC:8080/app/`, flash **x01** (or **h11** + **h13** pieces).
-2. **iPhone mic** — `python scripts/dev_https.py --extra-name LAN_IP`, open `https://…:8443/app/`. Flash **h16** to prove the box can speak HTTPS (set `DEMO_SERVER_PORT` 8443 for that flash only).
-3. **Second kit** — two **x01** (or **h11**) binaries, `box-a` / `box-b`. Protocol already allows it.
-4. **USB camera** — only if child→you photos are in v1.
+2. **Cross-Wi-Fi heartbeat** — `make demo-cross-heartbeat`. Box on 2.4 GHz, Mac on another SSID. Isolated networks: `TUNNEL=1`.
+3. **iPhone mic** — `python scripts/dev_https.py --extra-name LAN_IP`, open `https://…:8443/app/`. Flash **h16** to prove the box can speak HTTPS (set `DEMO_SERVER_PORT` 8443 for that flash only).
+4. **Second kit** — two **x01** (or **h11**) binaries, `box-a` / `box-b`. Protocol already allows it.
+5. **USB camera** — only if child→you photos are in v1.
 
 ## How to explore live audio this week
 
