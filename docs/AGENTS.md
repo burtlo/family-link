@@ -61,7 +61,7 @@ Nintendo Switch Online cannot run on the box. Voice sits **beside** Minecraft.
 Most island/protocol/personality demos **and the first product glue** are in the tree. See [`DEMO-MAP.md`](DEMO-MAP.md).
 
 - Combined host: `python -m demos.server.combined.server --host 0.0.0.0 --port 8080` (parent page at `/app/`).
-- Product box: `make flash DEMO=x01`. Piece demos remain **h01–h16**.
+- Product box: `make flash DEMO=x01`. Piece demos remain **h01–h19**.
 - iPhone mic still needs HTTPS: [`TLS.md`](TLS.md) / `scripts/dev_https.py`.
 - Still later: other-house SSID, always-on dock, second kit, group mixing (phase 3). Do not rewrite I2S.
 

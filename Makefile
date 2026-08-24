@@ -38,10 +38,11 @@ export PYTHONUNBUFFERED := 1
 	device-os device-software device-env \
 	device-flash device-partitions device-fs device-data \
 	idf-install flash flash-list flash-monitor build-firmware monitor \
-	h01 h02 h03 h04 h05 h06 h07 h08 h09 h10 h11 h12 h13 h14 h15 h16 \
+	h01 h02 h03 h04 h05 h06 h07 h08 h09 h10 h11 h12 h13 h14 h15 h16 h17 \
+	h18 h19 \
 	x01 \
 	p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 \
-	demo-auth demo-heartbeat demo-messages demo-cursor \
+	demo-auth demo-heartbeat demo-messages demo-cursor demo-playback \
 	demo-hangout demo-relay demo-combined demos-server \
 	install-persona demo-capture demo-cut demo-record demo-ideas demo-pack \
 	demos-persona
@@ -69,7 +70,7 @@ help:
 	'  make build-firmware DEMO=h02  compile only' \
 	'  make monitor         serial monitor (115200 / idf.py)' \
 	'  make flash-list      which demo .c files exist' \
-	'  make h01 … h16       aliases (h01 = Espressif BSP example; h16 = HTTPS)' \
+	'  make h01 … h19       aliases (h01 = Espressif BSP example; h18 = playback UI; h19 = list)' \
 	'  make x01             product shell (locked / PIN / inbox / hangout)' \
 	'  make p01 … p11       personality / face / packed portrait' \
 	'' \
@@ -77,6 +78,8 @@ help:
 	'  make demo-auth       01 known-device bearer tokens' \
 	'  make demo-heartbeat  02 presence / stale / recover' \
 	'  make demo-messages   03 text + WAV store-and-forward' \
+	'  make demo-playback   h18 fixture smoke test (starts+stops)' \
+	'  python demos/server/h18_playback/server.py --host 0.0.0.0 --port 8080' \
 	'  make demo-cursor     04 playhead + archive after reboot' \
 	'  make demo-hangout    05 invite/ring/accept/floor/hangup' \
 	'  make demo-relay      06 PCM copy-through' \
@@ -224,6 +227,15 @@ h15:
 h16:
 	@$(PYTHON) "$(FLASH)" --demo h16
 
+h17:
+	@$(PYTHON) "$(FLASH)" --demo h17
+
+h18:
+	@$(PYTHON) "$(FLASH)" --demo h18
+
+h19:
+	@$(PYTHON) "$(FLASH)" --demo h19
+
 x01:
 	@$(PYTHON) "$(FLASH)" --demo x01
 
@@ -268,6 +280,9 @@ demo-heartbeat:
 
 demo-messages:
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 03_messages
+
+demo-playback:
+	@$(PYTHON) "$(RUN_SERVER_DEMO)" h18_playback
 
 demo-cursor:
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 04_cursor_archive

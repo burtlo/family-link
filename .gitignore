@@ -19,3 +19,4 @@ devices.local.yaml
 data/
 .tools/
 firmware/assets/persona/
+demos/server/h18_playback/assets/*.wav

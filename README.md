@@ -35,4 +35,4 @@ v1 is **one-to-one**: you ↔ one child box. Later: several boxes (and you) in t
 
 **Hardware:** one BOX-3 is on the desk and enumerates on this Mac as `/dev/cu.usbmodem*` (2026-08-20).
 
-**Software:** island protocol demos **01–06**, combined glue host (`make demo-combined`, `/app` parent page), BOX-3 firmware **h01–h16** / **x01** / **p01–p11**, and persona packing. Map: [`docs/DEMO-MAP.md`](docs/DEMO-MAP.md). Replace stock wake-word firmware before the box leaves this house.
+**Software:** island protocol demos **01–06**, combined glue host (`make demo-combined`, `/app` parent page), BOX-3 firmware **h01–h19** / **x01** / **p01–p11**, and persona packing. Map: [`docs/DEMO-MAP.md`](docs/DEMO-MAP.md). Replace stock wake-word firmware before the box leaves this house.

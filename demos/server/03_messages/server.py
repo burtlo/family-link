@@ -91,7 +91,8 @@ async def post_message(
         "blob_path": None,
     }
     if blob_bytes is not None:
-        dest = DATA_DIR / recipient / str(seq)
+        name = f"{seq}.wav" if kind == "audio" else str(seq)
+        dest = DATA_DIR / recipient / name
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(blob_bytes)
         stored["blob_path"] = dest

@@ -254,6 +254,8 @@ Optional flag `--full-duplex-measure`: copy both ways with no floor, for a numbe
 
 When firmware has even a tiny HTTP client, point it at server demos 1–2 (device h07). Hangout on the box is device h11 against server demo 6.
 
+Device UI fixtures (not numbered 01–06): `h18_playback` serves a catalog (generated melody + imported inbox voice clips) for firmware **h18**. `GET /demo/h18/message?i=N` wraps. Inbox **list + detail** is firmware **h19** (no host). Do not fold those into 03_messages.
+
 ## How this maps to a later server
 
 Keep `server/family_link/` as the application. Promotion to “real” is operational, not a rewrite:

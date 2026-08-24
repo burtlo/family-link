@@ -6,7 +6,7 @@ One BOX-3 on USB. The other peer is the **parent page** (`/app/`) or a **Python 
 
 | Job | Live? | Direction | How | Demo that proves it |
 |---|---|---|---|---|
-| Voicemail **from** the box | No | Child → parent inbox | Hold mute, record, `POST /v1/messages` | **h08** + server **03** |
+| Voicemail **from** the box | No | Child → parent inbox | Hold **red circle**, record, `POST /v1/messages` | **h08** + server **03** (tested; trim leading click) |
 | Voicemail **to** the box | No | Parent → child inbox | `POST` blob, box `GET` + play | **h09** + server **03** |
 | Hangout **from** the box | Yes, 20 ms PCM | Child → peer while mute held | WS binary, server copies to peer | **h11** / **h12** + server **06** |
 | Hangout **to** the box | Yes, 20 ms PCM | Peer → child speaker | Same WS, other peer holds floor | **h11** / **h12** + `twin_peer.py` / `demos/parent/live_ptt.py` |
@@ -64,6 +64,9 @@ Numbered **01–06** stay island proofs (`make demos-server`). Glue is **`make d
 | h11–h12 | Live PTT through server; h12 paints LIVE while PCM moves |
 | h13–h15 | Photo preview, heartbeat + inbox WS, text after PIN |
 | h16 | HTTPS GET /v1/me (skip-verify LAN). Host: `scripts/dev_https.py`. [`TLS.md`](TLS.md) |
+| h17 | Button panel: live down/up, analog mic mute, chirps (circle press+release). Tested 2026-08-23 |
+| h18 | Playback screen: GET catalog message (sender/time/url/length/position/read), play/pause, stream WAV, ROOMVOL slider, Boot cycles clips. Host: `h18_playback` |
+| h19 | Scrollable message list + slide transition to detail and back. Client-side; same record shape as h18 |
 | x01 | Product shell: locked / PIN / inbox / record / hangout against combined |
 | p01–p09 | Geometric face, blink, moods, SFX, pet loop, notice, talk-or-freeze |
 | p10–p11 | Packed portrait + greeting (persona pipeline) |
@@ -84,8 +87,8 @@ Do **not** start by merging all `.c` files. Import the helper that passed. **x01
 |---|---|---|
 | Locked idle + count | h02, p08, **x01** | Dim schedule / quiet hours as a household rule |
 | PIN then content | h03, **h15**, **x01** | Polish: which look after unlock |
-| Record out | h04, h05, h08, **x01** | Upload retry, “sent” face |
-| Play inbound clip | h09, p09, **x01** | — |
+| Record out | h04, h05, h08, **x01** | Upload retry, “sent” face; **trim leading hardware click** (device or server) |
+| Play inbound clip | h09, p09, **x01** | Playback **screen** (h18); inbox **list + detail** (h19) |
 | Live you↔box | h11, h12, parent `live_ptt.py`, **`/app`**, **x01** | iPhone mic needs HTTPS ([`TLS.md`](TLS.md)) |
 | Face | p01–p07, p10 | Which look ships (geometry vs packed photo) |
 | Your voice greeting | p11 + persona pack | Not UI chirps (p06 stays non-speech) |

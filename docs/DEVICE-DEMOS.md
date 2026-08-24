@@ -63,6 +63,9 @@ firmware/
     h14_heartbeat_inbox.c
     h15_text_after_pin.c
     h16_https_me.c
+    h17_button_panel.c
+    h18_playback_screen.c
+    h19_message_list.c
 ```
 
 Select with `-D FAMILY_DEMO=h05` (or equivalent). Shared `common/` is board bring-up only. Demo `.c` files do not call each other.
@@ -80,12 +83,13 @@ h02 display + count        (RSSI, DHCP)            h08 record → POST
 h03 touch PIN                                      h09 GET blob → play
 h04 mute = hold-to-talk                            h10 playhead after reset
 h05 mic → speaker loopback                         h11 WS PTT relay
-                                                   h12 PTT + live screen
-                                                   h13–h15 photo / WS / PIN text
+h17 buttons + mute + chirp                         h12 PTT + live screen
+h19 inbox list + screen transitions                h13–h15 photo / WS / PIN text
                                                    h16 HTTPS GET /v1/me
+                                                   h18 playback screen + stream
 ```
 
-h01–h06 can run **in parallel** with server demos 1–4. h07 waits on server demo 1. h16 waits on `scripts/dev_https.py`. h11 waits on server demo 6.
+h01–h06, h17, and h19 can run **in parallel** with server demos 1–4. h07 waits on server demo 1. h16 waits on `scripts/dev_https.py`. h11 waits on server demo 6. h18 waits on the `h18_playback` fixture (`0.0.0.0:8080`).
 
 Default pairing for protocol demos: **this BOX-3 as box-a, Python `twin.py --id box-b` as the peer.** Two kits only after h11 is green against a twin.
 
@@ -189,13 +193,17 @@ Default pairing for protocol demos: **this BOX-3 as box-a, Python `twin.py --id 
 **App:** `h08_record_upload.c`  
 **Needs:** h05 + h07 green; server demo 3.
 
-- Hold mute, record, release.
+**Tested 2026-08-23** on the desk kit: clip lands as a playable WAV under `data/03_messages/box-b/` (now `N.wav`).
+
+- **PTT is the red circle** under the LCD (hold to record, release to upload). The top **mute** key is a *latch* wired through logic gates (`BSP_MUTE_STATUS` / GPIO1). While it is down the mics are **hardware-muted** — using it as PTT records silence. Red LED must be off before a take.
 - `POST /v1/messages` multipart `kind=audio` + WAV blob (header + PCM).
 - Twin or `curl` on the Mac can fetch the blob.
 
 **Pass:** Mac plays the uploaded clip and it is the same take. `-- PASS h08`. A 10 s 16 kHz s16le WAV is ~320 KB; PSRAM is 16 MB — prove we do not OOM.
 
-**Reuse later:** clip upload path. Chunked POST can wait until a single 10 s POST is proven.
+**Human note:** every take starts with a **hardware click** (button/codec). Trim it on the device (drop the first ~50–100 ms after the ADC opens) or on the server when the WAV is stored. Do not ship that click as part of the voicemail.
+
+**Reuse later:** clip upload path. Chunked POST can wait until a single 10 s POST is proven. Click-trim belongs in that helper, not a one-off in the demo forever.
 
 ### h09 — Download and play
 
@@ -269,6 +277,53 @@ Same as h07 (`GET /v1/me` good token then bad) over `https://DEMO_SERVER_HOST:DE
 **Feasibility:** ESP-IDF HTTPS client to this Mac. Production still needs SNTP + a real CA (or mkcert trusted on the phone). h07 stays HTTP.
 
 **Reuse later:** HTTPS URL + TLS transport; drop skip-verify when time + CA exist.
+
+### h17 — Button panel, chirps, analog mute
+
+**App:** `h17_button_panel.c` — **must run on the kit** (speaker).
+
+**Tested 2026-08-23** on the desk kit: chirps audible; mute GPIO matches the red LED.
+
+- Screen shows live **down / up** for mute (top latch), boot/config, and the red circle.
+- Banner shows **microphone muted** or **not muted** from `BSP_MUTE_STATUS` (GPIO1, active-low analog gate). Red LED on the box should match.
+- Mute, boot, and LCD tap chirp on press. The **red circle** chirps on **press and release** (higher, then a lower pitch). Mic codec stays closed.
+
+**Pass:** `-- PASS h17` after a chirp and both muted / not-muted GPIO states (toggle the top mute key once). Reset is not shown — it reboots.
+
+**Reuse later:** mute GPIO poll used by h08; button → chirp path is the same I2S port as p06.
+
+### h18 — Audio message playback screen
+
+**App:** `h18_playback_screen.c`  
+**Needs:** `python demos/server/h18_playback/server.py --host 0.0.0.0 --port 8080` (or `make demo-playback` to smoke the host). This is **not** server 03 — 03 is inbox seq/blob. h18 is a **fixed URL** plus a richer message object.
+
+```
+GET /demo/h18/message?i=N  →  {
+  id, sender, sent_at, url, duration_ms, position_ms, read, index, count
+}
+GET  <url>                 →  16 kHz s16le WAV (stream while playing)
+```
+
+- Device `GET`s `i=0` first, paints sender / time / unread / bar starting at `position_ms`.
+- **Play** / **Pause** streams `url` into the ES8311 (not a full download-then-play like h09).
+- **ROOMVOL** slider: mute + 78…100 by twos (13 notches). Starts muted. Codec **75–100 is audible enough in an active room (fans + cooking)** — that is why the first on-notch is 78. `ROOMVOL_SHOW_LEVEL` paints the codec number for level checks (dev); the product look hides it.
+- Codec **100 is in-range** (`esp_codec_dev` maps 100 → 0 dB). Espressif’s BOX-3 BSP example uses 50; this tree’s working playback demos use 50–70. No Espressif doc says 100 is past the speaker. The kit is an **8 Ω / 1 W** cone ([`HARDWARE.md`](HARDWARE.md): desk-volume, not a room). Smooth playback that still breaks up at 100 is **further testing** (90 vs 100, melody vs voice) before capping `ROOMVOL_MAX`.
+- **Boot** (GPIO0) loads the next catalog entry and wraps. Message 1 is the generated melody; 2…N are inbox voice clips imported into `demos/server/h18_playback/assets/` (`voice-05` … `voice-22`; `voice-01`–`04` were empty and are skipped). Speaker stream stays open across clips so GPIO46 PA does not drop after clip 1.
+- `-- PASS h18` after the JSON is on screen. Tap Play to hear the clip; bar should move.
+
+**Pass:** `-- PASS h18` after a 200 + parse + paint. **Fail:** wifi / fetch / JSON.
+
+**Reuse later:** message DTO, playback widgets, HTTP stream into I2S.
+
+### h19 — Message list + transition manager
+
+**App:** `h19_message_list.c` — **kit only** (touch). No server.
+
+Same record shape as h18 (`sender`, `sent_at`, `duration_ms`, `position_ms`, `read`), baked into the binary. Scrollable rows (more than one 320×240 screen). Tap a row → slide to a detail view (same layout language as h18). **Back** slides to the list. Play on detail only nudges the bar — this demo is navigation, not the codec.
+
+**Pass:** `-- PASS h19` after one list→detail and one Back.
+
+**Reuse later:** list widget, `nav_load` push/pop with `lv_screen_load_anim`.
 
 ### x01 — product shell
 
