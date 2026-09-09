@@ -4,7 +4,7 @@ Small ESP-IDF apps on the **ESP32-S3-BOX-3** that each prove one hardware job. T
 
 Host protocol lives in [`SERVER-DEMOS.md`](SERVER-DEMOS.md). Python twins prove the API without a box. Device demos prove the **board**: codecs, buttons, 320×240, Wi-Fi, and then the same API from ESP-IDF.
 
-One BOX-3 is on USB today. That is enough for every demo except a two-box hangout. Until hangout works, the other peer is a Python twin on this Mac.
+One BOX-3 is enough for island demos. Two-box open line (**h20–h22**, Mazi ↔ Arlo), shared drawing (**h26**), and drawing notes (**h27**) need both kits; see [`TWO-BOX.md`](TWO-BOX.md). Until a second kit is on the desk, the other peer for hangout is a Python twin.
 
 ## What we are examining
 
@@ -28,7 +28,7 @@ Wokwi `board-esp32-s3-box-3` can stand in for display, touch, and a mock Wi-Fi h
 ## Constraints every device demo obeys
 
 - **ESP-BSP `esp-box-3`.** Do not hand-wire ILI9341, GT911, ES7210, ES8311, or the PA on GPIO46.
-- Mic is live **only while a button is held**. No ESP-SR, no wake word, not even “for the demo.”
+- Mic is live **only while a button is held**, except **h20–h22**, which use the top **mute latch** as open/away (mics still hardware-dead while the latch is down). No ESP-SR, no wake word.
 - Flash through **USB-C on the box**, not the dock. Hold Boot, tap Reset, release Boot if download fails.
 - Peel the **screen protector** or the mics are muffled (Espressif).
 - Secrets (SSID, password, device token, server URL) live in a gitignored overlay (`sdkconfig.local`, `secrets.h`). Commit `secrets.example.h` only.
@@ -66,6 +66,15 @@ firmware/
     h17_button_panel.c
     h18_playback_screen.c
     h19_message_list.c
+    h20_presence.c
+    h21_talk.c
+    h22_diary.c
+    h23_record_idle_stop.c
+    h24_device_log.c
+    h25_chipmunk.c
+    h26_draw.c
+    h27_sketch.c
+    h28_video.c
 ```
 
 Select with `-D FAMILY_DEMO=h05` (or equivalent). Shared `common/` is board bring-up only. Demo `.c` files do not call each other.
@@ -85,11 +94,14 @@ h04 mute = hold-to-talk                            h10 playhead after reset
 h05 mic → speaker loopback                         h11 WS PTT relay
 h17 buttons + mute + chirp                         h12 PTT + live screen
 h19 inbox list + screen transitions                h13–h15 photo / WS / PIN text
-                                                   h16 HTTPS GET /v1/me
-                                                   h18 playback screen + stream
+h25 chipmunk voice memo                            h16 HTTPS GET /v1/me
+h28 short LCD clip                                 h18 playback screen + stream
+                                                   h20–h22 Mazi/Arlo open line
+                                                   h26 shared drawing (two kits)
+                                                   h27 drawing note (two kits)
 ```
 
-h01–h06, h17, and h19 can run **in parallel** with server demos 1–4. h07 waits on server demo 1. h16 waits on `scripts/dev_https.py`. h11 waits on server demo 6. h18 waits on the `h18_playback` fixture (`0.0.0.0:8080`).
+h01–h06, h17, h19, h25, and h28 can run **in parallel** with server demos 1–4. h07 waits on server demo 1. h16 waits on `scripts/dev_https.py`. h11 waits on server demo 6. h18 waits on the `h18_playback` fixture (`0.0.0.0:8080`). h20–h22 wait on their matching `h20_presence` / `h21_talk` / `h22_diary` hosts and want **two kits** (Mazi = `box-a`, Arlo = `box-b`). h26 waits on `h26_draw` and both kits. h27 waits on `h27_sketch` and both kits.
 
 Default pairing for protocol demos: **this BOX-3 as box-a, Python `twin.py --id box-b` as the peer.** Two kits only after h11 is green against a twin.
 
@@ -295,7 +307,7 @@ Same as h07 (`GET /v1/me` good token then bad) over `https://DEMO_SERVER_HOST:DE
 ### h18 — Audio message playback screen
 
 **App:** `h18_playback_screen.c`  
-**Needs:** `python demos/server/h18_playback/server.py --host 0.0.0.0 --port 8080` (or `make demo-playback` to smoke the host). This is **not** server 03 — 03 is inbox seq/blob. h18 is a **fixed URL** plus a richer message object.
+**Needs:** `python demos/server/h18_playback/server.py --host 0.0.0.0 --port 8080` (or `make demo-playback` to smoke the host). This is **not** server 03 — 03 is inbox seq/blob. h18 is a **fixed URL** plus a richer message object. The same host serves a **320×240 web twin** at `/box/` so layout work does not wait on a flash.
 
 ```
 GET /demo/h18/message?i=N  →  {
@@ -310,6 +322,7 @@ GET  <url>                 →  16 kHz s16le WAV (stream while playing)
 - Codec **100 is in-range** (`esp_codec_dev` maps 100 → 0 dB). Espressif’s BOX-3 BSP example uses 50; this tree’s working playback demos use 50–70. No Espressif doc says 100 is past the speaker. The kit is an **8 Ω / 1 W** cone ([`HARDWARE.md`](HARDWARE.md): desk-volume, not a room). Smooth playback that still breaks up at 100 is **further testing** (90 vs 100, melody vs voice) before capping `ROOMVOL_MAX`.
 - **Boot** (GPIO0) loads the next catalog entry and wraps. Message 1 is the generated melody; 2…N are inbox voice clips imported into `demos/server/h18_playback/assets/` (`voice-05` … `voice-22`; `voice-01`–`04` were empty and are skipped). Speaker stream stays open across clips so GPIO46 PA does not drop after clip 1.
 - `-- PASS h18` after the JSON is on screen. Tap Play to hear the clip; bar should move.
+- **Web twin:** `http://localhost:8080/box/` — same `GET /demo/h18/message?i=N` catalog in a 320×240 LCD plus bezel. **B** / **N** / **→** = Boot (next). **M** = mute latch. Hold **C** or Space = red circle. Mouse click/drag on the glass = touch (Play, timeline, ROOMVOL).
 
 **Pass:** `-- PASS h18` after a 200 + parse + paint. **Fail:** wifi / fetch / JSON.
 
@@ -325,6 +338,119 @@ Same record shape as h18 (`sender`, `sent_at`, `duration_ms`, `position_ms`, `re
 
 **Reuse later:** list widget, `nav_load` push/pop with `lv_screen_load_anim`.
 
+### h20 — Mute as open/away (Mazi ↔ Arlo)
+
+**App:** `h20_presence.c`  
+**Needs:** `python -m demos.server.h20_presence.server --host 0.0.0.0 --port 8080` (or `make demo-presence` to smoke the host). Two kits: Mazi = `box-a`, Arlo = `box-b`. Plan: [`plans/mazi-arlo-open-line.md`](plans/mazi-arlo-open-line.md).
+
+The top mute latch is the availability switch, not PTT. Down (red LED on) heartbeats `available: false` (away). Up heartbeats `available: true` (open). POST `/v1/heartbeat` sends our state; the JSON reply includes `self` and `peer` (`name`, `online`, `available`). A change is recorded on that POST; the friend sees it on **their** next heartbeat. Away is not offline — both keep beating.
+
+**Pass:** `-- PASS h20` after a 200 that includes a peer object. Screen: you + friend, open/away. `make demo-presence` proves the relay with two twins.
+
+**Reuse later:** mute GPIO poll, heartbeat body `{available}`, friend presence on the idle screen.
+
+### h21 — Live talk while unmuted
+
+**App:** `h21_talk.c`  
+**Needs:** `python -m demos.server.h21_talk.server --host 0.0.0.0 --port 8080`. Same two-kit pairing as h20: `WHO=mazi` / `WHO=arlo` and `PORT=` if both are plugged in.
+
+**Tested 2026-08-24** on both desk kits: Mazi ↔ Arlo communicate through the host (friend mute card + live voice). Same-time two-way with Audrey as tester is the next check.
+
+Start muted. Unmute streams 16 kHz s16le / 20 ms frames on `/v1/ws`. The server copies **both directions** (no invite, no floor). Incoming PCM always plays, so you can hear the friend while you are muted. Each kit also sends JSON `status` (`available`) so the friend card shows **muted** / **talking**, not a stuck waiting line. Speaker volume is the h18 ROOMVOL slider: mute, then 78 … 100 by 2 (starts at 90). Product hangout stays h11 half-duplex PTT; this demo is the conversation experiment. Same-desk echo is expected — use two rooms.
+
+**Pass:** `-- PASS h21` after ~10 frames sent and ~10 received. `make demo-talk` is the host smoke (names + mute relay + duplex PCM).
+
+**Reuse later:** WS copy-through without floor; mute latch as the send gate; ROOMVOL slider.
+
+### h22 — Diary journal while unmuted
+
+**App:** `h22_diary.c`  
+**Needs:** `python -m demos.server.h22_diary.server --host 0.0.0.0 --port 8080`.
+
+Unmute opens the mic once for the session and POSTs ~1 s WAV chunks to `/v1/diary` (`session`, `seq`, `blob`). Mute closes the mic and stops POSTs. The server stamps UTC `received_at` and writes under `data/h22_diary/`. Datetime lives on the host — the box has no clock.
+
+**Pass:** `-- PASS h22` after the first 200 upload. `make demo-diary` checks two dated chunks and that the peer diary stays empty.
+
+**Reuse later:** chunked upload, server-owned timestamps, mute as record gate.
+
+### h23 — Toggle record with idle auto-stop
+
+**App:** `h23_record_idle_stop.c`  
+**Needs:** h05 + h07 green; server demo 3 (same host as **h08**).
+
+- **Tap the red circle** to start recording; tap again to stop and upload. Unlike **h08**, this is a toggle, not hold-to-record.
+- While recording, if no chunk exceeds a speech peak threshold for **30 s**, the take stops automatically and uploads (screen shows `idle stop`).
+- `POST /v1/messages` multipart `kind=audio` + WAV blob — same path as **h08**.
+
+**Pass:** `-- PASS h23` after any completed upload (manual stop or idle timeout). Talk once, then stay quiet for 30 s to exercise auto-stop; or tap to stop early.
+
+**Reuse later:** idle timeout for long diary / open-line recordings; threshold tuning for desk vs room noise.
+
+### h24 — Device event log over heartbeat
+
+**App:** `h24_device_log.c`  
+**Needs:** `python -m demos.server.h24_device_log.server --host 0.0.0.0 --port 8080`. Two kits optional (peer line like **h20**).
+
+- Same **mute = away / open** heartbeat as **h20**, but each POST may carry a batch of `{seq, ms, lvl, msg}` lines from an in-RAM ring on the box.
+- The host appends to `data/h24_device_log/{device_id}.jsonl` and returns `logs_ack` so the box drops acked lines.
+- Logs today: boot reason, Wi-Fi join, mute changes, red-circle taps, peer presence changes, heartbeat failures.
+- **RAM only** — power loss clears unsent lines. This demo is the upload path to exercise before adding SD/NVS for a persistent outbox ([`STORAGE.md`](STORAGE.md)).
+
+**Pass:** `-- PASS h24` after the first heartbeat 200 with `logs_ack >= 1`. `make demo-device-log` smoke-tests the host. Tail files with `GET /v1/logs` (bearer token).
+
+**Reuse later:** diagnostic log shipping, failed-upload outbox, SD-backed ring + ack cursor in NVS.
+
+### h25 — Chipmunk voice memo
+
+**App:** `h25_chipmunk.c` — **must run on the kit** (mic + speaker). No server.
+
+- **Hold the red circle** to record (cap 8 s, 16 kHz s16le). Release plays the take back immediately.
+- Playback is resampled at **5/3** (~+9 semitones): higher pitch and faster, classic chipmunk. The I2S clock stays 16 kHz.
+- Drops the first ~80 ms so the button/codec click is not part of the memo.
+- Top **mute** latch still hardware-kills the mics — red LED must be off. Same PTT as **h08**, not **h05**.
+
+**Pass:** `-- PASS h25` after one completed chipmunk play. Spoken sentence should be silly but still a few words.
+
+**Reuse later:** local record buffer, click-trim, toy pitch-shift on playback (not a product path).
+
+### h26 — Shared drawing (Mazi ↔ Arlo)
+
+**App:** `h26_draw.c`  
+**Needs:** `python -m demos.server.h26_draw.server --host 0.0.0.0 --port 8080`. Two kits: Mazi = `box-a`, Arlo = `box-b`. Same `WHO=` / `PORT=` as **h20**.
+
+Both screens start **black**. Finger down/move/up on the glass sends JSON `{type:stroke, phase, x, y}` on `/v1/ws`. The server copies to the peer; the friend paints the same 320×240 points (white = you, blue = friend). Drag a heart on one kit; it appears on the other. **Boot** sends `clear` so both canvases wipe. No audio.
+
+**Pass:** `-- PASS h26` after the first stroke from the friend is painted. `make demo-draw` is the host smoke (heart polyline both ways + clear).
+
+**Desk success 2026-08-28. High impact** — keep this in the product/friend line; do not treat it as a throwaway glass experiment.
+
+**Reuse later:** live pointer coordinates over the same WS copy-through as h21, RGB565 framebuffer ink (same path as h13 / p12).
+
+### h27 — Drawing note (Mazi ↔ Arlo)
+
+**App:** `h27_sketch.c`  
+**Needs:** `python -m demos.server.h27_sketch.server --host 0.0.0.0 --port 8080`. Two kits: Mazi = `box-a`, Arlo = `box-b`. Same `WHO=` / `PORT=` as **h20**.
+
+Not live. Home is a **Draw** button plus **New message** when the inbox has a clip. Draw starts a timed recording (white ink). **Boot** POSTs the stroke list to the friend’s inbox (`/v1/sketches`). The friend can be elsewhere; the note waits. Opening it replays at the recorded speed (blue ink). Boot during playback stops and returns home; the note stays until it plays through. Empty Boot from record returns home without sending.
+
+**Pass:** `-- PASS h27` after a 200 send, or the first inbound point painted. `make demo-sketch` is the host smoke (timed heart Mazi → Arlo, then read).
+
+**Desk success 2026-08-28. High impact** — store-and-forward drawing is a first-class note type, same weight as a voice clip.
+
+**Reuse later:** store-and-forward stroke clips, timed RGB565 replay, home with one outbound control + waiting inbound.
+
+### h28 — Short clip on the LCD
+
+**App:** `h28_video.c` — **kit only** (display). No server.
+
+A ~5 s film at 12 fps: title card **CLIP**, then a bouncing ball over scrolling hills at dusk, then **END**. Painted into a 320×240 RGB565 buffer and blitted full-screen (same path as **h13** / **p12**). Loops. No JPEG decoder, no Wi-Fi, no speaker.
+
+Product v1 is still **not video**. This demo only answers whether the SPI LCD can hold a watchable moving picture.
+
+**Pass:** `-- PASS h28` after the first complete playthrough. UART logs achieved fps. **Fail** if the motion stutters or tears the way LVGL widgets do when they move on this panel.
+
+**Reuse later:** timed RGB565 framebuffer blit. If a parent→child clip ever happens, this is the paint path; download/decode is a different demo.
+
 ### x01 — product shell
 
 **App:** `x01_product_shell.c`  
@@ -332,7 +458,16 @@ Same record shape as h18 (`sender`, `sent_at`, `duration_ms`, `position_ms`, `re
 
 One state machine: locked (count, no body) → PIN → inbox (text / audio / RGB565 preview) / record-out / hangout PTT. Playhead stays on the server. `-- PASS x01` on first unlock, recording, or hangout `session_start`.
 
-**Reuse later:** this is the binary to polish, not a new I2S stack.
+**Reuse later:** this is the previous glue binary (combined host). v1 product is **x02**.
+
+### x02 — v1 product shell
+
+**App:** `x02_product_shell.c`  
+**Needs:** `make v1-server` (HTTP `:8080`). Admin: `/app/v1.html`. Box twin: `/box/`.
+
+Hangout roster, per-user PIN, carousel inbox, record 1:1 / Everyone, mute gate, WS `{type:inbox}` refresh. `-- PASS x02` after login. Flash `make x02 WHO=mazi` / `WHO=arlo`.
+
+**Reuse later:** this is the binary to polish for ship.
 
 ## Not in this series (on purpose)
 
@@ -343,7 +478,7 @@ One state machine: locked (count, no body) → PIN → inbox (text / audio / RGB
 - Pmod arcade button (only if h04’s human note says the mute key is too small).
 - Baking their-house SSID until this-house h06 and h07 are boring.
 
-Parent page lives in `demos/parent/web/` (combined `/app/`). Product LVGL app is **x01**.
+Parent page lives in `demos/parent/web/` (`/app/v1.html` on the v1 host). Product LVGL app is **x02**.
 
 ## How this maps to product firmware
 

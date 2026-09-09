@@ -22,6 +22,7 @@ class Device:
     token: str
     role: str
     peer: str
+    name: str = ""
 
 
 def registry_path() -> Path:
@@ -39,11 +40,13 @@ def load_devices(path: Path | None = None) -> dict[str, Device]:
     raw = yaml.safe_load(dest.read_text(encoding="utf-8")) or {}
     out: dict[str, Device] = {}
     for row in raw.get("devices") or []:
+        device_id = str(row["id"])
         dev = Device(
-            id=str(row["id"]),
+            id=device_id,
             token=str(row["token"]),
             role=str(row.get("role") or "child"),
             peer=str(row.get("peer") or ""),
+            name=str(row.get("name") or device_id),
         )
         out[dev.id] = dev
     if not out:

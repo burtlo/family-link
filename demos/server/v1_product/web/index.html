@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>BOX-3 · v1 product twin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="box.css" />
+  </head>
+  <body>
+    <header class="mast">
+      <p class="mast-mark">BOX-3 twin</p>
+      <p class="mast-demo">v1 product · carousel + shoulder settings</p>
+    </header>
+
+    <div class="stage">
+      <div>
+        <div class="setup" id="setup">
+          <label
+            >Server
+            <input id="origin" type="url" value="http://127.0.0.1:8080" />
+          </label>
+          <label
+            >Token
+            <input id="token" value="change-me-mazi" autocomplete="off" />
+          </label>
+          <label
+            >User
+            <input id="user" value="mazi" autocomplete="username" />
+          </label>
+          <label
+            >PIN
+            <input id="pin" value="2345" type="password" autocomplete="current-password" />
+          </label>
+          <button type="button" id="login-btn">Login</button>
+          <p class="setup-status" id="setup-status"></p>
+        </div>
+
+        <div class="box-slot" id="box-slot">
+          <div class="box" id="box">
+            <div class="box-top">
+              <span class="mic" aria-hidden="true"></span>
+              <span class="mic" aria-hidden="true"></span>
+              <button
+                type="button"
+                class="mute"
+                id="mute"
+                aria-pressed="false"
+                title="Mute latch (M)"
+              >
+                <span class="mute-rocker"></span>
+                mute
+              </button>
+              <span class="mute-led" aria-hidden="true"></span>
+            </div>
+
+            <div class="box-body">
+              <div class="box-side left">
+                <span class="usb" title="USB-C"></span>
+                <button
+                  type="button"
+                  class="hw-btn"
+                  id="boot"
+                  title="Shoulder (B / N / right arrow)"
+                >
+                  Boot
+                </button>
+                <button type="button" class="hw-btn" id="reset" disabled title="Reset">
+                  Reset
+                </button>
+              </div>
+
+              <div class="front">
+                <div class="lcd busy" id="lcd" aria-label="320 by 240 LCD">
+                  <div class="status-overlay" id="status-overlay">sign in</div>
+
+                  <div class="ribbon-top">
+                    <span id="count">—</span>
+                  </div>
+
+                  <div class="screen screen-carousel hidden" id="screen-carousel">
+                    <div class="carousel-row">
+                      <button type="button" class="peek hidden" id="peek-left" aria-label="Older"></button>
+                      <div class="msg-card" id="msg-card">
+                        <div class="card-panes">
+                          <div class="card-pane" id="face-pane"></div>
+                          <div class="card-pane" id="play-pane">
+                            <button type="button" class="play-hit" id="play-btn" aria-label="Play">
+                              <span class="play-disk"></span>
+                              <span class="play-icon play" id="play-icon"></span>
+                            </button>
+                          </div>
+                        </div>
+                        <div class="card-track">
+                          <input type="range" id="scrub" min="0" max="1000" value="0" />
+                        </div>
+                      </div>
+                      <button type="button" class="peek hidden" id="peek-right" aria-label="Newer"></button>
+                    </div>
+                  </div>
+
+                  <div class="screen screen-settings hidden" id="screen-settings">
+                    <div class="settings-scroll" id="settings-scroll">
+                      <p class="settings-title" id="settings-name">—</p>
+                      <p class="settings-section">vol</p>
+                      <div class="vol-row">
+                        <input
+                          type="range"
+                          id="vol-slider"
+                          min="0"
+                          max="12"
+                          value="4"
+                        />
+                        <span class="vol-num" id="vol-num">86</span>
+                      </div>
+                      <p class="settings-section">color</p>
+                      <div class="swatch-grid" id="swatch-grid"></div>
+                      <p class="settings-section">face</p>
+                      <div class="face-grid" id="face-grid"></div>
+                      <button type="button" class="sign-out" id="sign-out">sign out</button>
+                    </div>
+                  </div>
+
+                  <div class="screen screen-picker hidden" id="screen-picker">
+                    <div id="picker-list"></div>
+                  </div>
+
+                  <div class="ribbon-bot">
+                    <span class="toast" id="ribbon-toast"></span>
+                    <span class="back-hint" id="back-hint">shoulder = back</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="circle"
+                  id="circle"
+                  title="Red circle — short tap (C / Space)"
+                >
+                  <span class="sr-only">Red circle</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="legend">
+        <h1>Keys and touch</h1>
+        <p class="legend-lead">
+          LCD is exactly <strong>320&times;240</strong>. Same API as the kit
+          (<code>PUT /v1/profile</code>, carousel, inbox).
+        </p>
+        <ul>
+          <li><kbd>B</kbd> <kbd>N</kbd> <kbd>&rarr;</kbd> Shoulder · settings / back</li>
+          <li><kbd>C</kbd> / <kbd>Space</kbd> Red circle · short tap send picker</li>
+          <li><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> Older / newer message</li>
+          <li><kbd>P</kbd> Play / pause</li>
+          <li>Click peeks, play disk, scrub, swatches, faces</li>
+        </ul>
+        <div class="scale-row" role="group" aria-label="LCD scale">
+          <span>View</span>
+          <button type="button" class="scale-btn" data-scale="1">1&times;</button>
+          <button type="button" class="scale-btn on" data-scale="2">2&times;</button>
+          <button type="button" class="scale-btn" data-scale="3">3&times;</button>
+        </div>
+        <p class="line" id="line" role="status">Loading...</p>
+      </aside>
+    </div>
+
+    <script src="box.js"></script>
+  </body>
+</html>

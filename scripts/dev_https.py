@@ -8,7 +8,7 @@ for ESP32 skip-verify LAN demos (Safari on iPhone will warn).
 Certs go in gitignored data/certs/. Never commit PEM files.
 
   python scripts/dev_https.py
-  python scripts/dev_https.py --extra-name 192.168.1.10
+  python scripts/dev_https.py --extra-name 192.168.8.143
   python scripts/dev_https.py --insecure-self-signed
   python scripts/dev_https.py --certs-only
 

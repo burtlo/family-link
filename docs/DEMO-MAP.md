@@ -1,17 +1,21 @@
 # Demo map — what exists, what audio does, what to build next
 
-One BOX-3 on USB. The other peer is the **parent page** (`/app/`) or a **Python twin**. Discrete demos stay one-job; this file is how they fit the product.
+One BOX-3 on USB is enough for parent-page tryouts. Two kits (Mazi ↔ Arlo) use **h20–h22**, **h26**, and **h27**; see [`TWO-BOX.md`](TWO-BOX.md). Discrete demos stay one-job; this file is how they fit the product.
 
-## Audio: four different jobs (do not collapse them)
+## Audio: different jobs (do not collapse them)
 
 | Job | Live? | Direction | How | Demo that proves it |
 |---|---|---|---|---|
 | Voicemail **from** the box | No | Child → parent inbox | Hold **red circle**, record, `POST /v1/messages` | **h08** + server **03** (tested; trim leading click) |
+| Voicemail **from** the box (toggle + idle stop) | No | Child → parent inbox | Tap **red circle** on/off; auto-stop after 30 s quiet | **h23** + server **03** |
 | Voicemail **to** the box | No | Parent → child inbox | `POST` blob, box `GET` + play | **h09** + server **03** |
 | Hangout **from** the box | Yes, 20 ms PCM | Child → peer while mute held | WS binary, server copies to peer | **h11** / **h12** + server **06** |
 | Hangout **to** the box | Yes, 20 ms PCM | Peer → child speaker | Same WS, other peer holds floor | **h11** / **h12** + `twin_peer.py` / `demos/parent/live_ptt.py` |
+| Friend **talk** (two boxes) | Yes, 20 ms PCM | Both ways while unmuted | WS copy, **no floor** | **h21** + `h21_talk` (Mazi ↔ Arlo) |
+| Diary **from** the box | No (1 s files) | Child → server journal | Unmute, POST WAV chunks | **h22** + `h22_diary` |
+| Chipmunk memo (local) | No | Box only | Hold **red circle**, play back pitched up | **h25** |
 
-There is **no** “raw TCP/UDP stream to the ESP32” and **no** WebRTC. Live audio is **WebSocket binary frames** (16 kHz s16le mono, 640 bytes / 20 ms) **only while that side holds the floor**.
+There is **no** “raw TCP/UDP stream to the ESP32” and **no** WebRTC. Live product hangout is **WebSocket binary frames** (16 kHz s16le mono, 640 bytes / 20 ms) **only while that side holds the floor**. **h21** is the exception: both sides may send at once while unmuted.
 
 ```
 box mic --(hold mute)--> WS binary --> server relay --> peer speaker
@@ -34,7 +38,7 @@ What “two devices” means today:
 |---|---|
 | Python twin A ↔ twin B | **Done** — `make demo-relay` (server **06** client) |
 | One BOX-3 ↔ Mac twin | **Written** — flash **h11**, run `demos/parent/live_ptt.py` (or `twin_peer.py`) |
-| BOX-3 ↔ BOX-3 | **Same firmware + API.** Flash **h11** / **x01** on both, different `DEMO_DEVICE_ID` / tokens (`box-a` and `box-b`). Not tried on a second kit yet. |
+| BOX-3 ↔ BOX-3 | **Written** — flash **h20** / **h21** / **h22** / **h26** / **h27** (Mazi=`box-a`, Arlo=`box-b`) or **h11** / **x01**. See [`TWO-BOX.md`](TWO-BOX.md). |
 | BOX-3 ↔ iPhone | **Page is in the tree** — combined serves `demos/parent/web/` at `/app/`. Mic needs HTTPS ([`TLS.md`](TLS.md)); text / photo / WAV file work on HTTP |
 
 v1 **product** hangout is **you (phone) + one child box**, not kid-to-kid. Two boxes in `devices.example.yaml` are so the protocol can be exercised without a phone. Inboxes stay per child.
@@ -65,9 +69,19 @@ Numbered **01–06** stay island proofs (`make demos-server`). Glue is **`make d
 | h13–h15 | Photo preview, heartbeat + inbox WS, text after PIN |
 | h16 | HTTPS GET /v1/me (skip-verify LAN). Host: `scripts/dev_https.py`. [`TLS.md`](TLS.md) |
 | h17 | Button panel: live down/up, analog mic mute, chirps (circle press+release). Tested 2026-08-23 |
-| h18 | Playback screen: GET catalog message (sender/time/url/length/position/read), play/pause, stream WAV, ROOMVOL slider, Boot cycles clips. Host: `h18_playback` |
+| h18 | Playback screen: GET catalog message (sender/time/url/length/position/read), play/pause, stream WAV, ROOMVOL slider, Boot cycles clips. Host: `h18_playback`. Web twin: `/box/` (same catalog, 320×240 LCD + bezel keys) |
 | h19 | Scrollable message list + slide transition to detail and back. Client-side; same record shape as h18 |
-| x01 | Product shell: locked / PIN / inbox / record / hangout against combined |
+| h20 | Mute latch as open/away. Heartbeat `{available}`; response is the friend’s state (Mazi ↔ Arlo). Host: `h20_presence` |
+| h21 | Live talk while unmuted: full-duplex PCM copy-through, mute relay on the friend card, h18 ROOMVOL slider. Host: `h21_talk`. **Desk success 2026-08-24** (two kits) |
+| h22 | Diary: record while unmuted, POST 1 s WAV chunks, server stamps UTC. Host: `h22_diary` |
+| h23 | Toggle record on red circle; 30 s without speech auto-stops and uploads (h08 server) |
+| h24 | Heartbeat + device event log batch on each beat; host writes `data/h24_device_log/` |
+| h25 | Hold red circle, record a short memo, play it back as a chipmunk (pitch 5/3). No Wi-Fi |
+| h26 | Shared drawing: touch on one glass, coordinates through the server, ink on the other (Mazi ↔ Arlo). Host: `h26_draw`. **High impact** (desk 2026-08-28) |
+| h27 | Drawing note: record a timed sketch, POST to the friend, replay at the same speed. Host: `h27_sketch`. **High impact** (desk 2026-08-28) |
+| h28 | Short LCD clip: 5 s film at 12 fps (title / bouncing ball / end), RGB565 blit, loops. No Wi-Fi. Not a product path. |
+| x01 | Earlier glue shell: locked / PIN / inbox / record / hangout against combined |
+| x02 | v1 product shell: hangout roster, PIN, carousel, record, WS inbox. Host: `make v1-server` |
 | p01–p09 | Geometric face, blink, moods, SFX, pet loop, notice, talk-or-freeze |
 | p10–p11 | Packed portrait + greeting (persona pipeline) |
 
@@ -81,13 +95,13 @@ CLI stand-ins (`live_ptt.py`, `send_voicemail.py`, `send_photo.py`) plus the **p
 
 ## Product features vs demos
 
-Do **not** start by merging all `.c` files. Import the helper that passed. **x01** is the first product-shaped binary.
+Do **not** start by merging all `.c` files. Import the helper that passed. **x02** is the v1 product binary (x01 is the earlier combined-host glue).
 
 | Product mode | Proven by | Still missing |
 |---|---|---|
 | Locked idle + count | h02, p08, **x01** | Dim schedule / quiet hours as a household rule |
 | PIN then content | h03, **h15**, **x01** | Polish: which look after unlock |
-| Record out | h04, h05, h08, **x01** | Upload retry, “sent” face; **trim leading hardware click** (device or server) |
+| Record out | h04, h05, h08, **x01** | **Minutes-long diary** (chunked upload during hold, server stitch); upload retry + outbox; **trim leading hardware click**; raise **h09** inbound blob cap for long parent clips |
 | Play inbound clip | h09, p09, **x01** | Playback **screen** (h18); inbox **list + detail** (h19) |
 | Live you↔box | h11, h12, parent `live_ptt.py`, **`/app`**, **x01** | iPhone mic needs HTTPS ([`TLS.md`](TLS.md)) |
 | Face | p01–p07, p10 | Which look ships (geometry vs packed photo) |
@@ -98,14 +112,16 @@ Do **not** start by merging all `.c` files. Import the helper that passed. **x01
 | New-mail without polling | server 03 / combined WS `inbox`, **h14**, **x01** | — |
 | Power loss | h10 | NVS Wi-Fi+token only; never playhead |
 | TLS | h16 skip-verify + `scripts/dev_https.py` | Production: SNTP + CA; iPhone needs a cert it trusts ([`TLS.md`](TLS.md)) |
-| Two kids / mix | phase 3 | Server mixer; not on the ESP32 |
-| One product app | **x01** | Household SSID, always-on dock, second kit |
+| Two kids / mix | phase 3; **h20–h22** are a two-box friend-line experiment | Server mixer for product group hangout; not on the ESP32 |
+| Live shared drawing | **h26** | **High impact** (desk 2026-08-28). Import into friend line / later parent glass |
+| Drawing note | **h27** | **High impact** (desk 2026-08-28). Store-and-forward sketch like a voicemail; parent page playback still missing |
+| One product app | **x02** (x01 is prior glue) | Remote TLS + Tailscale before kids’ boxes ship |
 
 ## Suggested next (highest leverage first)
 
-1. **Desk tryout** — combined on `0.0.0.0:8080`, parent `http://MAC:8080/app/`, flash **x01** (or **h11** + **h13** pieces).
+1. **Desk tryout** — `make v1-server`, admin `http://MAC:8080/app/v1.html`, flash **x02**.
 2. **iPhone mic** — `python scripts/dev_https.py --extra-name LAN_IP`, open `https://…:8443/app/`. Flash **h16** to prove the box can speak HTTPS (set `DEMO_SERVER_PORT` 8443 for that flash only).
-3. **Second kit** — two **x01** (or **h11**) binaries, `box-a` / `box-b`. Protocol already allows it.
+3. **Second kit** — Mazi/Arlo open line: [`TWO-BOX.md`](TWO-BOX.md) + **h20** then **h21** then **h22**. Product hangout remains two **x01** (or **h11**) binaries, `box-a` / `box-b`.
 4. **USB camera** — only if child→you photos are in v1.
 
 ## How to explore live audio this week

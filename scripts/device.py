@@ -256,7 +256,9 @@ def pick_port(devices: list[SerialDevice] | None = None) -> SerialDevice:
             listed = ", ".join(d.port for d in last)
             raise TaskError(
                 f"Several BOX-3 serial ports look plausible ({listed}). "
-                "Re-run with PORT=/the/one make <task>."
+                "USB jack paths move. Bind a kit once, then any jack works:\n"
+                "  make flash DEMO=h26 WHO=mazi PORT=/dev/cu.usbmodem1101\n"
+                "  make flash DEMO=h26 WHO=arlo PORT=/dev/cu.usbmodem101"
             )
         if devices is not None or time.time() >= deadline:
             break

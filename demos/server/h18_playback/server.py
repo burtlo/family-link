@@ -7,6 +7,7 @@ clip copied into assets/. Boot on the box walks that list.
 
   python demos/server/h18_playback/server.py --host 0.0.0.0 --port 8080
   make flash DEMO=h18
+  open http://localhost:8080/box/   # 320x240 web twin, same catalog
 """
 
 from __future__ import annotations
@@ -21,13 +22,15 @@ from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import Response
+from fastapi.responses import RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 ASSETS = HERE / "assets"
+WEB = HERE / "web"
 INBOX_WAV = ROOT / "data" / "03_messages"
 
 RATE = 16000
@@ -175,6 +178,14 @@ def get_audio(clip_id: str):
     return Response(content=_item_bytes(item), media_type="audio/wav")
 
 
+@app.get("/")
+def index():
+    return RedirectResponse(url="/box/")
+
+
+app.mount("/box", StaticFiles(directory=str(WEB), html=True), name="box")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
@@ -182,6 +193,7 @@ def main() -> None:
     args = parser.parse_args()
     n = len(catalog())
     print(f"h18 catalog: {n} message(s) (melody + voice clips in {ASSETS})")
+    print(f"box twin:    http://127.0.0.1:{args.port}/box/")
     uvicorn.run(app, host=args.host, port=args.port)
 
 

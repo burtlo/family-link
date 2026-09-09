@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>BOX-3 · h18 playback</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="box.css" />
+  </head>
+  <body>
+    <header class="mast">
+      <p class="mast-mark">BOX-3 twin</p>
+      <p class="mast-demo">h18 playback · same catalog as the kit</p>
+    </header>
+
+    <div class="stage">
+      <div class="box-slot" id="box-slot">
+        <div class="box" id="box">
+          <div class="box-top">
+            <span class="mic" aria-hidden="true"></span>
+            <span class="mic" aria-hidden="true"></span>
+            <button
+              type="button"
+              class="mute"
+              id="mute"
+              aria-pressed="false"
+              title="Mute latch (M). Down = away, mics dead. Not hold-to-talk."
+            >
+              <span class="mute-rocker"></span>
+              mute
+            </button>
+            <span class="mute-led" id="mute-led" aria-hidden="true"></span>
+          </div>
+
+          <div class="box-body">
+            <div class="box-side left">
+              <span class="usb" title="USB-C"></span>
+              <button
+                type="button"
+                class="hw-btn"
+                id="boot"
+                title="Boot (B / N / right arrow). Next message, wraps."
+              >
+                Boot
+              </button>
+              <button
+                type="button"
+                class="hw-btn"
+                id="reset"
+                title="Reset reboots the box. Not a UI key."
+              >
+                Reset
+              </button>
+            </div>
+
+            <div class="front">
+              <div
+                class="lcd"
+                id="lcd"
+                aria-label="320 by 240 LCD"
+              >
+                <p class="status" id="status">h18 wifi...</p>
+                <p class="sender" id="sender"></p>
+                <p class="when" id="when"></p>
+                <p class="badge" id="badge"></p>
+                <p class="idx" id="idx"></p>
+                <div
+                  class="bar"
+                  id="bar"
+                  role="slider"
+                  aria-label="Timeline"
+                  aria-valuemin="0"
+                  aria-valuenow="0"
+                  aria-valuemax="1"
+                >
+                  <div class="bar-track">
+                    <div class="bar-fill" id="bar-fill"></div>
+                  </div>
+                </div>
+                <p class="clock" id="clock"></p>
+                <button type="button" class="play" id="play">Play</button>
+                <p class="vol-tag">vol</p>
+                <p class="vol-lab" id="vol-lab">mute</p>
+                <div
+                  class="slider"
+                  id="slider"
+                  role="slider"
+                  aria-label="Room volume"
+                  aria-valuemin="0"
+                  aria-valuemax="12"
+                  aria-valuenow="0"
+                >
+                  <div class="slider-track">
+                    <div class="slider-fill" id="slider-fill"></div>
+                    <div class="slider-knob" id="slider-knob"></div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="circle"
+                id="circle"
+                aria-pressed="false"
+                title="Red circle (hold C or Space). Record / PTT. Unused on this screen."
+              >
+                <span class="sr-only">Red circle</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="legend">
+        <h1>Keys and touch</h1>
+        <p class="legend-lead">
+          LCD is exactly <strong>320&times;240</strong>. Scale is only for the
+          desk. Glass is mouse; bezels are the physical controls.
+        </p>
+        <ul>
+          <li><kbd>B</kbd> <kbd>N</kbd> <kbd>→</kbd> Boot · next clip</li>
+          <li><kbd>M</kbd> Mute latch · away / open</li>
+          <li><kbd>C</kbd> / <kbd>Space</kbd> hold · red circle</li>
+          <li>Click Play · drag the bar and vol</li>
+        </ul>
+        <div class="scale-row" role="group" aria-label="LCD scale">
+          <span>View</span>
+          <button type="button" class="scale-btn" data-scale="1">1&times;</button>
+          <button type="button" class="scale-btn on" data-scale="2">2&times;</button>
+          <button type="button" class="scale-btn" data-scale="3">3&times;</button>
+        </div>
+        <p class="line" id="line" role="status">Loading catalog...</p>
+      </aside>
+    </div>
+
+    <script src="box.js"></script>
+  </body>
+</html>

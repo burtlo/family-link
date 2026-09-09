@@ -1,14 +1,14 @@
 # Notes for future agents
 
-Read this before writing code. Product intent lives in [`REQUIREMENTS.md`](REQUIREMENTS.md). Hardware facts in [`HARDWARE.md`](HARDWARE.md). Unresolved decisions in [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md). Demo plans: [`SERVER-DEMOS.md`](SERVER-DEMOS.md) (host), [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md) (BOX-3 feasibility), [`PERSONALITY-DEMOS.md`](PERSONALITY-DEMOS.md) (face, motion, chirps), [`PERSONA-ASSETS.md`](PERSONA-ASSETS.md) (parent likeness capture/cut/record/pack), [`DEMO-MAP.md`](DEMO-MAP.md) (what exists, audio paths, what to build next).
+Read this before writing code. Product intent: [`REQUIREMENTS.md`](REQUIREMENTS.md). **Approved v1 contract:** [`plans/v1-product-spec.md`](plans/v1-product-spec.md). Hardware facts: [`HARDWARE.md`](HARDWARE.md). Endpoint screen brief: [`BOX-UI.md`](BOX-UI.md). Removable media: [`STORAGE.md`](STORAGE.md). Unresolved decisions: [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md). Demo plans: [`SERVER-DEMOS.md`](SERVER-DEMOS.md), [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md), [`DEMO-MAP.md`](DEMO-MAP.md), [`plans/v1-demo-set.md`](plans/v1-demo-set.md).
 
 ## What this project is
 
-A **desk answering machine + walkie-talkie** so two children can reach a parent without borrowing the other parent’s phone (Marco Polo and Nintendo Switch voice both fail that way).
+A **desk answering machine** for a hangout (Lynn, Mazi, Arlo, Audrey): users sign in on BOX-3 **endpoints**, async audio mailbox, web admin on the home server.
 
-- Parent stays on **iPhone / Mac / PC**.
-- Each child eventually gets their own **ESP32-S3-BOX-3** on **2.4 GHz Wi-Fi**.
-- Media: **text, small photos, async audio**, and a **live half-duplex hangout**.
+- Lynn uses a **BOX-3** (parity) plus **web `/app`** on the Windows server.
+- Each person can use **any endpoint** after PIN sign-in.
+- Media in v1 merge: **async audio** only. Live voice, drawing, photos: later.
 - **No video. No cellular. No e-ink. No canned phrases. No wake word.**
 
 Folder name `family-link` is a placeholder. Names: [`NAMES.md`](NAMES.md). Do not brand around split-household language or Marco Polo.
@@ -30,7 +30,7 @@ A BOX-3 (or 3B — same main unit) is **plugged into this Mac**. Native USB seri
 /dev/cu.usbmodem113401
 ```
 
-(USB modem numbers move when you replug. `ls /dev/cu.usbmodem*`.)
+(USB modem numbers move when you replug. `ls /dev/cu.usbmodem*`. Two-box flashes remember the USB **serial** in `kits.local.yaml` so the kit can change jacks.)
 
 **Flash through USB-C on the box**, not the dock’s USB-C (dock USB-C is **power only**). Unplug any USB camera on the dock USB-A while flashing. If download fails: hold **Boot**, tap **Reset**, release Boot.
 
@@ -45,12 +45,10 @@ SSID and password are **known** and may be baked in. Never commit them. NVS / `s
 ## Architecture (do not invert)
 
 ```
-BOX-3  --HTTPS/WSS-->  server you run  <--  parent web app (iPhone Safari / Mac)
+endpoint  --HTTPS/WSS-->  server (Windows, home LAN)  <--  web /app
 ```
 
-v1 tryout is **one box + parent phone**. A second box is only for a second child.
-
-Hangouts are **half-duplex PTT**. Full-duplex speakerphone next to a Switch/TV will echo. Mixing for “everyone joins” is **on the server**, not on the ESP32.
+v1: **three endpoints**, four users, async audio. Lynn’s server at home; kids’ boxes on remote Wi-Fi when deployed (TLS + Tailscale before ship). Product glue: **x02** (successor to x01) per [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
 
 Child → parent photos need a **UVC/MJPEG USB 1.1** camera on dock USB-A. Parent → child photos do not (phone camera roll, server downscales to ~320×240).
 
@@ -61,20 +59,19 @@ Nintendo Switch Online cannot run on the box. Voice sits **beside** Minecraft.
 Most island/protocol/personality demos **and the first product glue** are in the tree. See [`DEMO-MAP.md`](DEMO-MAP.md).
 
 - Combined host: `python -m demos.server.combined.server --host 0.0.0.0 --port 8080` (parent page at `/app/`).
-- Product box: `make flash DEMO=x01`. Piece demos remain **h01–h19**.
-- iPhone mic still needs HTTPS: [`TLS.md`](TLS.md) / `scripts/dev_https.py`.
-- Still later: other-house SSID, always-on dock, second kit, group mixing (phase 3). Do not rewrite I2S.
-
-iPhone **getUserMedia requires HTTPS** (localhost is OK on the Mac). Plan TLS even for a home server.
+- Box LCD twin (no flash): `python demos/server/h18_playback/server.py --host 0.0.0.0 --port 8080` then `http://localhost:8080/box/` (320×240 + bezel; same h18 catalog).
+- Product box: `make x02` / `make flash DEMO=x02` (v1 shell). Island demos remain **h01–h28**. Build order: [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
+- Island demos (h20–h27) prove sync paths for **later**; not in v1 merge.
+- Remote endpoints need TLS: [`TLS.md`](TLS.md) / Tailscale on home server.
 
 ## Constraints that are already decided
 
 - Wi-Fi 2.4 GHz only. No 5 GHz, no SIM.
-- Mic live **only while a button is held**.
-- PIN gates **playback** of stored inbound content. Recording out does not need a PIN if the box is that child’s.
-- Locked idle may show a **count**, never the body, never audio.
-- Parent client is a phone page, not a second box.
+- Mic live **only during recording** (after recipient pick). No wake word.
+- PIN gates **carousel and recording**. 1 min idle relock.
+- Lynn client: BOX-3 endpoint + web `/app`, not phone-primary.
 - USB wall power; desk appliance.
+- v1 merge: **async audio only** — see [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
 
 ## If you are stuck
 

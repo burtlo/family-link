@@ -65,13 +65,28 @@ The dock is the desk stand. It also carries the only realistic **photo capture**
 | Cellular | No | Not required |
 | Nintendo voice app | No | Irrelevant; voice sits beside the game |
 
+## On-device storage
+
+The answering machine **does not keep the inbox on the box.** NVS holds Wi-Fi + token. Playhead and blobs live on the server ([`DEVICE-DEMOS.md`](DEVICE-DEMOS.md) h10).
+
+| Pool | Size | Role today |
+|---|---|---|
+| **SPI flash** (WROOM-1) | **16 MiB** | Firmware + NVS in **1.5 MiB** factory partition. **~14.4 MiB unallocated** — not a filesystem until a custom partition table. |
+| **PSRAM** | **16 MiB** | Working RAM (one ~320 KB WAV, one 153.6 KB preview). Lost on reset. |
+| **Server disk** | Yours | Canonical inbox. |
+
+Removable options: **USB stick on dock USB-A** (BOX-3B) or **microSD in SENSOR brick** (full kit only) — not both at once. **What capacity, speed, and format to buy:** [`STORAGE.md`](STORAGE.md).
+
+Rough local cache if you claim **~12 MiB** on-chip FAT later: **~35–40** ten-second PCM clips in an **outbox** — enough for days of Wi-Fi blips, not a long-term archive. Upload failures and size limits: [`STORAGE.md`](STORAGE.md).
+
 ## Gaps to plan for
 
-1. **No camera on the box.** Receive-photos in v1 is easy (your phone → server → LCD). Send-photos needs a cheap UVC webcam on the dock, or wait.
+1. **No camera on the box.** Receive-photos in v1 is easy (your phone → server → LCD). Send-photos needs a cheap UVC webcam on the dock, or wait. How far that can go (still vs clip vs live): [`UVC-CAMERA.md`](UVC-CAMERA.md).
 2. **Mute button is small** for Minecraft. If they cannot hit it without looking, add an arcade button on Pmod. Same guts.
-3. **1 W speaker** is desk-volume, not a room. Point it at the player, not at the TV speakers.
+3. **1 W speaker** is desk-volume, not a room. Point it at the player, not at the TV speakers. Louder speaker, headphones, external mic (same kit / Pmod): [`SPEAKER.md`](SPEAKER.md).
 4. **LCD glow.** E-ink would be calmer idle; this hardware will not do that. Dim the backlight when locked.
 5. **Stock firmware is a wake-word product.** Treat the kit as a blank HMI. Flash ours before it goes to their desk.
+6. **16 MiB flash is mostly empty and unused.** Firmware sits in 1.5 MiB. Local media needs a custom partition or removable storage — buying guide: [`STORAGE.md`](STORAGE.md).
 
 ## Software stack (intended)
 

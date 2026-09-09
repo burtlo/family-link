@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Family link — admin</title>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        background: #101418;
+        color: #e8f0e8;
+      }
+      body {
+        max-width: 32rem;
+        margin: 1.5rem auto;
+        padding: 0 1rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+      }
+      fieldset {
+        border: 1px solid #2a3038;
+        border-radius: 8px;
+        margin: 1rem 0;
+        padding: 1rem;
+      }
+      label {
+        display: block;
+        margin: 0.5rem 0 0.2rem;
+        color: #a8b0b8;
+        font-size: 0.85rem;
+      }
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        box-sizing: border-box;
+      }
+      button {
+        background: #5aa0e8;
+        border: none;
+        color: #101418;
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .hidden {
+        display: none;
+      }
+      #log {
+        font-size: 0.85rem;
+        color: #a8b0b8;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Family link admin</h1>
+    <p id="log">v1 product server — Lynn web tools</p>
+
+    <fieldset id="login-panel">
+      <legend>Sign in</legend>
+      <label for="origin">Server</label>
+      <input id="origin" type="url" value="http://192.168.8.143:8080" />
+      <label for="username">Username</label>
+      <input id="username" value="lynn" autocomplete="username" />
+      <label for="password">Web password</label>
+      <input id="password" type="password" autocomplete="current-password" />
+      <button type="button" id="login-btn">Login</button>
+    </fieldset>
+
+    <fieldset id="admin-panel" class="hidden">
+      <legend>Admin</legend>
+      <label for="reset-user">Reset box PIN for</label>
+      <select id="reset-user">
+        <option value="mazi">Mazi</option>
+        <option value="arlo">Arlo</option>
+        <option value="audrey">Audrey</option>
+        <option value="lynn">Lynn</option>
+      </select>
+      <label for="new-pin">New PIN (shown here only)</label>
+      <input id="new-pin" maxlength="8" placeholder="4 digits" />
+      <button type="button" id="reset-btn">Reset PIN</button>
+
+      <label for="welcome-wav">Upload welcome WAV (all users)</label>
+      <input id="welcome-wav" type="file" accept="audio/wav,audio/*" />
+      <button type="button" id="welcome-btn">Upload welcome</button>
+
+      <label for="send-user">Send audio to</label>
+      <select id="send-user">
+        <option value="mazi">Mazi</option>
+        <option value="arlo">Arlo</option>
+        <option value="audrey">Audrey</option>
+        <option value="lynn">Lynn</option>
+        <option value="broadcast">Everyone</option>
+      </select>
+      <label for="send-wav">Audio file</label>
+      <input id="send-wav" type="file" accept="audio/wav,audio/*" />
+      <button type="button" id="send-btn">Send audio</button>
+    </fieldset>
+
+    <script src="v1.js"></script>
+  </body>
+</html>

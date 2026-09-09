@@ -1,0 +1,39 @@
+# Copy to hangout.local.yaml (gitignored) for real PINs and tokens.
+# v1 product registry: one hangout, users, endpoints, web admin.
+#
+# Endpoint tokens go in firmware secrets.h (DEMO_DEVICE_TOKEN).
+# Box PINs are verified server-side on POST /v1/session/login.
+
+hangout:
+  id: family
+  name: Family
+
+users:
+  - id: lynn
+    name: Lynn
+    pin: "1234"
+    web_admin: true
+    web_password: change-me-lynn
+  - id: mazi
+    name: Mazi
+    pin: "2345"
+  - id: arlo
+    name: Arlo
+    pin: "3456"
+  - id: audrey
+    name: Audrey
+    pin: "4567"
+
+endpoints:
+  - id: endpoint-lynn
+    token: change-me-lynn
+    hangout_id: family
+  - id: endpoint-mazi
+    token: change-me-mazi
+    hangout_id: family
+  - id: endpoint-arlo
+    token: change-me-arlo
+    hangout_id: family
+
+# Optional: path to a WAV seeded as First Message (seq=1) for every user on startup.
+# welcome_wav: data/welcome.wav

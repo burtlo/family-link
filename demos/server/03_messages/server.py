@@ -165,7 +165,9 @@ async def ws_inbox(websocket: WebSocket) -> None:
 
         async def watch() -> None:
             while True:
-                await websocket.receive_text()
+                message = await websocket.receive()
+                if message["type"] == "websocket.disconnect":
+                    break
 
         await asyncio.gather(pump(), watch())
     except WebSocketDisconnect:

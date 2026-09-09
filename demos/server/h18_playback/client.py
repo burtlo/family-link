@@ -74,6 +74,15 @@ def main() -> int:
             if voice["position_ms"] != 0:
                 return fail(f"voice clip should start at 0: {voice}")
 
+        page = http.get(f"{base}/box/")
+        if page.status_code != 200:
+            return fail(f"GET /box/ expected 200 got {page.status_code}")
+        if 'id="lcd"' not in page.text:
+            return fail("box page missing 320x240 lcd")
+        js = http.get(f"{base}/box/box.js")
+        if js.status_code != 200:
+            return fail(f"GET /box/box.js expected 200 got {js.status_code}")
+
     print(f"-- PASS h18_playback count={count}")
     return 0
 

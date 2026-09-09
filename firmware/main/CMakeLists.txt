@@ -19,6 +19,7 @@ idf_component_register(
         "${CMAKE_CURRENT_LIST_DIR}/../common/board.c"
         "${CMAKE_CURRENT_LIST_DIR}/../common/wifi_sta.c"
         "${CMAKE_CURRENT_LIST_DIR}/../common/http_bearer.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../common/who.c"
     INCLUDE_DIRS
         "${CMAKE_CURRENT_LIST_DIR}/../common"
         "${CMAKE_CURRENT_LIST_DIR}/.."
@@ -37,3 +38,6 @@ idf_component_register(
 
 # secrets.h is gitignored; demos that need SSID/PIN include it.
 target_compile_definitions(${COMPONENT_LIB} PRIVATE FAMILY_DEMO_NAME="${FAMILY_DEMO}")
+
+# Identity (Mazi/Arlo) is stamped into who.c slots after compile. Do not
+# pass FAMILY_DEVICE_* here — that forced a second full build per kit.

@@ -3,10 +3,24 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .DS_Store
+Thumbs.db
+
+# Environment / secrets
 .env
+.env.*
+.envrc
+
+# Keys & certs (dev_https writes data/certs/)
 *.bin
 *.pem
+*.key
+*.p12
+*.pfx
 secrets/
+credentials.json
+*-credentials.json
+
+# ESP-IDF
 sdkconfig
 sdkconfig.old
 sdkconfig.local
@@ -15,8 +29,15 @@ managed_components/
 dependencies.lock
 firmware/secrets.h
 firmware/build/
-devices.local.yaml
+
+# Local config overrides (real tokens, PINs, Wi-Fi, kit USB map)
+*.local.yaml
+
 data/
 .tools/
 firmware/assets/persona/
 demos/server/h18_playback/assets/*.wav
+
+# IDE
+.idea/
+.vscode/

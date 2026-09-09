@@ -4,12 +4,17 @@
 # Two "child" peers so we can hangout without a phone UI yet. The parent
 # Mac tools (demos/parent/) speak as box-b; flash the kit as box-a.
 # A real parent-a device can be added later without changing routes.
+#
+# Display names (Mazi / Arlo) are for the two-box open-line demos (h20–h22).
+# Protocol ids stay box-a / box-b so existing flashes and tokens keep working.
 devices:
   - id: box-a
     token: change-me-a
     role: child
     peer: box-b
+    name: Mazi
   - id: box-b
     token: change-me-b
     role: child
     peer: box-a
+    name: Arlo

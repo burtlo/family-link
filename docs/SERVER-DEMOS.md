@@ -29,9 +29,9 @@ device A (BOX-3 or Python twin)
 device B (BOX-3, twin, or later the parent phone page)
 ```
 
-**Peers, not “parent vs child.”** Every endpoint is a `device_id` plus a bearer token. Child boxes and the parent web page are the same protocol with different `role` values. That keeps firmware to one client and lets us demo with two boxes before a phone UI exists.
+**Peers, not “parent vs child.”** Every **endpoint** is an `endpoint_id` plus a bearer token. **Users** (people) have inboxes and PINs; they sign in on endpoints. The web `/app` is another client for the same user accounts.
 
-Product v1 in [`REQUIREMENTS.md`](REQUIREMENTS.md) is still **you on a phone ↔ one child box**. The second box is the second child. The parent phone is a third peer when that client exists. Demos use two twins so we can exercise the full path without Safari.
+**Product v1** ([`plans/v1-product-spec.md`](plans/v1-product-spec.md)): a **hangout** with users and endpoints; per-user inbox; 1:1 and broadcast audio; Lynn’s box + web admin. Island demos still use legacy `peer` 1:1 YAML until the server grows hangout routes.
 
 ### Why the server stays in the middle for calls
 
@@ -63,11 +63,13 @@ LAN demos run **plain HTTP**. Headers and URLs stay TLS-ready. Wrap with `script
 
 Boxes lose power and RAM. The server is the source of truth for:
 
-- Device registry (ids, token hashes, peer)
-- Presence (`last_seen`)
-- Message archive until TTL
-- Per-device **playhead** (last fully consumed message seq in that inbox)
-- Hangout session (if any): who is in it, whose floor it is
+- Hangout registry (users, endpoints, tokens)
+- Per-**user** inbox and message blobs
+- Per-user session fields: `last_viewed_seq`, per-message `read`, `position_ms`
+- Presence (`last_seen`) — optional; dropped from v1 UI
+- Live session state (later)
+
+Legacy demos also track per-`device_id` **peer** and playhead until migrated.
 
 SQLite + a `data/blobs/` directory. No Postgres, no Redis for this phase.
 
@@ -95,9 +97,23 @@ devices:
     peer: box-a
 ```
 
-`peer` is the 1:1 inbox/hangout counterpart. A parent peer is added later without changing routes.
+`peer` is the 1:1 inbox/hangout counterpart in **legacy demos**. Product v1 uses **hangout membership** and **per-user inbox** — see [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
 
-### REST
+### Product v1 routes (to implement)
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/v1/hangout` | Members (names, ids) for recipient picker |
+| GET | `/v1/me` | Session: `user_id`, inbox summary, `last_viewed_seq`, unread |
+| POST | `/v1/messages` | `to_user_id` or `broadcast: true`; multipart audio |
+| PUT | `/v1/messages/{seq}/read` | Mark read + optional `position_ms` |
+| PUT | `/v1/session/view` | `{seq}` carousel focus |
+| POST | `/v1/admin/pin-reset` | Web auth; reset user box PIN |
+| POST | `/v1/admin/welcome` | Upload First Message WAV |
+
+Legacy demo routes below remain for island flashes.
+
+### REST (legacy demos)
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -254,7 +270,15 @@ Optional flag `--full-duplex-measure`: copy both ways with no floor, for a numbe
 
 When firmware has even a tiny HTTP client, point it at server demos 1–2 (device h07). Hangout on the box is device h11 against server demo 6.
 
-Device UI fixtures (not numbered 01–06): `h18_playback` serves a catalog (generated melody + imported inbox voice clips) for firmware **h18**. `GET /demo/h18/message?i=N` wraps. Inbox **list + detail** is firmware **h19** (no host). Do not fold those into 03_messages.
+Device UI fixtures (not numbered 01–06): `h18_playback` serves a catalog (generated melody + imported inbox voice clips) for firmware **h18** and a 320×240 web twin at `/box/`. `GET /demo/h18/message?i=N` wraps. Inbox **list + detail** is firmware **h19** (no host). Do not fold those into 03_messages.
+
+Two-box open line (Mazi / Arlo, names in `devices.example.yaml`): `h20_presence` (mute as `available` on `/v1/heartbeat`), `h21_talk` (full-duplex PCM copy, no floor; JSON `status` / `peer_status` for the friend’s mute line), `h22_diary` (dated WAV chunks on `POST /v1/diary`), `h26_draw` (JSON `stroke` / `clear` copy on `/v1/ws`, **high impact**), `h27_sketch` (timed stroke clip on `POST /v1/sketches`, inbox GET + replay, **high impact**). Firmware **h20–h22** / **h26** / **h27**. Plan: [`plans/mazi-arlo-open-line.md`](plans/mazi-arlo-open-line.md). Not the product hangout.
+
+### v1 product host
+
+**Script:** `demos/server/v1_product/` — `make v1-server` / `make demo-v1`.
+
+Hangout users + endpoints (`hangout.example.yaml`), per-user inbox, broadcast, First Message, web admin `/app/v1.html`, box twin `/box/`, WS `/v1/ws`. Firmware **x02**. Contract: [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
 
 ## How this maps to a later server
 

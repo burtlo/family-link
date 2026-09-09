@@ -1,74 +1,74 @@
 # Requirements
 
-Source: the product conversation (split household, Marco Polo access failure, Switch/Minecraft hangouts, Wi-Fi already known). Not invented canned phrases.
+Source: the product conversation (split household, Marco Polo access failure, Switch/Minecraft hangouts, Wi-Fi already known). Approved v1 contract: [`plans/v1-product-spec.md`](plans/v1-product-spec.md) (2026-09-04).
 
 ## Problem
 
-Two children. Communication with you currently rides on **the other parent’s phone** (Marco Polo, and voice during Minecraft on Nintendo Switches). Kids take turns. You do not have a private channel with each child.
+Two children. Communication with Lynn currently rides on **the other parent’s phone** (Marco Polo, and voice during Minecraft on Nintendo Switches). Kids take turns. Lynn does not have a private channel with each child.
 
 ## Goals
 
 Keep a small, ongoing connection:
 
-- Each child has **their own endpoint** that lives on a desk (next to a Switch dock is fine).
-- You stay on **your phone**.
-- No cellular. **2.4 GHz Wi-Fi** only. SSID and password are already known; they can be baked in ahead of a visit or while hanging out there.
-- The other parent should not have to unlock a phone or relay messages. They only need the box left plugged in on that network.
+- A **hangout** (family group) with **users** (Lynn, Mazi, Arlo, …) and **endpoints** (BOX-3 kiosks on desks).
+- Any user can sign in on any endpoint. Lynn uses a **box for parity** plus a **web admin** on the home server.
+- No cellular. **2.4 GHz Wi-Fi** only.
+- Async **audio** mailbox in v1: send 1:1 or broadcast to the hangout.
 
-## Non-goals (v1)
+## Non-goals (v1 merge)
 
-- Not a smartphone, tablet, or app store.
-- Not video (Marco Polo’s medium). Photos are enough for “look at this.”
-- Not e-ink, not a pocket daily driver, not Gmail.
-- Not Nintendo Switch Online. The box does not run Nintendo’s voice app. Voice to you sits **beside** the game.
-- Not always-listening / wake-word. The mic is live only while a button is held. That matters in someone else’s house.
-- Not one shared box with two PINs. That recreates the handoff.
+- Not a smartphone, tablet, or app store as the primary child experience.
+- Not video. Not live voice hangout in this merge (later).
+- Not drawing notes or live shared drawing in this merge (later; high impact when added).
+- Not photos in this merge (later).
+- Not e-ink, wake word, or canned phrases.
+- Not Nintendo Switch Online on the box.
 
 ## Functional requirements
 
 ### Identity
 
-- One physical device = one child.
-- You address Child A or Child B from your phone.
-- A numeric **passcode** unlocks stored inbound content on that box (sibling / walk-by privacy). Recording out does not need a PIN if the box is theirs.
-- Idle timeout relocks. Locked idle may show a **count** (“2 new”), never the body, never audio.
+- **Hangout:** named group; four users (Lynn, Mazi, Arlo, Audrey) and three endpoints in v1.
+- **User:** inbox, PIN, profile picture; not bound to one endpoint.
+- **Endpoint:** BOX-3 with device token; remembers last signed-in user for wake.
+- **Numeric PIN** required for carousel and recording. **1 minute** idle relock to PIN screen (same user portrait). **5 failed attempts** → 60s cooldown.
+- **Web admin:** Lynn (granted access) logs in with **web credentials** (separate from box PIN). PIN reset from server only — digits shown on web, not on box glass.
 
-### Async updates (store-and-forward)
+### Async updates (v1 merge: audio only)
 
 | Direction | Media | Notes |
 |---|---|---|
-| Child → you | Audio clip | Hold to record, release to send. Notification on your phone. |
-| You → child | Text, audio clip, **small photo** | Box lights “new.” Child enters PIN, then reads / plays / sees. |
-| Child → you | Small photo | Desired. Hardware has **no onboard camera**; see hardware doc. May slip to a later phase if a USB camera is not on the desk. |
+| User → user | Audio clip | Long-press circle → recipient (one user or **Everyone**) → record. **5s silence** or **3min** cap stops; long-press stops early. **150ms** leading trim. |
+| System → all users | Welcome audio | **First Message** at `seq=1` on user create; Lynn uploads via `/app`; display as `from: Family`. |
+| Later | Text, photo, sketch | Out of v1 merge; same inbox carousel model. |
 
-Photos are snapshots, not a camera roll. Downscale on the server to something a 320×240 screen can show.
+### Carousel inbox
 
-### Live hangout (push-to-talk)
+- Center card + peek left/right; datetime order.
+- **Read** on Play only (not on card select). Server syncs `read`, `last_viewed_seq`, `position_ms` **per user**.
+- Play / Pause and timeline scrub on glass. Volume always visible.
+- No autoplay on card change.
 
-- You start a session from your phone (“Dad is here”).
-- The child’s box shows that the hangout is live.
-- **Hold to talk**, speaker plays you. Half-duplex on purpose (box sits next to a TV/Switch; full-duplex will echo).
-- Mic is dead unless the button is down.
-- You end the session, or it times out. Box returns to answering-machine mode.
+### Live hangout (later)
 
-v1 hangout is **you + one box**. Two kids in Minecraft at once can wait for the group phase.
+- Half-duplex PTT through server. Not in v1 merge. Island demos (h21) remain reference.
 
-### Group hangout (later)
+### Group live session (later)
 
-- You + more than one child box on the same live session.
-- Mixing happens on **your server**, not by turning the boxes into a conference phone.
-- Same PTT discipline. Stored inbox stays per-child.
+- Server mixing for multiple endpoints. Same PTT discipline.
 
 ## Constraints
 
 | Constraint | Decision |
 |---|---|
-| Radio | Wi-Fi 2.4 GHz only. No 5 GHz, no cellular. |
-| Power | USB wall power. Always on the desk. |
-| Parent client | Phone (PWA or simple app). |
-| Backend | A server you own. Device-scoped auth. Audio and photos as files, not a third-party video app. |
-| Privacy | Button-gated mic. PIN for playback. No wake word. |
+| Radio | Wi-Fi 2.4 GHz only |
+| Power | USB wall power; desk appliance |
+| Lynn client | BOX-3 endpoint + web `/app` on home Windows server |
+| Remote endpoints | Kids’ boxes on other-house Wi-Fi; TLS + Tailscale (or similar) before ship |
+| Backend | Server you own; per-user inbox; device token per endpoint |
+| Privacy | PIN for mailbox access; mic live only during recording; no wake word |
+| Max clip | 3 minutes hard cap; 5s silence auto-stop |
 
-## Success
+## Success (v1 merge)
 
-A child can leave you a voice note, see a photo or text you sent, and talk to you while playing Minecraft **without picking up the other parent’s phone**.
+Lynn, Mazi, Arlo, and Audrey can each sign in on any endpoint, play and send async voice notes (1:1 or broadcast), with a non-empty mailbox (First Message), PIN privacy, and Lynn admin on the web — **without** borrowing the other parent’s phone.
