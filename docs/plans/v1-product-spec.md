@@ -6,7 +6,7 @@
 | **Owners / areas**             | Server, endpoint firmware, web admin                                  |
 | **Status**                     | `approved` (2026-09-04)                                               |
 | **Targets**                    | Three endpoints (Lynn, Mazi, Arlo); async audio mailbox; web admin    |
-| **Last updated**               | 2026-09-05                                                            |
+| **Last updated**               | 2026-09-09                                                            |
 | **Supersedes / superseded by** | Supersedes one-box + parent-phone v1 framing in older docs            |
 | **As-built**                   | None — link to [`docs/features/`](../features/_template.md) when shipped |
 
@@ -21,7 +21,7 @@ A **hangout** (group) has **users** (people) and **endpoints** (BOX-3 kiosks). A
 | Layer | v1 deliverable |
 |---|---|
 | **Server** | Hangout / user / endpoint model; per-user inbox; broadcast fan-out; session sync; web login; PIN admin; First Message seed |
-| **Firmware** | Sign-in roster, PIN, carousel, record + upload, mute gate, chirps, sleep / wake, sign out |
+| **Firmware** | Sign-in roster, PIN, carousel, record + upload, mute gate, chirps, sleep / wake, sign out, **connecting / server-wait UX** |
 | **Web `/app`** | Lynn admin at `/app/v1.html`: login, PIN reset, welcome upload, send audio |
 
 **Deployment:** Server on Lynn’s Windows box (fixed LAN IP, Ethernet). Lynn’s endpoint on the same LAN. Mazi and Arlo endpoints on **remote Wi-Fi** — firmware merge can prove on one LAN first; **Tailscale** (or similar) before hardware ships to the other house.
@@ -67,7 +67,7 @@ stateDiagram-v2
     RecipientPick --> Carousel: shoulder or 10s timeout
     Recording --> Carousel: tap circle stop / 5s silence / 3min cap → upload
     Recording --> Carousel: shoulder cancel (discard)
-    Carousel --> Asleep: 5 min idle (backlight off)
+    Carousel --> Asleep: 5 min idle (ambient sleep)
     PinLock --> Asleep: 5 min idle
     SignedOut --> Asleep: 5 min idle
 ```
@@ -119,8 +119,34 @@ stateDiagram-v2
 
 ### Sleep / wake
 
-- **2 min** dim → **5 min** backlight off (session unchanged).
-- Wake: touch or **short circle tap**.
+- **2 min** dim (32% backlight) → **5 min** ambient sleep (session unchanged).
+- **Ambient sleep** replaces a fully black screen so the box reads as asleep, not dead or unplugged. Bedroom-safe: very low backlight (~4–6%), not full off.
+- **Entry:** ~1.5 s fade from dim UI into a dark sleep screen.
+- **Asleep screen:** dark navy fill + slow bottom-half accent glow (user accent when signed in). 5 s breathe cycle on glow and backlight. Every ~25 s, a soft pulse in the zone above the physical red circle (no fake button drawn on the LCD).
+- **Signed in + unread:** small count badge pulses with the glow (count only — no message body).
+- **Wi-Fi error / connecting:** do **not** enter ambient sleep; these screens stay visible.
+- Wake: touch anywhere on LCD or **short circle tap** → full brightness + prior screen.
+
+### Server wait (“connecting”) — signed-out endpoints
+
+When **`GET /v1/hangout` fails** and nobody is signed in, the endpoint stays on a **connecting** screen — not sign-in tiles, not a developer error, not a timed “connection failed” panel. The household server may be booting or the link may be slow; the box **keeps trying**.
+
+| Rule | Contract |
+|---|---|
+| **When** | Signed out + server unreachable (HTTP fail on hangout probe) |
+| **Copy** | `connecting` only (no ellipsis). No hostnames, CLI hints, or `secrets.h` |
+| **Visual** | Screen-centered gold mailbox (~1.5×), then label, then **three gold dot circles** (not text) |
+| **Dots** | 1 → 2 → 3 over each **5 s** retry period (~1.7 s per step); reset to **1 dot** after each probe finishes |
+| **Retry** | `GET /v1/hangout` every **5 s**; **2.5 s** HTTP timeout per probe so UI animation stays smooth |
+| **Success** | **200** with users → **sign-in roster** |
+| **Cache** | Last hangout roster may persist in **NVS** for fast roster after reconnect; **do not show tiles while offline** |
+| **No timeout** | Do not switch to a separate error screen while retries continue |
+| **Wi-Fi down** | **Separate** `no Wi-Fi` screen — not the connecting screen |
+| **Signed in** | Server loss → carousel **offline** ribbon; block send/PIN-dependent server ops; not connecting |
+| **Signed-out heartbeat** | While signed out, probe hangout every **5 s** on roster **and** PIN — not only on connecting; failed probe → connecting (clear partial PIN) |
+| **PIN verify** | 4th digit → **`checking...`**; login POST on worker task; **2.5 s** timeout; transport fail → connecting, not a frozen pad |
+
+**UI detail:** [`BOX-UI.md`](../BOX-UI.md) § Connecting, § Connection confidence. **Implementation:** `firmware/demos/x02_product_shell.c`.
 
 ---
 
@@ -198,7 +224,7 @@ Server stores **one blob**, creates **N−1 inbox rows** (one per other hangout 
 | User login + PIN | h03 pad; sign-out roster |
 | First Message seed | Server on user create |
 | Mute gate + record chirps | h17 GPIO + chirp pattern |
-| Sleep / wake | Backlight policy |
+| Sleep / wake | Dim schedule + ambient sleep screen (bedroom-safe low backlight) |
 | Web admin | Login, PIN reset, welcome, send |
 
 **Product binary:** successor to **x01** (e.g. **x02**), importing passing helpers — not merging every `.c` file.

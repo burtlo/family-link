@@ -41,3 +41,11 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE FAMILY_DEMO_NAME="${FAMILY_D
 
 # Identity (Mazi/Arlo) is stamped into who.c slots after compile. Do not
 # pass FAMILY_DEVICE_* here — that forced a second full build per kit.
+target_link_options(
+    ${COMPONENT_LIB}
+    INTERFACE
+        "-Wl,-u,WHO_DEVICE_ID"
+        "-Wl,-u,WHO_DEVICE_TOKEN"
+        "-Wl,-u,WHO_DEVICE_NAME"
+        "-Wl,-u,WHO_PEER_NAME"
+)

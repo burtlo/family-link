@@ -85,23 +85,15 @@
                   </div>
 
                   <div class="screen screen-carousel hidden" id="screen-carousel">
-                    <div class="carousel-row">
-                      <button type="button" class="peek hidden" id="peek-left" aria-label="Older"></button>
-                      <div class="msg-card" id="msg-card">
-                        <div class="card-panes">
-                          <div class="card-pane" id="face-pane"></div>
-                          <div class="card-pane" id="play-pane">
-                            <button type="button" class="play-hit" id="play-btn" aria-label="Play">
-                              <span class="play-disk"></span>
-                              <span class="play-icon play" id="play-icon"></span>
-                            </button>
-                          </div>
-                        </div>
-                        <div class="card-track">
-                          <input type="range" id="scrub" min="0" max="1000" value="0" />
-                        </div>
+                    <div class="carousel-wrap">
+                      <div class="carousel-track" id="carousel-track"></div>
+                      <div class="carousel-transport locked-off" id="carousel-transport">
+                        <button type="button" class="play-hit" id="carousel-play" aria-label="Play">
+                          <span class="play-disk"></span>
+                          <span class="play-icon play" id="carousel-play-icon"></span>
+                        </button>
+                        <input type="range" id="carousel-scrub" min="0" max="1" value="0" />
                       </div>
-                      <button type="button" class="peek hidden" id="peek-right" aria-label="Newer"></button>
                     </div>
                   </div>
 
@@ -121,6 +113,8 @@
                       </div>
                       <p class="settings-section">color</p>
                       <div class="swatch-grid" id="swatch-grid"></div>
+                      <p class="settings-section">card gradient</p>
+                      <div class="grad-grid" id="grad-grid"></div>
                       <p class="settings-section">face</p>
                       <div class="face-grid" id="face-grid"></div>
                       <button type="button" class="sign-out" id="sign-out">sign out</button>
@@ -133,7 +127,16 @@
 
                   <div class="ribbon-bot">
                     <span class="toast" id="ribbon-toast"></span>
-                    <span class="back-hint" id="back-hint">shoulder = back</span>
+                  </div>
+
+                  <div
+                    class="sleep-overlay hidden"
+                    id="sleep-overlay"
+                    aria-hidden="true"
+                  >
+                    <div class="sleep-glow"></div>
+                    <div class="sleep-hint"></div>
+                    <div class="sleep-badge hidden" id="sleep-badge"></div>
                   </div>
                 </div>
 
@@ -162,7 +165,8 @@
           <li><kbd>C</kbd> / <kbd>Space</kbd> Red circle · short tap send picker</li>
           <li><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> Older / newer message</li>
           <li><kbd>P</kbd> Play / pause</li>
-          <li>Click peeks, play disk, scrub, swatches, faces</li>
+          <li>Swipe carousel, play disk, scrub, swatches, gradients, faces</li>
+          <li>2 min dim · 5 min ambient sleep (touch LCD or circle to wake)</li>
         </ul>
         <div class="scale-row" role="group" aria-label="LCD scale">
           <span>View</span>

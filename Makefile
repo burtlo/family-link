@@ -337,6 +337,9 @@ p11:
 p12:
 	@$(PYTHON) "$(FLASH)" --demo p12
 
+p13:
+	@$(PYTHON) "$(FLASH)" --demo p13
+
 demo-auth:
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 01_auth
 

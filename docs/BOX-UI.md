@@ -139,6 +139,7 @@ Four things a hand can hit. Only three are programmable.
 One endpoint, many users. Sign in → carousel → sign out or idle lock.
 
 ```
+boot / wifi ok --server down-->  CONNECTING  --server up-->  signed out (user tiles)
 asleep  --wake (touch / short circle)-->  signed out (user tiles)
 signed out  --tap user-->  PIN pad  --ok-->  CAROUSEL
 carousel  --shoulder-->  SETTINGS (volume, color, face, sign out)
@@ -146,13 +147,14 @@ settings  --shoulder-->  carousel
 carousel  --1 min idle-->  PIN lock (same user portrait)
 carousel  --sign out (settings)-->  signed out
 carousel  --tap circle-->  recipient pick  --tap-->  RECORDING  --tap circle-->  carousel
-carousel  --5 min idle-->  asleep (backlight off)
+carousel  --5 min idle-->  asleep (ambient sleep, low backlight)
 ```
 
 | Mode | Screen job |
 |---|---|
-| **Asleep** | Backlight off after 5 min (dim at 2 min). Session unchanged. |
-| **Signed out** | All hangout users as profile tiles. Tap → PIN. |
+| **Asleep** | After 5 min idle (dim at 2 min): dark screen + slow bottom accent glow (~4–6% backlight). Signed-in unread shows a count badge pulse. Not the same as `no wifi`. Wake: touch or short circle. |
+| **Connecting** | Signed out + server unreachable. Centered mailbox icon, `connecting`, animated dots. Keeps retrying — **not** an error screen. See [Connecting](#connecting-waiting-for-server). |
+| **Signed out** | All hangout users as profile tiles. Tap → PIN. Only after server is reachable. |
 | **PIN lock** | Same user’s portrait + PIN pad (1 min idle from carousel). 5 fails → 60s cooldown. |
 | **Carousel** | Center message card, peek strips, play, scrub. Shoulder → settings. Top/bottom ribbons. |
 | **Settings** | Scroll: volume → color swatches → face grid → sign out. Shoulder → carousel. |
@@ -234,16 +236,101 @@ Replace play + timeline with **listening** overlay on carousel (settings unchang
 
 ---
 
+## Connecting (waiting for server)
+
+Shown when the endpoint is **signed out** and **`GET /v1/hangout` fails** (server asleep, LAN/Tailscale blip, first boot). This is **not** a failure screen — the box is still trying. Do **not** show sign-in tiles, dev commands, or a separate “connection error” panel.
+
+**Distinct from:**
+
+| Situation | Screen |
+|---|---|
+| Wi-Fi join failed | **No Wi-Fi** — `this box needs the home network` / `ask Lynn to check the network` |
+| Signed in, server dropped mid-session | Carousel **offline** ribbon (`offline` + `saved messages still play`); not the connecting screen |
+| Empty inbox after sign-in | Carousel First Message / normal home |
+
+### Layout (320×240)
+
+Vertically centered stack on `#101418`:
+
+1. **Mailbox icon** — gold `#E8C040`, ~1.5× desk size, **screen-centered** (not top-left).
+2. **Label** — `connecting` (lowercase, **no** `...`; dots carry animation). `#F0F4F0`, Montserrat 28 or equivalent. Full-width centered text — not aligned to the icon’s left edge.
+3. **Progress dots** — three **gold circles** (not text periods), horizontally centered as a row. Fixed positions so phases never jump.
+
+Gap: ~22 px icon→label, ~14 px label→dots.
+
+### Dot animation
+
+- Tied to the **5 s retry window**: one dot → two → three, ~1.7 s per step.
+- Timer **resets to one dot** after each probe attempt completes (so a slow HTTP probe does not skip the single-dot phase).
+- Animation runs continuously while connecting; no fast-then-stall cadence.
+
+### Retry / transition
+
+- Probe server every **5 s** (`GET /v1/hangout`, **2.5 s** HTTP timeout per probe).
+- **Sign-in roster** appears only when the server returns **200** with users.
+- Hangout roster may be **cached in NVS** for a fast paint after reconnect, but **do not show user tiles while offline**.
+- **No timeout** to an error screen — connecting stays until the server answers or Wi-Fi fails.
+- **No ambient sleep** on this screen (same rule as Wi-Fi error).
+
+### Copy rules (end users)
+
+- Never show hostnames, ports, `make …`, or `secrets.h`.
+- Only escalation path on other screens: **ask Lynn** (PIN lockout, Wi-Fi). Connecting screen has **no** “ask Lynn” line — calm wait only.
+
+**Firmware reference:** `firmware/demos/x02_product_shell.c` (`ST_CONNECTING`, `paint_connecting`).
+
+---
+
+## Connection confidence (signed-out)
+
+The box must never look **ready to sign in** when the server cannot answer. A child should always be able to tell whether the device is **waiting**, **checking**, or **ready** — never stuck or silently broken.
+
+### Principle
+
+| User question | Screen truth |
+|---|---|
+| Can I pick someone? | Only on **sign-in roster** after a successful hangout probe |
+| Did my last tap register? | PIN dots update **immediately**; 4th digit shows **checking...** before any network work |
+| Is the server back? | **Connecting** with animated dots until hangout probe succeeds |
+
+WebSocket disconnect is a **fast hint**; **`GET /v1/hangout` every 5 s** (2.5 s timeout) is the **source of truth** while signed out.
+
+### Signed-out heartbeat
+
+While **nobody is signed in** (roster, PIN pad, or connecting — not Wi-Fi error):
+
+- Probe `GET /v1/hangout` every **5 s** even when the roster or PIN pad is visible.
+- On probe failure → **connecting** screen immediately (clear partial PIN).
+- On probe success → roster (from connecting) or stay on roster/PIN if already there.
+- **Do not** show user tiles or a live PIN pad when the last probe failed — even if a cached roster exists in NVS.
+
+### PIN verify (async)
+
+- Digits 1–3: update dots on tap (unchanged).
+- Digit 4: show **four dots** and status **`checking...`**; run `POST /v1/session/login` on a **worker task** with the **2.5 s** probe timeout — never block the touch handler.
+- Ignore further keypad taps while **checking...**.
+- Wrong PIN → clear entry, **`wrong pin`** (unchanged lockout rules).
+- Network / server failure → **connecting** screen (not a frozen pad or mystery missing dot).
+
+### Signed-in (unchanged)
+
+Server loss after sign-in → carousel **offline** ribbon; block send and server-backed ops; **not** the connecting screen.
+
+**Firmware reference:** `signed_out_pre_auth`, `signed_out_hangout_probe`, `enter_connecting_from_signin`, `login_task_fn` in `firmware/demos/x02_product_shell.c`.
+
+---
+
 ## Other screens
 
 | Screen | Contents |
 |---|---|
-| **Signed out** | Profile tiles for every hangout user |
+| **Connecting** | Mailbox + `connecting` + dot row — see above |
+| **Signed out** | Profile tiles for every hangout user (server must be up) |
 | **PIN pad** | 3×3 (1–9); dots; Boot clears partial entry or back to roster; 5 tries → cooldown |
 | **Recipient pick** | Four targets; Boot / timeout cancel |
 | **Settings** | Sign out + volume; Boot back to carousel |
-| **Wi-Fi / error** | `no wifi` — distinct from empty inbox |
-| **Asleep** | Backlight off; wake on touch or short circle |
+| **No Wi-Fi** | Wi-Fi icon + `no Wi-Fi` / home network copy — distinct from connecting and empty inbox |
+| **Asleep** | Dark navy + bottom accent breathe; ~25 s hint pulse above bezel circle; wake on touch or short circle |
 
 **Later (not v1 merge):** live hangout overlay, drawing playback, photo card, archive list (h19 rows).
 
@@ -284,12 +371,14 @@ PRODUCT (v1)
 - Sign out top-left. No video, no wake word, no phone chrome.
 
 SCREENS
-1) SIGNED OUT — profile tiles for each user
-2) PIN — 3x4 pad
-3) CAROUSEL — center card, peek edges, timeline, play, long-press hint
-3b) SETTINGS — sign out, volume slider, Boot = back
-4) CAROUSEL RECORDING — listening overlay on carousel
-5) RECIPIENT PICK — four targets
+1) CONNECTING — centered gold mailbox, "connecting", three gold dots (1 then 2 then 3)
+2) SIGNED OUT — profile tiles for each user
+3) PIN — 3x4 pad
+4) CAROUSEL — center card, peek edges, timeline, play, long-press hint
+4b) SETTINGS — sign out, volume slider, Boot = back
+5) CAROUSEL RECORDING — listening overlay on carousel
+6) RECIPIENT PICK — four targets
+7) NO WI-FI — separate from connecting; ask Lynn to check network
 
 STYLE: dark bg #101418, cards #2A3038, unread gold #E8C040, calm desk appliance.
 Also one DEVICE CHROME mock with bezel and red circle.
@@ -311,6 +400,9 @@ Also one DEVICE CHROME mock with bezel and red circle.
 | Identity | Per-user `avatar_slot` + `accent_hex` on server; 10 colors + 13 faces |
 | PIN | Required for carousel and record; 1 min idle relock |
 | Locked | PIN lock shows user portrait; signed-out shows all users |
+| Connecting | Signed out + server down: mailbox + `connecting` + dots; retry every 5 s; no error timeout |
+| Connection confidence | Signed-out roster/PIN re-probe every 5 s; offline → connecting; PIN verify async with `checking...` |
+| No Wi-Fi | Separate screen; not connecting; not empty inbox |
 | v1 media | Audio only |
 
 Still open: product name, quiet hours, retention. See [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md). Full contract: [`plans/v1-product-spec.md`](plans/v1-product-spec.md).

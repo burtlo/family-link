@@ -75,6 +75,7 @@ DEMOS = {
     "p10": "p10_portrait",
     "p11": "p11_greeting",
     "p12": "p12_tamagotchi",
+    "p13": "p13_ui_showcase",
 }
 
 H01_EXAMPLE = "espressif/esp-box-3:display_audio_photo"
@@ -114,11 +115,19 @@ def find_idf() -> Path:
 
 
 def bash_idf(idf: Path, inner: str, extra_env: dict[str, str] | None = None) -> int:
-    """Run a command with IDF export.sh loaded (required on macOS/Linux)."""
+    """Run a command with IDF export loaded (export.bat on Windows, export.sh elsewhere)."""
     env = os.environ.copy()
     env["IDF_PATH"] = str(idf)
     if extra_env:
         env.update(extra_env)
+    print(f"-> idf: {idf}", flush=True)
+    print(f"-> {inner}", flush=True)
+    if os.name == "nt":
+        export = idf / "export.bat"
+        if not export.is_file():
+            raise FlashError(f"missing {export}")
+        cmd = f"call {export} && {inner}"
+        return subprocess.run(["cmd", "/c", cmd], cwd=str(ROOT), env=env).returncode
     export = idf / "export.sh"
     if not export.is_file():
         raise FlashError(f"missing {export}")
@@ -126,8 +135,6 @@ def bash_idf(idf: Path, inner: str, extra_env: dict[str, str] | None = None) -> 
     # Do not use bash -l: macOS login shells put /usr/bin/python3 (3.9) first,
     # while install.sh created the venv for Homebrew 3.14.
     cmd = f"set -euo pipefail; source '{export}'; {quoted}"
-    print(f"-> idf: {idf}", flush=True)
-    print(f"-> {inner}", flush=True)
     return subprocess.run(["bash", "-c", cmd], cwd=str(ROOT), env=env).returncode
 
 
@@ -167,13 +174,22 @@ def cmd_idf_install(dest: Path) -> int:
         ).returncode
         if rc != 0:
             raise FlashError("esp-idf submodule update failed")
-    install = dest / "install.sh"
-    if not install.is_file():
-        raise FlashError(f"no install.sh in {dest}")
-    print("-> ./install.sh esp32s3 (downloads the xtensa-esp32s3 compiler)", flush=True)
-    rc = subprocess.run(["bash", str(install), "esp32s3"], cwd=str(dest)).returncode
-    if rc != 0:
-        raise FlashError("IDF install.sh failed")
+    if os.name == "nt":
+        install = dest / "install.bat"
+        if not install.is_file():
+            raise FlashError(f"no install.bat in {dest}")
+        print("-> install.bat esp32s3 (downloads the xtensa-esp32s3 compiler)", flush=True)
+        rc = subprocess.run(["cmd", "/c", str(install), "esp32s3"], cwd=str(dest)).returncode
+        if rc != 0:
+            raise FlashError("IDF install.bat failed")
+    else:
+        install = dest / "install.sh"
+        if not install.is_file():
+            raise FlashError(f"no install.sh in {dest}")
+        print("-> ./install.sh esp32s3 (downloads the xtensa-esp32s3 compiler)", flush=True)
+        rc = subprocess.run(["bash", str(install), "esp32s3"], cwd=str(dest)).returncode
+        if rc != 0:
+            raise FlashError("IDF install.sh failed")
     print()
     print(f"Installed. IDF_PATH={dest}")
     print("Next: make flash DEMO=h02")
@@ -498,7 +514,10 @@ def flash_image(idf: Path, build_dir: Path, port: str, app_bin: Path) -> int:
             path = build_dir / rel
         if Path(rel).name == "family_link_demo.bin":
             path = app_bin
-        parts.append(f'{offset} "{path}"')
+        if os.name == "nt":
+            parts.append(f"{offset} {path}")
+        else:
+            parts.append(f'{offset} "{path}"')
     chip = extra.get("chip") or "esp32s3"
     before = extra.get("before") or "default_reset"
     after = extra.get("after") or "hard_reset"
@@ -507,8 +526,9 @@ def flash_image(idf: Path, build_dir: Path, port: str, app_bin: Path) -> int:
         mode = settings.get("flash_mode") or "dio"
         freq = settings.get("flash_freq") or "80m"
         write_args = ["--flash_mode", mode, "--flash_freq", freq, "--flash_size", "detect"]
+    port_arg = port if os.name == "nt" else f'"{port}"'
     inner = (
-        f'python -m esptool --chip {chip} -p "{port}" -b 460800 '
+        f"python -m esptool --chip {chip} -p {port_arg} -b 460800 "
         f"--before {before} --after {after} write_flash "
         + " ".join(str(a) for a in write_args)
         + " "

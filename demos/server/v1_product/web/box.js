@@ -5,6 +5,8 @@
   const ROOMVOL_MAX = 100;
   const ROOMVOL_ON = ((ROOMVOL_MAX - ROOMVOL_FIRST) / ROOMVOL_STEP) + 1;
   const CIRCLE_DEBOUNCE_MS = 400;
+  const DIM_MS = 120000;
+  const SLEEP_MS = 300000;
 
   const ACCENTS = [
     "#5AA0E8", "#E8C040", "#7AC47A", "#C070E8", "#E87A9A",
@@ -13,28 +15,39 @@
 
   const DEFAULT_ACCENTS = ACCENTS;
 
+  /* Vertical gradients only — p13 grad 1, 2 (colors), 5. */
+  const CARD_GRADS = [
+    { id: 1, label: "sky fade", top: "#5AA0E8", bottom: "#101418", light: false },
+    { id: 2, label: "ember", top: "#E85A5A", bottom: "#E8C040", light: false },
+    { id: 5, label: "platinum", top: "#F0F2F5", bottom: "#8898A8", light: true },
+  ];
+
+  /* p13 PAGE_SCROLL_H_SNAP_GRAD */
+  const SNAP_CARD_W = 132;
+  const SNAP_CARD_H = 100;
+  const SNAP_CARD_GAP = 12;
+  const SNAP_SCROLL_MS_MIN = 380;
+  const SNAP_SCROLL_MS_MAX = 720;
+
   const $ = (id) => document.getElementById(id);
 
   const lcd = $("lcd");
   const countEl = $("count");
   const ribbonToast = $("ribbon-toast");
-  const backHint = $("back-hint");
   const screenCarousel = $("screen-carousel");
   const screenSettings = $("screen-settings");
   const screenPicker = $("screen-picker");
-  const peekLeft = $("peek-left");
-  const peekRight = $("peek-right");
-  const msgCard = $("msg-card");
-  const facePane = $("face-pane");
-  const playPane = $("play-pane");
-  const playBtn = $("play-btn");
-  const playIcon = $("play-icon");
-  const scrubEl = $("scrub");
+  const carouselTrack = $("carousel-track");
+  const carouselTransport = $("carousel-transport");
+  const carouselPlay = $("carousel-play");
+  const carouselPlayIcon = $("carousel-play-icon");
+  const carouselScrub = $("carousel-scrub");
   const pickerList = $("picker-list");
   const settingsScroll = $("settings-scroll");
   const volSlider = $("vol-slider");
   const volNum = $("vol-num");
   const swatchGrid = $("swatch-grid");
+  const gradGrid = $("grad-grid");
   const faceGrid = $("face-grid");
   const settingsName = $("settings-name");
   const setupPanel = $("setup");
@@ -43,6 +56,8 @@
   const bootEl = $("boot");
   const circleEl = $("circle");
   const muteEl = $("mute");
+  const sleepOverlay = $("sleep-overlay");
+  const sleepBadge = $("sleep-badge");
 
   const player = new Audio();
   player.preload = "auto";
@@ -62,6 +77,13 @@
     carouselReadyAt: 0,
     sendHintShown: false,
     profile: { avatar_slot: 0, accent_hex: ACCENTS[0] },
+    cardGrad: Number(localStorage.getItem("fl-card-grad")) || 1,
+    scrollLock: false,
+    carouselLocked: true,
+    snapAnim: null,
+    activityAt: Date.now(),
+    dimmed: false,
+    asleep: false,
   };
 
   function roomvolCodec(notch) {
@@ -109,23 +131,6 @@
     return u ? u.id : label;
   }
 
-  function lighten(hex, pct) {
-    const n = parseInt(hex.slice(1), 16);
-    let r = (n >> 16) & 0xff;
-    let g = (n >> 8) & 0xff;
-    let b = n & 0xff;
-    r = Math.round(r + (255 - r) * pct / 100);
-    g = Math.round(g + (255 - g) * pct / 100);
-    b = Math.round(b + (255 - b) * pct / 100);
-    return (
-      "#" +
-      [r, g, b]
-        .map((c) => c.toString(16).padStart(2, "0"))
-        .join("")
-        .toUpperCase()
-    );
-  }
-
   function portraitEl(userId, sizePx) {
     const prof = profileFor(userId);
     const wrap = document.createElement("div");
@@ -153,24 +158,73 @@
     return wrap;
   }
 
-  function setToast(msg, ms = 2500) {
-    ribbonToast.textContent = msg || "";
-    if (msg) {
-      backHint.style.display = "none";
-      if (ms > 0) {
-        setTimeout(() => {
-          if (ribbonToast.textContent === msg) {
-            ribbonToast.textContent = "";
-            backHint.style.display = "";
-          }
-        }, ms);
+  function unreadCount() {
+    return state.inbox.filter((m) => !m.read).length;
+  }
+
+  function noteActivity() {
+    state.activityAt = Date.now();
+    if (state.asleep || state.dimmed) {
+      state.asleep = false;
+      state.dimmed = false;
+      updateSleepVisuals();
+    }
+  }
+
+  function updateSleepVisuals() {
+    lcd.classList.toggle("dimmed", state.dimmed && !state.asleep);
+    lcd.classList.toggle("asleep", state.asleep);
+    if (state.asleep) {
+      sleepOverlay.classList.remove("hidden");
+      sleepOverlay.setAttribute("aria-hidden", "false");
+      const accent = state.sessionUser
+        ? state.profile.accent_hex
+        : ACCENTS[0];
+      sleepOverlay.style.setProperty("--sleep-accent", accent);
+      const n = unreadCount();
+      if (n > 0 && state.sessionUser) {
+        sleepBadge.classList.remove("hidden");
+        sleepBadge.textContent = n > 9 ? "9+" : String(n);
+      } else {
+        sleepBadge.classList.add("hidden");
       }
     } else {
-      backHint.style.display = "";
+      sleepOverlay.classList.add("hidden");
+      sleepOverlay.setAttribute("aria-hidden", "true");
+      sleepBadge.classList.add("hidden");
+    }
+  }
+
+  function tickSleepPolicy() {
+    if (state.mode === "login") {
+      return;
+    }
+    const idle = Date.now() - state.activityAt;
+    if (!state.asleep && idle > SLEEP_MS) {
+      state.asleep = true;
+      state.dimmed = false;
+      player.pause();
+      state.playing = false;
+      updateSleepVisuals();
+    } else if (!state.asleep && !state.dimmed && idle > DIM_MS) {
+      state.dimmed = true;
+      updateSleepVisuals();
+    }
+  }
+
+  function setToast(msg, ms = 2500) {
+    ribbonToast.textContent = msg || "";
+    if (msg && ms > 0) {
+      setTimeout(() => {
+        if (ribbonToast.textContent === msg) {
+          ribbonToast.textContent = "";
+        }
+      }, ms);
     }
   }
 
   function setMode(mode) {
+    noteActivity();
     state.mode = mode;
     const overlay = $("status-overlay");
     screenCarousel.classList.toggle("hidden", mode !== "carousel");
@@ -189,11 +243,6 @@
 
     if (mode === "carousel") {
       state.carouselReadyAt = Date.now();
-      backHint.style.display = "none";
-      backHint.textContent = "";
-    } else if (mode === "settings" || mode === "picker") {
-      backHint.style.display = "";
-      backHint.textContent = "shoulder = back";
     }
     paint();
   }
@@ -202,66 +251,266 @@
     return state.inbox[state.focus] || null;
   }
 
-  function paintPeek(btn, msg, side) {
-    btn.replaceChildren();
-    if (!msg) {
-      btn.classList.add("hidden");
-      return;
-    }
-    btn.classList.remove("hidden");
-    btn.classList.toggle("unread-left", !msg.read && side === "left");
-    btn.classList.toggle("unread-right", !msg.read && side === "right");
-    const uid = userIdForLabel(senderKey(msg));
-    const prof = profileFor(uid);
-    const band = document.createElement("div");
-    band.className = "peek-band";
-    band.style.background = prof.accent_hex;
-    band.appendChild(portraitEl(uid, 32));
-    btn.appendChild(band);
-    const name = document.createElement("div");
-    name.className = "peek-name";
-    name.textContent = (senderKey(msg) || "?").slice(0, 6);
-    btn.appendChild(name);
+  function displayName(label) {
+    const u = state.hangoutUsers.find(
+      (x) => x.name === label || x.id === label,
+    );
+    return u ? u.name : label || "Family";
   }
 
-  function paintCarousel() {
-    const m = currentMsg();
+  function cardGradStyle() {
+    const g = CARD_GRADS.find((x) => x.id === state.cardGrad) || CARD_GRADS[0];
+    return {
+      ...g,
+      css: `linear-gradient(180deg, ${g.top} 0%, ${g.bottom} 100%)`,
+    };
+  }
+
+  function buildMsgCard(msg, idx) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "msg-card";
+    card.dataset.idx = String(idx);
+    const grad = cardGradStyle();
+    card.style.background = grad.css;
+    if (grad.light) card.classList.add("grad-light");
+
+    if (!msg) {
+      const empty = document.createElement("div");
+      empty.className = "card-name";
+      empty.textContent = "empty";
+      card.appendChild(empty);
+      return card;
+    }
+
+    const uid = userIdForLabel(senderKey(msg));
+    const head = document.createElement("div");
+    head.className = "card-head";
+    head.appendChild(portraitEl(uid, 22));
+    const nameEl = document.createElement("div");
+    nameEl.className = "card-name";
+    nameEl.textContent = displayName(senderKey(msg));
+    head.appendChild(nameEl);
+    card.appendChild(head);
+    return card;
+  }
+
+  function updateCountRibbon() {
     const n = state.inbox.length;
     countEl.textContent = n > 0 ? `${state.focus + 1}/${n}` : "0/0";
+  }
 
-    paintPeek(peekLeft, state.focus > 0 ? state.inbox[state.focus - 1] : null, "left");
-    paintPeek(
-      peekRight,
-      state.focus + 1 < n ? state.inbox[state.focus + 1] : null,
-      "right",
+  function cardAt(idx) {
+    return carouselTrack.querySelector(`.msg-card[data-idx="${idx}"]`);
+  }
+
+  function focusIndexFromScroll() {
+    if (!state.inbox.length) return 0;
+    const mid = carouselTrack.scrollLeft + carouselTrack.clientWidth / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < state.inbox.length; i++) {
+      const el = cardAt(i);
+      if (!el) continue;
+      const center = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(center - mid);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function updateCardCenters() {
+    const moving = state.scrollLock || !!state.snapAnim;
+    const highlight = moving ? focusIndexFromScroll() : state.focus;
+    carouselTrack.querySelectorAll(".msg-card").forEach((card) => {
+      const idx = Number(card.dataset.idx);
+      const center = idx === highlight;
+      card.classList.toggle("center", center);
+      card.disabled = !moving && center;
+    });
+    carouselTransport.classList.toggle(
+      "locked-off",
+      !state.carouselLocked || state.scrollLock,
     );
+  }
 
+  function updatePlayIcon() {
+    carouselPlayIcon.className =
+      "play-icon " + (state.playing && !player.paused ? "pause" : "play");
+  }
+
+  function updateTransport() {
+    const m = currentMsg();
+    updateCardCenters();
+    updatePlayIcon();
     if (!m) {
-      msgCard.classList.remove("unread");
-      facePane.style.background = "#2a3038";
-      playPane.style.background = "#2a3038";
-      facePane.replaceChildren();
-      facePane.textContent = "empty";
-      scrubEl.value = 0;
+      carouselScrub.max = "1";
+      carouselScrub.value = "0";
+      return;
+    }
+    const dur = m.duration_ms > 0 ? m.duration_ms : 1;
+    carouselScrub.max = String(dur);
+    carouselScrub.value = String(
+      state.playing ? Math.round(player.currentTime * 1000) : m.position_ms || 0,
+    );
+  }
+
+  function maxScrollLeft() {
+    return Math.max(0, carouselTrack.scrollWidth - carouselTrack.clientWidth);
+  }
+
+  function clampScrollLeft(x) {
+    const max = maxScrollLeft();
+    if (x < 0) return 0;
+    if (x > max) return max;
+    return x;
+  }
+
+  /* p13 snap_target_x — horizontal clamp */
+  function snapTargetScrollLeft(card) {
+    if (!card) return 0;
+    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+    return clampScrollLeft(cardCenter - carouselTrack.clientWidth / 2);
+  }
+
+  function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  function snapDurationMs(from, to) {
+    const dist = Math.abs(to - from);
+    return Math.min(
+      SNAP_SCROLL_MS_MAX,
+      Math.max(SNAP_SCROLL_MS_MIN, 300 + dist * 0.55),
+    );
+  }
+
+  function snapScrollTo(target, animate) {
+    const clamped = clampScrollLeft(target);
+    if (state.snapAnim) {
+      cancelAnimationFrame(state.snapAnim);
+      state.snapAnim = null;
+    }
+    carouselTrack.classList.remove("is-snapping");
+    if (!animate) {
+      carouselTrack.scrollLeft = clamped;
+      state.scrollLock = false;
+      state.carouselLocked = true;
+      updateTransport();
+      return;
+    }
+    const start = carouselTrack.scrollLeft;
+    if (Math.abs(start - clamped) < 1) {
+      carouselTrack.scrollLeft = clamped;
+      state.scrollLock = false;
+      state.carouselLocked = true;
+      updateTransport();
+      return;
+    }
+    state.scrollLock = true;
+    state.carouselLocked = false;
+    carouselTrack.classList.add("is-snapping");
+    updateTransport();
+    const duration = snapDurationMs(start, clamped);
+    const t0 = performance.now();
+    function frame(now) {
+      const p = Math.min(1, (now - t0) / duration);
+      carouselTrack.scrollLeft = start + (clamped - start) * easeInOut(p);
+      updateCardCenters();
+      if (p < 1) {
+        state.snapAnim = requestAnimationFrame(frame);
+      } else {
+        carouselTrack.scrollLeft = clamped;
+        carouselTrack.classList.remove("is-snapping");
+        state.snapAnim = null;
+        state.scrollLock = false;
+        state.carouselLocked = true;
+        updateTransport();
+      }
+    }
+    state.snapAnim = requestAnimationFrame(frame);
+  }
+
+  function scrollToFocus(animate) {
+    snapScrollTo(snapTargetScrollLeft(cardAt(state.focus)), animate);
+  }
+
+  function persistView() {
+    const m = currentMsg();
+    if (!m) return;
+    fetch(state.origin + "/v1/session/view", {
+      method: "PUT",
+      headers: {
+        ...sessionHeaders(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ seq: m.seq }),
+    }).catch(() => {});
+  }
+
+  function setFocus(idx, smoothScroll) {
+    if (!state.inbox.length || idx < 0 || idx >= state.inbox.length) return;
+    if (idx === state.focus && smoothScroll !== true) return;
+    player.pause();
+    state.playing = false;
+    state.focus = idx;
+    updateCountRibbon();
+    updateTransport();
+    persistView();
+    if (smoothScroll === true) {
+      scrollToFocus(true);
+    } else if (smoothScroll === false) {
+      scrollToFocus(false);
+    }
+  }
+
+  function syncFocusFromScroll() {
+    if (state.scrollLock || !state.inbox.length) return;
+    const mid = carouselTrack.scrollLeft + carouselTrack.clientWidth / 2;
+    let best = state.focus;
+    let bestDist = Infinity;
+    for (let i = 0; i < state.inbox.length; i++) {
+      const el = cardAt(i);
+      if (!el) continue;
+      const center = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(center - mid);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    if (best === state.focus) return;
+    setFocus(best);
+  }
+
+  function paintCarousel(opts = {}) {
+    const scroll = opts.scroll !== false;
+    const animate = opts.smooth === true;
+
+    carouselTrack.replaceChildren();
+    if (!state.inbox.length) {
+      carouselTrack.appendChild(buildMsgCard(null, 0));
+      const end = document.createElement("div");
+      end.className = "carousel-end";
+      carouselTrack.appendChild(end);
+      updateCountRibbon();
+      updateTransport();
       return;
     }
 
-    const uid = userIdForLabel(senderKey(m));
-    const prof = profileFor(uid);
-    msgCard.classList.toggle("unread", !m.read);
-    facePane.style.background = prof.accent_hex;
-    playPane.style.background = lighten(prof.accent_hex, 28);
-    facePane.replaceChildren();
-    facePane.appendChild(portraitEl(uid, 96));
+    state.inbox.forEach((msg, idx) => {
+      carouselTrack.appendChild(buildMsgCard(msg, idx));
+    });
+    const end = document.createElement("div");
+    end.className = "carousel-end";
+    carouselTrack.appendChild(end);
 
-    const dur = m.duration_ms || 1;
-    const pos = state.playing
-      ? Math.round(player.currentTime * 1000)
-      : m.position_ms || 0;
-    scrubEl.max = dur;
-    scrubEl.value = pos;
-    playIcon.className =
-      "play-icon " + (state.playing && !player.paused ? "pause" : "play");
+    updateCountRibbon();
+    updateTransport();
+    if (scroll) scrollToFocus(animate);
   }
 
   function paintSettings() {
@@ -281,6 +530,23 @@
       b.style.background = hex;
       b.addEventListener("click", () => pickAccent(hex));
       swatchGrid.appendChild(b);
+    });
+
+    gradGrid.replaceChildren();
+    const activeGrad = state.cardGrad;
+    CARD_GRADS.forEach((g) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className =
+        "grad-btn" +
+        (g.id === activeGrad ? " on" : "") +
+        (g.light ? " light" : "");
+      b.style.background = `linear-gradient(180deg, ${g.top} 0%, ${g.bottom} 100%)`;
+      const lab = document.createElement("span");
+      lab.textContent = g.label;
+      b.appendChild(lab);
+      b.addEventListener("click", () => pickCardGrad(g.id));
+      gradGrid.appendChild(b);
     });
 
     faceGrid.replaceChildren();
@@ -406,6 +672,13 @@
     }
   }
 
+  function pickCardGrad(id) {
+    state.cardGrad = id;
+    localStorage.setItem("fl-card-grad", String(id));
+    paintSettings();
+    if (state.mode === "carousel") paintCarousel({ scroll: false });
+  }
+
   function pickAccent(hex) {
     state.profile.accent_hex = hex.toUpperCase();
     const u = state.hangoutUsers.find((x) => x.id === state.sessionUser);
@@ -464,6 +737,9 @@
       return;
     }
     state.sessionUser = userId;
+    state.activityAt = Date.now();
+    state.dimmed = false;
+    state.asleep = false;
     state.inbox = data.messages || [];
     state.focus = 0;
     if (data.profile) state.profile = data.profile;
@@ -485,6 +761,9 @@
   function signOut() {
     player.pause();
     state.playing = false;
+    state.asleep = false;
+    state.dimmed = false;
+    updateSleepVisuals();
     if (state.ws) state.ws.close();
     state.sessionUser = "";
     state.inbox = [];
@@ -495,6 +774,11 @@
   }
 
   function shoulderPress() {
+    if (state.asleep) {
+      noteActivity();
+      return;
+    }
+    noteActivity();
     if (state.mode === "carousel") {
       player.pause();
       state.playing = false;
@@ -505,6 +789,11 @@
   }
 
   function circleTap() {
+    if (state.asleep) {
+      noteActivity();
+      return;
+    }
+    noteActivity();
     if (state.mode === "carousel") {
       if (state.playing) return;
       if (Date.now() - state.carouselReadyAt < CIRCLE_DEBOUNCE_MS) return;
@@ -521,7 +810,7 @@
       player.pause();
       state.playing = false;
       m.position_ms = Math.round(player.currentTime * 1000);
-      paint();
+      updateTransport();
       return;
     }
     const blobRes = await fetch(
@@ -548,26 +837,16 @@
       });
       m.read = true;
     }
-    paint();
+    updateTransport();
   }
 
   function shiftFocus(dir) {
-    if (!state.inbox.length) return;
-    player.pause();
-    state.playing = false;
-    const next = state.focus + dir;
-    if (next < 0 || next >= state.inbox.length) return;
-    state.focus = next;
-    fetch(state.origin + "/v1/session/view", {
-      method: "PUT",
-      headers: {
-        ...sessionHeaders(),
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ seq: state.inbox[state.focus].seq }),
-    }).catch(() => {});
-    paint();
+    setFocus(state.focus + dir, true);
   }
+
+  lcd.addEventListener("pointerdown", () => noteActivity());
+
+  setInterval(tickSleepPolicy, 500);
 
   $("login-btn").addEventListener("click", () => {
     login().catch((e) => {
@@ -578,9 +857,40 @@
   $("sign-out").addEventListener("click", signOut);
   bootEl.addEventListener("click", shoulderPress);
   circleEl.addEventListener("click", circleTap);
-  peekLeft.addEventListener("click", () => shiftFocus(-1));
-  peekRight.addEventListener("click", () => shiftFocus(1));
-  playBtn.addEventListener("click", () => togglePlay().catch(console.error));
+  carouselTrack.addEventListener("click", (ev) => {
+    const card = ev.target.closest(".msg-card");
+    if (!card || card.disabled) return;
+    const idx = Number(card.dataset.idx);
+    if (Number.isNaN(idx) || idx === state.focus) return;
+    setFocus(idx, true);
+  });
+
+  let scrollEndTimer;
+  carouselTrack.addEventListener("scroll", () => {
+    if (!state.scrollLock) {
+      carouselTrack.scrollLeft = clampScrollLeft(carouselTrack.scrollLeft);
+      updateCardCenters();
+    }
+    window.clearTimeout(scrollEndTimer);
+    scrollEndTimer = window.setTimeout(() => {
+      if (state.scrollLock) return;
+      syncFocusFromScroll();
+      scrollToFocus(true);
+    }, 80);
+  });
+
+  carouselPlay.addEventListener("click", () => {
+    if (carouselTransport.classList.contains("locked-off")) return;
+    togglePlay().catch(console.error);
+  });
+
+  carouselScrub.addEventListener("input", () => {
+    if (carouselTransport.classList.contains("locked-off")) return;
+    const m = currentMsg();
+    if (!m) return;
+    m.position_ms = Number(carouselScrub.value);
+    if (state.playing) player.currentTime = m.position_ms / 1000;
+  });
 
   volSlider.addEventListener("input", () => {
     state.volNotch = Number(volSlider.value);
@@ -588,27 +898,19 @@
     paint();
   });
 
-  scrubEl.addEventListener("input", () => {
-    const m = currentMsg();
-    if (!m) return;
-    m.position_ms = Number(scrubEl.value);
-    if (state.playing) player.currentTime = m.position_ms / 1000;
-    paintCarousel();
-  });
-
   player.addEventListener("timeupdate", () => {
     if (!state.playing) return;
     const m = currentMsg();
     if (!m) return;
     m.position_ms = Math.round(player.currentTime * 1000);
-    paintCarousel();
+    carouselScrub.value = String(m.position_ms);
   });
 
   player.addEventListener("ended", () => {
     state.playing = false;
     const m = currentMsg();
     if (m) m.position_ms = m.duration_ms || m.position_ms;
-    paint();
+    updateTransport();
   });
 
   muteEl.addEventListener("click", () => {
