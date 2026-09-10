@@ -1,0 +1,16 @@
+---
+description: Freeze carousel/feature scope while debugging PIN or connectivity (INT-014 class)
+alwaysApply: false
+---
+
+# Auth-debug scope freeze
+
+While debugging PIN login, connection confidence, or connectivity (INT-014 class):
+
+- **Do not** edit carousel, snap animation, transport refresh, or unrelated feature code in the same branch.
+- **Do not** land large monolithic rewrites to `x02_product_shell.c` alongside auth fixes.
+- Limit changes to login worker, probe guards, PIN UI, and connectivity state paths until PIN login is verified on device.
+
+Rationale: INT-011 (~2100 lines of carousel edits) landed in the same session as INT-014 (PIN stuck on `checking...`); mixed scope makes root-cause analysis and regression attribution impossible.
+
+When auth is verified (serial log or explicit user confirmation per `device-verify-before-done`), resume carousel/feature work on a separate branch.

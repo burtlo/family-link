@@ -419,4 +419,26 @@ INT-009 documented SPI tearing for snap-grad (`3fa0fee1…:1`); INT-011 ported p
 
 ---
 
+## 9. Implementation status
+
+Tracked against [`docs/plans/stability-work-delegation.md`](docs/plans/stability-work-delegation.md) (2026-09-10). Update this table when agents complete or block.
+
+| Work item | Agent / phase | Status | Notes |
+|-----------|---------------|--------|-------|
+| Cursor rules (4 × `.mdc`) | A | **done** | `device-verify-before-done`, `async-state-no-stale-gates`, `lvgl-incremental-ui`, `v1-auth-scope-freeze` |
+| Cursor skills (2 × `SKILL.md`) | A | **done** | `device-test-after-flash`, `web-firmware-parity-check` |
+| `docs/AGENTS.md` stability section | A | **done** | Links synthesis, rules, skills, INT-014 acceptance |
+| V1 isolation plan | B | **done** | [`docs/plans/v1-isolation-plan.md`](docs/plans/v1-isolation-plan.md) |
+| V1 Phase 1 — skeleton + timing | C1 | **done** | `shared/v1/timing.yaml`, stubs, `make v1-timing`, `v1_timing.js` |
+| V1 Phase 2 — auth + connect | C2 | **done** | `v1_auth`, `v1_connect`, `v1_state`, `v1_api`, `v1_ui_common` in `firmware/v1/` |
+| V1 Phase 3 — carousel + record | C3 | **done** | `v1_carousel`, `v1_record`, slim `x02_main`; 1-line shim |
+| V1 Phase 4 — cutover + docs | C4 | **done** | AGENTS, DEMO-MAP, v1-demo-set; `make check-v1-parity` green |
+| INT-014 fix (login generation, entry gate) | D | **done** | `v1_auth.c`; login generation + entry gate; structured logging |
+| Flash + parity tooling | E | **done** | `flash.py --monitor-seconds`, `check_v1_parity.py`, `make check-v1-parity` |
+| Docs acceptance scripts + delegation | F | **done** | BOX-UI appendix, synthesis §9, Agent E/F + C2–C4 prompts |
+
+**Status (2026-09-10):** All work streams A–F and C1–C4 complete. v1 product firmware isolated under `firmware/v1/`; `x02_product_shell.c` is a flash shim only.
+
+---
+
 *End of stability synthesis. No firmware changes were made during this review.*

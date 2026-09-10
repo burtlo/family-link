@@ -1,12 +1,20 @@
 /* v1 product BOX-3 twin — carousel, shoulder settings, profile API */
+import {
+  V1_CAROUSEL_SNAP_MS_MAX,
+  V1_CAROUSEL_SNAP_MS_MIN,
+  V1_UI_DIM_MS,
+  V1_UI_SLEEP_MS,
+  V1_UI_TOAST_MS,
+} from "./v1_timing.js";
+
 (() => {
   const ROOMVOL_FIRST = 78;
   const ROOMVOL_STEP = 2;
   const ROOMVOL_MAX = 100;
   const ROOMVOL_ON = ((ROOMVOL_MAX - ROOMVOL_FIRST) / ROOMVOL_STEP) + 1;
   const CIRCLE_DEBOUNCE_MS = 400;
-  const DIM_MS = 120000;
-  const SLEEP_MS = 300000;
+  const DIM_MS = V1_UI_DIM_MS;
+  const SLEEP_MS = V1_UI_SLEEP_MS;
 
   const ACCENTS = [
     "#5AA0E8", "#E8C040", "#7AC47A", "#C070E8", "#E87A9A",
@@ -26,8 +34,6 @@
   const SNAP_CARD_W = 132;
   const SNAP_CARD_H = 100;
   const SNAP_CARD_GAP = 12;
-  const SNAP_SCROLL_MS_MIN = 380;
-  const SNAP_SCROLL_MS_MAX = 720;
 
   const $ = (id) => document.getElementById(id);
 
@@ -212,7 +218,7 @@
     }
   }
 
-  function setToast(msg, ms = 2500) {
+  function setToast(msg, ms = V1_UI_TOAST_MS) {
     ribbonToast.textContent = msg || "";
     if (msg && ms > 0) {
       setTimeout(() => {
@@ -383,8 +389,8 @@
   function snapDurationMs(from, to) {
     const dist = Math.abs(to - from);
     return Math.min(
-      SNAP_SCROLL_MS_MAX,
-      Math.max(SNAP_SCROLL_MS_MIN, 300 + dist * 0.55),
+      V1_CAROUSEL_SNAP_MS_MAX,
+      Math.max(V1_CAROUSEL_SNAP_MS_MIN, 300 + dist * 0.55),
     );
   }
 

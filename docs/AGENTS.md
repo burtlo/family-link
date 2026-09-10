@@ -60,7 +60,7 @@ Most island/protocol/personality demos **and the first product glue** are in the
 
 - Combined host: `python -m demos.server.combined.server --host 0.0.0.0 --port 8080` (parent page at `/app/`).
 - Box LCD twin (no flash): `python demos/server/h18_playback/server.py --host 0.0.0.0 --port 8080` then `http://localhost:8080/box/` (320×240 + bezel; same h18 catalog).
-- Product box: `make x02` / `make flash DEMO=x02` (v1 shell). Island demos remain **h01–h28**. Build order: [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
+- Product box: `make x02` / `make flash DEMO=x02` (v1 shell). Logic lives in **`firmware/v1/`** (`x02_main.c` + modules); `firmware/demos/x02_product_shell.c` is a one-line flash shim (`flash.py` maps demo id **`x02`** → `x02_product_shell`). After editing timing: `make v1-timing`; verify parity: `make check-v1-parity`. Island demos remain **h01–h28**. Build order: [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
 - Island demos (h20–h27) prove sync paths for **later**; not in v1 merge.
 - Remote endpoints need TLS: [`TLS.md`](TLS.md) / Tailscale on home server.
 
@@ -72,6 +72,28 @@ Most island/protocol/personality demos **and the first product glue** are in the
 - Lynn client: BOX-3 endpoint + web `/app`, not phone-primary.
 - USB wall power; desk appliance.
 - v1 merge: **async audio only** — see [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
+
+## Stability and device verification
+
+Stability analysis (INT-001–INT-015, anti-patterns, prioritized fixes): [`../stability-synthesis.md`](../stability-synthesis.md).
+
+**Cursor rules** (`.cursor/rules/`):
+
+| Rule | Scope |
+|------|-------|
+| [`device-verify-before-done.mdc`](../.cursor/rules/device-verify-before-done.mdc) | Firmware + web twin — serial log or user confirmation before task close |
+| [`async-state-no-stale-gates.mdc`](../.cursor/rules/async-state-no-stale-gates.mdc) | x02 / v1 async workers — no silent `continue` without UI reconciliation |
+| [`lvgl-incremental-ui.mdc`](../.cursor/rules/lvgl-incremental-ui.mdc) | x02, p13, v1 UI — incremental updates; 64 KB LVGL heap budget |
+| [`v1-auth-scope-freeze.mdc`](../.cursor/rules/v1-auth-scope-freeze.mdc) | INT-014 class — no carousel/feature edits while debugging PIN/connectivity |
+
+**Project skills** (`.cursor/skills/`):
+
+| Skill | Purpose |
+|-------|---------|
+| [`device-test-after-flash`](../.cursor/skills/device-test-after-flash/SKILL.md) | Post-flash checklist: WiFi, PIN, carousel; COM4 (Windows) or `/dev/cu.usbmodem*` (Mac) |
+| [`web-firmware-parity-check`](../.cursor/skills/web-firmware-parity-check/SKILL.md) | Compare `shared/v1/timing.yaml` → `firmware/v1/v1_timing.h` + `web/v1_timing.js`; run `make check-v1-parity` |
+
+**INT-014 acceptance** (PIN stuck on `checking...`): per [`BOX-UI.md`](BOX-UI.md) line 313 — never infinite checking; network failure must transition to **connecting**, not a frozen pad. Auth logic: `firmware/v1/v1_auth.c` (`login_task_fn`, login generation token). Isolation plan: [`plans/v1-isolation-plan.md`](plans/v1-isolation-plan.md).
 
 ## If you are stuck
 

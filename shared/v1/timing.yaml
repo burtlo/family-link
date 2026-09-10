@@ -1,0 +1,23 @@
+# shared/v1/timing.yaml — single source for firmware + web twin timing.
+# Regenerate: make v1-timing
+version: 1
+connect:
+  probe_ms: 2500
+  retry_ms: 5000
+  wifi_retry_ms: 30000
+carousel:
+  snap_ms_min: 380
+  snap_ms_max: 720
+ui:
+  toast_ms: 2500
+  pick_timeout_ms: 10000
+  idle_relock_ms: 60000
+  dim_ms: 120000
+  sleep_ms: 300000
+record:
+  max_sec: 180
+  silence_sec: 5
+  trim_ms: 150
+auth:
+  pin_tries: 5
+  pin_cooldown_ms: 60000

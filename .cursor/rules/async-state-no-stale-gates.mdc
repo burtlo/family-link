@@ -1,0 +1,21 @@
+---
+description: Async workers must not gate success on stale UI state flags
+globs:
+  - firmware/demos/x02*.c
+  - firmware/v1/**
+alwaysApply: false
+---
+
+# Async state machine rules
+
+- Worker tasks must capture inputs at enqueue time (user_id, pin, operation_id).
+- Success handlers must NOT require `s_st == ST_*` unless transitioning from a confirmed sub-state.
+- Every worker exit path must call `request_repaint()` or apply a direct LVGL update — never silent `continue`.
+- While `login_operation_active`, block `enter_connecting_from_signin` and any `s_st` change away from PIN except explicit cancel/timeout UI.
+- Align with `docs/BOX-UI.md` Connection confidence and PIN verify sections.
+
+## Anti-pattern (INT-014)
+
+Stale worker wake must never clear busy and `continue` without UI reconciliation — UI can stay on `checking...` forever.
+
+**Reference implementation:** `firmware/v1/v1_auth.c` (`v1_auth_login_task`) — capture `(user, pin, gen)` at submit; on stale gen call `v1_ui_request_repaint()` and log `worker_stale`; never silent `continue`.

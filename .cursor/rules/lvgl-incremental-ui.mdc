@@ -1,0 +1,25 @@
+---
+description: Prefer incremental LVGL updates over full screen rebuilds
+globs:
+  - firmware/demos/x02_product_shell.c
+  - firmware/demos/p13_ui_showcase.c
+  - firmware/v1/**
+alwaysApply: false
+---
+
+# LVGL update policy
+
+- Use `request_repaint()` / full `paint_*` only for **screen state changes** (ST_PIN → ST_CAROUSEL, etc.).
+- For carousel playback, transport, and focus visuals: use `request_transport_refresh()` or in-place style updates.
+- Never call `lv_obj_clean(scr)` on the active carousel unless scroll position and focus are saved and restored (see `paint_carousel` keep_scroll pattern).
+- New screens must log free heap after build; if adding >10 widgets, justify or split lazy-load like p13.
+- `CONFIG_LV_MEM_SIZE` is **64 KB** — treat as hard budget unless sdkconfig changed with measurement.
+
+## Memory budget checklist
+
+Before merging new UI screens or widgets:
+
+1. Log `esp_get_free_heap_size()` after screen build at boot.
+2. Cap widgets per screen; prefer lazy load (p13 pattern) over eager creation of all pages.
+3. Prefer PSRAM bitmaps over live canvases (INT-008 lesson).
+4. If heap drops below comfortable margin after build, split or defer widget creation.

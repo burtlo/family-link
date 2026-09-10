@@ -6,8 +6,16 @@ port the same way `make connect` does, then runs idf.py build/flash/monitor.
 
   python scripts/flash.py --demo h02
   python scripts/flash.py --demo h02 --monitor
+  python scripts/flash.py --demo x02 --port COM4 --monitor-seconds 30
   python scripts/flash.py --idf-install
   python scripts/flash.py --example display_audio_photo   # h01
+
+``--monitor`` attaches an interactive serial monitor (unchanged).
+
+``--monitor-seconds N`` (after a successful flash) captures N seconds of boot
+log to ``logs/flash-{demo}-{timestamp}.txt``. Uses ``idf.py monitor`` first;
+falls back to pyserial at 115200 baud if that fails. Combine with ``--monitor``
+to save a timed capture, then stay attached interactively.
 
 Do not flash through the dock USB-C (power only).
 """
@@ -21,6 +29,8 @@ import re
 import shutil
 import subprocess
 import sys
+import time
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -537,9 +547,85 @@ def flash_image(idf: Path, build_dir: Path, port: str, app_bin: Path) -> int:
     return bash_idf(idf, inner)
 
 
+def _idf_shell_cmd(idf: Path, inner: str) -> list[str]:
+    if os.name == "nt":
+        export = idf / "export.bat"
+        return ["cmd", "/c", f"call {export} && {inner}"]
+    export = idf / "export.sh"
+    quoted = inner.replace("'", "'\\''")
+    return ["bash", "-c", f"set -euo pipefail; source '{export}'; {quoted}"]
+
+
+def capture_serial_seconds(port: str, seconds: float) -> bytes:
+    """Read serial for *seconds*; try idf.py monitor, then pyserial at 115200."""
+    idf = find_idf()
+    port_arg = port if os.name == "nt" else f'"{port}"'
+    inner = f"idf.py -p {port_arg} monitor"
+    env = os.environ.copy()
+    env["IDF_PATH"] = str(idf)
+    chunks: list[bytes] = []
+    deadline = time.monotonic() + seconds
+    proc = subprocess.Popen(
+        _idf_shell_cmd(idf, inner),
+        cwd=str(ROOT),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    try:
+        while time.monotonic() < deadline:
+            if proc.stdout is None:
+                break
+            remaining = max(0.05, deadline - time.monotonic())
+            chunk = proc.stdout.read(4096) if hasattr(proc.stdout, "read") else b""
+            if chunk:
+                chunks.append(chunk)
+            elif proc.poll() is not None:
+                break
+            else:
+                time.sleep(min(0.05, remaining))
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=2)
+    if chunks:
+        return b"".join(chunks)
+
+    print("idf.py monitor failed or produced no output; trying 115200 serial capture")
+    try:
+        import serial
+    except ImportError as exc:
+        raise FlashError("pyserial missing. make install") from exc
+    chunks = []
+    with serial.Serial(port, 115200, timeout=0.2) as ser:
+        while time.monotonic() < deadline:
+            chunk = ser.read(4096)
+            if chunk:
+                chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def write_monitor_log(demo: str, port: str, seconds: float) -> Path:
+    logs_dir = ROOT / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_path = logs_dir / f"flash-{demo}-{stamp}.txt"
+    print(f"-> capturing {seconds:g}s serial log → {log_path.relative_to(ROOT)}", flush=True)
+    raw = capture_serial_seconds(port, seconds)
+    text = raw.decode("utf-8", errors="replace")
+    log_path.write_text(text, encoding="utf-8")
+    line_count = text.count("\n") + (1 if text and not text.endswith("\n") else 0)
+    print(f"-> saved {len(raw)} bytes ({line_count} lines)", flush=True)
+    return log_path
+
+
 def cmd_flash(
     demo: str,
     monitor: bool,
+    monitor_seconds: float | None,
     port: str | None,
     build_only: bool,
     who: str | None = None,
@@ -584,12 +670,18 @@ def cmd_flash(
     if rc != 0:
         raise FlashError(f"flash failed for {demo} (exit {rc})")
     remember_usb(identity[0], usb_serial, serial)
+    if monitor_seconds is not None and monitor_seconds > 0:
+        write_monitor_log(demo, serial, monitor_seconds)
     if monitor:
         return cmd_monitor(serial)
     return 0
 
 
-def cmd_flash_h01(monitor: bool, port: str | None) -> int:
+def cmd_flash_h01(
+    monitor: bool,
+    monitor_seconds: float | None,
+    port: str | None,
+) -> int:
     """Espressif BSP example display_audio_photo — not our firmware."""
     idf = find_idf()
     work = TOOLS / "h01_display_audio_photo"
@@ -618,6 +710,10 @@ def cmd_flash_h01(monitor: bool, port: str | None) -> int:
     rc = bash_idf(idf, inner)
     if rc != 0:
         raise FlashError(f"h01 flash failed (exit {rc})")
+    if monitor_seconds is not None and monitor_seconds > 0:
+        write_monitor_log("h01", serial, monitor_seconds)
+    if monitor and " monitor" not in inner:
+        return cmd_monitor(serial)
     return 0
 
 
@@ -660,6 +756,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--demo", help="Short id (h02, h05, p01, …) or C file stem")
     parser.add_argument("--example", help="Flash Espressif example (h01 uses display_audio_photo)")
     parser.add_argument("--monitor", action="store_true", help="Attach serial monitor after flash")
+    parser.add_argument(
+        "--monitor-seconds",
+        type=float,
+        metavar="N",
+        help="After flash, capture N seconds of serial output to logs/flash-{demo}-{timestamp}.txt",
+    )
     parser.add_argument("--build-only", action="store_true", help="Compile, do not flash")
     parser.add_argument("--idf-install", action="store_true", help="Clone ESP-IDF and install esp32s3 tools")
     parser.add_argument("--idf-dir", type=Path, default=IDF_CLONE_DEFAULT, help="Clone destination")
@@ -682,11 +784,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.example:
             if args.example != "display_audio_photo":
                 raise FlashError("only display_audio_photo is wired as h01 for now")
-            return cmd_flash_h01(monitor=args.monitor, port=args.port)
+            return cmd_flash_h01(
+                monitor=args.monitor,
+                monitor_seconds=args.monitor_seconds,
+                port=args.port,
+            )
         if args.demo:
             return cmd_flash(
                 args.demo,
                 monitor=args.monitor,
+                monitor_seconds=args.monitor_seconds,
                 port=args.port,
                 build_only=args.build_only,
                 who=args.who or os.environ.get("WHO") or os.environ.get("FAMILY_WHO"),

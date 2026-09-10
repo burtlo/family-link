@@ -81,7 +81,7 @@ Numbered **01–06** stay island proofs (`make demos-server`). Glue is **`make d
 | h27 | Drawing note: record a timed sketch, POST to the friend, replay at the same speed. Host: `h27_sketch`. **High impact** (desk 2026-08-28) |
 | h28 | Short LCD clip: 5 s film at 12 fps (title / bouncing ball / end), RGB565 blit, loops. No Wi-Fi. Not a product path. |
 | x01 | Earlier glue shell: locked / PIN / inbox / record / hangout against combined |
-| x02 | v1 product shell: hangout roster, PIN, carousel, record, WS inbox. Host: `make v1-server` |
+| x02 | v1 product shell: hangout roster, PIN, carousel, record, WS inbox. Firmware: **`firmware/v1/`** modules + `demos/x02_product_shell.c` (1-line flash shim). Host: `make v1-server`. Timing: `make v1-timing`; parity: `make check-v1-parity` |
 | p01–p09 | Geometric face, blink, moods, SFX, pet loop, notice, talk-or-freeze |
 | p10–p11 | Packed portrait + greeting (persona pipeline) |
 
@@ -119,7 +119,7 @@ Do **not** start by merging all `.c` files. Import the helper that passed. **x02
 
 ## Suggested next (highest leverage first)
 
-1. **Desk tryout** — `make v1-server`, admin `http://MAC:8080/app/v1.html`, flash **x02**.
+1. **Desk tryout** — `make v1-server`, admin `http://MAC:8080/app/v1.html`, `make check-v1-parity`, flash **x02** (`firmware/v1/` + shim).
 2. **iPhone mic** — `python scripts/dev_https.py --extra-name LAN_IP`, open `https://…:8443/app/`. Flash **h16** to prove the box can speak HTTPS (set `DEMO_SERVER_PORT` 8443 for that flash only).
 3. **Second kit** — Mazi/Arlo open line: [`TWO-BOX.md`](TWO-BOX.md) + **h20** then **h21** then **h22**. Product hangout remains two **x01** (or **h11**) binaries, `box-a` / `box-b`.
 4. **USB camera** — only if child→you photos are in v1.

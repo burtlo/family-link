@@ -42,6 +42,7 @@ export PYTHONUNBUFFERED := 1
 	device-os device-software device-env \
 	device-flash device-partitions device-fs device-data \
 	idf-install flash flash-list flash-monitor build-firmware monitor \
+	v1-timing check-v1-parity \
 	h01 h02 h03 h04 h05 h06 h07 h08 h09 h10 h11 h12 h13 h14 h15 h16 h17 \
 	h18 h19 h20 h21 h22 h23 h24 h25 h26 h27 h28 h29 \
 	x01 x02 \
@@ -82,6 +83,8 @@ help:
 	'  make h01 … h28       aliases (h01 = Espressif BSP example; h20–h22 / h26 / h27 = Mazi/Arlo two-box; h28 = short LCD clip)' \
 	'  make x01             legacy product shell (peer inbox)' \
 	'  make x02             v1 carousel shell (hangout users, PIN, inbox)' \
+	'  make v1-timing       regenerate v1_timing.h + v1_timing.js from timing.yaml' \
+	'  make check-v1-parity compare timing.yaml vs firmware vs web twin' \
 	'  make v1-server       leave v1 product host running on :8080' \
 	'  make v1-server-tls   v1 host on :8443 (needs data/certs/dev*.pem)' \
 	'  make p01 … p11       personality / face / packed portrait' \
@@ -293,6 +296,12 @@ x01:
 
 x02:
 	@$(PYTHON) "$(FLASH)" --demo x02
+
+v1-timing:
+	@$(PYTHON) shared/v1/gen_timing.py
+
+check-v1-parity:
+	@$(PYTHON) scripts/check_v1_parity.py
 
 v1-server:
 	@$(PYTHON) -m demos.server.v1_product.server --host 0.0.0.0 --port 8080

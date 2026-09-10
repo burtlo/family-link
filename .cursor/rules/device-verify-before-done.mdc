@@ -1,0 +1,32 @@
+---
+description: Require device verification before closing firmware/UI tasks
+globs:
+  - firmware/**
+  - demos/server/v1_product/web/**
+alwaysApply: false
+---
+
+# Device task completion gate
+
+When a task changes firmware or web twin behavior that affects the physical BOX-3:
+
+1. Build must succeed (`make x02` or relevant DEMO).
+2. After flash, capture serial monitor output (≥20 lines) OR obtain explicit user confirmation of the scripted test.
+3. Do NOT mark the task complete based on compile/flash alone.
+4. If the user reports failure, capture their exact screen state and timestamp before attempting a second fix.
+5. For PIN/connectivity changes: run the PIN entry script (4 digits → expect carousel or `wrong pin` or connecting within 3 s per `docs/BOX-UI.md`).
+
+Forbidden closure phrases without evidence: "should work", "flashed successfully", "try again".
+
+## Examples
+
+```markdown
+# ❌ BAD — compile-only closure
+make x02 succeeded. Firmware is flashed to COM4. Try signing in again.
+
+# ✅ GOOD — serial log or user confirmation
+Flashed x02 to COM4. Monitor excerpt:
+  I (12345) x02: login POST status=200 user=mazi
+  I (12350) x02: s_st PIN -> CAROUSEL
+User confirmed: PIN 1234 → carousel within 2 s.
+```

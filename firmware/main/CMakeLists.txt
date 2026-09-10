@@ -3,6 +3,22 @@ if(NOT DEFINED FAMILY_DEMO OR FAMILY_DEMO STREQUAL "")
 endif()
 
 set(DEMO_SRC "${CMAKE_CURRENT_LIST_DIR}/../demos/${FAMILY_DEMO}.c")
+if(FAMILY_DEMO STREQUAL "x02_product_shell")
+    set(V1_SRCS
+        "${CMAKE_CURRENT_LIST_DIR}/../v1/x02_main.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../v1/v1_api.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../v1/v1_ui_common.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../v1/v1_state.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../v1/v1_connect.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../v1/v1_auth.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../v1/v1_carousel.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../v1/v1_record.c"
+    )
+    set(V1_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/../v1")
+else()
+    set(V1_SRCS "")
+    set(V1_INCLUDE "")
+endif()
 if(NOT EXISTS "${DEMO_SRC}")
     message(FATAL_ERROR "Unknown FAMILY_DEMO=${FAMILY_DEMO} (expected ${DEMO_SRC})")
 endif()
@@ -15,6 +31,7 @@ endif()
 idf_component_register(
     SRCS
         "${DEMO_SRC}"
+        ${V1_SRCS}
         "${CMAKE_CURRENT_LIST_DIR}/../common/pass.c"
         "${CMAKE_CURRENT_LIST_DIR}/../common/board.c"
         "${CMAKE_CURRENT_LIST_DIR}/../common/wifi_sta.c"
@@ -23,6 +40,7 @@ idf_component_register(
     INCLUDE_DIRS
         "${CMAKE_CURRENT_LIST_DIR}/../common"
         "${CMAKE_CURRENT_LIST_DIR}/.."
+        ${V1_INCLUDE}
     PRIV_REQUIRES
         esp_timer
         driver

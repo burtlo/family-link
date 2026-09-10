@@ -6,7 +6,7 @@
 | **Owners / areas**             | Device firmware, host protocol, web admin                             |
 | **Status**                     | `active`                                                              |
 | **Targets**                    | Three endpoints; async audio mailbox — see [`v1-product-spec.md`](v1-product-spec.md) |
-| **Last updated**               | 2026-09-05                                                            |
+| **Last updated**               | 2026-09-10                                                            |
 | **Supersedes / superseded by** | Product contract: [`v1-product-spec.md`](v1-product-spec.md)        |
 | **As-built**                   | None — link to [`docs/features/`](../features/_template.md) when shipped |
 
@@ -316,8 +316,12 @@ make demo-v1
 **Flash** (`secrets.h` token must match `hangout.example.yaml` endpoint):
 
 ```bash
+make v1-timing          # after editing shared/v1/timing.yaml
+make check-v1-parity    # yaml ↔ firmware/v1/v1_timing.h ↔ web/v1_timing.js
 make x02
 ```
+
+**Firmware layout:** `firmware/v1/x02_main.c` + `v1_auth`, `v1_connect`, `v1_carousel`, `v1_record`, `v1_state`, `v1_api`, `v1_ui_common`; `firmware/demos/x02_product_shell.c` is the flash.py build id only.
 
 **On the kit:** Tap a user, enter PIN from `hangout.example.yaml`, carousel shows First Message. Long-press red circle → recipient → record (5s silence / 3min cap). Play/Pause, drag timeline to scrub, volume. Peek edges animate (h19 260 ms). Inbox refreshes over WebSocket `{type:"inbox"}` without sign-out. Touch or short circle tap wakes from sleep (2min dim → 5min off). UART `-- PASS x02` after login.
 
@@ -587,8 +591,10 @@ Moved to [`v1-product-spec.md`](v1-product-spec.md) (resolved) and [`OPEN-QUESTI
 
 ## References
 
-- Firmware: `firmware/demos/h08_record_upload.c`, `h17_button_panel.c`, `h18_playback_screen.c`, `h19_message_list.c`, `x02_product_shell.c`
+- Firmware (x02): `firmware/v1/` (`x02_main.c`, `v1_*.c`, generated `v1_timing.h`); shim `firmware/demos/x02_product_shell.c`
+- Island demos: `firmware/demos/h08_record_upload.c`, `h17_button_panel.c`, `h18_playback_screen.c`, `h19_message_list.c`, …
+- Timing contract: `shared/v1/timing.yaml`, `shared/v1/gen_timing.py`
 - Hosts: `demos/server/v1_product/`, `demos/server/03_messages/`, `demos/server/h18_playback/`, `demos/server/combined/`
-- Make: `make x02`, `make v1-server`, `make demo-v1`, `make h08`, `make h17`, `make h18`, `make h19`
+- Make: `make x02`, `make v1-server`, `make v1-timing`, `make check-v1-parity`, `make demo-v1`, `make h08`, `make h17`, `make h18`, `make h19`
 - Product spec: [`v1-product-spec.md`](v1-product-spec.md)
 - Docs: [`REQUIREMENTS.md`](../REQUIREMENTS.md), [`BOX-UI.md`](../BOX-UI.md), [`DEMO-MAP.md`](../DEMO-MAP.md), [`DEVICE-DEMOS.md`](../DEVICE-DEMOS.md)

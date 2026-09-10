@@ -409,6 +409,54 @@ Still open: product name, quiet hours, retention. See [`OPEN-QUESTIONS.md`](OPEN
 
 ---
 
+## Appendix: Acceptance scripts
+
+Use these scripts after any firmware or web-twin change that touches PIN, connectivity, or carousel. Run on **device** (with serial monitor) and on the **web twin** before claiming a fix complete.
+
+**Device workflow:** follow [`.cursor/skills/device-test-after-flash/SKILL.md`](../.cursor/skills/device-test-after-flash/SKILL.md) — flash with monitor, paste login/state log excerpts into session notes.
+
+**Web twin (no flash):**
+
+```bash
+python -m demos.server.v1_product.server --host 0.0.0.0 --port 8080
+# open http://localhost:8080/box/
+```
+
+Run the same scripts below in the browser twin where behavior is implemented (connecting UX may lag firmware — note divergence before flash).
+
+### PIN script
+
+1. From **sign-in roster**, tap a user → PIN pad.
+2. Enter **4 digits** (one tap each).
+3. **Expect:** status **`checking...`** on the 4th digit (within one tap — async worker must not block the touch handler).
+4. **Within 3 s**, exactly one of:
+   - **Carousel** (correct PIN, server up),
+   - **`wrong pin`** (incorrect PIN),
+   - **Connecting** screen (network / server failure — not a frozen pad).
+
+**Never acceptable:** infinite **`checking...`** with no transition. Network failure must land on **connecting**, not a stuck pad (see [PIN verify (async)](#pin-verify-async) — line 313: *Network / server failure → connecting screen*).
+
+### Connecting script
+
+1. Start with server down or unreachable (stop `make v1-server`, or block LAN).
+2. Boot or trigger signed-out probe failure → **connecting** screen.
+3. **Expect:** three gold dots animate **1 → 2 → 3** over the **5 s retry window** (~1.7 s per step); animation **resets to one dot** after each probe completes.
+4. **Expect:** dots keep moving while waiting — no long frozen stall, no fast-then-stall burst.
+5. Restore server → roster appears after successful `GET /v1/hangout`.
+
+See [Dot animation](#dot-animation) and [Retry / transition](#retry--transition).
+
+### Carousel script
+
+1. Sign in → **carousel** with at least two messages.
+2. **Snap:** tap a **non-center** peek card → card **animates** to center (not an instant jump).
+3. **Play focus:** with the centered card, tap **Play** → let playback **finish** (do not navigate away).
+4. **Expect:** the **same card remains centered** after playback ends (no jump to first message).
+
+See [Carousel rules](#carousel-rules) — center card, peek tap, position restore.
+
+---
+
 ## References
 
 - Hardware: [`HARDWARE.md`](HARDWARE.md)
