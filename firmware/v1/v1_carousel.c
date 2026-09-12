@@ -83,6 +83,7 @@ static lv_obj_t *s_play_btn;
 static lv_obj_t *s_play_icon;
 static lv_obj_t *s_pause_icon;
 static uint16_t s_play_icon_fb[V1_CARD_PLAY_ICON * V1_CARD_PLAY_ICON];
+static lv_obj_t *s_sender_lab;
 static lv_obj_t *s_offline_lab;
 static lv_obj_t *s_toast;
 
@@ -554,6 +555,9 @@ static void refresh_card_visuals_from_scroll(void)
             lv_obj_set_style_transform_scale(card, 230, 0);
         }
     }
+    if (s_sender_lab && visual >= 0 && visual < s_inbox_n) {
+        lv_label_set_text(s_sender_lab, sender_display_name(&s_inbox_msgs[visual]));
+    }
 }
 
 
@@ -733,31 +737,35 @@ static void refresh_card_focus_states(void)
 
 static lv_obj_t *make_pause_icon(lv_obj_t *parent)
 {
-    lv_obj_t *box = lv_obj_create(parent);
-    lv_obj_set_size(box, 20, 20);
-    lv_obj_set_style_bg_opa(box, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(box, 0, 0);
-    lv_obj_set_style_pad_all(box, 0, 0);
-    lv_obj_clear_flag(box, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(box, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_t *l = lv_obj_create(box);
-    lv_obj_set_size(l, 4, 16);
+    const int box = V1_CAROUSEL_PLAY * 20 / 24;
+    const int bar_w = V1_CAROUSEL_PLAY * 4 / 24;
+    const int bar_h = V1_CAROUSEL_PLAY * 16 / 24;
+    const int gap = V1_CAROUSEL_PLAY * 5 / 24;
+    lv_obj_t *wrap = lv_obj_create(parent);
+    lv_obj_set_size(wrap, box, box);
+    lv_obj_set_style_bg_opa(wrap, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(wrap, 0, 0);
+    lv_obj_set_style_pad_all(wrap, 0, 0);
+    lv_obj_clear_flag(wrap, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(wrap, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_t *l = lv_obj_create(wrap);
+    lv_obj_set_size(l, bar_w, bar_h);
     lv_obj_set_style_bg_color(l, lv_color_hex(V1_UI_TEXT), 0);
     lv_obj_set_style_border_width(l, 0, 0);
     lv_obj_set_style_pad_all(l, 0, 0);
     lv_obj_clear_flag(l, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_align(l, LV_ALIGN_CENTER, -5, 0);
-    lv_obj_t *r = lv_obj_create(box);
-    lv_obj_set_size(r, 4, 16);
+    lv_obj_align(l, LV_ALIGN_CENTER, -gap, 0);
+    lv_obj_t *r = lv_obj_create(wrap);
+    lv_obj_set_size(r, bar_w, bar_h);
     lv_obj_set_style_bg_color(r, lv_color_hex(V1_UI_TEXT), 0);
     lv_obj_set_style_border_width(r, 0, 0);
     lv_obj_set_style_pad_all(r, 0, 0);
     lv_obj_clear_flag(r, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_align(r, LV_ALIGN_CENTER, 5, 0);
-    lv_obj_center(box);
-    return box;
+    lv_obj_align(r, LV_ALIGN_CENTER, gap, 0);
+    lv_obj_center(wrap);
+    return wrap;
 }
 
 
@@ -776,6 +784,9 @@ static void ui_refresh_transport(void)
 {
     msg_t *m = focus_msg();
     refresh_card_focus_states();
+    if (s_sender_lab) {
+        lv_label_set_text(s_sender_lab, m ? sender_display_name(m) : "");
+    }
     if (!m) {
         return;
     }
@@ -1013,8 +1024,6 @@ static void on_scrub(lv_event_t *e)
     }
 }
 
-#define PLAY_ICON_W 24
-#define PLAY_ICON_H 24
 
 static uint16_t rgb565_from_hex(uint32_t hex)
 {
@@ -1061,12 +1070,13 @@ static void fill_play_icon_fb(uint16_t *fb, uint32_t disk_hex)
 {
     const uint16_t bg = rgb565_from_hex(disk_hex);
     const uint16_t fg = rgb565_from_hex(0xFFFFFF);
-    int x0 = 12;
-    int y0 = 4;
-    int x1 = 5;
-    int y1 = 19;
-    int x2 = 19;
-    int y2 = 19;
+    /* p13 upright template scaled to icon size, then rotated 270° */
+    int x0 = PLAY_ICON_W * 12 / 24;
+    int y0 = PLAY_ICON_H * 4 / 24;
+    int x1 = PLAY_ICON_W * 5 / 24;
+    int y1 = PLAY_ICON_H * 19 / 24;
+    int x2 = PLAY_ICON_W * 19 / 24;
+    int y2 = PLAY_ICON_H * 19 / 24;
     int pivot_x = (x0 + x1 + x2) / 3;
     int pivot_y = (y0 + y1 + y2) / 3;
     int ax;
@@ -1120,10 +1130,8 @@ static void paint_ribbons(lv_obj_t *scr)
 static void carousel_add_card(int msg_idx, int x)
 {
     msg_t *m = &s_inbox_msgs[msg_idx];
-    const card_grad_t *g = active_card_grad();
     int uid = v1_connect_user_index_by_label(m->from_label);
     carousel_card_ui_t *ui = &s_card_ui[msg_idx];
-    uint32_t text_hex = g->light_ui ? 0x101418U : 0xF0F4F0U;
 
     memset(ui, 0, sizeof(*ui));
 
@@ -1144,19 +1152,7 @@ static void carousel_add_card(int msg_idx, int x)
     lv_obj_set_style_transform_pivot_x(card, lv_pct(50), 0);
     lv_obj_set_style_transform_pivot_y(card, lv_pct(50), 0);
 
-    v1_ui_paint_user_portrait_aligned(card, uid, V1_CARD_PORTRAIT, LV_ALIGN_LEFT_MID, 10, 0);
-
-    lv_obj_t *name = lv_label_create(card);
-    lv_label_set_text(name, sender_display_name(m));
-    lv_obj_set_style_text_color(name, lv_color_hex(text_hex), 0);
-#if defined(LV_FONT_MONTSERRAT_14) && LV_FONT_MONTSERRAT_14
-    lv_obj_set_style_text_font(name, &lv_font_montserrat_14, 0);
-#elif defined(LV_FONT_MONTSERRAT_12) && LV_FONT_MONTSERRAT_12
-    lv_obj_set_style_text_font(name, &lv_font_montserrat_12, 0);
-#endif
-    lv_obj_set_width(name, V1_SCROLL_CARD_W - V1_CARD_PORTRAIT - 24);
-    lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
-    lv_obj_align(name, LV_ALIGN_LEFT_MID, 10 + V1_CARD_PORTRAIT + 6, 0);
+    v1_ui_paint_user_portrait_aligned(card, uid, V1_CARD_PORTRAIT, LV_ALIGN_CENTER, 0, 0);
 }
 
 
@@ -1180,8 +1176,6 @@ static void save_profile(void)
 
 static void paint_carousel(lv_obj_t *scr)
 {
-    const card_grad_t *g = active_card_grad();
-    uint32_t disk_hex = g->light_ui ? 0x101418U : 0x3A4450U;
     int32_t keep_scroll = 0;
     int keep_focus = s_inbox_focus;
     bool restore_scroll = s_carousel_scroll != NULL;
@@ -1197,6 +1191,7 @@ static void paint_carousel(lv_obj_t *scr)
     s_play_btn = NULL;
     s_play_icon = NULL;
     s_pause_icon = NULL;
+    s_sender_lab = NULL;
     s_ribbon_top = NULL;
     s_ribbon_bot = NULL;
     s_count_lab = NULL;
@@ -1207,6 +1202,21 @@ static void paint_carousel(lv_obj_t *scr)
 
     paint_ribbons(scr);
     s_carousel_ready_us = now_us();
+
+    s_sender_lab = lv_label_create(scr);
+    lv_label_set_text(s_sender_lab, "");
+    lv_obj_set_style_text_color(s_sender_lab, lv_color_hex(V1_UI_TEXT), 0);
+#if defined(LV_FONT_MONTSERRAT_24) && LV_FONT_MONTSERRAT_24
+    lv_obj_set_style_text_font(s_sender_lab, &lv_font_montserrat_24, 0);
+#elif defined(LV_FONT_MONTSERRAT_22) && LV_FONT_MONTSERRAT_22
+    lv_obj_set_style_text_font(s_sender_lab, &lv_font_montserrat_22, 0);
+#endif
+    lv_obj_set_width(s_sender_lab, V1_LCD_W - V1_CAROUSEL_PLAY - V1_CAROUSEL_PLAY_PAD * 3);
+    lv_label_set_long_mode(s_sender_lab, LV_LABEL_LONG_DOT);
+    /* Left-aligned, vertically centered in upper third */
+    lv_obj_align(s_sender_lab, LV_ALIGN_LEFT_MID, V1_CAROUSEL_PLAY_PAD,
+                 (V1_CAROUSEL_HEADER_Y + V1_CAROUSEL_HEADER_H / 2)
+                     - (V1_CONTENT_H + 2 * V1_RIBBON_H) / 2);
 
     s_carousel_scroll = lv_obj_create(scr);
     lv_obj_set_pos(s_carousel_scroll, 0, V1_SCROLL_CARD_Y);
@@ -1230,37 +1240,30 @@ static void paint_carousel(lv_obj_t *scr)
     lv_obj_set_size(end, 1, 1);
     lv_obj_set_pos(end, x, 0);
 
+    /* p13 270° triangle play control — fixed in header, padded top/right */
     s_play_btn = lv_button_create(scr);
     lv_obj_set_size(s_play_btn, V1_CAROUSEL_PLAY, V1_CAROUSEL_PLAY);
-    lv_obj_align(s_play_btn, LV_ALIGN_TOP_MID, 0, V1_CAROUSEL_TRANSPORT_Y);
+    lv_obj_align(s_play_btn, LV_ALIGN_TOP_RIGHT, -V1_CAROUSEL_PLAY_PAD,
+                 V1_CAROUSEL_HEADER_Y + V1_CAROUSEL_PLAY_PAD);
     lv_obj_set_style_bg_opa(s_play_btn, LV_OPA_TRANSP, 0);
     lv_obj_set_style_shadow_width(s_play_btn, 0, 0);
     lv_obj_set_style_border_width(s_play_btn, 0, 0);
     lv_obj_set_style_pad_all(s_play_btn, 0, 0);
     lv_obj_add_event_cb(s_play_btn, on_play, LV_EVENT_CLICKED, NULL);
 
-    lv_obj_t *disk = lv_obj_create(s_play_btn);
-    lv_obj_set_size(disk, V1_CAROUSEL_DISK, V1_CAROUSEL_DISK);
-    lv_obj_set_style_radius(disk, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(disk, lv_color_hex(disk_hex), 0);
-    lv_obj_set_style_bg_opa(disk, g->light_ui ? LV_OPA_20 : LV_OPA_COVER, 0);
-    lv_obj_set_style_border_width(disk, 0, 0);
-    lv_obj_set_style_pad_all(disk, 0, 0);
-    lv_obj_clear_flag(disk, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(disk, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_center(disk);
-
-    s_play_icon = make_play_icon_buf(s_play_btn, disk_hex, s_play_icon_fb);
+    s_play_icon = make_play_icon_buf(s_play_btn, V1_UI_BG, s_play_icon_fb);
     s_pause_icon = make_pause_icon(s_play_btn);
     lv_obj_add_flag(s_pause_icon, LV_OBJ_FLAG_HIDDEN);
 
+    /* Timeline scrub kept for later; hidden for now. */
     s_bar = lv_slider_create(scr);
     lv_obj_set_size(s_bar, V1_SCROLL_CARD_W - 16, 12);
-    lv_obj_align(s_bar, LV_ALIGN_TOP_MID, 0, V1_CAROUSEL_TRANSPORT_Y + V1_CAROUSEL_PLAY + 4);
+    lv_obj_align(s_bar, LV_ALIGN_TOP_MID, 0, V1_SCROLL_CARD_Y + 4);
     style_transport_slider(s_bar);
     lv_obj_add_event_cb(s_bar, on_scrub, LV_EVENT_PRESSED, NULL);
     lv_obj_add_event_cb(s_bar, on_scrub, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_add_event_cb(s_bar, on_scrub, LV_EVENT_RELEASED, NULL);
+    lv_obj_add_flag(s_bar, LV_OBJ_FLAG_HIDDEN);
 
     ui_refresh_transport();
     if (s_inbox_n > 0) {

@@ -35,6 +35,8 @@ static char s_send_to[16];
 static bool s_send_all;
 static volatile bool s_stop_record;
 static volatile bool s_cancel_pick;
+static volatile bool s_record_armed;
+static volatile bool s_recording;
 static int64_t s_pick_open_us;
 static uint8_t *s_pcm;
 static lv_obj_t *s_overlay;
@@ -82,17 +84,29 @@ void v1_record_start_task(void)
 void v1_record_paint_pick(lv_obj_t *scr) { paint_pick(scr); }
 void v1_record_paint_overlay(lv_obj_t *scr) { paint_record_overlay(scr); }
 
-void v1_record_on_circle_stop(void) { s_stop_record = true; }
+void v1_record_on_circle_stop(void)
+{
+    s_stop_record = true;
+    /* If capture never started (armed race / chirp hang), leave listening UI. */
+    if (!s_recording && v1_state_get() == ST_RECORD) {
+        s_record_armed = false;
+        s_cancel_pick = true;
+        v1_state_apply(ST_CAROUSEL);
+        v1_ui_request_repaint();
+    }
+}
 
 void v1_record_on_shoulder_cancel(void)
 {
     s_cancel_pick = true;
     s_stop_record = true;
+    s_record_armed = false;
     if (s_cfg.play_chirp_pair) {
         s_cfg.play_chirp_pair(523, 392);
     }
-    if (v1_state_get() == ST_PICK) {
-        v1_state_post_goto(ST_CAROUSEL);
+    state_t st = v1_state_get();
+    if (st == ST_PICK || st == ST_RECORD) {
+        v1_state_apply(ST_CAROUSEL);
         v1_ui_request_repaint();
     }
 }
@@ -280,30 +294,51 @@ static void record_task_fn(void *arg)
     (void)arg;
     for (;;) {
         xSemaphoreTake(s_cfg.work_sem, portMAX_DELAY);
+        if (!s_record_armed) {
+            ESP_LOGW(TAG, "record wake without arm (st=%d)", (int)v1_state_get());
+            continue;
+        }
+        s_record_armed = false;
         if (v1_state_get() != ST_RECORD) {
+            /* Apply before give_work should prevent this; recover UI if not. */
+            ESP_LOGW(TAG, "record wake st=%d (expected RECORD) — recovering",
+                     (int)v1_state_get());
+            v1_state_apply(ST_CAROUSEL);
+            v1_ui_request_repaint();
             continue;
         }
         if (!v1_connect_online()) {
             v1_ui_set_toast(NULL, "can't send right now");
-            v1_state_post_goto(ST_CAROUSEL);
+            v1_state_apply(ST_CAROUSEL);
             v1_ui_request_repaint();
             continue;
         }
         if (!s_cfg.mic || !pcm_buffer_ready()) {
             v1_ui_set_toast(NULL, "no mic");
-            v1_state_post_goto(ST_CAROUSEL);
+            v1_state_apply(ST_CAROUSEL);
             v1_ui_request_repaint();
             continue;
         }
         if (mute_latched()) {
             v1_ui_set_toast(NULL, "unmute first");
-            v1_state_post_goto(ST_CAROUSEL);
+            v1_state_apply(ST_CAROUSEL);
             v1_ui_request_repaint();
             continue;
         }
+        if (s_cancel_pick || s_stop_record) {
+            s_cancel_pick = false;
+            s_stop_record = false;
+            ESP_LOGI(TAG, "record cancelled before capture");
+            v1_state_apply(ST_CAROUSEL);
+            v1_ui_request_repaint();
+            continue;
+        }
+        ESP_LOGI(TAG, "record start");
         if (s_cfg.play_chirp_pair) s_cfg.play_chirp_pair(523, 784);
         s_stop_record = false;
+        s_recording = true;
         size_t pcm = record_take(44 + (size_t)V1_RECORD_MAX_SEC * V1_SAMPLE_RATE * 2);
+        s_recording = false;
         if (s_cfg.play_chirp_pair) s_cfg.play_chirp_pair(784, 392);
         if (pcm > 0 && !s_cancel_pick) {
             wav_header(s_pcm, (uint32_t)pcm);
@@ -333,7 +368,7 @@ static void record_task_fn(void *arg)
             v1_ui_set_toast(NULL, "cancelled");
         }
         s_cancel_pick = false;
-        v1_state_post_goto(ST_CAROUSEL);
+        v1_state_apply(ST_CAROUSEL);
         v1_ui_request_repaint();
     }
 }
@@ -342,7 +377,7 @@ static void on_pick_btn(lv_event_t *e)
 {
     if (!v1_connect_online()) {
         v1_ui_set_toast(NULL, "can't send right now");
-        v1_state_post_goto(ST_CAROUSEL);
+        v1_state_apply(ST_CAROUSEL);
         v1_ui_request_repaint();
         return;
     }
@@ -351,7 +386,11 @@ static void on_pick_btn(lv_event_t *e)
     if (!s_send_all && id) {
         strncpy(s_send_to, id, sizeof(s_send_to) - 1);
     }
-    v1_state_post_goto(ST_RECORD);
+    s_cancel_pick = false;
+    s_stop_record = false;
+    /* Apply ST_RECORD before waking the worker — post_goto alone races (INT-014 class). */
+    s_record_armed = true;
+    v1_state_apply(ST_RECORD);
     v1_ui_request_repaint();
     v1_record_give_work();
     v1_ui_bump_activity();

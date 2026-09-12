@@ -45,6 +45,8 @@ import {
   const screenPicker = $("screen-picker");
   const carouselTrack = $("carousel-track");
   const carouselTransport = $("carousel-transport");
+  const carouselSender = $("carousel-sender");
+  const carouselHeader = $("carousel-header");
   const carouselPlay = $("carousel-play");
   const carouselPlayIcon = $("carousel-play-icon");
   const carouselScrub = $("carousel-scrub");
@@ -290,14 +292,7 @@ import {
     }
 
     const uid = userIdForLabel(senderKey(msg));
-    const head = document.createElement("div");
-    head.className = "card-head";
-    head.appendChild(portraitEl(uid, 22));
-    const nameEl = document.createElement("div");
-    nameEl.className = "card-name";
-    nameEl.textContent = displayName(senderKey(msg));
-    head.appendChild(nameEl);
-    card.appendChild(head);
+    card.appendChild(portraitEl(uid, 22));
     return card;
   }
 
@@ -337,10 +332,13 @@ import {
       card.classList.toggle("center", center);
       card.disabled = !moving && center;
     });
-    carouselTransport.classList.toggle(
-      "locked-off",
-      !state.carouselLocked || state.scrollLock,
-    );
+    const lockedOff = !state.carouselLocked || state.scrollLock;
+    carouselTransport.classList.toggle("locked-off", lockedOff);
+    carouselHeader.classList.toggle("locked-off", lockedOff);
+    if (carouselSender) {
+      const msg = state.inbox[highlight] || currentMsg();
+      carouselSender.textContent = msg ? displayName(senderKey(msg)) : "";
+    }
   }
 
   function updatePlayIcon() {
@@ -353,6 +351,7 @@ import {
     updateCardCenters();
     updatePlayIcon();
     if (!m) {
+      if (carouselSender) carouselSender.textContent = "";
       carouselScrub.max = "1";
       carouselScrub.value = "0";
       return;
@@ -886,12 +885,12 @@ import {
   });
 
   carouselPlay.addEventListener("click", () => {
-    if (carouselTransport.classList.contains("locked-off")) return;
+    if (carouselHeader.classList.contains("locked-off")) return;
     togglePlay().catch(console.error);
   });
 
   carouselScrub.addEventListener("input", () => {
-    if (carouselTransport.classList.contains("locked-off")) return;
+    if (carouselHeader.classList.contains("locked-off")) return;
     const m = currentMsg();
     if (!m) return;
     m.position_ms = Number(carouselScrub.value);

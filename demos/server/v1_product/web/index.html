@@ -86,13 +86,15 @@
 
                   <div class="screen screen-carousel hidden" id="screen-carousel">
                     <div class="carousel-wrap">
-                      <div class="carousel-track" id="carousel-track"></div>
-                      <div class="carousel-transport locked-off" id="carousel-transport">
+                      <div class="carousel-header" id="carousel-header">
+                        <div class="carousel-sender" id="carousel-sender"></div>
                         <button type="button" class="play-hit" id="carousel-play" aria-label="Play">
-                          <span class="play-disk"></span>
                           <span class="play-icon play" id="carousel-play-icon"></span>
                         </button>
-                        <input type="range" id="carousel-scrub" min="0" max="1" value="0" />
+                      </div>
+                      <div class="carousel-track" id="carousel-track"></div>
+                      <div class="carousel-transport locked-off hidden" id="carousel-transport">
+                        <input type="range" id="carousel-scrub" min="0" max="1" value="0" hidden />
                       </div>
                     </div>
                   </div>

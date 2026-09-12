@@ -18,16 +18,19 @@
 
 #define V1_LCD_W               320
 #define V1_CONTENT_H           (240 - 2 * V1_RIBBON_H)
+#define V1_CAROUSEL_HEADER_H   (V1_CONTENT_H / 3)
+#define V1_CAROUSEL_HEADER_Y   (V1_RIBBON_H)
 #define V1_SCROLL_CARD_W       132
-#define V1_SCROLL_CARD_H       100
+#define V1_SCROLL_CARD_H       (V1_CONTENT_H - V1_CAROUSEL_HEADER_H)
 #define V1_SCROLL_CARD_GAP     12
-#define V1_SCROLL_CARD_Y       (V1_RIBBON_H + 8)
-#define V1_CAROUSEL_TRANSPORT_Y (V1_SCROLL_CARD_Y + V1_SCROLL_CARD_H + 4)
+#define V1_SCROLL_CARD_Y       (V1_RIBBON_H + V1_CAROUSEL_HEADER_H)
 #define V1_CARD_RADIUS         8
 #define V1_CARD_PORTRAIT       22
-#define V1_CAROUSEL_PLAY       32
-#define V1_CAROUSEL_DISK       24
-#define V1_CARD_PLAY_ICON      24
+#define V1_CAROUSEL_PLAY_PAD   8
+#define V1_CAROUSEL_SENDER_FONT 24  /* web twin uses 23px; LVGL has 24 */
+#define V1_CAROUSEL_PLAY       (V1_CAROUSEL_HEADER_H - 2 * V1_CAROUSEL_PLAY_PAD)
+#define V1_CAROUSEL_DISK       V1_CAROUSEL_PLAY
+#define V1_CARD_PLAY_ICON      V1_CAROUSEL_PLAY
 #define V1_SAMPLE_RATE         16000
 #define V1_PLAYBACK_BUF_CAP    (320 * 1024)
 #define V1_ROOMVOL_FIRST       78

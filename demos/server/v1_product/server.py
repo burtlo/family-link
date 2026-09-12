@@ -12,7 +12,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, Header, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.datastructures import UploadFile as StarletteUploadFile
@@ -437,6 +437,11 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         pass
     finally:
         await v1_ws.drop(endpoint_id, websocket)
+
+
+@app.get("/")
+def index():
+    return RedirectResponse(url="/box/")
 
 
 def _mount_static() -> None:
