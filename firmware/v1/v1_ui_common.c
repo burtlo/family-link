@@ -127,6 +127,13 @@ void v1_ui_bind_toast(lv_obj_t *toast)
     s_toast = toast;
 }
 
+void v1_ui_clear_widget_binds(void)
+{
+    s_status = NULL;
+    s_dots = NULL;
+    s_toast = NULL;
+}
+
 void v1_ui_set_toast(lv_obj_t *toast, const char *msg)
 {
     lv_obj_t *lab = toast ? toast : s_toast;

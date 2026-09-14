@@ -4,11 +4,11 @@
 |--------------------------------|-----------------------------------------------------------------------|
 | **Doc kind**                   | `feature-plan` (architecture / migration)                           |
 | **Owners / areas**             | Firmware (x02), v1 server, web twin                                   |
-| **Status**                     | `done` (all phases complete; cutover 2026-09-10)                          |
+| **Status**                     | `done` (structural phases complete; cutover 2026-09-10)                |
 | **Targets**                    | Isolate v1 product code; split `x02_product_shell.c`; documented builds |
-| **Last updated**               | 2026-09-10                                                            |
-| **Supersedes / superseded by** | Product contract: [`v1-product-spec.md`](v1-product-spec.md)        |
-| **As-built**                   | None — link to [`docs/features/`](../features/_template.md) when shipped |
+| **Last updated**               | 2026-09-13                                                            |
+| **Supersedes / superseded by** | Product contract: [`v1-product-spec.md`](v1-product-spec.md). Remaining hardening: [`v1-isolation-remaining.md`](v1-isolation-remaining.md) |
+| **As-built**                   | None — feature record deferred to [`v1-isolation-remaining.md`](v1-isolation-remaining.md) Phase 4 |
 
 **Context:** [`stability-synthesis.md`](../../stability-synthesis.md) §8.3 and §5 P2/P3 recommend separating auth from carousel before further feature work (INT-014 lesson: ~2100-line monolith edit correlated with PIN `checking...` hang). This plan does **not** implement moves — it defines the target layout, module boundaries, build targets, and incremental migration order.
 

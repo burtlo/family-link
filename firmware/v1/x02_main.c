@@ -81,7 +81,7 @@ static void on_auth_ok(const char *user_id, bool pin_reset)
     strncpy(s_session_user, user_id, sizeof(s_session_user) - 1);
     s_session_user[sizeof(s_session_user) - 1] = 0;
     if (pin_reset) {
-        v1_ui_set_toast(NULL, "PIN reset - ask Lynn");
+        v1_carousel_queue_toast("PIN reset - ask Lynn");
     }
     v1_carousel_on_auth_ok();
 }
@@ -157,13 +157,20 @@ static void paint(void)
 {
     lv_obj_t *scr = lv_screen_active();
     if (v1_ui_sleep_is_asleep()) {
+        v1_carousel_invalidate_ui();
         v1_ui_paint_sleep(scr, &s_sleep_cfg);
         v1_ui_clear_repaint();
         v1_ui_refresh_sleep_anim(&s_sleep_cfg);
         return;
     }
     v1_connect_clear_conn_dots();
-    switch (v1_state_get()) {
+    state_t st = v1_state_get();
+    /* Carousel/record share painted widgets; every other screen cleans the
+     * active LVGL tree and must drop carousel handles first. */
+    if (st != ST_CAROUSEL && st != ST_RECORD) {
+        v1_carousel_invalidate_ui();
+    }
+    switch (st) {
     case ST_CONNECTING:
         v1_connect_paint_connecting(scr);
         break;

@@ -308,19 +308,19 @@ static void record_task_fn(void *arg)
             continue;
         }
         if (!v1_connect_online()) {
-            v1_ui_set_toast(NULL, "can't send right now");
+            v1_carousel_queue_toast("can't send right now");
             v1_state_apply(ST_CAROUSEL);
             v1_ui_request_repaint();
             continue;
         }
         if (!s_cfg.mic || !pcm_buffer_ready()) {
-            v1_ui_set_toast(NULL, "no mic");
+            v1_carousel_queue_toast("no mic");
             v1_state_apply(ST_CAROUSEL);
             v1_ui_request_repaint();
             continue;
         }
         if (mute_latched()) {
-            v1_ui_set_toast(NULL, "unmute first");
+            v1_carousel_queue_toast("unmute first");
             v1_state_apply(ST_CAROUSEL);
             v1_ui_request_repaint();
             continue;
@@ -359,13 +359,13 @@ static void record_task_fn(void *arg)
                         }
                     }
                 }
-                v1_ui_set_toast(NULL, "sent");
+                v1_carousel_queue_toast("sent");
             } else {
                 v1_connect_mark_offline();
-                v1_ui_set_toast(NULL, "couldn't send");
+                v1_carousel_queue_toast("couldn't send");
             }
         } else if (s_cancel_pick) {
-            v1_ui_set_toast(NULL, "cancelled");
+            v1_carousel_queue_toast("cancelled");
         }
         s_cancel_pick = false;
         v1_state_apply(ST_CAROUSEL);
@@ -376,7 +376,7 @@ static void record_task_fn(void *arg)
 static void on_pick_btn(lv_event_t *e)
 {
     if (!v1_connect_online()) {
-        v1_ui_set_toast(NULL, "can't send right now");
+        v1_carousel_queue_toast("can't send right now");
         v1_state_apply(ST_CAROUSEL);
         v1_ui_request_repaint();
         return;

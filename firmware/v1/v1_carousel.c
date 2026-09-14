@@ -86,6 +86,9 @@ static uint16_t s_play_icon_fb[V1_CARD_PLAY_ICON * V1_CARD_PLAY_ICON];
 static lv_obj_t *s_sender_lab;
 static lv_obj_t *s_offline_lab;
 static lv_obj_t *s_toast;
+static bool s_carousel_ui_live;
+static bool s_pending_toast;
+static char s_pending_toast_msg[40];
 
 static int16_t s_chirp_pcm[V1_CHIRP_SAMPLES + V1_CHIRP_DRAIN];
 
@@ -111,6 +114,8 @@ static void play_chirp(int hz);
 static void play_chirp_pair(int a, int b);
 static void nvs_load_card_grad(void);
 static void nvs_save_card_grad(void);
+static void carousel_clear_ui_ptrs(void);
+static void carousel_flush_toast(void);
 
 void v1_carousel_init(const v1_carousel_cfg_t *cfg)
 {
@@ -132,13 +137,57 @@ void v1_carousel_on_auth_ok(void)
 {
     if (!s_send_hint_shown) {
         s_send_hint_shown = true;
-        v1_ui_set_toast(NULL, "tap circle to send");
+        v1_carousel_queue_toast("tap circle to send");
     }
     s_carousel_ready_us = now_us();
     if (!s_passed) {
         s_passed = true;
         demo_pass("x02");
     }
+}
+
+static void carousel_clear_ui_ptrs(void)
+{
+    s_carousel_scroll = NULL;
+    memset(s_card_ui, 0, sizeof(s_card_ui));
+    s_bar = NULL;
+    s_play_btn = NULL;
+    s_play_icon = NULL;
+    s_pause_icon = NULL;
+    s_sender_lab = NULL;
+    s_ribbon_top = NULL;
+    s_ribbon_bot = NULL;
+    s_count_lab = NULL;
+    s_offline_lab = NULL;
+    s_toast = NULL;
+    s_carousel_ui_live = false;
+    v1_ui_clear_widget_binds();
+}
+
+void v1_carousel_invalidate_ui(void)
+{
+    carousel_clear_ui_ptrs();
+}
+
+void v1_carousel_queue_toast(const char *msg)
+{
+    if (!msg) {
+        s_pending_toast = false;
+        s_pending_toast_msg[0] = 0;
+        return;
+    }
+    strncpy(s_pending_toast_msg, msg, sizeof(s_pending_toast_msg) - 1);
+    s_pending_toast_msg[sizeof(s_pending_toast_msg) - 1] = 0;
+    s_pending_toast = true;
+}
+
+static void carousel_flush_toast(void)
+{
+    if (!s_pending_toast || !s_toast) {
+        return;
+    }
+    v1_ui_set_toast(s_toast, s_pending_toast_msg);
+    s_pending_toast = false;
 }
 
 void v1_carousel_on_ws_inbox(const char *user_id)
@@ -180,7 +229,7 @@ void v1_carousel_on_circle_press(int64_t t_us)
         return;
     }
     if (!v1_connect_online()) {
-        v1_ui_set_toast(NULL, "can't send right now");
+        v1_carousel_queue_toast("can't send right now");
         return;
     }
     if ((now_us() - s_carousel_ready_us) < (int64_t)V1_CIRCLE_DEBOUNCE_MS * 1000) {
@@ -547,12 +596,13 @@ static void refresh_card_visuals_from_scroll(void)
         if (!card) {
             continue;
         }
+        /* Opacity only — transform_scale allocates a full-card draw layer
+         * (~35 KB RGB565) and wedged LVGL's 64 KB heap after PIN→carousel
+         * (framebuffer half-updated: carousel top + leftover PIN pixels). */
         if (i == visual) {
             lv_obj_set_style_opa(card, LV_OPA_COVER, 0);
-            lv_obj_set_style_transform_scale(card, 256, 0);
         } else {
             lv_obj_set_style_opa(card, LV_OPA_50, 0);
-            lv_obj_set_style_transform_scale(card, 230, 0);
         }
     }
     if (s_sender_lab && visual >= 0 && visual < s_inbox_n) {
@@ -696,10 +746,8 @@ static void refresh_card_focus_states(void)
             }
             if (i == s_inbox_focus) {
                 lv_obj_set_style_opa(card, LV_OPA_COVER, 0);
-                lv_obj_set_style_transform_scale(card, 256, 0);
             } else {
                 lv_obj_set_style_opa(card, LV_OPA_50, 0);
-                lv_obj_set_style_transform_scale(card, 230, 0);
             }
         }
     }
@@ -831,7 +879,7 @@ static void playback_task(void *arg)
         http_buf_t b = { .buf = s_cfg.playback_buf, .cap = V1_PLAYBACK_BUF_CAP, .len = 0 };
         if (http_blob_get(m->seq, &b) != 200 || b.len < 64) {
             if (!v1_connect_online()) {
-                v1_ui_set_toast(NULL, "can't play right now");
+                v1_carousel_queue_toast("can't play right now");
             }
             continue;
         }
@@ -1140,7 +1188,7 @@ static void carousel_add_card(int msg_idx, int x)
     lv_obj_set_size(card, V1_SCROLL_CARD_W, V1_SCROLL_CARD_H);
     lv_obj_set_pos(card, x, 0);
     lv_obj_set_style_radius(card, V1_CARD_RADIUS, 0);
-    lv_obj_set_style_clip_corner(card, true, 0);
+    /* No clip_corner — with radius+gradient+portrait it also forces a layer. */
     lv_obj_set_style_pad_all(card, 0, 0);
     lv_obj_set_style_shadow_width(card, 0, 0);
     apply_card_grad_style(card);
@@ -1178,23 +1226,17 @@ static void paint_carousel(lv_obj_t *scr)
 {
     int32_t keep_scroll = 0;
     int keep_focus = s_inbox_focus;
-    bool restore_scroll = s_carousel_scroll != NULL;
+    /* Only restore scroll when our widgets still own the screen. After PIN/pick
+     * (or any other lv_obj_clean), s_carousel_scroll is a dangling handle — reading
+     * it reboots or paints a hybrid carousel+PIN screen (UAF). */
+    bool restore_scroll = s_carousel_ui_live && s_carousel_scroll != NULL;
     if (restore_scroll) {
         keep_scroll = lv_obj_get_scroll_x(s_carousel_scroll);
     }
 
     lv_obj_clean(scr);
     lv_obj_set_style_bg_color(scr, lv_color_hex(0x101418), 0);
-    s_carousel_scroll = NULL;
-    memset(s_card_ui, 0, sizeof(s_card_ui));
-    s_bar = NULL;
-    s_play_btn = NULL;
-    s_play_icon = NULL;
-    s_pause_icon = NULL;
-    s_sender_lab = NULL;
-    s_ribbon_top = NULL;
-    s_ribbon_bot = NULL;
-    s_count_lab = NULL;
+    carousel_clear_ui_ptrs();
     s_card_face_seq = -1;
     s_card_face_read = false;
     s_scroll_lock = false;
@@ -1283,6 +1325,8 @@ static void paint_carousel(lv_obj_t *scr)
         s_carousel_locked = true;
         ui_refresh_transport();
     }
+    s_carousel_ui_live = true;
+    carousel_flush_toast();
     v1_ui_hook_scr(scr);
 }
 

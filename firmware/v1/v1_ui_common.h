@@ -26,6 +26,8 @@ void v1_ui_refresh_dots(size_t elen);
 
 void v1_ui_set_toast(lv_obj_t *toast, const char *msg);
 void v1_ui_bind_toast(lv_obj_t *toast);
+/** Clear status/dots/toast binds after lv_obj_clean destroyed those widgets. */
+void v1_ui_clear_widget_binds(void);
 
 void v1_ui_request_chirp(int hz);
 void v1_ui_request_chirp_pair(int a, int b);

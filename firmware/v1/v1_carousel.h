@@ -28,6 +28,9 @@ bool v1_carousel_is_playing(void);
 void v1_carousel_start_tasks(void);
 
 void v1_carousel_paint(lv_obj_t *scr);
+/** Drop LVGL object handles after another screen called lv_obj_clean. */
+void v1_carousel_invalidate_ui(void);
+void v1_carousel_queue_toast(const char *msg);
 void v1_carousel_refresh_transport(void);
 void v1_carousel_refresh_offline_ribbon(void);
 
