@@ -8,11 +8,13 @@
 
 #include "board.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 static const char *TAG = "v1_auth";
@@ -231,6 +233,7 @@ void v1_auth_login_task(void *arg)
                 s_on_login_ok_cb(user_id, s_login_pin_reset);
             }
             v1_ui_request_chirp(988);
+            v1_ui_bump_activity();
             v1_ui_request_repaint();
             ESP_LOGI(TAG, "pin phase event=worker_ok st=%d busy=%d gen=%lu http=%d",
                      (int)v1_state_get(), 0, (unsigned long)gen, http);
@@ -294,6 +297,68 @@ void v1_auth_on_boot_press(void)
     }
 }
 
+static const lv_font_t *pin_title_font(void)
+{
+#if defined(LV_FONT_MONTSERRAT_24) && LV_FONT_MONTSERRAT_24
+    return &lv_font_montserrat_24;
+#elif defined(LV_FONT_MONTSERRAT_22) && LV_FONT_MONTSERRAT_22
+    return &lv_font_montserrat_22;
+#else
+    return LV_FONT_DEFAULT;
+#endif
+}
+
+static int pin_text_width(const char *text, const lv_font_t *font)
+{
+    lv_point_t sz = {0, 0};
+    if (!text || !text[0] || !font) {
+        return 0;
+    }
+    lv_text_get_size(&sz, text, font, 0, 0, INT32_MAX, LV_TEXT_FLAG_NONE);
+    return (int)sz.x;
+}
+
+/** Fit "Sign in as" into budget_px by trimming from the right, then "...". */
+static void pin_fit_sign_in_prefix(char *out, size_t cap, int budget_px, const lv_font_t *font)
+{
+    static const char full[] = "Sign in as";
+    if (!out || cap == 0) {
+        return;
+    }
+    out[0] = 0;
+    if (budget_px <= 0) {
+        return;
+    }
+    if (pin_text_width(full, font) <= budget_px) {
+        snprintf(out, cap, "%s", full);
+        return;
+    }
+    size_t n = sizeof(full) - 1;
+    for (int keep = (int)n - 1; keep >= 1; keep--) {
+        char stem[16];
+        if ((size_t)keep >= sizeof(stem)) {
+            keep = (int)sizeof(stem) - 1;
+        }
+        memcpy(stem, full, (size_t)keep);
+        stem[keep] = 0;
+        while (keep > 0 && stem[keep - 1] == ' ') {
+            stem[--keep] = 0;
+        }
+        if (keep <= 0) {
+            break;
+        }
+        char trial[24];
+        snprintf(trial, sizeof(trial), "%s...", stem);
+        if (pin_text_width(trial, font) <= budget_px) {
+            snprintf(out, cap, "%s", trial);
+            return;
+        }
+    }
+    if (pin_text_width("...", font) <= budget_px) {
+        snprintf(out, cap, "...");
+    }
+}
+
 void v1_auth_paint_pin(lv_obj_t *scr)
 {
     if (v1_connect_awaiting_server("", v1_state_get())) {
@@ -301,20 +366,74 @@ void v1_auth_paint_pin(lv_obj_t *scr)
         return;
     }
 
+    v1_connect_invalidate_roster();
+    v1_connect_set_offline_lab(NULL);
     lv_obj_clean(scr);
-    lv_obj_set_style_bg_color(scr, lv_color_hex(0x101418), 0);
-    v1_ui_paint_face(scr, v1_connect_user_index(s_pick_id), 12, 6);
+    lv_obj_set_style_bg_color(scr, lv_color_hex(V1_UI_BG), 0);
+
+    /* Same ribbon + header/keypad split as carousel / sign-in. */
+    lv_obj_t *ribbon_top, *ribbon_bot, *count_lab, *offline_lab, *toast;
+    v1_ui_paint_ribbons(scr, v1_connect_online(), "", &ribbon_top, &ribbon_bot,
+                        &count_lab, &offline_lab, &toast);
+    v1_connect_set_offline_lab(offline_lab);
+    if (count_lab) {
+        lv_label_set_text(count_lab, "");
+    }
+    v1_ui_bind_toast(toast);
+
+    const lv_font_t *font = pin_title_font();
+    const int face_sz = 28;
+    const int gap = 8;
+    const int max_cluster_w = (V1_LCD_W * 2) / 3;
+    const int header_y_ofs = (V1_CAROUSEL_HEADER_Y + V1_CAROUSEL_HEADER_H / 2)
+                             - (V1_CONTENT_H + 2 * V1_RIBBON_H) / 2;
+    const char *uname = v1_connect_user_name(s_pick_id);
+    int name_w = pin_text_width(uname, font);
+    int prefix_budget = max_cluster_w - face_sz - 2 * gap - name_w;
+    char prefix[24];
+    pin_fit_sign_in_prefix(prefix, sizeof(prefix), prefix_budget, font);
+
+    int x = V1_CAROUSEL_PLAY_PAD;
+    lv_obj_t *as_lab = lv_label_create(scr);
+    lv_label_set_text(as_lab, prefix);
+    lv_obj_set_style_text_color(as_lab, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_set_style_text_font(as_lab, font, 0);
+    lv_obj_align(as_lab, LV_ALIGN_LEFT_MID, x, header_y_ofs);
+    int prefix_w = pin_text_width(prefix, font);
+    if (prefix_w > 0) {
+        x += prefix_w + gap;
+    }
+
+    int uid = v1_connect_user_index(s_pick_id);
+    v1_ui_paint_user_portrait_aligned(scr, uid, face_sz, LV_ALIGN_LEFT_MID, x, header_y_ofs);
+    x += face_sz + gap;
+
     lv_obj_t *title = lv_label_create(scr);
-    lv_label_set_text(title, v1_connect_user_name(s_pick_id));
-    lv_obj_set_style_text_color(title, lv_color_hex(0xE8F0E8), 0);
-    lv_obj_align(title, LV_ALIGN_TOP_LEFT, 48, 14);
-    lv_obj_t *dots = lv_label_create(scr);
-    lv_obj_set_style_text_color(dots, lv_color_hex(0xE8C040), 0);
-    lv_obj_align(dots, LV_ALIGN_TOP_MID, 0, 38);
-    v1_ui_bind_dots(dots);
+    lv_label_set_text(title, uname);
+    lv_obj_set_style_text_color(title, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_set_style_text_font(title, font, 0);
+    int name_max = max_cluster_w - (x - V1_CAROUSEL_PLAY_PAD);
+    if (name_max < 24) {
+        name_max = 24;
+    }
+    lv_obj_set_width(title, name_max);
+    lv_label_set_long_mode(title, LV_LABEL_LONG_DOT);
+    lv_obj_align(title, LV_ALIGN_LEFT_MID, x, header_y_ofs);
+
+    /* Right-justified masked PIN dots in the same upper third. */
+    lv_obj_t *entry = lv_label_create(scr);
+    lv_obj_set_style_text_color(entry, lv_color_hex(V1_UI_ACCENT), 0);
+    lv_obj_set_style_text_font(entry, font, 0);
+    lv_obj_set_style_text_align(entry, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_width(entry, V1_LCD_W - max_cluster_w - V1_CAROUSEL_PLAY_PAD);
+    lv_obj_align(entry, LV_ALIGN_RIGHT_MID, -V1_CAROUSEL_PLAY_PAD, header_y_ofs);
+    v1_ui_bind_dots(entry);
     v1_ui_refresh_dots(s_elen);
+
     lv_obj_t *status = lv_label_create(scr);
-    lv_obj_align(status, LV_ALIGN_TOP_MID, 0, 54);
+    lv_obj_set_style_text_align(status, LV_TEXT_ALIGN_RIGHT, 0);
+    lv_obj_set_width(status, V1_LCD_W - max_cluster_w - V1_CAROUSEL_PLAY_PAD);
+    lv_obj_align(status, LV_ALIGN_RIGHT_MID, -V1_CAROUSEL_PLAY_PAD, header_y_ofs + 18);
     v1_ui_bind_status(status);
     if (pin_locked()) {
         char line[24];
@@ -323,24 +442,35 @@ void v1_auth_paint_pin(lv_obj_t *scr)
     } else {
         v1_ui_set_status(status, "", 0xA8B0B8);
     }
+
+    /* Keypad fills the lower 2/3 content band (same Y/H as carousel cards). */
     const char *keys[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
-    const int btn_w = 88;
-    const int btn_h = 40;
-    const int gap_x = 10;
-    const int gap_y = 8;
-    const int start_x = (320 - 3 * btn_w - 2 * gap_x) / 2;
-    const int start_y = 72;
+    const int pad = 4;
+    const int gap_x = 4;
+    const int gap_y = 4;
+    const int btn_w = (V1_LCD_W - 2 * pad - 2 * gap_x) / 3;
+    const int btn_h = (V1_SCROLL_CARD_H - 2 * pad - 2 * gap_y) / 3;
+    const int start_x = pad;
+    const int start_y = V1_SCROLL_CARD_Y + pad;
     for (int i = 0; i < 9; i++) {
         int row = i / 3;
         int col = i % 3;
         lv_obj_t *b = lv_button_create(scr);
         lv_obj_set_pos(b, start_x + col * (btn_w + gap_x), start_y + row * (btn_h + gap_y));
         lv_obj_set_size(b, btn_w, btn_h);
+        lv_obj_set_style_radius(b, V1_CARD_RADIUS, 0);
+        lv_obj_set_style_bg_color(b, lv_color_hex(V1_UI_CARD), 0);
+        lv_obj_set_style_bg_color(b, lv_color_hex(V1_UI_CARD_PRESS), LV_STATE_PRESSED);
+        lv_obj_set_style_shadow_width(b, 0, 0);
         lv_obj_t *t = lv_label_create(b);
         lv_label_set_text(t, keys[i]);
+        lv_obj_set_style_text_color(t, lv_color_hex(V1_UI_TEXT), 0);
+        lv_obj_set_style_text_font(t, font, 0);
         lv_obj_center(t);
         lv_obj_add_event_cb(b, on_pin_key_event, LV_EVENT_CLICKED, (void *)keys[i]);
     }
+    ESP_LOGI(TAG, "paint pin heap=%u pick=%s", (unsigned)esp_get_free_heap_size(),
+             s_pick_id[0] ? s_pick_id : "-");
     v1_ui_hook_scr(scr);
 }
 

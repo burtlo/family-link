@@ -40,6 +40,8 @@ bool v1_connect_awaiting_server(const char *session_user, state_t st);
 void v1_connect_paint_connecting(lv_obj_t *scr);
 void v1_connect_paint_wifi_error(lv_obj_t *scr);
 void v1_connect_paint_roster(lv_obj_t *scr);
+/** Drop roster carousel handles / snap anims before another screen cleans LVGL. */
+void v1_connect_invalidate_roster(void);
 
 void v1_connect_refresh_conn_dots(void);
 void v1_connect_clear_conn_dots(void);

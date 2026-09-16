@@ -22,6 +22,9 @@ void v1_ui_hook_scr(lv_obj_t *scr);
 void v1_ui_set_status(lv_obj_t *status, const char *t, uint32_t color);
 void v1_ui_bind_status(lv_obj_t *status);
 void v1_ui_bind_dots(lv_obj_t *dots);
+/** Show PIN entry (digits) or a single space when empty. */
+void v1_ui_refresh_entry(const char *entry);
+/** Legacy asterisk mask — prefer v1_ui_refresh_entry for the PIN header. */
 void v1_ui_refresh_dots(size_t elen);
 
 void v1_ui_set_toast(lv_obj_t *toast, const char *msg);

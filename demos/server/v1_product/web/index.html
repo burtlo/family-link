@@ -78,10 +78,17 @@
 
               <div class="front">
                 <div class="lcd busy" id="lcd" aria-label="320 by 240 LCD">
-                  <div class="status-overlay" id="status-overlay">sign in</div>
-
                   <div class="ribbon-top">
                     <span id="count">—</span>
+                  </div>
+
+                  <div class="screen screen-roster" id="screen-roster">
+                    <div class="carousel-wrap">
+                      <div class="carousel-header">
+                        <div class="carousel-sender" id="roster-title">Sign In</div>
+                      </div>
+                      <div class="carousel-track" id="roster-track"></div>
+                    </div>
                   </div>
 
                   <div class="screen screen-carousel hidden" id="screen-carousel">
@@ -100,26 +107,28 @@
                   </div>
 
                   <div class="screen screen-settings hidden" id="screen-settings">
-                    <div class="settings-scroll" id="settings-scroll">
-                      <p class="settings-title" id="settings-name">—</p>
-                      <p class="settings-section">vol</p>
-                      <div class="vol-row">
-                        <input
-                          type="range"
-                          id="vol-slider"
-                          min="0"
-                          max="12"
-                          value="4"
-                        />
-                        <span class="vol-num" id="vol-num">86</span>
+                    <div class="settings-dim" id="settings-dim" aria-hidden="true"></div>
+                    <div class="settings-modal" id="settings-modal">
+                      <div class="settings-scroll" id="settings-scroll">
+                        <p class="settings-section">Volume</p>
+                        <div class="vol-row">
+                          <input
+                            type="range"
+                            id="vol-slider"
+                            min="0"
+                            max="12"
+                            value="12"
+                          />
+                          <span class="vol-num" id="vol-num">100</span>
+                        </div>
+                        <button type="button" class="sign-out" id="sign-out">sign out</button>
+                        <p class="settings-section">Face</p>
+                        <div class="face-grid" id="face-grid"></div>
+                        <p class="settings-section">Background</p>
+                        <div class="swatch-grid" id="swatch-grid"></div>
+                        <p class="settings-section">Card</p>
+                        <div class="grad-grid" id="grad-grid"></div>
                       </div>
-                      <p class="settings-section">color</p>
-                      <div class="swatch-grid" id="swatch-grid"></div>
-                      <p class="settings-section">card gradient</p>
-                      <div class="grad-grid" id="grad-grid"></div>
-                      <p class="settings-section">face</p>
-                      <div class="face-grid" id="face-grid"></div>
-                      <button type="button" class="sign-out" id="sign-out">sign out</button>
                     </div>
                   </div>
 

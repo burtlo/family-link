@@ -40,6 +40,8 @@ import {
   const lcd = $("lcd");
   const countEl = $("count");
   const ribbonToast = $("ribbon-toast");
+  const screenRoster = $("screen-roster");
+  const rosterTrack = $("roster-track");
   const screenCarousel = $("screen-carousel");
   const screenSettings = $("screen-settings");
   const screenPicker = $("screen-picker");
@@ -57,7 +59,6 @@ import {
   const swatchGrid = $("swatch-grid");
   const gradGrid = $("grad-grid");
   const faceGrid = $("face-grid");
-  const settingsName = $("settings-name");
   const setupPanel = $("setup");
   const setupStatus = $("setup-status");
   const lineEl = $("line");
@@ -78,7 +79,8 @@ import {
     hangoutUsers: [],
     inbox: [],
     focus: 0,
-    volNotch: 4,
+    rosterFocus: 0,
+    volNotch: ROOMVOL_ON,
     ws: null,
     playing: false,
     scrubbing: false,
@@ -89,6 +91,7 @@ import {
     scrollLock: false,
     carouselLocked: true,
     snapAnim: null,
+    rosterSnapAnim: null,
     activityAt: Date.now(),
     dimmed: false,
     asleep: false,
@@ -234,20 +237,22 @@ import {
   function setMode(mode) {
     noteActivity();
     state.mode = mode;
-    const overlay = $("status-overlay");
-    screenCarousel.classList.toggle("hidden", mode !== "carousel");
+    screenRoster.classList.toggle("hidden", mode !== "login");
+    /* Settings is a p13 modal over the carousel — keep carousel painted. */
+    screenCarousel.classList.toggle(
+      "hidden",
+      mode !== "carousel" && mode !== "settings",
+    );
     screenSettings.classList.toggle("hidden", mode !== "settings");
     screenPicker.classList.toggle("hidden", mode !== "picker");
 
     if (mode === "login") {
-      overlay.style.display = "flex";
-      overlay.textContent = "sign in";
-      screenCarousel.classList.add("hidden");
-      screenSettings.classList.add("hidden");
-      screenPicker.classList.add("hidden");
+      lcd.classList.add("busy");
+      countEl.textContent = "";
+      paintRoster();
       return;
     }
-    overlay.style.display = "none";
+    lcd.classList.remove("busy");
 
     if (mode === "carousel") {
       state.carouselReadyAt = Date.now();
@@ -294,6 +299,165 @@ import {
     const uid = userIdForLabel(senderKey(msg));
     card.appendChild(portraitEl(uid, 22));
     return card;
+  }
+
+  function buildUserCard(user, idx) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "msg-card user-card";
+    card.dataset.idx = String(idx);
+    card.dataset.userId = user.id;
+    const grad = cardGradStyle();
+    card.style.background = grad.css;
+    if (grad.light) card.classList.add("grad-light");
+    card.appendChild(portraitEl(user.id, 66));
+    const name = document.createElement("div");
+    name.className = "user-card-name";
+    name.textContent = user.name || user.id;
+    card.appendChild(name);
+    return card;
+  }
+
+  function rosterCardAt(idx) {
+    return rosterTrack.querySelector(`.user-card[data-idx="${idx}"]`);
+  }
+
+  function rosterFocusFromScroll() {
+    const users = rosterUsersOrdered();
+    if (!users.length) return 0;
+    const mid = rosterTrack.scrollLeft + rosterTrack.clientWidth / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < users.length; i++) {
+      const el = rosterCardAt(i);
+      if (!el) continue;
+      const center = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(center - mid);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function updateRosterCenters() {
+    const moving = !!state.rosterSnapAnim;
+    const highlight = moving ? rosterFocusFromScroll() : state.rosterFocus;
+    rosterTrack.querySelectorAll(".user-card").forEach((card) => {
+      const idx = Number(card.dataset.idx);
+      card.classList.toggle("center", idx === highlight);
+    });
+  }
+
+  function rosterSnapTarget(card) {
+    if (!card) return 0;
+    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+    const max = Math.max(0, rosterTrack.scrollWidth - rosterTrack.clientWidth);
+    return Math.max(0, Math.min(max, cardCenter - rosterTrack.clientWidth / 2));
+  }
+
+  function rosterSnapTo(target, animate) {
+    const max = Math.max(0, rosterTrack.scrollWidth - rosterTrack.clientWidth);
+    const clamped = Math.max(0, Math.min(max, target));
+    if (state.rosterSnapAnim) {
+      cancelAnimationFrame(state.rosterSnapAnim);
+      state.rosterSnapAnim = null;
+    }
+    rosterTrack.classList.remove("is-snapping");
+    if (!animate) {
+      rosterTrack.scrollLeft = clamped;
+      updateRosterCenters();
+      return;
+    }
+    const start = rosterTrack.scrollLeft;
+    if (Math.abs(start - clamped) < 1) {
+      rosterTrack.scrollLeft = clamped;
+      updateRosterCenters();
+      return;
+    }
+    rosterTrack.classList.add("is-snapping");
+    const duration = snapDurationMs(start, clamped);
+    const t0 = performance.now();
+    function frame(now) {
+      const p = Math.min(1, (now - t0) / duration);
+      rosterTrack.scrollLeft = start + (clamped - start) * easeInOut(p);
+      updateRosterCenters();
+      if (p < 1) {
+        state.rosterSnapAnim = requestAnimationFrame(frame);
+      } else {
+        state.rosterSnapAnim = null;
+        rosterTrack.classList.remove("is-snapping");
+        rosterTrack.scrollLeft = clamped;
+        updateRosterCenters();
+      }
+    }
+    state.rosterSnapAnim = requestAnimationFrame(frame);
+  }
+
+  function loginOrderIds() {
+    try {
+      const raw = localStorage.getItem("fl-login-order");
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function noteLoginOrder(userId) {
+    if (!userId) return;
+    const next = [userId, ...loginOrderIds().filter((id) => id !== userId)];
+    localStorage.setItem("fl-login-order", JSON.stringify(next.slice(0, 8)));
+  }
+
+  /** Most recent login first; hangout order for everyone else / cold start. */
+  function rosterUsersOrdered() {
+    const users = state.hangoutUsers.slice();
+    const order = loginOrderIds();
+    if (!order.length) return users;
+    const byId = new Map(users.map((u) => [u.id, u]));
+    const out = [];
+    const used = new Set();
+    for (const id of order) {
+      const u = byId.get(id);
+      if (u && !used.has(id)) {
+        out.push(u);
+        used.add(id);
+      }
+    }
+    for (const u of users) {
+      if (!used.has(u.id)) out.push(u);
+    }
+    return out;
+  }
+
+  function paintRoster() {
+    rosterTrack.replaceChildren();
+    const users = rosterUsersOrdered();
+    const pref = ($("user").value || "").trim();
+    state.rosterFocus = 0;
+    users.forEach((u, i) => {
+      if (u.id === pref || u.name === pref) state.rosterFocus = i;
+      const card = buildUserCard(u, i);
+      card.addEventListener("click", () => {
+        if (i !== state.rosterFocus) {
+          state.rosterFocus = i;
+          rosterSnapTo(rosterSnapTarget(card), true);
+          return;
+        }
+        $("user").value = u.id;
+        lineEl.textContent = "picked " + (u.name || u.id) + " — enter PIN to login";
+      });
+      rosterTrack.appendChild(card);
+    });
+    const end = document.createElement("div");
+    end.className = "carousel-end";
+    rosterTrack.appendChild(end);
+    requestAnimationFrame(() => {
+      const focusCard = rosterCardAt(state.rosterFocus);
+      rosterSnapTo(rosterSnapTarget(focusCard), false);
+    });
   }
 
   function updateCountRibbon() {
@@ -494,6 +658,7 @@ import {
   function paintCarousel(opts = {}) {
     const scroll = opts.scroll !== false;
     const animate = opts.smooth === true;
+    const keepScroll = scroll ? null : carouselTrack.scrollLeft;
 
     carouselTrack.replaceChildren();
     if (!state.inbox.length) {
@@ -515,13 +680,43 @@ import {
 
     updateCountRibbon();
     updateTransport();
-    if (scroll) scrollToFocus(animate);
+    if (scroll) {
+      scrollToFocus(animate);
+    } else if (keepScroll != null) {
+      carouselTrack.scrollLeft = keepScroll;
+    }
+  }
+
+  function facePreviewEl(slot, sizePx) {
+    const wrap = document.createElement("div");
+    wrap.className = "portrait";
+    wrap.style.width = sizePx + "px";
+    wrap.style.height = sizePx + "px";
+    const accent =
+      slot <= 0
+        ? state.profile.accent_hex
+        : ACCENTS[(slot - 1) % ACCENTS.length];
+    const paintGeometry = () => {
+      wrap.classList.add("geometry");
+      wrap.style.background = accent;
+      wrap.innerHTML = '<span class="eye l"></span><span class="eye r"></span>';
+    };
+    if (slot >= 1 && slot <= 12) {
+      const img = document.createElement("img");
+      img.src = "avatars/avatar-" + slot + ".png";
+      img.alt = "";
+      img.onerror = () => {
+        img.remove();
+        paintGeometry();
+      };
+      wrap.appendChild(img);
+    } else {
+      paintGeometry();
+    }
+    return wrap;
   }
 
   function paintSettings() {
-    settingsName.textContent =
-      state.hangoutUsers.find((u) => u.id === state.sessionUser)?.name ||
-      state.sessionUser;
     volSlider.max = ROOMVOL_ON;
     volSlider.value = state.volNotch;
     volNum.textContent = String(roomvolCodec(state.volNotch));
@@ -560,25 +755,7 @@ import {
       b.type = "button";
       b.className =
         "face-btn" + (slot === state.profile.avatar_slot ? " on" : "");
-      if (slot === 0) {
-        const p = portraitEl(state.sessionUser, 40);
-        b.appendChild(p);
-      } else {
-        const p = document.createElement("div");
-        p.className = "portrait";
-        p.style.width = "40px";
-        p.style.height = "40px";
-        const img = document.createElement("img");
-        img.src = "avatars/avatar-" + slot + ".png";
-        img.alt = "";
-        img.onerror = () => {
-          p.classList.add("geometry");
-          p.style.background = ACCENTS[(slot - 1) % ACCENTS.length];
-          p.innerHTML = '<span class="eye l"></span><span class="eye r"></span>';
-        };
-        p.appendChild(img);
-        b.appendChild(p);
-      }
+      b.appendChild(facePreviewEl(slot, 36));
       b.addEventListener("click", () => pickAvatar(slot));
       faceGrid.appendChild(b);
     }
@@ -617,7 +794,10 @@ import {
   }
 
   function paint() {
-    if (state.mode === "carousel") paintCarousel();
+    if (state.mode === "login") paintRoster();
+    if (state.mode === "carousel" || state.mode === "settings") {
+      paintCarousel({ scroll: state.mode === "carousel" });
+    }
     if (state.mode === "settings") paintSettings();
     if (state.mode === "picker") paintPicker();
     player.volume = state.volNotch <= 0 ? 0 : 0.35 + 0.65 * (state.volNotch / ROOMVOL_ON);
@@ -742,6 +922,7 @@ import {
       return;
     }
     state.sessionUser = userId;
+    noteLoginOrder(userId);
     state.activityAt = Date.now();
     state.dimmed = false;
     state.asleep = false;
@@ -884,6 +1065,18 @@ import {
     }, 80);
   });
 
+  let rosterScrollEndTimer = 0;
+  rosterTrack.addEventListener("scroll", () => {
+    updateRosterCenters();
+    window.clearTimeout(rosterScrollEndTimer);
+    rosterScrollEndTimer = window.setTimeout(() => {
+      if (state.rosterSnapAnim) return;
+      state.rosterFocus = rosterFocusFromScroll();
+      const card = rosterCardAt(state.rosterFocus);
+      rosterSnapTo(rosterSnapTarget(card), true);
+    }, 80);
+  });
+
   carouselPlay.addEventListener("click", () => {
     if (carouselHeader.classList.contains("locked-off")) return;
     togglePlay().catch(console.error);
@@ -953,4 +1146,15 @@ import {
 
   lcd.classList.add("busy");
   lineEl.textContent = "login to start";
+  setMode("login");
+  /* Prefetch hangout so the twin can show user cards before PIN login. */
+  state.origin = $("origin").value.replace(/\/$/, "");
+  state.token = $("token").value.trim();
+  loadHangout()
+    .then(() => {
+      if (state.mode === "login") paintRoster();
+    })
+    .catch(() => {
+      lineEl.textContent = "hangout unreachable — start the v1 server";
+    });
 })();

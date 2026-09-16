@@ -165,10 +165,13 @@ static void paint(void)
     }
     v1_connect_clear_conn_dots();
     state_t st = v1_state_get();
-    /* Carousel/record share painted widgets; every other screen cleans the
-     * active LVGL tree and must drop carousel handles first. */
-    if (st != ST_CAROUSEL && st != ST_RECORD) {
+    /* Carousel/record/settings share painted widgets; every other screen
+     * cleans the active LVGL tree and must drop carousel handles first. */
+    if (st != ST_CAROUSEL && st != ST_RECORD && st != ST_SETTINGS) {
         v1_carousel_invalidate_ui();
+    }
+    if (st != ST_ROSTER) {
+        v1_connect_invalidate_roster();
     }
     switch (st) {
     case ST_CONNECTING:
@@ -190,7 +193,11 @@ static void paint(void)
         v1_carousel_paint(scr);
         break;
     case ST_SETTINGS:
-        v1_ui_paint_settings(scr, &s_settings_cfg);
+        /* p13 modal: carousel underneath, dim + scrollable panel on top. */
+        if (scr != NULL) {
+            v1_carousel_paint(scr);
+            v1_ui_paint_settings(scr, &s_settings_cfg);
+        }
         break;
     case ST_RECORD:
         if (scr != NULL) {
@@ -246,11 +253,6 @@ static void ui_task(void *arg)
             v1_connect_refresh_conn_dots();
             board_lvgl_unlock();
         }
-        if (v1_state_get() == ST_CAROUSEL || v1_state_get() == ST_SETTINGS) {
-            board_lvgl_lock(0);
-            v1_carousel_refresh_offline_ribbon();
-            board_lvgl_unlock();
-        }
         if (v1_ui_repaint_pending() || v1_carousel_is_playing() || v1_ui_transport_dirty()) {
             board_lvgl_lock(0);
             if (v1_ui_repaint_pending()) {
@@ -259,6 +261,12 @@ static void ui_task(void *arg)
                 v1_carousel_refresh_transport();
             }
             v1_ui_clear_transport_dirty();
+            board_lvgl_unlock();
+        }
+        /* After paint so offline_lab is never a destroyed roster/PIN widget. */
+        if (v1_state_get() == ST_CAROUSEL || v1_state_get() == ST_SETTINGS) {
+            board_lvgl_lock(0);
+            v1_carousel_refresh_offline_ribbon();
             board_lvgl_unlock();
         }
         if (v1_state_get() == ST_PIN) {
@@ -431,6 +439,6 @@ void app_main(void)
         }
     }
 
-    s_vol_notch = 4;
+    s_vol_notch = V1_ROOMVOL_ON;
     v1_carousel_apply_volume(v1_carousel_roomvol_codec(s_vol_notch));
 }

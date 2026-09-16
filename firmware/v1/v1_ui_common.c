@@ -111,12 +111,23 @@ void v1_ui_bind_dots(lv_obj_t *dots)
     s_dots = dots;
 }
 
+void v1_ui_refresh_entry(const char *entry)
+{
+    if (!s_dots) {
+        return;
+    }
+    lv_label_set_text(s_dots, (entry && entry[0]) ? entry : " ");
+}
+
 void v1_ui_refresh_dots(size_t elen)
 {
     if (!s_dots) {
         return;
     }
     char d[V1_ENTRY_MAX + 1];
+    if (elen > V1_ENTRY_MAX) {
+        elen = V1_ENTRY_MAX;
+    }
     memset(d, '*', elen);
     d[elen] = 0;
     lv_label_set_text(s_dots, elen ? d : " ");
@@ -863,6 +874,57 @@ static void on_avatar_pick(lv_event_t *e)
     v1_ui_bump_activity();
 }
 
+/* p13 modal geometry — panel over dimmed base content. */
+#define SETTINGS_MODAL_X   16
+#define SETTINGS_MODAL_Y   28
+#define SETTINGS_MODAL_W   288
+#define SETTINGS_MODAL_H   184
+#define SETTINGS_PAD       12
+#define SETTINGS_INNER_W   (SETTINGS_MODAL_W - 2 * SETTINGS_PAD)
+#define SETTINGS_PANEL_BG  0x1E242C
+#define SETTINGS_PANEL_BD  0x5AA0E8
+#define SETTINGS_FACE_SZ   40
+#define SETTINGS_FACE_COLS 5
+#define SETTINGS_SWATCH_SZ 36
+#define SETTINGS_SWATCH_COLS 5
+#define SETTINGS_GRAD_W    72
+#define SETTINGS_GRAD_H    44
+
+static int settings_even_x(int count, int index, int item_w)
+{
+    if (count <= 1) {
+        return SETTINGS_PAD + (SETTINGS_INNER_W - item_w) / 2;
+    }
+    int gap = (SETTINGS_INNER_W - count * item_w) / (count - 1);
+    if (gap < 4) {
+        gap = 4;
+    }
+    return SETTINGS_PAD + index * (item_w + gap);
+}
+
+static void settings_paint_face_slot(lv_obj_t *parent, int slot, uint32_t accent, int sz)
+{
+    if (slot <= 0) {
+        v1_ui_paint_geometry_face(parent, accent, sz);
+        return;
+    }
+    const lv_image_dsc_t *img = avatar_image((uint8_t)slot);
+    if (img) {
+        lv_obj_t *av = lv_image_create(parent);
+        lv_image_set_src(av, img);
+        lv_obj_set_size(av, sz, sz);
+        lv_obj_center(av);
+        return;
+    }
+    /* Asset missing — geometry fallback, distinct tint per slot. */
+    static const uint32_t fallback[V1_ACCENT_COUNT] = {
+        0x5AA0E8, 0xE8C040, 0x7AC47A, 0xC070E8,
+        0xE87A9A, 0x7AD4E8, 0xD4A0E8, 0xE8A87A,
+        0x4ECDC4, 0xFF6B6B,
+    };
+    v1_ui_paint_geometry_face(parent, fallback[(slot - 1) % V1_ACCENT_COUNT], sz);
+}
+
 void v1_ui_paint_settings(lv_obj_t *scr, const v1_ui_settings_cfg_t *cfg)
 {
     static const uint32_t accents[V1_ACCENT_COUNT] = {
@@ -874,117 +936,181 @@ void v1_ui_paint_settings(lv_obj_t *scr, const v1_ui_settings_cfg_t *cfg)
         {1, 0x5AA0E8, 0x101418}, {2, 0xE85A5A, 0xE8C040}, {5, 0xF0F2F5, 0x8898A8},
     };
 
-    if (!cfg) {
+    if (!cfg || !scr) {
         return;
     }
     s_settings_paint_cfg = cfg;
     s_settings_vol_notch = cfg->vol_notch;
     s_settings_apply_volume = cfg->apply_volume;
-
-    lv_obj_clean(scr);
-    lv_obj_set_style_bg_color(scr, lv_color_hex(V1_UI_BG), 0);
     s_vol_slider = NULL;
     s_vol_val_lab = NULL;
     s_settings_scroll = NULL;
 
-    lv_obj_t *ribbon_top, *ribbon_bot, *count_lab, *offline_lab, *toast;
-    v1_ui_paint_ribbons(scr, v1_connect_online(), cfg->session_user,
-                        &ribbon_top, &ribbon_bot, &count_lab, &offline_lab, &toast);
-    v1_connect_set_offline_lab(offline_lab);
-    v1_ui_bind_toast(toast);
+    /* Caller paints carousel (or other base) first — overlay only (p13 modal). */
+    lv_obj_t *dim = lv_obj_create(scr);
+    lv_obj_remove_style_all(dim);
+    lv_obj_set_size(dim, V1_LCD_W, 240);
+    lv_obj_set_pos(dim, 0, 0);
+    lv_obj_set_style_bg_color(dim, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(dim, LV_OPA_50, 0);
+    lv_obj_clear_flag(dim, LV_OBJ_FLAG_SCROLLABLE);
 
-    s_settings_scroll = lv_obj_create(scr);
-    lv_obj_set_pos(s_settings_scroll, 0, V1_RIBBON_H);
-    lv_obj_set_size(s_settings_scroll, V1_LCD_W, V1_CONTENT_H);
-    lv_obj_set_style_bg_color(s_settings_scroll, lv_color_hex(V1_UI_BG), 0);
-    lv_obj_set_style_border_width(s_settings_scroll, 0, 0);
+    lv_obj_t *modal = lv_obj_create(scr);
+    lv_obj_set_pos(modal, SETTINGS_MODAL_X, SETTINGS_MODAL_Y);
+    lv_obj_set_size(modal, SETTINGS_MODAL_W, SETTINGS_MODAL_H);
+    lv_obj_set_style_bg_color(modal, lv_color_hex(SETTINGS_PANEL_BG), 0);
+    lv_obj_set_style_bg_opa(modal, LV_OPA_COVER, 0);
+    lv_obj_set_style_radius(modal, 12, 0);
+    lv_obj_set_style_border_width(modal, 2, 0);
+    lv_obj_set_style_border_color(modal, lv_color_hex(SETTINGS_PANEL_BD), 0);
+    lv_obj_set_style_pad_all(modal, 0, 0);
+    lv_obj_clear_flag(modal, LV_OBJ_FLAG_SCROLLABLE);
+
+    s_settings_scroll = lv_obj_create(modal);
+    lv_obj_remove_style_all(s_settings_scroll);
+    lv_obj_set_pos(s_settings_scroll, 0, 0);
+    lv_obj_set_size(s_settings_scroll, SETTINGS_MODAL_W, SETTINGS_MODAL_H);
     lv_obj_add_flag(s_settings_scroll, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scroll_dir(s_settings_scroll, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(s_settings_scroll, LV_SCROLLBAR_MODE_AUTO);
+    lv_obj_set_style_bg_opa(s_settings_scroll, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_pad_all(s_settings_scroll, SETTINGS_PAD, 0);
 
     lv_obj_t *content = lv_obj_create(s_settings_scroll);
-    lv_obj_set_width(content, V1_LCD_W);
+    lv_obj_remove_style_all(content);
+    lv_obj_set_width(content, SETTINGS_INNER_W);
     lv_obj_set_style_bg_opa(content, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(content, 0, 0);
     lv_obj_clear_flag(content, LV_OBJ_FLAG_SCROLLABLE);
 
-    int y = 8;
+    int y = 0;
     int me = v1_connect_user_index(cfg->session_user);
-    uint32_t my_accent = v1_connect_user_accent(me);
+    uint32_t my_accent = (me >= 0) ? v1_connect_user_accent(me) : V1_UI_ACCENT;
+    const int face_n = V1_AVATAR_SLOTS + 1;
+    const int face_rows = (face_n + SETTINGS_FACE_COLS - 1) / SETTINGS_FACE_COLS;
 
-    lv_obj_t *title = lv_label_create(content);
-    lv_label_set_text(title, v1_connect_user_name(cfg->session_user));
-    lv_obj_set_style_text_color(title, lv_color_hex(0xE8F0E8), 0);
-    lv_obj_set_pos(title, 16, y);
-    y += 28;
+    /* Volume */
+    lv_obj_t *vol_lab = lv_label_create(content);
+    lv_label_set_text(vol_lab, "Volume");
+    lv_obj_set_style_text_color(vol_lab, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_set_pos(vol_lab, 0, y);
+    y += 20;
 
+    const int slider_w = 200;
+    const int slider_x = (SETTINGS_INNER_W - slider_w) / 2;
     s_vol_slider = lv_slider_create(content);
-    lv_obj_set_size(s_vol_slider, 200, 20);
-    lv_obj_set_pos(s_vol_slider, 56, y);
+    lv_obj_set_size(s_vol_slider, slider_w, 20);
+    lv_obj_set_pos(s_vol_slider, slider_x, y);
     lv_slider_set_range(s_vol_slider, 0, V1_ROOMVOL_ON);
     if (cfg->vol_notch) {
         lv_slider_set_value(s_vol_slider, *cfg->vol_notch, LV_ANIM_OFF);
     }
     lv_obj_add_event_cb(s_vol_slider, on_volume, LV_EVENT_VALUE_CHANGED, NULL);
     s_vol_val_lab = lv_label_create(content);
-    lv_obj_set_pos(s_vol_val_lab, 268, y + 2);
+    lv_obj_set_style_text_color(s_vol_val_lab, lv_color_hex(V1_UI_TEXT_DIM), 0);
+    lv_obj_set_pos(s_vol_val_lab, slider_x + slider_w + 8, y + 2);
     refresh_vol_label();
-    y += 40;
+    y += 36;
 
+    /* Sign out — full panel width */
+    lv_obj_t *out = lv_button_create(content);
+    lv_obj_set_size(out, SETTINGS_INNER_W, 40);
+    lv_obj_set_pos(out, 0, y);
+    lv_obj_set_style_bg_color(out, lv_color_hex(V1_UI_CARD), 0);
+    lv_obj_set_style_radius(out, 8, 0);
+    lv_obj_t *out_lab = lv_label_create(out);
+    lv_label_set_text(out_lab, "sign out");
+    lv_obj_set_style_text_color(out_lab, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_center(out_lab);
+    lv_obj_add_event_cb(out, on_sign_out, LV_EVENT_CLICKED, (void *)cfg);
+    y += 52;
+
+    /* User icons (faces) — all circles, faces painted */
+    lv_obj_t *face_lab = lv_label_create(content);
+    lv_label_set_text(face_lab, "Face");
+    lv_obj_set_style_text_color(face_lab, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_set_pos(face_lab, 0, y);
+    y += 22;
+
+    uint8_t my_slot = (me >= 0) ? v1_connect_user_avatar_slot(me) : 0;
+    for (int slot = 0; slot < face_n; slot++) {
+        int row = slot / SETTINGS_FACE_COLS;
+        int col = slot % SETTINGS_FACE_COLS;
+        int row_count = SETTINGS_FACE_COLS;
+        int row_start = row * SETTINGS_FACE_COLS;
+        if (row_start + row_count > face_n) {
+            row_count = face_n - row_start;
+        }
+        int x = settings_even_x(row_count, col, SETTINGS_FACE_SZ);
+        lv_obj_t *fb = lv_button_create(content);
+        lv_obj_set_size(fb, SETTINGS_FACE_SZ, SETTINGS_FACE_SZ);
+        lv_obj_set_pos(fb, x, y + row * (SETTINGS_FACE_SZ + 8));
+        lv_obj_set_style_radius(fb, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_clip_corner(fb, true, 0);
+        lv_obj_set_style_pad_all(fb, 0, 0);
+        lv_obj_set_style_bg_color(fb, lv_color_hex(V1_UI_CARD), 0);
+        lv_obj_set_style_border_width(fb, slot == (int)my_slot ? 2 : 0, 0);
+        lv_obj_set_style_border_color(fb, lv_color_hex(V1_UI_TEXT), 0);
+        settings_paint_face_slot(fb, slot, my_accent, SETTINGS_FACE_SZ - 4);
+        lv_obj_add_event_cb(fb, on_avatar_pick, LV_EVENT_CLICKED, (void *)(intptr_t)slot);
+    }
+    y += face_rows * (SETTINGS_FACE_SZ + 8) + 8;
+
+    /* Background colors (accent swatches) */
+    lv_obj_t *bg_lab = lv_label_create(content);
+    lv_label_set_text(bg_lab, "Background");
+    lv_obj_set_style_text_color(bg_lab, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_set_pos(bg_lab, 0, y);
+    y += 22;
+
+    const int swatch_rows = (V1_ACCENT_COUNT + SETTINGS_SWATCH_COLS - 1) / SETTINGS_SWATCH_COLS;
     for (int i = 0; i < V1_ACCENT_COUNT; i++) {
-        int col = i % 5;
-        int row = i / 5;
+        int row = i / SETTINGS_SWATCH_COLS;
+        int col = i % SETTINGS_SWATCH_COLS;
+        int row_count = SETTINGS_SWATCH_COLS;
+        int row_start = row * SETTINGS_SWATCH_COLS;
+        if (row_start + row_count > V1_ACCENT_COUNT) {
+            row_count = V1_ACCENT_COUNT - row_start;
+        }
+        int x = settings_even_x(row_count, col, SETTINGS_SWATCH_SZ);
         lv_obj_t *sw = lv_button_create(content);
-        lv_obj_set_size(sw, 40, 40);
-        lv_obj_set_pos(sw, 16 + col * 48, y + row * 48);
+        lv_obj_set_size(sw, SETTINGS_SWATCH_SZ, SETTINGS_SWATCH_SZ);
+        lv_obj_set_pos(sw, x, y + row * (SETTINGS_SWATCH_SZ + 8));
         lv_obj_set_style_bg_color(sw, lv_color_hex(accents[i]), 0);
         lv_obj_set_style_radius(sw, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_pad_all(sw, 0, 0);
         if (accents[i] == my_accent) {
             lv_obj_set_style_border_width(sw, 2, 0);
-            lv_obj_set_style_border_color(sw, lv_color_hex(0xE8F0E8), 0);
+            lv_obj_set_style_border_color(sw, lv_color_hex(V1_UI_TEXT), 0);
+        } else {
+            lv_obj_set_style_border_width(sw, 0, 0);
         }
         lv_obj_add_event_cb(sw, on_accent_pick, LV_EVENT_CLICKED, (void *)(uintptr_t)accents[i]);
     }
-    y += 104;
+    y += swatch_rows * (SETTINGS_SWATCH_SZ + 8) + 8;
+
+    /* Card gradients */
+    lv_obj_t *grad_lab = lv_label_create(content);
+    lv_label_set_text(grad_lab, "Card");
+    lv_obj_set_style_text_color(grad_lab, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_set_pos(grad_lab, 0, y);
+    y += 22;
 
     uint8_t card_grad = v1_carousel_card_grad();
     for (int i = 0; i < V1_CARD_GRAD_N; i++) {
+        int x = settings_even_x(V1_CARD_GRAD_N, i, SETTINGS_GRAD_W);
         lv_obj_t *gb = lv_button_create(content);
-        lv_obj_set_size(gb, 88, 52);
-        lv_obj_set_pos(gb, 16 + i * 96, y);
+        lv_obj_set_size(gb, SETTINGS_GRAD_W, SETTINGS_GRAD_H);
+        lv_obj_set_pos(gb, x, y);
         lv_obj_set_style_bg_color(gb, lv_color_hex(grads[i].top), 0);
         lv_obj_set_style_bg_grad_color(gb, lv_color_hex(grads[i].bot), 0);
         lv_obj_set_style_bg_grad_dir(gb, LV_GRAD_DIR_VER, 0);
-        if (grads[i].id == card_grad) {
-            lv_obj_set_style_border_width(gb, 2, 0);
-        }
+        lv_obj_set_style_radius(gb, 8, 0);
+        lv_obj_set_style_border_width(gb, grads[i].id == card_grad ? 2 : 0, 0);
+        lv_obj_set_style_border_color(gb, lv_color_hex(V1_UI_TEXT), 0);
         lv_obj_add_event_cb(gb, on_grad_pick, LV_EVENT_CLICKED, (void *)(uintptr_t)grads[i].id);
     }
-    y += 60;
+    y += SETTINGS_GRAD_H + SETTINGS_PAD;
 
-    uint8_t my_slot = v1_connect_user_avatar_slot(me);
-    for (int slot = 0; slot <= V1_AVATAR_SLOTS; slot++) {
-        int col = slot % 4;
-        int row = slot / 4;
-        lv_obj_t *fb = lv_button_create(content);
-        lv_obj_set_size(fb, 48, 48);
-        lv_obj_set_pos(fb, 16 + col * 56, y + row * 56);
-        if (slot == (int)my_slot) {
-            lv_obj_set_style_border_width(fb, 2, 0);
-        }
-        if (slot == 0) {
-            v1_ui_paint_geometry_face(fb, my_accent, 40);
-        }
-        lv_obj_add_event_cb(fb, on_avatar_pick, LV_EVENT_CLICKED, (void *)(intptr_t)slot);
-    }
-    y += 4 * 56;
-
-    lv_obj_t *out = lv_button_create(content);
-    lv_obj_set_size(out, 200, 48);
-    lv_obj_set_pos(out, 60, y);
-    lv_obj_t *out_lab = lv_label_create(out);
-    lv_label_set_text(out_lab, "sign out");
-    lv_obj_center(out_lab);
-    lv_obj_add_event_cb(out, on_sign_out, LV_EVENT_CLICKED, (void *)cfg);
-
-    lv_obj_set_height(content, y + 60);
+    lv_obj_set_height(content, y);
     v1_ui_hook_scr(scr);
 }

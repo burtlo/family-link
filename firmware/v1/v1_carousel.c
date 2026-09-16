@@ -161,6 +161,7 @@ static void carousel_clear_ui_ptrs(void)
     s_offline_lab = NULL;
     s_toast = NULL;
     s_carousel_ui_live = false;
+    v1_connect_set_offline_lab(NULL);
     v1_ui_clear_widget_binds();
 }
 
@@ -1327,6 +1328,8 @@ static void paint_carousel(lv_obj_t *scr)
     }
     s_carousel_ui_live = true;
     carousel_flush_toast();
+    ESP_LOGI(TAG, "paint carousel msgs=%d heap=%u", s_inbox_n,
+             (unsigned)esp_get_free_heap_size());
     v1_ui_hook_scr(scr);
 }
 
