@@ -3,8 +3,10 @@ import {
   V1_CAROUSEL_SNAP_MS_MAX,
   V1_CAROUSEL_SNAP_MS_MIN,
   V1_UI_DIM_MS,
+  V1_UI_IDLE_RELOCK_MS,
   V1_UI_SLEEP_MS,
   V1_UI_TOAST_MS,
+  V1_SEND_RECEIPT_MS,
 } from "./v1_timing.js";
 
 (() => {
@@ -15,6 +17,7 @@ import {
   const CIRCLE_DEBOUNCE_MS = 400;
   const DIM_MS = V1_UI_DIM_MS;
   const SLEEP_MS = V1_UI_SLEEP_MS;
+  const IDLE_RELOCK_MS = V1_UI_IDLE_RELOCK_MS;
 
   const ACCENTS = [
     "#5AA0E8", "#E8C040", "#7AC47A", "#C070E8", "#E87A9A",
@@ -43,22 +46,29 @@ import {
   const screenRoster = $("screen-roster");
   const rosterTrack = $("roster-track");
   const screenCarousel = $("screen-carousel");
-  const screenSettings = $("screen-settings");
+  const screenModal = $("screen-modal");
   const screenPicker = $("screen-picker");
+  const screenSend = $("screen-send");
+  const sendHeadline = $("send-headline");
+  const sendCheck = $("send-check");
+  const sendFaces = $("send-faces");
+  const sendNames = $("send-names");
   const carouselTrack = $("carousel-track");
   const carouselTransport = $("carousel-transport");
-  const carouselSender = $("carousel-sender");
+  const carouselFromPrefix = $("carousel-from-prefix");
+  const carouselFromFace = $("carousel-from-face");
+  const carouselFromName = $("carousel-from-name");
   const carouselHeader = $("carousel-header");
   const carouselPlay = $("carousel-play");
   const carouselPlayIcon = $("carousel-play-icon");
   const carouselScrub = $("carousel-scrub");
-  const pickerList = $("picker-list");
-  const settingsScroll = $("settings-scroll");
-  const volSlider = $("vol-slider");
-  const volNum = $("vol-num");
-  const swatchGrid = $("swatch-grid");
-  const gradGrid = $("grad-grid");
-  const faceGrid = $("face-grid");
+  const pickerTrack = $("picker-track");
+  const pickerRec = $("picker-rec");
+  const pickerRecDisk = $("picker-rec-disk");
+  const modalDim = $("modal-dim");
+  const modalTitle = $("modal-title");
+  const modalClose = $("modal-close");
+  const modalBody = $("modal-body");
   const setupPanel = $("setup");
   const setupStatus = $("setup-status");
   const lineEl = $("line");
@@ -67,6 +77,16 @@ import {
   const muteEl = $("mute");
   const sleepOverlay = $("sleep-overlay");
   const sleepBadge = $("sleep-badge");
+
+  const SETTINGS_CARDS = [
+    { id: "logout", title: "Logout" },
+    { id: "volume", title: "Volume" },
+    { id: "autoplay", title: "Auto-play new" },
+    { id: "icons", title: "User icons" },
+    { id: "colors", title: "User colors" },
+    { id: "card", title: "Card colors" },
+  ];
+  const PICK_CIRCLE_D = 54;
 
   const player = new Audio();
   player.preload = "auto";
@@ -79,6 +99,8 @@ import {
     hangoutUsers: [],
     inbox: [],
     focus: 0,
+    settingsFocus: 0,
+    modalKind: null,
     rosterFocus: 0,
     volNotch: ROOMVOL_ON,
     ws: null,
@@ -86,15 +108,23 @@ import {
     scrubbing: false,
     carouselReadyAt: 0,
     sendHintShown: false,
-    profile: { avatar_slot: 0, accent_hex: ACCENTS[0] },
+    profile: { avatar_slot: 0, accent_hex: ACCENTS[0], autoplay_new: false },
     cardGrad: Number(localStorage.getItem("fl-card-grad")) || 1,
     scrollLock: false,
     carouselLocked: true,
     snapAnim: null,
     rosterSnapAnim: null,
+    rosterScrollLock: false,
+    pickerFocus: 0,
+    pickerSelected: new Set(),
+    pickerSnapAnim: null,
+    pickerScrollLock: false,
+    sendRecipients: [],
+    sendBroadcast: false,
     activityAt: Date.now(),
     dimmed: false,
     asleep: false,
+    privacyScreenOff: false,
   };
 
   function roomvolCodec(notch) {
@@ -120,14 +150,16 @@ import {
   function profileFor(userId) {
     const u = state.hangoutUsers.find((x) => x.id === userId);
     if (!u || !u.profile) {
-      return {
-        avatar_slot: 0,
-        accent_hex: defaultAccentForUser(userId),
-      };
+    return {
+      avatar_slot: 0,
+      accent_hex: defaultAccentForUser(userId),
+      autoplay_new: false,
+    };
     }
     return {
       avatar_slot: u.profile.avatar_slot || 0,
       accent_hex: u.profile.accent_hex || defaultAccentForUser(userId),
+      autoplay_new: !!u.profile.autoplay_new,
     };
   }
 
@@ -174,6 +206,9 @@ import {
   }
 
   function noteActivity() {
+    if (state.privacyScreenOff) {
+      return;
+    }
     state.activityAt = Date.now();
     if (state.asleep || state.dimmed) {
       state.asleep = false;
@@ -183,7 +218,8 @@ import {
   }
 
   function updateSleepVisuals() {
-    lcd.classList.toggle("dimmed", state.dimmed && !state.asleep);
+    lcd.classList.toggle("privacy-off", state.privacyScreenOff);
+    lcd.classList.toggle("dimmed", state.dimmed && !state.asleep && !state.privacyScreenOff);
     lcd.classList.toggle("asleep", state.asleep);
     if (state.asleep) {
       sleepOverlay.classList.remove("hidden");
@@ -207,7 +243,7 @@ import {
   }
 
   function tickSleepPolicy() {
-    if (state.mode === "login") {
+    if (state.mode === "login" || state.privacyScreenOff) {
       return;
     }
     const idle = Date.now() - state.activityAt;
@@ -237,14 +273,17 @@ import {
   function setMode(mode) {
     noteActivity();
     state.mode = mode;
+    if (mode !== "settings") {
+      closeModal();
+    }
     screenRoster.classList.toggle("hidden", mode !== "login");
-    /* Settings is a p13 modal over the carousel — keep carousel painted. */
     screenCarousel.classList.toggle(
       "hidden",
       mode !== "carousel" && mode !== "settings",
     );
-    screenSettings.classList.toggle("hidden", mode !== "settings");
+    screenModal.classList.toggle("hidden", !state.modalKind);
     screenPicker.classList.toggle("hidden", mode !== "picker");
+    screenSend.classList.toggle("hidden", mode !== "send");
 
     if (mode === "login") {
       lcd.classList.add("busy");
@@ -257,11 +296,25 @@ import {
     if (mode === "carousel") {
       state.carouselReadyAt = Date.now();
     }
+    if (mode === "settings") {
+      state.settingsFocus = 0;
+    }
+    if (mode === "picker") {
+      state.pickerFocus = 0;
+      state.pickerSelected = new Set();
+    }
     paint();
   }
 
   function currentMsg() {
     return state.inbox[state.focus] || null;
+  }
+
+  function formatDurationMs(ms) {
+    const total = Math.max(0, Math.floor((ms || 0) / 1000));
+    const min = Math.floor(total / 60);
+    const sec = total % 60;
+    return `${min}:${String(sec).padStart(2, "0")}`;
   }
 
   function displayName(label) {
@@ -297,7 +350,38 @@ import {
     }
 
     const uid = userIdForLabel(senderKey(msg));
-    card.appendChild(portraitEl(uid, 22));
+    const face = document.createElement("div");
+    face.className = "msg-card-face";
+    face.appendChild(portraitEl(uid, 66));
+    card.appendChild(face);
+
+    const unread = document.createElement("span");
+    unread.className = "msg-card-unread";
+    unread.hidden = !!msg.read;
+    unread.setAttribute("aria-hidden", msg.read ? "true" : "false");
+    card.appendChild(unread);
+
+    const dur = document.createElement("span");
+    dur.className = "msg-card-duration";
+    dur.textContent = formatDurationMs(msg.duration_ms);
+    card.appendChild(dur);
+
+    return card;
+  }
+
+  function buildSettingCard(item, idx) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "msg-card setting-card";
+    card.dataset.idx = String(idx);
+    card.dataset.setting = item.id;
+    const grad = cardGradStyle();
+    card.style.background = grad.css;
+    if (grad.light) card.classList.add("grad-light");
+    const lab = document.createElement("div");
+    lab.className = "setting-card-label";
+    lab.textContent = item.title;
+    card.appendChild(lab);
     return card;
   }
 
@@ -341,9 +425,19 @@ import {
     return best;
   }
 
+  function rosterScrollAlignedToFocus() {
+    const card = rosterCardAt(state.rosterFocus);
+    if (!card) return false;
+    const target = rosterSnapTarget(card);
+    return Math.abs(rosterTrack.scrollLeft - target) < 2;
+  }
+
   function updateRosterCenters() {
-    const moving = !!state.rosterSnapAnim;
-    const highlight = moving ? rosterFocusFromScroll() : state.rosterFocus;
+    const snapping = state.rosterScrollLock || !!state.rosterSnapAnim;
+    const highlight =
+      snapping || rosterScrollAlignedToFocus()
+        ? state.rosterFocus
+        : rosterFocusFromScroll();
     rosterTrack.querySelectorAll(".user-card").forEach((card) => {
       const idx = Number(card.dataset.idx);
       card.classList.toggle("center", idx === highlight);
@@ -365,6 +459,7 @@ import {
       state.rosterSnapAnim = null;
     }
     rosterTrack.classList.remove("is-snapping");
+    state.rosterScrollLock = false;
     if (!animate) {
       rosterTrack.scrollLeft = clamped;
       updateRosterCenters();
@@ -376,7 +471,9 @@ import {
       updateRosterCenters();
       return;
     }
+    state.rosterScrollLock = true;
     rosterTrack.classList.add("is-snapping");
+    updateRosterCenters();
     const duration = snapDurationMs(start, clamped);
     const t0 = performance.now();
     function frame(now) {
@@ -387,6 +484,7 @@ import {
         state.rosterSnapAnim = requestAnimationFrame(frame);
       } else {
         state.rosterSnapAnim = null;
+        state.rosterScrollLock = false;
         rosterTrack.classList.remove("is-snapping");
         rosterTrack.scrollLeft = clamped;
         updateRosterCenters();
@@ -409,6 +507,43 @@ import {
     if (!userId) return;
     const next = [userId, ...loginOrderIds().filter((id) => id !== userId)];
     localStorage.setItem("fl-login-order", JSON.stringify(next.slice(0, 8)));
+  }
+
+  function sendOrderIds() {
+    try {
+      const raw = localStorage.getItem("fl-send-order");
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function noteSendOrder(userId) {
+    if (!userId) return;
+    const next = [userId, ...sendOrderIds().filter((id) => id !== userId)];
+    localStorage.setItem("fl-send-order", JSON.stringify(next.slice(0, 8)));
+  }
+
+  /** Recent outbound recipients first; excludes signed-in user. */
+  function pickerUsersOrdered() {
+    const users = state.hangoutUsers.filter((u) => u.id !== state.sessionUser);
+    const order = sendOrderIds();
+    if (!order.length) return users;
+    const byId = new Map(users.map((u) => [u.id, u]));
+    const out = [];
+    const used = new Set();
+    for (const id of order) {
+      const u = byId.get(id);
+      if (u && !used.has(id)) {
+        out.push(u);
+        used.add(id);
+      }
+    }
+    for (const u of users) {
+      if (!used.has(u.id)) out.push(u);
+    }
+    return out;
   }
 
   /** Most recent login first; hangout order for everyone else / cold start. */
@@ -461,8 +596,20 @@ import {
   }
 
   function updateCountRibbon() {
+    if (state.mode === "settings") {
+      countEl.textContent = `${state.settingsFocus + 1}/${SETTINGS_CARDS.length}`;
+      return;
+    }
     const n = state.inbox.length;
     countEl.textContent = n > 0 ? `${state.focus + 1}/${n}` : "0/0";
+  }
+
+  function activeFocus() {
+    return state.mode === "settings" ? state.settingsFocus : state.focus;
+  }
+
+  function activeCount() {
+    return state.mode === "settings" ? SETTINGS_CARDS.length : state.inbox.length;
   }
 
   function cardAt(idx) {
@@ -470,11 +617,12 @@ import {
   }
 
   function focusIndexFromScroll() {
-    if (!state.inbox.length) return 0;
+    const n = activeCount();
+    if (!n) return 0;
     const mid = carouselTrack.scrollLeft + carouselTrack.clientWidth / 2;
     let best = 0;
     let bestDist = Infinity;
-    for (let i = 0; i < state.inbox.length; i++) {
+    for (let i = 0; i < n; i++) {
       const el = cardAt(i);
       if (!el) continue;
       const center = el.offsetLeft + el.offsetWidth / 2;
@@ -489,19 +637,48 @@ import {
 
   function updateCardCenters() {
     const moving = state.scrollLock || !!state.snapAnim;
-    const highlight = moving ? focusIndexFromScroll() : state.focus;
+    const highlight = moving ? focusIndexFromScroll() : activeFocus();
+    const settings = state.mode === "settings";
     carouselTrack.querySelectorAll(".msg-card").forEach((card) => {
       const idx = Number(card.dataset.idx);
       const center = idx === highlight;
       card.classList.toggle("center", center);
-      card.disabled = !moving && center;
+      card.disabled = settings ? false : !moving && center;
+      if (!settings && !card.classList.contains("setting-card")) {
+        const msg = state.inbox[idx];
+        const unread = card.querySelector(".msg-card-unread");
+        if (msg && unread) {
+          unread.hidden = !!msg.read;
+          unread.setAttribute("aria-hidden", msg.read ? "true" : "false");
+        }
+      }
     });
-    const lockedOff = !state.carouselLocked || state.scrollLock;
+    const lockedOff = settings || !state.carouselLocked || state.scrollLock;
     carouselTransport.classList.toggle("locked-off", lockedOff);
     carouselHeader.classList.toggle("locked-off", lockedOff);
-    if (carouselSender) {
-      const msg = state.inbox[highlight] || currentMsg();
-      carouselSender.textContent = msg ? displayName(senderKey(msg)) : "";
+    carouselPlay.classList.toggle("hidden", settings);
+    if (carouselFromPrefix && carouselFromFace && carouselFromName) {
+      if (settings) {
+        carouselFromPrefix.textContent = "Settings";
+        carouselFromFace.replaceChildren();
+        carouselFromName.textContent = "";
+        carouselFromFace.classList.add("hidden");
+        carouselFromName.classList.add("hidden");
+      } else {
+        carouselFromFace.classList.remove("hidden");
+        carouselFromName.classList.remove("hidden");
+        const msg = state.inbox[highlight] || currentMsg();
+        carouselFromPrefix.textContent = "From";
+        if (msg) {
+          const uid = userIdForLabel(senderKey(msg));
+          carouselFromFace.replaceChildren();
+          carouselFromFace.appendChild(portraitEl(uid, 28));
+          carouselFromName.textContent = displayName(senderKey(msg));
+        } else {
+          carouselFromFace.replaceChildren();
+          carouselFromName.textContent = "";
+        }
+      }
     }
   }
 
@@ -515,7 +692,9 @@ import {
     updateCardCenters();
     updatePlayIcon();
     if (!m) {
-      if (carouselSender) carouselSender.textContent = "";
+      if (carouselFromPrefix) carouselFromPrefix.textContent = "";
+      if (carouselFromFace) carouselFromFace.replaceChildren();
+      if (carouselFromName) carouselFromName.textContent = "";
       carouselScrub.max = "1";
       carouselScrub.value = "0";
       return;
@@ -604,10 +783,11 @@ import {
   }
 
   function scrollToFocus(animate) {
-    snapScrollTo(snapTargetScrollLeft(cardAt(state.focus)), animate);
+    snapScrollTo(snapTargetScrollLeft(cardAt(activeFocus())), animate);
   }
 
   function persistView() {
+    if (state.mode === "settings") return;
     const m = currentMsg();
     if (!m) return;
     fetch(state.origin + "/v1/session/view", {
@@ -621,11 +801,18 @@ import {
   }
 
   function setFocus(idx, smoothScroll) {
-    if (!state.inbox.length || idx < 0 || idx >= state.inbox.length) return;
-    if (idx === state.focus && smoothScroll !== true) return;
-    player.pause();
-    state.playing = false;
-    state.focus = idx;
+    const settings = state.mode === "settings";
+    const n = activeCount();
+    if (!n || idx < 0 || idx >= n) return;
+    const cur = activeFocus();
+    if (idx === cur && smoothScroll !== true) return;
+    if (!settings) {
+      player.pause();
+      state.playing = false;
+      state.focus = idx;
+    } else {
+      state.settingsFocus = idx;
+    }
     updateCountRibbon();
     updateTransport();
     persistView();
@@ -637,11 +824,11 @@ import {
   }
 
   function syncFocusFromScroll() {
-    if (state.scrollLock || !state.inbox.length) return;
+    if (state.scrollLock || !activeCount()) return;
     const mid = carouselTrack.scrollLeft + carouselTrack.clientWidth / 2;
-    let best = state.focus;
+    let best = activeFocus();
     let bestDist = Infinity;
-    for (let i = 0; i < state.inbox.length; i++) {
+    for (let i = 0; i < activeCount(); i++) {
       const el = cardAt(i);
       if (!el) continue;
       const center = el.offsetLeft + el.offsetWidth / 2;
@@ -651,7 +838,7 @@ import {
         best = i;
       }
     }
-    if (best === state.focus) return;
+    if (best === activeFocus()) return;
     setFocus(best);
   }
 
@@ -659,21 +846,20 @@ import {
     const scroll = opts.scroll !== false;
     const animate = opts.smooth === true;
     const keepScroll = scroll ? null : carouselTrack.scrollLeft;
+    const settings = state.mode === "settings";
 
     carouselTrack.replaceChildren();
-    if (!state.inbox.length) {
+    if (settings) {
+      SETTINGS_CARDS.forEach((item, idx) => {
+        carouselTrack.appendChild(buildSettingCard(item, idx));
+      });
+    } else if (!state.inbox.length) {
       carouselTrack.appendChild(buildMsgCard(null, 0));
-      const end = document.createElement("div");
-      end.className = "carousel-end";
-      carouselTrack.appendChild(end);
-      updateCountRibbon();
-      updateTransport();
-      return;
+    } else {
+      state.inbox.forEach((msg, idx) => {
+        carouselTrack.appendChild(buildMsgCard(msg, idx));
+      });
     }
-
-    state.inbox.forEach((msg, idx) => {
-      carouselTrack.appendChild(buildMsgCard(msg, idx));
-    });
     const end = document.createElement("div");
     end.className = "carousel-end";
     carouselTrack.appendChild(end);
@@ -716,89 +902,456 @@ import {
     return wrap;
   }
 
-  function paintSettings() {
-    volSlider.max = ROOMVOL_ON;
-    volSlider.value = state.volNotch;
-    volNum.textContent = String(roomvolCodec(state.volNotch));
+  function closeModal() {
+    state.modalKind = null;
+    if (screenModal) screenModal.classList.add("hidden");
+    if (modalBody) modalBody.replaceChildren();
+  }
 
-    swatchGrid.replaceChildren();
-    const myAccent = state.profile.accent_hex;
-    ACCENTS.forEach((hex) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "swatch" + (hex.toUpperCase() === myAccent.toUpperCase() ? " on" : "");
-      b.style.background = hex;
-      b.addEventListener("click", () => pickAccent(hex));
-      swatchGrid.appendChild(b);
-    });
+  function openModal(kind) {
+    state.modalKind = kind;
+    const item = SETTINGS_CARDS.find((c) => c.id === kind);
+    if (modalTitle) modalTitle.textContent = item ? item.title : "";
+    paintModalBody(kind);
+    if (screenModal) screenModal.classList.remove("hidden");
+  }
 
-    gradGrid.replaceChildren();
-    const activeGrad = state.cardGrad;
-    CARD_GRADS.forEach((g) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className =
-        "grad-btn" +
-        (g.id === activeGrad ? " on" : "") +
-        (g.light ? " light" : "");
-      b.style.background = `linear-gradient(180deg, ${g.top} 0%, ${g.bottom} 100%)`;
-      const lab = document.createElement("span");
-      lab.textContent = g.label;
-      b.appendChild(lab);
-      b.addEventListener("click", () => pickCardGrad(g.id));
-      gradGrid.appendChild(b);
-    });
-
-    faceGrid.replaceChildren();
-    for (let slot = 0; slot <= 12; slot++) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className =
-        "face-btn" + (slot === state.profile.avatar_slot ? " on" : "");
-      b.appendChild(facePreviewEl(slot, 36));
-      b.addEventListener("click", () => pickAvatar(slot));
-      faceGrid.appendChild(b);
+  function paintModalBody(kind) {
+    if (!modalBody) return;
+    modalBody.replaceChildren();
+    if (kind === "logout") {
+      const hint = document.createElement("p");
+      hint.className = "settings-section";
+      hint.textContent = "Sign out of this box?";
+      modalBody.appendChild(hint);
+      const out = document.createElement("button");
+      out.type = "button";
+      out.className = "sign-out";
+      out.textContent = "sign out";
+      out.addEventListener("click", signOut);
+      modalBody.appendChild(out);
+      return;
+    }
+    if (kind === "volume") {
+      const row = document.createElement("div");
+      row.className = "vol-row";
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = "0";
+      slider.max = String(ROOMVOL_ON);
+      slider.value = String(state.volNotch);
+      const num = document.createElement("span");
+      num.className = "vol-num";
+      num.textContent = String(roomvolCodec(state.volNotch));
+      slider.addEventListener("input", () => {
+        state.volNotch = Number(slider.value);
+        num.textContent = String(roomvolCodec(state.volNotch));
+        player.volume =
+          state.volNotch <= 0 ? 0 : 0.35 + 0.65 * (state.volNotch / ROOMVOL_ON);
+      });
+      row.appendChild(slider);
+      row.appendChild(num);
+      modalBody.appendChild(row);
+      return;
+    }
+    if (kind === "autoplay") {
+      const hint = document.createElement("p");
+      hint.className = "settings-section";
+      hint.textContent =
+        "When you are on the newest message and caught up, play new mail automatically.";
+      modalBody.appendChild(hint);
+      const row = document.createElement("label");
+      row.className = "autoplay-row";
+      const sw = document.createElement("input");
+      sw.type = "checkbox";
+      sw.checked = !!state.profile.autoplay_new;
+      sw.addEventListener("change", () => {
+        state.profile.autoplay_new = sw.checked;
+        saveProfile().catch(() => {});
+      });
+      row.appendChild(sw);
+      row.appendChild(document.createTextNode(" Auto-play new messages"));
+      modalBody.appendChild(row);
+      return;
+    }
+    if (kind === "icons") {
+      const grid = document.createElement("div");
+      grid.className = "face-grid";
+      for (let slot = 0; slot <= 12; slot++) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className =
+          "face-btn" + (slot === state.profile.avatar_slot ? " on" : "");
+        b.appendChild(facePreviewEl(slot, PICK_CIRCLE_D - 6));
+        b.addEventListener("click", () => {
+          pickAvatar(slot);
+          grid.querySelectorAll(".face-btn").forEach((el, i) => {
+            el.classList.toggle("on", i === slot);
+          });
+        });
+        grid.appendChild(b);
+      }
+      modalBody.appendChild(grid);
+      return;
+    }
+    if (kind === "colors") {
+      const grid = document.createElement("div");
+      grid.className = "swatch-grid";
+      const myAccent = state.profile.accent_hex;
+      ACCENTS.forEach((hex) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className =
+          "swatch" +
+          (hex.toUpperCase() === myAccent.toUpperCase() ? " on" : "");
+        b.style.background = hex;
+        b.addEventListener("click", () => {
+          pickAccent(hex);
+          grid.querySelectorAll(".swatch").forEach((el) => {
+            el.classList.toggle(
+              "on",
+              el.style.background.toUpperCase() === hex.toUpperCase() ||
+                getComputedStyle(el).backgroundColor === hex,
+            );
+          });
+          grid.querySelectorAll(".swatch").forEach((el) => {
+            el.classList.toggle("on", el === b);
+          });
+        });
+        grid.appendChild(b);
+      });
+      modalBody.appendChild(grid);
+      return;
+    }
+    if (kind === "card") {
+      const grid = document.createElement("div");
+      grid.className = "grad-grid";
+      CARD_GRADS.forEach((g) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className =
+          "grad-btn" +
+          (g.id === state.cardGrad ? " on" : "") +
+          (g.light ? " light" : "");
+        b.style.background = `linear-gradient(180deg, ${g.top} 0%, ${g.bottom} 100%)`;
+        const lab = document.createElement("span");
+        lab.textContent = g.label;
+        b.appendChild(lab);
+        b.addEventListener("click", () => {
+          pickCardGrad(g.id);
+          grid.querySelectorAll(".grad-btn").forEach((el) => el.classList.remove("on"));
+          b.classList.add("on");
+          paintCarousel({ scroll: false });
+        });
+        grid.appendChild(b);
+      });
+      modalBody.appendChild(grid);
     }
   }
 
+  function pickerCardAt(idx) {
+    return pickerTrack.querySelector(`.picker-card[data-idx="${idx}"]`);
+  }
+
+  function pickerSnapTarget(card) {
+    if (!card) return 0;
+    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+    const max = Math.max(0, pickerTrack.scrollWidth - pickerTrack.clientWidth);
+    return Math.max(0, Math.min(max, cardCenter - pickerTrack.clientWidth / 2));
+  }
+
+  function pickerSnapTo(target, animate) {
+    const max = Math.max(0, pickerTrack.scrollWidth - pickerTrack.clientWidth);
+    const clamped = Math.max(0, Math.min(max, target));
+    if (state.pickerSnapAnim) {
+      cancelAnimationFrame(state.pickerSnapAnim);
+      state.pickerSnapAnim = null;
+    }
+    pickerTrack.classList.remove("is-snapping");
+    state.pickerScrollLock = false;
+    if (!animate) {
+      pickerTrack.scrollLeft = clamped;
+      updatePickerCenters();
+      return;
+    }
+    const start = pickerTrack.scrollLeft;
+    if (Math.abs(start - clamped) < 2) {
+      pickerTrack.scrollLeft = clamped;
+      updatePickerCenters();
+      return;
+    }
+    state.pickerScrollLock = true;
+    pickerTrack.classList.add("is-snapping");
+    const t0 = performance.now();
+    const dur = Math.min(
+      V1_CAROUSEL_SNAP_MS_MAX,
+      Math.max(V1_CAROUSEL_SNAP_MS_MIN, 300 + Math.abs(clamped - start) * 0.55),
+    );
+    const frame = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      pickerTrack.scrollLeft = start + (clamped - start) * easeInOut(p);
+      updatePickerCenters();
+      if (p < 1) {
+        state.pickerSnapAnim = requestAnimationFrame(frame);
+      } else {
+        state.pickerSnapAnim = null;
+        state.pickerScrollLock = false;
+        pickerTrack.classList.remove("is-snapping");
+        pickerTrack.scrollLeft = clamped;
+        updatePickerCenters();
+      }
+    };
+    state.pickerSnapAnim = requestAnimationFrame(frame);
+  }
+
+  function pickerFocusFromScroll() {
+    const n = pickerTrack.querySelectorAll(".picker-card").length;
+    if (!n) return 0;
+    const mid = pickerTrack.scrollLeft + pickerTrack.clientWidth / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < n; i++) {
+      const el = pickerCardAt(i);
+      if (!el) continue;
+      const center = el.offsetLeft + el.offsetWidth / 2;
+      const dist = Math.abs(center - mid);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  function pickerScrollAlignedToFocus() {
+    const card = pickerCardAt(state.pickerFocus);
+    if (!card) return false;
+    const target = pickerSnapTarget(card);
+    return Math.abs(pickerTrack.scrollLeft - target) < 2;
+  }
+
+  function updatePickerCenters() {
+    const snapping = state.pickerScrollLock || !!state.pickerSnapAnim;
+    const highlight =
+      snapping || pickerScrollAlignedToFocus()
+        ? state.pickerFocus
+        : pickerFocusFromScroll();
+    pickerTrack.querySelectorAll(".picker-card").forEach((card) => {
+      const idx = Number(card.dataset.idx);
+      card.classList.toggle("center", idx === highlight);
+      const key = card.dataset.pickKey;
+      card.classList.toggle("picked", state.pickerSelected.has(key));
+    });
+  }
+
+  function refreshPickerRecBtn() {
+    const on = state.pickerSelected.size > 0;
+    pickerRec.disabled = !on;
+    pickerRec.classList.toggle("enabled", on);
+    pickerRecDisk.classList.toggle("on", on);
+  }
+
+  function buildPickerEveryoneCard(idx) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "msg-card user-card picker-card";
+    card.dataset.idx = String(idx);
+    card.dataset.pickKey = "__all__";
+    const grad = cardGradStyle();
+    card.style.background = grad.css;
+    if (grad.light) card.classList.add("grad-light");
+    const name = document.createElement("div");
+    name.className = "user-card-name";
+    name.textContent = "Everyone";
+    card.appendChild(name);
+    return card;
+  }
+
+  function sendRecipientSummary(ids, broadcast) {
+    if (broadcast) return "Everyone";
+    const names = ids.map((id) => {
+      const u = state.hangoutUsers.find((x) => x.id === id);
+      return u ? u.name : id;
+    });
+    if (names.length <= 3) return names.join(", ");
+    return `${names[0]}, ${names[1]} +${names.length - 2}`;
+  }
+
+  function paintSendReceipt(phase) {
+    const showRecipients = phase === "sent" || phase === "failed";
+    const headlines = {
+      finishing: "Finishing",
+      sending: "Sending...",
+      sent: "Sent",
+      failed: "Couldn't send",
+    };
+    sendHeadline.textContent = headlines[phase] || "";
+    sendHeadline.classList.toggle("failed", phase === "failed");
+    sendCheck.classList.toggle("hidden", phase !== "sent");
+    sendFaces.replaceChildren();
+    sendNames.textContent = "";
+    if (!showRecipients) return;
+    if (state.sendBroadcast) {
+      const mark = document.createElement("div");
+      mark.className = "everyone-mark";
+      mark.textContent = "*";
+      sendFaces.appendChild(mark);
+    } else {
+      const show = state.sendRecipients.slice(0, 3);
+      for (const id of show) {
+        sendFaces.appendChild(portraitEl(id, 36));
+      }
+    }
+    sendNames.textContent = sendRecipientSummary(
+      state.sendRecipients,
+      state.sendBroadcast,
+    );
+  }
+
+  function tinyWavBlob() {
+    const sampleRate = 16000;
+    const numSamples = 800;
+    const dataSize = numSamples * 2;
+    const buf = new ArrayBuffer(44 + dataSize);
+    const v = new DataView(buf);
+    const writeStr = (off, s) => {
+      for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i));
+    };
+    writeStr(0, "RIFF");
+    v.setUint32(4, 36 + dataSize, true);
+    writeStr(8, "WAVE");
+    writeStr(12, "fmt ");
+    v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true);
+    v.setUint16(22, 1, true);
+    v.setUint32(24, sampleRate, true);
+    v.setUint32(28, sampleRate * 2, true);
+    v.setUint16(32, 2, true);
+    v.setUint16(34, 16, true);
+    writeStr(36, "data");
+    v.setUint32(40, dataSize, true);
+    return new Blob([buf], { type: "audio/wav" });
+  }
+
+  function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function postOutboundMessage() {
+    const fd = new FormData();
+    fd.append("kind", "audio");
+    fd.append("blob", tinyWavBlob(), "clip.wav");
+    if (state.sendBroadcast) {
+      fd.append("broadcast", "true");
+    } else if (state.sendRecipients.length === 1) {
+      fd.append("to_user_id", state.sendRecipients[0]);
+      fd.append("broadcast", "false");
+    } else {
+      let ok = true;
+      for (const id of state.sendRecipients) {
+        const one = new FormData();
+        one.append("kind", "audio");
+        one.append("to_user_id", id);
+        one.append("broadcast", "false");
+        one.append("blob", tinyWavBlob(), "clip.wav");
+        const res = await fetch(state.origin + "/v1/messages", {
+          method: "POST",
+          headers: sessionHeaders(),
+          body: one,
+        });
+        if (!res.ok) {
+          ok = false;
+          break;
+        }
+        noteSendOrder(id);
+      }
+      return ok;
+    }
+    const res = await fetch(state.origin + "/v1/messages", {
+      method: "POST",
+      headers: sessionHeaders(),
+      body: fd,
+    });
+    if (res.ok && state.sendBroadcast) {
+      noteSendOrder("__all__");
+    } else if (res.ok && state.sendRecipients[0]) {
+      noteSendOrder(state.sendRecipients[0]);
+    }
+    return res.ok;
+  }
+
+  async function runOutboundSend() {
+    if (!state.pickerSelected.size) return;
+    state.sendBroadcast = state.pickerSelected.has("__all__");
+    state.sendRecipients = state.sendBroadcast
+      ? []
+      : [...state.pickerSelected];
+    setMode("send");
+    paintSendReceipt("finishing");
+    await delay(200);
+    paintSendReceipt("sending");
+    const ok = await postOutboundMessage();
+    paintSendReceipt(ok ? "sent" : "failed");
+    if (ok) {
+      await reloadInbox();
+    }
+    await delay(V1_SEND_RECEIPT_MS);
+    setMode("carousel");
+  }
+
+  function startPickerRecordStub() {
+    runOutboundSend().catch((e) => {
+      paintSendReceipt("failed");
+      setToast(String(e), 2000);
+      setTimeout(() => setMode("carousel"), V1_SEND_RECEIPT_MS);
+    });
+  }
+
   function paintPicker() {
-    pickerList.replaceChildren();
-    const title = document.createElement("p");
-    title.className = "picker-title";
-    title.textContent = "send to";
-    pickerList.appendChild(title);
-    state.hangoutUsers.forEach((u) => {
-      if (u.id === state.sessionUser) return;
-      const row = document.createElement("button");
-      row.type = "button";
-      row.className = "picker-row";
-      row.appendChild(portraitEl(u.id, 28));
-      const lab = document.createElement("span");
-      lab.textContent = u.name;
-      row.appendChild(lab);
-      row.addEventListener("click", () => {
-        setToast("record stub — not sent", 2000);
-        setMode("carousel");
+    pickerTrack.replaceChildren();
+    const users = pickerUsersOrdered();
+    const items = [...users, { id: "__all__", name: "Everyone" }];
+    state.pickerFocus = 0;
+    items.forEach((u, i) => {
+      const card =
+        u.id === "__all__"
+          ? buildPickerEveryoneCard(i)
+          : (() => {
+              const c = buildUserCard(u, i);
+              c.classList.add("picker-card");
+              c.dataset.pickKey = u.id;
+              return c;
+            })();
+      card.addEventListener("click", () => {
+        if (i !== state.pickerFocus) {
+          state.pickerFocus = i;
+          pickerSnapTo(pickerSnapTarget(card), true);
+          return;
+        }
+        const key = card.dataset.pickKey;
+        if (state.pickerSelected.has(key)) state.pickerSelected.delete(key);
+        else state.pickerSelected.add(key);
+        updatePickerCenters();
+        refreshPickerRecBtn();
       });
-      pickerList.appendChild(row);
+      pickerTrack.appendChild(card);
     });
-    const all = document.createElement("button");
-    all.type = "button";
-    all.className = "picker-row";
-    all.textContent = "Everyone";
-    all.addEventListener("click", () => {
-      setToast("record stub — not sent", 2000);
-      setMode("carousel");
+    const end = document.createElement("div");
+    end.className = "carousel-end";
+    pickerTrack.appendChild(end);
+    requestAnimationFrame(() => {
+      const focusCard = pickerCardAt(state.pickerFocus);
+      if (focusCard) pickerSnapTo(pickerSnapTarget(focusCard), false);
+      updatePickerCenters();
+      refreshPickerRecBtn();
     });
-    pickerList.appendChild(all);
   }
 
   function paint() {
     if (state.mode === "login") paintRoster();
     if (state.mode === "carousel" || state.mode === "settings") {
-      paintCarousel({ scroll: state.mode === "carousel" });
+      paintCarousel({ scroll: true });
     }
-    if (state.mode === "settings") paintSettings();
     if (state.mode === "picker") paintPicker();
     player.volume = state.volNotch <= 0 ? 0 : 0.35 + 0.65 * (state.volNotch / ROOMVOL_ON);
   }
@@ -812,7 +1365,42 @@ import {
     state.hangoutUsers = data.users || [];
   }
 
+  function tickIdleRelock() {
+    if (state.privacyScreenOff) {
+      return;
+    }
+    if (state.mode !== "carousel" && state.mode !== "settings") {
+      return;
+    }
+    if (Date.now() - state.activityAt > IDLE_RELOCK_MS) {
+      player.pause();
+      state.playing = false;
+      state.sessionUser = "";
+      state.inbox = [];
+      setupPanel.classList.remove("hidden");
+      lcd.classList.add("busy");
+      setMode("login");
+      lineEl.textContent = "idle lock — enter PIN";
+      state.activityAt = Date.now();
+    }
+  }
+
+  function inboxAutoplayArmed() {
+    if (!state.profile.autoplay_new) {
+      return false;
+    }
+    if (!state.inbox.length) {
+      return false;
+    }
+    if (state.focus !== state.inbox.length - 1) {
+      return false;
+    }
+    return state.inbox.every((m) => m.read);
+  }
+
   async function reloadInbox() {
+    const armed = inboxAutoplayArmed();
+    const inboxBefore = state.inbox.length;
     const res = await fetch(state.origin + "/v1/inbox", {
       headers: sessionHeaders(),
     });
@@ -826,11 +1414,24 @@ import {
       if (i >= 0) state.focus = i;
     }
     if (data.profile) {
-      state.profile = data.profile;
+      state.profile = {
+        avatar_slot: data.profile.avatar_slot || 0,
+        accent_hex: data.profile.accent_hex || ACCENTS[0],
+        autoplay_new: !!data.profile.autoplay_new,
+      };
       const u = state.hangoutUsers.find((x) => x.id === state.sessionUser);
-      if (u) u.profile = data.profile;
+      if (u) u.profile = state.profile;
     }
     paint();
+    if (
+      armed &&
+      state.inbox.length > inboxBefore &&
+      state.mode === "carousel"
+    ) {
+      state.focus = state.inbox.length - 1;
+      scrollToFocus(true);
+      await togglePlay();
+    }
   }
 
   async function saveProfile() {
@@ -843,6 +1444,7 @@ import {
       body: JSON.stringify({
         avatar_slot: state.profile.avatar_slot,
         accent_hex: state.profile.accent_hex,
+        autoplay_new: !!state.profile.autoplay_new,
       }),
     });
     if (!res.ok) {
@@ -860,8 +1462,9 @@ import {
   function pickCardGrad(id) {
     state.cardGrad = id;
     localStorage.setItem("fl-card-grad", String(id));
-    paintSettings();
-    if (state.mode === "carousel") paintCarousel({ scroll: false });
+    if (state.mode === "carousel" || state.mode === "settings") {
+      paintCarousel({ scroll: false });
+    }
   }
 
   function pickAccent(hex) {
@@ -870,7 +1473,7 @@ import {
     if (u) {
       u.profile = { ...state.profile };
     }
-    saveProfile().then(() => paintSettings());
+    saveProfile().catch(() => {});
   }
 
   function pickAvatar(slot) {
@@ -879,7 +1482,7 @@ import {
     if (u) {
       u.profile = { ...state.profile };
     }
-    saveProfile().then(() => paintSettings());
+    saveProfile().catch(() => {});
   }
 
   function connectWs() {
@@ -928,7 +1531,13 @@ import {
     state.asleep = false;
     state.inbox = data.messages || [];
     state.focus = 0;
-    if (data.profile) state.profile = data.profile;
+    if (data.profile) {
+      state.profile = {
+        avatar_slot: data.profile.avatar_slot || 0,
+        accent_hex: data.profile.accent_hex || ACCENTS[0],
+        autoplay_new: !!data.profile.autoplay_new,
+      };
+    }
     await loadHangout();
     const u = state.hangoutUsers.find((x) => x.id === userId);
     if (u && data.profile) u.profile = data.profile;
@@ -949,6 +1558,7 @@ import {
     state.playing = false;
     state.asleep = false;
     state.dimmed = false;
+    state.privacyScreenOff = false;
     updateSleepVisuals();
     if (state.ws) state.ws.close();
     state.sessionUser = "";
@@ -965,6 +1575,10 @@ import {
       return;
     }
     noteActivity();
+    if (state.modalKind) {
+      closeModal();
+      return;
+    }
     if (state.mode === "carousel") {
       player.pause();
       state.playing = false;
@@ -980,12 +1594,15 @@ import {
       return;
     }
     noteActivity();
+    if (state.mode === "send") {
+      return;
+    }
     if (state.mode === "carousel") {
       if (state.playing) return;
       if (Date.now() - state.carouselReadyAt < CIRCLE_DEBOUNCE_MS) return;
       setMode("picker");
     } else if (state.mode === "picker") {
-      setMode("carousel");
+      startPickerRecordStub();
     }
   }
 
@@ -1027,12 +1644,13 @@ import {
   }
 
   function shiftFocus(dir) {
-    setFocus(state.focus + dir, true);
+    setFocus(activeFocus() + dir, true);
   }
 
   lcd.addEventListener("pointerdown", () => noteActivity());
 
   setInterval(tickSleepPolicy, 500);
+  setInterval(tickIdleRelock, 500);
 
   $("login-btn").addEventListener("click", () => {
     login().catch((e) => {
@@ -1040,14 +1658,25 @@ import {
     });
   });
 
-  $("sign-out").addEventListener("click", signOut);
+  if (modalClose) modalClose.addEventListener("click", closeModal);
+  if (modalDim) modalDim.addEventListener("click", closeModal);
   bootEl.addEventListener("click", shoulderPress);
   circleEl.addEventListener("click", circleTap);
   carouselTrack.addEventListener("click", (ev) => {
     const card = ev.target.closest(".msg-card");
     if (!card || card.disabled) return;
     const idx = Number(card.dataset.idx);
-    if (Number.isNaN(idx) || idx === state.focus) return;
+    if (Number.isNaN(idx)) return;
+    if (state.mode === "settings") {
+      if (idx === state.settingsFocus) {
+        const kind = card.dataset.setting;
+        if (kind) openModal(kind);
+        return;
+      }
+      setFocus(idx, true);
+      return;
+    }
+    if (idx === state.focus) return;
     setFocus(idx, true);
   });
 
@@ -1071,14 +1700,37 @@ import {
     window.clearTimeout(rosterScrollEndTimer);
     rosterScrollEndTimer = window.setTimeout(() => {
       if (state.rosterSnapAnim) return;
+      if (rosterScrollAlignedToFocus()) {
+        updateRosterCenters();
+        return;
+      }
       state.rosterFocus = rosterFocusFromScroll();
       const card = rosterCardAt(state.rosterFocus);
       rosterSnapTo(rosterSnapTarget(card), true);
     }, 80);
   });
 
+  let pickerScrollEndTimer = 0;
+  pickerTrack.addEventListener("scroll", () => {
+    updatePickerCenters();
+    window.clearTimeout(pickerScrollEndTimer);
+    pickerScrollEndTimer = window.setTimeout(() => {
+      if (state.pickerSnapAnim) return;
+      if (pickerScrollAlignedToFocus()) {
+        updatePickerCenters();
+        return;
+      }
+      state.pickerFocus = pickerFocusFromScroll();
+      const card = pickerCardAt(state.pickerFocus);
+      pickerSnapTo(pickerSnapTarget(card), true);
+    }, 80);
+  });
+
+  pickerRec.addEventListener("click", () => startPickerRecordStub());
+
   carouselPlay.addEventListener("click", () => {
     if (carouselHeader.classList.contains("locked-off")) return;
+    if (state.mode === "settings") return;
     togglePlay().catch(console.error);
   });
 
@@ -1088,12 +1740,6 @@ import {
     if (!m) return;
     m.position_ms = Number(carouselScrub.value);
     if (state.playing) player.currentTime = m.position_ms / 1000;
-  });
-
-  volSlider.addEventListener("input", () => {
-    state.volNotch = Number(volSlider.value);
-    volNum.textContent = String(roomvolCodec(state.volNotch));
-    paint();
   });
 
   player.addEventListener("timeupdate", () => {
@@ -1113,8 +1759,43 @@ import {
 
   muteEl.addEventListener("click", () => {
     const on = muteEl.getAttribute("aria-pressed") === "true";
-    muteEl.setAttribute("aria-pressed", on ? "false" : "true");
+    if (!on) {
+      muteEl.setAttribute("aria-pressed", "true");
+      mutePrivacyEngage();
+    } else {
+      muteEl.setAttribute("aria-pressed", "false");
+      if (state.privacyScreenOff) {
+        mutePrivacyWake();
+      }
+    }
   });
+
+  function mutePrivacyEngage() {
+    player.pause();
+    state.playing = false;
+    state.privacyScreenOff = true;
+    state.asleep = false;
+    state.dimmed = false;
+    if (state.ws) state.ws.close();
+    state.sessionUser = "";
+    state.inbox = [];
+    closeModal();
+    setupPanel.classList.remove("hidden");
+    lcd.classList.add("busy");
+    setMode("login");
+    lineEl.textContent = "muted — screen off";
+    updateSleepVisuals();
+  }
+
+  function mutePrivacyWake() {
+    state.privacyScreenOff = false;
+    state.activityAt = Date.now();
+    setupPanel.classList.remove("hidden");
+    lcd.classList.add("busy");
+    setMode("login");
+    lineEl.textContent = "login to start";
+    updateSleepVisuals();
+  }
 
   document.addEventListener("keydown", (ev) => {
     if (ev.target.matches("input")) return;

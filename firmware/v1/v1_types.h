@@ -8,6 +8,7 @@
 #define V1_USER_MAX       8
 #define V1_MSG_MAX        16
 #define V1_ENTRY_MAX      8
+#define V1_PIN_DIGITS     4
 #define V1_JSON_CAP       4096
 #define V1_HANGOUT_NVS_MAX 1536
 #define V1_AVATAR_SLOTS   12
@@ -17,6 +18,7 @@
 #define V1_CONNECT_ICON_SCALE 150
 
 #define V1_LCD_W               320
+#define V1_LCD_H               240
 #define V1_CONTENT_H           (240 - 2 * V1_RIBBON_H)
 #define V1_CAROUSEL_HEADER_H   (V1_CONTENT_H / 3)
 #define V1_CAROUSEL_HEADER_Y   (V1_RIBBON_H)
@@ -48,6 +50,18 @@
 #define V1_SLEEP_HINT_MS       25000
 #define V1_SLEEP_HINT_PULSE_MS 900
 #define V1_CARD_GRAD_N         3
+/** Circle diameter for pick grids — matches dense vertical list-row height. */
+#define V1_PICK_CIRCLE_D       54
+#define V1_LIST_BTN_H          40
+/** Modal inset from LCD edges (border included in size). */
+#define V1_MODAL_INSET_X       24
+#define V1_MODAL_INSET_Y       28
+#define V1_MODAL_W             (V1_LCD_W - 2 * V1_MODAL_INSET_X)
+#define V1_MODAL_H             184
+#define V1_MODAL_PAD           12
+#define V1_MODAL_HEADER_H      32
+#define V1_MODAL_CLOSE_SZ      28
+#define V1_SETTINGS_CARD_N     6
 #define V1_TALK_PEAK           256
 #define V1_CHIRP_MS            160
 #define V1_CHIRP_DRAIN_MS      60
@@ -72,6 +86,7 @@ typedef enum {
     ST_SETTINGS,
     ST_PICK,
     ST_RECORD,
+    ST_SEND,
 } state_t;
 
 typedef struct {
@@ -79,12 +94,14 @@ typedef struct {
     char name[24];
     uint8_t avatar_slot;
     uint32_t accent;
+    bool autoplay_new;
 } user_t;
 
 typedef struct {
     int seq;
     char from_label[24];
     bool read;
+    bool has_sketch;
     int position_ms;
     int duration_ms;
 } msg_t;

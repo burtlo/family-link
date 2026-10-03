@@ -1,6 +1,7 @@
 #include "v1_api.h"
 
 #include "v1_connect.h"
+#include "v1_state.h"
 #include "v1_timing.h"
 
 #include "cJSON.h"
@@ -205,6 +206,7 @@ void v1_api_parse_inbox(const char *js)
             cJSON *seq = cJSON_GetObjectItem(it, "seq");
             cJSON *label = cJSON_GetObjectItem(it, "from_label");
             cJSON *read = cJSON_GetObjectItem(it, "read");
+            cJSON *sketch = cJSON_GetObjectItem(it, "has_sketch");
             cJSON *pos = cJSON_GetObjectItem(it, "position_ms");
             cJSON *dur = cJSON_GetObjectItem(it, "duration_ms");
             if (!cJSON_IsNumber(seq)) {
@@ -217,6 +219,7 @@ void v1_api_parse_inbox(const char *js)
                 strncpy(m->from_label, label->valuestring, sizeof(m->from_label) - 1);
             }
             m->read = cJSON_IsTrue(read);
+            m->has_sketch = cJSON_IsTrue(sketch);
             m->position_ms = cJSON_IsNumber(pos) ? pos->valueint : 0;
             m->duration_ms = cJSON_IsNumber(dur) ? dur->valueint : 0;
         }
@@ -333,7 +336,10 @@ static void on_ws(void *arg, esp_event_base_t base, int32_t id, void *data)
         return;
     }
     if (id == WEBSOCKET_EVENT_DISCONNECTED || id == WEBSOCKET_EVENT_ERROR) {
-        v1_connect_mark_offline();
+        state_t st = v1_state_get();
+        if (st != ST_RECORD && st != ST_SEND) {
+            v1_connect_mark_offline();
+        }
         return;
     }
     if (id != WEBSOCKET_EVENT_DATA || ev == NULL) {

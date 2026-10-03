@@ -308,6 +308,27 @@ static const lv_font_t *pin_title_font(void)
 #endif
 }
 
+static const lv_font_t *pin_entry_font(void)
+{
+#if defined(LV_FONT_MONTSERRAT_32) && LV_FONT_MONTSERRAT_32
+    return &lv_font_montserrat_32;
+#elif defined(LV_FONT_MONTSERRAT_28) && LV_FONT_MONTSERRAT_28
+    return &lv_font_montserrat_28;
+#else
+    return pin_title_font();
+#endif
+}
+
+static int pin_shared_mid_y_ofs(const lv_font_t *title_font, const lv_font_t *entry_font,
+                                int header_y_ofs)
+{
+    lv_point_t t = {0, 0};
+    lv_point_t e = {0, 0};
+    lv_text_get_size(&t, "Ay", title_font, 0, 0, INT32_MAX, LV_TEXT_FLAG_NONE);
+    lv_text_get_size(&e, "Ay", entry_font, 0, 0, INT32_MAX, LV_TEXT_FLAG_NONE);
+    return header_y_ofs + ((int)t.y - (int)e.y) / 2;
+}
+
 static int pin_text_width(const char *text, const lv_font_t *font)
 {
     lv_point_t sz = {0, 0};
@@ -382,6 +403,7 @@ void v1_auth_paint_pin(lv_obj_t *scr)
     v1_ui_bind_toast(toast);
 
     const lv_font_t *font = pin_title_font();
+    const lv_font_t *pin_font = pin_entry_font();
     const int face_sz = 28;
     const int gap = 8;
     const int max_cluster_w = (V1_LCD_W * 2) / 3;
@@ -420,20 +442,31 @@ void v1_auth_paint_pin(lv_obj_t *scr)
     lv_label_set_long_mode(title, LV_LABEL_LONG_DOT);
     lv_obj_align(title, LV_ALIGN_LEFT_MID, x, header_y_ofs);
 
-    /* Right-justified masked PIN dots in the same upper third. */
-    lv_obj_t *entry = lv_label_create(scr);
-    lv_obj_set_style_text_color(entry, lv_color_hex(V1_UI_ACCENT), 0);
-    lv_obj_set_style_text_font(entry, font, 0);
-    lv_obj_set_style_text_align(entry, LV_TEXT_ALIGN_RIGHT, 0);
-    lv_obj_set_width(entry, V1_LCD_W - max_cluster_w - V1_CAROUSEL_PLAY_PAD);
-    lv_obj_align(entry, LV_ALIGN_RIGHT_MID, -V1_CAROUSEL_PLAY_PAD, header_y_ofs);
-    v1_ui_bind_dots(entry);
+    /* Four PIN slots: larger type, LTR; vertical mid aligned with "Sign in as". */
+    const int pin_y_ofs = pin_shared_mid_y_ofs(font, pin_font, header_y_ofs);
+    const int slot_gap = 10;
+    int slot_w = pin_text_width("*", pin_font);
+    if (slot_w < 10) {
+        slot_w = 18;
+    }
+    const int pin_start_x = max_cluster_w + V1_CAROUSEL_PLAY_PAD;
+    lv_obj_t *slot0 = lv_label_create(scr);
+    lv_obj_t *slot1 = lv_label_create(scr);
+    lv_obj_t *slot2 = lv_label_create(scr);
+    lv_obj_t *slot3 = lv_label_create(scr);
+    lv_obj_t *slots[4] = { slot0, slot1, slot2, slot3 };
+    for (int i = 0; i < V1_PIN_DIGITS; i++) {
+        lv_obj_set_style_text_font(slots[i], pin_font, 0);
+        lv_obj_align(slots[i], LV_ALIGN_LEFT_MID, pin_start_x + i * (slot_w + slot_gap),
+                     pin_y_ofs);
+    }
+    v1_ui_bind_pin_slots(slot0, slot1, slot2, slot3);
     v1_ui_refresh_dots(s_elen);
 
     lv_obj_t *status = lv_label_create(scr);
     lv_obj_set_style_text_align(status, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_set_width(status, V1_LCD_W - max_cluster_w - V1_CAROUSEL_PLAY_PAD);
-    lv_obj_align(status, LV_ALIGN_RIGHT_MID, -V1_CAROUSEL_PLAY_PAD, header_y_ofs + 18);
+    lv_obj_align(status, LV_ALIGN_RIGHT_MID, -V1_CAROUSEL_PLAY_PAD, pin_y_ofs + 22);
     v1_ui_bind_status(status);
     if (pin_locked()) {
         char line[24];

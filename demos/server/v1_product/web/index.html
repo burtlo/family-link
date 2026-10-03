@@ -94,7 +94,11 @@
                   <div class="screen screen-carousel hidden" id="screen-carousel">
                     <div class="carousel-wrap">
                       <div class="carousel-header" id="carousel-header">
-                        <div class="carousel-sender" id="carousel-sender"></div>
+                        <div class="carousel-sender" id="carousel-sender">
+                          <span class="carousel-from-prefix" id="carousel-from-prefix">From</span>
+                          <span class="carousel-from-face" id="carousel-from-face"></span>
+                          <span class="carousel-from-name" id="carousel-from-name"></span>
+                        </div>
                         <button type="button" class="play-hit" id="carousel-play" aria-label="Play">
                           <span class="play-icon play" id="carousel-play-icon"></span>
                         </button>
@@ -106,34 +110,43 @@
                     </div>
                   </div>
 
-                  <div class="screen screen-settings hidden" id="screen-settings">
-                    <div class="settings-dim" id="settings-dim" aria-hidden="true"></div>
-                    <div class="settings-modal" id="settings-modal">
-                      <div class="settings-scroll" id="settings-scroll">
-                        <p class="settings-section">Volume</p>
-                        <div class="vol-row">
-                          <input
-                            type="range"
-                            id="vol-slider"
-                            min="0"
-                            max="12"
-                            value="12"
-                          />
-                          <span class="vol-num" id="vol-num">100</span>
-                        </div>
-                        <button type="button" class="sign-out" id="sign-out">sign out</button>
-                        <p class="settings-section">Face</p>
-                        <div class="face-grid" id="face-grid"></div>
-                        <p class="settings-section">Background</p>
-                        <div class="swatch-grid" id="swatch-grid"></div>
-                        <p class="settings-section">Card</p>
-                        <div class="grad-grid" id="grad-grid"></div>
+                  <div class="screen screen-modal hidden" id="screen-modal">
+                    <div class="settings-dim" id="modal-dim" aria-hidden="true"></div>
+                    <div class="settings-modal" id="settings-modal" role="dialog" aria-modal="true">
+                      <div class="modal-header">
+                        <div class="modal-title" id="modal-title"></div>
+                        <button type="button" class="modal-close" id="modal-close" aria-label="Close">X</button>
                       </div>
+                      <div class="settings-scroll" id="modal-body"></div>
+                    </div>
+                  </div>
+
+                  <div class="screen screen-send hidden" id="screen-send">
+                    <div class="send-receipt" id="send-receipt">
+                      <div class="send-check hidden" id="send-check" aria-hidden="true">&#10003;</div>
+                      <div class="send-headline" id="send-headline">Finishing</div>
+                      <div class="send-faces" id="send-faces"></div>
+                      <div class="send-names" id="send-names"></div>
                     </div>
                   </div>
 
                   <div class="screen screen-picker hidden" id="screen-picker">
-                    <div id="picker-list"></div>
+                    <div class="carousel-wrap">
+                      <div class="carousel-header">
+                        <div class="carousel-sender picker-title" id="picker-title">
+                          Send a message to ...
+                        </div>
+                        <button
+                          type="button"
+                          class="play-hit picker-rec"
+                          id="picker-rec"
+                          aria-label="Start recording"
+                        >
+                          <span class="rec-disk" id="picker-rec-disk"></span>
+                        </button>
+                      </div>
+                      <div class="carousel-track" id="picker-track"></div>
+                    </div>
                   </div>
 
                   <div class="ribbon-bot">
@@ -172,11 +185,11 @@
           (<code>PUT /v1/profile</code>, carousel, inbox).
         </p>
         <ul>
-          <li><kbd>B</kbd> <kbd>N</kbd> <kbd>&rarr;</kbd> Shoulder · settings / back</li>
+          <li><kbd>B</kbd> <kbd>N</kbd> <kbd>&rarr;</kbd> Shoulder · settings carousel / back · close modal</li>
           <li><kbd>C</kbd> / <kbd>Space</kbd> Red circle · short tap send picker</li>
-          <li><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> Older / newer message</li>
+          <li><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> Older / newer message (or setting)</li>
           <li><kbd>P</kbd> Play / pause</li>
-          <li>Swipe carousel, play disk, scrub, swatches, gradients, faces</li>
+          <li>Swipe carousel; tap centered setting card to open modal</li>
           <li>2 min dim · 5 min ambient sleep (touch LCD or circle to wake)</li>
         </ul>
         <div class="scale-row" role="group" aria-label="LCD scale">

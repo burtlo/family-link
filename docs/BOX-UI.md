@@ -222,17 +222,18 @@ Center **message card** (~200×184): two panes (~100×162) + teal progress track
 
 1. **Tap circle** → recipient screen (touch only).
 2. Tap a recipient or **Everyone** → recording starts + start chirp.
-3. **Tap circle** → stop + upload + stop chirp. Also: **5s silence**, **3min** cap.
-4. **Shoulder** during picker or record → cancel discard.
-5. **Shoulder** on carousel → settings; shoulder again → back.
-5. Mute latched → block; near-silence 0.5s → abort with `unmute first`.
-6. **PIN required** before carousel and before record.
+3. **Tap circle** → stop + stop chirp; **send receipt** screen (`Finishing` → `Sending...` → `Sent` or `Couldn't send`). Also: **5s silence**, **3min** cap.
+4. **Sent** shows a checkmark, the word **Sent**, recipient portraits (up to three), and a compact name line (`Audrey, Lynn +2` beyond three). **Everyone** uses the asterisk tile. Dwell ~2s, then carousel. No success toast.
+5. **Shoulder** during picker or record → cancel discard. Shoulder ignored during send receipt.
+6. **Shoulder** on carousel → settings; shoulder again → back.
+7. Mute latched → block; near-silence 0.5s → abort with `unmute first`.
+8. **PIN required** before carousel and before record.
 
 Hint copy: `unmute first` (toast when needed). First session: `tap circle to send` (once).
 
-### Recording overlay
+### Recording screen
 
-Replace play + timeline with **listening** overlay on carousel (settings unchanged underneath if opened later).
+Recording uses a dedicated full-screen (320×240) RGB565 drawing canvas. The rec disk stays in the same top-right position over the canvas. A small dim elapsed timer sits at the top-left of the canvas. Touch ink uses canvas-local coordinates (0…319 × 0…239); the disk is a separate widget and is not part of the sketch blob.
 
 ---
 

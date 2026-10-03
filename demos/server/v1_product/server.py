@@ -6,7 +6,6 @@ import argparse
 import json
 import os
 import secrets
-import time
 from pathlib import Path
 
 import uvicorn
@@ -20,6 +19,7 @@ from starlette.datastructures import UploadFile as StarletteUploadFile
 from demos.server._shared.hangout_registry import endpoint_for_token, load_registry
 from demos.server._shared.registry import parse_bearer
 from demos.server._shared.user_mailbox import bootstrap_mailbox, wav_duration_ms
+from demos.server.h27_sketch.codec import SketchError, unpack_sketch
 from demos.server.v1_product import ws as v1_ws
 
 ROOT = Path(os.environ.get("FAMILY_LINK_ROOT") or Path(__file__).resolve().parents[3])
@@ -66,8 +66,9 @@ class PinResetBody(BaseModel):
 
 
 class ProfileBody(BaseModel):
-    avatar_slot: int = Field(0, ge=0, le=12)
+    avatar_slot: int | None = Field(None, ge=0, le=12)
     accent_hex: str | None = None
+    autoplay_new: bool | None = None
 
 
 def unauthorized() -> JSONResponse:
@@ -126,7 +127,8 @@ def session_login(
     body: LoginBody,
     authorization: str | None = Header(default=None),
 ):
-    if require_endpoint(authorization) is None:
+    ep = require_endpoint(authorization)
+    if ep is None:
         return unauthorized()
     if body.user_id not in REGISTRY.users:
         return JSONResponse({"error": "unknown user"}, status_code=404)
@@ -159,7 +161,12 @@ def put_profile(
     if user_id is None:
         return JSONResponse({"error": "X-User-Id required"}, status_code=400)
     try:
-        prof = MAILBOX.set_profile(user_id, body.avatar_slot, body.accent_hex)
+        prof = MAILBOX.set_profile(
+            user_id,
+            body.avatar_slot,
+            body.accent_hex,
+            body.autoplay_new,
+        )
     except ValueError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
     return {"ok": True, "profile": prof}
@@ -231,9 +238,11 @@ async def post_message(
     authorization: str | None = Header(default=None),
     x_user_id: str | None = Header(default=None),
 ):
-    if require_endpoint(authorization) is None:
+    ep = require_endpoint(authorization)
+    from_user_hdr = require_user_header(x_user_id)
+    if ep is None:
         return unauthorized()
-    from_user = require_user_header(x_user_id)
+    from_user = from_user_hdr
     if from_user is None:
         return JSONResponse({"error": "X-User-Id required"}, status_code=400)
 
@@ -253,14 +262,25 @@ async def post_message(
         if not broadcast and not to_user_id:
             return JSONResponse({"error": "to_user_id or broadcast required"}, status_code=400)
         blob_item = form.get("blob")
+        sketch_item = form.get("sketch")
         blob_bytes: bytes | None = None
+        sketch_bytes: bytes | None = None
         if isinstance(blob_item, StarletteUploadFile):
             blob_bytes = await blob_item.read()
+        if isinstance(sketch_item, StarletteUploadFile):
+            sketch_bytes = await sketch_item.read()
     finally:
         await form.close()
 
     if not blob_bytes:
         return JSONResponse({"error": "blob required"}, status_code=400)
+    if sketch_bytes:
+        try:
+            unpack_sketch(sketch_bytes)
+        except SketchError as exc:
+            return JSONResponse({"error": f"bad sketch: {exc}"}, status_code=400)
+    else:
+        sketch_bytes = None
 
     dur = wav_duration_ms(blob_bytes)
     try:
@@ -269,6 +289,7 @@ async def post_message(
             to_user_id=to_user_id,
             broadcast=broadcast,
             blob=blob_bytes,
+            sketch=sketch_bytes,
             duration_ms=dur,
         )
     except ValueError as exc:
@@ -301,6 +322,23 @@ def get_blob(
     if user_id is None:
         return JSONResponse({"error": "X-User-Id required"}, status_code=400)
     data = MAILBOX.read_blob(user_id, seq)
+    if data is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return Response(data, media_type="application/octet-stream")
+
+
+@app.get("/v1/messages/{seq}/sketch")
+def get_sketch(
+    seq: int,
+    authorization: str | None = Header(default=None),
+    x_user_id: str | None = Header(default=None),
+):
+    if require_endpoint(authorization) is None:
+        return unauthorized()
+    user_id = require_user_header(x_user_id)
+    if user_id is None:
+        return JSONResponse({"error": "X-User-Id required"}, status_code=400)
+    data = MAILBOX.read_sketch(user_id, seq)
     if data is None:
         return JSONResponse({"error": "not found"}, status_code=404)
     return Response(data, media_type="application/octet-stream")

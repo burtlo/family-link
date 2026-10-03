@@ -25,6 +25,10 @@ int v1_connect_user_index_by_label(const char *label);
 void v1_connect_apply_profile(const char *user_id, cJSON *prof);
 void v1_connect_nvs_load_last(char *last_user, size_t cap);
 void v1_connect_nvs_save_last(const char *id);
+/** MRU outbound recipients for picker ordering (persisted in NVS). */
+void v1_connect_note_send_recipient(const char *id);
+/** Hangout user indices: recent sends first, excluding session_user. */
+int v1_connect_recipient_order(int *out, int out_max, const char *session_user);
 bool v1_connect_nvs_load_hangout(void);
 
 bool v1_connect_load_hangout_ms(int timeout_ms);

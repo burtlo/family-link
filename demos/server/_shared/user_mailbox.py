@@ -22,6 +22,7 @@ class Message:
     system: bool = False
     broadcast_id: str | None = None
     has_blob: bool = False
+    has_sketch: bool = False
     duration_ms: int | None = None
 
 
@@ -29,6 +30,7 @@ class Message:
 class UserProfile:
     avatar_slot: int = 0
     accent_hex: str | None = None
+    autoplay_new: bool = False
 
 
 @dataclass
@@ -51,8 +53,12 @@ class UserMailbox:
         self._pin_overrides: dict[str, str] = {}
         self._blob_dir = data_dir / "blobs"
         self._shared_dir = data_dir / "shared"
+        self._sketch_dir = data_dir / "sketches"
+        self._shared_sketch_dir = data_dir / "shared_sketches"
         self._blob_dir.mkdir(parents=True, exist_ok=True)
         self._shared_dir.mkdir(parents=True, exist_ok=True)
+        self._sketch_dir.mkdir(parents=True, exist_ok=True)
+        self._shared_sketch_dir.mkdir(parents=True, exist_ok=True)
 
     def _session(self, user_id: str) -> UserSession:
         return self.sessions[user_id]
@@ -88,6 +94,7 @@ class UserMailbox:
             item["broadcast_id"] = msg.broadcast_id
         if msg.duration_ms is not None:
             item["duration_ms"] = msg.duration_ms
+        item["has_sketch"] = msg.has_sketch
         return item
 
     def _default_accent(self, user_id: str) -> str:
@@ -118,19 +125,33 @@ class UserMailbox:
             slot = 0
         if slot > 12:
             slot = 12
-        return {"avatar_slot": slot, "accent_hex": accent}
+        return {
+            "avatar_slot": slot,
+            "accent_hex": accent,
+            "autoplay_new": prof.autoplay_new,
+        }
 
-    def set_profile(self, user_id: str, avatar_slot: int, accent_hex: str | None) -> dict:
+    def set_profile(
+        self,
+        user_id: str,
+        avatar_slot: int | None = None,
+        accent_hex: str | None = None,
+        autoplay_new: bool | None = None,
+    ) -> dict:
         if user_id not in self.registry.users:
             raise ValueError("unknown user")
-        if avatar_slot < 0 or avatar_slot > 12:
-            raise ValueError("avatar_slot must be 0..12")
-        if accent_hex is not None and not accent_hex.startswith("#"):
-            accent_hex = f"#{accent_hex}"
         prof = self.profiles[user_id]
-        prof.avatar_slot = avatar_slot
-        if accent_hex:
-            prof.accent_hex = accent_hex.upper()
+        if avatar_slot is not None:
+            if avatar_slot < 0 or avatar_slot > 12:
+                raise ValueError("avatar_slot must be 0..12")
+            prof.avatar_slot = avatar_slot
+        if accent_hex is not None:
+            if accent_hex and not accent_hex.startswith("#"):
+                accent_hex = f"#{accent_hex}"
+            if accent_hex:
+                prof.accent_hex = accent_hex.upper()
+        if autoplay_new is not None:
+            prof.autoplay_new = autoplay_new
         return self.profile_dict(user_id)
 
     def inbox_payload(self, user_id: str) -> dict:
@@ -162,8 +183,19 @@ class UserMailbox:
     def _shared_blob_path(self, blob_id: str) -> Path:
         return self._shared_dir / blob_id
 
+    def _shared_sketch_path(self, blob_id: str) -> Path:
+        return self._shared_sketch_dir / f"{blob_id}.flsk"
+
     def store_shared_blob(self, blob_id: str, data: bytes) -> None:
         self._shared_blob_path(blob_id).write_bytes(data)
+
+    def _store_sketch(self, user_id: str, seq: int, data: bytes) -> None:
+        dest = self._sketch_dir / user_id / f"{seq}.flsk"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
+
+    def store_shared_sketch(self, blob_id: str, data: bytes) -> None:
+        self._shared_sketch_path(blob_id).write_bytes(data)
 
     def read_blob(self, user_id: str, seq: int) -> bytes | None:
         for msg in self.inboxes[user_id]:
@@ -187,6 +219,7 @@ class UserMailbox:
         system: bool = False,
         broadcast_id: str | None = None,
         blob: bytes | None = None,
+        sketch: bytes | None = None,
         duration_ms: int | None = None,
     ) -> Message:
         seq = self.next_seq[to_user]
@@ -201,6 +234,7 @@ class UserMailbox:
             system=system,
             broadcast_id=broadcast_id,
             has_blob=blob is not None,
+            has_sketch=sketch is not None,
             duration_ms=duration_ms,
         )
         if blob is not None:
@@ -209,6 +243,12 @@ class UserMailbox:
                     self.store_shared_blob(broadcast_id, blob)
             else:
                 self._store_blob(to_user, seq, blob)
+        if sketch is not None:
+            if broadcast_id:
+                if not self._shared_sketch_path(broadcast_id).is_file():
+                    self.store_shared_sketch(broadcast_id, sketch)
+            else:
+                self._store_sketch(to_user, seq, sketch)
         self.inboxes[to_user].append(msg)
         return msg
 
@@ -219,6 +259,7 @@ class UserMailbox:
         to_user_id: str | None = None,
         broadcast: bool = False,
         blob: bytes,
+        sketch: bytes | None = None,
         duration_ms: int | None = None,
     ) -> list[Message]:
         if broadcast:
@@ -238,6 +279,7 @@ class UserMailbox:
                         from_label=self._label_for(from_user),
                         broadcast_id=bid,
                         blob=blob,
+                        sketch=sketch,
                         duration_ms=duration_ms,
                     )
                 )
@@ -251,9 +293,22 @@ class UserMailbox:
                 from_user=from_user,
                 from_label=self._label_for(from_user),
                 blob=blob,
+                sketch=sketch,
                 duration_ms=duration_ms,
             )
         ]
+
+    def read_sketch(self, user_id: str, seq: int) -> bytes | None:
+        for msg in self.inboxes[user_id]:
+            if msg.seq != seq or not msg.has_sketch:
+                continue
+            if msg.broadcast_id:
+                path = self._shared_sketch_path(msg.broadcast_id)
+            else:
+                path = self._sketch_dir / user_id / f"{seq}.flsk"
+            if path.is_file():
+                return path.read_bytes()
+        return None
 
     def seed_first_message(self, wav: bytes, duration_ms: int | None = None) -> None:
         label = self.registry.hangout.name

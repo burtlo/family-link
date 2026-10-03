@@ -223,6 +223,68 @@ def ensure_secrets() -> None:
     print(f"-> copied {example.name} → secrets.h (edit SSID/token; gitignored)")
 
 
+# Wi-Fi (and shared server fields) per deployment network. Identity still comes
+# from WHO= stamping; see firmware/secrets-profile.example.h.
+DEFAULT_SECRETS_PROFILE = "sunset"
+
+SECRETS_PROFILE_ALIASES = {
+    "sunset": "sunset",
+    "sunsethouse": "sunset",
+    "sunsethouseputyonapedestal": "sunset",
+    "anamcara": "anamcara",
+}
+
+
+def _canonical_secrets_profile(name: str) -> str:
+    key = str(name).strip().lower()
+    return SECRETS_PROFILE_ALIASES.get(key, key)
+
+
+def secrets_profile_file(profile: str) -> Path:
+    key = _canonical_secrets_profile(profile)
+    return FIRMWARE / f"secrets.{key}.h"
+
+
+def resolve_secrets_profile(
+    profile_arg: str | None, device_id: str | None
+) -> str | None:
+    """Profile name from CLI/env, else kits.local.yaml for this device id."""
+    for raw in (
+        profile_arg,
+        os.environ.get("PROFILE"),
+        os.environ.get("SECRETS_PROFILE"),
+    ):
+        if raw and str(raw).strip():
+            return _canonical_secrets_profile(str(raw).strip())
+    if device_id:
+        row = load_kits().get(device_id) or {}
+        sp = row.get("secrets_profile")
+        if sp and str(sp).strip():
+            return _canonical_secrets_profile(str(sp).strip())
+    return DEFAULT_SECRETS_PROFILE
+
+
+def apply_secrets_profile(profile: str | None) -> None:
+    """Materialize firmware/secrets.h from secrets.<profile>.h before compile."""
+    if not profile:
+        ensure_secrets()
+        return
+    src = secrets_profile_file(profile)
+    if not src.is_file():
+        key = _canonical_secrets_profile(profile)
+        raise FlashError(
+            f"missing {src.relative_to(ROOT)} for PROFILE={profile!r}. "
+            f"Copy firmware/secrets-profile.example.h → secrets.{key}.h "
+            "(gitignored) and fill Wi-Fi."
+        )
+    dest = FIRMWARE / "secrets.h"
+    dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    print(
+        f"-> secrets profile {profile!r} → secrets.h (Wi-Fi baked into this build)",
+        flush=True,
+    )
+
+
 WHO_ALIASES = {
     "mazi": "box-a",
     "arlo": "box-b",
@@ -299,7 +361,7 @@ def resolve_who(
     )
 
 
-def identity_from_secrets() -> tuple[str, str, str, str]:
+def identity_from_secrets(demo: str | None = None) -> tuple[str, str, str, str]:
     path = FIRMWARE / "secrets.h"
     if not path.is_file():
         path = FIRMWARE / "secrets.example.h"
@@ -310,12 +372,15 @@ def identity_from_secrets() -> tuple[str, str, str, str]:
         return match.group(1) if match else default
 
     device_id = grab("DEMO_DEVICE_ID", "box-a")
-    try:
-        resolved = resolve_who(device_id)
-        if resolved:
-            return resolved
-    except FlashError:
-        pass
+    for who_key in (device_id, "mazi" if device_id == "box-a" else "arlo" if device_id == "box-b" else None):
+        if not who_key:
+            continue
+        try:
+            resolved = resolve_who(who_key, demo=demo)
+            if resolved:
+                return resolved
+        except FlashError:
+            pass
     token = grab("DEMO_DEVICE_TOKEN", "change-me-a")
     return device_id, token, device_id, "friend"
 
@@ -629,6 +694,7 @@ def cmd_flash(
     port: str | None,
     build_only: bool,
     who: str | None = None,
+    profile: str | None = None,
 ) -> int:
     if demo == "h01":
         return cmd_flash_h01(monitor=monitor, port=port)
@@ -640,10 +706,12 @@ def cmd_flash(
     if not src.is_file():
         raise FlashError(f"missing {src}. That demo is not in the tree yet.")
 
-    identity = resolve_who(who, demo=name) or identity_from_secrets()
+    identity = resolve_who(who, demo=name) or identity_from_secrets(demo=name)
     idf = find_idf()
-    ensure_secrets()
+    secrets_profile = resolve_secrets_profile(profile, identity[0])
+    apply_secrets_profile(secrets_profile)
     # One build dir per demo, not per WHO. Second kit is stamp + flash only.
+    # Different PROFILE= forces a rebuild (secrets.h content changes).
     build_dir = FIRMWARE / "build" / name
     build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -773,6 +841,11 @@ def main(argv: list[str] | None = None) -> int:
         "Stamped into the already-built .bin (no second compile). "
         "Also reads WHO= from the environment.",
     )
+    parser.add_argument(
+        "--profile",
+        help="Wi-Fi secrets profile: sunset / anamcara (firmware/secrets.<name>.h). "
+        "Also PROFILE= or SECRETS_PROFILE=; else kits.local.yaml secrets_profile.",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -797,6 +870,7 @@ def main(argv: list[str] | None = None) -> int:
                 port=args.port,
                 build_only=args.build_only,
                 who=args.who or os.environ.get("WHO") or os.environ.get("FAMILY_WHO"),
+                profile=args.profile,
             )
         parser.print_help()
         print("\nDemos:\n" + known_demos())

@@ -17,14 +17,15 @@ void v1_ui_request_transport_refresh(void);
 
 void v1_ui_note_activity(void);
 void v1_ui_bump_activity(void);
+
+void v1_ui_set_privacy_screen_off(bool off);
+bool v1_ui_privacy_screen_off(void);
 void v1_ui_hook_scr(lv_obj_t *scr);
 
 void v1_ui_set_status(lv_obj_t *status, const char *t, uint32_t color);
 void v1_ui_bind_status(lv_obj_t *status);
-void v1_ui_bind_dots(lv_obj_t *dots);
-/** Show PIN entry (digits) or a single space when empty. */
-void v1_ui_refresh_entry(const char *entry);
-/** Legacy asterisk mask — prefer v1_ui_refresh_entry for the PIN header. */
+void v1_ui_bind_pin_slots(lv_obj_t *s0, lv_obj_t *s1, lv_obj_t *s2, lv_obj_t *s3);
+/** Masked PIN: four slots left-to-right (`_` then `*`). */
 void v1_ui_refresh_dots(size_t elen);
 
 void v1_ui_set_toast(lv_obj_t *toast, const char *msg);
@@ -51,6 +52,8 @@ void v1_ui_roster_row_layout(int n, int *y0, int *row_h, int *row_step, int *fac
 void v1_ui_paint_ribbons(lv_obj_t *scr, bool server_online, const char *session_user,
                          lv_obj_t **ribbon_top, lv_obj_t **ribbon_bot,
                          lv_obj_t **count_lab, lv_obj_t **offline_lab, lv_obj_t **toast);
+void v1_ui_create_rec_disk(lv_obj_t *scr, lv_event_cb_t on_click, void *user_data,
+                           lv_obj_t **btn_out, lv_obj_t **disk_out);
 
 lv_obj_t *v1_ui_paint_icon_box_at(lv_obj_t *scr, int x, int y, int scale_pct);
 lv_obj_t *v1_ui_paint_transparent_bar(lv_obj_t *scr, int y, int h);
@@ -71,6 +74,15 @@ typedef struct {
     int msg_n;
 } v1_ui_settings_cfg_t;
 
+typedef enum {
+    V1_SET_LOGOUT = 0,
+    V1_SET_VOLUME,
+    V1_SET_AUTOPLAY,
+    V1_SET_ICONS,
+    V1_SET_COLORS,
+    V1_SET_CARD,
+} v1_setting_id_t;
+
 typedef struct {
     char *session_user;
     msg_t *msgs;
@@ -90,7 +102,16 @@ void v1_ui_sleep_enter(void);
 void v1_ui_sleep_wake_from_asleep(bool request_full_repaint);
 
 bool v1_ui_can_enter_sleep(state_t st);
-void v1_ui_paint_settings(lv_obj_t *scr, const v1_ui_settings_cfg_t *cfg);
+
+void v1_ui_settings_bind(const v1_ui_settings_cfg_t *cfg);
+const char *v1_ui_setting_title(v1_setting_id_t id);
+/** Scrollable dim+panel overlay with close (X). Body from setting id. */
+void v1_ui_modal_show_setting(lv_obj_t *scr, v1_setting_id_t id);
+void v1_ui_modal_close(void);
+bool v1_ui_modal_is_open(void);
+/** Drop modal handles after lv_obj_clean (do not delete widgets). */
+void v1_ui_modal_invalidate(void);
+
 void v1_ui_paint_sleep(lv_obj_t *scr, const v1_ui_sleep_cfg_t *cfg);
 void v1_ui_refresh_sleep_anim(const v1_ui_sleep_cfg_t *cfg);
 bool v1_ui_sleep_tick(int64_t now_us, state_t st, const v1_ui_sleep_cfg_t *cfg);

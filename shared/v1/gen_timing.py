@@ -67,6 +67,7 @@ _SYMBOLS: list[tuple[tuple[str, ...], str, str]] = [
     (("record", "max_sec"), "RECORD_MAX_SEC", "s"),
     (("record", "silence_sec"), "RECORD_SILENCE_SEC", "s"),
     (("record", "trim_ms"), "RECORD_TRIM_MS", "ms"),
+    (("send", "receipt_ms"), "SEND_RECEIPT_MS", "ms"),
     (("auth", "pin_tries"), "AUTH_PIN_TRIES", ""),
     (("auth", "pin_cooldown_ms"), "AUTH_PIN_COOLDOWN_MS", "ms"),
 ]

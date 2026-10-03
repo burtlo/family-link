@@ -28,6 +28,8 @@ build/
 managed_components/
 dependencies.lock
 firmware/secrets.h
+firmware/secrets.*.h
+!firmware/secrets-profile.example.h
 firmware/build/
 
 # Local config overrides (real tokens, PINs, Wi-Fi, kit USB map)

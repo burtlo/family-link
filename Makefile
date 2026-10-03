@@ -1,9 +1,14 @@
-# Host tasks for the ESP32-S3-BOX-3 on USB + demo runners.
+# Family-link Makefile — host tasks for ESP32-S3-BOX-3 on USB + demo runners.
 # GNU Make + Python 3.9+. Override the port with PORT=...
-#
 # Plug USB-C into the box itself. The dock USB-C jack is power only.
 
+SHELL := /bin/bash
+
 ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
+define step_msg
+	@echo '[STEP] $(1)'
+endef
 VENV_PY := $(firstword \
 	$(wildcard $(ROOT)/.venv/bin/python3) \
 	$(wildcard $(ROOT)/.venv/bin/python) \
@@ -32,6 +37,10 @@ ifdef WHO
 export WHO
 export FAMILY_WHO := $(WHO)
 endif
+ifdef PROFILE
+export PROFILE
+export SECRETS_PROFILE := $(PROFILE)
+endif
 
 export PYTHONUNBUFFERED := 1
 
@@ -46,7 +55,8 @@ export PYTHONUNBUFFERED := 1
 	h01 h02 h03 h04 h05 h06 h07 h08 h09 h10 h11 h12 h13 h14 h15 h16 h17 \
 	h18 h19 h20 h21 h22 h23 h24 h25 h26 h27 h28 h29 \
 	x01 x02 \
-	p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 p12 \
+	p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 p12 p13 \
+	v1-server v1-server-tls demo-v1 \
 	demo-auth demo-heartbeat demo-messages demo-cursor demo-playback \
 	demo-hangout demo-relay demo-presence demo-talk demo-diary demo-device-log \
 	demo-draw demo-sketch demo-pingpong \
@@ -55,102 +65,38 @@ export PYTHONUNBUFFERED := 1
 	demos-persona
 
 help:
-	@printf '%s\n' \
-	'' \
-	'Family desk link — ESP32-S3-BOX-3 host tasks' \
-	'' \
-	'  make                 this help' \
-	'  make install         Python venv + esptool from PyPI' \
-	'  make install-server  same, plus FastAPI/httpx for protocol demos' \
-	'  make install-persona Pillow for parent photo/voice packing' \
-	'' \
-	'Inspect (USB, no IDF):' \
-	'  make connect         USB detect → port → ROM sync → chip' \
-	'  make system          OS, firmware versions, host/device environment' \
-	'  make storage         flash size, partitions, filesystems' \
-	'  make report          connect, then system, then storage' \
-	'' \
-	'Flash (needs ESP-IDF; USB-C on the box, not the dock):' \
-	'  make idf-install     clone ESP-IDF to ~/esp/esp-idf and install esp32s3 tools' \
-	'  make flash DEMO=h02  build+flash one firmware demo' \
-	'  make flash DEMO=h26 WHO=mazi   (second kit: WHO=arlo; compile once)' \
-	'  make flash DEMO=h27 WHO=mazi   sketch note (async drawing; WHO=arlo)' \
-	'  make flash DEMO=h26 WHO=mazi PORT=/dev/cu.usbmodem…  (first bind only)' \
-	'  make flash-monitor DEMO=h02   flash then serial monitor' \
-	'  make build-firmware DEMO=h02  compile only' \
-	'  make monitor         serial monitor (115200 / idf.py)' \
-	'  make flash-list      which demo .c files exist' \
-	'  make h01 … h28       aliases (h01 = Espressif BSP example; h20–h22 / h26 / h27 = Mazi/Arlo two-box; h28 = short LCD clip)' \
-	'  make x01             legacy product shell (peer inbox)' \
-	'  make x02             v1 carousel shell (hangout users, PIN, inbox)' \
-	'  make v1-timing       regenerate v1_timing.h + v1_timing.js from timing.yaml' \
-	'  make check-v1-parity compare timing.yaml vs firmware vs web twin' \
-	'  make v1-server       leave v1 product host running on :8080' \
-	'  make v1-server-tls   v1 host on :8443 (needs data/certs/dev*.pem)' \
-	'  make p01 … p11       personality / face / packed portrait' \
-	'' \
-	'Server protocol demos (no box required):' \
-	'  make demo-auth       01 known-device bearer tokens' \
-	'  make demo-heartbeat  02 presence / stale / recover' \
-	'  make demo-messages   03 text + WAV store-and-forward' \
-	'  make demo-playback   h18 fixture smoke test (starts+stops)' \
-	'  python demos/server/h18_playback/server.py --host 0.0.0.0 --port 8080' \
-	'  open http://localhost:8080/box/     320x240 web twin (same catalog)' \
-	'  make demo-cursor     04 playhead + archive after reboot' \
-	'  make demo-hangout    05 invite/ring/accept/floor/hangup' \
-	'  make demo-relay      06 PCM copy-through' \
-	'  make demo-presence   h20 mute open/away heartbeat (two twins)' \
-	'  make demo-talk       h21 full-duplex PCM copy (two twins)' \
-	'  make demo-diary      h22 dated diary chunks' \
-	'  make demo-device-log h24 heartbeat + device log upload' \
-	'  make demo-draw       h26 shared drawing (two twins, heart polyline)' \
-	'  make demo-sketch     h27 drawing note (store-and-forward timed strokes)' \
-	'  make demo-pingpong   h29 async voice ping-pong (two twins)' \
-	'  make demo-combined   glue host (REST + hangout WS + /app)' \
-	'  make demo-v1         v1 product host smoke (hangout users + inbox)' \
-	'  make demos-server    run 01–06 in order' \
-	'' \
-	'Parent likeness (no family media required; stand-ins until you pass --in):' \
-	'  make demo-capture    still: generated SAMPLE, or --in / --webcam' \
-	'  make demo-cut        square 200px crop' \
-	'  make demo-record     greeting WAV (hum, or --mic / --in)' \
-	'  make demo-ideas      stylized variants to pick a look later' \
-	'  make demo-pack       PNG+WAV → C arrays for p10/p11' \
-	'  make demos-persona   run a01–a05' \
-	'  make flash DEMO=p10  show packed portrait' \
-	'  make flash DEMO=p11  play packed greeting' \
-	'' \
-	'Parent Mac (phone stand-in; audio through the server, not box-to-box Wi-Fi):' \
-	'  python demos/parent/live_ptt.py --base-url http://MAC:8080' \
-	'  python demos/parent/send_voicemail.py --base-url http://MAC:8080' \
-	'  python demos/parent/send_photo.py --base-url http://MAC:8080' \
-	'  python scripts/dev_https.py     TLS certs + HTTPS :8443 (docs/TLS.md)' \
-	'  See docs/DEMO-MAP.md' \
-	'' \
-	'Port: make flash DEMO=h02 PORT=/dev/cu.usbmodem113401  (first bind only if two kits)' \
-	'Who:  make flash DEMO=h27 WHO=mazi   then   WHO=arlo  (one compile; USB serial remembered)' \
-	'Cable: USB-C on the box, not the dock.' \
-	''
+	@bash "$(ROOT)/scripts/make-help.sh"
+
+# --- Install ---
 
 install:
+	$(call step_msg,Installing Python venv and esptool)
 	@$(INSTALL_PY) "$(INSTALL)"
 
 install-server:
+	$(call step_msg,Installing host deps for server protocol demos)
 	@$(INSTALL_PY) "$(INSTALL)" --server
 
 install-persona:
+	$(call step_msg,Installing Pillow for parent photo/voice packing)
 	@$(INSTALL_PY) "$(INSTALL)" --persona
 
+# --- Device inspect (USB, no IDF) ---
+
 connect:
+	$(call step_msg,Connecting to box over USB)
 	@$(PYTHON) "$(DEVICE)" connect
 
 system:
+	$(call step_msg,Reading system and firmware versions)
 	@$(PYTHON) "$(DEVICE)" system
 
 storage:
+	$(call step_msg,Reading flash partitions and filesystems)
 	@$(PYTHON) "$(DEVICE)" storage
 
 report:
+	$(call step_msg,Device report (connect + system + storage))
 	@$(PYTHON) "$(DEVICE)" report
 
 device-detect:
@@ -186,22 +132,30 @@ device-fs:
 device-data:
 	@$(PYTHON) "$(DEVICE)" device-data
 
+# --- Flash (ESP-IDF) ---
+
 idf-install:
+	$(call step_msg,Installing ESP-IDF and esp32s3 tools)
 	@$(PYTHON) "$(FLASH)" --idf-install
 
 flash-list:
+	$(call step_msg,Listing firmware demo sources)
 	@$(PYTHON) "$(FLASH)" --list
 
 flash:
+	$(call step_msg,Building and flashing firmware demo $(DEMO))
 	@$(PYTHON) "$(FLASH)" --demo "$(DEMO)"
 
 flash-monitor:
+	$(call step_msg,Flash $(DEMO) then open serial monitor)
 	@$(PYTHON) "$(FLASH)" --demo "$(DEMO)" --monitor
 
 build-firmware:
+	$(call step_msg,Building firmware demo $(DEMO) (no flash))
 	@$(PYTHON) "$(FLASH)" --demo "$(DEMO)" --build-only
 
 monitor:
+	$(call step_msg,Serial monitor (115200))
 	@$(PYTHON) "$(FLASH)" --monitor
 
 h01:
@@ -294,21 +248,34 @@ h29:
 x01:
 	@$(PYTHON) "$(FLASH)" --demo x01
 
+# --- V1 device (carousel firmware) ---
+
 x02:
+	$(call step_msg,Building and flashing v1 device firmware (x02))
 	@$(PYTHON) "$(FLASH)" --demo x02
 
 v1-timing:
+	$(call step_msg,Regenerating v1_timing.h and v1_timing.js from timing.yaml)
 	@$(PYTHON) shared/v1/gen_timing.py
 
 check-v1-parity:
+	$(call step_msg,Checking timing.yaml vs firmware vs web twin)
 	@$(PYTHON) scripts/check_v1_parity.py
 
+# --- V1 server (product host) ---
+
 v1-server:
+	$(call step_msg,Running v1 product host on 0.0.0.0:8080)
 	@$(PYTHON) -m demos.server.v1_product.server --host 0.0.0.0 --port 8080
 
 v1-server-tls:
+	$(call step_msg,Running v1 product host on 0.0.0.0:8443 (TLS))
 	@$(PYTHON) -m demos.server.v1_product.server --host 0.0.0.0 --port 8443 \
 		--ssl-certfile data/certs/dev.pem --ssl-keyfile data/certs/dev-key.pem
+
+demo-v1:
+	$(call step_msg,V1 server smoke test (hangout users + inbox))
+	@$(PYTHON) "$(RUN_SERVER_DEMO)" v1_product
 
 p01:
 	@$(PYTHON) "$(FLASH)" --demo p01
@@ -349,71 +316,95 @@ p12:
 p13:
 	@$(PYTHON) "$(FLASH)" --demo p13
 
+# --- Server protocol demos ---
+
 demo-auth:
+	$(call step_msg,Server demo 01 — known-device bearer tokens)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 01_auth
 
 demo-heartbeat:
+	$(call step_msg,Server demo 02 — presence / stale / recover)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 02_heartbeat
 
 demo-messages:
+	$(call step_msg,Server demo 03 — text + WAV store-and-forward)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 03_messages
 
 demo-playback:
+	$(call step_msg,Server demo h18 — playback fixture smoke test)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h18_playback
 
 demo-cursor:
+	$(call step_msg,Server demo 04 — playhead + archive after reboot)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 04_cursor_archive
 
 demo-hangout:
+	$(call step_msg,Server demo 05 — invite/ring/accept/floor/hangup)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 05_hangout_signaling
 
 demo-relay:
+	$(call step_msg,Server demo 06 — PCM copy-through)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" 06_audio_relay
 
 demo-presence:
+	$(call step_msg,Server demo h20 — mute open/away heartbeat)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h20_presence
 
 demo-talk:
+	$(call step_msg,Server demo h21 — full-duplex PCM copy)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h21_talk
 
 demo-diary:
+	$(call step_msg,Server demo h22 — dated diary chunks)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h22_diary
 
 demo-device-log:
+	$(call step_msg,Server demo h24 — heartbeat + device log upload)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h24_device_log
 
 demo-draw:
+	$(call step_msg,Server demo h26 — shared drawing)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h26_draw
 
 demo-sketch:
+	$(call step_msg,Server demo h27 — drawing note)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h27_sketch
 
 demo-pingpong:
+	$(call step_msg,Server demo h29 — async voice ping-pong)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h29_pingpong
 
 demo-combined:
+	$(call step_msg,Server demo combined — REST + hangout WS + /app)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" combined
 
-demo-v1:
-	@$(PYTHON) "$(RUN_SERVER_DEMO)" v1_product
+demos-server:
+	$(call step_msg,Running server protocol demos 01–06 in order)
+	@$(MAKE) --no-print-directory demo-auth demo-heartbeat demo-messages demo-cursor demo-hangout demo-relay
+	@echo '[PASS] demos-server'
 
-demos-server: demo-auth demo-heartbeat demo-messages demo-cursor demo-hangout demo-relay
-	@echo '-- PASS demos-server'
+# --- Parent likeness demos ---
 
 demo-capture:
+	$(call step_msg,Persona demo a01 — capture still)
 	@$(PYTHON) "$(RUN_PERSONA_DEMO)" 01_capture
 
 demo-cut:
+	$(call step_msg,Persona demo a02 — square crop)
 	@$(PYTHON) "$(RUN_PERSONA_DEMO)" 02_cut
 
 demo-record:
+	$(call step_msg,Persona demo a03 — greeting WAV)
 	@$(PYTHON) "$(RUN_PERSONA_DEMO)" 03_record
 
 demo-ideas:
+	$(call step_msg,Persona demo a04 — stylized variants)
 	@$(PYTHON) "$(RUN_PERSONA_DEMO)" 04_ideas
 
 demo-pack:
+	$(call step_msg,Persona demo a05 — PNG+WAV to C arrays)
 	@$(PYTHON) "$(RUN_PERSONA_DEMO)" 05_pack
 
 demos-persona:
+	$(call step_msg,Running persona demos a01–a05)
 	@$(PYTHON) "$(RUN_PERSONA_DEMO)"

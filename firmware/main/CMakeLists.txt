@@ -36,6 +36,7 @@ idf_component_register(
         "${CMAKE_CURRENT_LIST_DIR}/../common/board.c"
         "${CMAKE_CURRENT_LIST_DIR}/../common/wifi_sta.c"
         "${CMAKE_CURRENT_LIST_DIR}/../common/http_bearer.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../common/v1_sketch.c"
         "${CMAKE_CURRENT_LIST_DIR}/../common/who.c"
     INCLUDE_DIRS
         "${CMAKE_CURRENT_LIST_DIR}/../common"

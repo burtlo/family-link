@@ -7,6 +7,7 @@
 #include "v1_state.h"
 #include "v1_timing.h"
 #include "v1_ui_common.h"
+#include "v1_sketch.h"
 
 #include "board.h"
 #include "esp_codec_dev.h"
@@ -31,6 +32,16 @@ static const char *TAG = "v1_carousel";
 #define PLAY_ICON_H V1_CARD_PLAY_ICON
 #define V1_CHIRP_SAMPLES (V1_SAMPLE_RATE * V1_CHIRP_MS / 1000)
 #define V1_CHIRP_DRAIN   (V1_SAMPLE_RATE * V1_CHIRP_DRAIN_MS / 1000)
+#define CAROUSEL_SENDER_FACE_SZ 28
+#define V1_CARD_META_PAD        6
+#define V1_CARD_UNREAD_DOT_SZ   8
+#define CARD_SKETCH_W           V1_SCROLL_CARD_W
+#define CARD_SKETCH_H           V1_SCROLL_CARD_H
+#define CARD_SKETCH_FB_BYTES    (CARD_SKETCH_W * CARD_SKETCH_H * 2)
+#define CARD_SKETCH_BRUSH       1
+#define CARD_SKETCH_BG_HEX      0x000000
+#define CARD_SKETCH_INK_HEX     0xE8F0E8
+#define V1_SKETCH_FETCH_CAP     (sizeof(v1_sketch_hdr_t) + sizeof(v1_sketch_pt_t) * V1_SKETCH_MAX_POINTS)
 
 typedef struct {
     uint8_t id;
@@ -40,7 +51,18 @@ typedef struct {
 } card_grad_t;
 
 typedef struct {
+    uint16_t *fb;
+    v1_sketch_ink_t ink;
+    lv_image_dsc_t dsc;
+    int play_i;
+    bool visible;
+} card_sketch_slot_t;
+
+typedef struct {
     lv_obj_t *card;
+    lv_obj_t *sketch_img;
+    lv_obj_t *unread_dot;
+    lv_obj_t *dur_lab;
 } carousel_card_ui_t;
 
 static esp_codec_dev_sample_info_t s_fs = {
@@ -69,21 +91,29 @@ static bool s_scrubbing;
 static bool s_bar_sync;
 static volatile bool s_inbox_dirty;
 static char s_inbox_for[16];
-static int s_card_face_seq;
-static bool s_card_face_read;
 static bool s_spk_open;
+static int s_settings_focus;
 
 static lv_obj_t *s_ribbon_top;
 static lv_obj_t *s_ribbon_bot;
 static lv_obj_t *s_count_lab;
 static lv_obj_t *s_carousel_scroll;
 static carousel_card_ui_t s_card_ui[V1_MSG_MAX];
+static card_sketch_slot_t s_sketch_slot[V1_MSG_MAX];
+static uint8_t s_sketch_blob[V1_SKETCH_FETCH_CAP];
+static const v1_sketch_pt_t *s_sketch_pts;
+static int s_sketch_n;
+static int s_sketch_card_idx = -1;
+static volatile bool s_sketch_resync;
+static int s_sketch_resync_ms;
 static lv_obj_t *s_bar;
 static lv_obj_t *s_play_btn;
 static lv_obj_t *s_play_icon;
 static lv_obj_t *s_pause_icon;
 static uint16_t s_play_icon_fb[V1_CARD_PLAY_ICON * V1_CARD_PLAY_ICON];
-static lv_obj_t *s_sender_lab;
+static lv_obj_t *s_sender_prefix;
+static lv_obj_t *s_sender_face;
+static lv_obj_t *s_sender_name;
 static lv_obj_t *s_offline_lab;
 static lv_obj_t *s_toast;
 static bool s_carousel_ui_live;
@@ -100,9 +130,26 @@ static const card_grad_t s_card_grads[V1_CARD_GRAD_N] = {
 
 static int64_t now_us(void) { return esp_timer_get_time(); }
 
+static bool carousel_settings_mode(void)
+{
+    return v1_state_get() == ST_SETTINGS;
+}
+
+static int carousel_item_n(void)
+{
+    return carousel_settings_mode() ? V1_SETTINGS_CARD_N : s_inbox_n;
+}
+
+static int *carousel_focus_ptr(void)
+{
+    return carousel_settings_mode() ? &s_settings_focus : &s_inbox_focus;
+}
+
 static msg_t *focus_msg(void);
 static lv_obj_t *carousel_card_at(int idx);
 static const char *sender_display_name(const msg_t *m);
+static void carousel_refresh_sender_header(void);
+static int carousel_center_index(void);
 static void stop_playback(void);
 static void playback_task(void *arg);
 static void refresh_offline_ribbon(void);
@@ -116,6 +163,12 @@ static void nvs_load_card_grad(void);
 static void nvs_save_card_grad(void);
 static void carousel_clear_ui_ptrs(void);
 static void carousel_flush_toast(void);
+static void carousel_sketch_inbox_reset(void);
+static void carousel_sketch_stop_session(void);
+static void carousel_sketch_request_resync(int card_idx, int t_ms);
+static void carousel_sketch_sync(void);
+static void carousel_sketch_tick(int t_ms);
+static uint16_t rgb565_from_hex(uint32_t hex);
 
 void v1_carousel_init(const v1_carousel_cfg_t *cfg)
 {
@@ -146,6 +199,31 @@ void v1_carousel_on_auth_ok(void)
     }
 }
 
+static void carousel_sketch_free_slots(void)
+{
+    for (int i = 0; i < V1_MSG_MAX; i++) {
+        if (s_sketch_slot[i].fb) {
+            heap_caps_free(s_sketch_slot[i].fb);
+        }
+        memset(&s_sketch_slot[i], 0, sizeof(s_sketch_slot[i]));
+    }
+}
+
+static void carousel_sketch_stop_session(void)
+{
+    s_sketch_pts = NULL;
+    s_sketch_n = 0;
+    s_sketch_card_idx = -1;
+    s_sketch_resync = false;
+    s_sketch_resync_ms = 0;
+}
+
+static void carousel_sketch_inbox_reset(void)
+{
+    carousel_sketch_stop_session();
+    carousel_sketch_free_slots();
+}
+
 static void carousel_clear_ui_ptrs(void)
 {
     s_carousel_scroll = NULL;
@@ -154,7 +232,9 @@ static void carousel_clear_ui_ptrs(void)
     s_play_btn = NULL;
     s_play_icon = NULL;
     s_pause_icon = NULL;
-    s_sender_lab = NULL;
+    s_sender_prefix = NULL;
+    s_sender_face = NULL;
+    s_sender_name = NULL;
     s_ribbon_top = NULL;
     s_ribbon_bot = NULL;
     s_count_lab = NULL;
@@ -163,6 +243,7 @@ static void carousel_clear_ui_ptrs(void)
     s_carousel_ui_live = false;
     v1_connect_set_offline_lab(NULL);
     v1_ui_clear_widget_binds();
+    v1_ui_modal_invalidate();
 }
 
 void v1_carousel_invalidate_ui(void)
@@ -241,9 +322,15 @@ void v1_carousel_on_circle_press(int64_t t_us)
 
 void v1_carousel_on_shoulder_press(void)
 {
+    if (v1_ui_modal_is_open()) {
+        v1_ui_modal_close();
+        v1_ui_bump_activity();
+        return;
+    }
     state_t st = v1_state_get();
     if (st == ST_CAROUSEL) {
         stop_playback();
+        s_settings_focus = 0;
         v1_state_post_goto(ST_SETTINGS);
         v1_ui_request_repaint();
     } else if (st == ST_SETTINGS) {
@@ -262,10 +349,24 @@ bool v1_carousel_tick_inbox(void)
     }
     s_inbox_dirty = false;
     state_t st = v1_state_get();
-    if (st == ST_RECORD) {
+    if (st == ST_RECORD || st == ST_SEND) {
         s_inbox_dirty = true;
         return false;
     }
+    bool autoplay_armed = false;
+    if (s_inbox_n > 0 && s_inbox_focus == s_inbox_n - 1) {
+        int uidx = v1_connect_user_index(s_session);
+        if (uidx >= 0 && v1_connect_users()[uidx].autoplay_new) {
+            autoplay_armed = true;
+            for (int i = 0; i < s_inbox_n; i++) {
+                if (!s_inbox_msgs[i].read) {
+                    autoplay_armed = false;
+                    break;
+                }
+            }
+        }
+    }
+    int inbox_before = s_inbox_n;
     int keep = -1;
     msg_t *m = focus_msg();
     if (m) {
@@ -275,12 +376,25 @@ bool v1_carousel_tick_inbox(void)
         stop_playback();
     }
     if (v1_api_reload_inbox(s_session)) {
+        carousel_sketch_inbox_reset();
         if (keep > 0) {
             for (int i = 0; i < s_inbox_n; i++) {
                 if (s_inbox_msgs[i].seq == keep) {
                     s_inbox_focus = i;
                     break;
                 }
+            }
+        }
+        if (autoplay_armed && s_inbox_n > inbox_before && s_inbox_n > 0) {
+            s_inbox_focus = s_inbox_n - 1;
+            char js[32];
+            snprintf(js, sizeof(js), "{\"seq\":%d}", s_inbox_msgs[s_inbox_focus].seq);
+            uint8_t tmp[64];
+            http_buf_t b = { .buf = tmp, .cap = sizeof(tmp) };
+            (void)v1_api_http_json("PUT", "/v1/session/view", js, s_session, &b);
+            if (st == ST_CAROUSEL) {
+                s_want_play = true;
+                v1_ui_request_transport_refresh();
             }
         }
         if (st == ST_CAROUSEL) {
@@ -380,12 +494,258 @@ static void style_msg_card(lv_obj_t *card)
     lv_obj_set_style_border_width(card, 0, 0);
 }
 
+static const lv_font_t *card_meta_font(void)
+{
+#if defined(LV_FONT_MONTSERRAT_14) && LV_FONT_MONTSERRAT_14
+    return &lv_font_montserrat_14;
+#else
+    return LV_FONT_DEFAULT;
+#endif
+}
+
+static uint32_t card_meta_text_color(void)
+{
+    return active_card_grad()->light_ui ? 0x101418u : (uint32_t)V1_UI_TEXT;
+}
+
+static uint32_t card_unread_dot_color(void)
+{
+    return active_card_grad()->light_ui ? 0x101418u : 0xE8F0E8u;
+}
+
+static void format_duration_ms(char *out, size_t cap, int ms)
+{
+    if (!out || cap == 0) {
+        return;
+    }
+    if (ms < 0) {
+        ms = 0;
+    }
+    int total_sec = ms / 1000;
+    int min = total_sec / 60;
+    int sec = total_sec % 60;
+    snprintf(out, cap, "%d:%02d", min, sec);
+}
+
+static void style_card_meta_label(lv_obj_t *lab)
+{
+    lv_obj_set_style_text_color(lab, lv_color_hex(card_meta_text_color()), 0);
+    lv_obj_set_style_text_font(lab, card_meta_font(), 0);
+    lv_obj_set_style_text_align(lab, LV_TEXT_ALIGN_RIGHT, 0);
+}
+
+static void card_sketch_show(carousel_card_ui_t *ui, int card_idx);
+
+static void carousel_refresh_cards_read_state(void)
+{
+    if (carousel_settings_mode()) {
+        return;
+    }
+    for (int i = 0; i < s_inbox_n; i++) {
+        carousel_card_ui_t *ui = &s_card_ui[i];
+        if (!ui->unread_dot) {
+            continue;
+        }
+        if (s_inbox_msgs[i].read) {
+            lv_obj_add_flag(ui->unread_dot, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_clear_flag(ui->unread_dot, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+}
+
+static void carousel_populate_msg_card(carousel_card_ui_t *ui, int msg_idx)
+{
+    msg_t *m = &s_inbox_msgs[msg_idx];
+    lv_obj_t *card = ui->card;
+    int uid = v1_connect_user_index_by_label(m->from_label);
+
+    v1_ui_paint_user_portrait_aligned(card, uid, V1_CARD_PORTRAIT * 3, LV_ALIGN_CENTER, 0, 0);
+
+    if (m->has_sketch && s_sketch_slot[msg_idx].visible && s_sketch_slot[msg_idx].fb) {
+        card_sketch_show(ui, msg_idx);
+    }
+
+    ui->unread_dot = lv_obj_create(card);
+    lv_obj_set_size(ui->unread_dot, V1_CARD_UNREAD_DOT_SZ, V1_CARD_UNREAD_DOT_SZ);
+    lv_obj_set_style_radius(ui->unread_dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(ui->unread_dot, lv_color_hex(card_unread_dot_color()), 0);
+    lv_obj_set_style_bg_opa(ui->unread_dot, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(ui->unread_dot, 0, 0);
+    lv_obj_set_style_pad_all(ui->unread_dot, 0, 0);
+    lv_obj_clear_flag(ui->unread_dot, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(ui->unread_dot, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_align(ui->unread_dot, LV_ALIGN_BOTTOM_LEFT, V1_CARD_META_PAD, -V1_CARD_META_PAD);
+    if (m->read) {
+        lv_obj_add_flag(ui->unread_dot, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    ui->dur_lab = lv_label_create(card);
+    char dur[12];
+    format_duration_ms(dur, sizeof(dur), m->duration_ms);
+    lv_label_set_text(ui->dur_lab, dur);
+    style_card_meta_label(ui->dur_lab);
+    lv_obj_set_width(ui->dur_lab, V1_SCROLL_CARD_W - 2 * V1_CARD_META_PAD);
+    lv_label_set_long_mode(ui->dur_lab, LV_LABEL_LONG_CLIP);
+    lv_obj_remove_flag(ui->dur_lab, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_align(ui->dur_lab, LV_ALIGN_BOTTOM_RIGHT, -V1_CARD_META_PAD, -V1_CARD_META_PAD);
+}
+
 
 static int http_blob_get(int seq, http_buf_t *body)
 {
     char path[48];
     snprintf(path, sizeof(path), "/v1/messages/%d/blob", seq);
     return v1_api_http_json("GET", path, NULL, s_session, body);
+}
+
+static int http_sketch_get(int seq, http_buf_t *body)
+{
+    char path[48];
+    snprintf(path, sizeof(path), "/v1/messages/%d/sketch", seq);
+    return v1_api_http_json("GET", path, NULL, s_session, body);
+}
+
+static void sketch_map_xy(int16_t sx, int16_t sy, int16_t *dx, int16_t *dy)
+{
+    *dx = (int16_t)((int32_t)sx * (CARD_SKETCH_W - 1) / (V1_LCD_W - 1));
+    *dy = (int16_t)((int32_t)sy * (CARD_SKETCH_H - 1) / (V1_LCD_H - 1));
+}
+
+static bool card_sketch_alloc_fb(int card_idx)
+{
+    card_sketch_slot_t *sl = &s_sketch_slot[card_idx];
+    if (sl->fb) {
+        return true;
+    }
+    sl->fb = heap_caps_malloc(CARD_SKETCH_FB_BYTES, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (!sl->fb) {
+        sl->fb = heap_caps_malloc(CARD_SKETCH_FB_BYTES, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    }
+    if (!sl->fb) {
+        return false;
+    }
+    v1_sketch_ink_init(&sl->ink, sl->fb, CARD_SKETCH_W, CARD_SKETCH_H, CARD_SKETCH_BRUSH);
+    memset(&sl->dsc, 0, sizeof(sl->dsc));
+    sl->dsc.header.magic = LV_IMAGE_HEADER_MAGIC;
+    sl->dsc.header.cf = LV_COLOR_FORMAT_RGB565;
+    sl->dsc.header.w = CARD_SKETCH_W;
+    sl->dsc.header.h = CARD_SKETCH_H;
+    sl->dsc.header.stride = CARD_SKETCH_W * 2;
+    sl->dsc.data_size = CARD_SKETCH_FB_BYTES;
+    sl->dsc.data = (const uint8_t *)sl->fb;
+    return true;
+}
+
+static void card_sketch_clear_fb(int card_idx)
+{
+    card_sketch_slot_t *sl = &s_sketch_slot[card_idx];
+    sl->play_i = 0;
+    if (sl->fb) {
+        v1_sketch_ink_clear(&sl->ink, rgb565_from_hex(CARD_SKETCH_BG_HEX));
+    }
+}
+
+static void card_sketch_show(carousel_card_ui_t *ui, int card_idx)
+{
+    if (!ui || !ui->card || card_idx < 0 || card_idx >= V1_MSG_MAX) {
+        return;
+    }
+    if (!card_sketch_alloc_fb(card_idx)) {
+        return;
+    }
+    card_sketch_slot_t *sl = &s_sketch_slot[card_idx];
+    if (!ui->sketch_img) {
+        ui->sketch_img = lv_image_create(ui->card);
+        lv_image_set_src(ui->sketch_img, &sl->dsc);
+        lv_obj_set_size(ui->sketch_img, CARD_SKETCH_W, CARD_SKETCH_H);
+        lv_obj_align(ui->sketch_img, LV_ALIGN_CENTER, 0, 0);
+        lv_obj_remove_flag(ui->sketch_img, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_clear_flag(ui->sketch_img, LV_OBJ_FLAG_SCROLLABLE);
+    }
+    sl->visible = true;
+    lv_obj_clear_flag(ui->sketch_img, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_invalidate(ui->sketch_img);
+}
+
+static void card_sketch_apply_point(int card_idx, const v1_sketch_pt_t *p)
+{
+    card_sketch_slot_t *sl = &s_sketch_slot[card_idx];
+    int16_t x;
+    int16_t y;
+    sketch_map_xy((int16_t)p->x, (int16_t)p->y, &x, &y);
+    v1_sketch_ink_point(&sl->ink, p->phase, x, y, rgb565_from_hex(CARD_SKETCH_INK_HEX));
+}
+
+static void card_sketch_apply_until(int card_idx, int t_ms)
+{
+    if (!s_sketch_pts || s_sketch_n <= 0 || card_idx < 0 || card_idx >= V1_MSG_MAX) {
+        return;
+    }
+    carousel_card_ui_t *ui = &s_card_ui[card_idx];
+    card_sketch_show(ui, card_idx);
+    card_sketch_slot_t *sl = &s_sketch_slot[card_idx];
+    while (sl->play_i < s_sketch_n && s_sketch_pts[sl->play_i].t_ms <= t_ms) {
+        card_sketch_apply_point(card_idx, &s_sketch_pts[sl->play_i]);
+        sl->play_i++;
+    }
+    if (ui->sketch_img) {
+        lv_obj_invalidate(ui->sketch_img);
+    }
+}
+
+static void carousel_sketch_request_resync(int card_idx, int t_ms)
+{
+    s_sketch_resync = true;
+    s_sketch_resync_ms = t_ms < 0 ? 0 : t_ms;
+    if (card_idx >= 0) {
+        s_sketch_card_idx = card_idx;
+    }
+    v1_ui_request_transport_refresh();
+}
+
+static void carousel_sketch_sync(void)
+{
+    if (!s_sketch_resync || s_sketch_card_idx < 0 || !s_sketch_pts || s_sketch_n <= 0) {
+        s_sketch_resync = false;
+        return;
+    }
+    int card_idx = s_sketch_card_idx;
+    card_sketch_clear_fb(card_idx);
+    card_sketch_apply_until(card_idx, s_sketch_resync_ms);
+    s_sketch_resync = false;
+}
+
+static void carousel_sketch_tick(int t_ms)
+{
+    if (!s_sketch_pts || s_sketch_n <= 0 || s_sketch_card_idx < 0) {
+        return;
+    }
+    card_sketch_apply_until(s_sketch_card_idx, t_ms);
+}
+
+static bool carousel_sketch_begin_play(msg_t *m, int card_idx, int start_ms)
+{
+    if (!m || !m->has_sketch || card_idx < 0 || card_idx >= V1_MSG_MAX) {
+        carousel_sketch_stop_session();
+        return false;
+    }
+    http_buf_t b = { .buf = s_sketch_blob, .cap = sizeof(s_sketch_blob), .len = 0 };
+    if (http_sketch_get(m->seq, &b) != 200 || b.len == 0) {
+        carousel_sketch_stop_session();
+        return false;
+    }
+    const v1_sketch_pt_t *pts = NULL;
+    uint16_t n = 0;
+    if (!v1_sketch_blob_points(s_sketch_blob, b.len, &pts, &n)) {
+        carousel_sketch_stop_session();
+        return false;
+    }
+    s_sketch_pts = pts;
+    s_sketch_n = (int)n;
+    s_sketch_card_idx = card_idx;
+    carousel_sketch_request_resync(card_idx, start_ms);
+    return true;
 }
 
 
@@ -418,6 +778,7 @@ static void mark_read(int seq, int pos_ms)
             break;
         }
     }
+    carousel_refresh_cards_read_state();
 }
 
 
@@ -562,15 +923,164 @@ static int32_t snap_target_x(lv_obj_t *card, lv_obj_t *scroller)
 }
 
 
+static int carousel_header_y_ofs(void)
+{
+    return (V1_CAROUSEL_HEADER_Y + V1_CAROUSEL_HEADER_H / 2)
+           - (V1_CONTENT_H + 2 * V1_RIBBON_H) / 2;
+}
+
+static const lv_font_t *carousel_sender_font(void)
+{
+#if defined(LV_FONT_MONTSERRAT_24) && LV_FONT_MONTSERRAT_24
+    return &lv_font_montserrat_24;
+#elif defined(LV_FONT_MONTSERRAT_22) && LV_FONT_MONTSERRAT_22
+    return &lv_font_montserrat_22;
+#else
+    return LV_FONT_DEFAULT;
+#endif
+}
+
+static void style_carousel_sender_label(lv_obj_t *lab)
+{
+    lv_obj_set_style_text_color(lab, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_set_style_text_font(lab, carousel_sender_font(), 0);
+}
+
+static int carousel_text_width(const char *text, const lv_font_t *font)
+{
+    lv_point_t sz = {0, 0};
+    if (!text || !text[0] || !font) {
+        return 0;
+    }
+    lv_text_get_size(&sz, text, font, 0, 0, INT32_MAX, LV_TEXT_FLAG_NONE);
+    return (int)sz.x;
+}
+
+/** Fit "From" into budget_px by trimming from the right, then "...". */
+static void carousel_fit_from_prefix(char *out, size_t cap, int budget_px, const lv_font_t *font)
+{
+    static const char full[] = "From";
+    if (!out || cap == 0) {
+        return;
+    }
+    out[0] = 0;
+    if (budget_px <= 0) {
+        return;
+    }
+    if (carousel_text_width(full, font) <= budget_px) {
+        snprintf(out, cap, "%s", full);
+        return;
+    }
+    size_t n = sizeof(full) - 1;
+    for (int keep = (int)n - 1; keep >= 1; keep--) {
+        char stem[12];
+        if ((size_t)keep >= sizeof(stem)) {
+            keep = (int)sizeof(stem) - 1;
+        }
+        memcpy(stem, full, (size_t)keep);
+        stem[keep] = 0;
+        while (keep > 0 && stem[keep - 1] == ' ') {
+            stem[--keep] = 0;
+        }
+        if (keep <= 0) {
+            break;
+        }
+        char trial[16];
+        snprintf(trial, sizeof(trial), "%s...", stem);
+        if (carousel_text_width(trial, font) <= budget_px) {
+            snprintf(out, cap, "%s", trial);
+            return;
+        }
+    }
+    if (carousel_text_width("...", font) <= budget_px) {
+        snprintf(out, cap, "...");
+    }
+}
+
+static const msg_t *sender_header_msg(void)
+{
+    if (carousel_settings_mode() || s_inbox_n <= 0) {
+        return NULL;
+    }
+    if (s_carousel_scroll) {
+        int visual = carousel_center_index();
+        if (visual >= 0 && visual < s_inbox_n) {
+            return &s_inbox_msgs[visual];
+        }
+    }
+    return focus_msg();
+}
+
+static void carousel_refresh_sender_header(void)
+{
+    if (!s_sender_prefix || !s_sender_face || !s_sender_name) {
+        return;
+    }
+    const int header_y_ofs = carousel_header_y_ofs();
+    const int face_sz = CAROUSEL_SENDER_FACE_SZ;
+    const int gap = 8;
+    const int max_cluster_w = carousel_settings_mode()
+                                  ? (V1_LCD_W - V1_CAROUSEL_PLAY_PAD * 2)
+                                  : (V1_LCD_W - V1_CAROUSEL_PLAY - V1_CAROUSEL_PLAY_PAD * 3);
+
+    if (carousel_settings_mode()) {
+        lv_label_set_text(s_sender_prefix, "Settings");
+        lv_obj_align(s_sender_prefix, LV_ALIGN_LEFT_MID, V1_CAROUSEL_PLAY_PAD, header_y_ofs);
+        lv_label_set_text(s_sender_name, "");
+        lv_obj_add_flag(s_sender_face, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(s_sender_name, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+
+    lv_obj_clear_flag(s_sender_face, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(s_sender_name, LV_OBJ_FLAG_HIDDEN);
+
+    const msg_t *m = sender_header_msg();
+    const char *uname = m ? sender_display_name(m) : "";
+    int uid = m ? v1_connect_user_index_by_label(m->from_label) : -1;
+    const lv_font_t *font = carousel_sender_font();
+    int name_w = carousel_text_width(uname, font);
+    int prefix_budget = max_cluster_w - face_sz - 2 * gap - name_w;
+    char prefix[16];
+    carousel_fit_from_prefix(prefix, sizeof(prefix), prefix_budget, font);
+
+    lv_label_set_text(s_sender_prefix, prefix);
+    int x = V1_CAROUSEL_PLAY_PAD;
+    lv_obj_align(s_sender_prefix, LV_ALIGN_LEFT_MID, x, header_y_ofs);
+    int prefix_w = carousel_text_width(prefix, font);
+    if (prefix_w > 0) {
+        x += prefix_w + gap;
+    }
+
+    lv_obj_align(s_sender_face, LV_ALIGN_LEFT_MID, x, header_y_ofs);
+    x += face_sz + gap;
+
+    lv_label_set_text(s_sender_name, uname);
+    int name_max = max_cluster_w - (x - V1_CAROUSEL_PLAY_PAD);
+    if (name_max < 24) {
+        name_max = 24;
+    }
+    lv_obj_set_width(s_sender_name, name_max);
+    lv_label_set_long_mode(s_sender_name, LV_LABEL_LONG_DOT);
+    lv_obj_align(s_sender_name, LV_ALIGN_LEFT_MID, x, header_y_ofs);
+
+    lv_obj_clean(s_sender_face);
+    if (uid >= 0) {
+        v1_ui_paint_user_portrait_aligned(s_sender_face, uid, face_sz, LV_ALIGN_CENTER, 0, 0);
+    }
+}
+
 static int carousel_center_index(void)
 {
-    if (!s_carousel_scroll || s_inbox_n <= 0) {
-        return s_inbox_focus;
+    int n = carousel_item_n();
+    int *focus = carousel_focus_ptr();
+    if (!s_carousel_scroll || n <= 0) {
+        return *focus;
     }
     int32_t mid = lv_obj_get_scroll_x(s_carousel_scroll) + lv_obj_get_width(s_carousel_scroll) / 2;
     int best = 0;
     int32_t best_dist = INT32_MAX;
-    for (int i = 0; i < s_inbox_n; i++) {
+    for (int i = 0; i < n; i++) {
         lv_obj_t *ch = carousel_card_at(i);
         if (!ch) {
             continue;
@@ -588,34 +1098,30 @@ static int carousel_center_index(void)
 
 static void refresh_card_visuals_from_scroll(void)
 {
-    if (!s_carousel_scroll || s_inbox_n <= 0) {
+    int n = carousel_item_n();
+    if (!s_carousel_scroll || n <= 0) {
         return;
     }
     int visual = carousel_center_index();
-    for (int i = 0; i < s_inbox_n; i++) {
+    for (int i = 0; i < n; i++) {
         lv_obj_t *card = s_card_ui[i].card;
         if (!card) {
             continue;
         }
-        /* Opacity only — transform_scale allocates a full-card draw layer
-         * (~35 KB RGB565) and wedged LVGL's 64 KB heap after PIN→carousel
-         * (framebuffer half-updated: carousel top + leftover PIN pixels). */
         if (i == visual) {
             lv_obj_set_style_opa(card, LV_OPA_COVER, 0);
         } else {
             lv_obj_set_style_opa(card, LV_OPA_50, 0);
         }
     }
-    if (s_sender_lab && visual >= 0 && visual < s_inbox_n) {
-        lv_label_set_text(s_sender_lab, sender_display_name(&s_inbox_msgs[visual]));
-    }
+    carousel_refresh_sender_header();
 }
 
 
 static void scroll_x_exec(void *obj, int32_t v)
 {
     lv_obj_scroll_to_x((lv_obj_t *)obj, v, LV_ANIM_OFF);
-    if (v1_state_get() == ST_CAROUSEL) {
+    if (v1_state_get() == ST_CAROUSEL || v1_state_get() == ST_SETTINGS) {
         refresh_card_visuals_from_scroll();
     }
 }
@@ -664,7 +1170,13 @@ static void snap_scroll_to(lv_obj_t *scroller, int32_t target)
 
 static void carousel_snap_to_focus(void)
 {
-    lv_obj_t *card = carousel_card_at(s_inbox_focus);
+    /* Programmatic snap steps fire SCROLL_END; ignore while locked or the
+     * anim restarts every frame and cards crawl (roster has the same guard). */
+    if (s_scroll_lock) {
+        return;
+    }
+    int *focus = carousel_focus_ptr();
+    lv_obj_t *card = carousel_card_at(*focus);
     if (!card || !s_carousel_scroll) {
         return;
     }
@@ -681,13 +1193,15 @@ static void carousel_snap_to_focus(void)
 
 static void sync_focus_from_scroll(void)
 {
-    if (s_scroll_lock || !s_carousel_scroll || s_inbox_n <= 0) {
+    int n = carousel_item_n();
+    int *focus = carousel_focus_ptr();
+    if (s_scroll_lock || !s_carousel_scroll || n <= 0) {
         return;
     }
     int32_t mid = lv_obj_get_scroll_x(s_carousel_scroll) + lv_obj_get_width(s_carousel_scroll) / 2;
-    int best = s_inbox_focus;
+    int best = *focus;
     int32_t best_dist = -1;
-    for (int i = 0; i < s_inbox_n; i++) {
+    for (int i = 0; i < n; i++) {
         lv_obj_t *ch = carousel_card_at(i);
         if (!ch) {
             continue;
@@ -699,18 +1213,24 @@ static void sync_focus_from_scroll(void)
             best = i;
         }
     }
-    if (best == s_inbox_focus) {
+    if (best == *focus) {
         return;
     }
-    stop_playback();
-    s_inbox_focus = best;
-    char js[32];
-    snprintf(js, sizeof(js), "{\"seq\":%d}", s_inbox_msgs[s_inbox_focus].seq);
-    uint8_t tmp[64];
-    http_buf_t b = { .buf = tmp, .cap = sizeof(tmp) };
-    (void)v1_api_http_json("PUT", "/v1/session/view", js, s_session, &b);
-    ui_refresh_transport();
-    if (!s_want_play && !s_playing) {
+    if (!carousel_settings_mode()) {
+        stop_playback();
+        *focus = best;
+        char js[32];
+        snprintf(js, sizeof(js), "{\"seq\":%d}", s_inbox_msgs[s_inbox_focus].seq);
+        uint8_t tmp[64];
+        http_buf_t b = { .buf = tmp, .cap = sizeof(tmp) };
+        (void)v1_api_http_json("PUT", "/v1/session/view", js, s_session, &b);
+        ui_refresh_transport();
+        if (!s_want_play && !s_playing) {
+            v1_ui_request_chirp(784);
+        }
+    } else {
+        *focus = best;
+        ui_refresh_transport();
         v1_ui_request_chirp(784);
     }
 }
@@ -737,40 +1257,50 @@ static void set_transport_icon(bool playing)
 
 static void refresh_card_focus_states(void)
 {
+    int n = carousel_item_n();
+    int focus = *carousel_focus_ptr();
+    bool settings = carousel_settings_mode();
     if (s_scroll_lock) {
         refresh_card_visuals_from_scroll();
     } else {
-        for (int i = 0; i < s_inbox_n; i++) {
+        for (int i = 0; i < n; i++) {
             lv_obj_t *card = s_card_ui[i].card;
             if (!card) {
                 continue;
             }
-            if (i == s_inbox_focus) {
+            if (i == focus) {
                 lv_obj_set_style_opa(card, LV_OPA_COVER, 0);
             } else {
                 lv_obj_set_style_opa(card, LV_OPA_50, 0);
             }
         }
     }
-    for (int i = 0; i < s_inbox_n; i++) {
+    for (int i = 0; i < n; i++) {
         lv_obj_t *card = s_card_ui[i].card;
         if (!card) {
             continue;
         }
-        if (i == s_inbox_focus && !s_scroll_lock) {
+        /* Inbox: center card not clickable (play via triangle).
+         * Settings: center card stays clickable to open modal. */
+        if (!settings && i == focus && !s_scroll_lock) {
             lv_obj_remove_flag(card, LV_OBJ_FLAG_CLICKABLE);
         } else {
             lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
         }
     }
-    bool transport = s_carousel_locked && !s_scroll_lock && s_inbox_n > 0;
+    bool transport = !settings && s_carousel_locked && !s_scroll_lock && s_inbox_n > 0;
     if (s_play_btn) {
-        if (transport) {
-            lv_obj_add_flag(s_play_btn, LV_OBJ_FLAG_CLICKABLE);
-            lv_obj_set_style_opa(s_play_btn, LV_OPA_COVER, 0);
+        if (settings) {
+            lv_obj_add_flag(s_play_btn, LV_OBJ_FLAG_HIDDEN);
         } else {
-            lv_obj_remove_flag(s_play_btn, LV_OBJ_FLAG_CLICKABLE);
-            lv_obj_set_style_opa(s_play_btn, LV_OPA_50, 0);
+            lv_obj_clear_flag(s_play_btn, LV_OBJ_FLAG_HIDDEN);
+            if (transport) {
+                lv_obj_add_flag(s_play_btn, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_set_style_opa(s_play_btn, LV_OPA_COVER, 0);
+            } else {
+                lv_obj_remove_flag(s_play_btn, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_set_style_opa(s_play_btn, LV_OPA_50, 0);
+            }
         }
     }
     if (s_bar) {
@@ -831,12 +1361,23 @@ static void style_transport_slider(lv_obj_t *sl)
 
 static void ui_refresh_transport(void)
 {
-    msg_t *m = focus_msg();
     refresh_card_focus_states();
-    if (s_sender_lab) {
-        lv_label_set_text(s_sender_lab, m ? sender_display_name(m) : "");
+    if (carousel_settings_mode()) {
+        carousel_refresh_sender_header();
+        if (s_count_lab) {
+            char who[16];
+            snprintf(who, sizeof(who), "%d/%d",
+                     s_settings_focus + 1, V1_SETTINGS_CARD_N);
+            lv_label_set_text(s_count_lab, who);
+        }
+        return;
     }
+    msg_t *m = focus_msg();
+    carousel_refresh_sender_header();
     if (!m) {
+        if (s_count_lab) {
+            lv_label_set_text(s_count_lab, "0/0");
+        }
         return;
     }
     if (s_bar && !s_scrubbing) {
@@ -847,15 +1388,17 @@ static void ui_refresh_transport(void)
         s_bar_sync = false;
     }
     set_transport_icon(s_playing);
-    if (m->seq != s_card_face_seq || m->read != s_card_face_read) {
-        s_card_face_seq = m->seq;
-        s_card_face_read = m->read;
-    }
+    carousel_refresh_cards_read_state();
     if (s_count_lab) {
         char who[16];
         snprintf(who, sizeof(who), "%d/%d",
                  s_inbox_n > 0 ? s_inbox_focus + 1 : 0, s_inbox_n);
         lv_label_set_text(s_count_lab, who);
+    }
+    carousel_sketch_sync();
+    if (s_sketch_pts && s_sketch_card_idx >= 0) {
+        int t_ms = s_playing ? s_play_pos_ms : (m ? m->position_ms : 0);
+        carousel_sketch_tick(t_ms);
     }
 }
 
@@ -897,6 +1440,13 @@ static void playback_task(void *arg)
         const uint8_t *pcm_base = pcm + skip;
         int pcm_base_len = pcm_len - skip;
         restart_message_if_at_end(m);
+        int play_start_ms = m->position_ms;
+        int focus_idx = s_inbox_focus;
+        if (m->has_sketch) {
+            (void)carousel_sketch_begin_play(m, focus_idx, play_start_ms);
+        } else {
+            carousel_sketch_stop_session();
+        }
         int offset_bytes = (m->position_ms * V1_SAMPLE_RATE * 2) / 1000;
         if (offset_bytes > pcm_base_len) {
             offset_bytes = 0;
@@ -945,6 +1495,9 @@ static void playback_task(void *arg)
         s_playing = false;
         m->position_ms = s_play_pos_ms;
         save_position(m->seq, s_play_pos_ms);
+        if (s_sketch_card_idx >= 0 && s_sketch_pts) {
+            carousel_sketch_request_resync(s_sketch_card_idx, s_play_pos_ms);
+        }
         if (!s_stop_play) {
             mark_read(m->seq, s_play_pos_ms);
         }
@@ -955,23 +1508,29 @@ static void playback_task(void *arg)
 
 static void shift_focus_to(int idx)
 {
-    if (s_inbox_n <= 0 || idx < 0 || idx >= s_inbox_n) {
+    int n = carousel_item_n();
+    int *focus = carousel_focus_ptr();
+    if (n <= 0 || idx < 0 || idx >= n) {
         return;
     }
-    if (idx == s_inbox_focus) {
+    if (idx == *focus) {
         return;
     }
-    stop_playback();
-    msg_t *m = focus_msg();
-    if (m) {
-        save_position(m->seq, m->position_ms);
+    if (!carousel_settings_mode()) {
+        stop_playback();
+        msg_t *m = focus_msg();
+        if (m) {
+            save_position(m->seq, m->position_ms);
+        }
+        *focus = idx;
+        char js[32];
+        snprintf(js, sizeof(js), "{\"seq\":%d}", s_inbox_msgs[s_inbox_focus].seq);
+        uint8_t tmp[64];
+        http_buf_t b = { .buf = tmp, .cap = sizeof(tmp) };
+        (void)v1_api_http_json("PUT", "/v1/session/view", js, s_session, &b);
+    } else {
+        *focus = idx;
     }
-    s_inbox_focus = idx;
-    char js[32];
-    snprintf(js, sizeof(js), "{\"seq\":%d}", s_inbox_msgs[s_inbox_focus].seq);
-    uint8_t tmp[64];
-    http_buf_t b = { .buf = tmp, .cap = sizeof(tmp) };
-    (void)v1_api_http_json("PUT", "/v1/session/view", js, s_session, &b);
     carousel_snap_to_focus();
     ui_refresh_transport();
     if (!s_want_play && !s_playing) {
@@ -986,7 +1545,26 @@ static void on_carousel_card_click(lv_event_t *e)
     lv_obj_t *card = lv_event_get_current_target(e);
     lv_obj_t *scroller = s_carousel_scroll;
     intptr_t idx = (intptr_t)lv_event_get_user_data(e);
-    if ((int)idx == s_inbox_focus || !card || !scroller) {
+    int *focus = carousel_focus_ptr();
+    if (!card || !scroller) {
+        return;
+    }
+    if (carousel_settings_mode()) {
+        if ((int)idx == *focus) {
+            if (v1_ui_modal_is_open()) {
+                return;
+            }
+            v1_ui_modal_show_setting(lv_screen_active(), (v1_setting_id_t)idx);
+            return;
+        }
+        *focus = (int)idx;
+        snap_scroll_to(scroller, snap_target_x(card, scroller));
+        ui_refresh_transport();
+        v1_ui_request_chirp(784);
+        v1_ui_bump_activity();
+        return;
+    }
+    if ((int)idx == *focus) {
         return;
     }
     stop_playback();
@@ -994,7 +1572,7 @@ static void on_carousel_card_click(lv_event_t *e)
     if (m) {
         save_position(m->seq, m->position_ms);
     }
-    s_inbox_focus = (int)idx;
+    *focus = (int)idx;
     char js[32];
     snprintf(js, sizeof(js), "{\"seq\":%d}", s_inbox_msgs[s_inbox_focus].seq);
     uint8_t tmp[64];
@@ -1016,7 +1594,7 @@ static void on_carousel_scroll(lv_event_t *e)
         refresh_card_visuals_from_scroll();
         return;
     }
-    if (code == LV_EVENT_SCROLL_END) {
+    if (code == LV_EVENT_SCROLL_END && !s_scroll_lock) {
         sync_focus_from_scroll();
         carousel_snap_to_focus();
     }
@@ -1064,6 +1642,9 @@ static void on_scrub(lv_event_t *e)
         int pos = (int)lv_slider_get_value(s_bar);
         m->position_ms = pos;
         s_play_pos_ms = pos;
+        if (m->has_sketch && s_sketch_pts && s_sketch_card_idx == s_inbox_focus) {
+            carousel_sketch_request_resync(s_sketch_card_idx, pos);
+        }
         return;
     }
     if (code == LV_EVENT_RELEASED) {
@@ -1178,8 +1759,6 @@ static void paint_ribbons(lv_obj_t *scr)
 
 static void carousel_add_card(int msg_idx, int x)
 {
-    msg_t *m = &s_inbox_msgs[msg_idx];
-    int uid = v1_connect_user_index_by_label(m->from_label);
     carousel_card_ui_t *ui = &s_card_ui[msg_idx];
 
     memset(ui, 0, sizeof(*ui));
@@ -1201,7 +1780,36 @@ static void carousel_add_card(int msg_idx, int x)
     lv_obj_set_style_transform_pivot_x(card, lv_pct(50), 0);
     lv_obj_set_style_transform_pivot_y(card, lv_pct(50), 0);
 
-    v1_ui_paint_user_portrait_aligned(card, uid, V1_CARD_PORTRAIT, LV_ALIGN_CENTER, 0, 0);
+    carousel_populate_msg_card(ui, msg_idx);
+}
+
+
+static void carousel_add_setting_card(int set_idx, int x)
+{
+    carousel_card_ui_t *ui = &s_card_ui[set_idx];
+    memset(ui, 0, sizeof(*ui));
+
+    lv_obj_t *card = lv_obj_create(s_carousel_scroll);
+    ui->card = card;
+    lv_obj_set_size(card, V1_SCROLL_CARD_W, V1_SCROLL_CARD_H);
+    lv_obj_set_pos(card, x, 0);
+    lv_obj_set_style_radius(card, V1_CARD_RADIUS, 0);
+    lv_obj_set_style_pad_all(card, 8, 0);
+    lv_obj_set_style_shadow_width(card, 0, 0);
+    apply_card_grad_style(card);
+    style_msg_card(card);
+    lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(card, on_carousel_card_click, LV_EVENT_CLICKED,
+                        (void *)(intptr_t)set_idx);
+    lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *lab = lv_label_create(card);
+    lv_label_set_text(lab, v1_ui_setting_title((v1_setting_id_t)set_idx));
+    lv_obj_set_style_text_color(lab, lv_color_hex(V1_UI_TEXT), 0);
+    lv_obj_set_width(lab, V1_SCROLL_CARD_W - 16);
+    lv_label_set_long_mode(lab, LV_LABEL_LONG_WRAP);
+    lv_obj_set_style_text_align(lab, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_center(lab);
 }
 
 
@@ -1225,12 +1833,22 @@ static void save_profile(void)
 
 static void paint_carousel(lv_obj_t *scr)
 {
+    bool settings = carousel_settings_mode();
+    int *focus = carousel_focus_ptr();
     int32_t keep_scroll = 0;
-    int keep_focus = s_inbox_focus;
+    int keep_focus = *focus;
     /* Only restore scroll when our widgets still own the screen. After PIN/pick
      * (or any other lv_obj_clean), s_carousel_scroll is a dangling handle — reading
      * it reboots or paints a hybrid carousel+PIN screen (UAF). */
-    bool restore_scroll = s_carousel_ui_live && s_carousel_scroll != NULL;
+    bool restore_scroll = s_carousel_ui_live && s_carousel_scroll != NULL &&
+                          ((settings && v1_state_get() == ST_SETTINGS) ||
+                           (!settings && v1_state_get() == ST_CAROUSEL));
+    /* Crossing inbox↔settings always rebuilds from focus snap. */
+    static bool s_was_settings;
+    if (s_was_settings != settings) {
+        restore_scroll = false;
+        s_was_settings = settings;
+    }
     if (restore_scroll) {
         keep_scroll = lv_obj_get_scroll_x(s_carousel_scroll);
     }
@@ -1238,28 +1856,22 @@ static void paint_carousel(lv_obj_t *scr)
     lv_obj_clean(scr);
     lv_obj_set_style_bg_color(scr, lv_color_hex(0x101418), 0);
     carousel_clear_ui_ptrs();
-    s_card_face_seq = -1;
-    s_card_face_read = false;
     s_scroll_lock = false;
     s_carousel_locked = false;
 
     paint_ribbons(scr);
     s_carousel_ready_us = now_us();
 
-    s_sender_lab = lv_label_create(scr);
-    lv_label_set_text(s_sender_lab, "");
-    lv_obj_set_style_text_color(s_sender_lab, lv_color_hex(V1_UI_TEXT), 0);
-#if defined(LV_FONT_MONTSERRAT_24) && LV_FONT_MONTSERRAT_24
-    lv_obj_set_style_text_font(s_sender_lab, &lv_font_montserrat_24, 0);
-#elif defined(LV_FONT_MONTSERRAT_22) && LV_FONT_MONTSERRAT_22
-    lv_obj_set_style_text_font(s_sender_lab, &lv_font_montserrat_22, 0);
-#endif
-    lv_obj_set_width(s_sender_lab, V1_LCD_W - V1_CAROUSEL_PLAY - V1_CAROUSEL_PLAY_PAD * 3);
-    lv_label_set_long_mode(s_sender_lab, LV_LABEL_LONG_DOT);
-    /* Left-aligned, vertically centered in upper third */
-    lv_obj_align(s_sender_lab, LV_ALIGN_LEFT_MID, V1_CAROUSEL_PLAY_PAD,
-                 (V1_CAROUSEL_HEADER_Y + V1_CAROUSEL_HEADER_H / 2)
-                     - (V1_CONTENT_H + 2 * V1_RIBBON_H) / 2);
+    s_sender_prefix = lv_label_create(scr);
+    style_carousel_sender_label(s_sender_prefix);
+    s_sender_face = lv_obj_create(scr);
+    lv_obj_remove_style_all(s_sender_face);
+    lv_obj_set_size(s_sender_face, CAROUSEL_SENDER_FACE_SZ, CAROUSEL_SENDER_FACE_SZ);
+    lv_obj_clear_flag(s_sender_face, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(s_sender_face, LV_OBJ_FLAG_CLICKABLE);
+    s_sender_name = lv_label_create(scr);
+    style_carousel_sender_label(s_sender_name);
+    carousel_refresh_sender_header();
 
     s_carousel_scroll = lv_obj_create(scr);
     lv_obj_set_pos(s_carousel_scroll, 0, V1_SCROLL_CARD_Y);
@@ -1274,9 +1886,17 @@ static void paint_carousel(lv_obj_t *scr)
     lv_obj_add_event_cb(s_carousel_scroll, on_carousel_scroll, LV_EVENT_SCROLL_END, NULL);
 
     int x = V1_SCROLL_CARD_GAP;
-    for (int i = 0; i < s_inbox_n; i++) {
-        carousel_add_card(i, x);
-        x += V1_SCROLL_CARD_W + V1_SCROLL_CARD_GAP;
+    int n = carousel_item_n();
+    if (settings) {
+        for (int i = 0; i < n; i++) {
+            carousel_add_setting_card(i, x);
+            x += V1_SCROLL_CARD_W + V1_SCROLL_CARD_GAP;
+        }
+    } else {
+        for (int i = 0; i < n; i++) {
+            carousel_add_card(i, x);
+            x += V1_SCROLL_CARD_W + V1_SCROLL_CARD_GAP;
+        }
     }
     lv_obj_t *end = lv_obj_create(s_carousel_scroll);
     lv_obj_remove_style_all(end);
@@ -1293,6 +1913,9 @@ static void paint_carousel(lv_obj_t *scr)
     lv_obj_set_style_border_width(s_play_btn, 0, 0);
     lv_obj_set_style_pad_all(s_play_btn, 0, 0);
     lv_obj_add_event_cb(s_play_btn, on_play, LV_EVENT_CLICKED, NULL);
+    if (settings) {
+        lv_obj_add_flag(s_play_btn, LV_OBJ_FLAG_HIDDEN);
+    }
 
     s_play_icon = make_play_icon_buf(s_play_btn, V1_UI_BG, s_play_icon_fb);
     s_pause_icon = make_pause_icon(s_play_btn);
@@ -1309,9 +1932,9 @@ static void paint_carousel(lv_obj_t *scr)
     lv_obj_add_flag(s_bar, LV_OBJ_FLAG_HIDDEN);
 
     ui_refresh_transport();
-    if (s_inbox_n > 0) {
-        if (keep_focus >= 0 && keep_focus < s_inbox_n) {
-            s_inbox_focus = keep_focus;
+    if (n > 0) {
+        if (keep_focus >= 0 && keep_focus < n) {
+            *focus = keep_focus;
         }
         if (restore_scroll) {
             s_scroll_lock = true;
@@ -1328,7 +1951,8 @@ static void paint_carousel(lv_obj_t *scr)
     }
     s_carousel_ui_live = true;
     carousel_flush_toast();
-    ESP_LOGI(TAG, "paint carousel msgs=%d heap=%u", s_inbox_n,
+    ESP_LOGI(TAG, "paint carousel mode=%s items=%d heap=%u",
+             settings ? "settings" : "inbox", n,
              (unsigned)esp_get_free_heap_size());
     v1_ui_hook_scr(scr);
 }
@@ -1336,7 +1960,8 @@ static void paint_carousel(lv_obj_t *scr)
 
 static lv_obj_t *carousel_card_at(int idx)
 {
-    if (idx < 0 || idx >= s_inbox_n) {
+    int n = carousel_item_n();
+    if (idx < 0 || idx >= n) {
         return NULL;
     }
     return s_card_ui[idx].card;

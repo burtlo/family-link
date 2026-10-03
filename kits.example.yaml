@@ -1,0 +1,9 @@
+# Copy to kits.local.yaml (gitignored). USB serial is filled in on first flash.
+#
+# secrets_profile: names firmware/secrets.<profile>.h used when you flash this kit
+# (unless PROFILE= overrides). Pair with WHO=mazi / WHO=arlo for identity stamping.
+kits:
+  box-a:
+    secrets_profile: sunset
+  box-b:
+    secrets_profile: sunset

@@ -30,6 +30,9 @@ static char s_last_user[16];
 /** Most-recent login first; empty until someone has signed in on this box. */
 static char s_login_order[V1_USER_MAX][16];
 static int s_login_order_n;
+/** Most-recent outbound recipient first (per device). */
+static char s_send_order[V1_USER_MAX][16];
+static int s_send_order_n;
 static lv_obj_t *s_offline_lab;
 static lv_obj_t *s_conn_dots;
 static lv_obj_t *s_dot_circles[3];
@@ -92,6 +95,7 @@ static int parse_hangout_users(cJSON *users, user_t *out, int max)
         out[loaded].name[sizeof(out[0].name) - 1] = 0;
         out[loaded].avatar_slot = 0;
         out[loaded].accent = 0;
+        out[loaded].autoplay_new = false;
         cJSON *prof = cJSON_GetObjectItem(it, "profile");
         if (prof) {
             cJSON *slot = cJSON_GetObjectItem(prof, "avatar_slot");
@@ -111,6 +115,10 @@ static int parse_hangout_users(cJSON *users, user_t *out, int max)
                 if (c) {
                     out[loaded].accent = c;
                 }
+            }
+            cJSON *autoplay = cJSON_GetObjectItem(prof, "autoplay_new");
+            if (cJSON_IsBool(autoplay)) {
+                out[loaded].autoplay_new = cJSON_IsTrue(autoplay);
             }
         }
         loaded++;
@@ -147,7 +155,10 @@ void v1_connect_mark_online(void)
 {
     if (!s_server_online) {
         s_server_online = true;
-        v1_ui_request_repaint();
+        /* Stay on connecting without a full rebuild; hangout probe owns roster. */
+        if (v1_state_get() != ST_CONNECTING) {
+            v1_ui_request_repaint();
+        }
     }
 }
 
@@ -155,7 +166,9 @@ void v1_connect_mark_offline(void)
 {
     if (s_server_online) {
         s_server_online = false;
-        v1_ui_request_repaint();
+        if (v1_state_get() != ST_CONNECTING) {
+            v1_ui_request_repaint();
+        }
     }
 }
 
@@ -259,6 +272,10 @@ void v1_connect_apply_profile(const char *user_id, cJSON *prof)
             u->accent = c;
         }
     }
+    cJSON *autoplay = cJSON_GetObjectItem(prof, "autoplay_new");
+    if (cJSON_IsBool(autoplay)) {
+        u->autoplay_new = cJSON_IsTrue(autoplay);
+    }
 }
 
 static void login_order_persist(nvs_handle_t h)
@@ -310,6 +327,129 @@ static void login_order_load_from_str(const char *blob)
             s_login_order_n++;
         }
     }
+}
+
+static void send_order_persist(nvs_handle_t h)
+{
+    char blob[V1_USER_MAX * 16];
+    size_t pos = 0;
+    blob[0] = 0;
+    for (int i = 0; i < s_send_order_n; i++) {
+        size_t len = strlen(s_send_order[i]);
+        if (len == 0 || pos + len + 2 > sizeof(blob)) {
+            break;
+        }
+        if (pos > 0) {
+            blob[pos++] = ',';
+        }
+        memcpy(blob + pos, s_send_order[i], len);
+        pos += len;
+        blob[pos] = 0;
+    }
+    (void)nvs_set_str(h, "send_ord", blob);
+}
+
+static void send_order_load_from_str(const char *blob)
+{
+    s_send_order_n = 0;
+    memset(s_send_order, 0, sizeof(s_send_order));
+    if (!blob || !blob[0]) {
+        return;
+    }
+    const char *p = blob;
+    while (*p && s_send_order_n < V1_USER_MAX) {
+        while (*p == ',') {
+            p++;
+        }
+        if (!*p) {
+            break;
+        }
+        const char *start = p;
+        while (*p && *p != ',') {
+            p++;
+        }
+        size_t len = (size_t)(p - start);
+        if (len >= sizeof(s_send_order[0])) {
+            len = sizeof(s_send_order[0]) - 1;
+        }
+        if (len > 0) {
+            memcpy(s_send_order[s_send_order_n], start, len);
+            s_send_order[s_send_order_n][len] = 0;
+            s_send_order_n++;
+        }
+    }
+}
+
+static void send_order_note(const char *id)
+{
+    if (!id || !id[0]) {
+        return;
+    }
+    for (int i = 0; i < s_send_order_n; i++) {
+        if (strcmp(s_send_order[i], id) == 0) {
+            for (int j = i; j < s_send_order_n - 1; j++) {
+                memcpy(s_send_order[j], s_send_order[j + 1], sizeof(s_send_order[0]));
+            }
+            s_send_order_n--;
+            break;
+        }
+    }
+    if (s_send_order_n < V1_USER_MAX) {
+        for (int i = s_send_order_n; i > 0; i--) {
+            memcpy(s_send_order[i], s_send_order[i - 1], sizeof(s_send_order[0]));
+        }
+        s_send_order_n++;
+    } else {
+        for (int i = V1_USER_MAX - 1; i > 0; i--) {
+            memcpy(s_send_order[i], s_send_order[i - 1], sizeof(s_send_order[0]));
+        }
+    }
+    strncpy(s_send_order[0], id, sizeof(s_send_order[0]) - 1);
+    s_send_order[0][sizeof(s_send_order[0]) - 1] = 0;
+}
+
+void v1_connect_note_send_recipient(const char *id)
+{
+    send_order_note(id);
+    nvs_handle_t h;
+    if (nvs_open("x02", NVS_READWRITE, &h) != ESP_OK) {
+        return;
+    }
+    send_order_persist(h);
+    (void)nvs_commit(h);
+    nvs_close(h);
+}
+
+int v1_connect_recipient_order(int *out, int out_max, const char *session_user)
+{
+    if (!out || out_max <= 0) {
+        return 0;
+    }
+    bool used[V1_USER_MAX] = {0};
+    int n = 0;
+    for (int i = 0; i < s_send_order_n && n < out_max && n < s_user_n; i++) {
+        int idx = v1_connect_user_index(s_send_order[i]);
+        if (idx < 0 || used[idx]) {
+            continue;
+        }
+        if (session_user && session_user[0] &&
+            strcmp(v1_connect_users()[idx].id, session_user) == 0) {
+            continue;
+        }
+        used[idx] = true;
+        out[n++] = idx;
+    }
+    for (int i = 0; i < s_user_n && n < out_max; i++) {
+        if (used[i]) {
+            continue;
+        }
+        if (session_user && session_user[0] &&
+            strcmp(v1_connect_users()[i].id, session_user) == 0) {
+            continue;
+        }
+        out[n++] = i;
+    }
+    return n;
 }
 
 static void login_order_note(const char *id)
@@ -381,6 +521,11 @@ void v1_connect_nvs_load_last(char *last_user, size_t cap)
     } else if (last_user[0]) {
         /* Migrate single last-user into order list. */
         login_order_note(last_user);
+    }
+    char send_ord[V1_USER_MAX * 16];
+    size_t send_ord_n = sizeof(send_ord);
+    if (nvs_get_str(h, "send_ord", send_ord, &send_ord_n) == ESP_OK) {
+        send_order_load_from_str(send_ord);
     }
     nvs_close(h);
     strncpy(s_last_user, last_user, sizeof(s_last_user) - 1);
@@ -543,6 +688,10 @@ void v1_connect_enter_from_signin(void)
         return;
     }
     v1_auth_clear_entry();
+    /* Already waiting: refresh dots only — lv_obj_clean here flashes white. */
+    if (v1_state_get() == ST_CONNECTING) {
+        return;
+    }
     v1_state_post(V1_EV_ENTER_CONNECTING, 0);
     v1_ui_request_repaint();
 }
@@ -558,10 +707,11 @@ void v1_connect_signed_out_probe(void)
             v1_state_post(V1_EV_ROSTER_READY, 0);
             v1_ui_request_repaint();
         }
-    } else {
+    } else if (v1_state_get() != ST_CONNECTING) {
         v1_connect_enter_from_signin();
     }
     s_conn_retry_us = esp_timer_get_time();
+    /* Spec: reset dot phase after each probe without rebuilding the screen. */
     s_conn_dot_anim_us = esp_timer_get_time();
     if (v1_state_get() == ST_CONNECTING) {
         v1_connect_refresh_conn_dots();
@@ -576,11 +726,8 @@ void v1_connect_tick(int64_t now_us, bool signed_out_pre_auth)
     state_t st = v1_state_get();
     if (!s_server_online && st != ST_CONNECTING) {
         v1_connect_enter_from_signin();
-    } else if (s_server_online && st == ST_CONNECTING && !v1_auth_login_active() &&
-               s_user_n > 0) {
-        v1_state_post(V1_EV_ROSTER_READY, 0);
-        v1_ui_request_repaint();
     } else if ((now_us - s_conn_retry_us) > (int64_t)V1_CONNECT_RETRY_MS * 1000) {
+        /* Roster only after hangout 200 — not WS-up + NVS cache alone. */
         if (v1_state_may_probe()) {
             v1_connect_signed_out_probe();
         }
@@ -850,12 +997,28 @@ static int roster_center_index(void)
     return best;
 }
 
+static bool roster_scroll_aligned_to_focus(void)
+{
+    if (s_roster_focus < 0 || s_roster_focus >= s_roster_n) {
+        return false;
+    }
+    lv_obj_t *card = s_roster_cards[s_roster_focus];
+    if (!card || !s_roster_scroll) {
+        return false;
+    }
+    int32_t target = roster_snap_target_x(card, s_roster_scroll);
+    return lv_obj_get_scroll_x(s_roster_scroll) == target;
+}
+
 static void roster_refresh_visuals(void)
 {
     if (!s_roster_scroll || s_roster_n <= 0) {
         return;
     }
-    int visual = roster_center_index();
+    /* Snap anim / aligned scroll: trust s_roster_focus — midpoint can favor a neighbor. */
+    int visual = s_roster_scroll_lock || roster_scroll_aligned_to_focus()
+                     ? s_roster_focus
+                     : roster_center_index();
     for (int i = 0; i < s_roster_n; i++) {
         lv_obj_t *card = s_roster_cards[i];
         if (!card) {
@@ -914,7 +1077,7 @@ static void roster_snap_scroll_to(lv_obj_t *scroller, int32_t target)
 
 static void roster_snap_to_focus(void)
 {
-    if (s_roster_focus < 0 || s_roster_focus >= s_user_n) {
+    if (s_roster_focus < 0 || s_roster_focus >= s_roster_n) {
         return;
     }
     lv_obj_t *card = s_roster_cards[s_roster_focus];
@@ -938,6 +1101,10 @@ static void on_roster_scroll(lv_event_t *e)
         return;
     }
     if (code == LV_EVENT_SCROLL_END && !s_roster_scroll_lock) {
+        if (roster_scroll_aligned_to_focus()) {
+            roster_refresh_visuals();
+            return;
+        }
         s_roster_focus = roster_center_index();
         roster_snap_to_focus();
     }
@@ -956,6 +1123,7 @@ static void on_roster_card_click(lv_event_t *e)
     if ((int)display_idx != s_roster_focus) {
         s_roster_focus = (int)display_idx;
         roster_snap_scroll_to(s_roster_scroll, roster_snap_target_x(card, s_roster_scroll));
+        roster_refresh_visuals();
         v1_ui_request_chirp(784);
         v1_ui_bump_activity();
         return;
@@ -982,10 +1150,6 @@ static void roster_add_card(int display_idx, int user_idx, int x)
     lv_obj_set_style_shadow_width(card, 0, 0);
     lv_obj_set_style_border_width(card, 0, 0);
     apply_roster_card_grad(card);
-    if (s_last_user[0] && strcmp(s_users[user_idx].id, s_last_user) == 0) {
-        lv_obj_set_style_border_width(card, 2, 0);
-        lv_obj_set_style_border_color(card, lv_color_hex(V1_UI_ACCENT), 0);
-    }
     lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_event_cb(card, on_roster_card_click, LV_EVENT_CLICKED,
@@ -1005,6 +1169,7 @@ static void roster_add_card(int display_idx, int user_idx, int x)
     lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(name, LV_ALIGN_BOTTOM_MID, 0, -8);
+    lv_obj_remove_flag(name, LV_OBJ_FLAG_CLICKABLE);
 }
 
 void v1_connect_paint_roster(lv_obj_t *scr)

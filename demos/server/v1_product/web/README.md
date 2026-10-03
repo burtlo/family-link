@@ -10,10 +10,10 @@ open http://localhost:8080/box/
 ## What matches firmware
 
 - 20px top/bottom ribbons (`3/7` count, toast, `shoulder = back`)
-- 56px peek strips with sender hue + portrait + name
+- Header row: `From` + portrait + sender name; message cards use the same 66px portrait as sign-in roster cards, plus unread dot and duration `M:SS`
 - Center card: face pane + play disk + scrub track
-- Shoulder (Boot) → scrollable settings: volume, color, face, sign out
-- Short tap red circle → recipient picker (record is a stub in the twin)
+- Shoulder (Boot) → settings carousel (logout, volume, icons, colors, card); centered card opens modal with (X)
+- Short tap red circle → recipient picker; tap again → send receipt (Finishing / Sending... / Sent)
 - `PUT /v1/profile` for accent + avatar slot
 
 ## Keys

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import struct
 import sys
 import wave
 from io import BytesIO
@@ -35,6 +36,19 @@ def tiny_wav(seconds: float = 0.25) -> bytes:
         n = int(16000 * seconds)
         wf.writeframes(b"\x00\x01" * n)
     return buf.getvalue()
+
+
+def tiny_sketch() -> bytes:
+    # FLSK v1 with a short down/move/up stroke.
+    pts = [
+        (0, 0, 10, 10),
+        (120, 1, 30, 20),
+        (240, 2, 40, 24),
+    ]
+    blob = struct.pack("<4sBBH", b"FLSK", 1, 0, len(pts))
+    for t_ms, phase, x, y in pts:
+        blob += struct.pack("<HBBHH", t_ms, phase, 0, x, y)
+    return blob
 
 
 async def ws_smoke(base: str, http: httpx.Client) -> None:
@@ -111,7 +125,10 @@ def main() -> int:
             f"{base}/v1/messages",
             headers=headers,
             data={"kind": "audio", "to_user_id": "lynn", "broadcast": "false"},
-            files={"blob": ("clip.wav", wav, "audio/wav")},
+            files={
+                "blob": ("clip.wav", wav, "audio/wav"),
+                "sketch": ("clip.flsk", tiny_sketch(), "application/octet-stream"),
+            },
         )
         if sent.status_code != 200:
             return fail(f"send expected 200 got {sent.status_code} {sent.text}")
@@ -127,6 +144,13 @@ def main() -> int:
         lynn_seqs = [m["seq"] for m in lynn_inbox]
         if max(lynn_seqs) < 2:
             return fail(f"lynn missing inbound message: {lynn_seqs}")
+        latest = max(lynn_inbox, key=lambda m: m["seq"])
+        if not latest.get("has_sketch"):
+            return fail(f"expected has_sketch on latest message: {latest}")
+        sketch = http.get(f"{base}/v1/messages/{latest['seq']}/sketch", headers=lynn_headers)
+        if sketch.status_code != 200 or not sketch.content.startswith(b"FLSK"):
+            return fail(f"sketch fetch failed: {sketch.status_code}")
+        print("PASS sketch sidecar")
 
         bc = http.post(
             f"{base}/v1/messages",

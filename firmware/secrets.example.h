@@ -1,6 +1,11 @@
 #pragma once
 
-/* Copy to secrets.h (gitignored) and fill in. Never commit real values. */
+/* Copy to secrets.h (gitignored) and fill in. Never commit real values.
+ *
+ * Two Wi-Fi networks: copy secrets-profile.example.h to secrets.sunset.h and
+ * secrets.anamcara.h, then flash with PROFILE= or set secrets_profile per kit in
+ * kits.local.yaml (see kits.example.yaml). make flash copies the profile into
+ * secrets.h for that build. */
 
 #define DEMO_WIFI_SSID "your-2.4ghz-ssid"
 #define DEMO_WIFI_PASS "your-password"

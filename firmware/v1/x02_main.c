@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include "bsp/esp-bsp.h"
+#include "driver/gpio.h"
 #include "esp_codec_dev.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -57,6 +58,64 @@ static SemaphoreHandle_t s_login_work;
 
 static v1_ui_settings_cfg_t s_settings_cfg;
 static v1_ui_sleep_cfg_t s_sleep_cfg;
+static bool s_mute_latched_prev;
+static bool s_mute_gpio_ready;
+
+static void bump_idle(void);
+static void paint(void);
+
+static bool mute_latched(void)
+{
+    return gpio_get_level(BSP_MUTE_STATUS) == 0;
+}
+
+static void mute_privacy_engaged(void)
+{
+    v1_carousel_stop_playback();
+    v1_record_on_shoulder_cancel();
+    v1_ui_modal_close();
+    s_session_user[0] = 0;
+    v1_auth_clear_entry();
+    v1_state_apply(ST_ROSTER);
+    v1_ui_sleep_set_dimmed(false);
+    if (v1_ui_sleep_is_asleep()) {
+        v1_ui_sleep_wake_from_asleep(false);
+    }
+    v1_ui_set_privacy_screen_off(true);
+    board_backlight_set(0);
+    board_lvgl_lock(0);
+    paint();
+    board_lvgl_unlock();
+    bump_idle();
+}
+
+static void mute_privacy_wake(void)
+{
+    v1_ui_set_privacy_screen_off(false);
+    s_session_user[0] = 0;
+    v1_auth_clear_entry();
+    v1_state_apply(ST_ROSTER);
+    v1_ui_sleep_wake_from_asleep(true);
+    board_backlight_set(V1_BRIGHT_NORM);
+    bump_idle();
+    board_lvgl_lock(0);
+    paint();
+    board_lvgl_unlock();
+}
+
+static void poll_mute_latch(void)
+{
+    if (!s_mute_gpio_ready) {
+        return;
+    }
+    bool latched = mute_latched();
+    if (latched && !s_mute_latched_prev) {
+        mute_privacy_engaged();
+    } else if (!latched && s_mute_latched_prev && v1_ui_privacy_screen_off()) {
+        mute_privacy_wake();
+    }
+    s_mute_latched_prev = latched;
+}
 
 static int64_t now_us(void)
 {
@@ -71,6 +130,9 @@ static void bump_idle(void)
 
 static void note_activity(void)
 {
+    if (v1_ui_privacy_screen_off()) {
+        return;
+    }
     v1_ui_sleep_note_activity();
     bump_idle();
     v1_ui_sleep_wake_from_asleep(true);
@@ -132,6 +194,9 @@ static void on_circle_up(void *btn, void *usr)
     if (st == ST_CAROUSEL) {
         v1_carousel_on_circle_press(now_us());
         note_activity();
+    } else if (st == ST_PICK) {
+        v1_record_on_circle_start();
+        note_activity();
     } else if (st == ST_RECORD) {
         v1_record_on_circle_stop();
         note_activity();
@@ -155,6 +220,9 @@ static void on_boot_press(void *btn, void *usr)
 
 static void paint(void)
 {
+    if (v1_ui_privacy_screen_off()) {
+        return;
+    }
     lv_obj_t *scr = lv_screen_active();
     if (v1_ui_sleep_is_asleep()) {
         v1_carousel_invalidate_ui();
@@ -165,13 +233,22 @@ static void paint(void)
     }
     v1_connect_clear_conn_dots();
     state_t st = v1_state_get();
-    /* Carousel/record/settings share painted widgets; every other screen
+    /* Carousel/settings share painted widgets; every other screen
      * cleans the active LVGL tree and must drop carousel handles first. */
-    if (st != ST_CAROUSEL && st != ST_RECORD && st != ST_SETTINGS) {
+    if (st != ST_CAROUSEL && st != ST_SETTINGS) {
         v1_carousel_invalidate_ui();
     }
     if (st != ST_ROSTER) {
         v1_connect_invalidate_roster();
+    }
+    if (st != ST_PICK) {
+        v1_record_invalidate_pick();
+    }
+    if (st != ST_RECORD) {
+        v1_record_invalidate_record();
+    }
+    if (st != ST_SEND) {
+        v1_record_invalidate_send();
     }
     switch (st) {
     case ST_CONNECTING:
@@ -193,17 +270,15 @@ static void paint(void)
         v1_carousel_paint(scr);
         break;
     case ST_SETTINGS:
-        /* p13 modal: carousel underneath, dim + scrollable panel on top. */
-        if (scr != NULL) {
-            v1_carousel_paint(scr);
-            v1_ui_paint_settings(scr, &s_settings_cfg);
-        }
+        v1_carousel_paint(scr);
         break;
     case ST_RECORD:
         if (scr != NULL) {
-            v1_carousel_paint(scr);
-            v1_record_paint_overlay(scr);
+            v1_record_paint_record(scr);
         }
+        break;
+    case ST_SEND:
+        v1_record_paint_send(scr);
         break;
     }
     v1_ui_clear_repaint();
@@ -217,7 +292,8 @@ static void ui_task(void *arg)
     board_lvgl_unlock();
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(100));
-        if (!v1_carousel_is_playing()) {
+        v1_record_tick_send(now_us());
+        if (v1_state_get() != ST_RECORD && !v1_carousel_is_playing()) {
             int a = 0;
             int b = 0;
             if (v1_ui_take_chirp(&a, &b)) {
@@ -257,7 +333,7 @@ static void ui_task(void *arg)
             board_lvgl_lock(0);
             if (v1_ui_repaint_pending()) {
                 paint();
-            } else if (v1_state_get() == ST_CAROUSEL) {
+            } else if (v1_state_get() == ST_CAROUSEL || v1_state_get() == ST_SETTINGS) {
                 v1_carousel_refresh_transport();
             }
             v1_ui_clear_transport_dirty();
@@ -274,8 +350,8 @@ static void ui_task(void *arg)
             v1_auth_tick(v1_state_get());
             board_lvgl_unlock();
         }
-        (void)v1_record_tick_pick_timeout(now_us());
         (void)v1_carousel_tick_inbox();
+        poll_mute_latch();
         if ((v1_state_get() == ST_CAROUSEL || v1_state_get() == ST_SETTINGS) &&
             (now_us() - s_idle_us) > (int64_t)V1_UI_IDLE_RELOCK_MS * 1000) {
             v1_carousel_stop_playback();
@@ -354,7 +430,7 @@ void app_main(void)
     car_cfg.playback_buf = s_buf;
     v1_carousel_init(&car_cfg);
 
-    s_work = xSemaphoreCreateBinary();
+    s_work = xSemaphoreCreateCounting(8, 0);
     s_login_work = xSemaphoreCreateBinary();
     v1_auth_init(s_login_work);
     v1_auth_start_task();
@@ -379,6 +455,7 @@ void app_main(void)
         .msgs = s_msgs,
         .msg_n = V1_MSG_MAX,
     };
+    v1_ui_settings_bind(&s_settings_cfg);
     s_sleep_cfg = (v1_ui_sleep_cfg_t){
         .session_user = s_session_user,
         .msgs = s_msgs,
@@ -437,6 +514,18 @@ void app_main(void)
             iot_button_register_cb(btns[BSP_BUTTON_CONFIG], BUTTON_PRESS_DOWN, NULL,
                                   on_boot_press, NULL);
         }
+    }
+
+    gpio_config_t mute_in = {
+        .pin_bit_mask = 1ULL << BSP_MUTE_STATUS,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    if (gpio_config(&mute_in) == ESP_OK) {
+        s_mute_gpio_ready = true;
+        s_mute_latched_prev = mute_latched();
     }
 
     s_vol_notch = V1_ROOMVOL_ON;

@@ -11,13 +11,15 @@ carousel:
 ui:
   toast_ms: 2500
   pick_timeout_ms: 10000
-  idle_relock_ms: 60000
+  idle_relock_ms: 600000
   dim_ms: 120000
   sleep_ms: 300000
 record:
   max_sec: 180
   silence_sec: 5
   trim_ms: 150
+send:
+  receipt_ms: 2000
 auth:
   pin_tries: 5
   pin_cooldown_ms: 60000
