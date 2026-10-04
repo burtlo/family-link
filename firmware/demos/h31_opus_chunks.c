@@ -1,9 +1,9 @@
 /*
  * h31 — Opus chunk upload + Ogg playback (index.json + HTTP Range).
  *
- * Hold red circle: mic -> Opus -> 2 s PUT chunks (length-prefixed packets).
- * Release: POST /complete. Short Boot plays last upload; long Boot toggles 16/24
- * kbps for the next hold (never while recording or playing).
+ * Tap red circle: start/stop mic -> Opus -> 2 s PUT chunks (max 180 s).
+ * Stop (or cap) runs POST /complete. Short Boot plays last upload; long Boot
+ * toggles 16/24 kbps for the next take (not while recording or playing).
  */
 
 #include <stdbool.h>
@@ -70,11 +70,12 @@ typedef struct {
 static esp_codec_dev_handle_t s_mic;
 static esp_codec_dev_handle_t s_spk;
 static fl_opus_codec_t s_codec;
-static volatile bool s_held;
+static volatile bool s_recording;
+static volatile bool s_stop_click;
 static volatile bool s_play_req;
 static volatile bool s_profile_toggle;
 static volatile bool s_play_running;
-static SemaphoreHandle_t s_down_sem;
+static SemaphoreHandle_t s_circle_start;
 static SemaphoreHandle_t s_rec_done;
 static SemaphoreHandle_t s_upload_go;
 static SemaphoreHandle_t s_upload_done;
@@ -435,8 +436,10 @@ static bool record_session(void)
     (void)esp_codec_dev_set_in_mute(s_mic, false);
     (void)esp_codec_dev_set_in_gain(s_mic, MIC_GAIN_DB);
 
+    s_recording = true;
+    s_stop_click = false;
     int64_t t0 = esp_timer_get_time();
-    while (s_held && s_record_ms < (uint32_t)MAX_SECONDS * 1000u && !s_failed) {
+    while (s_recording && !s_stop_click && s_record_ms < (uint32_t)MAX_SECONDS * 1000u && !s_failed) {
         if (esp_codec_dev_read(s_mic, s_pcm_frame, CHUNK_PCM_BYTES) != ESP_CODEC_DEV_OK) {
             break;
         }
@@ -446,6 +449,12 @@ static bool record_session(void)
         }
         (void)append_packet(s_pkt_frame, plen);
         s_record_ms += 20;
+        if ((s_record_ms % 30000u) == 0u && s_record_ms > 0) {
+            char line[40];
+            snprintf(line, sizeof(line), "rec %us/%ds\n2s chunks",
+                     (unsigned)(s_record_ms / 1000u), MAX_SECONDS);
+            board_status_set(line);
+        }
         if (s_record_ms - s_chunk_start_ms >= (uint32_t)CHUNK_MS) {
             if (!upload_run(UPLOAD_CMD_FLUSH)) {
                 break;
@@ -454,15 +463,21 @@ static bool record_session(void)
         /* Feed IDLE / LVGL / task WDT while encoding (tight loop otherwise runs seconds). */
         vTaskDelay(1);
     }
+    s_recording = false;
     (void)esp_codec_dev_close(s_mic);
     (void)esp_codec_dev_set_out_mute(s_spk, false);
-    uint32_t held_ms = (uint32_t)((esp_timer_get_time() - t0) / 1000);
-    ESP_LOGI(TAG, "record held=%u ms seq=%d stack_hw=%u", (unsigned)held_ms, s_seq,
-             (unsigned)uxTaskGetStackHighWaterMark(NULL));
+    uint32_t wall_ms = (uint32_t)((esp_timer_get_time() - t0) / 1000);
+    ESP_LOGI(TAG, "record %u ms audio_ms=%u seq=%d stack_hw=%u", (unsigned)wall_ms,
+             (unsigned)s_record_ms, s_seq, (unsigned)uxTaskGetStackHighWaterMark(NULL));
     if (!upload_run(UPLOAD_CMD_COMPLETE)) {
         return false;
     }
-    return held_ms >= PASS_HOLD_MS && s_seq >= 1;
+    bool duration_ok = wall_ms >= PASS_HOLD_MS ||
+                       s_record_ms >= (uint32_t)MAX_SECONDS * 1000u - 50u;
+    if (s_record_ms >= (uint32_t)MAX_SECONDS * 1000u - 50u) {
+        ESP_LOGI(TAG, "-- SOAK PASS h31 %ds seq=%d", MAX_SECONDS, s_seq);
+    }
+    return duration_ok && s_seq >= 1;
 }
 
 static int http_get_range(const char *path, size_t range_start, body_buf_t *out)
@@ -567,21 +582,17 @@ static bool play_ogg_stream(size_t start_offset)
     return true;
 }
 
-static void ptt_down(void *b, void *u)
+static void on_circle_up(void *b, void *u)
 {
     (void)b;
     (void)u;
-    s_held = true;
-    if (s_down_sem) {
-        xSemaphoreGive(s_down_sem);
+    if (!s_rec_task_running) {
+        if (s_circle_start != NULL) {
+            xSemaphoreGive(s_circle_start);
+        }
+        return;
     }
-}
-
-static void ptt_up(void *b, void *u)
-{
-    (void)b;
-    (void)u;
-    s_held = false;
+    s_stop_click = true;
 }
 
 static void status_idle_line(void)
@@ -591,14 +602,14 @@ static void status_idle_line(void)
                                                                : "PASS 24k\nBoot=play");
     } else {
         board_status_set(s_profile == FL_OPUS_PROFILE_VOIP_16K
-                             ? "16 kbps\nhold red\nlong Boot=24k"
-                             : "24 kbps\nhold red\nlong Boot=16k");
+                             ? "16 kbps\ntap red=rec\nmax 3 min"
+                             : "24 kbps\ntap red=rec\nmax 3 min");
     }
 }
 
 static void apply_profile_toggle(void)
 {
-    if (!s_profile_toggle || s_held || s_rec_task_running || s_play_running) {
+    if (!s_profile_toggle || s_rec_task_running || s_play_running) {
         return;
     }
     s_profile_toggle = false;
@@ -616,7 +627,7 @@ static void on_boot_short(void *b, void *u)
 {
     (void)b;
     (void)u;
-    if (s_message_id[0] != 0 && !s_rec_task_running && !s_play_running && !s_held) {
+    if (s_message_id[0] != 0 && !s_rec_task_running && !s_play_running) {
         s_play_req = true;
     }
 }
@@ -625,7 +636,7 @@ static void on_boot_long(void *b, void *u)
 {
     (void)b;
     (void)u;
-    if (!s_rec_task_running && !s_play_running && !s_held) {
+    if (!s_rec_task_running && !s_play_running) {
         s_profile_toggle = true;
     }
 }
@@ -663,7 +674,7 @@ static void record_worker(void *arg)
             }
             status_idle_line();
         } else {
-            board_status_set("retry hold");
+            board_status_set("retry\ntap red");
         }
         s_rec_task_running = false;
         if (s_rec_done != NULL) {
@@ -733,8 +744,7 @@ static bool init_buttons(void)
     if (btns[BSP_BUTTON_MAIN] == NULL) {
         return false;
     }
-    iot_button_register_cb(btns[BSP_BUTTON_MAIN], BUTTON_PRESS_DOWN, NULL, ptt_down, NULL);
-    iot_button_register_cb(btns[BSP_BUTTON_MAIN], BUTTON_PRESS_UP, NULL, ptt_up, NULL);
+    iot_button_register_cb(btns[BSP_BUTTON_MAIN], BUTTON_PRESS_UP, NULL, on_circle_up, NULL);
     if (btns[BSP_BUTTON_CONFIG] != NULL) {
         iot_button_register_cb(btns[BSP_BUTTON_CONFIG], BUTTON_PRESS_DOWN, NULL, on_boot_short,
                                NULL);
@@ -778,12 +788,12 @@ void app_main(void)
         return;
     }
 
-    s_down_sem = xSemaphoreCreateBinary();
+    s_circle_start = xSemaphoreCreateBinary();
     s_rec_done = xSemaphoreCreateBinary();
     s_record_start = xSemaphoreCreateBinary();
     s_upload_go = xSemaphoreCreateBinary();
     s_upload_done = xSemaphoreCreateBinary();
-    if (s_down_sem == NULL || s_rec_done == NULL || s_record_start == NULL || s_upload_go == NULL ||
+    if (s_circle_start == NULL || s_rec_done == NULL || s_record_start == NULL || s_upload_go == NULL ||
         s_upload_done == NULL || !init_buttons()) {
         demo_fail("h31", "buttons");
         return;
@@ -802,29 +812,26 @@ void app_main(void)
     }
 
     status_idle_line();
-    ESP_LOGI(TAG, "hold red=record; short Boot=play; long Boot=16/24k");
+    ESP_LOGI(TAG, "tap red start/stop (max %ds); short Boot=play; long Boot=16/24k", MAX_SECONDS);
 
     while (!s_failed) {
         ui_flush();
         apply_profile_toggle();
-        if (s_play_req && !s_held && !s_rec_task_running && !s_play_running) {
+        if (s_play_req && !s_rec_task_running && !s_play_running) {
             s_play_req = false;
             (void)start_playback_task();
         }
-        if (xSemaphoreTake(s_down_sem, pdMS_TO_TICKS(50)) != pdTRUE) {
+        if (xSemaphoreTake(s_circle_start, pdMS_TO_TICKS(50)) != pdTRUE) {
             continue;
         }
-        if (!s_held) {
+        if (s_rec_task_running || s_play_running) {
             continue;
         }
         if (mute_latched()) {
             board_status_set("unmute first");
-            while (s_held && !s_failed) {
-                vTaskDelay(pdMS_TO_TICKS(20));
-            }
             continue;
         }
-        board_status_set("recording…");
+        board_status_set("recording…\ntap red=stop");
         if (!start_record_task()) {
             board_status_set("busy");
             continue;
@@ -833,9 +840,6 @@ void app_main(void)
             ui_flush();
         }
         ui_flush();
-        while (s_held && !s_failed) {
-            vTaskDelay(pdMS_TO_TICKS(20));
-        }
     }
 
     while (1) {

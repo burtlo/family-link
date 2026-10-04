@@ -419,12 +419,12 @@ Unmute opens the mic once for the session and POSTs ~1 s WAV chunks to `/v1/diar
 
 **App:** `h30_opus_local.c` — **must run on the kit** (mic + speaker). No server (host: `scripts/opus_inspect.py`).
 
-- **Hold the red circle** for live mic → Opus encode → decode → speaker (16 kHz mono, 20 ms frames). Cap **180 s**; packets saved length-prefixed in PSRAM for replay.
+- **Tap the red circle** to start/stop recording (cap **180 s**). Mic → Opus encode → decode for metrics; speaker stays muted until stop.
 - **Boot** toggles **16 kbps (VOIP)** vs **24 kbps (AUDIO)**. Top mute latch must be off (same as h25).
-- Serial **metrics every 10 s** during a hold: bytes, frames, drops, encode/decode latency, heap/PSRAM, stack HWM, underruns.
-- On release after **≥10 s**, replays stored packets with one **missing** and one **corrupt** frame (PLC behavior logged).
+- Serial **metrics every 10 s** while recording: bytes, frames, drops, encode/decode latency, heap/PSRAM, stack HWM, underruns.
+- After **≥10 s**, stop triggers replay with one **missing** and one **corrupt** frame (PLC test). Hitting the **180 s** cap logs `-- SOAK PASS h30` (no fault replay).
 
-**Pass:** `-- PASS h30` after the 10 s hold + fault replay. Run a **3 min** hold on hardware for soak acceptance.
+**Pass:** `-- PASS h30` after a ≥10 s take + fault replay.
 
 **Reuse later:** `fl_opus` wrapper, raw packet blob format, metrics pattern for phase 3 chunk upload.
 
@@ -432,9 +432,10 @@ Unmute opens the mic once for the session and POSTs ~1 s WAV chunks to `/v1/diar
 
 **App:** `h31_opus_chunks.c` — **must run on the kit** with `make demo-opus-messages` green on the Mac first.
 
-- **Hold red circle:** 16 kHz mono Opus → **2 s** `PUT` chunks (`MESSAGE-PROTOCOL` headers + SHA-256). **Release:** `POST …/complete`.
-- **Boot (short):** play last completed **Ogg** from the server (after PASS). **Boot (long):** toggle 16/24 kbps for the *next* hold only — ignored while recording or playing.
-- **Pass:** `-- PASS h31` after ≥2.5 s hold and successful complete. Full phase 3 acceptance (3 min, pause/reconnect/seek on hardware) is operator-run.
+- **Tap red circle** to start/stop: 16 kHz mono Opus → **2 s** `PUT` chunks (max **180 s**), then `POST …/complete`. Tap again to stop early.
+- **Boot (short):** play last completed **Ogg** from the server (after PASS). **Boot (long):** toggle 16/24 kbps for the *next* take — ignored while recording or playing.
+- **3 min soak:** leave recording running until the cap; serial logs `-- SOAK PASS h31`. Short **Boot** plays when done.
+- **Pass:** `-- PASS h31` after ≥2.5 s and successful complete. Pause/reconnect/seek on hardware remain operator/TBD.
 
 **Host:** `demos/server/h31_opus_messages` — `make demo-opus-messages`.
 

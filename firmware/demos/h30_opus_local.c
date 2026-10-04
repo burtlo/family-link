@@ -1,14 +1,10 @@
 /*
  * h30 — Local Opus encode/decode soak (no Wi-Fi).
  *
- * Hold red circle: mic -> Opus encode (+ decode for metrics; speaker stays muted).
- * Release: replay stored packets to the speaker (incl. fault-injection test).
- * Packets are also length-prefixed into PSRAM (~3 min @ 24 kbps).
- * Boot toggles 16 kbps (VOIP) vs 24 kbps (AUDIO). Top mute latch must be off.
- *
- * After a >=10 s hold, on release replays saved packets with one missing and one
- * corrupt frame (audible PLC test). Operator runs 180 s soak on hardware; CI PASS
- * is emitted after the 10 s self-test.
+ * Tap red circle: start/stop mic -> Opus encode (+ decode for metrics; muted).
+ * After stop (or 180 s cap), replays stored packets (fault test if >=10 s).
+ * Packets are length-prefixed in PSRAM (~3 min @ 24 kbps). Boot = 16/24 kbps.
+ * Top mute latch must be off. Full 180 s logs -- SOAK PASS h30 on serial.
  */
 
 #include <stdbool.h>
@@ -79,11 +75,12 @@ typedef struct {
 static esp_codec_dev_handle_t s_mic;
 static esp_codec_dev_handle_t s_spk;
 static fl_opus_codec_t s_codec;
-static volatile bool s_held;
+static volatile bool s_stop_click;
+static volatile bool s_audio_busy;
 static volatile bool s_passed;
 static volatile bool s_failed;
 static volatile fl_opus_profile_t s_profile = FL_OPUS_PROFILE_VOIP_16K;
-static SemaphoreHandle_t s_down_sem;
+static SemaphoreHandle_t s_circle_start;
 static SemaphoreHandle_t s_audio_go;
 static SemaphoreHandle_t s_audio_done;
 static volatile bool s_profile_toggle;
@@ -114,35 +111,32 @@ static void fail_once(const char *reason)
     demo_fail("h30", reason);
 }
 
-static void ptt_down(void *button_handle, void *usr_data)
+static void on_circle_up(void *button_handle, void *usr_data)
 {
     (void)button_handle;
     (void)usr_data;
-    s_held = true;
-    if (s_down_sem != NULL) {
-        xSemaphoreGive(s_down_sem);
+    if (!s_audio_busy) {
+        if (s_circle_start != NULL) {
+            xSemaphoreGive(s_circle_start);
+        }
+        return;
     }
-    ESP_LOGI(TAG, "DOWN t=%u ms", (unsigned)esp_log_timestamp());
-}
-
-static void ptt_up(void *button_handle, void *usr_data)
-{
-    (void)button_handle;
-    (void)usr_data;
-    s_held = false;
-    ESP_LOGI(TAG, "UP t=%u ms", (unsigned)esp_log_timestamp());
+    s_stop_click = true;
+    ESP_LOGI(TAG, "stop tap t=%u ms", (unsigned)esp_log_timestamp());
 }
 
 static void on_boot(void *button_handle, void *usr_data)
 {
     (void)button_handle;
     (void)usr_data;
-    s_profile_toggle = true;
+    if (!s_audio_busy) {
+        s_profile_toggle = true;
+    }
 }
 
 static void apply_profile_toggle(void)
 {
-    if (!s_profile_toggle || s_held) {
+    if (!s_profile_toggle || s_audio_busy) {
         return;
     }
     s_profile_toggle = false;
@@ -153,8 +147,8 @@ static void apply_profile_toggle(void)
         s_profile = next;
         ESP_LOGI(TAG, "profile -> %s kbps",
                  next == FL_OPUS_PROFILE_VOIP_16K ? "16" : "24");
-        board_status_set(next == FL_OPUS_PROFILE_VOIP_16K ? "16 kbps VOIP\nhold red circle"
-                                                          : "24 kbps AUDIO\nhold red circle");
+        board_status_set(next == FL_OPUS_PROFILE_VOIP_16K ? "16 kbps VOIP\ntap red=rec"
+                                                          : "24 kbps AUDIO\ntap red=rec");
     }
 }
 
@@ -322,8 +316,7 @@ static bool init_buttons(void)
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "bsp_iot_button_create: %s", esp_err_to_name(err));
     }
-    iot_button_register_cb(btns[BSP_BUTTON_MAIN], BUTTON_PRESS_DOWN, NULL, ptt_down, NULL);
-    iot_button_register_cb(btns[BSP_BUTTON_MAIN], BUTTON_PRESS_UP, NULL, ptt_up, NULL);
+    iot_button_register_cb(btns[BSP_BUTTON_MAIN], BUTTON_PRESS_UP, NULL, on_circle_up, NULL);
     if (btns[BSP_BUTTON_CONFIG] != NULL) {
         iot_button_register_cb(btns[BSP_BUTTON_CONFIG], BUTTON_PRESS_DOWN, NULL, on_boot, NULL);
     }
@@ -378,7 +371,7 @@ static bool live_loop_frame(void)
     return true;
 }
 
-static bool record_encode_decode_while_held(void)
+static bool record_encode_decode_session(void)
 {
     (void)esp_codec_dev_set_out_mute(s_spk, true);
 
@@ -393,9 +386,10 @@ static bool record_encode_decode_while_held(void)
     (void)esp_codec_dev_set_out_mute(s_spk, true);
 
     metrics_reset();
+    s_stop_click = false;
 
     uint32_t max_ms = (uint32_t)MAX_SECONDS * 1000u;
-    while (s_held && session_ms() < max_ms && !s_failed) {
+    while (session_ms() < max_ms && !s_failed && !s_stop_click) {
         if (!live_loop_frame()) {
             break;
         }
@@ -490,12 +484,22 @@ static void audio_worker(void *arg)
         if (xSemaphoreTake(s_audio_go, portMAX_DELAY) != pdTRUE) {
             continue;
         }
+        s_audio_busy = true;
         board_backlight_set(45);
-        bool ok = record_encode_decode_while_held();
+        board_status_set("recording…\ntap red=stop");
+        bool ok = record_encode_decode_session();
+        uint32_t max_ms = (uint32_t)MAX_SECONDS * 1000u;
+        bool full_soak = session_ms() >= max_ms - 100u;
         board_backlight_set(80);
-        if (!s_failed && ok) {
+        if (!s_failed && full_soak) {
+            ESP_LOGI(TAG, "-- SOAK PASS h30 %ds frames=%u enc_bytes=%u", MAX_SECONDS,
+                     (unsigned)s_m.frames, (unsigned)s_m.enc_bytes);
+            board_status_set("SOAK PASS\n3min");
+        }
+        if (!s_failed && ok && !full_soak) {
             board_status_set("fault replay...");
             if (!replay_with_faults()) {
+                s_audio_busy = false;
                 xSemaphoreGive(s_audio_done);
                 continue;
             }
@@ -503,10 +507,13 @@ static void audio_worker(void *arg)
                 s_passed = true;
                 demo_pass("h30");
             }
-            board_status_set("PASS\nhold for 3min soak");
+            board_status_set("PASS\ntap red=rec");
+        } else if (!s_failed && ok && full_soak) {
+            board_status_set("SOAK done\ntap red=rec");
         } else if (!s_failed) {
-            board_status_set("hold >=10s");
+            board_status_set("need >=10s\ntap red=rec");
         }
+        s_audio_busy = false;
         xSemaphoreGive(s_audio_done);
     }
 }
@@ -559,10 +566,10 @@ void app_main(void)
         return;
     }
 
-    s_down_sem = xSemaphoreCreateBinary();
+    s_circle_start = xSemaphoreCreateBinary();
     s_audio_go = xSemaphoreCreateBinary();
     s_audio_done = xSemaphoreCreateBinary();
-    if (s_down_sem == NULL || s_audio_go == NULL || s_audio_done == NULL || !init_buttons()) {
+    if (s_circle_start == NULL || s_audio_go == NULL || s_audio_done == NULL || !init_buttons()) {
         fail_once("buttons failed");
         return;
     }
@@ -571,37 +578,29 @@ void app_main(void)
         return;
     }
 
-    board_status_set("16 kbps VOIP\nhold=rec release=play");
-    ESP_LOGI(TAG, "hold: encode (muted); release: replay (cap %ds). Boot=16/24 kbps.",
-             MAX_SECONDS);
+    board_status_set("16 kbps VOIP\ntap red=rec max 3m");
+    ESP_LOGI(TAG, "tap red start/stop (max %ds); stop -> replay. Boot=16/24k.", MAX_SECONDS);
 
     while (!s_failed) {
         apply_profile_toggle();
-        if (xSemaphoreTake(s_down_sem, pdMS_TO_TICKS(50)) != pdTRUE) {
+        if (xSemaphoreTake(s_circle_start, pdMS_TO_TICKS(50)) != pdTRUE) {
             continue;
         }
-        if (!s_held || s_failed) {
+        if (s_audio_busy || s_failed) {
             continue;
         }
         if (mute_latched()) {
             board_status_set("unmute first\nred LED off");
-            while (s_held && !s_failed) {
-                vTaskDelay(pdMS_TO_TICKS(10));
-            }
             continue;
         }
 
         while (xSemaphoreTake(s_audio_done, 0) == pdTRUE) {
         }
-        board_status_set("recording…\n(muted)");
         if (xSemaphoreGive(s_audio_go) != pdTRUE) {
             continue;
         }
         while (xSemaphoreTake(s_audio_done, pdMS_TO_TICKS(50)) != pdTRUE) {
             vTaskDelay(1);
-        }
-        while (s_held && !s_failed) {
-            vTaskDelay(pdMS_TO_TICKS(10));
         }
     }
 

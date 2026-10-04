@@ -27,8 +27,8 @@ Prove whether the BOX-3 can encode and decode intelligible 16 kHz mono Opus cont
 |------|---------|
 | Host | `make install-server` then `.venv/bin/python -m demos.server.h31_opus_messages.server --host 0.0.0.0 --port 8080` |
 | Smoke (Mac) | `make demo-opus-messages` |
-| Local Opus (kit) | `make flash DEMO=h30` — hold red ≥10 s (muted record), release → replay |
-| Chunk + server (kit) | `make flash DEMO=h31` — hold red ≥3 s, short **Boot** = play, long **Boot** = 16/24k for next record |
+| Local Opus (kit) | `make flash DEMO=h30` — tap red ≥10 s, tap again → replay; max 180 s |
+| Chunk + server (kit) | `make flash DEMO=h31` — tap red start/stop (max 180 s), short **Boot** = play, long **Boot** = 16/24k |
 
 ---
 
@@ -59,8 +59,8 @@ This is an island demo. Do not modify X02 until product integration is explicitl
 
 ### Phase 2 as-built (h30)
 
-- **Hold red:** mic → Opus encode (+ decode for metrics); **speaker muted** during hold (live loopback causes desk feedback).
-- **Release:** replay stored packets to speaker; fault injection (one missing + one corrupt frame) after ≥10 s hold → `-- PASS h30`.
+- **Tap red:** start/stop mic → Opus encode (+ decode for metrics); **speaker muted** while recording.
+- **Stop (≥10 s):** replay stored packets + fault injection → `-- PASS h30`. **180 s cap:** `-- SOAK PASS h30`.
 - **Boot:** toggles 16/24 kbps for the next session (long-press pattern on h31; h30 uses Boot for bitrate).
 - **Tasks:** `h30_audio` worker with **32 KiB** stack (PSRAM when available). **Do not** run Opus on `app_main` (stack overflow reboot).
 - **Desk verification (2026-10-04):** Record + playback intelligible; no reboot after stack fix.
@@ -131,7 +131,7 @@ Completed 2026-10-04: [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md) now record
 |---|---|---|
 | Bitrate | 16 kbps, 24 kbps | h30/h31 long Boot |
 | Speech | Quiet, normal, noisy-room, silence | Operator informal only |
-| Duration | 10 s, 60 s, 180 s | ≥10 s PASS; 180 s not logged |
+| Duration | 10 s, 60 s, 180 s | ≥10 s PASS; **180 s** tap-to-record until cap (`-- SOAK PASS h30` / `h31`) |
 | Failure | Missing/corrupt frame, duplicate chunk | h30 fault replay; h31 `client.py` |
 | Playback | Start, seek, reconnect | Short Boot play; full seek TBD |
 | Metrics | CPU, heap, serial on h30 | Available in h30 logs |
