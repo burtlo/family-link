@@ -1,0 +1,22 @@
+git_commit=9788f0130fdc9826503f48f39eba032db6be6593
+git_status_short:
+ M docs/LONG-MESSAGE-ARCHITECTURE.md
+ M docs/plans/long-message-experiments.md
+?? docs/evidence/
+?? docs/plans/x02-opus-partition-feasibility.md
+
+target=esp32s3
+flash_size=16MiB (BOX-3)
+family_idf_version_env=v5.4.2 (default in scripts/flash.py)
+esp_idf_version=ESP-IDF v5.4.2
+compiler=xtensa-esp-elf-gcc (crosstool-NG esp-14.2.0_20241119) 14.2.0
+idf_path=/Users/lynnfrank/esp/esp-idf
+
+sdkconfig_repo_sha256=50fb4fcd6b020b63314d80fc0dc54937006ab7be4a0dffe41885e59a4eac2eed  (firmware/sdkconfig)
+sdkconfig_defaults_sha256=6bef4dd6481a3db589e30975718d57949bda1bc3cfa223b49b69cb52e01cb3be  (firmware/sdkconfig.defaults)
+partition_table_kconfig=CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y  (from sdkconfig.defaults)
+partition_table_idf_preset=SINGLE_APP_LARGE → factory app 1500 KiB @ 0x10000
+
+build_method=make build-firmware DEMO=<id> → scripts/flash.py --build-only (sources ~/esp/esp-idf/export.sh)
+clean_method=idf.py fullclean per build dir before each build (2026-10-04)
+application_binary=firmware/build/<demo_dir>/family_link_demo.bin (unstamped; WHO stamp only on flash)

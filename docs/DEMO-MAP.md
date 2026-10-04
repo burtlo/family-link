@@ -82,6 +82,8 @@ Numbered **01–06** stay island proofs (`make demos-server`). Glue is **`make d
 | h28 | Short LCD clip: 5 s film at 12 fps (title / bouncing ball / end), RGB565 blit, loops. No Wi-Fi. Not a product path. |
 | x01 | Earlier glue shell: locked / PIN / inbox / record / hangout against combined |
 | x02 | v1 product shell: hangout roster, PIN, carousel, record, WS inbox. Firmware: **`firmware/v1/`** modules + `demos/x02_product_shell.c` (1-line flash shim). Host: `make v1-server`. Timing: `make v1-timing`; parity: `make check-v1-parity` |
+| x02-opus-probe | **Measurement only:** full X02 + forced Opus link; partition overflow on current 1.5 MiB slot. See [`x02-opus-partition-feasibility.md`](plans/x02-opus-partition-feasibility.md). |
+| x02-opus-dep | **Measurement only:** X02 + Opus dep, no live references (negative control for link-time stripping). |
 | p01–p09 | Geometric face, blink, moods, SFX, pet loop, notice, talk-or-freeze |
 | p10–p11 | Packed portrait + greeting (persona pipeline) |
 

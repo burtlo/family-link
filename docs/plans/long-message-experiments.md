@@ -33,7 +33,7 @@ The current X02 can record up to three minutes but downloads playback into a buf
 
 This roadmap does not authorize X02 implementation. Each phase is an island experiment with evidence and handoff. Opus Phase 6 completed early because h30/h31 were independent island proofs; its remaining product checks are explicitly carried into Phases 5 and 8. Do not weaken an earlier acceptance criterion to claim a later integration phase complete.
 
-**Related docs:** [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), [`MESSAGE-COSTS.md`](../MESSAGE-COSTS.md), [`durable-outbox-demo.md`](durable-outbox-demo.md), [`opus-demo.md`](opus-demo.md).
+**Related docs:** [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), [`MESSAGE-COSTS.md`](../MESSAGE-COSTS.md), [`durable-outbox-demo.md`](durable-outbox-demo.md), [`opus-demo.md`](opus-demo.md), [`x02-opus-partition-feasibility.md`](x02-opus-partition-feasibility.md).
 
 ## Phase 1 — Record the baseline
 
@@ -47,6 +47,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 - Record upload time for 10, 60, and 180 seconds on the test network where practical.
 - Record current server process memory and on-disk files for the same messages.
 - Store results in a dated feature or experiment-results document; do not overwrite estimates in `MESSAGE-COSTS.md` with measurements lacking provenance.
+- Execute [`x02-opus-partition-feasibility.md`](x02-opus-partition-feasibility.md) after the comparable baseline builds; its combined link and partition decision may proceed independently of playback and server experiments. **Done (2026-10-04):** partition feasibility research shows that X02+Opus **hard-fails** the current 1.5 MiB factory slot. Both corrected **2.125 MiB single-factory** and **dual-OTA** candidates are tool-validated, absent from `sdkconfig`, and not device-proven. The production choice remains open pending an explicit decision about physical recovery versus remote update and rollback; modeled capacity is **~31.5** versus **~26.5** three-minute messages. Evidence: [`docs/evidence/x02-opus-partition/`](../evidence/x02-opus-partition/), corrections [`phase4-corrections.md`](../evidence/x02-opus-partition/phase4-corrections.md).
 
 **Acceptance**
 
@@ -193,6 +194,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 - Compatibility plan for existing single-POST clients and stored messages.
 - X02 UI state map for safely stored, pending, uploading, sent, reconnecting playback, storage full, and server full.
 - Updated resource budget from measured results.
+- Consume the corrected partition and flash-reserve evidence from [`x02-opus-partition-feasibility.md`](x02-opus-partition-feasibility.md). Before integration, resolve the open product decision between the tool-validated single-factory and dual-OTA layouts by deciding whether physical serial recovery is acceptable and whether remote update with rollback is required. Probe size is **1,665,808 B**, planned reserve is **80–178 KiB**, and margin at a 2.125 MiB slot is **334,234 B**; implementation, device proof, and one-device flash remain separate. See [`phase4-corrections.md`](../evidence/x02-opus-partition/phase4-corrections.md).
 - Rollback plan retaining the existing short-message path until end-to-end acceptance passes.
 - A separate X02 implementation plan for user approval.
 

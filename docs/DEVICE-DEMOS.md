@@ -495,6 +495,12 @@ Hangout roster, per-user PIN, carousel inbox, record 1:1 / Everyone, mute gate, 
 
 **Reuse later:** this is the binary to polish for ship.
 
+### x02-opus-probe / x02-opus-dep — partition size probes (not product)
+
+**Apps:** `x02_opus_size_probe.c`, `x02_opus_dep_only.c` (+ `fl_opus_size_probe`).
+
+Build-only variants for [`plans/x02-opus-partition-feasibility.md`](plans/x02-opus-partition-feasibility.md): **probe** retains Opus encode/decode with full X02; **dep** is the negative control. Flash ids `x02-opus-probe` / `x02-opus-dep`. Do not ship; keep for size regression. Corrected partition math: [`evidence/x02-opus-partition/phase4-corrections.md`](evidence/x02-opus-partition/phase4-corrections.md).
+
 ## Not in this series (on purpose)
 
 - Expressive face / avatar / UI chirps — those are [`PERSONALITY-DEMOS.md`](PERSONALITY-DEMOS.md) (p01–p09). Do not fold a pet UI into h02.

@@ -34,7 +34,7 @@ Approved Opus profile identifiers:
 | `voip_16k` | VOIP | 16,000 bps | Default voice message profile |
 | `audio_24k` | AUDIO | 24,000 bps | Optional measured higher-quality profile |
 
-Opus encoding and decoding MUST run on a dedicated task with a product-measured stack budget. The island proof required a 32 KiB task stack and added about 180 KiB to the simpler demo binary. X02 integration must resolve application partition headroom before enabling Opus in the product build.
+Opus encoding and decoding MUST run on a dedicated task with a product-measured stack budget. The island proof required a 32 KiB task stack and added about 180 KiB to the simpler demo binary. The 2026-10-04 [X02 + Opus partition feasibility](plans/x02-opus-partition-feasibility.md) spike measured **+181,536 B** for full X02 with retained Opus (**1,665,808 B** image vs **1,536,000 B** `SINGLE_APP_LARGE` slot — **hard overflow**). Product Opus enablement requires an enlarged application slot. Both corrected **2.125 MiB single-factory** and **dual-OTA** candidates have tool-validated geometry but are not device-proven; the production choice remains open pending a decision about physical recovery versus remote update and rollback. Margin at either candidate app slot is **334,234 B**, not the current slot’s **262,144 B**. Evidence: [`docs/evidence/x02-opus-partition/`](evidence/x02-opus-partition/), corrections [`phase4-corrections.md`](evidence/x02-opus-partition/phase4-corrections.md).
 
 ## Identity
 

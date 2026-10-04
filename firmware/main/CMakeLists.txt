@@ -3,7 +3,8 @@ if(NOT DEFINED FAMILY_DEMO OR FAMILY_DEMO STREQUAL "")
 endif()
 
 set(DEMO_SRC "${CMAKE_CURRENT_LIST_DIR}/../demos/${FAMILY_DEMO}.c")
-if(FAMILY_DEMO STREQUAL "x02_product_shell")
+set(X02_V1_DEMOS x02_product_shell x02_opus_size_probe x02_opus_dep_only)
+if(FAMILY_DEMO IN_LIST X02_V1_DEMOS)
     set(V1_SRCS
         "${CMAKE_CURRENT_LIST_DIR}/../v1/x02_main.c"
         "${CMAKE_CURRENT_LIST_DIR}/../v1/v1_api.c"
@@ -18,6 +19,11 @@ if(FAMILY_DEMO STREQUAL "x02_product_shell")
 else()
     set(V1_SRCS "")
     set(V1_INCLUDE "")
+endif()
+
+set(OPUS_PROBE_SRCS "")
+if(FAMILY_DEMO STREQUAL "x02_opus_size_probe")
+    list(APPEND OPUS_PROBE_SRCS "${CMAKE_CURRENT_LIST_DIR}/../common/fl_opus_size_probe.c")
 endif()
 if(NOT EXISTS "${DEMO_SRC}")
     message(FATAL_ERROR "Unknown FAMILY_DEMO=${FAMILY_DEMO} (expected ${DEMO_SRC})")
@@ -37,7 +43,8 @@ set(COMMON_SRCS
     "${CMAKE_CURRENT_LIST_DIR}/../common/who.c"
 )
 set(EXTRA_REQUIRES "")
-if(FAMILY_DEMO STREQUAL "h30_opus_local" OR FAMILY_DEMO STREQUAL "h31_opus_chunks")
+if(FAMILY_DEMO STREQUAL "h30_opus_local" OR FAMILY_DEMO STREQUAL "h31_opus_chunks"
+        OR FAMILY_DEMO STREQUAL "x02_opus_size_probe" OR FAMILY_DEMO STREQUAL "x02_opus_dep_only")
     list(APPEND EXTRA_REQUIRES opus)
 endif()
 
@@ -45,6 +52,7 @@ idf_component_register(
     SRCS
         "${DEMO_SRC}"
         ${V1_SRCS}
+        ${OPUS_PROBE_SRCS}
         ${COMMON_SRCS}
     INCLUDE_DIRS
         "${CMAKE_CURRENT_LIST_DIR}/../common"
@@ -69,11 +77,13 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE FAMILY_DEMO_NAME="${FAMILY_D
 
 # Identity (Mazi/Arlo) is stamped into who.c slots after compile. Do not
 # pass FAMILY_DEVICE_* here — that forced a second full build per kit.
-target_link_options(
-    ${COMPONENT_LIB}
-    INTERFACE
-        "-Wl,-u,WHO_DEVICE_ID"
-        "-Wl,-u,WHO_DEVICE_TOKEN"
-        "-Wl,-u,WHO_DEVICE_NAME"
-        "-Wl,-u,WHO_PEER_NAME"
+set(WHO_LINK_OPTS
+    "-Wl,-u,WHO_DEVICE_ID"
+    "-Wl,-u,WHO_DEVICE_TOKEN"
+    "-Wl,-u,WHO_DEVICE_NAME"
+    "-Wl,-u,WHO_PEER_NAME"
 )
+if(FAMILY_DEMO STREQUAL "x02_opus_size_probe")
+    list(APPEND WHO_LINK_OPTS "-Wl,-u,fl_opus_size_probe_force_link")
+endif()
+target_link_options(${COMPONENT_LIB} INTERFACE ${WHO_LINK_OPTS})

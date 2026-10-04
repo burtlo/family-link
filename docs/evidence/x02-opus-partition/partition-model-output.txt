@@ -1,0 +1,29 @@
+=== Current SINGLE_APP_LARGE tail ===
+Unpartitioned tail: 0x187000..0x1000000 = 0xE79000 = 15,175,680 B
+
+=== Strategy (a) single factory + outbox ===
+Raw outbox (a): 0x230000..0x1000000 = 0xDD0000 = 14,483,456 B
+Modeled usable (a): 12,258,797 B (11.691 MiB)
+3-min messages (a): 31.5
+Required margin for 0x220000 slot: 334,234 B
+Reserve low (80 KiB): projected=1,747,728 free=480,496 beyond_margin=146,262 product_ready=True
+Reserve mid (125 KiB): projected=1,793,808 free=434,416 beyond_margin=100,182 product_ready=True
+Reserve high (178 KiB): projected=1,848,080 free=380,144 beyond_margin=45,910 product_ready=True
+
+=== Self-consistent minimum app slots ===
+Policy: free >= max(256 KiB, ceil(15% of slot))
+Rounded slot alignment: 0x1000 (4,096 B)
+Reserve low (80 KiB): projected=1,747,728 minimum=2,056,151 B (1.960898 MiB) aligned=0x1F6000 = 2,056,192 B (1.960938 MiB)
+Reserve mid (125 KiB): projected=1,793,808 minimum=2,110,363 B (2.012599 MiB) aligned=0x204000 = 2,113,536 B (2.015625 MiB)
+Reserve high (178 KiB): projected=1,848,080 minimum=2,174,212 B (2.073490 MiB) aligned=0x213000 = 2,174,976 B (2.074219 MiB)
+
+=== Strategy (b) corrected dual OTA + outbox ===
+Raw outbox (b): 0x460000..0x1000000 = 0xBA0000 = 12,189,696 B
+Modeled usable (b): 10,317,358 B
+3-min messages (b): 26.5
+Delta vs (a): raw 2,293,760 B, usable 1,941,439 B, messages ~5.0
+
+=== Current partition policy (1.5 MiB slot) ===
+Required margin for current slot: 262,144 B
+X02 free: 51,728 (marginal: True)
+Probe overflow: 129,808 B

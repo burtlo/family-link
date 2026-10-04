@@ -267,7 +267,9 @@ Firmware **does not mount USB MSC** in this tree yet. Buy when implementing **ou
 
 ## On-chip flash (nothing to buy)
 
-The WROOM-1 module has **16 MiB** soldered flash. Today **~14.4 MiB is unallocated** — not a volume until you flash a custom partition table (~**11–12 MiB** wear-leveled FAT after a 2–3 MiB app). That is a **firmware change**, not a shopping trip.
+The WROOM-1 module has **16 MiB** soldered flash. Today **15,175,680 B** of tail flash is **unpartitioned** (`SINGLE_APP_LARGE` factory ends at `0x187000`) — not a volume until you flash a custom partition table. Corrected modeled on-chip outbox under the candidate **2.125 MiB** single-app + FAT layout: **12,258,797 B** (**11.691 MiB**, or **12.259 MB**) modeled usable (~**31.5** three-minute Opus messages at planning size) — see [`evidence/x02-opus-partition/phase4-corrections.md`](evidence/x02-opus-partition/phase4-corrections.md). That is a **firmware change**, not a shopping trip.
+
+**Partition feasibility (2026-10-04):** full X02 + retained Opus does **not** fit the current **1.5 MiB** factory slot (probe **1,665,808** B, **−129,808** B). Both a **2.125 MiB single-factory** layout and a **dual-OTA layout with two 2.125 MiB slots** have tool-validated geometry and useful modeled on-chip outbox capacity. The production choice remains open pending a decision about physical recovery versus remote update and rollback. See [`plans/x02-opus-partition-feasibility.md`](plans/x02-opus-partition-feasibility.md) and evidence [`evidence/x02-opus-partition/`](evidence/x02-opus-partition/); neither layout is selected in `sdkconfig` or device-proven.
 
 ---
 

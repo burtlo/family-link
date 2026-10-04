@@ -1,0 +1,18 @@
+ESP-IDF partition_table/gen_esp32part.py validation (2026-10-04)
+Commit: 9788f0130fdc9826503f48f39eba032db6be6593
+Target: esp32s3, flash 16 MiB
+Partition table offset: 0x8000 (IDF default)
+
+Command (each fixture):
+  python gen_esp32part.py fixtures/partitions_<name>.csv /tmp/pt.bin --flash-size 16MB --quiet
+  python gen_esp32part.py /tmp/pt.bin /tmp/pt-decoded.csv
+
+Fixtures:
+  docs/evidence/x02-opus-partition/fixtures/partitions_single_factory.csv
+  docs/evidence/x02-opus-partition/fixtures/partitions_dual_ota.csv
+
+Both tables: verify OK (exit 0). Decoded output:
+  partition-tool-validation-single.csv
+  partition-tool-validation-dual.csv
+
+Reproducible arithmetic: scripts/opus_partition_model.py → partition-model-output.txt

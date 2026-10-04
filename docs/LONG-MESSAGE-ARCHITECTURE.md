@@ -73,6 +73,7 @@ This document records the product decisions behind messages longer than the curr
 - Experiment order: [plans/long-message-experiments.md](plans/long-message-experiments.md)
 - Durable outbox experiment: [plans/durable-outbox-demo.md](plans/durable-outbox-demo.md)
 - Opus experiment: [plans/opus-demo.md](plans/opus-demo.md)
+- X02 + Opus partition feasibility: [plans/x02-opus-partition-feasibility.md](plans/x02-opus-partition-feasibility.md)
 
 ## Deliberately unresolved
 

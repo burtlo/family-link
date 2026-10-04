@@ -75,6 +75,8 @@ DEMOS = {
     "h31": "h31_opus_chunks",
     "x01": "x01_product_shell",
     "x02": "x02_product_shell",
+    "x02-opus-probe": "x02_opus_size_probe",
+    "x02-opus-dep": "x02_opus_dep_only",
     "p01": "p01_static_face",
     "p02": "p02_idle_life",
     "p03": "p03_moods",

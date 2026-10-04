@@ -71,7 +71,7 @@ The answering machine **does not keep the inbox on the box.** NVS holds Wi-Fi + 
 
 | Pool | Size | Role today |
 |---|---|---|
-| **SPI flash** (WROOM-1) | **16 MiB** | Firmware + NVS in **1.5 MiB** factory partition. **~14.4 MiB unallocated** — not a filesystem until a custom partition table. |
+| **SPI flash** (WROOM-1) | **16 MiB** | Firmware + NVS in **1.5 MiB** factory partition today (`SINGLE_APP_LARGE`). **15,175,680 B** unpartitioned tail (`0xE79000`) — not a filesystem until a custom partition table. Measured **2026-10-04:** X02 shell **1,484,272** B (~3.4% free); X02+Opus size probe **1,665,808** B (**overflows** current slot by **129,808** B). Feasibility outcome (corrected geometry): [`plans/x02-opus-partition-feasibility.md`](plans/x02-opus-partition-feasibility.md), [`evidence/x02-opus-partition/phase4-corrections.md`](evidence/x02-opus-partition/phase4-corrections.md). |
 | **PSRAM** | **16 MiB** | Working RAM (one ~320 KB WAV, one 153.6 KB preview). Lost on reset. |
 | **Server disk** | Yours | Canonical inbox. |
 
@@ -86,7 +86,7 @@ Rough local cache if you claim **~12 MiB** on-chip FAT later: **~35–40** ten
 3. **1 W speaker** is desk-volume, not a room. Point it at the player, not at the TV speakers. Louder speaker, headphones, external mic (same kit / Pmod): [`SPEAKER.md`](SPEAKER.md).
 4. **LCD glow.** E-ink would be calmer idle; this hardware will not do that. Dim the backlight when locked.
 5. **Stock firmware is a wake-word product.** Treat the kit as a blank HMI. Flash ours before it goes to their desk.
-6. **16 MiB flash is mostly empty and unused.** Firmware sits in 1.5 MiB. Local media needs a custom partition or removable storage — buying guide: [`STORAGE.md`](STORAGE.md).
+6. **16 MiB flash is mostly empty and unused.** Firmware sits in 1.5 MiB today; long-message + Opus needs a **larger app slot**. Corrected single-factory and dual-OTA candidates each use **2.125 MiB** app slots and retain useful on-chip FAT capacity. Their geometry is tool-validated but not flashed or device-proven; the production choice remains open pending recovery and remote-update requirements. Local media also has removable paths — buying guide: [`STORAGE.md`](STORAGE.md).
 
 ## Software stack (intended)
 

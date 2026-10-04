@@ -1,0 +1,479 @@
+Executing action: size
+Running ninja in directory /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe
+Executing "ninja all"...
+[1/13] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/__/common/who.c.obj
+[2/13] Performing build step for 'bootloader'
+[1/1] cd /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/bootloader/esp-idf/esptool_py && /Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env/bin/python /Users/lynnfrank/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/bootloader/bootloader.bin
+Bootloader binary size 0x5130 bytes. 0x2ed0 bytes (37%) free.
+[3/13] No install step for 'bootloader'
+[4/13] Completed 'bootloader'
+[5/13] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/__/v1/v1_api.c.obj
+In file included from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_internal.h:125,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/lv_3dmath.h:17,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:5,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/lvgl.h:1,
+                 from /Users/lynnfrank/src/family-link/firmware/v1/v1_connect.h:7,
+                 from /Users/lynnfrank/src/family-link/firmware/v1/v1_api.c:3:
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_kconfig.h:226:2: warning: #warning "LV_MEM_SIZE_KILOBYTES is deprecated, use LV_MEM_SIZE instead (value in bytes)" [-Wcpp]
+  226 | #warning "LV_MEM_SIZE_KILOBYTES is deprecated, use LV_MEM_SIZE instead (value in bytes)"
+      |  ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_kconfig.h:230:2: warning: #warning "Both LV_MEM_SIZE and LV_MEM_SIZE_KILOBYTES are defined. Using LV_MEM_SIZE" [-Wcpp]
+  230 | #warning "Both LV_MEM_SIZE and LV_MEM_SIZE_KILOBYTES are defined. Using LV_MEM_SIZE"
+      |  ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_internal.h:4976:10: warning: #warning "LV_ASSERT_HANDLER_INCLUDE is deprecated and will be removed in a future release. Use LV_ASSERT_CUSTOM_INCLUDE and define LV_ASSERT_HANDLER inside. To suppress this warning, remove LV_ASSERT_HANDLER_INCLUDE or enable LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING." [-Wcpp]
+ 4976 |         #warning "LV_ASSERT_HANDLER_INCLUDE is deprecated and will be removed in a future release. Use LV_ASSERT_CUSTOM_INCLUDE and define LV_ASSERT_HANDLER inside. To suppress this warning, remove LV_ASSERT_HANDLER_INCLUDE or enable LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING."
+      |          ^~~~~~~
+[6/13] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/__/v1/x02_main.c.obj
+In file included from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_internal.h:125,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/lv_3dmath.h:17,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:5,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/lvgl.h:1,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/espressif__esp-box-3/include/bsp/esp-box-3.h:29,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/espressif__esp-box-3/include/bsp/esp-bsp.h:8,
+                 from /Users/lynnfrank/src/family-link/firmware/v1/x02_main.c:10:
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_kconfig.h:226:2: warning: #warning "LV_MEM_SIZE_KILOBYTES is deprecated, use LV_MEM_SIZE instead (value in bytes)" [-Wcpp]
+  226 | #warning "LV_MEM_SIZE_KILOBYTES is deprecated, use LV_MEM_SIZE instead (value in bytes)"
+      |  ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_kconfig.h:230:2: warning: #warning "Both LV_MEM_SIZE and LV_MEM_SIZE_KILOBYTES are defined. Using LV_MEM_SIZE" [-Wcpp]
+  230 | #warning "Both LV_MEM_SIZE and LV_MEM_SIZE_KILOBYTES are defined. Using LV_MEM_SIZE"
+      |  ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_internal.h:4976:10: warning: #warning "LV_ASSERT_HANDLER_INCLUDE is deprecated and will be removed in a future release. Use LV_ASSERT_CUSTOM_INCLUDE and define LV_ASSERT_HANDLER inside. To suppress this warning, remove LV_ASSERT_HANDLER_INCLUDE or enable LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING." [-Wcpp]
+ 4976 |         #warning "LV_ASSERT_HANDLER_INCLUDE is deprecated and will be removed in a future release. Use LV_ASSERT_CUSTOM_INCLUDE and define LV_ASSERT_HANDLER inside. To suppress this warning, remove LV_ASSERT_HANDLER_INCLUDE or enable LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING."
+      |          ^~~~~~~
+[7/13] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/__/v1/v1_record.c.obj
+In file included from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_internal.h:125,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/lv_3dmath.h:17,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:5,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/lvgl.h:1,
+                 from /Users/lynnfrank/src/family-link/firmware/v1/v1_record.h:5,
+                 from /Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1:
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_kconfig.h:226:2: warning: #warning "LV_MEM_SIZE_KILOBYTES is deprecated, use LV_MEM_SIZE instead (value in bytes)" [-Wcpp]
+  226 | #warning "LV_MEM_SIZE_KILOBYTES is deprecated, use LV_MEM_SIZE instead (value in bytes)"
+      |  ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_kconfig.h:230:2: warning: #warning "Both LV_MEM_SIZE and LV_MEM_SIZE_KILOBYTES are defined. Using LV_MEM_SIZE" [-Wcpp]
+  230 | #warning "Both LV_MEM_SIZE and LV_MEM_SIZE_KILOBYTES are defined. Using LV_MEM_SIZE"
+      |  ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_internal.h:4976:10: warning: #warning "LV_ASSERT_HANDLER_INCLUDE is deprecated and will be removed in a future release. Use LV_ASSERT_CUSTOM_INCLUDE and define LV_ASSERT_HANDLER inside. To suppress this warning, remove LV_ASSERT_HANDLER_INCLUDE or enable LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING." [-Wcpp]
+ 4976 |         #warning "LV_ASSERT_HANDLER_INCLUDE is deprecated and will be removed in a future release. Use LV_ASSERT_CUSTOM_INCLUDE and define LV_ASSERT_HANDLER inside. To suppress this warning, remove LV_ASSERT_HANDLER_INCLUDE or enable LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING."
+      |          ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c: In function 'pick_refresh_rec_btn':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:805:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  805 |         lv_obj_add_flag(s_pick_rec_btn, LV_OBJ_FLAG_CLICKABLE);
+      |         ^~~~~~~~~~~~~~~
+In file included from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:21:
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:808:9: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  808 |         lv_obj_remove_flag(s_pick_rec_btn, LV_OBJ_FLAG_CLICKABLE);
+      |         ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c: In function 'pick_add_user_card':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1142:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1142 |     lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1143:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1143 |     lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1160:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1160 |     lv_obj_remove_flag(name, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c: In function 'pick_add_all_card':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1176:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1176 |     lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1177:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1177 |     lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1195:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1195 |     lv_obj_remove_flag(name, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c: In function 'paint_send':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1254:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1254 |     lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c: In function 'paint_pick':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1367:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1367 |     lv_obj_add_flag(s_pick_scroll, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c: In function 'paint_record':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1511:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1511 |     lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1540:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1540 |     lv_obj_add_flag(s_record_img, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:1541:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1541 |     lv_obj_remove_flag(s_record_img, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c: At top level:
+/Users/lynnfrank/src/family-link/firmware/v1/v1_record.c:485:13: warning: 'record_abort_mic' defined but not used [-Wunused-function]
+  485 | static void record_abort_mic(void)
+      |             ^~~~~~~~~~~~~~~~
+[8/13] Building C object esp-idf/main/CMakeFiles/__idf_main.dir/__/v1/v1_carousel.c.obj
+In file included from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_internal.h:125,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/lv_3dmath.h:17,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:5,
+                 from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/lvgl.h:1,
+                 from /Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.h:5,
+                 from /Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1:
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_kconfig.h:226:2: warning: #warning "LV_MEM_SIZE_KILOBYTES is deprecated, use LV_MEM_SIZE instead (value in bytes)" [-Wcpp]
+  226 | #warning "LV_MEM_SIZE_KILOBYTES is deprecated, use LV_MEM_SIZE instead (value in bytes)"
+      |  ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_kconfig.h:230:2: warning: #warning "Both LV_MEM_SIZE and LV_MEM_SIZE_KILOBYTES are defined. Using LV_MEM_SIZE" [-Wcpp]
+  230 | #warning "Both LV_MEM_SIZE and LV_MEM_SIZE_KILOBYTES are defined. Using LV_MEM_SIZE"
+      |  ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/3d/../config/lv_conf_internal.h:4976:10: warning: #warning "LV_ASSERT_HANDLER_INCLUDE is deprecated and will be removed in a future release. Use LV_ASSERT_CUSTOM_INCLUDE and define LV_ASSERT_HANDLER inside. To suppress this warning, remove LV_ASSERT_HANDLER_INCLUDE or enable LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING." [-Wcpp]
+ 4976 |         #warning "LV_ASSERT_HANDLER_INCLUDE is deprecated and will be removed in a future release. Use LV_ASSERT_CUSTOM_INCLUDE and define LV_ASSERT_HANDLER inside. To suppress this warning, remove LV_ASSERT_HANDLER_INCLUDE or enable LV_DISABLE_ASSERT_HANDLER_INCLUDE_WARNING."
+      |          ^~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'carousel_refresh_cards_read_state':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:568:13: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  568 |             lv_obj_add_flag(ui->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |             ^~~~~~~~~~~~~~~
+In file included from /Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:21:
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:570:13: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  570 |             lv_obj_clear_flag(ui->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |             ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'carousel_populate_msg_card':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:594:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  594 |     lv_obj_clear_flag(ui->unread_dot, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:595:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  595 |     lv_obj_remove_flag(ui->unread_dot, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:598:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  598 |         lv_obj_add_flag(ui->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |         ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:608:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  608 |     lv_obj_remove_flag(ui->dur_lab, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'card_sketch_show':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:683:9: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  683 |         lv_obj_remove_flag(ui->sketch_img, LV_OBJ_FLAG_CLICKABLE);
+      |         ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:684:9: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  684 |         lv_obj_clear_flag(ui->sketch_img, LV_OBJ_FLAG_SCROLLABLE);
+      |         ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:687:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  687 |     lv_obj_clear_flag(ui->sketch_img, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'carousel_refresh_sender_header':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1055:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1055 |         lv_obj_add_flag(s_sender_face, LV_OBJ_FLAG_HIDDEN);
+      |         ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1056:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1056 |         lv_obj_add_flag(s_sender_name, LV_OBJ_FLAG_HIDDEN);
+      |         ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1060:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1060 |     lv_obj_clear_flag(s_sender_face, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1061:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1061 |     lv_obj_clear_flag(s_sender_name, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'set_transport_icon':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1268:13: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1268 |             lv_obj_add_flag(s_play_icon, LV_OBJ_FLAG_HIDDEN);
+      |             ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1270:13: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1270 |             lv_obj_clear_flag(s_play_icon, LV_OBJ_FLAG_HIDDEN);
+      |             ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1275:13: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1275 |             lv_obj_clear_flag(s_pause_icon, LV_OBJ_FLAG_HIDDEN);
+      |             ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1277:13: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1277 |             lv_obj_add_flag(s_pause_icon, LV_OBJ_FLAG_HIDDEN);
+      |             ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'refresh_card_focus_states':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1311:13: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1311 |             lv_obj_remove_flag(card, LV_OBJ_FLAG_CLICKABLE);
+      |             ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1313:13: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1313 |             lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+      |             ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1319:13: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1319 |             lv_obj_add_flag(s_play_btn, LV_OBJ_FLAG_HIDDEN);
+      |             ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1321:13: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1321 |             lv_obj_clear_flag(s_play_btn, LV_OBJ_FLAG_HIDDEN);
+      |             ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1323:17: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1323 |                 lv_obj_add_flag(s_play_btn, LV_OBJ_FLAG_CLICKABLE);
+      |                 ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1326:17: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1326 |                 lv_obj_remove_flag(s_play_btn, LV_OBJ_FLAG_CLICKABLE);
+      |                 ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1333:13: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1333 |             lv_obj_add_flag(s_bar, LV_OBJ_FLAG_CLICKABLE);
+      |             ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1336:13: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1336 |             lv_obj_remove_flag(s_bar, LV_OBJ_FLAG_CLICKABLE);
+      |             ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'make_pause_icon':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1353:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1353 |     lv_obj_clear_flag(wrap, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1354:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1354 |     lv_obj_remove_flag(wrap, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1360:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1360 |     lv_obj_clear_flag(l, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1361:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1361 |     lv_obj_remove_flag(l, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1368:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1368 |     lv_obj_clear_flag(r, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1369:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1369 |     lv_obj_remove_flag(r, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'make_play_icon_buf':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1777:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1777 |     lv_obj_remove_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'carousel_add_card':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1813:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1813 |     lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1816:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1816 |     lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'carousel_add_setting_card':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1838:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1838 |     lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1841:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1841 |     lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: In function 'paint_carousel':
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1907:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1907 |     lv_obj_clear_flag(s_sender_face, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1908:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ 1908 |     lv_obj_remove_flag(s_sender_face, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1919:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1919 |     lv_obj_add_flag(s_carousel_scroll, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1954:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1954 |         lv_obj_add_flag(s_play_btn, LV_OBJ_FLAG_HIDDEN);
+      |         ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1959:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1959 |     lv_obj_add_flag(s_pause_icon, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1969:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+ 1969 |     lv_obj_add_flag(s_bar, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c: At top level:
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1853:13: warning: 'save_profile' defined but not used [-Wunused-function]
+ 1853 | static void save_profile(void)
+      |             ^~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/firmware/v1/v1_carousel.c:1543:13: warning: 'shift_focus_to' defined but not used [-Wunused-function]
+ 1543 | static void shift_focus_to(int idx)
+      |             ^~~~~~~~~~~~~~
+[9/13] Linking C static library esp-idf/main/libmain.a
+[10/13] Generating ld/sections.ld
+[11/13] Linking CXX executable family_link_demo.elf
+[12/13] Generating binary image from built executable
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/family_link_demo.bin
+[13/13] cd /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/esp-idf/esptool_py && /Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env/bin/python /Users/lynnfrank/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/partition_table/partition-table.bin /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/family_link_demo.bin
+FAILED: [code=1] esp-idf/esptool_py/CMakeFiles/app_check_size /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/esp-idf/esptool_py/CMakeFiles/app_check_size 
+cd /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/esp-idf/esptool_py && /Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env/bin/python /Users/lynnfrank/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/partition_table/partition-table.bin /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/family_link_demo.bin
+Error: app partition is too small for binary family_link_demo.bin size 0x196b10:
+  - Part 'factory' 0/0 @ 0x10000 size 0x177000 (overflow 0x1fb10)
+ninja: build stopped: subcommand failed.
+Running ninja in directory /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe
+Executing "ninja size"...
+[0/1] cd /Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe && /opt/homebrew/bin/cmake -D "IDF_SIZE_TOOL=/Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env/bin/python;-m;esp_idf_size" -D MAP_FILE=/Users/lynnfrank/src/family-link/firmware/build/x02_opus_size_probe/family_link_demo.map -D OUTPUT_JSON= -P /Users/lynnfrank/esp/esp-idf/tools/cmake/run_size_tool.cmake
+                           Memory Type Usage Summary                            
+┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Memory            ┃              ┃          ┃                ┃               ┃
+┃ Type/Section      ┃ Used [bytes] ┃ Used [%] ┃ Remain [bytes] ┃ Total [bytes] ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ Flash Code        │      1260786 │          │                │               │
+│    .text          │      1260786 │          │                │               │
+│ Flash Data        │       276612 │          │                │               │
+│    .rodata        │       276356 │          │                │               │
+│    .appdesc       │          256 │          │                │               │
+│ DIRAM             │       232431 │    68.01 │         109329 │        341760 │
+│    .bss           │       120544 │    35.27 │                │               │
+│    .text          │        90455 │    26.47 │                │               │
+│    .data          │        21432 │     6.27 │                │               │
+│ IRAM              │        16383 │    99.99 │              1 │         16384 │
+│    .text          │        15356 │    93.73 │                │               │
+│    .vectors       │         1027 │     6.27 │                │               │
+│ RTC FAST          │           52 │     0.63 │           8140 │          8192 │
+│    .force_fast    │           28 │     0.34 │                │               │
+│    .rtc_reserved  │           24 │     0.29 │                │               │
+└───────────────────┴──────────────┴──────────┴────────────────┴───────────────┘
+Total image size: 1665696 bytes (.bin may be padded larger)
+Note: The reported total sizes may be smaller than those in the technical 
+reference manual due to reserved memory and application configuration. The total
+flash size available for the application is not included by default, as it 
+cannot be reliably determined due to the presence of other data like the 
+bootloader, partition table, and application partition size.
