@@ -274,6 +274,8 @@ Device UI fixtures (not numbered 01–06): `h18_playback` serves a catalog (gene
 
 Two-box open line (Mazi / Arlo, names in `devices.example.yaml`): `h20_presence` (mute as `available` on `/v1/heartbeat`), `h21_talk` (full-duplex PCM copy, no floor; JSON `status` / `peer_status` for the friend’s mute line), `h22_diary` (dated WAV chunks on `POST /v1/diary`), `h26_draw` (JSON `stroke` / `clear` copy on `/v1/ws`, **high impact**), `h27_sketch` (timed stroke clip on `POST /v1/sketches`, inbox GET + replay, **high impact**). Firmware **h20–h22** / **h26** / **h27**. Plan: [`plans/mazi-arlo-open-line.md`](plans/mazi-arlo-open-line.md). Not the product hangout.
 
+**Opus island (phase 3):** `h31_opus_messages` — minimal [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md) chunk lifecycle for `audio.codec=opus` (create, PUT 2 s chunks, upload status, complete, Ogg finalize, range GET, `index.json`). `make demo-opus-messages`. Pairs with firmware **h31**. Plan: [`plans/opus-demo.md`](plans/opus-demo.md).
+
 ### v1 product host
 
 **Script:** `demos/server/v1_product/` — `make v1-server` / `make demo-v1`.

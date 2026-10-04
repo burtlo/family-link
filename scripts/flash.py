@@ -71,6 +71,8 @@ DEMOS = {
     "h27": "h27_sketch",
     "h28": "h28_video",
     "h29": "h29_pingpong",
+    "h30": "h30_opus_local",
+    "h31": "h31_opus_chunks",
     "x01": "x01_product_shell",
     "x02": "x02_product_shell",
     "p01": "p01_static_face",
@@ -787,18 +789,17 @@ def cmd_flash_h01(
 
 def cmd_monitor(port: str | None) -> int:
     idf = find_idf()
-    serial = port or pick_serial_port()
+    serial_port = port or pick_serial_port()
     # Prefer idf.py monitor so USB-JTAG reset works; fall back to pyserial.
-    rc = bash_idf(idf, f'idf.py -p "{serial}" monitor')
+    rc = bash_idf(idf, f'idf.py -p "{serial_port}" monitor')
     if rc == 0:
         return 0
     print("idf.py monitor failed; trying 115200 serial capture (Ctrl-C to quit)")
-    device = _import_device()
     try:
-        import serial
+        import serial as pyserial
     except ImportError as exc:
         raise FlashError("pyserial missing. make install") from exc
-    with serial.Serial(serial, 115200, timeout=0.2) as ser:
+    with pyserial.Serial(serial_port, 115200, timeout=0.2) as ser:
         while True:
             chunk = ser.read(4096)
             if chunk:

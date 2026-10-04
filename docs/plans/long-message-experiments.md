@@ -20,8 +20,8 @@ Prove long messages in isolated steps while protecting the current X02 path. The
 | [Phase 2 — Prove streaming playback](#phase-2--prove-streaming-playback) | BOX-3 plays long server files with bounded RAM and range resume | `todo` |
 | [Phase 3 — Prove canonical server storage](#phase-3--prove-canonical-server-storage) | Chunk sessions finalize into restart-safe message directories | `todo` |
 | [Phase 4 — Prove the durable outbox](#phase-4--prove-the-durable-outbox) | Recordings survive offline operation, interruption, and reboot | `todo` |
-| [Phase 5 — Prove end-to-end PCM](#phase-5--prove-end-to-end-pcm) | One three-minute PCM message records, retries, finalizes, streams, and resumes | `todo` |
-| [Phase 6 — Evaluate Opus](#phase-6--evaluate-opus) | Measurements choose Opus 16/24 kbps or PCM fallback | `todo` |
+| [Phase 5 — Prove the end-to-end codecs](#phase-5--prove-the-end-to-end-codecs) | Preferred Opus and fallback PCM both survive the durable lifecycle | `todo` |
+| [Phase 6 — Evaluate Opus](#phase-6--evaluate-opus) | h30/h31 select 16 kbps VOIP, Ogg finalization, and indexed range playback | `done` (island proof) |
 | [Phase 7 — Prove full-message sketching](#phase-7--prove-full-message-sketching) | Sparse FLSK2 chunks synchronize for the entire message and through seeks | `todo` |
 | [Phase 8 — Prepare X02 integration](#phase-8--prepare-x02-integration) | Proven helpers and migration steps are ready for a separately authorized product change | `todo` |
 
@@ -31,7 +31,7 @@ Prove long messages in isolated steps while protecting the current X02 path. The
 
 The current X02 can record up to three minutes but downloads playback into a buffer that holds only about 10.24 seconds. Recording is staged in volatile PSRAM, upload is one large request, failed sends are discarded, and the server materializes complete media in RAM. Existing h18 and h22 demos already prove important pieces but not the durable combined lifecycle.
 
-This roadmap does not authorize X02 implementation. Each phase is an island experiment with evidence and handoff. Do not proceed to a later phase by silently weakening an earlier acceptance criterion.
+This roadmap does not authorize X02 implementation. Each phase is an island experiment with evidence and handoff. Opus Phase 6 completed early because h30/h31 were independent island proofs; its remaining product checks are explicitly carried into Phases 5 and 8. Do not weaken an earlier acceptance criterion to claim a later integration phase complete.
 
 **Related docs:** [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), [`MESSAGE-COSTS.md`](../MESSAGE-COSTS.md), [`durable-outbox-demo.md`](durable-outbox-demo.md), [`opus-demo.md`](opus-demo.md).
 
@@ -118,44 +118,47 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 
 **Status:** `todo`
 
-## Phase 5 — Prove end-to-end PCM
+## Phase 5 — Prove the end-to-end codecs
 
-**Goal.** Demonstrate the complete standard using only the required baseline codec.
+**Goal.** Demonstrate the complete durable standard with preferred Opus and confirm that PCM remains a functioning fallback.
 
 **Deliverables**
 
-- One island firmware combining bounded PCM capture, durable outbox, background upload, completion, inbox fetch, streaming playback, and playhead.
+- One island firmware combining bounded Opus capture, durable outbox, background upload, completion, inbox fetch, streaming playback, and playhead.
 - One island server combining canonical storage, inbox reference, notification, streaming, restart recovery, and administrator trash.
 - Simultaneous recording and background retry where storage capacity permits.
 - End-to-end identifiers and checksums visible in logs.
+- A PCM fallback fixture through the same message lifecycle and interfaces.
 
 **Acceptance**
 
-- A three-minute recording succeeds when online.
-- A three-minute recording made offline survives reboot and succeeds later.
+- A three-minute 16 kbps Opus recording succeeds when online.
+- A three-minute Opus recording made offline survives reboot and succeeds later.
 - Recipient hears one gapless message and sees one inbox entry.
 - Server and device memory remain bounded by chunk/buffer sizes rather than total duration, except canonical media on disk.
 - A broadcast creates multiple inbox references and one canonical media directory.
+- PCM fallback finalizes to WAV and streams without changing outbox or inbox semantics.
 
 **Status:** `todo`
 
 ## Phase 6 — Evaluate Opus
 
-**Goal.** Decide whether compression should become the preferred product codec without destabilizing durable transport.
+**Goal.** Record the completed island codec decision and carry its remaining product risks forward.
 
 **Deliverables**
 
-- Execute [`opus-demo.md`](opus-demo.md).
-- Run the approved Opus candidate through the Phase 5 lifecycle.
-- Compare storage capacity, upload completion time, CPU, memory, quality, and seeking against PCM.
+- Completed h30 local encode/decode at 16 and 24 kbps.
+- Completed h31 two-second chunks, idempotency/conflict checks, server-side Ogg mux, `index.json`, and range playback.
+- Decision recorded in [`opus-demo.md`](opus-demo.md): 16 kbps VOIP preferred, 24 kbps AUDIO optional, PCM fallback retained.
+- Carry formal 180-second soak, p95 codec timing, bounded product streaming, and X02 partition sizing into Phases 5 and 8.
 
 **Acceptance**
 
-- The Opus plan produces a dated codec decision.
-- An approved Opus representation is fully specified in the protocol before product integration.
-- PCM remains interoperable as the baseline and fallback.
+- [`opus-demo.md`](opus-demo.md) is marked complete with desk evidence and known limits.
+- The approved packet framing, Ogg representation, and seek index are specified in [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md).
+- Remaining product risks are acceptance work for integration rather than unresolved codec design.
 
-**Status:** `todo`
+**Status:** `done` (island proof)
 
 ## Phase 7 — Prove full-message sketching
 

@@ -33,7 +33,9 @@ message_store/
       10/
         <message-id>/
           manifest.json
-          audio.wav
+          media.ogg        # preferred Opus
+          index.json       # Opus time-to-Ogg-page seek map
+          # or media.wav for PCM fallback
           sketch.flsk2
           complete
 
@@ -42,7 +44,8 @@ message_store/
       10/
         <message-id>/
           manifest.json
-          audio.wav
+          media.ogg        # or media.wav
+          index.json       # when required by the codec/container
           sketch.flsk2
           deletion.json
 
@@ -72,10 +75,12 @@ The year/month partition prevents one directory from accumulating an unbounded n
   "completed_at": "2026-10-04T18:01:14Z",
   "duration_ms": 73420,
   "audio": {
-    "codec": "pcm_s16le",
-    "container": "wav",
-    "path": "audio.wav",
-    "bytes": 2349484,
+    "codec": "opus",
+    "profile": "voip_16k",
+    "container": "ogg",
+    "path": "media.ogg",
+    "index_path": "index.json",
+    "bytes": 153420,
     "sha256": "…",
     "sample_rate_hz": 16000,
     "channels": 1
@@ -111,7 +116,7 @@ Never acknowledge a chunk while it exists only in Python memory. Never use the c
 
 ## Finalization
 
-PCM finalization writes a WAV header followed by audio chunk contents in sequence to a temporary output. It does not join chunks in RAM. After validating size, duration, and aggregate checksum:
+Opus finalization parses each two-byte-length-prefixed packet stream and writes Ogg pages sequentially to `media.ogg`. It also writes `index.json` with message-relative times and Ogg page byte offsets. PCM fallback finalization writes a WAV header followed by audio chunk contents in sequence to `media.wav`. Neither path joins chunks in RAM. After validating size, duration, and aggregate checksum:
 
 1. Write the completed manifest into the incoming directory.
 2. Create the zero-length `complete` marker last.
@@ -122,7 +127,7 @@ PCM finalization writes a WAV header followed by audio chunk contents in sequenc
 
 Chunk files SHOULD be removed after canonical media is safely committed so storage is not doubled. They MAY be retained briefly for diagnostics under a configured development option.
 
-Opus finalization will be selected by the Opus demo. It should produce a standard seekable file rather than a private concatenation of packets.
+The h31 island demo selected server-side Ogg Opus muxing and a separate seek index. Product server work should reuse that representation while replacing the demo's full-file index scan and full-byte response reads with bounded file processing and streaming responses.
 
 ## Restart recovery
 

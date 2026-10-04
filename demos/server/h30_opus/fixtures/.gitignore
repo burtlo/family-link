@@ -1,0 +1,3 @@
+# Created by scripts/opus_inspect.py --self-test
+*.ogg
+*_rt.wav

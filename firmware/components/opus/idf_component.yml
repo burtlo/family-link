@@ -1,0 +1,4 @@
+## Managed libopus for BOX-3 demos (see README.md).
+dependencies:
+  idf: ">=5.0"
+  78/esp-opus: "^1.0.5"

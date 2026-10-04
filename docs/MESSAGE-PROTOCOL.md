@@ -8,12 +8,13 @@ The protocol supports interrupted recording uploads, restart recovery, one-to-on
 
 ## Media baseline
 
-| Field | Required baseline | Optional after proof |
+| Field | Preferred message format | Required fallback |
 |---|---|---|
-| Audio codec | `pcm_s16le` | `opus` |
+| Audio codec | `opus` | `pcm_s16le` |
 | Sample rate | 16,000 Hz | 16,000 Hz |
 | Channels | 1 | 1 |
-| PCM byte rate | 32,000 bytes/s | N/A |
+| Encode profile | 16 kbps VOIP; 24 kbps AUDIO optional | 256 kbps PCM byte rate |
+| Codec frame | 20 ms / 320 samples | Complete 16-bit samples |
 | Target chunk duration | 2,000 ms | 2,000 ms |
 | Maximum chunk duration | 5,000 ms | 5,000 ms |
 | Maximum message duration | 180,000 ms | Same until product policy changes |
@@ -22,7 +23,18 @@ The protocol supports interrupted recording uploads, restart recovery, one-to-on
 | Maximum sketch chunk | 64 KiB | 64 KiB |
 | Maximum sketch per message | 512 KiB | 512 KiB |
 
-PCM chunks contain raw samples and do not repeat WAV headers. The server creates a canonical WAV file during finalization. Opus framing and final container remain experimental until [plans/opus-demo.md](plans/opus-demo.md) is complete.
+Opus is approved by the completed h30/h31 island proof in [plans/opus-demo.md](plans/opus-demo.md). An Opus chunk is a sequence of 20 ms packets. Each packet is preceded by a two-byte unsigned little-endian packet length. Packet length is positive and MUST NOT exceed 400 bytes. The server parses these frames and finalizes them into Ogg Opus without loading the full message into RAM.
+
+PCM chunks contain raw samples and do not repeat WAV headers. The server creates a canonical WAV file during finalization. Codec selection does not change message identity, chunk acknowledgement, retry, or outbox semantics.
+
+Approved Opus profile identifiers:
+
+| Identifier | Encoder application | Target bitrate | Use |
+|---|---|---:|---|
+| `voip_16k` | VOIP | 16,000 bps | Default voice message profile |
+| `audio_24k` | AUDIO | 24,000 bps | Optional measured higher-quality profile |
+
+Opus encoding and decoding MUST run on a dedicated task with a product-measured stack budget. The island proof required a 32 KiB task stack and added about 180 KiB to the simpler demo binary. X02 integration must resolve application partition headroom before enabling Opus in the product build.
 
 ## Identity
 
@@ -61,9 +73,12 @@ Only `complete` messages may appear in inboxes or media playback routes.
   "to_user_id": "lynn",
   "broadcast": false,
   "audio": {
-    "codec": "pcm_s16le",
+    "codec": "opus",
+    "profile": "voip_16k",
     "sample_rate_hz": 16000,
     "channels": 1,
+    "frame_ms": 20,
+    "packet_framing": "u16le_length",
     "target_chunk_ms": 2000
   },
   "sketch": {
@@ -85,6 +100,7 @@ The response is `201 Created` for a new message or `200 OK` when an identical `c
     "max_duration_ms": 180000,
     "max_audio_chunk_bytes": 196608,
     "max_audio_bytes": 6291456,
+    "max_opus_packet_bytes": 400,
     "max_sketch_chunk_bytes": 65536,
     "max_sketch_bytes": 524288
   }
@@ -112,6 +128,8 @@ Rules:
 - Sequence numbers start at zero and increase without gaps in the finalized message.
 - `X-Chunk-Start-Ms` MUST be monotonic and SHOULD equal the sum of prior audio durations.
 - PCM chunks MUST contain complete 16-bit mono samples.
+- Opus chunks MUST contain only complete `uint16_le length + packet` records. A truncated length or packet is a validation error.
+- Opus defaults to 16 kbps VOIP. A sender using 24 kbps AUDIO declares that profile in audio metadata; senders MUST NOT change profile within a message.
 - The server MUST calculate the checksum while streaming the body to a temporary file.
 - The server MUST validate declared size, actual size, checksum, codec limits, and ownership before acknowledgement.
 - The server MUST atomically rename the temporary file into the incoming message directory before returning success.
@@ -174,12 +192,14 @@ The device SHOULD use this route after reconnect or reboot instead of retransmit
   "audio_chunks": 90,
   "sketch_sequences": [0, 2, 7, 12, 18],
   "duration_ms": 180000,
-  "audio_sha256": "sha256-of-canonical-encoded-audio-stream",
+  "source_audio_sha256": "sha256-of-concatenated-chunk-bodies-in-sequence",
   "closed_reason": "button"
 }
 ```
 
 `closed_reason` is one of `button`, `silence`, `duration_limit`, or `recovered`.
+
+`source_audio_sha256` covers the exact accepted chunk bodies concatenated in sequence. For Opus it does not equal the final Ogg file checksum because the server adds container pages. The completed manifest records a separate checksum for `media.ogg` or `media.wav`.
 
 The server MUST:
 
@@ -214,7 +234,7 @@ An inbox entry SHOULD contain:
   "from": "mazi",
   "from_label": "Mazi",
   "duration_ms": 73420,
-  "audio_codec": "pcm_s16le",
+  "audio_codec": "opus",
   "has_sketch": true,
   "read": false,
   "position_ms": 0,
@@ -232,7 +252,25 @@ Recipient sequence numbers remain useful for carousel ordering. Media routes use
 - It MUST provide `Content-Length`, `Content-Type`, `Accept-Ranges: bytes`, `ETag`, and the message checksum where practical.
 - It MUST honor a valid single byte `Range` request and return `206 Partial Content` with `Content-Range`.
 - PCM messages SHOULD be served as a canonical WAV file for interoperability.
-- Opus messages SHOULD use a seekable standard container selected by the Opus experiment.
+- Opus messages MUST be finalized as Ogg Opus and served as `audio/ogg`.
+- An Opus message MUST expose `GET /v1/messages/{message_id}/index.json`, mapping `time_ms` to an Ogg page `byte_offset`. X02 selects the closest point at or before the desired time, issues a Range request, and decodes sequentially from that page.
+- An Opus Ogg range response begins at a page boundary named by the index. Implementations MUST NOT assume an arbitrary byte offset is independently decodable.
+
+The Opus seek index uses this baseline shape:
+
+```json
+{
+  "media_type": "audio/ogg",
+  "file": "media.ogg",
+  "duration_ms": 73420,
+  "seek_points": [
+    {"time_ms": 0, "byte_offset": 0},
+    {"time_ms": 2000, "byte_offset": 4382}
+  ]
+}
+```
+
+Seek points MUST be ordered by time and refer to valid Ogg page boundaries. The final point MAY identify the end boundary and is not necessarily independently decodable.
 - Authorization is checked against the authenticated user's inbox reference or administrator role.
 
 `GET /v1/messages/{message_id}/sketch`

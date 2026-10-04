@@ -26,7 +26,7 @@ Prove that a valuable recording survives server loss, Wi-Fi interruption, applic
 
 ## Background
 
-h22 already proves one-second recording chunks and sequential multipart writes, but drops a failed chunk. h24 demonstrates an acknowledgement cursor for small in-memory event batches. This demo combines those shapes with durable media storage.
+h22 already proves one-second PCM recording chunks and sequential multipart writes, but drops a failed chunk. h24 demonstrates an acknowledgement cursor for small in-memory event batches. The completed h31 demo proves preferred two-second Opus chunk framing and upload. This demo combines those shapes with durable media storage.
 
 The user reports that the current device has storage attached. The implementation agent must identify it rather than assume USB mass storage, SENSOR microSD, or an on-chip filesystem. If more than one backend is present, qualify the attached removable medium first and keep the outbox interface backend-neutral.
 
@@ -93,7 +93,7 @@ This order favors duplicate recovery over recording loss.
 
 **Deliverables**
 
-- Start from h22 capture behavior but use two-second raw PCM chunks and the local layout above.
+- Start from h31's two-second length-prefixed Opus chunks and the local layout above. Keep the queue codec-neutral so PCM chunks remain a fallback test case.
 - Generate a strong provisional client message ID before the first chunk.
 - Calculate SHA-256 while writing or immediately after close.
 - Persist sequence, start time, duration, bytes, and checksum.
@@ -104,7 +104,7 @@ This order favors duplicate recovery over recording loss.
 
 **Acceptance**
 
-- A three-minute PCM recording survives reboot before any upload occurs.
+- A three-minute 16 kbps Opus recording survives reboot before any upload occurs. A shorter PCM fallback fixture proves that queue semantics do not depend on Opus.
 - Every recovered final chunk matches its manifest checksum and sequence.
 - Temporary or corrupt files are quarantined or ignored with a visible diagnostic; valid prior chunks remain available.
 - Storage exhaustion stops safely and preserves the already closed portion of the recording.
@@ -131,7 +131,7 @@ This order favors duplicate recovery over recording loss.
 - Interrupting Wi-Fi during any chosen chunk does not lose earlier or later recorded data.
 - Duplicate requests create one server chunk and one completed message.
 - Losing the completion response leads to an idempotent recovery, not a duplicate inbox message.
-- The server's final audio checksum and duration match the local closed manifest.
+- The server's accepted source-audio checksum and duration match the local closed manifest. The server separately records the checksum of finalized `media.ogg` or `media.wav`.
 
 **Status:** `todo`
 

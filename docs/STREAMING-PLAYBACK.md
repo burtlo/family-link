@@ -67,9 +67,13 @@ Although network availability is assumed, malformed responses, server restart, a
 - File streaming without loading the complete message into Python memory
 - Clear failure when the message was culled between inbox load and playback
 
-## Opus considerations
+## Opus representation
 
-PCM permits exact byte-to-time conversion. Opus needs a standard seekable container or an index mapping time to byte/packet positions. The Opus demo must select that representation before X02 product integration.
+The completed h31 demo selected Ogg Opus plus a server-generated `index.json`. The index maps message-relative `time_ms` values to Ogg page byte offsets. X02 chooses the nearest point at or before the desired time, requests that byte range, then walks and decodes pages sequentially. It does not need libogg for the proven island path.
+
+Opus capture uses 20 ms frames and two-second upload chunks. The server muxes the length-prefixed packets into Ogg; the device does not mux Ogg during recording. The default encode profile is 16 kbps VOIP, with 24 kbps AUDIO reserved for measured quality needs.
+
+The h31 demo still leaves product work: it reads bounded Ogg data in a simple island path, lacks the carousel pause/reconnect state machine, and has not logged a formal three-minute soak. X02 integration must preserve bounded streaming rather than expanding the island read into a full-file buffer.
 
 The playback interface should expose decoded PCM to the speaker regardless of source codec. Codec selection belongs beneath the carousel and playhead UI.
 
@@ -78,7 +82,7 @@ The playback interface should expose decoded PCM to the speaker regardless of so
 - Listening depends on a reachable server.
 - Playback implementation becomes a state machine instead of one download followed by one write loop.
 - Resume and seek need correct range handling.
-- Opus adds decoder and container complexity if adopted.
+- Opus adds a dedicated codec task, about 180 KiB of demonstrated firmware growth, Ogg page parsing, and index retrieval.
 
 These costs are accepted because streaming removes the message-length RAM ceiling and avoids allocating several megabytes merely to listen.
 

@@ -28,16 +28,24 @@ if(NOT EXISTS "${SECRETS}")
     set(SECRETS "${CMAKE_CURRENT_LIST_DIR}/../secrets.example.h")
 endif()
 
+set(COMMON_SRCS
+    "${CMAKE_CURRENT_LIST_DIR}/../common/pass.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../common/board.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../common/wifi_sta.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../common/http_bearer.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../common/v1_sketch.c"
+    "${CMAKE_CURRENT_LIST_DIR}/../common/who.c"
+)
+set(EXTRA_REQUIRES "")
+if(FAMILY_DEMO STREQUAL "h30_opus_local" OR FAMILY_DEMO STREQUAL "h31_opus_chunks")
+    list(APPEND EXTRA_REQUIRES opus)
+endif()
+
 idf_component_register(
     SRCS
         "${DEMO_SRC}"
         ${V1_SRCS}
-        "${CMAKE_CURRENT_LIST_DIR}/../common/pass.c"
-        "${CMAKE_CURRENT_LIST_DIR}/../common/board.c"
-        "${CMAKE_CURRENT_LIST_DIR}/../common/wifi_sta.c"
-        "${CMAKE_CURRENT_LIST_DIR}/../common/http_bearer.c"
-        "${CMAKE_CURRENT_LIST_DIR}/../common/v1_sketch.c"
-        "${CMAKE_CURRENT_LIST_DIR}/../common/who.c"
+        ${COMMON_SRCS}
     INCLUDE_DIRS
         "${CMAKE_CURRENT_LIST_DIR}/../common"
         "${CMAKE_CURRENT_LIST_DIR}/.."
@@ -53,6 +61,7 @@ idf_component_register(
         json
         mbedtls
         esp_websocket_client
+        ${EXTRA_REQUIRES}
 )
 
 # secrets.h is gitignored; demos that need SSID/PIN include it.

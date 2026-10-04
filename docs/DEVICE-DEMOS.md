@@ -72,6 +72,8 @@ firmware/
     h23_record_idle_stop.c
     h24_device_log.c
     h25_chipmunk.c
+    h30_opus_local.c
+    h31_opus_chunks.c
     h26_draw.c
     h27_sketch.c
     h28_video.c
@@ -412,6 +414,29 @@ Unmute opens the mic once for the session and POSTs ~1 s WAV chunks to `/v1/diar
 **Pass:** `-- PASS h25` after one completed chipmunk play. Spoken sentence should be silly but still a few words.
 
 **Reuse later:** local record buffer, click-trim, toy pitch-shift on playback (not a product path).
+
+### h30 — Local Opus encode/decode
+
+**App:** `h30_opus_local.c` — **must run on the kit** (mic + speaker). No server (host: `scripts/opus_inspect.py`).
+
+- **Hold the red circle** for live mic → Opus encode → decode → speaker (16 kHz mono, 20 ms frames). Cap **180 s**; packets saved length-prefixed in PSRAM for replay.
+- **Boot** toggles **16 kbps (VOIP)** vs **24 kbps (AUDIO)**. Top mute latch must be off (same as h25).
+- Serial **metrics every 10 s** during a hold: bytes, frames, drops, encode/decode latency, heap/PSRAM, stack HWM, underruns.
+- On release after **≥10 s**, replays stored packets with one **missing** and one **corrupt** frame (PLC behavior logged).
+
+**Pass:** `-- PASS h30` after the 10 s hold + fault replay. Run a **3 min** hold on hardware for soak acceptance.
+
+**Reuse later:** `fl_opus` wrapper, raw packet blob format, metrics pattern for phase 3 chunk upload.
+
+### h31 — Opus chunk upload + playback
+
+**App:** `h31_opus_chunks.c` — **must run on the kit** with `make demo-opus-messages` green on the Mac first.
+
+- **Hold red circle:** 16 kHz mono Opus → **2 s** `PUT` chunks (`MESSAGE-PROTOCOL` headers + SHA-256). **Release:** `POST …/complete`.
+- **Boot (short):** play last completed **Ogg** from the server (after PASS). **Boot (long):** toggle 16/24 kbps for the *next* hold only — ignored while recording or playing.
+- **Pass:** `-- PASS h31` after ≥2.5 s hold and successful complete. Full phase 3 acceptance (3 min, pause/reconnect/seek on hardware) is operator-run.
+
+**Host:** `demos/server/h31_opus_messages` — `make demo-opus-messages`.
 
 ### h26 — Shared drawing (Mazi ↔ Arlo)
 

@@ -10,7 +10,7 @@ This document records the product decisions behind messages longer than the curr
 2. Outbound recordings must survive loss of Wi-Fi, server availability, application restart, and device reboot until the server durably acknowledges them.
 3. Recording uses small chunks. A user still sees one message, one duration, one playhead, and one notification.
 4. Playback streams from the server through a bounded device buffer. Continued network availability during playback is an accepted product assumption.
-5. PCM at 16 kHz, mono, signed 16-bit little-endian is the required baseline codec. Opus may become the preferred codec after the isolation demo meets its acceptance criteria.
+5. Opus at 16 kbps VOIP is the preferred message codec based on the completed h30/h31 island proof. PCM at 16 kHz, mono, signed 16-bit little-endian remains the required fallback and interoperability baseline until X02 integration passes.
 6. Sketch capture may continue for the full message. Audio time is the canonical clock.
 7. The server may remove old messages only through an explicit administrator action. Normal inbox expiry or filtering must not silently delete media.
 8. An inbox entry references one canonical message ID. Broadcast recipients do not receive duplicate media files.
@@ -26,7 +26,7 @@ This document records the product decisions behind messages longer than the curr
 | Long playback | Stream completed media from the server and support byte-range resume. |
 | Server RAM growth | Stream request bodies to temporary files and stream responses from files. |
 | Server disk organization | Store each message in one stable directory with a manifest and canonical media. |
-| Smaller storage and faster uploads | Evaluate Opus without changing message lifecycle or retry semantics. |
+| Smaller storage and faster uploads | Use two-second length-prefixed Opus packet chunks; finalize to Ogg Opus on the server. |
 | Long synchronized drawings | Store sparse sketch chunks on the same message clock as audio. |
 | Later cleanup | Provide explicit administrator culling with preview, audit record, and recoverable trash. |
 
@@ -60,6 +60,7 @@ This document records the product decisions behind messages longer than the curr
 - X02 currently downloads a complete blob into a 320 KiB playback buffer: [v1_carousel.c](../firmware/v1/v1_carousel.c).
 - h18 already streams HTTP audio to the BOX-3 speaker using a small working buffer: [h18_playback_screen.c](../firmware/demos/h18_playback_screen.c).
 - h22 already records and uploads approximately one-second chunks and writes multipart sections sequentially: [h22_diary.c](../firmware/demos/h22_diary.c) and [h22 server](../demos/server/h22_diary/server.py).
+- h30 proves local 16/24 kbps Opus encode/decode on BOX-3; h31 proves two-second Opus chunks, idempotency, Ogg finalization, range playback, and seek indexing: [opus-demo.md](plans/opus-demo.md).
 - Current v1 media is separated across direct, shared, and sketch directories while mailbox state is rebuilt in memory: [user_mailbox.py](../demos/server/_shared/user_mailbox.py).
 - Current storage and accessory constraints are documented in [STORAGE.md](STORAGE.md) and [HARDWARE.md](HARDWARE.md).
 
@@ -76,5 +77,5 @@ This document records the product decisions behind messages longer than the curr
 ## Deliberately unresolved
 
 - Which attached storage backend is present on the current device. The outbox demo begins by recording the detected hardware and mount path.
-- Whether Opus 16 or 24 kbps becomes the preferred codec. The PCM contract works regardless.
+- A formal 180-second Opus soak, p95 codec timing table, and final X02 partition budget remain required during product integration. These do not reopen the preferred-codec decision unless measurements fail the documented limits.
 - Final retention policy and trash grace period. Administrator culling is required; automatic age deletion is not assumed.

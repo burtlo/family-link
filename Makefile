@@ -53,7 +53,7 @@ export PYTHONUNBUFFERED := 1
 	idf-install flash flash-list flash-monitor build-firmware monitor \
 	v1-timing check-v1-parity \
 	h01 h02 h03 h04 h05 h06 h07 h08 h09 h10 h11 h12 h13 h14 h15 h16 h17 \
-	h18 h19 h20 h21 h22 h23 h24 h25 h26 h27 h28 h29 \
+	h18 h19 h20 h21 h22 h23 h24 h25 h26 h27 h28 h29 h30 h31 \
 	x01 x02 \
 	p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 p12 p13 \
 	v1-server v1-server-tls demo-v1 \
@@ -244,6 +244,16 @@ h28:
 
 h29:
 	@$(PYTHON) "$(FLASH)" --demo h29
+
+h30:
+	@$(PYTHON) "$(FLASH)" --demo h30
+
+h31:
+	@$(PYTHON) "$(FLASH)" --demo h31
+
+demo-opus-messages:
+	$(call step_msg,h31 Opus chunk server smoke test)
+	@$(PYTHON) "$(RUN_SERVER_DEMO)" h31_opus_messages
 
 x01:
 	@$(PYTHON) "$(FLASH)" --demo x01

@@ -62,6 +62,34 @@ def device_for_token(token: str, devices: dict[str, Device] | None = None) -> De
     return None
 
 
+def resolve_device_for_token(token: str) -> Device | None:
+    """Match bearer token from devices.*.yaml or hangout.*.yaml endpoints (v1 tokens)."""
+    dev = device_for_token(token)
+    if dev is not None:
+        return dev
+    try:
+        from demos.server._shared.hangout_registry import endpoint_for_token, load_registry
+
+        ep = endpoint_for_token(token)
+        if ep is None:
+            return None
+        reg = load_registry()
+        name = ep.id
+        suffix = ep.id.removeprefix("endpoint-")
+        user = reg.users.get(suffix)
+        if user is not None:
+            name = user.name
+        return Device(
+            id=ep.id,
+            token=ep.token,
+            role="child",
+            peer="",
+            name=name,
+        )
+    except (FileNotFoundError, ValueError, OSError):
+        return None
+
+
 def parse_bearer(header: str | None) -> str | None:
     if not header:
         return None

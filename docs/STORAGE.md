@@ -50,13 +50,13 @@ Prefer **upload while recording** in small pieces — **h22** already proves the
 
 | Approach | Child UX | Upload | Lose on one failure |
 |---|---|---|---|
-| **Stream chunks during hold** (recommended) | Hold red circle the whole time; release when done | POST every **1–5 s** of PCM (or Opus later) to `/v1/messages` or a diary-style route; server **stitches** one inbox item for the parent | **One chunk** (~1–5 s), not the full diary |
+| **Stream chunks during hold** (recommended) | Hold red circle the whole time; release when done | POST every **2 s** using preferred Opus or fallback PCM; server finalizes one inbox item | **One chunk**, retained in the durable outbox until acknowledged |
 | **h22-style session** | Unmute latch = “recording”; mute = stop | Already POSTs **~1 s** WAV chunks to `/v1/diary` | One second |
 | **Record-all-then-POST** | Hold, release, wait | Single blob after release | **Entire message** (+ timeout risk) |
 
 For a **3 minute** hold with **5 s** chunks: ~**36 POSTs** × ~160 KB ≈ **5.8 MB** total — same audio, but each POST stays small (~170 kbps for ~2 s upload budget per chunk on a bad link).
 
-**Opus** (~16 kbps mono) would cut a 3 min message to ~**360 KB** total — worth it before chasing five-minute single POSTs. Not on the wire yet ([`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md)).
+**Opus** (~16 kbps mono) cuts a 3 min message to roughly **360–400 KB** plus Ogg overhead. The h30/h31 island demos proved BOX-3 encode/decode, two-second chunk upload, server-side Ogg finalization, and range playback; see [`plans/opus-demo.md`](plans/opus-demo.md). X02 has not integrated this path yet.
 
 ### Parent playback
 
@@ -64,7 +64,7 @@ Your phone plays **one continuous clip** whether the box sent one WAV or thirty 
 
 ### Storage impact of minutes-long notes
 
-| | 10 s demo | 3 min diary (PCM) | 3 min (Opus 16 kbps, future) |
+| | 10 s demo | 3 min diary (PCM) | 3 min (Opus 16 kbps, preferred) |
 |---|---|---|---|
 | One message on server | ~320 KB | ~5.8 MB | ~360 KB |
 | Pending in **outbox** (one unsent diary) | ~320 KB | ~5.8 MB | ~360 KB |
@@ -85,7 +85,7 @@ These bounds matter for “will this POST fit?” — not for shopping capacity.
 | Upload HTTP timeout | **15 s** | **h08**, **x01** `post_wav` — too short for multi‑MB single POST |
 | Inbound blob download | **320 KB** cap | **h09** `MAX_BLOB` — must rise for long inbound parent clips too |
 
-Product path: **chunked upload during hold** (see above) or Opus; not a bigger `MAX_SEC` alone.
+Product path: **durable two-second Opus chunks during recording**, server-side Ogg finalization, and PCM fallback; not a bigger `MAX_SEC` alone.
 
 ### Server (combined / 03_messages)
 

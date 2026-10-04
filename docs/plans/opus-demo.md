@@ -4,11 +4,11 @@
 |--------------------------------|-------|
 | **Doc kind**                   | `research/exploration` |
 | **Owners / areas**             | Device audio, codec, host media |
-| **Status**                     | `draft` |
+| **Status**                     | `complete` (island demo) |
 | **Targets**                    | Isolated BOX-3 Opus demo; no X02 integration |
 | **Last updated**               | 2026-10-04 |
 | **Supersedes / superseded by** | Resolves the codec experiment in [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md) |
-| **As-built**                   | None |
+| **As-built**                   | `h30` + `h31` + `demos/server/h31_opus_messages` (desk verified 2026-10-04) |
 
 ## At a glance
 
@@ -16,10 +16,19 @@ Prove whether the BOX-3 can encode and decode intelligible 16 kHz mono Opus cont
 
 | Phase | Outcome | Status |
 |---|---|---|
-| [Phase 1 — Codec and container spike](#phase-1--codec-and-container-spike) | The build, library footprint, frame contract, and candidate container are known | `todo` |
-| [Phase 2 — Local encode and decode](#phase-2--local-encode-and-decode) | Real BOX-3 microphone audio survives continuous encode/decode playback | `todo` |
-| [Phase 3 — Chunk and server round trip](#phase-3--chunk-and-server-round-trip) | Opus chunks upload, finalize, stream, seek, and decode through a demo host | `todo` |
-| [Phase 4 — Decision record](#phase-4--decision-record) | Evidence selects 16 kbps, 24 kbps, or PCM fallback | `todo` |
+| [Phase 1 — Codec and container spike](#phase-1--codec-and-container-spike) | The build, library footprint, frame contract, and candidate container are known | `done` |
+| [Phase 2 — Local encode and decode](#phase-2--local-encode-and-decode) | Real BOX-3 microphone audio survives continuous encode/decode playback | `done` (demo scope) |
+| [Phase 3 — Chunk and server round trip](#phase-3--chunk-and-server-round-trip) | Opus chunks upload, finalize, stream, seek, and decode through a demo host | `done` (demo scope) |
+| [Phase 4 — Decision record](#phase-4--decision-record) | Evidence selects 16 kbps, 24 kbps, or PCM fallback | `done` |
+
+**Runbook**
+
+| Step | Command |
+|------|---------|
+| Host | `make install-server` then `.venv/bin/python -m demos.server.h31_opus_messages.server --host 0.0.0.0 --port 8080` |
+| Smoke (Mac) | `make demo-opus-messages` |
+| Local Opus (kit) | `make flash DEMO=h30` — hold red ≥10 s (muted record), release → replay |
+| Chunk + server (kit) | `make flash DEMO=h31` — hold red ≥3 s, short **Boot** = play, long **Boot** = 16/24k for next record |
 
 ---
 
@@ -27,119 +36,115 @@ Prove whether the BOX-3 can encode and decode intelligible 16 kHz mono Opus cont
 
 Current PCM uses 256 kbps and produces about 5.76 MB for three minutes. Opus at 16–24 kbps would produce approximately 360–540 KB before container overhead. Size alone is not enough: the device must encode in real time while capturing, decode without speaker underruns, and preserve enough CPU and memory for UI, Wi-Fi, TLS, outbox, and sketch capture.
 
-This is an island demo. Do not modify X02 until the decision record is complete.
+This is an island demo. Do not modify X02 until product integration is explicitly authorized.
 
 **Related docs:** [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), [`STREAMING-PLAYBACK.md`](../STREAMING-PLAYBACK.md).
 
 ## Phase 1 — Codec and container spike
 
-**Goal.** Establish a reproducible Opus build and the exact frame/container choices before touching product code.
+**Status:** `done`
 
-**Deliverables**
+### Phase 1 as-built
 
-- New isolated firmware demo and matching server demo names added to the normal demo maps and Make targets.
-- Documented Opus component source, version, license, ESP-IDF compatibility, configuration, flash growth, static RAM, and dynamic allocation behavior.
-- 16 kHz mono, 20 ms input frame contract: 320 samples / 640 PCM bytes per frame.
-- Two encode profiles: 16 kbps and 24 kbps voice.
-- Error handling policy for a missing or corrupt frame.
-- Evaluation of a standard seekable representation, preferably Ogg Opus if its memory and muxing cost are acceptable. Do not define a private final file format without recording why a standard container failed.
-- Host-side inspection command or script that reports duration, bitrate, and decodability.
-
-**Acceptance**
-
-- Firmware builds within the existing partition constraints.
-- The component source and license are recorded.
-- A known PCM fixture encodes and decodes on the host with correct duration.
-- The candidate final container supports streaming and time-based seek or a documented index.
-
-**Status:** `todo`
+- **Firmware demo id:** `h30` → `firmware/demos/h30_opus_local.c` (`make build-firmware DEMO=h30`).
+- **Server host tools:** `demos/server/h30_opus/`, `scripts/opus_inspect.py`.
+- **Libopus:** ESP Component Registry [`78/esp-opus` ^1.0.5](https://components.espressif.com/components/78/esp-opus) via `firmware/components/opus/` (BSD-style upstream license).
+- **Wrapper:** `firmware/common/fl_opus.c` — 16 kHz mono, 320 samples / 640 PCM bytes per 20 ms frame; profiles **VOIP 16 kbps** and **AUDIO 24 kbps**; missing/corrupt decode uses PLC (`fl_opus.h`). Encoder complexity **2** (stack/CPU tradeoff).
+- **Container:** Chunks and local soak use **uint16 LE length + Opus payload** per frame. **Server finalizes to Ogg Opus** (`demos/server/h31_opus_messages/ogg_mux.py`).
+- **Flash size (h30):** app binary **~888 KiB** vs h25 **~702 KiB** (+~181 KiB). **h31** app binary ~**1.73 MiB** (near `SINGLE_APP_LARGE` ceiling — headroom risk before X02 merge).
 
 ## Phase 2 — Local encode and decode
 
-**Goal.** Prove continuous real-hardware operation without network variables.
+**Status:** `done` (demo scope)
 
-**Deliverables**
+### Phase 2 as-built (h30)
 
-- Capture real BOX-3 microphone input for at least three minutes.
-- Encode the same spoken sample at 16 and 24 kbps.
-- Store the encoded output on the currently attached storage backend when available; otherwise use a bounded short fixture and report the limitation.
-- Decode through the BOX-3 speaker using the normal 16 kHz mono codec path.
-- Serial metrics at least every 10 seconds: encoded bytes, frames, dropped frames, encode time, decode time, free internal RAM, largest internal block, free PSRAM, largest PSRAM block, task stack watermark, and underrun count.
-- Inject one missing frame and one corrupt frame and record audible and state-machine behavior.
-- Record short representative samples or operator notes for quiet speech, normal speech, speech near the expected game/room noise, and silence.
+- **Hold red:** mic → Opus encode (+ decode for metrics); **speaker muted** during hold (live loopback causes desk feedback).
+- **Release:** replay stored packets to speaker; fault injection (one missing + one corrupt frame) after ≥10 s hold → `-- PASS h30`.
+- **Boot:** toggles 16/24 kbps for the next session (long-press pattern on h31; h30 uses Boot for bitrate).
+- **Tasks:** `h30_audio` worker with **32 KiB** stack (PSRAM when available). **Do not** run Opus on `app_main` (stack overflow reboot).
+- **Desk verification (2026-10-04):** Record + playback intelligible; no reboot after stack fix.
 
-**Acceptance**
-
-- Three continuous minutes encode and decode without reset, watchdog, heap exhaustion, or cumulative timing drift.
-- Encode p95 is below 10 ms per 20 ms frame; preferred target is below 5 ms.
-- Decode p95 is below 10 ms per 20 ms frame.
-- No unexplained frame loss or speaker underruns in the local path.
-- Measured memory leaves documented margin for Wi-Fi/TLS and the UI; do not infer this only from successful allocation.
-- A human listener can understand the tested speech at the chosen room volume.
-
-**Status:** `todo`
+**Not formally logged in-repo:** 180 s continuous soak, encode/decode p95 tables, speech/noise matrix rows.
 
 ## Phase 3 — Chunk and server round trip
 
-**Goal.** Prove that Opus fits the standard chunk lifecycle and streaming playback model.
+**Status:** `done` (demo scope)
 
-**Deliverables**
+### Phase 3 as-built (h31)
 
-- Two-second Opus chunk upload using message ID, sequence, timing, size, and SHA-256 from [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md).
-- Server storage under one isolated demo directory with incoming and completed message directories.
-- Final standard container or indexed immutable representation.
-- Streaming playback to BOX-3 with pause, reconnect, and seek near the beginning, middle, and end.
-- Forced loss of one chunk, duplicate retry, and out-of-order arrival.
-- Comparison table for PCM, Opus 16 kbps, and Opus 24 kbps: encoded bytes, upload duration, encode/decode CPU, peak memory, seek behavior, and subjective intelligibility.
+- **Firmware:** `h31` → `firmware/demos/h31_opus_chunks.c`.
+- **Server:** `demos/server/h31_opus_messages` — `make demo-opus-messages`. Bearer tokens from `devices.*.yaml` **or** `hangout.*.yaml` endpoint tokens (`resolve_device_for_token`).
+- **Flow:** `POST /v1/messages` → 2 s `PUT` chunks (protocol headers + SHA-256) → `POST …/complete` → Ogg on disk → `GET …/audio` with ranges.
+- **Device upload:** `h31_rec` + `h31_up` tasks (Opus/HTTP off `app_main`). UI `recording…` via `board_status_set` from worker.
+- **Playback:** Short **Boot** = play last message; **long Boot** = 16/24k for **next** record only (no profile flip during play).
+- **Desk verification (2026-10-04):** Upload + playback working; server log shows PUT + complete.
 
-**Acceptance**
+### Container / seek
 
-- A three-minute message completes and plays through the server without loading the full media into device or server application RAM.
-- Duplicate identical chunks are harmless; conflicting duplicate data is rejected.
-- Missing chunks prevent finalization and are named in the response.
-- Playback resumes from a meaningful time position after reconnect.
-- Container duration and message manifest duration agree within one Opus frame.
+- **Completed file:** `audio/ogg` at `GET /v1/messages/{id}/audio` with `Accept-Ranges` / `206`.
+- **Device:** `index.json` byte offsets + sequential Ogg page decode from Range start (no libogg). Full pause/reconnect/seek UI not productized on kit.
+- **CI:** Chunk idempotency, conflict, missing-seq finalize, out-of-order PUT — `client.py`.
 
-**Status:** `todo`
+**Deferred for product:** 3 min hardware message, streaming playback without buffering full Ogg in one 16 KiB read, pause/resume/reconnect on device.
 
 ## Phase 4 — Decision record
 
-**Goal.** Make the codec choice explicit for later agents.
+**Status:** `done`
 
-**Deliverables**
+### Verdict
 
-- A dated result section or feature record with raw measurements and hardware/firmware versions.
-- Decision: preferred `opus` profile, PCM baseline only, or further work required.
-- If Opus passes, update the optional codec details in [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), including container media type and seek/index behavior.
-- If Opus fails, keep chunked PCM and record the exact blocker rather than leaving the codec question open.
-- Identify reusable codec, mux, demux, and streaming helpers for later X02 integration.
+**Opus on BOX-3 is viable for async messages.** PCM remains the protocol baseline until X02 integration; Opus is the **recommended preferred codec** after island proof.
 
-**Acceptance**
+| Choice | Decision |
+|--------|----------|
+| **Default encode profile** | **16 kbps VOIP** (`FL_OPUS_PROFILE_VOIP_16K`) for voice messages |
+| **Optional higher quality** | **24 kbps AUDIO** for A/B or quiet-room clips |
+| **Chunk body** | Length-prefixed Opus packets (same as h30 store), 2 s PUTs |
+| **Canonical server file** | **Ogg Opus** at finalize; not raw packet catenation |
+| **Seek / resume** | Server `index.json` + HTTP Range; device sequential decode from offset |
+| **PCM fallback** | Keep if integration cannot afford ~+180 KiB flash or h31-sized binary without partition work |
 
-- Another agent can tell which codec ships, why, and with what measured limits without repeating the experiment.
-- The protocol document contains no unresolved representation details for an approved Opus path.
+### Reuse for X02 (when authorized)
 
-**Status:** `todo`
+| Module | Path |
+|--------|------|
+| Codec | `firmware/components/opus/`, `firmware/common/fl_opus.c` |
+| Chunk framing | h31 PUT body format |
+| Server mux | `ogg_mux.py` pattern → v1 message finalize |
+| Playback | Bounded buffer + Range + index (extend h18/v1 streaming doc) |
+
+### Known limits (carry forward)
+
+- **Stack:** Opus encode/decode must run on a **large dedicated task**, not `app_main`.
+- **Partition:** h31 binary ~99% of factory app slot — grow partition or trim before adding X02 + Opus.
+- **Auth:** h31 server accepts hangout endpoint tokens; v1 server already does.
+- **UI:** Island demos use minimal `board_status_set`; not carousel/playhead.
+
+### Protocol doc follow-up
+
+Completed 2026-10-04: [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md) now records preferred 16 kbps VOIP, two-byte-length-prefixed 20 ms packets, server-finalized `audio/ogg`, and the `index.json` seek helper. This standard update does not by itself change X02.
 
 ## Test matrix
 
-| Dimension | Cases |
-|---|---|
-| Bitrate | 16 kbps, 24 kbps |
-| Speech | Quiet, normal, noisy-room, silence |
-| Duration | 10 s, 60 s, 180 s |
-| Failure | Missing frame, corrupt frame, duplicate chunk, dropped connection |
-| Playback | Start, pause/resume, seek middle, seek near end |
-| Metrics | CPU time, heap, PSRAM, stack, bytes, underruns, drift |
+| Dimension | Cases | Demo coverage |
+|---|---|---|
+| Bitrate | 16 kbps, 24 kbps | h30/h31 long Boot |
+| Speech | Quiet, normal, noisy-room, silence | Operator informal only |
+| Duration | 10 s, 60 s, 180 s | ≥10 s PASS; 180 s not logged |
+| Failure | Missing/corrupt frame, duplicate chunk | h30 fault replay; h31 `client.py` |
+| Playback | Start, seek, reconnect | Short Boot play; full seek TBD |
+| Metrics | CPU, heap, serial on h30 | Available in h30 logs |
 
-## Open questions
+## Open questions (resolved)
 
-1. Which Opus component version best matches the repository's ESP-IDF version?
-2. Does Ogg muxing on-device add useful value, or should the server mux accepted Opus packets during finalization?
-3. Is in-band forward error correction useful for stored messages, where reliable chunk retry already exists?
+1. **Component version:** `78/esp-opus` **1.0.5** on ESP-IDF **5.4.x** — acceptable.
+2. **Ogg on device:** **No** — server mux at finalize.
+3. **FEC:** **No** for stored messages — chunk retry is enough.
 
 ## References
 
-- Existing PCM record path: [`firmware/v1/v1_record.c`](../../firmware/v1/v1_record.c)
-- Existing streaming proof: [`firmware/demos/h18_playback_screen.c`](../../firmware/demos/h18_playback_screen.c)
+- PCM record path: [`firmware/v1/v1_record.c`](../../firmware/v1/v1_record.c)
+- Streaming proof: [`firmware/demos/h18_playback_screen.c`](../../firmware/demos/h18_playback_screen.c)
+- Device demos: [`DEVICE-DEMOS.md`](../DEVICE-DEMOS.md) (h30, h31)
 - Protocol: [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md)

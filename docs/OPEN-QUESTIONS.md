@@ -48,7 +48,6 @@ Tryout on **this Mac’s LAN** is easy. Production is not:
 - **Mute vs red-circle vs Pmod arcade** as the PTT control after a real Minecraft test.
 - **Dock always attached** in production (stand + later camera) vs box USB-C only on the desk.
 - **ESP-IDF version.** BSP `esp-box-3` wants recent IDF (docs mentioned ≥5.3; confirm current component).
-- **Preferred audio codec.** Protocol baseline is chunked 16 kHz mono PCM. Opus at 16/24 kbps becomes preferred only if the isolation experiment passes; see [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md) and [`plans/opus-demo.md`](plans/opus-demo.md).
 - **Clock / TLS CA bundle** on the ESP32 for HTTPS.
 
 ## Parent client
