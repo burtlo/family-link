@@ -119,6 +119,7 @@ static lv_obj_t *s_toast;
 static bool s_carousel_ui_live;
 static bool s_pending_toast;
 static char s_pending_toast_msg[40];
+static TaskHandle_t s_playback_task;
 
 static int16_t s_chirp_pcm[V1_CHIRP_SAMPLES + V1_CHIRP_DRAIN];
 
@@ -286,7 +287,24 @@ bool v1_carousel_is_playing(void) { return s_playing; }
 
 void v1_carousel_start_tasks(void)
 {
-    xTaskCreate(playback_task, "play", 12288, NULL, 5, NULL);
+    if (s_playback_task) {
+        return;
+    }
+    BaseType_t ok = xTaskCreate(playback_task, "play", 8192, NULL, 5, &s_playback_task);
+    if (ok != pdPASS || !s_playback_task) {
+        s_playback_task = NULL;
+        ok = xTaskCreate(playback_task, "play", 6144, NULL, 5, &s_playback_task);
+    }
+    if (ok != pdPASS || !s_playback_task) {
+        s_playback_task = NULL;
+        ESP_LOGE(TAG, "playback task create failed internal=%u largest=%u",
+                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL |
+                                                           MALLOC_CAP_8BIT));
+        return;
+    }
+    ESP_LOGI(TAG, "playback task ready internal=%u",
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
 }
 
 void v1_carousel_refresh_offline_ribbon(void) { refresh_offline_ribbon(); }
@@ -626,6 +644,8 @@ static bool card_sketch_alloc_fb(int card_idx)
         return false;
     }
     v1_sketch_ink_init(&sl->ink, sl->fb, CARD_SKETCH_W, CARD_SKETCH_H, CARD_SKETCH_BRUSH);
+    v1_sketch_ink_clear(&sl->ink, rgb565_from_hex(CARD_SKETCH_BG_HEX));
+    sl->play_i = 0;
     memset(&sl->dsc, 0, sizeof(sl->dsc));
     sl->dsc.header.magic = LV_IMAGE_HEADER_MAGIC;
     sl->dsc.header.cf = LV_COLOR_FORMAT_RGB565;
@@ -731,7 +751,10 @@ static bool carousel_sketch_begin_play(msg_t *m, int card_idx, int start_ms)
         return false;
     }
     http_buf_t b = { .buf = s_sketch_blob, .cap = sizeof(s_sketch_blob), .len = 0 };
-    if (http_sketch_get(m->seq, &b) != 200 || b.len == 0) {
+    int status = http_sketch_get(m->seq, &b);
+    if (status != 200 || b.len == 0) {
+        ESP_LOGW(TAG, "sketch fetch seq=%d status=%d len=%u", m->seq, status,
+                 (unsigned)b.len);
         carousel_sketch_stop_session();
         return false;
     }
@@ -745,6 +768,8 @@ static bool carousel_sketch_begin_play(msg_t *m, int card_idx, int start_ms)
     s_sketch_n = (int)n;
     s_sketch_card_idx = card_idx;
     carousel_sketch_request_resync(card_idx, start_ms);
+    ESP_LOGI(TAG, "sketch ready seq=%d points=%d start=%d", m->seq, s_sketch_n,
+             start_ms);
     return true;
 }
 
@@ -1421,7 +1446,10 @@ static void playback_task(void *arg)
             continue;
         }
         http_buf_t b = { .buf = s_cfg.playback_buf, .cap = V1_PLAYBACK_BUF_CAP, .len = 0 };
-        if (http_blob_get(m->seq, &b) != 200 || b.len < 64) {
+        int blob_status = http_blob_get(m->seq, &b);
+        ESP_LOGI(TAG, "play fetch seq=%d status=%d len=%u sketch=%d", m->seq,
+                 blob_status, (unsigned)b.len, (int)m->has_sketch);
+        if (blob_status != 200 || b.len < 64) {
             if (!v1_connect_online()) {
                 v1_carousel_queue_toast("can't play right now");
             }
@@ -1478,6 +1506,8 @@ static void playback_task(void *arg)
         }
         apply_volume((*s_cfg.volume));
         s_playing = true;
+        ESP_LOGI(TAG, "play start seq=%d pos=%d bytes=%d", m->seq, m->position_ms,
+                 pcm_len);
         s_play_pos_ms = m->position_ms;
         int pos_bytes = 0;
         while (pos_bytes < pcm_len && !s_stop_play) {
@@ -1501,6 +1531,10 @@ static void playback_task(void *arg)
         if (!s_stop_play) {
             mark_read(m->seq, s_play_pos_ms);
         }
+        ESP_LOGI(TAG, "play done seq=%d pos=%d stopped=%d", m->seq, s_play_pos_ms,
+                 (int)s_stop_play);
+        ESP_LOGI(TAG, "playback stack free=%u",
+                 (unsigned)uxTaskGetStackHighWaterMark(NULL));
         v1_ui_request_transport_refresh();
     }
 }
@@ -1604,6 +1638,9 @@ static void on_carousel_scroll(lv_event_t *e)
 static void on_play(lv_event_t *e)
 {
     (void)e;
+    msg_t *focused = focus_msg();
+    ESP_LOGI(TAG, "play click seq=%d playing=%d task=%p",
+             focused ? focused->seq : -1, (int)s_playing, (void *)s_playback_task);
     if (s_playing) {
         stop_playback();
         v1_ui_request_chirp(660);

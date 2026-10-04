@@ -27,6 +27,8 @@
 #include "esp_crt_bundle.h"
 #endif
 
+#define V1_LOGIN_HTTP_MS 6000
+
 static const char *TAG = "v1_api";
 
 static uint8_t s_json[V1_JSON_CAP];
@@ -255,8 +257,8 @@ bool v1_api_login_user(const char *user_id, const char *pin, char *session_user,
     if (pin_reset) {
         *pin_reset = false;
     }
-    int st = v1_api_http_json_timeout("POST", "/v1/session/login", js, NULL, &b,
-                                      V1_CONNECT_PROBE_MS);
+    int st =
+        v1_api_http_json_timeout("POST", "/v1/session/login", js, NULL, &b, V1_LOGIN_HTTP_MS);
     if (http_status) {
         *http_status = st;
     }

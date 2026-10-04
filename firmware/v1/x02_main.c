@@ -429,6 +429,7 @@ void app_main(void)
     }
     car_cfg.playback_buf = s_buf;
     v1_carousel_init(&car_cfg);
+    v1_carousel_start_tasks();
 
     s_work = xSemaphoreCreateCounting(8, 0);
     s_login_work = xSemaphoreCreateBinary();
@@ -443,6 +444,7 @@ void app_main(void)
         .play_chirp_pair = v1_carousel_play_chirp_pair,
     };
     v1_record_init(&rec_cfg);
+    v1_record_start_task();
 
     s_settings_cfg = (v1_ui_settings_cfg_t){
         .session_user = s_session_user,
@@ -500,9 +502,6 @@ void app_main(void)
     } else {
         (void)esp_codec_dev_set_out_vol(s_spk, 0);
     }
-
-    v1_carousel_start_tasks();
-    v1_record_start_task();
 
     button_handle_t btns[BSP_BUTTON_NUM] = {0};
     if (bsp_iot_button_create(btns, NULL, BSP_BUTTON_NUM) == ESP_OK) {

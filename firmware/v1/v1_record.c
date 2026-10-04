@@ -27,6 +27,7 @@
 static const char *TAG = "v1_record";
 
 #define CHUNK 640
+#define V1_SEND_STUCK_MS 25000
 
 static esp_codec_dev_sample_info_t s_fs = {
     .sample_rate = V1_SAMPLE_RATE, .channel = 1, .bits_per_sample = 16,
@@ -240,11 +241,16 @@ static bool record_task_try_create(uint32_t stack_words)
     }
     BaseType_t ok = xTaskCreate(record_task_fn, "rec", stack_words, NULL, 7, &s_record_task);
     if (ok != pdPASS || !s_record_task) {
-        ESP_LOGE(TAG, "record task create failed stack=%u free=%u",
-                 (unsigned)stack_words, (unsigned)esp_get_free_heap_size());
+        ESP_LOGE(TAG, "record task create failed stack=%u internal=%u largest=%u",
+                 (unsigned)stack_words,
+                 (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL |
+                                                           MALLOC_CAP_8BIT));
         s_record_task = NULL;
         return false;
     }
+    ESP_LOGI(TAG, "record task ready stack=%u internal=%u", (unsigned)stack_words,
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     return true;
 }
 
@@ -257,7 +263,7 @@ void v1_record_start_task(void)
         }
         s_record_task = NULL;
     }
-    if (!record_task_try_create(12288) && !record_task_try_create(8192)) {
+    if (!record_task_try_create(8192) && !record_task_try_create(6144)) {
         ESP_LOGE(TAG, "record task create failed");
     }
 }
@@ -328,6 +334,9 @@ static bool pick_arm_focus_if_needed(void)
 
 void v1_record_on_circle_start(void)
 {
+    ESP_LOGI(TAG, "circle start st=%d focus=%d selected=%d aligned=%d armed=%d",
+             (int)v1_state_get(), s_pick_focus, (int)pick_has_selection(),
+             (int)pick_scroll_aligned_to_focus(), (int)s_record_armed);
     if (v1_state_get() != ST_PICK) {
         return;
     }
@@ -365,6 +374,8 @@ static void send_enter_finishing(void)
 
 void v1_record_on_circle_stop(void)
 {
+    ESP_LOGI(TAG, "circle stop st=%d recording=%d armed=%d",
+             (int)v1_state_get(), (int)s_recording, (int)s_record_armed);
     s_stop_record = true;
     if (!s_recording && v1_state_get() == ST_RECORD) {
         if (!s_record_armed) {
@@ -438,11 +449,13 @@ void v1_record_tick_send(int64_t now)
     if (s_send_phase != SEND_PHASE_FINISHING && s_send_phase != SEND_PHASE_SENDING) {
         return;
     }
-    if (s_send_enter_us <= 0 || (now - s_send_enter_us) < (int64_t)8000 * 1000) {
+    if (s_send_enter_us <= 0 ||
+        (now - s_send_enter_us) < (int64_t)V1_SEND_STUCK_MS * 1000) {
         return;
     }
     ESP_LOGW(TAG, "send receipt stuck phase=%d — leaving", (int)s_send_phase);
     s_stop_record = true;
+    s_record_armed = false;
     s_send_enter_us = 0;
     v1_state_apply(ST_CAROUSEL);
     v1_ui_request_repaint();
@@ -557,7 +570,7 @@ static int post_wav(const uint8_t *wav, int wav_len, bool broadcast, const char 
     int st = esp_http_client_get_status_code(c);
     esp_http_client_cleanup(c);
     heap_caps_free(body);
-    ESP_LOGI(TAG, "post_wav status=%d err=%d", st, (int)err);
+    ESP_LOGI(TAG, "post_wav status=%d err=%d (%s)", st, (int)err, esp_err_to_name(err));
     if (st >= 200 && st <= 299) {
         return st;
     }
@@ -763,6 +776,8 @@ static void record_task_fn(void *arg)
             vTaskDelay(pdMS_TO_TICKS(V1_SEND_RECEIPT_MS));
         }
         s_cancel_pick = false;
+        ESP_LOGI(TAG, "record stack free=%u",
+                 (unsigned)uxTaskGetStackHighWaterMark(NULL));
         v1_state_apply(ST_CAROUSEL);
         v1_ui_request_repaint();
     }
@@ -842,6 +857,9 @@ static void pick_arm_send_targets(void)
 static void pick_begin_recording(void)
 {
     state_t st = v1_state_get();
+    ESP_LOGI(TAG, "pick begin st=%d selected=%d armed=%d online=%d",
+             (int)st, (int)pick_has_selection(), (int)s_record_armed,
+             (int)v1_connect_online());
     if (st == ST_RECORD || st == ST_SEND || s_record_armed) {
         return;
     }
@@ -1055,6 +1073,9 @@ static void on_pick_scroll(lv_event_t *e)
         return;
     }
     if (code == LV_EVENT_SCROLL_END && !s_pick_scroll_lock) {
+        ESP_LOGI(TAG, "pick scroll end st=%d focus=%d x=%ld",
+                 (int)v1_state_get(), s_pick_focus,
+                 s_pick_scroll ? (long)lv_obj_get_scroll_x(s_pick_scroll) : -1L);
         if (pick_scroll_aligned_to_focus()) {
             pick_refresh_visuals();
             return;
@@ -1067,6 +1088,9 @@ static void on_pick_scroll(lv_event_t *e)
 static void on_pick_card_click(lv_event_t *e)
 {
     intptr_t display_idx = (intptr_t)lv_event_get_user_data(e);
+    ESP_LOGI(TAG, "pick click st=%d idx=%d focus=%d aligned=%d",
+             (int)v1_state_get(), (int)display_idx, s_pick_focus,
+             (int)pick_scroll_aligned_to_focus());
     if (display_idx < 0 || (int)display_idx >= s_pick_n) {
         return;
     }
@@ -1301,9 +1325,9 @@ static void paint_send(lv_obj_t *scr)
 
 static void paint_pick(lv_obj_t *scr)
 {
-    (void)v1_connect_load_hangout();
     v1_record_invalidate_pick();
     lv_obj_clean(scr);
+    (void)v1_connect_load_hangout_ms(V1_CONNECT_PROBE_MS);
     lv_obj_set_style_bg_color(scr, lv_color_hex(V1_UI_BG), 0);
 
     lv_obj_t *ribbon_top, *ribbon_bot, *count_lab, *offline_lab, *toast;
@@ -1374,7 +1398,7 @@ static void paint_pick(lv_obj_t *scr)
     }
     pick_refresh_rec_btn();
 
-    ESP_LOGI(TAG, "paint pick cards=%d heap=%u", s_pick_n,
+    ESP_LOGI(TAG, "paint pick st=%d cards=%d heap=%u", (int)v1_state_get(), s_pick_n,
              (unsigned)esp_get_free_heap_size());
     v1_ui_hook_scr(scr);
 }
