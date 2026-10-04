@@ -2,6 +2,8 @@
 
 Read this before writing code. Product intent: [`REQUIREMENTS.md`](REQUIREMENTS.md). **Approved v1 contract:** [`plans/v1-product-spec.md`](plans/v1-product-spec.md). Hardware facts: [`HARDWARE.md`](HARDWARE.md). Endpoint screen brief: [`BOX-UI.md`](BOX-UI.md). Removable media: [`STORAGE.md`](STORAGE.md). Unresolved decisions: [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md). Demo plans: [`SERVER-DEMOS.md`](SERVER-DEMOS.md), [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md), [`DEMO-MAP.md`](DEMO-MAP.md), [`plans/v1-demo-set.md`](plans/v1-demo-set.md).
 
+**Durable long-message work:** architecture [`LONG-MESSAGE-ARCHITECTURE.md`](LONG-MESSAGE-ARCHITECTURE.md), normative protocol [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md), server layout [`SERVER-MESSAGE-STORAGE.md`](SERVER-MESSAGE-STORAGE.md), streaming playback [`STREAMING-PLAYBACK.md`](STREAMING-PLAYBACK.md), sketch timing [`SKETCH-TIMELINE.md`](SKETCH-TIMELINE.md), and ordered experiments [`plans/long-message-experiments.md`](plans/long-message-experiments.md). These are plans and standards, not as-built X02 behavior.
+
 ## What this project is
 
 A **desk answering machine** for a hangout (Lynn, Mazi, Arlo, Audrey): users sign in on BOX-3 **endpoints**, async audio mailbox, web admin on the home server.

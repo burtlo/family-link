@@ -4,6 +4,8 @@
 
 **Outbox (pending upload):** when a child records and the POST fails — Wi-Fi blip, server down, timeout — the clip must sit somewhere until retry succeeds. **That path is not built yet.** Today the take is **discarded**. Local storage (on-chip FAT, USB stick, or SENSOR microSD) is for that **outbox**, not for replacing the server archive.
 
+The planned durable design and implementation experiment are now specified in [`LONG-MESSAGE-ARCHITECTURE.md`](LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md), and [`plans/durable-outbox-demo.md`](plans/durable-outbox-demo.md). Those documents do not change the current as-built warning above.
+
 On-chip flash / PSRAM facts: [`HARDWARE.md`](HARDWARE.md). Camera + USB port sharing: [`UVC-CAMERA.md`](UVC-CAMERA.md).
 
 ## What happens today if upload fails

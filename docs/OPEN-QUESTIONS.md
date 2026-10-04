@@ -10,8 +10,8 @@ Decided items stay in [`REQUIREMENTS.md`](REQUIREMENTS.md). This file is only wh
 - **Child → parent photos.** Deferred — out of v1 merge per [`plans/v1-product-spec.md`](docs/plans/v1-product-spec.md).
 - **PIN model.** Resolved — see [`plans/v1-product-spec.md`](plans/v1-product-spec.md): per-user PIN; Lynn resets via `/app`; 1 min relock; web creds separate from box PIN.
 - **Max clip length.** Resolved for v1 merge: **3 min** cap, **5s** silence auto-stop, long-press stop, 150ms trim.
-- **Retention.** How long are voicemails kept? Can a user or Lynn delete?
-- **Failed outbound upload.** Retry from a local outbox? Show “not sent yet” on idle? See [`STORAGE.md`](STORAGE.md).
+- **Retention duration.** Administrator preview/cull/trash/restore is the decided architecture; the automatic retention duration and trash grace period remain open. See [`SERVER-MESSAGE-STORAGE.md`](SERVER-MESSAGE-STORAGE.md).
+- **Failed outbound upload.** Resolved direction: durable local chunk outbox, retry until an exact server acknowledgement, and show a privacy-safe pending count. See [`LONG-MESSAGE-ARCHITECTURE.md`](LONG-MESSAGE-ARCHITECTURE.md) and [`plans/durable-outbox-demo.md`](plans/durable-outbox-demo.md).
 - **Quiet hours / volume.** Household at the other house; 1 W speaker next to a Switch. Hardware options: [`SPEAKER.md`](SPEAKER.md).
 - **Ages.** Affects PIN, whether they can type, whether Minecraft PTT must be an arcade button.
 - **How much “pet” on the LCD.** Locked idle is already count-only for *content*. A face + badge is compatible; how lively (blink rate, glow, chirps) in the other house is not decided. Demo plan: [`PERSONALITY-DEMOS.md`](PERSONALITY-DEMOS.md).
@@ -48,7 +48,7 @@ Tryout on **this Mac’s LAN** is easy. Production is not:
 - **Mute vs red-circle vs Pmod arcade** as the PTT control after a real Minecraft test.
 - **Dock always attached** in production (stand + later camera) vs box USB-C only on the desk.
 - **ESP-IDF version.** BSP `esp-box-3` wants recent IDF (docs mentioned ≥5.3; confirm current component).
-- **Audio codec format** on the wire: Opus vs WAV/PCM vs AMR. Size vs latency vs ESP decode cost. **Minutes-long child→parent diaries strongly favor Opus or chunked PCM** ([`STORAGE.md`](STORAGE.md)).
+- **Preferred audio codec.** Protocol baseline is chunked 16 kHz mono PCM. Opus at 16/24 kbps becomes preferred only if the isolation experiment passes; see [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md) and [`plans/opus-demo.md`](plans/opus-demo.md).
 - **Clock / TLS CA bundle** on the ESP32 for HTTPS.
 
 ## Parent client
