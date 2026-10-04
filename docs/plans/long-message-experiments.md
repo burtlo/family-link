@@ -19,11 +19,12 @@ Prove long messages in isolated steps while protecting the current X02 path. The
 | [Phase 1 — Record the baseline](#phase-1--record-the-baseline) | Current X02 and server limits have reproducible evidence | `todo` |
 | [Phase 2 — Prove streaming playback](#phase-2--prove-streaming-playback) | BOX-3 plays long server files with bounded RAM and range resume | `todo` |
 | [Phase 3 — Prove canonical server storage](#phase-3--prove-canonical-server-storage) | Chunk sessions finalize into restart-safe message directories | `todo` |
-| [Phase 4 — Prove the durable outbox](#phase-4--prove-the-durable-outbox) | Recordings survive offline operation, interruption, and reboot | `todo` |
-| [Phase 5 — Prove the end-to-end codecs](#phase-5--prove-the-end-to-end-codecs) | Preferred Opus and fallback PCM both survive the durable lifecycle | `todo` |
-| [Phase 6 — Evaluate Opus](#phase-6--evaluate-opus) | h30/h31 select 16 kbps VOIP, Ogg finalization, and indexed range playback | `done` (island proof) |
-| [Phase 7 — Prove full-message sketching](#phase-7--prove-full-message-sketching) | Sparse FLSK2 chunks synchronize for the entire message and through seeks | `todo` |
-| [Phase 8 — Prepare X02 integration](#phase-8--prepare-x02-integration) | Proven helpers and migration steps are ready for a separately authorized product change | `todo` |
+| [Phase 4 — Qualify on-chip storage](#phase-4--qualify-on-chip-storage) | The internal FAT/WL outbox survives writes, resets, remounts, and near-full operation | `todo` |
+| [Phase 5 — Prove the durable outbox](#phase-5--prove-the-durable-outbox) | Recordings survive offline operation, interruption, and reboot | `todo` |
+| [Phase 6 — Prove the end-to-end codecs](#phase-6--prove-the-end-to-end-codecs) | Preferred Opus and fallback PCM both survive the durable lifecycle | `todo` |
+| [Phase 7 — Evaluate Opus](#phase-7--evaluate-opus) | h30/h31 select 16 kbps VOIP, Ogg finalization, and indexed range playback | `done` (island proof) |
+| [Phase 8 — Prove full-message sketching](#phase-8--prove-full-message-sketching) | Sparse FLSK2 chunks synchronize for the entire message and through seeks | `todo` |
+| [Phase 9 — Prepare X02 integration](#phase-9--prepare-x02-integration) | Proven helpers and migration steps are ready for a separately authorized product change | `todo` |
 
 ---
 
@@ -31,9 +32,9 @@ Prove long messages in isolated steps while protecting the current X02 path. The
 
 The current X02 can record up to three minutes but downloads playback into a buffer that holds only about 10.24 seconds. Recording is staged in volatile PSRAM, upload is one large request, failed sends are discarded, and the server materializes complete media in RAM. Existing h18 and h22 demos already prove important pieces but not the durable combined lifecycle.
 
-This roadmap does not authorize X02 implementation. Each phase is an island experiment with evidence and handoff. Opus Phase 6 completed early because h30/h31 were independent island proofs; its remaining product checks are explicitly carried into Phases 5 and 8. Do not weaken an earlier acceptance criterion to claim a later integration phase complete.
+This roadmap does not authorize X02 implementation. Each phase is an island experiment with evidence and handoff. Opus Phase 7 completed early because h30/h31 were independent island proofs; its remaining product checks are explicitly carried into Phases 6 and 9. Do not weaken an earlier acceptance criterion to claim a later integration phase complete.
 
-**Related docs:** [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), [`MESSAGE-COSTS.md`](../MESSAGE-COSTS.md), [`durable-outbox-demo.md`](durable-outbox-demo.md), [`opus-demo.md`](opus-demo.md), [`x02-opus-partition-feasibility.md`](x02-opus-partition-feasibility.md).
+**Related docs:** [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), [`MESSAGE-COSTS.md`](../MESSAGE-COSTS.md), [`onchip-storage-qualification.md`](onchip-storage-qualification.md), [`durable-outbox-demo.md`](durable-outbox-demo.md), [`opus-demo.md`](opus-demo.md), [`x02-opus-partition-feasibility.md`](x02-opus-partition-feasibility.md).
 
 ## Phase 1 — Record the baseline
 
@@ -100,14 +101,35 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 
 **Status:** `todo`
 
-## Phase 4 — Prove the durable outbox
+## Phase 4 — Qualify on-chip storage
+
+**Goal.** Replace modeled filesystem capacity and recovery assumptions with one-device evidence before writing queue state.
+
+**Deliverables**
+
+- Execute every phase in [`onchip-storage-qualification.md`](onchip-storage-qualification.md) on one BOX-3.
+- Use the tool-validated single-factory layout as an experiment-only fixture; keep the production choice between single-factory and dual OTA open.
+- Preserve and restore the original device state, prove NVS behavior, and keep product firmware and `firmware/sdkconfig.defaults` unchanged.
+- Measure FAT-over-wear-leveling capacity, overhead, mount time, free-space reporting, integrity, write/flush latency, Opus cadence, PCM stress rate, interruption recovery, and the safe free-space floor.
+- Use deterministic generated tones/data or existing nonprivate fixtures so the run requires no person to speak or press a control.
+
+**Acceptance**
+
+- The qualification plan's boot, NVS, filesystem, cadence, interruption, near-full, evidence, and restore acceptance criteria all pass.
+- A committed file retains its SHA-256 across reboot/remount, and interrupted `.part` writes never appear as valid final files.
+- The durable-outbox phase receives a measured safe floor and backend contract rather than a modeled capacity assumption.
+- Any absence of true switched-power evidence remains explicit; reset evidence is labeled by its actual mechanism.
+
+**Status:** `todo`
+
+## Phase 5 — Prove the durable outbox
 
 **Goal.** Make capture safe before network delivery.
 
 **Deliverables**
 
-- Execute every phase in [`durable-outbox-demo.md`](durable-outbox-demo.md) against the Phase 3 server.
-- Qualify the storage currently attached to the device.
+- Execute every phase in [`durable-outbox-demo.md`](durable-outbox-demo.md) against the Phase 3 server and the qualified Phase 4 on-chip backend.
+- Preserve backend-neutral APIs so removable attached storage can be qualified later as optional overflow or alternate capacity.
 - Retain audio and sketch chunks until exact durable acknowledgements.
 - Reboot and failure campaign with saved logs and filesystem evidence.
 
@@ -119,7 +141,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 
 **Status:** `todo`
 
-## Phase 5 — Prove the end-to-end codecs
+## Phase 6 — Prove the end-to-end codecs
 
 **Goal.** Demonstrate the complete durable standard with preferred Opus and confirm that PCM remains a functioning fallback.
 
@@ -142,7 +164,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 
 **Status:** `todo`
 
-## Phase 6 — Evaluate Opus
+## Phase 7 — Evaluate Opus
 
 **Goal.** Record the completed island codec decision and carry its remaining product risks forward.
 
@@ -151,7 +173,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 - Completed h30 local encode/decode at 16 and 24 kbps.
 - Completed h31 two-second chunks, idempotency/conflict checks, server-side Ogg mux, `index.json`, and range playback.
 - Decision recorded in [`opus-demo.md`](opus-demo.md): 16 kbps VOIP preferred, 24 kbps AUDIO optional, PCM fallback retained.
-- Carry formal 180-second soak, p95 codec timing, bounded product streaming, and X02 partition sizing into Phases 5 and 8.
+- Carry formal 180-second soak, p95 codec timing, bounded product streaming, and X02 partition sizing into Phases 6 and 9.
 
 **Acceptance**
 
@@ -161,7 +183,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 
 **Status:** `done` (island proof)
 
-## Phase 7 — Prove full-message sketching
+## Phase 8 — Prove full-message sketching
 
 **Goal.** Keep sparse synchronized drawing available for the entire audio message.
 
@@ -183,7 +205,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 
 **Status:** `todo`
 
-## Phase 8 — Prepare X02 integration
+## Phase 9 — Prepare X02 integration
 
 **Goal.** Hand off proven components and a migration sequence without changing the product binary in this roadmap.
 

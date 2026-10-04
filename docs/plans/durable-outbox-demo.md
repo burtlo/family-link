@@ -5,18 +5,18 @@
 | **Doc kind**                   | `feature-plan` |
 | **Owners / areas**             | Device storage, record path, upload recovery, demo server |
 | **Status**                     | `draft` |
-| **Targets**                    | Isolated BOX-3 outbox demo using the currently attached storage |
+| **Targets**                    | Isolated BOX-3 outbox demo using the qualified on-chip FAT/WL backend first |
 | **Last updated**               | 2026-10-04 |
 | **Supersedes / superseded by** | Implements the persistence contract in [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md) |
 | **As-built**                   | None |
 
 ## At a glance
 
-Prove that a valuable recording survives server loss, Wi-Fi interruption, application restart, and device reboot. The demo records small chunks to attached storage, retries idempotently, and deletes local data only after a durable matching server acknowledgement.
+Prove that a valuable recording survives server loss, Wi-Fi interruption, application restart, and device reboot. The demo records small chunks to qualified on-chip storage, retries idempotently, and deletes local data only after a durable matching server acknowledgement.
 
 | Phase | Outcome | Status |
 |---|---|---|
-| [Phase 1 — Identify and qualify storage](#phase-1--identify-and-qualify-storage) | The attached medium, mount path, filesystem, capacity, and write behavior are recorded | `todo` |
+| [Phase 1 — Adopt the qualified storage backend](#phase-1--adopt-the-qualified-storage-backend) | The measured on-chip backend is available through a backend-neutral interface | `todo` |
 | [Phase 2 — Persistent local queue](#phase-2--persistent-local-queue) | Closed chunks and queue metadata survive reboot and partial writes | `todo` |
 | [Phase 3 — Retry protocol](#phase-3--retry-protocol) | Server outage and reconnect complete without losing or duplicating a message | `todo` |
 | [Phase 4 — Failure campaign](#phase-4--failure-campaign) | Power and network interruption cases have repeatable evidence | `todo` |
@@ -28,11 +28,11 @@ Prove that a valuable recording survives server loss, Wi-Fi interruption, applic
 
 h22 already proves one-second PCM recording chunks and sequential multipart writes, but drops a failed chunk. h24 demonstrates an acknowledgement cursor for small in-memory event batches. The completed h31 demo proves preferred two-second Opus chunk framing and upload. This demo combines those shapes with durable media storage.
 
-The user reports that the current device has storage attached. The implementation agent must identify it rather than assume USB mass storage, SENSOR microSD, or an on-chip filesystem. If more than one backend is present, qualify the attached removable medium first and keep the outbox interface backend-neutral.
+The on-chip `data,fat` partition is the first outbox backend. Complete [`onchip-storage-qualification.md`](onchip-storage-qualification.md) before implementing the queue, then consume its measured capacity, safe free-space floor, latency, mount, and recovery behavior through a backend-neutral interface. Attached removable storage remains useful as optional overflow, export, or alternate-backend capacity; it is not a prerequisite for the first durable queue proof.
 
 This is an island demo. Do not implement it inside X02.
 
-**Related docs:** [`STORAGE.md`](../STORAGE.md), [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md).
+**Related docs:** [`onchip-storage-qualification.md`](onchip-storage-qualification.md), [`STORAGE.md`](../STORAGE.md), [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md).
 
 ## Local filesystem contract
 
@@ -66,24 +66,24 @@ Deletion order after completion:
 
 This order favors duplicate recovery over recording loss.
 
-## Phase 1 — Identify and qualify storage
+## Phase 1 — Adopt the qualified storage backend
 
-**Goal.** Establish facts about the storage physically attached to the current device before building the queue.
+**Goal.** Reuse the device-proven on-chip filesystem behind a small interface before building queue semantics.
 
 **Deliverables**
 
-- Record the BOX-3 accessory arrangement, storage medium, capacity, filesystem, bus, mount API, relevant GPIO/USB conflicts, and whether the dock/speaker path remains usable.
-- Add a one-job mount/write/read/rename/delete/reboot demo for that medium if no existing demo covers it.
-- Measure sequential write throughput for 64 KiB and 192 KiB files, flush latency, mount time, free-space reporting, and behavior after reset during a temporary write.
-- Define a small backend interface: mount, free bytes, atomic replace, enumerate message directories, open/read/write/close, and remove acknowledged data.
-- Record whether wear leveling is supplied by the chosen backend.
+- Consume the completed evidence and safe free-space floor from [`onchip-storage-qualification.md`](onchip-storage-qualification.md); do not replace its measured limits with the earlier capacity model.
+- Define a small backend interface: mount, free bytes, atomic replace, enumerate message directories, open/read/write/flush/close, checksum, and remove acknowledged data.
+- Implement the first backend with the qualified on-chip FAT-over-wear-leveling partition and preserve its demonstrated no-auto-format recovery behavior.
+- Keep partition, FAT, and wear-leveling details outside the queue state machine so a removable backend can implement the same interface later.
+- Record the experiment partition fixture and clarify that its single-factory geometry does not settle the production choice between single-factory and dual OTA.
 
 **Acceptance**
 
-- The medium remounts after reboot and a committed test file retains its exact SHA-256.
-- A reset during `.part` creation leaves either the prior committed file or an identifiable temporary file, never a falsely valid final chunk.
-- Sustained write speed exceeds real-time PCM generation with margin. Baseline requirement is greater than 64 KB/s; preferred is greater than 256 KB/s.
-- At least 12 MB or the documented chosen reserve is safely available for outbox use.
+- The on-chip qualification plan is complete and linked to device evidence for boot, NVS, mount, capacity, cadence, interruption recovery, safe floor, and restore.
+- Backend conformance repeats mount, write/flush/close, SHA-256 read-back, atomic rename, enumeration, delete, and reboot/remount through the interface rather than direct filesystem calls.
+- The interface refuses writes at the measured free-space floor and preserves previously committed files.
+- Queue code has no dependency on FAT paths, wear-leveling handles, or removable-media APIs outside the backend implementation.
 
 **Status:** `todo`
 
@@ -167,7 +167,7 @@ This order favors duplicate recovery over recording loss.
 | Between last chunk and complete request | Completion resumes after reboot |
 | After server completion, before response | Idempotent complete returns existing message |
 | After completion acknowledgement, during local cleanup | Startup cleanup removes only data already recorded as completed |
-| Storage removed or unmounted | Recording stops safely; existing data is not treated as sent |
+| Storage becomes unavailable or unmounted | Recording stops safely; existing data is not treated as sent |
 | Server disk full (`507`) | Local message remains pending and retry is delayed |
 
 ## Phase 5 — Product handoff
@@ -189,6 +189,7 @@ This order favors duplicate recovery over recording loss.
 - A future X02 agent can import named helpers and state transitions rather than merging the demo source.
 - All failure-campaign evidence is linked from the handoff.
 - Remaining backend-specific risks are explicit.
+- Optional removable USB or microSD qualification is a separate backend/overflow experiment after the on-chip outbox passes; it does not block this handoff.
 
 **Status:** `todo`
 
@@ -198,3 +199,4 @@ This order favors duplicate recovery over recording loss.
 - Chunk server proof: [`demos/server/h22_diary/server.py`](../../demos/server/h22_diary/server.py)
 - Storage constraints: [`STORAGE.md`](../STORAGE.md)
 - Protocol: [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md)
+- On-chip backend prerequisite: [`onchip-storage-qualification.md`](onchip-storage-qualification.md)
