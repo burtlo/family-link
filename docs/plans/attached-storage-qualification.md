@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Doc kind | Experiment plan defined before implementation |
-| Status | Planned; accessory and medium not identified; no attached backend qualified |
-| Date | 2026-10-05 |
+| Status | H35 read-only discovery implementation committed; hardware discovery not run; accessory/medium still unverified; no attached backend qualified |
+| Date | 2026-10-05 (status updated after H35 implementation commit `5170a92`) |
 | Scope | Isolated BOX-3 storage fixture, host controls, strict evidence parser |
 | Product partition choice | Open: single-factory versus dual OTA |
-| Next gate | Read-only inventory and media preservation |
+| Next gate | Independently validate the fresh H35 build, then perform bounded read-only discovery and verify full device restoration |
 
 ## Reason and boundaries
 
