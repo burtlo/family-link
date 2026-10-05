@@ -1,0 +1,1253 @@
+{
+  "checks": {
+    "authorization_and_limits": {
+      "admin_playback": true,
+      "child_admin_forbidden": true,
+      "odd_pcm_range": 400,
+      "oversized_range_safe": true,
+      "recipient_complete_forbidden": true,
+      "sender_repeat": true,
+      "sender_without_inbox_playback": 403,
+      "status": "pass",
+      "unrelated_complete_forbidden": true,
+      "unsatisfiable_range": 416,
+      "unsupported_rate_rejected": true
+    },
+    "chunk_boundaries": {
+      "accepted_advisory_chunk_ms": 3000,
+      "accepted_duration_ms": 5000,
+      "advisory_target_ms": 2000,
+      "odd_pcm_bytes_rejected": true,
+      "rejected_duration_ms": 5001,
+      "status": "pass"
+    },
+    "completed_before_and_trash_auth": {
+      "bytes": 64044,
+      "child_trash_status": 403,
+      "completed_before": "2026-10-05T09:21:04.521175Z",
+      "excluded_message_id": "1e2fe8c3-efeb-49dc-a18a-7b1428229337",
+      "selected_message_id": "ffc42d73-b7eb-4214-8e44-47ea21f046e3",
+      "status": "pass"
+    },
+    "invalid_utf8_cull_journal": {
+      "affected_message_status": 200,
+      "diagnostic_recorded": true,
+      "healthy_message_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "status": "pass"
+    },
+    "journaled_orphan_trash": {
+      "cull_audit_rows": 1,
+      "deletion_metadata_rebuilt": true,
+      "journal": "cull_intent",
+      "restored_media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "status": "pass"
+    },
+    "jsonl_fail_closed": {
+      "committed_rows_before_corruption": 2,
+      "diagnostic_recorded": true,
+      "malformed_middle_row": "startup rejected",
+      "status": "pass"
+    },
+    "low_disk_admission": {
+      "admission_status": 507,
+      "received_after_refusal": [],
+      "recovery": "upload and completion passed",
+      "status": "pass",
+      "temporary_files_after_refusal": 0
+    },
+    "low_disk_completion": {
+      "admission_status": 507,
+      "chunk_count_before_refusal": 2,
+      "completion_intent_before_recovery": false,
+      "floor_bytes": 1000000000000000000,
+      "recovered_completion": true,
+      "status": "pass"
+    },
+    "media": {
+      "full_bytes": 5760044,
+      "full_sha256": "798038d711184e4a46503da29f5c73082938c38d864a96351a0589034a821f4a",
+      "message_id": "13f20373-0593-47b6-b981-192f8391fbc2",
+      "ranges": [
+        {
+          "bytes": 64,
+          "end": 63,
+          "sha256": "896784ab7a22fd30f6995128bd34ccb4a12bbe0e732fad0cc38915300b22e528",
+          "start": 0
+        },
+        {
+          "bytes": 128,
+          "end": 2880149,
+          "sha256": "807bb8c5e0348acb8d598e7abb761d20e362e9fac39fb675e3fd757cfe36fa2f",
+          "start": 2880022
+        },
+        {
+          "bytes": 128,
+          "end": 5760043,
+          "sha256": "1ae631328b7cfe09e7d8e141d5496501ca242cfd4e7380c9f9f96a9afc52bdd8",
+          "start": 5759916
+        },
+        {
+          "bytes": 5760044,
+          "end": 5760043,
+          "sha256": "798038d711184e4a46503da29f5c73082938c38d864a96351a0589034a821f4a",
+          "start": 0
+        }
+      ],
+      "recipient_inbox_count": 1,
+      "status": "pass"
+    },
+    "memory": {
+      "limit_bytes": 1048576,
+      "long_180s": {
+        "finalization_peak_bytes": 530977,
+        "range_full_peak_bytes": 265013,
+        "range_small_peak_bytes": 20929,
+        "upload_peak_bytes": 341852
+      },
+      "max_server_request_chunk_bytes": 64000,
+      "max_server_response_chunk_bytes": 65536,
+      "method": "tracemalloc.reset_peak per ASGI request; peak minus live allocation baseline; response streaming included",
+      "samples": 115,
+      "server_rss_peak_bytes": 66846720,
+      "short_2s": {
+        "finalization_peak_bytes": 417623,
+        "range_full_peak_bytes": 283380,
+        "upload_peak_bytes": 345354
+      },
+      "status": "pass"
+    },
+    "preview_token_expiry": {
+      "cull_status": 400,
+      "message_remained_visible": true,
+      "status": "pass",
+      "ttl_seconds": 0
+    },
+    "quarantine_audio_type": {
+      "case": "audio_type",
+      "diagnostic_recorded": true,
+      "healthy_message_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "quarantined_directories": 1,
+      "status": "pass"
+    },
+    "quarantine_invalid_trashed_at": {
+      "case": "invalid_trashed_at",
+      "diagnostic_recorded": true,
+      "healthy_message_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "quarantined_directories": 1,
+      "status": "pass"
+    },
+    "quarantine_orphan_trash": {
+      "case": "orphan_trash",
+      "diagnostic_recorded": true,
+      "healthy_message_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "quarantined_directories": 1,
+      "status": "pass"
+    },
+    "quarantine_utf8_deletion": {
+      "case": "utf8_deletion",
+      "diagnostic_recorded": true,
+      "healthy_message_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "quarantined_directories": 1,
+      "status": "pass"
+    },
+    "quarantine_utf8_manifest": {
+      "case": "utf8_manifest",
+      "diagnostic_recorded": true,
+      "healthy_message_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "quarantined_directories": 1,
+      "status": "pass"
+    },
+    "restart_and_trash": {
+      "inbox_count": 1,
+      "media_sha256": "798038d711184e4a46503da29f5c73082938c38d864a96351a0589034a821f4a",
+      "status": "pass"
+    },
+    "stale_media_selection": {
+      "canonical_directory_preserved": true,
+      "cull_status": 409,
+      "playback_rejected": true,
+      "same_size_mutation": true,
+      "status": "pass"
+    },
+    "suffix_range": {
+      "content_range": "bytes 63916-64043/64044",
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "start": 63916,
+      "status": "pass",
+      "suffix_bytes": 128
+    },
+    "transient_completion_storage_recovery": {
+      "disk_floor_status": 507,
+      "inbox_count": 1,
+      "intent_crash_exit": 86,
+      "media_bytes": 64044,
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "quarantined": false,
+      "recovery_state": "finalizing",
+      "restarts": 3,
+      "status": "pass"
+    },
+    "upload": {
+      "chunks": 90,
+      "conflict_rejected": true,
+      "deduplicated": true,
+      "reordered": true,
+      "status": "pass"
+    }
+  },
+  "environment": {
+    "durability_scope": "process crash; no power-loss claim",
+    "implementation": "CPython",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.14.7"
+  },
+  "faults": [
+    {
+      "boundary": "chunk_temp_write",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_temp_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_rename_raw",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_audio_dir_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_work_dir_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_rename",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_manifest_temp_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_manifest_replace",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_manifest",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "chunk_pre_response",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "chunk",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "intent_temp_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "intent_replace",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "intent",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "wav_temp_write",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "wav_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "wav_rename",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "complete_manifest_temp_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "complete_manifest_replace",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "complete_manifest",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "marker_temp_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "marker_replace",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "marker",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "message_dest_parent",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "message_rename_raw",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "message_source_parent_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "message_rename",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "inbox_temp_fsync",
+      "broadcast": true,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 1,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "inbox_replace",
+      "broadcast": true,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 1,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "inbox_append",
+      "broadcast": true,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 1,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cleanup",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "complete",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_intent_temp_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_intent_replace",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_intent",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_deletion_temp_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_deletion_replace",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_deletion",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_dest_parent",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_rename_raw",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_source_parent_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_rename",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "cull_audit",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "cull",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_intent_temp_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 404,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_intent_replace",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_intent",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_dest_parent",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_rename_raw",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_source_parent_fsync",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_rename",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_audit",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    },
+    {
+      "boundary": "restore_cleanup",
+      "broadcast": false,
+      "inbox_count": 1,
+      "initial_media_status": 200,
+      "inventory": {
+        "broadcast_second_inbox_rows": 0,
+        "canonical_directories": 1,
+        "complete_markers": 1,
+        "cull_audit_rows": 1,
+        "incoming_directories": 0,
+        "recipient_inbox_rows": 1,
+        "remaining_chunk_files": 0,
+        "restore_audit_rows": 1,
+        "trash_directories": 0
+      },
+      "media_sha256": "e9062f34effcde0c0d56fce571abac3ca1dd49147232b85c81ef1943aa51d93b",
+      "operation": "restore",
+      "restarts": 2,
+      "source_sha256": "c7bb1860088acb44baf34bb48419fc987656481308f5ab810d85dbb4f8e67d47",
+      "status": "pass"
+    }
+  ],
+  "fixture": {
+    "channels": 1,
+    "chunk_bytes": 64000,
+    "chunk_count": 90,
+    "duration_ms": 180000,
+    "generator": "integer-lcg-v1",
+    "pcm_bytes": 5760000,
+    "pcm_sha256": "8d1bbf8aed233815eeae3a3ba2e844bf3a6fc42ee4b107a7a21f5e5991d8e74a",
+    "sample_format": "s16le",
+    "sample_rate_hz": 16000,
+    "target_chunk_ms": 2000,
+    "wav_bytes": 5760044,
+    "wav_sha256": "798038d711184e4a46503da29f5c73082938c38d864a96351a0589034a821f4a"
+  },
+  "run_id": "aa1ea0ac-51d9-4aca-994e-be0911056db5",
+  "schema": "h34-qualification/1",
+  "source_revision": "d0f70c42781ecb433dd7d624ce016cf87b1db955",
+  "status": "pass"
+}

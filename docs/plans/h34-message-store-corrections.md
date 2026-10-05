@@ -3,21 +3,23 @@
 | Field | Value |
 |---|---|
 | **Doc kind** | `island-demo-correction` |
-| **Status** | `planned` |
-| **Last updated** | 2026-10-04 |
+| **Status** | `done` (Gates A–D; host PCM filesystem subset) |
+| **Last updated** | 2026-10-05 |
 | **Scope** | Host-only PCM implementation in `demos/server/h34_message_store/` and its evidence/docs |
 
 ## Goal
 
 Bring the h34 host demo into conformance with the durable message protocol and filesystem contract before relying on it as the Phase 3 server proof. Close the authorization, finalization recovery, durability, bounded streaming, trash recovery, exact-selection, and validation gaps. Replace the current short happy-path claim with reproducible 180-second PCM and fault-injection evidence.
 
+**Result (2026-10-05):** Gates A–D passed for the host PCM filesystem subset. The committed-source qualification at `d0f70c42781ecb433dd7d624ce016cf87b1db955` produced 21/21 passing checks and 50/50 passing process-crash boundaries with the deterministic 180-second fixture. See [the retained JSON, log, measurements, and limits](../evidence/h34-message-store/README.md). This is process-crash evidence, not switched-power-loss evidence. Opus, sketches, upload abort, notification delivery, device work, and X02 integration remain later phases.
+
 This plan does not authorize firmware/X02 integration, Opus work, production deployment, or hardware qualification. The existing H32 changes in the workspace are outside this plan.
 
-## Current evidence and gaps
+## Baseline evidence and gaps before correction
 
-The current client covers short PCM chunks, duplicate/conflicting chunk responses, one happy-path completion, one ordinary restart with an open upload, one ordinary restart with a completed message, Range playback, and cull/restore without a restart. It does not establish crash consistency at finalization boundaries, process-level admin authorization, restart-safe trash, a three-minute transfer, or bounded peak memory. The current finalizer persists `finalizing` before work and treats that state as busy after restart; completed-message completion returns before checking sender ownership; administrator handlers accept any known device; Range handling reads the full selected range; startup does not index trash; and cull preview does not evaluate `completed_before` or bind a normalized exact selection to its caller.
+The baseline client covered short PCM chunks, duplicate/conflicting chunk responses, one happy-path completion, one ordinary restart with an open upload, one ordinary restart with a completed message, Range playback, and cull/restore without a restart. It did not establish crash consistency at finalization boundaries, process-level admin authorization, restart-safe trash, a three-minute transfer, or bounded peak memory. The baseline finalizer persisted `finalizing` before work and treated that state as busy after restart; completed-message completion returned before checking sender ownership; administrator handlers accepted any known device; Range handling read the full selected range; startup did not index trash; and cull preview did not evaluate `completed_before` or bind a normalized exact selection to its caller.
 
-The roadmap currently marks Phase 3 done while acknowledging the missing three-minute fixture and trash-index gap. Keep that status as `in progress`/`blocked on correction` until every gate below passes; do not use the existing short demo as proof of the missing properties.
+The roadmap previously marked Phase 3 done while acknowledging the missing three-minute fixture and trash-index gap. The correction gates below now have committed-source qualification evidence, so the Phase 3 host PCM status is restored to `done` with explicit scope and limits.
 
 ## Phases and acceptance gates
 

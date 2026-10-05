@@ -1,0 +1,73 @@
+[STEP] h34 180-second message_store qualification
+PASS upload
+PASS media
+PASS authorization_and_limits
+PASS memory
+PASS stale_media_selection
+PASS chunk_boundaries
+PASS restart_and_trash
+PASS jsonl_fail_closed
+PASS low_disk_admission
+PASS low_disk_completion
+PASS transient_completion_storage_recovery
+PASS suffix_range
+PASS completed_before_and_trash_auth
+PASS preview_token_expiry
+PASS quarantine_audio_type
+PASS quarantine_invalid_trashed_at
+PASS quarantine_orphan_trash
+PASS quarantine_utf8_manifest
+PASS quarantine_utf8_deletion
+PASS journaled_orphan_trash
+PASS invalid_utf8_cull_journal
+PASS fault chunk_temp_write
+PASS fault chunk_temp_fsync
+PASS fault chunk_rename_raw
+PASS fault chunk_audio_dir_fsync
+PASS fault chunk_work_dir_fsync
+PASS fault chunk_rename
+PASS fault chunk_manifest_temp_fsync
+PASS fault chunk_manifest_replace
+PASS fault chunk_manifest
+PASS fault chunk_pre_response
+PASS fault intent_temp_fsync
+PASS fault intent_replace
+PASS fault intent
+PASS fault wav_temp_write
+PASS fault wav_fsync
+PASS fault wav_rename
+PASS fault complete_manifest_temp_fsync
+PASS fault complete_manifest_replace
+PASS fault complete_manifest
+PASS fault marker_temp_fsync
+PASS fault marker_replace
+PASS fault marker
+PASS fault message_dest_parent
+PASS fault message_rename_raw
+PASS fault message_source_parent_fsync
+PASS fault message_rename
+PASS fault inbox_temp_fsync
+PASS fault inbox_replace
+PASS fault inbox_append
+PASS fault cleanup
+PASS fault cull_intent_temp_fsync
+PASS fault cull_intent_replace
+PASS fault cull_intent
+PASS fault cull_deletion_temp_fsync
+PASS fault cull_deletion_replace
+PASS fault cull_deletion
+PASS fault cull_dest_parent
+PASS fault cull_rename_raw
+PASS fault cull_source_parent_fsync
+PASS fault cull_rename
+PASS fault cull_audit
+PASS fault restore_intent_temp_fsync
+PASS fault restore_intent_replace
+PASS fault restore_intent
+PASS fault restore_dest_parent
+PASS fault restore_rename_raw
+PASS fault restore_source_parent_fsync
+PASS fault restore_rename
+PASS fault restore_audit
+PASS fault restore_cleanup
+RESULT PASS /Users/lynnfrank/src/family-link/docs/evidence/h34-message-store/qualification.json

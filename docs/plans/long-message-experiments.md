@@ -18,7 +18,7 @@ Prove long messages in isolated steps while protecting the current X02 path. The
 |---|---|---|
 | [Phase 1 — Record the baseline](#phase-1--record-the-baseline) | Current X02 and server limits have reproducible evidence | `todo` |
 | [Phase 2 — Prove streaming playback](#phase-2--prove-streaming-playback) | BOX-3 plays long server files with bounded RAM and range resume | `todo` |
-| [Phase 3 — Prove canonical server storage](#phase-3--prove-canonical-server-storage) | Chunk sessions finalize into restart-safe message directories | `todo` |
+| [Phase 3 — Prove canonical server storage](#phase-3--prove-canonical-server-storage) | Chunk sessions finalize into restart-safe message directories | `done` (host PCM island) |
 | [Phase 4 — Qualify on-chip storage](#phase-4--qualify-on-chip-storage) | The internal FAT/WL outbox survives writes, resets, remounts, and near-full operation | `todo` |
 | [Phase 5 — Prove the durable outbox](#phase-5--prove-the-durable-outbox) | Recordings survive offline operation, interruption, and reboot | `todo` |
 | [Phase 6 — Prove the end-to-end codecs](#phase-6--prove-the-end-to-end-codecs) | Preferred Opus and fallback PCM both survive the durable lifecycle | `todo` |
@@ -99,7 +99,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 - Only complete directories appear in inbox results.
 - Cull preview reports exact IDs and bytes; trash and restore preserve manifest/media hashes.
 
-**Status:** `done` (host island **h34_message_store**; `make demo-message-store`. PCM path only; 3-minute fixture and sketch/trash-index gaps tracked in [`message-store-demo.md`](message-store-demo.md).)
+**Status:** `done` (host PCM island **h34_message_store**). The [h34 correction plan](h34-message-store-corrections.md) passed Gates A–D at tested source revision `d0f70c42781ecb433dd7d624ce016cf87b1db955`: deterministic 180-second fixture, 21/21 qualification checks, and 50/50 process-crash fault boundaries. See [qualification evidence](../evidence/h34-message-store/README.md). Opus, sketches, notifications, and device/X02 integration remain later phases; sudden power-loss durability remains unproven.
 
 ## Phase 4 — Qualify on-chip storage
 
