@@ -1,0 +1,80 @@
+{
+  "controller_sha256": "f9484ce0fd115792e1b47118c0b664f14a6de4d63f4037e180bebe55b959c435",
+  "host_checks": {
+    "preflight_negative_cases": [
+      {
+        "case": "missing_serial",
+        "device_callback_calls": 0,
+        "metadata_reason": "serial_import_failed",
+        "serial_import_calls": 1,
+        "status": "failed_closed"
+      },
+      {
+        "case": "missing_required_api",
+        "device_callback_calls": 0,
+        "metadata_reason": "pyserial_distribution_or_api_invalid",
+        "serial_import_calls": 1,
+        "status": "failed_closed"
+      },
+      {
+        "case": "used_flash-attempt-private.json",
+        "device_callback_calls": 0,
+        "serial_import_calls": 0,
+        "status": "refused_unchanged"
+      },
+      {
+        "case": "used_capture-private.txt",
+        "device_callback_calls": 0,
+        "serial_import_calls": 0,
+        "status": "refused_unchanged"
+      },
+      {
+        "case": "used_host-preflight-private.json",
+        "device_callback_calls": 0,
+        "serial_import_calls": 0,
+        "status": "refused_unchanged"
+      },
+      {
+        "case": "used_capture-ready-private.json",
+        "device_callback_calls": 0,
+        "serial_import_calls": 0,
+        "status": "refused_unchanged"
+      },
+      {
+        "case": "unused_epoch_positive",
+        "device_callback_calls": 0,
+        "status": "pass"
+      }
+    ],
+    "pyserial_preflight": {
+      "distribution": "pyserial",
+      "status": "pass",
+      "version": "3.5"
+    },
+    "rejected_synthetic_record_cases": [
+      "wrong_geometry",
+      "false_success",
+      "duplicate",
+      "truncated",
+      "wrong_epoch",
+      "wrong_elf",
+      "unknown",
+      "private_field",
+      "wrong_order",
+      "failed_prerequisite",
+      "false_presence",
+      "interrupt_watchdog",
+      "task_watchdog",
+      "other_watchdog"
+    ],
+    "status": "pass",
+    "synthetic_only": true
+  },
+  "python_version": "3.14.7",
+  "source_commit": "b1e9882b5272b6a5a8d9a2b0bd0fa9da8f3252bd",
+  "verification": {
+    "diff_check": "pass",
+    "py_compile": "pass",
+    "host_checks": "pass"
+  }
+}
