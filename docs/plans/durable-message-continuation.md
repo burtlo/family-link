@@ -5,14 +5,16 @@ Updated 2026-10-05. This is an operator handoff, read alongside the [ordered exp
 **Current checkpoint:** H34 is complete; H32 failed its PCM deadline gate and
 remains unqualified. The H32 write-coalescing candidate stopped at the
 [read-only feasibility gate](../evidence/onchip-storage-qualification/coalescing-preflight.md).
-The H35 bounded attempt failed before application launch with
-`host_capture_dependency_failure`; it has no serial capture or media discovery
-verdict. Its complete restoration and boot were independently verified, and the
-reviewed failed-attempt evidence was committed as `7f89a07`. The host capture
-preflight correction and sanitized host-only checks are now committed; the
-controller passed the actual workspace `.venv` pyserial preflight without
-opening a port. The next step is a fresh corrected immutable hardware epoch.
-Preserve the failed H35 epoch unchanged; it is not a retry candidate. Follow [the continuation
+The first H35 attempt failed before application launch with
+`host_capture_dependency_failure`; its complete restoration and boot were
+independently verified, and the reviewed failure evidence was committed as
+`7f89a07`. The corrected immutable retry detected SDMMC, passed strict
+allowlist/public-mapping review, and independently verified full restoration.
+It establishes transport detection only: the 62.2 GB medium has not been
+read-only preserved, its filesystem has not been inspected, and ownership is
+unknown. The next step is read-only media preservation and ownership resolution
+before any mount or write. Preserve the first failed H35 epoch unchanged; it is
+not a retry candidate. Follow [the continuation
 checkpoint](continuation-checkpoint-2026-10-05.md) for exact status and next
 actions; do not follow the historical H32 retry instructions below as current
 work.

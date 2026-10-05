@@ -130,6 +130,14 @@ The planned 100 ms bounded-yield comparison was not run because no-yield failed.
 The original image was restored after both runs. Storage remains unqualified;
 do not advance to the durable outbox.
 
+Separately, the corrected H35 SDMMC discovery fixture detected an attached card:
+121,503,744 sectors × 512 bytes (62,209,916,928 bytes), 4-bit bus at 20 MHz.
+The strict sanitized result is [here](../evidence/attached-storage-qualification/h35-preflight-retry-20261005/summary.md).
+This is transport discovery only: the medium has not been preserved or inspected,
+ownership remains unknown, and no attached backend is qualified. H32 remains
+failed and the durable outbox remains blocked. Resolve read-only preservation
+and ownership before any mount or write.
+
 ## Phase 5 — Prove the durable outbox
 
 **Goal.** Make capture safe before network delivery.

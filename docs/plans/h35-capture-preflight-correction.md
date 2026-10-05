@@ -1,6 +1,6 @@
 # H35 host capture preflight correction
 
-**Status:** `hostverifiedawaitfreshhardware` — host preflight correction and checks reviewed; next step is a fresh corrected immutable hardware epoch.
+**Status:** Host correction, corrected H35 transport-discovery attempt, strict allowlist parsing, public-mapping review, and independent full restoration review are verified. Storage remains unqualified pending read-only media preservation and ownership.
 
 ## Failure being addressed
 
@@ -15,8 +15,9 @@ Before any device reset, full-image read, flash, or other device mutation, the a
 1. Complete-device restoration and independent boot/image review have passed. Commit the reviewed failed-attempt evidence and this correction plan before implementing any correction.
 2. Add the controller host preflight only to the `flash_capture`/capture path, before any `verify_device` or esptool callbacks. Do not add a global `serial` import; keep emergency restore usable without pyserial. Validate the actual interpreter, `serial` import, and required pyserial API before any device reset/full read/flash. Host-only negative checks must simulate both missing `serial` and a missing required API, replace all device-tool callbacks with sentinels, and require fail-closed behavior with zero callback invocations. Keep logs and interpreter/package paths private.
 3. **Complete:** independent review of the correction and host-only evidence passed; the correction and verification are committed. Host checks use the workspace `.venv`, verify the actual pyserial distribution/API without opening a port, prove fail-closed missing-module/API and used-epoch behavior with zero device callbacks, and keep interpreter/package paths private.
-4. Next, prepare a new immutable run epoch from the corrected committed source. Build and independently review its source/configuration binding, app bounds, partition table, and exact mutation interval.
-5. Only after those gates pass, execute a bounded hardware attempt in a managed execution session that retains the real controller exit code. Require fresh full-image comparison, app-only flashing, capture readiness before application launch, serial capture, complete-image restoration, independent full-image readback, and restored-boot confirmation.
-6. Review and sanitize the result into the evidence directory, preserving private identities and backups. Commit the reviewed evidence and resulting plan status before advancing to preservation or any later stage.
+4. **Complete:** new immutable epoch built and independently reviewed.
+5. **Complete:** bounded hardware attempt ran in a managed session with actual exit code retained; it detected SDMMC, captured serial output, and completed full-device restoration.
+6. **Complete:** strict allowlist parser exited 0; sanitized public-mapping/privacy review and independent full restoration review passed. This establishes discovery only, not storage qualification.
+7. Next, perform read-only preservation of the detected card and resolve ownership before any mount or write. Default to unknown ownership/preservation-only until clarified.
 
 This correction is limited to host preflight and execution readiness. It does not change product firmware, device behavior, partition selection, or storage qualification criteria.

@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Doc kind | Experiment plan defined before implementation |
-| Status | H35 host capture attempt failed before application launch (`host_capture_dependency_failure`); controller restore proof and independent full-image/boot review verified; no discovery verdict or attached backend qualification |
+| Status | Corrected H35 retry detected SDMMC; strict allowlist/public-mapping review and independent full restoration review passed; discovery-only, preservation/ownership/filesystem gates remain open; no attached backend qualified |
 | Date | 2026-10-05 (status updated after H35 implementation commit `5170a92`) |
 | Scope | Isolated BOX-3 storage fixture, host controls, strict evidence parser |
 | Product partition choice | Open: single-factory versus dual OTA |
-| Next gate | Commit the reviewed failed-attempt evidence and H35 capture preflight correction plan; then implement/review/commit host preflight, build and independently review a fresh epoch, and only then consider a bounded retry |
+| Next gate | Read-only preserve the detected 62,209,916,928-byte medium and resolve ownership before any mount or write; default to preservation-only while ownership is unknown |
 
 ## Reason and boundaries
 
