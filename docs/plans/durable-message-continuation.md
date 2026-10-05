@@ -64,7 +64,7 @@ Execute the following dependency sequence using the corrected controller:
 3. Flash sentinel application within the original application bounds; capture and validate sentinel-only/no-storage-access proof; retain post-sentinel NVS hash.
 4. Erase only the exact outbox region. Read back all 14,483,456 bytes, verify every byte is `0xff`, and compare the entire-region SHA with the expected erased hash.
 5. Flash experiment bootloader/table/application without launching firmware. Verify each image readback and unchanged post-sentinel NVS.
-6. Open serial capture before first launch. Capture the full scan, exactly one format/new-run, verified marker remount, five probe reboots, I/O matrix, both cadence runs, all 80 fault/recovery cycles, and near-full/reclaim phases.
+6. Open serial capture before first launch. Capture the full scan, exactly one format/new-run, verified marker remount, five probe reboots, I/O matrix, both cadence runs, all 90 fault/recovery cycles, and near-full/reclaim phases.
 7. Require one epoch and build set throughout. Parser must reject `FAIL`, invalid bounds, repeated formats, missing marker verification, duplicate proof identities, mismatched fault/recovery order, incomplete cadence, or watchdog failure. Derive evidence only into a fresh staging directory and publish atomically after acceptance.
 8. Restore the original complete image while held in the bootloader. Read back the entire image before starting firmware, compare full hash, table, NVS, and application descriptors; retain private proof and publish a sanitized result.
 

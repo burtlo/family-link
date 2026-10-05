@@ -165,6 +165,19 @@ Actual power removal remains unproven unless a named controllable power relay is
 introduced. Software restart evidence must continue to say `esp_restart` and
 must not be described as power-loss evidence.
 
+### Interruption matrix clarification (2026-10-05)
+
+Run ten cycles at each of nine boundaries, for 90 ordered fault/recovery pairs:
+buffered 128 bytes, buffered half payload, buffered 65,535 bytes, after fsync
+before close, after close before rename, after rename before metadata, after
+metadata before delete, between payload and manifest deletion, and after both
+deletions. The intermediate deletion boundary closes the original plan's
+requirement to reset during delete. Recovery must validate all retained earlier
+commits and exact manifest contents, complete cleanup successfully, and only
+then advance the progress cursor. The parser must enforce the exact pair set
+and order, including every reboot's epoch, marker, flash size, and partition
+bounds. Missing or duplicate pairs cannot qualify the run.
+
 ## Exact preflight gates
 
 The controller must stop before experiment mutation unless every gate passes:
