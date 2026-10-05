@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Private, fail-closed H35 controller. Discovery never authorizes media writes."""
 from __future__ import annotations
-import argparse,json,os,re,secrets,subprocess,time
+import argparse,importlib,importlib.metadata,json,os,re,secrets,subprocess,sys,time
+import tempfile
 from pathlib import Path
 import h32_storage_qual as h32
 ROOT=h32.ROOT; FW=h32.FW
 stop=h32.stop; digest=h32.digest; atomic_json=h32.atomic_json
+CAPTURE_USED_MARKERS=('flash-attempt-private.json','capture-private.txt',
+                      'host-preflight-private.json','capture-ready-private.json')
 
 
 def private(path):
@@ -163,7 +166,92 @@ def parse_records(text,epoch,elf):
     return {'status':'present' if result=='detected' else 'inconclusive','result':result,'scope':'discovery_only','qualification':'unqualified','records':r}
 
 
-def flash_capture(port,bd,rd,seconds):
+def resolve_serial(importer=importlib.import_module):
+    """Resolve and exercise the required pyserial API without opening a port."""
+    try:
+        serial=importer('serial')
+    except Exception:
+        return None,{'status':'failed','reason':'serial_import_failed'},'serial import failed'
+    try:
+        dist=importlib.metadata.distribution('pyserial')
+        version=dist.version
+        match=re.match(r'^(\d+)\.(\d+)',version)
+        if not match or (int(match[1]),int(match[2]))<(3,5):
+            raise ValueError('unsupported pyserial version')
+        owners={re.sub(r'[-_.]+','-',x).lower() for x in (importlib.metadata.packages_distributions().get('serial') or [])}
+        if 'pyserial' not in owners:
+            raise ValueError('serial module is not owned by pyserial')
+        module_path=Path(serial.__file__).resolve()
+        package_files=dist.files or ()
+        expected={Path(dist.locate_file(item)).resolve() for item in package_files
+                  if item.as_posix().endswith('serial/__init__.py')}
+        if module_path not in expected:
+            raise ValueError('serial module does not match pyserial distribution')
+        ctor=getattr(serial,'Serial',None)
+        if not callable(ctor):
+            raise ValueError('Serial constructor missing')
+        port=ctor(port=None,baudrate=115200,timeout=.2)
+        try:
+            if getattr(port,'is_open',True) or getattr(port,'port','not-none') is not None:
+                raise ValueError('unconnected Serial unexpectedly opened')
+            port.dtr=False
+            port.rts=False
+            port.port=None
+            for name in ('reset_input_buffer','read','close','__enter__','__exit__'):
+                if not callable(getattr(port,name,None)):
+                    raise ValueError('required Serial API missing')
+        finally:
+            port.close()
+        info={'status':'pass','distribution':'pyserial','version':version,
+              'module_path':str(module_path),'distribution_path':str(Path(dist.locate_file('')).resolve()),
+              'api':['Serial(port=None)','dtr','rts','port','reset_input_buffer','read','close','context_manager']}
+        return serial,info,None
+    except Exception:
+        return None,{'status':'failed','reason':'pyserial_distribution_or_api_invalid'},'pyserial distribution or required API invalid'
+
+
+def _write_host_preflight(rd,info):
+    target=rd/'host-preflight-private.json'
+    data={'schema':1,'status':info['status'],'python_executable':sys.executable,
+          'python_version':sys.version,'python_prefix':sys.prefix,'python_base_prefix':sys.base_prefix,
+          'serial':info}
+    # One immutable attempt per run. This file is private run metadata and is
+    # never copied to sanitized public evidence.
+    fd=os.open(target,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    try:
+        with os.fdopen(fd,'w') as f:
+            json.dump(data,f,sort_keys=True);f.write('\n');f.flush();os.fsync(f.fileno())
+        dfd=os.open(rd,os.O_RDONLY)
+        try:os.fsync(dfd)
+        finally:os.close(dfd)
+    except BaseException:
+        try:target.unlink()
+        except OSError:pass
+        raise
+
+
+def capture_preflight(rd,importer=importlib.import_module):
+    rd=private(rd)
+    serial,info,error=resolve_serial(importer)
+    _write_host_preflight(rd,info)
+    if error:stop(error)
+    return serial
+
+
+def require_unused_capture_epoch(rd):
+    """Reject a reused capture epoch without importing packages or touching a device."""
+    rd=private(rd)
+    if any(os.path.lexists(rd/name) for name in CAPTURE_USED_MARKERS):
+        stop('capture epoch already used')
+    return rd
+
+
+def flash_capture(port,bd,rd,seconds,importer=importlib.import_module):
+    # This must remain before verify_device/esptool and before every operation
+    # that could reset or mutate the target. Keep this resolved module for use
+    # below; do not re-import after device operations.
+    rd=require_unused_capture_epoch(rd)
+    serial=capture_preflight(rd,importer)
     if not 35<=seconds<=120: stop('capture bound must be 35..120 seconds')
     m=require_run(rd,bd); b=backup(bd); v=validate(rd,bd); out=rd/'capture-private.txt'
     if (rd/'flash-attempt-private.json').exists() or out.exists(): stop('epoch already used')
@@ -184,7 +272,6 @@ def flash_capture(port,bd,rd,seconds):
         original=fresh.read_bytes(); changed=check.read_bytes(); end=h32.APP_OFF+((app.stat().st_size+4095)//4096)*4096
         if len(changed)!=h32.FLASH or changed[:h32.APP_OFF]!=original[:h32.APP_OFF] or changed[end:]!=original[end:]: stop('flash changed bytes outside application erase sectors')
         h32.verify_device(port,b,hold=True)
-        import serial
         ser=serial.Serial(port=None,baudrate=115200,timeout=.2); ser.dtr=False; ser.rts=False; ser.port=port
         with ser, out.open('xb') as f:
             os.chmod(out,0o600); ser.reset_input_buffer()
@@ -230,6 +317,96 @@ def aggregate(rd,bd,output):
 
 
 def host_checks():
+    serial,serial_info,error=resolve_serial()
+    if error:stop('actual interpreter pyserial preflight failed: '+error)
+    fail_closed=[]
+    class MissingApiSerial:
+        def __init__(self,port=None,baudrate=0,timeout=None):
+            self.is_open=False;self.port=port;self.dtr=False;self.rts=False
+        def read(self,n):return b''
+        def close(self):pass
+        def __enter__(self):return self
+        def __exit__(self,*args):self.close()
+    bad_api=type('SerialModule',(),{'__file__':serial.__file__,'Serial':MissingApiSerial})()
+    def missing_import(name):
+        imports.append(name);raise ModuleNotFoundError("No module named 'serial'")
+    def missing_api(name):
+        imports.append(name);return bad_api
+    cases=[('missing_serial',missing_import,'serial_import_failed','serial import failed'),
+           ('missing_required_api',missing_api,'pyserial_distribution_or_api_invalid',
+            'pyserial distribution or required API invalid')]
+    callback_names=(('require_run',globals()),('backup',globals()),('validate',globals()),
+                    ('verify_device',vars(h32)),('esptool',vars(h32)),('run',vars(h32)),
+                    ('match_read',vars(h32)),('restore',vars(h32)))
+    for label,importer,expected_reason,expected_error in cases:
+        calls=[]; imports=[]; originals=[]
+        def sentinel(*args,**kwargs):
+            calls.append(1);raise AssertionError('device callback invoked during preflight')
+        try:
+            for name,scope in callback_names:
+                originals.append((scope,name,scope[name]));scope[name]=sentinel
+            with tempfile.TemporaryDirectory(prefix='h35-preflight-') as td:
+                run_dir=Path(td)/'run';run_dir.mkdir(mode=0o700)
+                try:flash_capture('sentinel-port',None,run_dir,45,importer)
+                except SystemExit as exc:
+                    if str(exc)!='STOP: '+expected_error:stop(label+' returned unexpected failure: '+str(exc))
+                else:stop(label+' preflight unexpectedly accepted')
+                record=json.loads((run_dir/'host-preflight-private.json').read_text())
+                if record['status']!='failed' or record['serial'].get('reason')!=expected_reason:
+                    stop(label+' private failure metadata differs')
+            if calls:stop(label+' invoked a device callback before failing closed')
+            if imports!=['serial']:stop(label+' importer call sequence differs')
+            fail_closed.append({'case':label,'status':'failed_closed','serial_import_calls':len(imports),
+                                'metadata_reason':expected_reason,'device_callback_calls':len(calls)})
+        finally:
+            for scope,name,value in reversed(originals):scope[name]=value
+    def snapshot_tree(root):
+        return {str(p.relative_to(root)):('dir' if p.is_dir() else p.read_bytes())
+                for p in sorted(root.rglob('*'))}
+    for marker in CAPTURE_USED_MARKERS:
+        calls=[];imports=[];originals=[]
+        def sentinel(*args,**kwargs):
+            calls.append(1);raise AssertionError('device callback invoked for used epoch')
+        def should_not_import(name):
+            imports.append(name);raise AssertionError('serial import attempted for used epoch')
+        try:
+            for name,scope in callback_names:
+                originals.append((scope,name,scope[name]));scope[name]=sentinel
+            with tempfile.TemporaryDirectory(prefix='h35-used-epoch-') as td:
+                run_dir=Path(td)/'run';run_dir.mkdir(mode=0o700)
+                (run_dir/marker).write_bytes(('existing:'+marker).encode())
+                before=snapshot_tree(run_dir)
+                try:flash_capture('sentinel-port',None,run_dir,45,should_not_import)
+                except SystemExit as exc:
+                    if str(exc)!='STOP: capture epoch already used':stop('used marker returned unrelated failure: '+marker)
+                else:stop('used marker accepted: '+marker)
+                after=snapshot_tree(run_dir)
+                if before!=after:stop('used marker changed run directory: '+marker)
+            if calls or imports:stop('used marker reached importer/device callback: '+marker)
+            fail_closed.append({'case':'used_'+marker,'status':'refused_unchanged',
+                                'serial_import_calls':len(imports),'device_callback_calls':len(calls)})
+        finally:
+            for scope,name,value in reversed(originals):scope[name]=value
+    with tempfile.TemporaryDirectory(prefix='h35-unused-epoch-') as td:
+        run_dir=Path(td)/'run';run_dir.mkdir(mode=0o700)
+        calls=[];originals=[]
+        def sentinel(*args,**kwargs):
+            calls.append(1);raise AssertionError('device callback invoked by host preflight')
+        try:
+            for name,scope in callback_names:
+                originals.append((scope,name,scope[name]));scope[name]=sentinel
+            guarded=require_unused_capture_epoch(run_dir)
+            if guarded!=run_dir.resolve():stop('unused guard did not return resolved run directory')
+            resolved=capture_preflight(guarded)
+            if not callable(getattr(resolved,'Serial',None)):stop('positive preflight did not return resolved pyserial module')
+            record_path=run_dir/'host-preflight-private.json'
+            record=json.loads(record_path.read_text())
+            if record.get('status')!='pass' or (record_path.stat().st_mode & 0o777)!=0o600:
+                stop('positive preflight record missing or not private')
+            if calls:stop('positive host preflight invoked a device callback')
+            fail_closed.append({'case':'unused_epoch_positive','status':'pass','device_callback_calls':len(calls)})
+        finally:
+            for scope,name,value in reversed(originals):scope[name]=value
     epoch='a'*32;elf='b'*64
     records=[('BOOT',{'reset_reason':'1','elf_sha256':elf}),('TRANSPORT',{'backend':'sdmmc','mode':'read_only','console':'usb_serial_jtag','usb_host':'disabled','slot':'0','width_requested':'4','max_freq_khz':'20000','command_timeout_ms':'1000','deadline_ms':'30000'}),('POWER',{'gpio':'43','active_level':'0','error':'0'}),('HOST',{'error':'0'}),('SLOT',{'error':'0'}),('CARD',{'error':'263'}),('STOP',{'reason':'finished','error':'263','deinit_error':'0','power_off_error':'0'}),('COMPLETE',{'result':'init_failed','card_present':'unproven','scope':'discovery_only'})]
     def render(rows): return '\n'.join('H35,1,'+e+',epoch='+epoch+','+','.join(k+'='+v for k,v in x.items()) for e,x in rows)
@@ -244,7 +421,10 @@ def host_checks():
         try:parse_records(text,epoch,elf)
         except SystemExit:pass
         else:stop('structural check accepted '+name)
-    print(json.dumps({'status':'pass','synthetic_only':True,'rejected':list(variants)}))
+    print(json.dumps({'status':'pass','synthetic_only':True,'rejected':list(variants),
+                      'pyserial_preflight':{'status':'pass','distribution':serial_info['distribution'],
+                                            'version':serial_info['version']},
+                      'preflight_negative_cases':fail_closed}))
 
 
 def main():

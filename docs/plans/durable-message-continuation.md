@@ -1,20 +1,25 @@
 # Durable message experiments: continuation instructions
 
-Updated 2026-10-05. This is an operator handoff, read alongside the [ordered experiments](long-message-experiments.md). The detailed current stopping point and resume sequence are in the [pause checkpoint](continuation-checkpoint-2026-10-05.md). That checkpoint supersedes the older “Immediate work” instructions below where they conflict.
+Updated 2026-10-05. This is an operator handoff, read alongside the [ordered experiments](long-message-experiments.md). The detailed current stopping point and resume sequence are in the [continuation checkpoint](continuation-checkpoint-2026-10-05.md). That checkpoint supersedes the older “Immediate work” instructions below where they conflict.
 
 **Current checkpoint:** H34 is complete; H32 failed its PCM deadline gate and
 remains unqualified. The H32 write-coalescing candidate stopped at the
 [read-only feasibility gate](../evidence/onchip-storage-qualification/coalescing-preflight.md).
-The attached-storage qualification plan and isolated H35 SDMMC discovery app
-are committed. A fresh H35 build is complete, but the device has not been
-flashed and no attached medium has been inspected. Work is paused at the user's
-request. Follow [the pause checkpoint](continuation-checkpoint-2026-10-05.md)
-for exact status and next actions; do not follow the historical H32 retry
-instructions below as current work.
+The H35 bounded attempt failed before application launch with
+`host_capture_dependency_failure`; it has no serial capture or media discovery
+verdict. Its complete restoration and boot were independently verified, and the
+reviewed failed-attempt evidence was committed as `7f89a07`. The host capture
+preflight correction and sanitized host-only checks are now committed; the
+controller passed the actual workspace `.venv` pyserial preflight without
+opening a port. The next step is a fresh corrected immutable hardware epoch.
+Preserve the failed H35 epoch unchanged; it is not a retry candidate. Follow [the continuation
+checkpoint](continuation-checkpoint-2026-10-05.md) for exact status and next
+actions; do not follow the historical H32 retry instructions below as current
+work.
 
 ## Working agreement
 
-The user authorized unattended implementation, server control, device flashing, generated audio, subagents, verification, and local commits. Finish one experiment with reproducible evidence and a commit before advancing to its dependent experiment. Write or amend its plan before implementation. Use separate implementation and independent review agents. A build alone does not qualify firmware: retain device serial evidence and a verified restore.
+The user authorized unattended implementation, server control, device flashing, generated audio, subagents, verification, and local commits. Finish one experiment with reproducible evidence and a commit before advancing to its dependent experiment. Write or amend its plan before implementation. Use separate implementation and independent review agents. A build alone does not qualify firmware: retain device serial evidence and a verified restore. Model policy: use gpt-6-luna for small implementation, operations, and routine documentation; use gpt-6.1-sol for outlining and independent verification/review.
 
 Read `docs/AGENTS.md`, [architecture](../LONG-MESSAGE-ARCHITECTURE.md), [protocol](../MESSAGE-PROTOCOL.md), [server storage](../SERVER-MESSAGE-STORAGE.md), [playback](../STREAMING-PLAYBACK.md), and [sketch timeline](../SKETCH-TIMELINE.md). These standards describe the intended system; they do not mean X02 already implements it.
 
