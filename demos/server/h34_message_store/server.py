@@ -163,6 +163,7 @@ def admin_auth(authorization: str | None):
 
 def ensure_layout() -> None:
     free_disk_floor_bytes()
+    preview_ttl_seconds()
     for d in (INCOMING, MESSAGES, TRASH, QUARANTINE, STATE, CULL_INTENTS):
         durable.mkdir_durable(d)
     if not INBOXES.exists():
@@ -231,6 +232,18 @@ def free_disk_floor_bytes() -> int:
     if not re.fullmatch(r"\d+", raw):
         raise ValueError("FAMILY_LINK_H34_FREE_DISK_FLOOR_BYTES must be a nonnegative integer")
     return int(raw)
+
+
+def preview_ttl_seconds() -> int:
+    raw = os.environ.get("FAMILY_LINK_H34_PREVIEW_TTL_SECONDS")
+    if raw is None:
+        return PREVIEW_TTL_SECONDS
+    if not re.fullmatch(r"[0-9]{1,10}", raw):
+        raise ValueError("FAMILY_LINK_H34_PREVIEW_TTL_SECONDS must be a nonnegative integer")
+    ttl = int(raw)
+    if ttl > 2_147_483_647:
+        raise ValueError("FAMILY_LINK_H34_PREVIEW_TTL_SECONDS is too large")
+    return ttl
 
 
 def has_disk_capacity(additional_bytes: int) -> bool:
@@ -1340,7 +1353,7 @@ async def admin_cull_preview(body: CullPreviewBody,
             return err(409, "selector contains unavailable messages", message_ids=stale)
         token = uuid.uuid4().hex
         _CULL_PREVIEW[token] = {"actor": dev.id, "selector": selector, "details": details,
-                                "expires_at": time.monotonic() + PREVIEW_TTL_SECONDS}
+                                "expires_at": time.monotonic() + preview_ttl_seconds()}
         durable.append_jsonl(AUDIT, {"action": "cull_preview", "actor": dev.id,
                                      "message_ids": [d["message_id"] for d in details], "at": utc_now()})
     public = [{key: d[key] for key in ("message_id", "bytes", "inbox_references")}
