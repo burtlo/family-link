@@ -34,7 +34,7 @@ if(NOT EXISTS "${SECRETS}")
     set(SECRETS "${CMAKE_CURRENT_LIST_DIR}/../secrets.example.h")
 endif()
 
-if(FAMILY_DEMO STREQUAL "h32_onchip_storage")
+if(FAMILY_DEMO STREQUAL "h32_onchip_storage" OR FAMILY_DEMO STREQUAL "h35_sdmmc_discovery")
     # h32 is an isolated storage qualification image.  Keep product, Wi-Fi,
     # display, and identity code out of the binary and out of its measurements.
     set(COMMON_SRCS "")
@@ -53,13 +53,15 @@ set(MAIN_PRIVATE_REQUIRES "")
 # such as FAMILY_DEMO. Declare the union here so H32 receives its SDK headers;
 # unused static libraries do not add product code to the linked image.
 if(CMAKE_BUILD_EARLY_EXPANSION)
-    list(APPEND MAIN_PRIVATE_REQUIRES app_update spi_flash fatfs wear_levelling)
+    list(APPEND MAIN_PRIVATE_REQUIRES app_update spi_flash fatfs wear_levelling sdmmc esp_driver_sdmmc esp_driver_gpio)
 endif()
 if(FAMILY_DEMO STREQUAL "h30_opus_local" OR FAMILY_DEMO STREQUAL "h31_opus_chunks"
         OR FAMILY_DEMO STREQUAL "x02_opus_size_probe" OR FAMILY_DEMO STREQUAL "x02_opus_dep_only")
     list(APPEND MAIN_PRIVATE_REQUIRES opus)
 endif()
-if(FAMILY_DEMO STREQUAL "h32_onchip_storage")
+if(FAMILY_DEMO STREQUAL "h35_sdmmc_discovery")
+    set(MAIN_PRIV_REQUIRES esp_timer mbedtls sdmmc esp_driver_sdmmc esp_driver_gpio)
+elseif(FAMILY_DEMO STREQUAL "h32_onchip_storage")
     set(MAIN_PRIV_REQUIRES
         esp_timer
         app_update
@@ -131,6 +133,13 @@ set(WHO_LINK_OPTS
 if(FAMILY_DEMO STREQUAL "x02_opus_size_probe")
     list(APPEND WHO_LINK_OPTS "-Wl,-u,fl_opus_size_probe_force_link")
 endif()
-if(NOT FAMILY_DEMO STREQUAL "h32_onchip_storage")
+if(FAMILY_DEMO STREQUAL "h35_sdmmc_discovery")
+    string(LENGTH "${H35_RUN_EPOCH}" H35_RUN_EPOCH_LENGTH)
+    if(NOT DEFINED H35_RUN_EPOCH OR NOT H35_RUN_EPOCH MATCHES "^[0-9a-f]+$" OR NOT H35_RUN_EPOCH_LENGTH EQUAL 32)
+        message(FATAL_ERROR "H35_RUN_EPOCH must be exactly 32 lowercase hex characters")
+    endif()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE H35_RUN_EPOCH="${H35_RUN_EPOCH}")
+endif()
+if(NOT FAMILY_DEMO STREQUAL "h32_onchip_storage" AND NOT FAMILY_DEMO STREQUAL "h35_sdmmc_discovery")
     target_link_options(${COMPONENT_LIB} INTERFACE ${WHO_LINK_OPTS})
 endif()
