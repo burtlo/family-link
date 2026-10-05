@@ -120,7 +120,13 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 - The durable-outbox phase receives a measured safe floor and backend contract rather than a modeled capacity assumption.
 - Any absence of true switched-power evidence remains explicit; reset evidence is labeled by its actual mechanism.
 
-**Status:** `todo`
+**Status:** `in progress; corrected mount retry failed PCM cadence`.
+The [H32 evidence](../evidence/onchip-storage-qualification/README.md) records
+successful blank authority, mount, and Opus-sized cadence, followed by 79 PCM
+deadline misses and verified original-image restoration. Fault recovery and
+near-full gates were not reached. Execute the
+[PCM correction comparison](h32-pcm-cadence-corrections.md) before accepting
+storage or advancing to the durable outbox.
 
 ## Phase 5 — Prove the durable outbox
 

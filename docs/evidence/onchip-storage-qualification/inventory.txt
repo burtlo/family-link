@@ -1,0 +1,10 @@
+status=failed-unqualified-retry
+current_epoch=16a5354bbfd590933f18a093dd4f154b
+chip=ESP32-S3
+flash_bytes=16777216
+psram_bytes=16777216
+idf=ESP-IDF v5.4.2
+original_raw_capture_bytes=117699
+original_raw_capture_sha256=6fd66476a548d03ff6f160cb98bf44fb2aa6e23f0566b2d1211ccf1dab30d2de
+private_backups=outside repository; no private paths or identities published
+source_and_build_identity=retry-20261005-failure/summary.json

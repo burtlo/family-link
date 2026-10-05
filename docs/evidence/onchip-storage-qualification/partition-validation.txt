@@ -1,0 +1,7 @@
+status=tool-validated
+tool=ESP-IDF v5.4.2 gen_esp32part.py
+nvs,data,nvs,0x9000,24K
+phy_init,data,phy,0xf000,4K
+factory,app,factory,0x10000,2176K
+outbox,data,fat,0x230000,14144K
+hardware_readback=unproven

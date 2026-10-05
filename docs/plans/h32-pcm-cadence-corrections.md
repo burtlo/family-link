@@ -56,6 +56,12 @@ read verification, erase characteristics, and scheduling also contribute.
 Removing yields can improve throughput while increasing starvation and
 watchdog risk. The next experiment must measure both outcomes.
 
+The prerequisite restore after this failed retry completed on 2026-10-05.
+The complete 16 MiB readback matched the original image; partition table,
+pre-sentinel NVS, device fingerprint, and application descriptors were verified.
+See [restore proof](../evidence/onchip-storage-qualification/restore-proof.txt).
+Future profile runs still require independent per-epoch restore verification.
+
 ## Implementation before flashing
 
 1. Preserve the failed epoch and hashes. Complete and record its original full

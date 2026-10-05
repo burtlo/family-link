@@ -4,11 +4,21 @@
 |--------------------------------|-------|
 | **Doc kind**                   | `research/exploration` |
 | **Owners / areas**             | BOX-3 firmware, ESP-IDF partitioning, FAT filesystem, wear leveling, recovery evidence |
-| **Status**                     | `draft` |
+| **Status**                     | `retry failed at PCM cadence; corrections planned` |
 | **Targets**                    | One-device isolated storage demo; no X02 or production partition change |
-| **Last updated**               | 2026-10-04 |
+| **Last updated**               | 2026-10-05 |
 | **Supersedes / superseded by** | Prerequisite for [`durable-outbox-demo.md`](durable-outbox-demo.md) |
-| **As-built**                   | None |
+| **As-built**                   | H32 implemented; PCM qualification failed; original device restored |
+
+> **Execution note (2026-10-05):** The earlier sandbox restriction was
+> resolved. A hardware attempt halted safely at first mount because stale NVS
+> progress prevented initialization of the erased outbox; the original flash
+> was subsequently restored. The [corrected retry plan](h32-onchip-mount-retry.md)
+> requires a full-region blank proof, a bound run epoch, and separate sentinel
+> and progress namespaces. The corrected retry reached PCM cadence and halted after 79 missed deadlines
+> across 90 chunks. Storage qualification failed; the original image has been restored and
+> complete readback verification passed.
+> Follow the [PCM cadence correction plan](h32-pcm-cadence-corrections.md). See the [evidence index](../evidence/onchip-storage-qualification/README.md).
 
 ## At a glance
 
@@ -16,18 +26,18 @@ Prove on one BOX-3 that its unused internal flash can safely hold recordings acr
 
 | Phase | Outcome | Status |
 |---|---|---|
-| [Phase 1 — Inventory and preserve the device](#phase-1--inventory-and-preserve-the-device) | The exact device can be restored if repartitioning or the demo fails | `todo` |
-| [Phase 2 — Build an isolated storage demo](#phase-2--build-an-isolated-storage-demo) | A dedicated build contains the validated test partition without changing product defaults | `todo` |
-| [Phase 3 — Prove boot, NVS, and filesystem behavior](#phase-3--prove-boot-nvs-and-filesystem-behavior) | The device boots, retains NVS state, and remounts measured FAT storage | `todo` |
-| [Phase 4 — Measure writes and recording rates](#phase-4--measure-writes-and-recording-rates) | Integrity, latency, capacity, and sustained recording-rate behavior are measured | `todo` |
-| [Phase 5 — Interrupt and recover writes](#phase-5--interrupt-and-recover-writes) | Temporary writes and committed files recover predictably after reset | `todo` |
-| [Phase 6 — Set limits and restore the device](#phase-6--set-limits-and-restore-the-device) | A safe free-space floor, reusable findings, and a verified restore path are recorded | `todo` |
+| [Phase 1 — Inventory and preserve the device](#phase-1--inventory-and-preserve-the-device) | The exact device can be restored if repartitioning or the demo fails | `verified preservation and restore` |
+| [Phase 2 — Build an isolated storage demo](#phase-2--build-an-isolated-storage-demo) | A dedicated build contains the validated test partition without changing product defaults | `build validated` |
+| [Phase 3 — Prove boot, NVS, and filesystem behavior](#phase-3--prove-boot-nvs-and-filesystem-behavior) | The device boots, retains NVS state, and remounts measured FAT storage | `observed; duplicate probe record correction required` |
+| [Phase 4 — Measure writes and recording rates](#phase-4--measure-writes-and-recording-rates) | Integrity, latency, capacity, and sustained recording-rate behavior are measured | `failed PCM cadence` |
+| [Phase 5 — Interrupt and recover writes](#phase-5--interrupt-and-recover-writes) | Temporary writes and committed files recover predictably after reset | `not reached` |
+| [Phase 6 — Set limits and restore the device](#phase-6--set-limits-and-restore-the-device) | A safe free-space floor, reusable findings, and a verified restore path are recorded | `restore verified; safe floor not reached` |
 
 ---
 
 ## Background
 
-The X02 + Opus partition study proved that the current 1.5 MiB application slot is too small and mechanically validated two 2.125 MiB layouts. Neither layout has booted on a device, and the FAT-over-wear-leveling outbox capacity remains modeled rather than measured.
+The X02 + Opus partition study proved that the current 1.5 MiB application slot is too small and mechanically validated two 2.125 MiB layouts. The storage fixture has reached firmware boot on hardware, but the first attempt halted at mount. FAT-over-wear-leveling capacity was observed in the failed retry, while recovery and the complete backend remain unqualified pending the PCM correction experiment.
 
 This experiment isolates that uncertainty before the durable queue is implemented. It uses the validated single-factory fixture only because a factory application is the simplest recovery target for a one-device storage island. The production decision remains open between single-factory and dual OTA; this experiment must not present its fixture as the selected product layout.
 
@@ -104,7 +114,7 @@ Every result must identify the Git commit, ESP-IDF version, chip revision, detec
 - A concrete restore command has passed a dry-run review against the detected chip, port, offsets, and backup sizes.
 - No experimental partition table is written until all preceding checks pass.
 
-**Status:** `todo`
+**Status:** `verified preservation and restore`
 
 ## Phase 2 — Build an isolated storage demo
 
@@ -116,6 +126,18 @@ Every result must identify the Git commit, ESP-IDF version, chip revision, detec
 - Add an island demo and dedicated build configuration selecting the custom table and 16 MiB flash. Keep `firmware/sdkconfig.defaults` unchanged and use a unique build directory.
 - Make the build emit the selected partition CSV path, decoded partition table, application size, binary hashes, and flash command into evidence.
 - Add unattended host controls for clean flash, timed serial capture, restart injection, test selection, result extraction, and restore. Tests must start automatically after boot or from a host command; they cannot require speech or button input.
+
+**Host capture timing (orchestrator).** Do not wait hours on a silent port. `scripts/h32_storage_qual.py capture` fails closed with these defaults:
+
+| Check | Sentinel | Experiment |
+|-------|----------|------------|
+| First serial byte | 45 s | 45 s |
+| Milestone | `H32,SENTINEL_READY` by 30 s | `H32,MOUNT` by 240 s (cold format budget) |
+| Output stall (after any bytes) | 90 s | 90 s |
+| Panic loop | 3× `Guru Meditation` | same |
+| Wall-clock cap (`--seconds`) | 30 s default | 5400 s (90 min) default |
+
+Poll progress every **60–120 s** during a healthy experiment (expect `H32,CHUNK` about every 2 s in cadence phases). If a watchdog fires, fix USB/boot/firmware before re-flashing; do not raise `--seconds` to mask a dead capture.
 - Generate deterministic payloads on-device or on the host. Include a generated 16 kHz mono PCM tone/pattern and deterministic Opus-sized byte frames; existing nonprivate audio fixtures may be used when their provenance is recorded.
 - Ensure the application fits `0x220000` while satisfying the partition study's current 15% headroom policy. Stop if it does not.
 
@@ -126,7 +148,7 @@ Every result must identify the Git commit, ESP-IDF version, chip revision, detec
 - The flash command writes only intended experiment regions and does not invoke full-chip erase.
 - The demo and host controller can run every non-power-cut case without a person touching or speaking to the device.
 
-**Status:** `todo`
+**Status:** `build validated`
 
 ## Phase 3 — Prove boot, NVS, and filesystem behavior
 
@@ -149,7 +171,7 @@ Every result must identify the Git commit, ESP-IDF version, chip revision, detec
 - Measured total/free capacity and overhead are recorded rather than substituted with the earlier `0.92 × 0.92` model.
 - Five reboot/remount cycles preserve the committed probe file and checksum.
 
-**Status:** `todo`
+**Status:** `observed; duplicate probe record correction required`
 
 ## Phase 4 — Measure writes and recording rates
 
@@ -173,7 +195,7 @@ Every result must identify the Git commit, ESP-IDF version, chip revision, detec
 - The 180-second PCM run sustains more than 64,000 bytes/second including required flushes; any 256,000-byte/second result is reported as measured margin rather than a baseline requirement.
 - Capacity, timing distributions, and memory watermarks are present in the committed evidence.
 
-**Status:** `todo`
+**Status:** `failed PCM cadence`
 
 ## Phase 5 — Interrupt and recover writes
 
@@ -195,7 +217,7 @@ Every result must identify the Git commit, ESP-IDF version, chip revision, detec
 - Unexpected filesystem damage or mount failure stops the experiment and preserves evidence; it is not hidden by auto-format.
 - Actual power-loss behavior is either supported by evidence from a named controllable setup or explicitly remains an unproven production risk.
 
-**Status:** `todo`
+**Status:** `not reached`
 
 ## Phase 6 — Set limits and restore the device
 
@@ -218,7 +240,7 @@ Every result must identify the Git commit, ESP-IDF version, chip revision, detec
 - The original device state is restored and verified, or the retained experimental state and exact restore procedure are recorded for the immediately following authorized experiment.
 - Every claim in the result summary is labeled measured, derived, tool-validated, or still unproven.
 
-**Status:** `todo`
+**Status:** `restore verified; safe floor not reached`
 
 ## Stop conditions
 

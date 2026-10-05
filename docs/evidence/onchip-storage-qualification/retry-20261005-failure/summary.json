@@ -1,0 +1,189 @@
+{
+  "status": "failed-unqualified",
+  "epoch": "16a5354bbfd590933f18a093dd4f154b",
+  "original_raw_capture_sha256": "6fd66476a548d03ff6f160cb98bf44fb2aa6e23f0566b2d1211ccf1dab30d2de",
+  "sanitized_h32_records_sha256": "ee822593dfe58df5ddf8a87b231aed3655e1b0f3d517820e69670cc3e3d946a8",
+  "records": 335,
+  "failure": [
+    {
+      "record_kind": "FAIL",
+      "epoch": "16a5354bbfd590933f18a093dd4f154b",
+      "run": "16a5354b",
+      "stage": "pcm",
+      "reason": "cadence",
+      "action": "halt"
+    }
+  ],
+  "cadence": [
+    {
+      "record_kind": "CADENCE",
+      "epoch": "16a5354bbfd590933f18a093dd4f154b",
+      "run": "16a5354b",
+      "stream": "opus",
+      "seconds": "180",
+      "rate": "2000",
+      "chunk_seconds": "2",
+      "chunks": "90",
+      "deadline_miss": "0",
+      "backlog_high": "0",
+      "max_write_us": "80214",
+      "max_flush_us": "339252",
+      "max_rename_us": "220011",
+      "max_manifest_us": "724034",
+      "min_free": "12681216",
+      "min_heap": "362699",
+      "min_psram": "16631128",
+      "min_stack_words": "10168",
+      "aggregate_kind": "ordered_chunk_sha256_hex",
+      "aggregate_sha256": "868aaa263742965e638264f3e20e45a3c9fc25b8d448988b089aa130dbd1b60c"
+    },
+    {
+      "record_kind": "CADENCE",
+      "epoch": "16a5354bbfd590933f18a093dd4f154b",
+      "run": "16a5354b",
+      "stream": "pcm",
+      "seconds": "180",
+      "rate": "67200",
+      "chunk_seconds": "2",
+      "chunks": "90",
+      "deadline_miss": "79",
+      "backlog_high": "1",
+      "max_write_us": "2175479",
+      "max_flush_us": "332253",
+      "max_rename_us": "220006",
+      "max_manifest_us": "952832",
+      "min_free": "851968",
+      "min_heap": "362699",
+      "min_psram": "16631128",
+      "min_stack_words": "10168",
+      "aggregate_kind": "ordered_chunk_sha256_hex",
+      "aggregate_sha256": "15119f71e4d0ebd424f60e54141f1f273470bc95486261c61545c24c258548d7"
+    }
+  ],
+  "runtime_parser_acceptance": "not granted; capture stopped at PCM cadence",
+  "interruption_matrix": "not reached",
+  "near_full": "not reached",
+  "restore": {
+    "status": "verified-original-image-restored",
+    "date": "2026-10-05",
+    "controller_exit_code": 0,
+    "full_readback_bytes": 16777216,
+    "full_readback_sha256": "7d6537305e73c36aa23353923536c8d805b61f12808bf47c9664b66a3213a112",
+    "partition_table_sha256": "06b412567cc48815931a3f67280450f31de7c3cc3e85747e71f3a4dc0219db88",
+    "nvs_sha256": "67235fa2b245383d6bca8962f9be12523459871b475d9361e8a3ee340fd8387e",
+    "matches_original": true,
+    "device_and_application_descriptors": "verified by held-ROM controller before launch",
+    "independent_full_readback_hash_check": "orchestrator pass",
+    "proof": "../restore-proof.txt"
+  },
+  "reset_class": "esp_restart; no power-loss claim",
+  "original_raw_capture_bytes": 117699,
+  "pcm_transaction_median_us": 2197771,
+  "pcm_transaction_max_us": 3157734,
+  "pcm_transaction_throughput_bytes_per_second": 61012.294749,
+  "opus_transaction_median_us": 919462.5,
+  "opus_transaction_max_us": 1219464,
+  "additional_acceptance_failure": "seven initial REMOUNT rows for five cycle identities; later cycle-5 repetition must be corrected",
+  "builds": {
+    "experiment": {
+      "mode": "experiment",
+      "idf_version": "ESP-IDF v5.4.2",
+      "fixture_sha256": "65100d070d19d7365e63b74228c2f4bf9d4e87945488eef1c73bc16b9667f153",
+      "source_sha256": "3b2e096250d0e40d8a67d0c82ab4ad5905c0a6b30b368541e2f5aab4347c8c87",
+      "image_sha256": {
+        "app": "643ce9b699478a88b52d064c6b4537375e2f92176bf9e5b0081c7fc93d687a8a",
+        "bootloader": "580892414667f8c97a5a9cf60e6442675878583040f6b3ad38044c4b4f11bdaf",
+        "partition_table": "ca85e18a7545259b1033b2045088f0d43b20871dc08c37a3a2b356b1af4851bc"
+      }
+    },
+    "sentinel": {
+      "mode": "sentinel",
+      "idf_version": "ESP-IDF v5.4.2",
+      "fixture_sha256": "65100d070d19d7365e63b74228c2f4bf9d4e87945488eef1c73bc16b9667f153",
+      "source_sha256": "3b2e096250d0e40d8a67d0c82ab4ad5905c0a6b30b368541e2f5aab4347c8c87",
+      "image_sha256": {
+        "app": "fa601608a5d818b5a95fed921fe8fc74df56ed70f204237c41ca49b0892e3cca",
+        "bootloader": "98fa0a3541819ab8c597168b6e8af8538340c549988eb6bc0edb54c19f118675",
+        "partition_table": "ca85e18a7545259b1033b2045088f0d43b20871dc08c37a3a2b356b1af4851bc"
+      }
+    }
+  },
+  "validated_builds_manifest_sha256": "c13fd79da85290738c202bf78a5501b3b2e48f392908757d62c5d198801497ae",
+  "capture_metadata_sha256": "2d5674f604a5a8e4e22146d48a28931df0e66b7039ab36fb7b83212096d3a1be",
+  "host_erased_region": {
+    "bytes": 14483456,
+    "expected_sha256": "6ef7367f20657ba1d9292cb6636c3be874c7ddc28e85fbf02302b88b2b291d15",
+    "offset": 2293760,
+    "sha256": "6ef7367f20657ba1d9292cb6636c3be874c7ddc28e85fbf02302b88b2b291d15",
+    "status": "verified"
+  },
+  "record_counts": {
+    "RUN_REQUEST": 8,
+    "SENTINEL": 8,
+    "HARDWARE": 8,
+    "PARTITION": 8,
+    "MOUNT": 24,
+    "ERASE_SCAN": 8,
+    "FORMAT": 1,
+    "MARKER": 8,
+    "RUN": 8,
+    "PROBE": 1,
+    "REBOOT": 5,
+    "REMOUNT": 7,
+    "PHASE": 5,
+    "IO": 40,
+    "RENAME": 1,
+    "DIR_SCAN": 2,
+    "IO_REMOUNT": 6,
+    "CHUNK": 180,
+    "CADENCE": 2,
+    "CHUNK_REMOUNT": 3,
+    "BACKLOG": 1,
+    "FAIL": 1
+  },
+  "io_counts_by_bytes": {
+    "65536": 20,
+    "196608": 20
+  },
+  "chunk_counts_by_stream": {
+    "opus": 90,
+    "pcm": 90
+  },
+  "probe_remount_cycles": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "5",
+    "5"
+  ],
+  "observed_initial_full_scan": [
+    {
+      "record_kind": "ERASE_SCAN",
+      "epoch": "16a5354bbfd590933f18a093dd4f154b",
+      "bytes": "14483456",
+      "elapsed_us": "3481147",
+      "all_erased": "yes",
+      "sha256": "6ef7367f20657ba1d9292cb6636c3be874c7ddc28e85fbf02302b88b2b291d15",
+      "status": "pass"
+    }
+  ],
+  "observed_formats": [
+    {
+      "record_kind": "FORMAT",
+      "epoch": "16a5354bbfd590933f18a093dd4f154b",
+      "partition": "outbox",
+      "format_us": "741694",
+      "status": "pass"
+    }
+  ],
+  "absent_gates": [
+    "PCM cadence post-remount verification",
+    "90 interruption/recovery pairs",
+    "near-full admission/reboot/reclaim",
+    "complete record"
+  ],
+  "independent_parser_verdict": "rejected on FAIL; removing FAIL still rejected for missing required remaining phases and duplicate probe cycle",
+  "sanitization": "Exact H32-only record extraction; removed only literal trailing \\r\\n log escape; all 335 output records equal corresponding raw records"
+}

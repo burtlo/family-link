@@ -1,0 +1,13 @@
+status=partial-observations-in-failed-unqualified-retry
+current_epoch=16a5354bbfd590933f18a093dd4f154b
+sentinel_only=reported pass; sentinel created; storage_access=no
+experiment_sentinel=8 observations existing valid sentinel; created=no
+full_blank_scan_bytes=14483456
+full_blank_scan_sha256=6ef7367f20657ba1d9292cb6636c3be874c7ddc28e85fbf02302b88b2b291d15
+new_run=1; full_scan authority; NVS experiment progress reset
+resume=7; marker authority; no reformat
+probe_remount_distinct_cycles=5
+probe_remount_rows=7; later boots repeat cycle5; strict acceptance failure
+runtime_failure=stage pcm; reason cadence; action halt
+full_parser_acceptance=rejected
+current_restore=verified original full image, original pre-sentinel NVS, partition table, device fingerprint, and application descriptors

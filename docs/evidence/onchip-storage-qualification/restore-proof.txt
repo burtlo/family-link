@@ -1,0 +1,16 @@
+status=verified-original-image-restored
+current_epoch=16a5354bbfd590933f18a093dd4f154b
+verified_date=2026-10-05
+controller_restore_exit_code=0
+full_readback_bytes=16777216
+full_readback_sha256=7d6537305e73c36aa23353923536c8d805b61f12808bf47c9664b66a3213a112
+original_full_image_match=yes
+partition_table_sha256=06b412567cc48815931a3f67280450f31de7c3cc3e85747e71f3a4dc0219db88
+original_partition_table_match=yes
+nvs_sha256=67235fa2b245383d6bca8962f9be12523459871b475d9361e8a3ee340fd8387e
+original_pre_sentinel_nvs_match=yes
+device_fingerprint=verified by held-ROM controller before launch; identity private
+application_descriptors=verified by held-ROM controller before launch
+independent_full_readback_hash_check=orchestrator pass
+qualification_verdict=failed at PCM cadence; restore does not qualify storage
+private_backup_paths_and_contents=not published

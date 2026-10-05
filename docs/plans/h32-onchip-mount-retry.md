@@ -3,12 +3,21 @@
 | Field | Value |
 |---|---|
 | **Doc kind** | `experiment correction / retry plan` |
-| **Status** | `ready for implementation` |
+| **Status** | `mount correction verified; retry failed at PCM cadence and restored` |
 | **Scope** | H32 controller, storage-only firmware, private operator artifacts, and H32 evidence |
 | **Observed failure** | 2026-10-04 experiment probe stopped at the first outbox mount |
 | **Production partition choice** | Open; the single-factory table remains an experiment fixture |
 
 ## Decision
+
+**Observed result (2026-10-05):** The corrected full-region blank authority,
+sentinel preservation, format, marker remount, and initial five probe cycles
+worked on the device. The retry then failed the PCM cadence gate (79 missed
+deadlines across 90 chunks) and stopped before fault recovery and near-full
+tests. The original full image was restored and verified. See the
+[failed-attempt evidence](../evidence/onchip-storage-qualification/README.md)
+and [PCM correction plan](h32-pcm-cadence-corrections.md). Overall storage
+qualification remains open.
 
 Retry H32 only after making a verified all-`0xff` outbox authoritative for a new
 experiment run. A stale experiment `run_id` in NVS must never prevent safe

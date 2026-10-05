@@ -1,0 +1,9 @@
+status=measured-in-failed-unqualified-retry
+current_epoch=16a5354bbfd590933f18a093dd4f154b
+filesystem_total_bytes=14323712
+wear_leveling_size_bytes=14360576
+wear_leveling_sector_bytes=4096
+first_format_us=741694
+first_mount_us=5486
+safe_floor=unproven; near-full phase not reached
+reason=PCM cadence failed; measurements do not qualify backend
