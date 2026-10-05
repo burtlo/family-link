@@ -83,6 +83,18 @@ The roadmap currently marks Phase 3 done while acknowledging the missing three-m
 - Memory evidence meets Gate D's bounded-allocation criterion and demonstrates the same result for a small range and a full-range response. The measured full-payload size exceeds the server-side Python allocation peak by the documented margin.
 - Evidence output is retained, reproducible, and sufficient for another engineer to distinguish pass, fail, and unsupported host durability guarantees. The Phase 3 roadmap status accurately reflects those gates.
 
+## Independent-review amendments
+
+These gates were added before accepting or committing implementation:
+
+- Recovery must converge within the qualification timeout to `open`, `complete`, or an explicit quarantine state. A merely recoverable or indefinitely `finalizing` message is a failure.
+- Serialize overlapping mutations for one message. Completion intent must snapshot broadcast recipients so recovery does not recalculate delivery from a changed registry.
+- Apply the crash matrix to chunk acknowledgement as well as completion: temporary-file fsync, cross-directory rename, fsync of both source and destination directories, manifest replacement, manifest-directory fsync, and the point immediately before the durable response.
+- Cull uses a persistent operation journal and deterministic roll-forward. Persist the selected identities and actor before changing inbox visibility or moving directories. Startup must reconcile both valid deletion records and orphan trash directories left by a rename-before-record crash. Multi-message cull is not described as transactionally atomic.
+- Media authorization, resolved-path containment, regular-file checks, symlink rejection, completion-marker validation, and manifest media identity validation all occur before opening media. PCM byte ranges that split a 16-bit sample are rejected.
+- Demonstrate bounded memory using at least a short fixture and the 180-second fixture with the same server read block. Measure the server process, stream the test client, and report Python allocation and RSS separately. The predeclared 1 MiB Python-allocation gate may only be changed by a committed plan amendment followed by a fresh run.
+- Scope the result as qualification of the PCM filesystem subset. Opus, sketches, upload abort, and notification delivery remain later protocol work.
+
 ## Finalization fault-injection matrix
 
 Inject process termination immediately after each boundary; restart against the same isolated store and run recovery plus invariant checks.
