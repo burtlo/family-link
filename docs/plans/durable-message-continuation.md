@@ -13,6 +13,10 @@ and [failure evidence](../evidence/onchip-storage-qualification/no-yield-2026100
 The mount-retry instructions below remain the hardware preservation procedure
 for every new epoch. Storage remains unqualified; durable outbox is dependent
 on its completion.
+The planned 16 KiB H32 write-coalescing candidate then stopped at its
+[read-only feasibility gate](../evidence/onchip-storage-qualification/coalescing-preflight.md):
+the current 4 KiB FAT cluster splits it back into 4 KiB data requests. No
+candidate was flashed. Define and qualify the attached storage interface next.
 
 ## Working agreement
 

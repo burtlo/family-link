@@ -41,6 +41,9 @@ was restored and its complete readback verified. See
 See [correction-summary.md](correction-summary.md),
 [failed retry summary](retry-20261005-failure/summary.json), and
 [sanitized H32 records](retry-20261005-failure/h32-records.txt).
+The subsequent [write-coalescing preflight](coalescing-preflight.md) stopped
+before another build or flash because the 4 KiB FAT cluster boundary preserves
+four 4 KiB driver data requests for a 16 KiB submission.
 Observed I/O and chunk rows are retained as partial failure evidence, not as
 accepted full-run parser output. The earlier sandbox block was historical;
 hardware access subsequently succeeded and the first mount attempt failed
