@@ -11,6 +11,7 @@ import os
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -63,6 +64,19 @@ def main(argv: list[str] | None = None) -> int:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
     env["FAMILY_LINK_ROOT"] = str(ROOT)
+    isolated = tempfile.TemporaryDirectory(prefix="family-link-h34-") if args.name == "h34_message_store" else None
+    if isolated is not None:
+        env["FAMILY_LINK_ROOT"] = isolated.name
+        registry = Path(isolated.name) / "devices.yaml"
+        registry.write_text(
+            "devices:\n"
+            "  - {id: box-a, token: demo-sender, role: child, peer: box-b}\n"
+            "  - {id: box-b, token: demo-recipient, role: child, peer: box-a}\n"
+            "  - {id: box-c, token: demo-unrelated, role: child, peer: ''}\n"
+            "  - {id: box-admin, token: demo-admin, role: admin, peer: ''}\n",
+            encoding="utf-8",
+        )
+        env["FAMILY_LINK_DEVICES_REGISTRY"] = str(registry)
     proc = subprocess.Popen(
         [py, str(server), "--host", "127.0.0.1", "--port", str(port)],
         cwd=str(ROOT),
@@ -89,6 +103,8 @@ def main(argv: list[str] | None = None) -> int:
             proc.wait(timeout=3)
         except subprocess.TimeoutExpired:
             proc.kill()
+        if isolated is not None:
+            isolated.cleanup()
 
 
 if __name__ == "__main__":

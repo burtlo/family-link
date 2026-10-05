@@ -57,7 +57,7 @@ export PYTHONUNBUFFERED := 1
 	x01 x02 \
 	p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 p12 p13 \
 	v1-server v1-server-tls demo-v1 \
-	demo-auth demo-heartbeat demo-messages demo-cursor demo-playback demo-message-store \
+	demo-auth demo-heartbeat demo-messages demo-cursor demo-playback demo-message-store qualify-message-store \
 	demo-hangout demo-relay demo-presence demo-talk demo-diary demo-device-log \
 	demo-draw demo-sketch demo-pingpong \
 	demo-combined demos-server \
@@ -258,6 +258,10 @@ demo-opus-messages:
 demo-message-store:
 	$(call step_msg,h34 canonical message_store PCM smoke test)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h34_message_store
+
+qualify-message-store:
+	$(call step_msg,h34 180-second message_store qualification)
+	@$(PYTHON) "$(ROOT)/demos/server/h34_message_store/qualify.py" --json-out "$(ROOT)/docs/evidence/h34-message-store/qualification.json"
 
 x01:
 	@$(PYTHON) "$(FLASH)" --demo x01

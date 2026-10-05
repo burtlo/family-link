@@ -221,9 +221,13 @@ def main() -> int:
     parser.add_argument("--base-url", required=True)
     args = parser.parse_args()
     base = args.base_url.rstrip("/")
-    devices = load_devices()
+    registry = os.environ.get("FAMILY_LINK_DEVICES_REGISTRY")
+    devices = load_devices(Path(registry) if registry else None)
     sender = devices["box-a"]
     recipient = devices["box-b"]
+    if "box-admin" not in devices:
+        return fail("box-admin credential is required for cull/restore smoke checks")
+    admin = devices["box-admin"]
 
     chunk = pcm_chunk(2.0)
     chunk_b = pcm_chunk(2.0, freq=880.0)
@@ -298,7 +302,7 @@ def main() -> int:
         manifest = done.json()
         wav_sha = manifest["audio"]["sha256"]
 
-        store_root = ROOT / "data" / "v1_product" / "message_store"
+        store_root = Path(os.environ.get("FAMILY_LINK_ROOT", str(ROOT))) / "data" / "v1_product" / "message_store"
         complete_marker = list(store_root.glob(f"messages/**/{message_id}/complete"))
         if not complete_marker:
             return fail("missing complete marker under messages/YYYY/MM/")
@@ -340,7 +344,7 @@ def main() -> int:
         preview = http.post(
             f"{base}/v1/admin/messages/cull/preview",
             json={"message_ids": [message_id]},
-            headers=auth(sender.token),
+            headers=auth(admin.token),
         )
         if preview.status_code != 200:
             return fail(f"cull preview {preview.status_code}")
@@ -349,13 +353,13 @@ def main() -> int:
         culled = http.post(
             f"{base}/v1/admin/messages/cull",
             json={"selection_token": token},
-            headers=auth(sender.token),
+            headers=auth(admin.token),
         )
         if culled.status_code != 200:
             return fail(f"cull {culled.status_code}")
         restored = http.post(
             f"{base}/v1/admin/messages/{message_id}/restore",
-            headers=auth(sender.token),
+            headers=auth(admin.token),
         )
         if restored.status_code != 200:
             return fail(f"restore {restored.status_code}")
