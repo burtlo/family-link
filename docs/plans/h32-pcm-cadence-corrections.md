@@ -92,6 +92,12 @@ watchdog risk. The next experiment must measure both outcomes.
    isolation, epoch enforcement, format policy, durability operations, and all
    unchanged interruption/recovery checks before mutation.
 
+The capture controller must recognize a complete `H32,FAIL` record immediately,
+flush and retain its log/sidecar, and report the firmware stopping stage rather
+than waiting for the byte-stall watchdog. A partial record must remain buffered
+until its line is complete. Preserve the original firmware failure alongside
+any later host error so the diagnostic cannot be replaced by a generic timeout.
+
 ## Controlled profile order
 
 Use generated patterns and exactly the original workload: same payload sizes,
