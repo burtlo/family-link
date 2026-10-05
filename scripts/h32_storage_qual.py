@@ -10,6 +10,8 @@ FIXTURE=FW/"partitions/h32_onchip_storage.csv"
 IDF=Path(os.environ.get("IDF_PATH",Path.home()/"esp/esp-idf"))
 FLASH=0x1000000; PT_OFF=0x8000; PT_SIZE=0x1000; APP_OFF=0x10000; APP_SIZE=0x220000
 OUT_OFF=0x230000; OUT_SIZE=0xDD0000
+PROFILES=("baseline","no_yield","bounded_yield")
+PROFILE_FILES={p:Path(f"firmware/sdkconfig.h32.{p}.defaults") for p in PROFILES}
 EPOCH_RE=re.compile(r"[0-9a-f]{32}\Z")
 # Fail-fast capture watchdogs (orchestrator should not block on a dead port or panic loop).
 CAPTURE_FIRST_BYTE_S=45
@@ -23,7 +25,7 @@ EXPECTED=[("nvs",1,2,0x9000,0x6000),("phy_init",1,1,0xf000,0x1000),
           ("factory",0,0,APP_OFF,APP_SIZE),("outbox",1,0x81,OUT_OFF,OUT_SIZE)]
 SOURCE_INPUTS=(Path("firmware/main/CMakeLists.txt"),Path("firmware/CMakeLists.txt"),Path("firmware/sdkconfig.defaults"),Path("firmware/demos/h32_onchip_storage.c"),
   Path("firmware/sdkconfig.h32.defaults"),Path("firmware/partitions/h32_onchip_storage.csv"),
-  Path("scripts/h32_storage_qual.py"))
+  Path("scripts/h32_storage_qual.py"),*PROFILE_FILES.values())
 
 def stop(s): raise SystemExit("STOP: "+s)
 def run(args,timeout=1800,capture=False):
@@ -60,12 +62,13 @@ def require_run(rd,bd=None):
     if rd is None or rd.resolve().is_relative_to(ROOT.resolve()): stop("--run-dir outside repository required")
     try: m=json.loads((rd/"operator-run-private.json").read_text())
     except Exception as e: stop(f"private run metadata missing/invalid: {e}; prepare-run first")
-    if m.get("schema")!=1 or not EPOCH_RE.fullmatch(m.get("epoch", "")): stop("invalid requested run epoch")
+    if m.get("schema")!=2 or m.get("profile") not in PROFILES or not EPOCH_RE.fullmatch(m.get("epoch", "")): stop("invalid requested run epoch")
     if bd is not None:
         b=require_backup(bd)
         if m.get("original_full_sha256")!=b["full"]["sha256"] or m.get("device_fingerprint_sha256")!=b["device"]["fingerprint_sha256"]: stop("run is bound to another original backup/device")
+    select_run_builds(m)
     return m
-def prepare_run(rd,bd):
+def prepare_run(rd,bd,profile):
     if rd is None or rd.resolve().is_relative_to(ROOT.resolve()): stop("--run-dir outside repository required")
     b=require_backup(bd)
     if rd.exists(): stop("run directory already exists; refusing to regenerate epoch or reuse evidence")
@@ -83,10 +86,16 @@ def prepare_run(rd,bd):
                 "old_app_sha256":old_meta.get("images",{}).get("app",{}).get("sha256"),
                 "old_partition_table_sha256":old_meta.get("images",{}).get("partition_table",{}).get("sha256"),
                 "old_manifest_sha256":digest(old_manifest) if old_manifest.is_file() else None}
-    m={"schema":1,"epoch":secrets.token_hex(16),"status":"prepared","created_unix":int(time.time()),"failed_attempt":failed,
+    m={"schema":2,"profile":profile,"epoch":secrets.token_hex(16),"status":"prepared","created_unix":int(time.time()),"failed_attempt":failed,
        "original_partition_sha256":b["partition_table"]["sha256"],"original_nvs_sha256":b["nvs"]["sha256"],"original_full_sha256":b["full"]["sha256"],"device_fingerprint_sha256":b["device"]["fingerprint_sha256"]}
     atomic_json(rd/"operator-run-private.json",m,0o600)
     print(json.dumps({"status":"prepared","epoch":m["epoch"],"run_dir":str(rd)},indent=2))
+def build_paths(run_meta):
+    suffix=run_meta["profile"]+"-"+run_meta["epoch"]
+    return (FW/"build"/("h32_onchip_storage-"+suffix),FW/"build"/("h32_onchip_storage_sentinel-"+suffix))
+def select_run_builds(run_meta):
+    global EXP,SENT
+    EXP,SENT=build_paths(run_meta)
 def update_run(rd,m): atomic_json(rd/"operator-run-private.json",m,0o600)
 def one_port(p):
     import glob
@@ -186,38 +195,72 @@ def source_identity():
     combined=dh(json.dumps(files,sort_keys=True,separators=(",",":")).encode())
     dirty=bool(subprocess.run(["git","status","--porcelain","--",*[str(p) for p in SOURCE_INPUTS]],cwd=ROOT,text=True,capture_output=True,check=True).stdout.strip())
     return {"files":files,"sha256":combined,"git_dirty":dirty}
-def build_one(d,sentinel,epoch):
+def build_one(d,sentinel,epoch,profile):
+    before=source_identity()
     d.mkdir(parents=True,exist_ok=True);sdk=d/"sdkconfig";stamp=d/"h32-config-inputs.sha256"
-    config_id=dh((digest(FW/"sdkconfig.defaults")+digest(FW/"sdkconfig.h32.defaults")+epoch+str(sentinel)).encode())
+    config_id=dh((digest(FW/"sdkconfig.defaults")+digest(FW/"sdkconfig.h32.defaults")+digest(ROOT/PROFILE_FILES[profile])+epoch+profile+str(sentinel)).encode())
     if sdk.exists() and (not stamp.exists() or stamp.read_text().strip()!=config_id): sdk.unlink()
     run(["idf.py","-D","FAMILY_DEMO=h32_onchip_storage","-D",f"H32_SENTINEL_ONLY={1 if sentinel else 0}",
-      "-D",f"H32_RUN_EPOCH={epoch}",
-      "-D",f"SDKCONFIG={sdk}","-D","SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.h32.defaults","-B",str(d),"-C",str(FW),"build"])
+      "-D",f"H32_RUN_EPOCH={epoch}","-D",f"H32_PROFILE={profile}",
+      "-D",f"SDKCONFIG={sdk}","-D",f"SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.h32.defaults;{PROFILE_FILES[profile].name}","-B",str(d),"-C",str(FW),"build"])
+    if source_identity()!=before: stop("source changed during compilation; rebuild before manifest acceptance")
+    atomic_json(d/"h32-compiled-source.json",before)
     stamp.write_text(config_id+"\n")
-def manifest(d,mode,epoch,create=False):
+def config_settings(path,profile):
+    settings={}
+    for line in path.read_text().splitlines():
+        match=re.fullmatch(r"(CONFIG_[A-Z0-9_]+)=(.*)",line)
+        unset=re.fullmatch(r"# (CONFIG_[A-Z0-9_]+) is not set",line)
+        if match: settings[match[1]]=match[2]
+        elif unset: settings[unset[1]]="n"
+    expected={"CONFIG_SPI_FLASH_YIELD_DURING_ERASE":"n" if profile=="no_yield" else "y",
+              "CONFIG_FREERTOS_HZ":"100","CONFIG_ESP_INT_WDT":"y","CONFIG_ESP_INT_WDT_TIMEOUT_MS":"300",
+              "CONFIG_ESP_INT_WDT_CHECK_CPU1":"y","CONFIG_ESP_TASK_WDT_EN":"n",
+              "CONFIG_WL_SECTOR_SIZE_4096":"y","CONFIG_FATFS_SECTOR_4096":"y",
+              "CONFIG_FATFS_LFN_HEAP":"y","CONFIG_FATFS_MAX_LFN":"64","CONFIG_FATFS_PER_FILE_CACHE":"y"}
+    if profile!="no_yield": expected.update(CONFIG_SPI_FLASH_ERASE_YIELD_DURATION_MS="100" if profile=="bounded_yield" else "20",CONFIG_SPI_FLASH_ERASE_YIELD_TICKS="1")
+    if any(settings.get(k)!=v for k,v in expected.items()): stop("effective configuration differs from selected H32 profile/watchdog/FAT contract")
+    selected={k:v for k,v in settings.items() if k.startswith(("CONFIG_SPI_FLASH_","CONFIG_FATFS_","CONFIG_WL_","CONFIG_ESP_INT_WDT","CONFIG_ESP_TASK_WDT")) or k=="CONFIG_FREERTOS_HZ"}
+    return {"sha256":digest(path),"settings":selected}
+def manifest(d,mode,epoch,create=False,profile=None,historical=False):
     mp=d/"h32-build-manifest.json"
+    if profile not in PROFILES: stop("explicit valid build profile required")
+    effective=config_settings(d/"sdkconfig",profile)
     if create:
         fs={"bootloader":(0,d/"bootloader/bootloader.bin"),"partition_table":(PT_OFF,d/"partition_table/partition-table.bin"),"app":(APP_OFF,d/"family_link_demo.bin")}
         if any(not p.is_file() for _,p in fs.values()): stop(f"{mode} build missing image")
         ps=partitions(fs["partition_table"][1].read_bytes()); exact_table(ps)
         if fs["app"][1].stat().st_size>int(APP_SIZE*.85): stop("application violates 15% headroom")
-        v={"schema":2,"mode":mode,"epoch":epoch,"git_commit":git_head(),"source":source_identity(),"idf_version":idf_version(),"fixture_sha256":digest(FIXTURE),"partitions":ps,
+        if json.loads((d/"h32-compiled-source.json").read_text())!=source_identity(): stop("source changed after compilation; rebuild")
+        elf=d/"family_link_demo.elf"
+        if not elf.is_file() or app_desc(fs["app"][1].read_bytes())["elf_sha256"]!=digest(elf): stop("application ELF descriptor does not match actual ELF")
+        v={"schema":3,"profile":profile,"effective_config":effective,"elf_sha256":digest(elf),"app_descriptor":app_desc(fs["app"][1].read_bytes()),"mode":mode,"epoch":epoch,"git_commit":git_head(),"source":source_identity(),"idf_version":idf_version(),"fixture_sha256":digest(FIXTURE),"partitions":ps,
           "images":{n:{"offset":o,"bytes":p.stat().st_size,"sha256":digest(p),"path":str(p.relative_to(ROOT))} for n,(o,p) in fs.items()}}
+        for relative,sha in v["source"]["files"].items():
+            original=ROOT/relative; frozen=d/"source-snapshot"/relative
+            frozen.parent.mkdir(parents=True,exist_ok=True);frozen.write_bytes(original.read_bytes())
+            if digest(frozen)!=sha: stop("source changed during build manifest snapshot")
         atomic_json(mp,v); return v
     try: v=json.loads(mp.read_text())
     except Exception as e: stop(f"invalid {mode} build manifest: {e}; run build")
-    if v.get("schema")!=2 or v.get("mode")!=mode or v.get("epoch")!=epoch or digest(FIXTURE)!=v.get("fixture_sha256") or v.get("source")!=source_identity() or v.get("idf_version")!=idf_version(): stop("build epoch/mode/IDF/fixture/source identity mismatch; rebuild")
+    if v.get("schema")!=3 or v.get("profile")!=profile or v.get("effective_config")!=effective or v.get("mode")!=mode or v.get("epoch")!=epoch or digest(FIXTURE)!=v.get("fixture_sha256") or (not historical and (v.get("source")!=source_identity() or v.get("idf_version")!=idf_version())): stop("build epoch/mode/IDF/fixture/source identity mismatch; rebuild")
+    if digest(d/"family_link_demo.elf")!=v.get("elf_sha256"): stop("archived ELF hash mismatch")
+    for relative,sha in v["source"]["files"].items():
+        frozen=d/"source-snapshot"/relative
+        if not frozen.is_file() or digest(frozen)!=sha: stop("archived build source snapshot mismatch")
     ps=partitions((d/"partition_table/partition-table.bin").read_bytes());exact_table(ps)
     if ps!=v.get("partitions"): stop("build partition manifest mismatch")
     for x in v["images"].values():
         p=ROOT/x["path"]
         if not p.is_file() or p.stat().st_size!=x["bytes"] or digest(p)!=x["sha256"] or x["offset"]+x["bytes"]>FLASH: stop("build image/hash/bounds mismatch")
+    if app_desc((ROOT/v["images"]["app"]["path"]).read_bytes())!=v.get("app_descriptor"): stop("build app descriptor mismatch")
     if v["images"]["app"]["bytes"]>int(APP_SIZE*.85): stop("application violates 15% headroom")
     return v
-def build(epoch):
-    if EXP.resolve()==SENT.resolve(): stop("sentinel and experiment build directories overlap")
-    build_one(EXP,False,epoch); manifest(EXP,"experiment",epoch,True)
-    build_one(SENT,True,epoch); manifest(SENT,"sentinel",epoch,True)
+def build(epoch,profile):
+    exp_dir,sent_dir=build_paths({"epoch":epoch,"profile":profile})
+    if exp_dir.resolve()==sent_dir.resolve(): stop("sentinel and experiment build directories overlap")
+    build_one(exp_dir,False,epoch,profile); manifest(exp_dir,"experiment",epoch,True,profile)
+    build_one(sent_dir,True,epoch,profile); manifest(sent_dir,"sentinel",epoch,True,profile)
 def match_read(port,off,src,dst):
     esptool(port,["--after","no_reset","read_flash",hex(off),hex(src.stat().st_size),str(dst)])
     if digest(dst)!=digest(src) or dst.stat().st_size!=src.stat().st_size: stop(f"flash readback mismatch at 0x{off:x}")
@@ -234,8 +277,8 @@ def verify_erased_readback(path):
     if count!=OUT_SIZE or h.hexdigest()!=ERASED_SHA256: stop("outbox erased-region hash mismatch")
     return {"status":"verified","offset":OUT_OFF,"bytes":count,"sha256":h.hexdigest(),"expected_sha256":ERASED_SHA256}
 def flash(port,bd,sentinel,rd):
-    meta=require_backup(bd); run_meta=require_run(rd,bd); epoch=run_meta["epoch"]
-    verify_device(port,meta,hold=True); d=SENT if sentinel else EXP; mode="sentinel" if sentinel else "experiment"; m=manifest(d,mode,epoch)
+    meta=require_backup(bd); run_meta=require_run(rd,bd); epoch=run_meta["epoch"];exp_dir,sent_dir=build_paths(run_meta)
+    verify_device(port,meta,hold=True); d=sent_dir if sentinel else exp_dir; mode="sentinel" if sentinel else "experiment"; m=manifest(d,mode,epoch,profile=run_meta["profile"])
     rb=bd/"readback"; rb.mkdir(mode=0o700,exist_ok=True); app=ROOT/m["images"]["app"]["path"]
     if sentinel:
         f=next((p for p in meta["partition_table"]["entries"] if p["name"]=="factory" and p["offset"]==APP_OFF),None)
@@ -250,7 +293,7 @@ def flash(port,bd,sentinel,rd):
       proof.get("original_full_sha256")==meta["full"]["sha256"] and proof.get("original_nvs_sha256")==meta["nvs"]["sha256"] and
       proof.get("post_sentinel_nvs_sha256")==meta.get("post_sentinel_nvs",{}).get("sha256") and
       proof.get("device_fingerprint_sha256")==meta["device"]["fingerprint_sha256"] and
-      proof.get("sentinel_app_sha256")==manifest(SENT,"sentinel",epoch)["images"]["app"]["sha256"] and
+      proof.get("sentinel_app_sha256")==manifest(sent_dir,"sentinel",epoch,profile=run_meta["profile"])["images"]["app"]["sha256"] and
       log_path.is_file() and digest(log_path)==proof.get("source_log_sha256"))
     if not proof_ok: stop("sentinel proof is not semantically valid and bound to backup/device/build/NVS/log")
     if run_meta.get("erased_region") is not None: stop("this run has already erased outbox; prepare a new run for retry")
@@ -292,10 +335,13 @@ def sentinel_backup(port,bd,rd):
     atomic_json(bd/"operator-private.json",m,0o600);atomic_json(proof_path,proof,0o600)
     print(json.dumps({"status":"verified","sha256":nvs_hash},indent=2))
 
+def complete_capture_lines(pending,chunk):
+    pieces=(pending+chunk).split(b"\n")
+    return pieces[-1],pieces[:-1]
 def capture(port,bd,rd,out,seconds,mode):
     if not 1<=seconds<=14400: stop("capture duration must be 1..14400 seconds")
-    meta=require_backup(bd);run_meta=require_run(rd,bd);epoch=run_meta["epoch"]
-    dev=verify_device(port,meta,hold=True); build_dir=SENT if mode=="sentinel" else EXP;build_meta=manifest(build_dir,mode,epoch)
+    meta=require_backup(bd);run_meta=require_run(rd,bd);epoch=run_meta["epoch"];exp_dir,sent_dir=build_paths(run_meta)
+    dev=verify_device(port,meta,hold=True); build_dir=sent_dir if mode=="sentinel" else exp_dir;build_meta=manifest(build_dir,mode,epoch,profile=run_meta["profile"])
     if not out.resolve().is_relative_to(rd.resolve()): stop("capture path must be in private run directory")
     if out.exists() or out.with_name(out.name+".metadata.json").exists(): stop("capture output already exists")
     if mode=="experiment" and (run_meta.get("erased_region",{}).get("status")!="verified" or run_meta.get("experiment_flash",{}).get("status")!="verified"): stop("experiment flash/whole-region erased proof missing")
@@ -304,13 +350,14 @@ def capture(port,bd,rd,out,seconds,mode):
         import serial
     except ImportError:
         stop("pyserial missing (make install)")
+    firmware_failure=None
     try:
         start=time.monotonic(); deadline=start+seconds
         ser=serial.Serial(port=None,baudrate=115200,timeout=0.2)
         ser.dtr=False; ser.rts=False; ser.port=port
         with out.open("xb") as f, ser:
             ser.rts=True; time.sleep(0.05); ser.rts=False; time.sleep(0.1)
-            last_flush=last_byte=start; tail=b""; total=0; guru=0; mount_seen=False; sentinel_ready=False
+            last_flush=last_byte=start; tail=b""; pending_line=b""; total=0; guru=0; mount_seen=False; sentinel_ready=False
             while time.monotonic()<deadline:
                 now=time.monotonic()
                 if total==0 and now-start>CAPTURE_FIRST_BYTE_S:
@@ -325,6 +372,12 @@ def capture(port,bd,rd,out,seconds,mode):
                 if chunk:
                     f.write(chunk); total+=len(chunk); last_byte=now
                     tail=(tail+chunk)[-16384:]
+                    pending_line,lines=complete_capture_lines(pending_line,chunk)
+                    for line in lines:
+                        if b"H32,FAIL," in line:
+                            firmware_failure=line[line.find(b"H32,FAIL,"):].decode(errors="replace").strip()
+                            f.flush();os.fsync(f.fileno())
+                            stop("firmware stopped: "+firmware_failure)
                     guru+=chunk.count(b"Guru Meditation")
                     if guru>=CAPTURE_GURU_MAX: stop(f"panic loop ({guru} Guru Meditation errors)")
                     if b"H32,MOUNT," in tail: mount_seen=True
@@ -339,10 +392,10 @@ def capture(port,bd,rd,out,seconds,mode):
         if mode=="experiment" and not mount_seen: stop("experiment capture ended without H32,MOUNT")
     except BaseException as exc:
         if out.exists():
-            atomic_json(out.with_name(out.name+".metadata.json"),{"schema":2,"epoch":epoch,"mode":mode,"status":"failed","failure":str(exc),"raw_log_sha256":digest(out),"raw_log_bytes":out.stat().st_size,"device_fingerprint_sha256":dev["fingerprint_sha256"],"source":build_meta["source"],"images":build_meta["images"],"erased_region":run_meta.get("erased_region")},0o600)
+            atomic_json(out.with_name(out.name+".metadata.json"),{"schema":2,"epoch":epoch,"mode":mode,"status":"failed","failure":str(exc),"firmware_failure":firmware_failure,"profile":run_meta["profile"],"effective_config":build_meta["effective_config"],"raw_log_sha256":digest(out),"raw_log_bytes":out.stat().st_size,"device_fingerprint_sha256":dev["fingerprint_sha256"],"source":build_meta["source"],"images":build_meta["images"],"erased_region":run_meta.get("erased_region")},0o600)
         raise
-    sent_build=manifest(SENT,"sentinel",epoch);exp_build=manifest(EXP,"experiment",epoch)
-    public={"schema":2,"status":"captured","epoch":epoch,"port":port,"chip":dev["chip_description"],"flash_bytes":dev["flash_bytes"],
+    sent_build=manifest(sent_dir,"sentinel",epoch,profile=run_meta["profile"]);exp_build=manifest(exp_dir,"experiment",epoch,profile=run_meta["profile"])
+    public={"schema":2,"status":"captured","epoch":epoch,"profile":run_meta["profile"],"effective_config":build_meta["effective_config"],"port":port,"chip":dev["chip_description"],"flash_bytes":dev["flash_bytes"],
       "device_fingerprint_sha256":dev["fingerprint_sha256"],"git_commit":build_meta["git_commit"],
       "idf_version":build_meta["idf_version"],"fixture_sha256":build_meta["fixture_sha256"],
       "images":build_meta["images"],"mode":mode,"source":build_meta["source"],
@@ -371,7 +424,62 @@ def kv(s):
         if not k or k in out: stop("duplicate H32 field")
         out[k]=v.strip()
     return out
-def parse_log(text,epoch,erased_proof):
+def validate_runtime_profiles(records,epoch,profile,effective_config,elf_sha256=None):
+    cfg=effective_config["settings"]
+    mapping={"erase_yield":"CONFIG_SPI_FLASH_YIELD_DURING_ERASE","erase_yield_duration_ms":"CONFIG_SPI_FLASH_ERASE_YIELD_DURATION_MS","erase_yield_ticks":"CONFIG_SPI_FLASH_ERASE_YIELD_TICKS","tick_hz":"CONFIG_FREERTOS_HZ","int_wdt":"CONFIG_ESP_INT_WDT","int_wdt_timeout_ms":"CONFIG_ESP_INT_WDT_TIMEOUT_MS","task_wdt":"CONFIG_ESP_TASK_WDT_EN","task_wdt_init":"CONFIG_ESP_TASK_WDT_INIT","task_wdt_timeout_s":"CONFIG_ESP_TASK_WDT_TIMEOUT_S","fatfs_per_file_cache":"CONFIG_FATFS_PER_FILE_CACHE","fatfs_lfn_heap":"CONFIG_FATFS_LFN_HEAP","fatfs_max_lfn":"CONFIG_FATFS_MAX_LFN","fatfs_timeout_ms":"CONFIG_FATFS_TIMEOUT_MS"}
+    for x in records:
+        if elf_sha256 and x.get("elf_sha256")!=elf_sha256: stop("runtime ELF hash differs from bound build")
+        if x.get("schema")!="2" or x.get("status")!="pass" or x.get("epoch")!=epoch or x.get("profile")!=profile: stop("runtime profile/schema/epoch mismatch")
+        for field,key in mapping.items():
+            value=cfg.get(key,"n")
+            expected="1" if value=="y" else "0" if value=="n" else value
+            if x.get(field)!=expected: stop("runtime effective config differs: "+field)
+        if x.get("wl_sector_bytes")!="4096": stop("runtime WL sector differs")
+def validate_probe_records(ordered,epoch):
+    probe=next((x for k,x in ordered if k=="PROBE"),{})
+    initial=[x for k,x in ordered if k=="REMOUNT"]
+    if [x.get("cycle") for x in initial]!=[str(i) for i in range(1,6)]: stop("initial remount order/count invalid")
+    later=[x for k,x in ordered if k=="PROBE_VERIFY"]
+    expected=[(p,0,0) for p in (1,2,3)]+[(4,0,0)]+[(4,c,1) for c in range(90)]+[(p,90,0) for p in (5,6)]
+    actual=[(int(x.get("phase","-1")),int(x.get("fault_cur","-1")),int(x.get("fault_active","-1"))) for x in later]
+    if actual!=expected: stop("retained probe phase/fault identities incomplete/duplicated/out of order")
+    last=0; initial_done=False
+    for kind,x in ordered:
+        if kind=="REMOUNT":
+            if initial_done or int(x.get("cycle","0"))!=last+1: stop("initial remount ordering invalid")
+            last+=1
+        elif kind=="PROBE_VERIFY":
+            initial_done=True
+            if last!=5 or x.get("epoch")!=epoch or x.get("cycle")!="5" or x.get("identity")!="retained" or x.get("formatted")!="no" or x.get("probe_bytes")!="65536" or x.get("probe_sha256")!=probe.get("sha256") or x.get("verify")!="pass" or not 1<=int(x.get("phase","-1"))<=7: stop("retained probe integrity/phase/order invalid")
+def validate_cadence_telemetry(rows):
+    for stream in ("opus","pcm"):
+        chunks=[x for x in rows["CHUNK"] if x["stream"]==stream]
+        summary=next(x for x in rows["CADENCE"] if x["stream"]==stream)
+        origin=int(chunks[0]["scheduled_start_us"]);max_late=0
+        for i,x in enumerate(chunks):
+            if x.get("schema")!="2": stop("cadence telemetry schema mismatch")
+            nums={k:int(x.get(k,"-1")) for k in ("open_us","write_us","flush_us","close_us","rename_us","read_verify_us","manifest_us","total_us","scheduled_start_us","actual_start_us","finish_us","lateness_us","finish_lateness_us","max_lateness_us","missed_periods")}
+            if any(v<0 for v in nums.values()): stop("missing/negative cadence telemetry")
+            scheduled=origin+i*2000000
+            if nums["scheduled_start_us"]!=scheduled or nums["actual_start_us"]<scheduled or nums["finish_us"]-nums["actual_start_us"]!=nums["total_us"]: stop("cadence monotonic schedule/service mismatch")
+            late=nums["actual_start_us"]-scheduled;max_late=max(max_late,late)
+            if nums["lateness_us"]!=late or nums["finish_lateness_us"]!=max(0,nums["finish_us"]-scheduled-2000000) or nums["max_lateness_us"]!=max_late or nums["missed_periods"]!=late//2000000 or int(x.get("backlog","-1"))!=late//2000000: stop("cadence lateness accounting mismatch")
+            if sum(nums[k] for k in ("open_us","write_us","flush_us","close_us","rename_us","read_verify_us","manifest_us"))!=nums["total_us"]: stop("cadence operation timing sum mismatch")
+            if nums["finish_lateness_us"] or nums["missed_periods"]: stop("absolute cadence deadline missed")
+        elapsed=int(summary.get("actual_elapsed_us","-1"))
+        if summary.get("schema")!="2" or elapsed<180000000 or elapsed<int(chunks[-1]["finish_us"])-origin or int(summary.get("max_lateness_us","-1"))!=max_late or int(summary.get("max_finish_lateness_us","-1"))!=max(int(x["finish_lateness_us"]) for x in chunks): stop("cadence elapsed/lateness summary mismatch")
+        if int(summary.get("watchdog_events","-1"))!=0 or int(summary.get("heartbeat_samples","0"))<=0 or int(summary.get("heartbeat_max_gap_us","0"))<=0: stop("cadence scheduler/watchdog telemetry invalid")
+        if int(summary.get("scheduled_deadline_miss","-1"))!=0 or int(summary.get("service_deadline_miss","-1"))!=0: stop("cadence deadline summary mismatch")
+        for event in ("start","end"):
+            memory=[x for x in rows["MEMORY"] if x.get("workload")==stream and x.get("event")==event]
+            if len(memory)!=1 or memory[0].get("schema")!="2" or any(int(memory[0].get(k,"0"))<=0 for k in ("heap","heap_min","heap_largest","storage_stack_bytes","heartbeat_stack_bytes")): stop("cadence memory telemetry missing/invalid")
+        service=sum(int(x["total_us"]) for x in chunks)
+        if int(summary.get("transaction_us","-1"))!=service: stop("cadence service total mismatch")
+        if stream=="pcm" and sum(int(x["bytes"]) for x in chunks)*1000000<=64000*service: stop("durable PCM transaction throughput does not exceed 64000 bytes/s")
+        hb=[x for x in rows["HEARTBEAT"] if x.get("workload")==stream]
+        if [x.get("event") for x in hb]!=["start","end"] or any(x.get("timer_resolution_us")!="1" or int(x.get("interval_ms","0"))<=0 or int(x.get("priority","-1"))<0 or int(x.get("core","-2")) not in (-1,0,1) for x in hb): stop("heartbeat contract missing/invalid")
+        if hb[-1].get("max_gap_us")!=summary["heartbeat_max_gap_us"] or hb[-1].get("samples")!=summary["heartbeat_samples"]: stop("heartbeat summary mismatch")
+def parse_log(text,epoch,erased_proof,profile,effective_config,elf_sha256=None):
     rows={}; ordered=[]
     for line in text.splitlines():
         at=line.find("H32,")
@@ -381,9 +489,10 @@ def parse_log(text,epoch,erased_proof):
         record=kv(x[2]);rows.setdefault(x[1],[]).append(record);ordered.append((x[1],record))
     if rows.get("FAIL"): stop("firmware reported FAIL")
     req=("SENTINEL","HARDWARE","PARTITION","ERASE_SCAN","RUN_REQUEST","MOUNT","FORMAT","MARKER","RUN","PROBE","REBOOT","REMOUNT","IO","IO_REMOUNT",
-         "RENAME","DIR_SCAN","CHUNK","CADENCE","CHUNK_REMOUNT","BACKLOG","FAULT","RECOVERY","FLOOR","COMPLETE")
+         "PROFILE","PROBE_VERIFY","HEARTBEAT","MEMORY","RENAME","DIR_SCAN","CHUNK","CADENCE","CHUNK_REMOUNT","BACKLOG","FAULT","RECOVERY","FLOOR","COMPLETE")
     miss=[x for x in req if not rows.get(x)]
     if miss: stop("incomplete run, missing "+str(miss))
+    validate_runtime_profiles(rows["PROFILE"],epoch,profile,effective_config,elf_sha256)
     requests=rows["RUN_REQUEST"]
     if any(x.get("epoch")!=epoch or x.get("mode")!="experiment" or x.get("status")!="pass" for x in requests): stop("firmware requested another epoch/mode")
     if any(x.get("epoch")!=epoch for _,x in ordered): stop("record lacks requested epoch")
@@ -402,7 +511,7 @@ def parse_log(text,epoch,erased_proof):
     cold=[x for x in rows["MOUNT"] if x.get("kind") in ("cold_after_format","cold_existing")]
     warm=[x for x in rows["MOUNT"] if x.get("kind")=="warm_remount"]
     if len(cold)!=len(runs) or len(warm)!=len(runs) or cold[0].get("kind")!="cold_after_format" or any(x.get("kind")!="cold_existing" or x.get("format_us")!="0" for x in cold[1:]): stop("mount/format counts do not match boots")
-    if len(requests)!=len(runs) or len(scans)!=len(runs) or len(rows["SENTINEL"])!=len(runs): stop("boot identity/proof counts differ")
+    if len(requests)!=len(runs) or len(scans)!=len(runs) or len(rows["SENTINEL"])!=len(runs) or len(rows["PROFILE"])!=len(runs): stop("boot identity/proof counts differ")
     if any(int(x.get("mount_us","-1"))<0 for x in cold+warm): stop("mount timing missing")
     first_run=next(i for i,(k,_) in enumerate(ordered) if k=="RUN")
     if any(x.get("epoch")!=epoch for k,x in ordered[first_run:] if k not in ("FAIL",)): stop("record lacks requested epoch after run initialization")
@@ -447,6 +556,7 @@ def parse_log(text,epoch,erased_proof):
     if len(rows["REBOOT"])!=5 or {(int(x["cycle"]),x.get("mechanism"),x.get("status")) for x in rows["REBOOT"]}!={(i,"esp_restart","scheduled") for i in range(1,6)}: stop("reboot schedule matrix incomplete/duplicated")
     if len(rows["REMOUNT"])!=5 or {int(x["cycle"]) for x in rows["REMOUNT"]}!=set(range(1,6)): stop("verified remount matrix incomplete/duplicated")
     if any(x.get("formatted")!="no" or x.get("probe_bytes")!="65536" or x.get("probe_sha256")!=probe["sha256"] or x.get("verify")!="pass" for x in rows["REMOUNT"]): stop("committed probe did not survive every remount")
+    validate_probe_records(ordered,epoch)
     if len(rows["RENAME"])!=1: stop("replace-existing rename result missing/duplicated")
     rename=rows["RENAME"][0]
     replaced=(rename.get("outcome")=="replaced" and rename.get("errno")=="0" and rename.get("old_preserved")=="no" and rename.get("new_valid")=="yes" and rename.get("part_present")=="no")
@@ -470,6 +580,7 @@ def parse_log(text,epoch,erased_proof):
         summary=cad[(stream,180,rate)]
         aggregate=dh("".join(x["sha256"] for x in chunks).encode())
         if summary.get("aggregate_kind")!="ordered_chunk_sha256_hex" or summary.get("aggregate_sha256")!=aggregate or summary.get("chunks")!="90" or summary.get("chunk_seconds")!="2": stop("cadence aggregate/count proof failed")
+    validate_cadence_telemetry(rows)
     if len(rows["CHUNK_REMOUNT"])!=6 or any(x.get("verify")!="pass" for x in rows["CHUNK_REMOUNT"]): stop("post-remount chunk verification incomplete/failed")
     if {(x.get("stream"),x.get("validated"),x.get("reclaimed"),x.get("retained")) for x in rows["BACKLOG"]}!={("opus","90","87","3"),("pcm","90","87","3")}: stop("backlog reclamation evidence incomplete")
     if len(rows["FAULT"])!=90 or {(int(x["point"]),int(x["cycle"])) for x in rows["FAULT"]}!={(p,c) for p in range(9) for c in range(10)}: stop("fault matrix incomplete/duplicated")
@@ -525,7 +636,10 @@ def parse_log(text,epoch,erased_proof):
     completed=[x for x in rows["COMPLETE"] if x.get("fault_cycles")=="90"]
     if len(completed)!=1 or int(completed[0].get("safe_floor","0"))!=configured: stop("detailed completion record missing or floor differs")
     return rows
-def validate_sentinel(inp,bd,rd):
+def validate_sentinel(inp,bd,rd,historical=False,persist_proof=True):
+    if historical: persist_proof=False
+    run_meta=require_run(rd,bd);epoch=run_meta["epoch"];profile=run_meta["profile"]
+    _,sent_dir=build_paths(run_meta)
     rows={}
     for line in inp.read_text(errors="replace").splitlines():
         at=line.find("H32,")
@@ -536,65 +650,117 @@ def validate_sentinel(inp,bd,rd):
     sent=rows.get("SENTINEL",[]); ready=rows.get("SENTINEL_READY",[])
     if not sent or sent[-1].get("mode")!="sentinel_only" or sent[-1].get("status")!="pass": stop("valid sentinel record missing")
     if not ready or ready[-1].get("storage_access")!="no" or ready[-1].get("action")!="halt": stop("sentinel-only halt record missing")
-    metadata=json.loads(inp.with_name(inp.name+".metadata.json").read_text());backup_meta=require_backup(bd);sent_build=manifest(SENT,"sentinel",require_run(rd,bd)["epoch"])
-    epoch=require_run(rd,bd)["epoch"]
+    metadata=json.loads(inp.with_name(inp.name+".metadata.json").read_text());backup_meta=require_backup(bd)
+    sent_build=manifest(sent_dir,"sentinel",epoch,profile=profile,historical=historical)
+    validate_runtime_profiles(rows.get("PROFILE",[]),epoch,profile,sent_build["effective_config"],sent_build["app_descriptor"]["elf_sha256"])
+    if not rows.get("PROFILE"): stop("sentinel runtime profile missing")
+    if metadata.get("source")!=sent_build["source"] or metadata.get("images")!=sent_build["images"] or metadata.get("profile")!=profile or metadata.get("effective_config")!=sent_build["effective_config"]: stop("sentinel capture profile/config mismatch")
     if metadata.get("epoch")!=epoch or metadata.get("raw_log_sha256")!=digest(inp) or metadata.get("raw_log_bytes")!=inp.stat().st_size or metadata.get("mode")!="sentinel" or metadata.get("device_fingerprint_sha256")!=backup_meta["device"]["fingerprint_sha256"] or metadata.get("images",{}).get("app",{}).get("sha256")!=sent_build["images"]["app"]["sha256"]: stop("sentinel log metadata is not bound to backup/build")
     if any(x.get("epoch")!=epoch for records in rows.values() for x in records): stop("sentinel records epoch mismatch")
     proof={"epoch":epoch,"status":"verified","mode":"sentinel_only","storage_access":"no","source_log_path":str(inp.resolve()),"source_log_sha256":digest(inp),
       "original_full_sha256":backup_meta["full"]["sha256"],"original_nvs_sha256":backup_meta["nvs"]["sha256"],
       "device_fingerprint_sha256":backup_meta["device"]["fingerprint_sha256"],"sentinel_app_sha256":sent_build["images"]["app"]["sha256"]}
-    atomic_json(bd/"sentinel-proof-private.json",proof,0o600);print(json.dumps(proof,indent=2)); return proof
+    if persist_proof: atomic_json(bd/"sentinel-proof-private.json",proof,0o600)
+    print(json.dumps(proof,indent=2)); return proof
 def write_csv(path,fields,records):
     fd,tmp=tempfile.mkstemp(dir=path.parent,prefix="."+path.name)
     with os.fdopen(fd,"w",newline="") as f:
-        w=csv.DictWriter(f,fieldnames=fields,extrasaction="ignore"); w.writeheader(); w.writerows(records)
+        w=csv.DictWriter(f,fieldnames=fields,extrasaction="ignore",lineterminator="\n"); w.writeheader(); w.writerows(records)
     os.replace(tmp,path)
 def aggregate(inp,out,rd):
     side=inp.with_name(inp.name+".metadata.json")
     try: metadata=json.loads(side.read_text())
     except Exception as e: stop(f"capture metadata missing/invalid: {e}")
-    run_meta=require_run(rd);epoch=run_meta["epoch"]
-    if metadata.get("schema")!=2 or metadata.get("status")!="captured" or metadata.get("epoch")!=epoch or metadata.get("mode")!="experiment" or metadata.get("flash_bytes")!=FLASH or metadata.get("capture_start_reset")!="idf_monitor_rts_dtr" or metadata.get("test_reset")!="esp_restart" or metadata.get("source")!=source_identity() or metadata.get("raw_log_sha256")!=digest(inp) or metadata.get("raw_log_bytes")!=inp.stat().st_size: stop("capture metadata does not describe the current qualified run")
+    run_meta=require_run(rd);epoch=run_meta["epoch"];exp_dir,sent_dir=build_paths(run_meta)
+    if metadata.get("schema")!=2 or metadata.get("status")!="captured" or metadata.get("epoch")!=epoch or metadata.get("mode")!="experiment" or metadata.get("flash_bytes")!=FLASH or metadata.get("capture_start_reset")!="idf_monitor_rts_dtr" or metadata.get("test_reset")!="esp_restart"  or metadata.get("raw_log_sha256")!=digest(inp) or metadata.get("raw_log_bytes")!=inp.stat().st_size: stop("capture metadata does not describe the current qualified run")
     if metadata.get("erased_region")!=run_meta.get("erased_region") or metadata.get("erased_region",{}).get("status")!="verified" or metadata["erased_region"].get("bytes")!=OUT_SIZE or metadata["erased_region"].get("offset")!=OUT_OFF or metadata["erased_region"].get("sha256")!=ERASED_SHA256: stop("capture lacks complete erased-region proof")
     if metadata.get("original_partition_sha256")!=run_meta.get("original_partition_sha256") or metadata.get("original_nvs_sha256")!=run_meta.get("original_nvs_sha256"): stop("capture partition/NVS backup bindings differ")
     if metadata.get("original_full_sha256")!=run_meta["original_full_sha256"] or metadata.get("device_fingerprint_sha256")!=run_meta["device_fingerprint_sha256"]: stop("capture is bound to another backup/device")
     if run_meta.get("experiment_flash",{}).get("status")!="verified" or metadata.get("post_sentinel_nvs_sha256")!=run_meta["experiment_flash"].get("post_flash_nvs_sha256"): stop("capture post-sentinel NVS binding differs")
-    exp=manifest(EXP,"experiment",epoch);sent=manifest(SENT,"sentinel",epoch)
+    exp=manifest(exp_dir,"experiment",epoch,profile=run_meta["profile"],historical=True);sent=manifest(sent_dir,"sentinel",epoch,profile=run_meta["profile"],historical=True)
     if metadata.get("experiment_app_sha256")!=exp["images"]["app"]["sha256"] or metadata.get("sentinel_app_sha256")!=sent["images"]["app"]["sha256"] or metadata.get("images")!=exp["images"]: stop("capture build hashes differ from manifests")
     if not inp.resolve().is_relative_to(rd.resolve()): stop("capture log must be in the private run directory")
     if out.exists() and (not out.is_dir() or any(out.iterdir())): stop("evidence staging directory must be empty")
-    r=parse_log(inp.read_text(errors="replace"),epoch,metadata["erased_region"])
+    if metadata.get("source")!=exp["source"] or metadata.get("profile")!=run_meta["profile"] or metadata.get("effective_config")!=exp["effective_config"]: stop("capture profile/config binding differs")
+    r=parse_log(inp.read_text(errors="replace"),epoch,metadata["erased_region"],run_meta["profile"],exp["effective_config"],exp["app_descriptor"]["elf_sha256"])
     out.parent.mkdir(parents=True,exist_ok=True)
     stage=Path(tempfile.mkdtemp(prefix="."+out.name+"-",dir=out.parent))
     final_out=out;out=stage
     write_csv(out/"io-measurements.csv",["status","test","size_bytes","iteration","open_us","write_us","flush_us","close_us","rename_us","read_verify_us","delete_us","free_before","free_after","verify","sha256"],({"status":"measured","test":x["file"],"size_bytes":x["bytes"],"iteration":i,**x} for i,x in enumerate(r["IO"])))
     write_csv(out/"cadence-results.csv",["status","test","seconds","bytes_per_second","max_write_us","max_flush_us","max_rename_us","max_manifest_us","missed_deadlines","backlog_high","min_free_bytes","min_heap_bytes","min_psram","min_stack_words","aggregate_kind","aggregate_sha256"],({"status":"measured","test":x["stream"],"bytes_per_second":x["rate"],"missed_deadlines":x["deadline_miss"],"min_free_bytes":x["min_free"],"min_heap_bytes":x["min_heap"],**x} for x in r["CADENCE"]))
+    write_csv(out/"chunk-timings.csv",["schema","epoch","stream","index","bytes","open_us","write_us","flush_us","close_us","rename_us","read_verify_us","manifest_us","total_us","scheduled_start_us","actual_start_us","finish_us","lateness_us","finish_lateness_us","max_lateness_us","missed_periods","backlog","free","heap","psram","stack_words","sha256"],r["CHUNK"])
+    atomic_json(out/"scheduler-telemetry.json",{"heartbeat":r["HEARTBEAT"],"memory":r["MEMORY"],"cadence":r["CADENCE"]})
     rec={(x["point"],x["cycle"]):x for x in r["RECOVERY"]}
     write_csv(out/"interruption-results.csv",["status","reset_class","point","cycle","prior_files_valid","partial_accepted","part","final","manifest","final_valid"],({"status":"measured","reset_class":"esp_restart","point":x["point"],"cycle":x["cycle"],"prior_files_valid":rec[(x["point"],x["cycle"])]["prior_valid"],"partial_accepted":"no",**rec[(x["point"],x["cycle"])]} for x in r["FAULT"]))
     complete=next(x for x in r["COMPLETE"] if x.get("fault_cycles")=="90")
-    safe_metadata={k:metadata[k] for k in ("schema","epoch","flash_bytes","git_commit","idf_version","fixture_sha256","images","source","sentinel_app_sha256","experiment_app_sha256","erased_region","capture_start_reset","test_reset","raw_log_sha256","raw_log_bytes")}
+    safe_metadata={k:metadata[k] for k in ("schema","epoch","profile","effective_config","flash_bytes","git_commit","idf_version","fixture_sha256","images","source","sentinel_app_sha256","experiment_app_sha256","erased_region","capture_start_reset","test_reset","raw_log_sha256","raw_log_bytes")}
     summary={"status":"measured","run_metadata":safe_metadata,"record_counts":{k:len(v) for k,v in sorted(r.items())},"filesystem_first":r["MOUNT"][0],"filesystem_last":r["MOUNT"][-1],"safe_floor_events":r["FLOOR"],"completion":complete,"power_loss":"unproven","source_log_sha256":digest(inp)}; atomic_json(out/"run-summary.json",summary)
     if final_out.exists(): final_out.rmdir()
     os.replace(stage,final_out)
     print(json.dumps(summary,indent=2))
 
+def host_checks(inp=None,bd=None,rd=None):
+    import copy
+    epoch="1"*32; hash_value="a"*64
+    probe={"epoch":epoch,"sha256":hash_value}
+    initial=[("REMOUNT",{"epoch":epoch,"cycle":str(i)}) for i in range(1,6)]
+    later={"epoch":epoch,"cycle":"5","identity":"retained","formatted":"no","probe_bytes":"65536","probe_sha256":hash_value,"verify":"pass","phase":"1"}
+    shapes=[(p,0,0) for p in (1,2,3)]+[(4,0,0)]+[(4,c,1) for c in range(90)]+[(p,90,0) for p in (5,6)]
+    valid=[("PROBE",probe),*initial,*[("PROBE_VERIFY",{**later,"phase":str(p),"fault_cur":str(c),"fault_active":str(a)}) for p,c,a in shapes]]
+    validate_probe_records(valid,epoch)
+    rejected=[]
+    cases={"duplicate_initial":valid+[initial[-1]],"missing_initial":valid[:3]+valid[4:],"wrong_epoch":copy.deepcopy(valid),"later_before_initial":valid[:1]+valid[-1:]+valid[1:-1],"duplicate_later":valid+[valid[-1]],"missing_later":valid[:-1]}
+    cases["wrong_epoch"][-1][1]["epoch"]="2"*32
+    for name,records in cases.items():
+        try: validate_probe_records(records,epoch)
+        except SystemExit: rejected.append(name)
+        else: stop("host shape check accepted "+name)
+    pending,lines=complete_capture_lines(b"",b"H32,FA")
+    if lines: stop("partial failure emitted early")
+    pending,lines=complete_capture_lines(pending,b"IL,epoch="+epoch.encode()+b",stage=pcm,reason=cadence")
+    if lines: stop("unterminated failure emitted early")
+    pending,lines=complete_capture_lines(pending,b"\r\n")
+    if pending or len(lines)!=1 or not lines[0].startswith(b"H32,FAIL,"): stop("complete fragmented failure was not detected")
+    with tempfile.TemporaryDirectory() as d:
+        path=Path(d)/"records.csv";write_csv(path,["x"],[{"x":"yes"}])
+        if path.read_bytes()!=b"x\nyes\n": stop("CSV line termination check failed")
+    cli_regression="not requested"
+    if any(x is not None for x in (inp,bd,rd)):
+        if not all(x is not None for x in (inp,bd,rd)): stop("CLI regression requires --input, --backup-dir and --run-dir")
+        import sys
+        proof_path=bd/"sentinel-proof-private.json"
+        proof_before=proof_path.read_bytes() if proof_path.exists() else None
+        result=subprocess.run([sys.executable,str(Path(__file__).resolve()),"validate-sentinel","--historical-validation","--input",str(inp),"--backup-dir",str(bd),"--run-dir",str(rd)],capture_output=True,text=True)
+        if result.returncode: stop("fresh interpreter sentinel CLI regression failed: "+result.stderr.strip())
+        proof=json.loads(result.stdout);run_meta=json.loads((rd/"operator-run-private.json").read_text())
+        metadata=json.loads(inp.with_name(inp.name+".metadata.json").read_text())
+        if proof.get("epoch")!=run_meta["epoch"] or proof.get("sentinel_app_sha256")!=metadata["images"]["app"]["sha256"] or proof.get("source_log_sha256")!=digest(inp): stop("fresh interpreter selected incorrect epoch/image/capture")
+        if (proof_path.read_bytes() if proof_path.exists() else None)!=proof_before: stop("historical CLI mutated sentinel proof")
+        cli_regression="passed, archived epoch/image/capture bound; mutation proof unchanged"
+    print(json.dumps({"status":"pass","scope":"synthetic structural checks and optional captured-evidence CLI regression; no hardware mutation","rejected":rejected,"csv":"LF","sentinel_cli":cli_regression},indent=2))
+
 def main():
-    p=argparse.ArgumentParser(); p.add_argument("command",choices=["inventory","backup","prepare-run","build","validate-build","sentinel-flash","validate-sentinel","sentinel-backup","experiment-flash","capture","parse","restore"]); p.add_argument("--port"); p.add_argument("--backup-dir",type=Path);p.add_argument("--run-dir",type=Path); p.add_argument("--output",type=Path); p.add_argument("--input",type=Path); p.add_argument("--evidence-dir",type=Path); p.add_argument("--seconds",type=int,default=None);p.add_argument("--mode",choices=["sentinel","experiment"],default="experiment"); a=p.parse_args(); port=None if a.command in ("prepare-run","build","validate-build","validate-sentinel","parse") else one_port(a.port)
-    if a.command=="inventory": inventory(port)
+    p=argparse.ArgumentParser(); p.add_argument("command",choices=["inventory","backup","prepare-run","build","validate-build","sentinel-flash","validate-sentinel","sentinel-backup","experiment-flash","capture","parse","restore","host-checks"]); p.add_argument("--historical-validation",action="store_true",help="read-only archived sentinel validation; does not authorize flashing");p.add_argument("--profile",choices=PROFILES); p.add_argument("--port"); p.add_argument("--backup-dir",type=Path);p.add_argument("--run-dir",type=Path); p.add_argument("--output",type=Path); p.add_argument("--input",type=Path); p.add_argument("--evidence-dir",type=Path); p.add_argument("--seconds",type=int,default=None);p.add_argument("--mode",choices=["sentinel","experiment"],default="experiment"); a=p.parse_args(); port=None if a.command in ("prepare-run","build","validate-build","validate-sentinel","parse","host-checks") else one_port(a.port)
+    if a.historical_validation and a.command!="validate-sentinel": p.error("--historical-validation only applies to read-only validate-sentinel")
+    if a.command!="prepare-run" and a.profile and a.run_dir and require_run(a.run_dir)["profile"]!=a.profile: p.error("--profile differs from immutable prepared run")
+    if a.command=="host-checks": host_checks(a.input,a.backup_dir,a.run_dir)
+    elif a.command=="inventory": inventory(port)
     elif a.command=="backup": backup(port,a.backup_dir or Path("/private/tmp")/f"family-link-h32-{int(time.time())}")
     elif a.command=="prepare-run":
         if not a.backup_dir or not a.run_dir: p.error("--backup-dir and --run-dir required")
-        prepare_run(a.run_dir,a.backup_dir)
-    elif a.command=="build": build(require_run(a.run_dir)["epoch"])
+        if not a.profile: p.error("--profile required for immutable run selection")
+        prepare_run(a.run_dir,a.backup_dir,a.profile)
+    elif a.command=="build":
+        run_meta=require_run(a.run_dir); build(run_meta["epoch"],run_meta["profile"])
     elif a.command=="validate-build":
-        epoch=require_run(a.run_dir)["epoch"]
-        print(json.dumps({"experiment":manifest(EXP,"experiment",epoch),"sentinel":manifest(SENT,"sentinel",epoch)},indent=2))
+        run_meta=require_run(a.run_dir);epoch=run_meta["epoch"];exp_dir,sent_dir=build_paths(run_meta)
+        print(json.dumps({"experiment":manifest(exp_dir,"experiment",epoch,profile=run_meta["profile"]),"sentinel":manifest(sent_dir,"sentinel",epoch,profile=run_meta["profile"])},indent=2))
     elif a.command in ("sentinel-flash","experiment-flash"):
         if not a.backup_dir: p.error("--backup-dir required")
         flash(port,a.backup_dir,a.command=="sentinel-flash",a.run_dir)
     elif a.command=="validate-sentinel":
         if not a.input or not a.backup_dir: p.error("--input and --backup-dir required")
-        validate_sentinel(a.input,a.backup_dir,a.run_dir)
+        validate_sentinel(a.input,a.backup_dir,a.run_dir,historical=a.historical_validation,persist_proof=not a.historical_validation)
     elif a.command=="sentinel-backup":
         if not a.backup_dir: p.error("--backup-dir required")
         sentinel_backup(port,a.backup_dir,a.run_dir)

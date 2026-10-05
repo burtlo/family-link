@@ -1,0 +1,18 @@
+H32 no-yield failed-run restore — 2026-10-05
+
+Run epoch: d5e92d2c813b3acd2125763829469869
+Result: verified; the original device image was restored after the PCM stop.
+
+The controller wrote the preserved complete 16 MiB image while holding the
+device in its ROM loader, read back all 16,777,216 bytes before launching the
+original application, and checked the partition table, NVS, application
+descriptors, and device identity. The restore command exited successfully.
+An independent SHA-256 comparison of the preserved image and readback matched:
+
+Full image: 7d6537305e73c36aa23353923536c8d805b61f12808bf47c9664b66a3213a112
+Partition table: 06b412567cc48815931a3f67280450f31de7c3cc3e85747e71f3a4dc0219db88
+Original NVS: 67235fa2b245383d6bca8962f9be12523459871b475d9361e8a3ee340fd8387e
+
+Private full images, readbacks, NVS, device identifiers, and operator paths
+remain outside the repository. This proves restoration of this one device;
+it does not qualify the failed storage workload.

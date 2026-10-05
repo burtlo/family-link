@@ -4,7 +4,7 @@
 |--------------------------------|-------|
 | **Doc kind**                   | `research/exploration` |
 | **Owners / areas**             | BOX-3 firmware, ESP-IDF partitioning, FAT filesystem, wear leveling, recovery evidence |
-| **Status**                     | `retry failed at PCM cadence; corrections planned` |
+| **Status**                     | `default-yield retry and no-yield comparison failed at PCM cadence; corrections planned` |
 | **Targets**                    | One-device isolated storage demo; no X02 or production partition change |
 | **Last updated**               | 2026-10-05 |
 | **Supersedes / superseded by** | Prerequisite for [`durable-outbox-demo.md`](durable-outbox-demo.md) |
@@ -16,8 +16,9 @@
 > was subsequently restored. The [corrected retry plan](h32-onchip-mount-retry.md)
 > requires a full-region blank proof, a bound run epoch, and separate sentinel
 > and progress namespaces. The corrected retry reached PCM cadence and halted after 79 missed deadlines
-> across 90 chunks. Storage qualification failed; the original image has been restored and
-> complete readback verification passed.
+> across 90 chunks. A later no-yield comparison also failed PCM cadence, with
+> 44 misses including 33 service misses. Storage qualification remains failed;
+> see the [no-yield result](../evidence/onchip-storage-qualification/no-yield-20261005-failure/summary.md).
 > Follow the [PCM cadence correction plan](h32-pcm-cadence-corrections.md). See the [evidence index](../evidence/onchip-storage-qualification/README.md).
 
 ## At a glance
@@ -29,9 +30,9 @@ Prove on one BOX-3 that its unused internal flash can safely hold recordings acr
 | [Phase 1 — Inventory and preserve the device](#phase-1--inventory-and-preserve-the-device) | The exact device can be restored if repartitioning or the demo fails | `verified preservation and restore` |
 | [Phase 2 — Build an isolated storage demo](#phase-2--build-an-isolated-storage-demo) | A dedicated build contains the validated test partition without changing product defaults | `build validated` |
 | [Phase 3 — Prove boot, NVS, and filesystem behavior](#phase-3--prove-boot-nvs-and-filesystem-behavior) | The device boots, retains NVS state, and remounts measured FAT storage | `observed; duplicate probe record correction required` |
-| [Phase 4 — Measure writes and recording rates](#phase-4--measure-writes-and-recording-rates) | Integrity, latency, capacity, and sustained recording-rate behavior are measured | `failed PCM cadence` |
+| [Phase 4 — Measure writes and recording rates](#phase-4--measure-writes-and-recording-rates) | Integrity, latency, capacity, and sustained recording-rate behavior are measured | `failed PCM cadence in default-yield and no-yield runs` |
 | [Phase 5 — Interrupt and recover writes](#phase-5--interrupt-and-recover-writes) | Temporary writes and committed files recover predictably after reset | `not reached` |
-| [Phase 6 — Set limits and restore the device](#phase-6--set-limits-and-restore-the-device) | A safe free-space floor, reusable findings, and a verified restore path are recorded | `restore verified; safe floor not reached` |
+| [Phase 6 — Set limits and restore the device](#phase-6--set-limits-and-restore-the-device) | A safe free-space floor, reusable findings, and a verified restore path are recorded | `both run restores verified; safe floor not reached` |
 
 ---
 
@@ -195,7 +196,7 @@ Poll progress every **60–120 s** during a healthy experiment (expect `H32,CHUN
 - The 180-second PCM run sustains more than 64,000 bytes/second including required flushes; any 256,000-byte/second result is reported as measured margin rather than a baseline requirement.
 - Capacity, timing distributions, and memory watermarks are present in the committed evidence.
 
-**Status:** `failed PCM cadence`
+**Status:** `failed PCM cadence in default-yield and no-yield runs`
 
 ## Phase 5 — Interrupt and recover writes
 

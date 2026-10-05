@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/unistd.h>
+#include "esp_app_desc.h"
 #include "esp_heap_caps.h"
 #include "esp_flash.h"
 #include "esp_ota_ops.h"
@@ -30,6 +31,39 @@
 #endif
 #ifndef H32_RUN_EPOCH
 #error "H32_RUN_EPOCH must be a 32-character lowercase hexadecimal string"
+#endif
+#ifndef H32_PROFILE
+#error "H32_PROFILE is required"
+#endif
+#ifndef CONFIG_SPI_FLASH_YIELD_DURING_ERASE
+#define CONFIG_SPI_FLASH_YIELD_DURING_ERASE 0
+#endif
+#ifndef CONFIG_SPI_FLASH_ERASE_YIELD_DURATION_MS
+#define CONFIG_SPI_FLASH_ERASE_YIELD_DURATION_MS 0
+#endif
+#ifndef CONFIG_SPI_FLASH_ERASE_YIELD_TICKS
+#define CONFIG_SPI_FLASH_ERASE_YIELD_TICKS 0
+#endif
+#ifndef CONFIG_ESP_INT_WDT
+#define CONFIG_ESP_INT_WDT 0
+#endif
+#ifndef CONFIG_ESP_INT_WDT_TIMEOUT_MS
+#define CONFIG_ESP_INT_WDT_TIMEOUT_MS 0
+#endif
+#ifndef CONFIG_ESP_TASK_WDT_EN
+#define CONFIG_ESP_TASK_WDT_EN 0
+#endif
+#ifndef CONFIG_ESP_TASK_WDT_INIT
+#define CONFIG_ESP_TASK_WDT_INIT 0
+#endif
+#ifndef CONFIG_ESP_TASK_WDT_TIMEOUT_S
+#define CONFIG_ESP_TASK_WDT_TIMEOUT_S 0
+#endif
+#ifndef CONFIG_FATFS_PER_FILE_CACHE
+#define CONFIG_FATFS_PER_FILE_CACHE 0
+#endif
+#ifndef CONFIG_FATFS_LFN_HEAP
+#define CONFIG_FATFS_LFN_HEAP 0
 #endif
 #define EPOCH H32_RUN_EPOCH
 _Static_assert(sizeof(EPOCH) == 33, "H32 epoch must be 128-bit lowercase hex");
@@ -81,6 +115,39 @@ static nvs_handle_t s_nvs;
 static uint32_t s_run;
 static bool s_emit_epoch;
 static bool prior_commits_valid(void);
+#define HEARTBEAT_INTERVAL_MS 20u
+#define HEARTBEAT_PRIORITY 2u
+#define HEARTBEAT_CORE 0
+static TaskHandle_t s_heartbeat_task;
+static portMUX_TYPE s_heartbeat_lock = portMUX_INITIALIZER_UNLOCKED;
+static int64_t s_heartbeat_last, s_heartbeat_max;
+static uint32_t s_heartbeat_samples;
+static uint32_t s_watchdog_events;
+
+static void heartbeat_task(void *arg)
+{
+    (void)arg;
+    TickType_t wake = xTaskGetTickCount();
+    while (true) {
+        vTaskDelayUntil(&wake, pdMS_TO_TICKS(HEARTBEAT_INTERVAL_MS));
+        portENTER_CRITICAL(&s_heartbeat_lock);
+        int64_t now = esp_timer_get_time();
+        int64_t gap = now - s_heartbeat_last;
+        if (gap > s_heartbeat_max) s_heartbeat_max = gap;
+        s_heartbeat_last = now;
+        s_heartbeat_samples++;
+        portEXIT_CRITICAL(&s_heartbeat_lock);
+    }
+}
+static void heartbeat_snapshot(int64_t *gap, uint32_t *samples)
+{
+    portENTER_CRITICAL(&s_heartbeat_lock);
+    int64_t now = esp_timer_get_time();
+    *gap = s_heartbeat_max;
+    if (now - s_heartbeat_last > *gap) *gap = now - s_heartbeat_last;
+    *samples = s_heartbeat_samples;
+    portEXIT_CRITICAL(&s_heartbeat_lock);
+}
 
 static void rec(const char *kind, const char *fmt, ...)
 {
@@ -89,6 +156,61 @@ static void rec(const char *kind, const char *fmt, ...)
     if (s_emit_epoch) printf("epoch=%s,", EPOCH);
     va_start(ap, fmt); vprintf(fmt, ap); va_end(ap);
     printf("\n"); fflush(stdout);
+}
+static void monitor_report(const char *workload, const char *event, int64_t gap, uint32_t samples)
+{
+    rec("HEARTBEAT", "schema=2,workload=%s,event=%s,priority=%u,core=%d,storage_priority=%u,storage_core=%d,interval_ms=%u,timer_resolution_us=1,max_gap_us=%"PRId64",samples=%u,stack_bytes=%u,watchdog_events=%u",
+        workload,event,HEARTBEAT_PRIORITY,HEARTBEAT_CORE,(unsigned)uxTaskPriorityGet(NULL),xPortGetCoreID(),HEARTBEAT_INTERVAL_MS,gap,samples,
+        (unsigned)uxTaskGetStackHighWaterMark(s_heartbeat_task),s_watchdog_events);
+    rec("MEMORY", "schema=2,workload=%s,event=%s,heap=%u,heap_min=%u,heap_largest=%u,psram=%u,psram_min=%u,storage_stack_bytes=%u,heartbeat_stack_bytes=%u",
+        workload,event,(unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+        (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+        (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+        (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+        (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM),
+        (unsigned)uxTaskGetStackHighWaterMark(NULL),(unsigned)uxTaskGetStackHighWaterMark(s_heartbeat_task));
+}
+static void monitor(const char *workload, const char *event)
+{
+    if (!strcmp(event, "start")) {
+        portENTER_CRITICAL(&s_heartbeat_lock);
+        s_heartbeat_last = esp_timer_get_time();
+        s_heartbeat_max = 0; s_heartbeat_samples = 0;
+        portEXIT_CRITICAL(&s_heartbeat_lock);
+    }
+    int64_t gap; uint32_t samples;
+    heartbeat_snapshot(&gap, &samples);
+    monitor_report(workload,event,gap,samples);
+}
+/* Monotonic absolute schedule; tick rounding must never begin a chunk early. */
+static void wait_until_us(int64_t deadline)
+{
+    while (true) {
+        int64_t remaining=deadline-esp_timer_get_time();
+        if (remaining<=0) return;
+        int64_t tick_us=1000000LL/configTICK_RATE_HZ;
+        TickType_t ticks=(TickType_t)((remaining+tick_us-1)/tick_us);
+        vTaskDelay(ticks?ticks:1);
+    }
+}
+static bool profile_record(void)
+{
+    const esp_app_desc_t *app=esp_app_get_description();
+    char elf_sha256[65];
+    for(unsigned i=0;i<32;i++)sprintf(elf_sha256+2*i,"%02x",app->app_elf_sha256[i]);
+    elf_sha256[64]=0;
+    bool yield = CONFIG_SPI_FLASH_YIELD_DURING_ERASE;
+    bool valid = CONFIG_FREERTOS_HZ == 100 &&
+        ((!strcmp(H32_PROFILE,"baseline") && yield && CONFIG_SPI_FLASH_ERASE_YIELD_DURATION_MS == 20 && CONFIG_SPI_FLASH_ERASE_YIELD_TICKS == 1) ||
+         (!strcmp(H32_PROFILE,"no_yield") && !yield) ||
+         (!strcmp(H32_PROFILE,"bounded_yield") && yield && CONFIG_SPI_FLASH_ERASE_YIELD_DURATION_MS == 100 && CONFIG_SPI_FLASH_ERASE_YIELD_TICKS == 1));
+    rec("PROFILE", "schema=2,profile=%s,elf_sha256=%s,erase_yield=%u,erase_yield_duration_ms=%u,erase_yield_ticks=%u,tick_hz=%u,int_wdt=%u,int_wdt_timeout_ms=%u,task_wdt=%u,task_wdt_init=%u,task_wdt_timeout_s=%u,wl_sector_bytes=%u,fatfs_per_file_cache=%u,fatfs_lfn_heap=%u,fatfs_max_lfn=%u,fatfs_timeout_ms=%u,status=%s",
+        H32_PROFILE,elf_sha256,(unsigned)yield,(unsigned)CONFIG_SPI_FLASH_ERASE_YIELD_DURATION_MS,(unsigned)CONFIG_SPI_FLASH_ERASE_YIELD_TICKS,
+        (unsigned)CONFIG_FREERTOS_HZ,(unsigned)CONFIG_ESP_INT_WDT,(unsigned)CONFIG_ESP_INT_WDT_TIMEOUT_MS,
+        (unsigned)CONFIG_ESP_TASK_WDT_EN,(unsigned)CONFIG_ESP_TASK_WDT_INIT,(unsigned)CONFIG_ESP_TASK_WDT_TIMEOUT_S,
+        (unsigned)CONFIG_WL_SECTOR_SIZE,(unsigned)CONFIG_FATFS_PER_FILE_CACHE,(unsigned)CONFIG_FATFS_LFN_HEAP,
+        (unsigned)CONFIG_FATFS_MAX_LFN,(unsigned)CONFIG_FATFS_TIMEOUT_MS,valid?"pass":"fail");
+    return valid;
 }
 static void fail(const char *stage, const char *why)
 {
@@ -240,7 +362,7 @@ static bool state_reset(uint32_t run)
 {
     if(nvs_erase_all(s_nvs)!=ESP_OK||nvs_set_str(s_nvs,"epoch",EPOCH)!=ESP_OK||
         nvs_set_u32(s_nvs,"run_id",run)!=ESP_OK)return false;
-    const char*keys[]={"phase","remount","fault_cur","fault_active","fill_bytes","fill_count"};
+    const char*keys[]={"phase","remount","remount_seen","fault_cur","fault_active","fill_bytes","fill_count"};
     for(unsigned i=0;i<sizeof(keys)/sizeof(keys[0]);i++)
         if(nvs_set_u32(s_nvs,keys[i],0)!=ESP_OK)return false;
     return nvs_commit(s_nvs)==ESP_OK;
@@ -322,11 +444,15 @@ static bool probe_create(void)
         s_run,PROBE_BYTES,PROBE_SEED,ok?hash:"unavailable",ok?"pass":"fail");
     return ok;
 }
-static bool probe_verify(unsigned cycle)
+static bool probe_verify(unsigned cycle, bool initial, unsigned phase)
 {
     char hash[65];bool ok=verify(PROBE_PATH,PROBE_BYTES,PROBE_SEED,hash);
-    rec("REMOUNT","run=%08"PRIx32",cycle=%u,formatted=no,probe_bytes=%u,probe_sha256=%s,verify=%s",
-        s_run,cycle,PROBE_BYTES,ok?hash:"unavailable",ok?"pass":"fail");
+    if (initial)
+        rec("REMOUNT","run=%08"PRIx32",cycle=%u,formatted=no,probe_bytes=%u,probe_sha256=%s,verify=%s",
+            s_run,cycle,PROBE_BYTES,ok?hash:"unavailable",ok?"pass":"fail");
+    else
+        rec("PROBE_VERIFY","schema=2,run=%08"PRIx32",phase=%u,fault_cur=%u,fault_active=%u,cycle=%u,identity=retained,formatted=no,probe_bytes=%u,probe_sha256=%s,verify=%s",
+            s_run,phase,get32("fault_cur",0),get32("fault_active",0),cycle,PROBE_BYTES,ok?hash:"unavailable",ok?"pass":"fail");
     return ok;
 }
 static bool commit(const char *stem, size_t bytes, uint32_t seed, bool retain)
@@ -438,40 +564,69 @@ static bool manifest_valid(const char *path,unsigned i,size_t bytes,uint32_t see
 }
 static bool cadence(const char *name,size_t rate,uint32_t base)
 {
-    TickType_t wake=xTaskGetTickCount();int64_t mw=0,mf=0,mr=0,mm=0;unsigned miss=0;
-    uint64_t total,free_bytes,minfree=UINT64_MAX;uint32_t minheap=UINT32_MAX,minpsram=UINT32_MAX,minstack=UINT32_MAX,backlog_high=0;
+    const int64_t period = CHUNK_SECS * 1000000LL;
+    int64_t epoch,mw=0,mf=0,mr=0,mm=0,max_late=0,max_finish_late=0;
+    unsigned miss=0,service_miss=0; uint64_t transaction_us=0;
+    uint64_t total,free_bytes,minfree=UINT64_MAX;
+    uint32_t minheap=UINT32_MAX,minpsram=UINT32_MAX,minstack=UINT32_MAX,backlog_high=0;
     mbedtls_sha256_context aggregate;uint8_t aggregate_digest[32];char aggregate_hex[65];
     mbedtls_sha256_init(&aggregate);mbedtls_sha256_starts(&aggregate,0);
+    monitor(name,"start");
+    epoch=esp_timer_get_time();
     const char *dir=!strcmp(name,"opus")?OPUS_ROOT:PCM_ROOT;
-    for(unsigned i=0;i<CHUNKS;i++){char p[96],fpath[96],h[65];size_t bytes=rate*CHUNK_SECS;
+    for(unsigned i=0;i<CHUNKS;i++) {
+        char p[96],fpath[96],h[65];size_t bytes=rate*CHUNK_SECS;
         snprintf(p,sizeof(p),"%s/%03u.part",dir,i);snprintf(fpath,sizeof(fpath),"%s/%03u.bin",dir,i);
-        int64_t a=esp_timer_get_time();FILE*f=fopen(p,"wb");if(!f||!write_pattern(f,bytes,base+i)){if(f)fclose(f);return false;}
-        int64_t b=esp_timer_get_time();if(fflush(f)||fsync(fileno(f))){fclose(f);return false;}int64_t c=esp_timer_get_time();
-        if(fclose(f)||rename(p,fpath))return false;
+        int64_t scheduled=epoch+(int64_t)i*period;
+        wait_until_us(scheduled);
+        int64_t a=esp_timer_get_time();FILE*f=fopen(p,"wb");int64_t opened=esp_timer_get_time();
+        if(!f)return false;
+        if(!write_pattern(f,bytes,base+i)){fclose(f);return false;}
+        int64_t b=esp_timer_get_time();
+        if(fflush(f)||fsync(fileno(f))){fclose(f);return false;}int64_t c=esp_timer_get_time();
+        if(fclose(f))return false;
+        int64_t closed=esp_timer_get_time();
+        if(rename(p,fpath))return false;
         int64_t d=esp_timer_get_time();if(!verify(fpath,bytes,base+i,h))return false;
-        int64_t e=esp_timer_get_time();if(!manifest(name,i,bytes,base+i,h))return false;int64_t z=esp_timer_get_time();
+        int64_t e=esp_timer_get_time();if(!manifest(name,i,bytes,base+i,h))return false;
+        int64_t z=esp_timer_get_time();
         mbedtls_sha256_update(&aggregate,(const unsigned char*)h,64);
-        uint32_t backlog=(uint32_t)((z-a)/(CHUNK_SECS*1000000LL));if(backlog>backlog_high)backlog_high=backlog;
-        if(b-a>mw)mw=b-a;
+        int64_t late=a>scheduled?a-scheduled:0;
+        int64_t finish_late=z>scheduled+period?z-scheduled-period:0;
+        uint32_t backlog=(uint32_t)(late/period);
+        uint32_t missed_periods=(uint32_t)(late/period);
+        if(backlog>backlog_high)backlog_high=backlog;
+        if(late>max_late)max_late=late;
+        if(finish_late>max_finish_late)max_finish_late=finish_late;
+        if(b-opened>mw)mw=b-opened;
         if(c-b>mf)mf=c-b;
-        if(d-c>mr)mr=d-c;
+        if(d-closed>mr)mr=d-closed;
         if(z-e>mm)mm=z-e;
-        if(backlog)miss++;
+        if(finish_late)miss++;
+        if(z-a>=period)service_miss++;
+        transaction_us+=(uint64_t)(z-a);
         if(!space(&total,&free_bytes)){mbedtls_sha256_free(&aggregate);return false;}
         uint32_t heap=heap_caps_get_free_size(MALLOC_CAP_INTERNAL),psram=heap_caps_get_free_size(MALLOC_CAP_SPIRAM),stack=uxTaskGetStackHighWaterMark(NULL);
         if(free_bytes<minfree)minfree=free_bytes;
         if(heap<minheap)minheap=heap;
         if(psram<minpsram)minpsram=psram;
         if(stack<minstack)minstack=stack;
-        rec("CHUNK","run=%08"PRIx32",stream=%s,index=%u,bytes=%u,write_us=%"PRId64",flush_us=%"PRId64",rename_us=%"PRId64",manifest_us=%"PRId64",total_us=%"PRId64",backlog=%u,free=%"PRIu64",heap=%u,psram=%u,stack_words=%u,sha256=%s",
-            s_run,name,i,(unsigned)bytes,b-a,c-b,d-c,z-e,z-a,backlog,free_bytes,heap,psram,stack,h);
-        vTaskDelayUntil(&wake,pdMS_TO_TICKS(CHUNK_SECS*1000u));}
+        int64_t heartbeat_gap;uint32_t heartbeat_samples;
+        heartbeat_snapshot(&heartbeat_gap,&heartbeat_samples);
+        rec("CHUNK","schema=2,run=%08"PRIx32",stream=%s,index=%u,bytes=%u,open_us=%"PRId64",write_us=%"PRId64",flush_us=%"PRId64",close_us=%"PRId64",rename_us=%"PRId64",read_verify_us=%"PRId64",manifest_us=%"PRId64",total_us=%"PRId64",scheduled_start_us=%"PRId64",actual_start_us=%"PRId64",finish_us=%"PRId64",lateness_us=%"PRId64",finish_lateness_us=%"PRId64",max_lateness_us=%"PRId64",missed_periods=%u,backlog=%u,heartbeat_max_gap_us=%"PRId64",heartbeat_samples=%u,watchdog_events=%u,free=%"PRIu64",heap=%u,psram=%u,stack_words=%u,stack_unit=bytes,stack_bytes=%u,sha256=%s",
+            s_run,name,i,(unsigned)bytes,opened-a,b-opened,c-b,closed-c,d-closed,e-d,z-e,z-a,
+            scheduled,a,z,late,finish_late,max_late,missed_periods,backlog,heartbeat_gap,heartbeat_samples,s_watchdog_events,free_bytes,heap,psram,stack,stack,h);
+    }
+    wait_until_us(epoch+CHUNKS*period);
+    int64_t elapsed=esp_timer_get_time()-epoch,heartbeat_gap;uint32_t heartbeat_samples;
+    heartbeat_snapshot(&heartbeat_gap,&heartbeat_samples);
     mbedtls_sha256_finish(&aggregate,aggregate_digest);mbedtls_sha256_free(&aggregate);
     for(unsigned i=0;i<32;i++)sprintf(aggregate_hex+2*i,"%02x",aggregate_digest[i]);
     aggregate_hex[64]=0;
-    rec("CADENCE","run=%08"PRIx32",stream=%s,seconds=%u,rate=%u,chunk_seconds=%u,chunks=%u,deadline_miss=%u,backlog_high=%u,max_write_us=%"PRId64",max_flush_us=%"PRId64",max_rename_us=%"PRId64",max_manifest_us=%"PRId64",min_free=%"PRIu64",min_heap=%u,min_psram=%u,min_stack_words=%u,aggregate_kind=ordered_chunk_sha256_hex,aggregate_sha256=%s",
-        s_run,name,SECONDS,(unsigned)rate,CHUNK_SECS,CHUNKS,miss,backlog_high,mw,mf,mr,mm,minfree,minheap,minpsram,minstack,aggregate_hex);
-    return miss==0;
+    rec("CADENCE","schema=2,run=%08"PRIx32",stream=%s,seconds=%u,rate=%u,chunk_seconds=%u,chunks=%u,deadline_miss=%u,scheduled_deadline_miss=%u,service_deadline_miss=%u,backlog_high=%u,max_write_us=%"PRId64",max_flush_us=%"PRId64",max_rename_us=%"PRId64",max_manifest_us=%"PRId64",actual_elapsed_us=%"PRId64",transaction_us=%"PRIu64",max_lateness_us=%"PRId64",max_finish_lateness_us=%"PRId64",heartbeat_max_gap_us=%"PRId64",heartbeat_samples=%u,watchdog_events=%u,min_free=%"PRIu64",min_heap=%u,min_psram=%u,min_stack_words=%u,stack_unit=bytes,min_stack_bytes=%u,aggregate_kind=ordered_chunk_sha256_hex,aggregate_sha256=%s",
+        s_run,name,SECONDS,(unsigned)rate,CHUNK_SECS,CHUNKS,miss,miss,service_miss,backlog_high,mw,mf,mr,mm,elapsed,transaction_us,max_late,max_finish_late,heartbeat_gap,heartbeat_samples,s_watchdog_events,minfree,minheap,minpsram,minstack,minstack,aggregate_hex);
+    monitor_report(name,"end",heartbeat_gap,heartbeat_samples);
+    return miss==0&&service_miss==0;
 }
 static bool cadence_validate(const char*name,size_t rate,uint32_t base)
 {
@@ -554,6 +709,7 @@ static void fault_begin(unsigned cursor)
         s_run,point,cycle,
         point==0?"after_buffered_128_before_flush":point==1?"after_buffered_half_before_flush":point==2?"after_buffered_65535_before_flush":point==3?"after_fsync_before_close":point==4?"after_close_before_rename":point==5?"after_rename_before_metadata":point==6?"after_metadata_before_delete":point==7?"after_final_delete_before_manifest_delete":"after_delete",
         (unsigned)bytes,point>=3?"yes":"no",point>=4?"yes":"no",point>=5?"yes":"no",point>=6?"yes":"no",point>=7?"yes":"no");
+    monitor("fault","end");
     esp_restart();
 }
 static bool faults(void)
@@ -625,6 +781,7 @@ void app_main(void)
     rec("RUN_REQUEST", "epoch=%s,mode=%s,status=pass", EPOCH,
         H32_SENTINEL_ONLY ? "sentinel_only" : "experiment");
     s_emit_epoch = true;
+    if(!profile_record())fail("profile","effective_config_mismatch");
     esp_err_t e=nvs_flash_init();
     if(e==ESP_ERR_NVS_NO_FREE_PAGES||e==ESP_ERR_NVS_NEW_VERSION_FOUND)fail("nvs_init","erase_required");
     nvs_handle_t sentinel_nvs;
@@ -641,6 +798,13 @@ void app_main(void)
     if(H32_SENTINEL_ONLY){rec("SENTINEL_READY","mode=sentinel_only,storage_access=no,action=halt");while(true)vTaskDelay(portMAX_DELAY);}
     if(created)fail("sentinel","experiment_requires_existing");
     nvs_close(sentinel_nvs);
+    esp_reset_reason_t reset_reason=esp_reset_reason();
+    s_watchdog_events=reset_reason==ESP_RST_INT_WDT||reset_reason==ESP_RST_TASK_WDT||reset_reason==ESP_RST_WDT;
+    if(s_watchdog_events)fail("watchdog","reset_observed");
+    s_heartbeat_last=esp_timer_get_time();
+    if(xTaskCreatePinnedToCore(heartbeat_task,"h32_heartbeat",3072,NULL,HEARTBEAT_PRIORITY,&s_heartbeat_task,HEARTBEAT_CORE)!=pdPASS)
+        fail("heartbeat","task_create");
+    monitor("boot","start");
     if(nvs_open("h32_run",NVS_READWRITE,&s_nvs)!=ESP_OK)fail("nvs_init","run_open");
 #if !CONFIG_ESPTOOLPY_FLASHSIZE_16MB
 #error "h32 requires 16 MiB flash (CONFIG_ESPTOOLPY_FLASHSIZE_16MB)"
@@ -650,19 +814,27 @@ void app_main(void)
         fail("hardware","flash_size");
     rec("HARDWARE","flash_bytes=%u,flash_id=%s,psram_bytes=%u,reset=%d,idf=%s",flash_size,"host_verified",
         (unsigned)heap_caps_get_total_size(MALLOC_CAP_SPIRAM),esp_reset_reason(),esp_get_idf_version());
-    const esp_partition_t*outbox=NULL;if(!layout(&outbox))fail("partition","layout");if(!mount_fs(outbox))fail("mount","unsafe_or_io");
+    const esp_partition_t*outbox=NULL;if(!layout(&outbox))fail("partition","layout");
+    monitor("mount","start");
+    if(!mount_fs(outbox))fail("mount","unsafe_or_io");
+    monitor("mount","end");
     uint32_t r=get32("remount",0);
     if(r==0){if(!probe_create())fail("remount_probe","create");}
-    else if(r<=5&&!probe_verify(r))fail("remount_probe","verify");
+    else if(r<=5) {
+        uint32_t seen=get32("remount_seen",0),phase=get32("phase",0);
+        bool initial=seen<r;
+        if(!probe_verify(r,initial,phase))fail("remount_probe","verify");
+        if(initial&&!put32("remount_seen",r))fail("remount_probe","nvs");
+    }
     if(r<5){if(!put32("remount",r+1))fail("remount","nvs");rec("REBOOT","run=%08"PRIx32",cycle=%u,mechanism=esp_restart,status=scheduled",s_run,r+1);esp_restart();}
     uint32_t p=get32("phase",0);rec("PHASE","run=%08"PRIx32",current=%u,event=enter",s_run,p);
-    if(p==0){if(!io_write())fail("io","measurement");if(!namespace_test())fail("namespace","semantics");next(1);}
-    if(p==1){if(!io_validate())fail("io","post_remount");if(!cadence("opus",OPUS_RATE,0x510000u))fail("opus","cadence");next(2);}
-    if(p==2){if(!cadence_validate("opus",OPUS_RATE,0x510000u))fail("opus","post_remount");if(!cadence("pcm",PCM_RATE,0x520000u))fail("pcm","cadence");next(3);}
-    if(p==3){if(!cadence_validate("pcm",PCM_RATE,0x520000u))fail("pcm","post_remount");next(4);}
-    if(p==4){if(!faults())fail("fault","recovery");next(5);}
-    if(p==5){if(!fill_create())fail("floor","admission");next(6);}
-    if(p==6){if(!fill_validate())fail("floor","post_remount");if(!put32("phase",7))fail("complete","nvs");
+    if(p==0){monitor("io","start");if(!io_write())fail("io","measurement");if(!namespace_test())fail("namespace","semantics");monitor("io","end");next(1);}
+    if(p==1){monitor("io_validate","start");if(!io_validate())fail("io","post_remount");monitor("io_validate","end");if(!cadence("opus",OPUS_RATE,0x510000u))fail("opus","cadence");next(2);}
+    if(p==2){monitor("opus_validate","start");if(!cadence_validate("opus",OPUS_RATE,0x510000u))fail("opus","post_remount");monitor("opus_validate","end");if(!cadence("pcm",PCM_RATE,0x520000u))fail("pcm","cadence");next(3);}
+    if(p==3){monitor("pcm_validate","start");if(!cadence_validate("pcm",PCM_RATE,0x520000u))fail("pcm","post_remount");monitor("pcm_validate","end");next(4);}
+    if(p==4){monitor("fault","start");if(!faults())fail("fault","recovery");monitor("fault","end");next(5);}
+    if(p==5){monitor("fill","start");if(!fill_create())fail("floor","admission");monitor("fill","end");next(6);}
+    if(p==6){monitor("fill_validate","start");if(!fill_validate())fail("floor","post_remount");monitor("fill_validate","end");if(!put32("phase",7))fail("complete","nvs");
         rec("COMPLETE","run=%08"PRIx32",io_iterations=%u,cadence_seconds=%u,fault_cycles=%u,power_loss=unproven,safe_floor=%u",s_run,IO_ITERS,SECONDS,FAULT_POINTS*FAULT_REPEATS,FLOOR);}
     else if(p>=7)rec("COMPLETE","run=%08"PRIx32",event=already_complete,action=halt",s_run);
     while(true)vTaskDelay(portMAX_DELAY);

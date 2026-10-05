@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Doc kind | Experiment correction and comparison plan |
-| Status | Defined before implementation; hardware runs pending |
+| Status | Default-yield and no-yield runs failed PCM cadence; planned 100 ms bounded-yield comparison was not run; further correction pending |
 | Date | 2026-10-05 |
 | Scope | Isolated H32 firmware, controller, evidence; existing qualification gates |
 | Prerequisite | Verified original-image restore after the failed retry |
@@ -38,6 +38,21 @@ record contract is corrected.
 The failed run did not reach interruption recovery or near-full admission.
 Do not accept the backend, advance to durable outbox, or infer a safe reserve
 from this partial run.
+
+## No-yield comparison result
+
+The later no-yield profile run, epoch
+`d5e92d2c813b3acd2125763829469869`, also halted at PCM cadence. It completed
+90 Opus chunks with no missed deadlines; the 90-chunk PCM run had 44 deadline
+misses (33 service misses) and maximum chunk-start lateness of 2,674,574 µs.
+The heartbeat maximum gap was 57,684 µs and no watchdog event was reported.
+The full sanitized result and PCM operation median/p95 measurements are in the
+[no-yield failure evidence](../evidence/onchip-storage-qualification/no-yield-20261005-failure/summary.md).
+It did not reach recovery or near-full gates, and it does not establish a safe
+free-space floor. This comparison does not qualify storage or alter acceptance.
+The full original image was subsequently restored and its 16 MiB readback
+matched the original SHA-256. The planned 100 ms bounded-yield profile was not
+run because the prerequisite no-yield run failed.
 
 ## Read-only diagnosis and hypothesis
 

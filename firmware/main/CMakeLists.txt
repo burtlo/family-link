@@ -111,7 +111,11 @@ if(FAMILY_DEMO STREQUAL "h32_onchip_storage")
     if(NOT DEFINED H32_RUN_EPOCH OR NOT H32_RUN_EPOCH MATCHES "^[0-9a-f]+$" OR NOT H32_RUN_EPOCH_LENGTH EQUAL 32)
         message(FATAL_ERROR "H32_RUN_EPOCH must be exactly 32 lowercase hex characters")
     endif()
+    if(NOT DEFINED H32_PROFILE OR NOT H32_PROFILE MATCHES "^(baseline|no_yield|bounded_yield)$")
+        message(FATAL_ERROR "H32_PROFILE must be baseline, no_yield or bounded_yield")
+    endif()
     target_compile_definitions(${COMPONENT_LIB} PRIVATE
+        H32_PROFILE="${H32_PROFILE}"
         H32_SENTINEL_ONLY=${H32_SENTINEL_ONLY}
         H32_RUN_EPOCH="${H32_RUN_EPOCH}")
 endif()

@@ -4,13 +4,15 @@ Updated 2026-10-05. This is an operator handoff, read alongside the [ordered exp
 
 **Current checkpoint:** H34 is complete. The corrected H32 mount retry was
 executed and committed as `132eed8`: blank authority, mounting, retained NVS,
-I/O, and Opus cadence worked; PCM missed 79 of 90 deadlines. The original full
-image was restored with exact readback. Continue with the committed
-[PCM cadence correction comparison](h32-pcm-cadence-corrections.md), which adds
-measurements, fixes repeated probe records, and compares erase-yield profiles.
+I/O, and Opus cadence worked; PCM missed 79 of 90 deadlines. A fresh H32
+no-yield comparison then missed 44 of 90 PCM deadlines, with 33 transactions
+lasting more than two seconds. Its full original-image restore and readback
+passed. The planned 100 ms bounded-yield comparison was not run because the
+no-yield prerequisite failed. See the [PCM comparison](h32-pcm-cadence-corrections.md)
+and [failure evidence](../evidence/onchip-storage-qualification/no-yield-20261005-failure/summary.md).
 The mount-retry instructions below remain the hardware preservation procedure
-for every new profile/epoch. Storage remains unqualified; durable outbox is
-still dependent on its completion.
+for every new epoch. Storage remains unqualified; durable outbox is dependent
+on its completion.
 
 ## Working agreement
 

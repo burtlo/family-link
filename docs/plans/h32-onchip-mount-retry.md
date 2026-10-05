@@ -3,12 +3,20 @@
 | Field | Value |
 |---|---|
 | **Doc kind** | `experiment correction / retry plan` |
-| **Status** | `mount correction verified; retry failed at PCM cadence and restored` |
+| **Status** | `mount correction verified; PCM retry failed and restored; later preflight stopped before experiment mutation` |
 | **Scope** | H32 controller, storage-only firmware, private operator artifacts, and H32 evidence |
 | **Observed failure** | 2026-10-04 experiment probe stopped at the first outbox mount |
 | **Production partition choice** | Open; the single-factory table remains an experiment fixture |
 
 ## Decision
+
+**Later no-yield preflight (2026-10-05):** Attempt epoch
+`17e69395cf2086a79ce7c15f533dfadb` stopped at controller `validate-sentinel`
+because Python eagerly evaluated a global build-path expression. The captured
+sentinel had a valid runtime profile, and historical validation passes after
+the controller fix. No experiment erase or start occurred. The original full
+image was restored and its complete readback verified. See the
+[preflight evidence](../evidence/onchip-storage-qualification/preflight-20261005-no-yield.txt).
 
 **Observed result (2026-10-05):** The corrected full-region blank authority,
 sentinel preservation, format, marker remount, and initial five probe cycles

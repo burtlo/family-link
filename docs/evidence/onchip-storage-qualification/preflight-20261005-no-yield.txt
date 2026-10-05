@@ -1,0 +1,17 @@
+H32 no-yield preflight — 2026-10-05
+
+Attempt epoch: 17e69395cf2086a79ce7c15f533dfadb
+Outcome: stopped at controller validate-sentinel; no experiment erase or start occurred.
+
+The sentinel capture recorded a valid runtime profile. Controller validation
+stopped because Python eagerly evaluated a global build-path expression before
+the sentinel-only validation path could complete. After the controller fix,
+historical validation of the captured sentinel passes. This preflight is not a
+storage experiment result and does not qualify H32.
+
+The original full 16 MiB device image was restored. Complete readback SHA-256:
+7d6537305e73c36aa23353923536c8d805b61f12808bf47c9664b66a3213a112.
+
+Raw capture and restore artifacts are retained outside the repository. No
+operator paths, device identifiers, credentials, or private contents are
+included here.
