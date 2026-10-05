@@ -57,7 +57,7 @@ export PYTHONUNBUFFERED := 1
 	x01 x02 \
 	p01 p02 p03 p04 p05 p06 p07 p08 p09 p10 p11 p12 p13 \
 	v1-server v1-server-tls demo-v1 \
-	demo-auth demo-heartbeat demo-messages demo-cursor demo-playback \
+	demo-auth demo-heartbeat demo-messages demo-cursor demo-playback demo-message-store \
 	demo-hangout demo-relay demo-presence demo-talk demo-diary demo-device-log \
 	demo-draw demo-sketch demo-pingpong \
 	demo-combined demos-server \
@@ -254,6 +254,10 @@ h31:
 demo-opus-messages:
 	$(call step_msg,h31 Opus chunk server smoke test)
 	@$(PYTHON) "$(RUN_SERVER_DEMO)" h31_opus_messages
+
+demo-message-store:
+	$(call step_msg,h34 canonical message_store PCM smoke test)
+	@$(PYTHON) "$(RUN_SERVER_DEMO)" h34_message_store
 
 x01:
 	@$(PYTHON) "$(FLASH)" --demo x01

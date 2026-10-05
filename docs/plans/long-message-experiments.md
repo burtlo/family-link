@@ -99,7 +99,7 @@ This roadmap does not authorize X02 implementation. Each phase is an island expe
 - Only complete directories appear in inbox results.
 - Cull preview reports exact IDs and bytes; trash and restore preserve manifest/media hashes.
 
-**Status:** `todo`
+**Status:** `done` (host island **h34_message_store**; `make demo-message-store`. PCM path only; 3-minute fixture and sketch/trash-index gaps tracked in [`message-store-demo.md`](message-store-demo.md).)
 
 ## Phase 4 — Qualify on-chip storage
 

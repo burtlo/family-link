@@ -276,6 +276,8 @@ Two-box open line (Mazi / Arlo, names in `devices.example.yaml`): `h20_presence`
 
 **Opus island (phase 3):** `h31_opus_messages` — minimal [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md) chunk lifecycle for `audio.codec=opus` (create, PUT 2 s chunks, upload status, complete, Ogg finalize, range GET, `index.json`). `make demo-opus-messages`. Pairs with firmware **h31**. Plan: [`plans/opus-demo.md`](plans/opus-demo.md).
 
+**Canonical storage (phase 3, host):** `h34_message_store` — full `data/v1_product/message_store/` layout, PCM chunk path (stream receive, WAV finalize, chunk cleanup), restart index rebuild, inbox JSONL, admin cull preview/trash/restore. `make demo-message-store`. Plan: [`plans/message-store-demo.md`](plans/message-store-demo.md).
+
 ### v1 product host
 
 **Script:** `demos/server/v1_product/` — `make v1-server` / `make demo-v1`.
