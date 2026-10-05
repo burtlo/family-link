@@ -1,22 +1,16 @@
 # Durable message experiments: continuation instructions
 
-Updated 2026-10-05. This is an operator handoff, read alongside the [ordered experiments](long-message-experiments.md). It records the completed server proof and the safe sequence for continuing device work.
+Updated 2026-10-05. This is an operator handoff, read alongside the [ordered experiments](long-message-experiments.md). The detailed current stopping point and resume sequence are in the [pause checkpoint](continuation-checkpoint-2026-10-05.md). That checkpoint supersedes the older “Immediate work” instructions below where they conflict.
 
-**Current checkpoint:** H34 is complete. The corrected H32 mount retry was
-executed and committed as `132eed8`: blank authority, mounting, retained NVS,
-I/O, and Opus cadence worked; PCM missed 79 of 90 deadlines. A fresh H32
-no-yield comparison then missed 44 of 90 PCM deadlines, with 33 transactions
-lasting more than two seconds. Its full original-image restore and readback
-passed. The planned 100 ms bounded-yield comparison was not run because the
-no-yield prerequisite failed. See the [PCM comparison](h32-pcm-cadence-corrections.md)
-and [failure evidence](../evidence/onchip-storage-qualification/no-yield-20261005-failure/summary.md).
-The mount-retry instructions below remain the hardware preservation procedure
-for every new epoch. Storage remains unqualified; durable outbox is dependent
-on its completion.
-The planned 16 KiB H32 write-coalescing candidate then stopped at its
-[read-only feasibility gate](../evidence/onchip-storage-qualification/coalescing-preflight.md):
-the current 4 KiB FAT cluster splits it back into 4 KiB data requests. No
-candidate was flashed. Define and qualify the attached storage interface next.
+**Current checkpoint:** H34 is complete; H32 failed its PCM deadline gate and
+remains unqualified. The H32 write-coalescing candidate stopped at the
+[read-only feasibility gate](../evidence/onchip-storage-qualification/coalescing-preflight.md).
+The attached-storage qualification plan and isolated H35 SDMMC discovery app
+are committed. A fresh H35 build is complete, but the device has not been
+flashed and no attached medium has been inspected. Work is paused at the user's
+request. Follow [the pause checkpoint](continuation-checkpoint-2026-10-05.md)
+for exact status and next actions; do not follow the historical H32 retry
+instructions below as current work.
 
 ## Working agreement
 
@@ -42,9 +36,13 @@ make qualify-message-store 2>&1 | tee docs/evidence/h34-message-store/qualificat
 
 Do not rerun the complete suite merely to re-establish already retained results. After a code change, commit the tested source before the final evidence run so `source_revision` identifies it; commit the generated evidence afterward.
 
-## Immediate work: corrected H32 storage qualification
+## Historical record: corrected H32 storage qualification (completed; failed PCM gate)
 
-Use [the H32 retry plan](h32-onchip-mount-retry.md) and [the original qualification plan](onchip-storage-qualification.md). H32 source and controller changes are in progress in the workspace; inspect Git status and the current code before assigning work. Do not treat older placeholder evidence as a successful device result.
+The instructions in this historical section describe the completed H32 attempt
+and must not be treated as the current next step. See the pause checkpoint for
+the H35 attached-storage discovery state and ordered remaining work.
+
+The completed H32 attempt used [the H32 retry plan](h32-onchip-mount-retry.md) and [the original qualification plan](onchip-storage-qualification.md). Its PCM cadence failure is recorded in the evidence above. Do not treat older placeholder evidence as a successful device result or repeat this attempt as the current next step.
 
 The first attempt halted safely at mount: stale experiment NVS progress was mistaken for filesystem generation authority after the host erased the outbox. It scanned only 4 KiB. The correction requires a host-generated 128-bit epoch, an entire-region erased proof, separate preservation/progress NVS namespaces, and a checked filesystem marker.
 
