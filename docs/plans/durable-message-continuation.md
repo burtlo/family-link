@@ -2,6 +2,16 @@
 
 Updated 2026-10-05. This is an operator handoff, read alongside the [ordered experiments](long-message-experiments.md). It records the completed server proof and the safe sequence for continuing device work.
 
+**Current checkpoint:** H34 is complete. The corrected H32 mount retry was
+executed and committed as `132eed8`: blank authority, mounting, retained NVS,
+I/O, and Opus cadence worked; PCM missed 79 of 90 deadlines. The original full
+image was restored with exact readback. Continue with the committed
+[PCM cadence correction comparison](h32-pcm-cadence-corrections.md), which adds
+measurements, fixes repeated probe records, and compares erase-yield profiles.
+The mount-retry instructions below remain the hardware preservation procedure
+for every new profile/epoch. Storage remains unqualified; durable outbox is
+still dependent on its completion.
+
 ## Working agreement
 
 The user authorized unattended implementation, server control, device flashing, generated audio, subagents, verification, and local commits. Finish one experiment with reproducible evidence and a commit before advancing to its dependent experiment. Write or amend its plan before implementation. Use separate implementation and independent review agents. A build alone does not qualify firmware: retain device serial evidence and a verified restore.
