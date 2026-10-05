@@ -8,7 +8,6 @@ import hashlib
 import json
 import os
 import platform
-import shutil
 import socket
 import struct
 import subprocess
@@ -456,7 +455,7 @@ def low_disk_case(root: Path) -> dict:
 
 
 def completion_disk_case(root: Path) -> dict:
-    """Chunks can fit while the additional canonical WAV allocation cannot."""
+    """Accepted chunks survive a later canonical-WAV admission refusal."""
     root.mkdir(parents=True)
     server = Server(root)
     source = b"\x00\x10" * (CHUNK_BYTES // 2)
@@ -465,14 +464,14 @@ def completion_disk_case(root: Path) -> dict:
         with httpx.Client(timeout=20) as http:
             mid = create(http, server.base)
             need(upload(http, server.base, mid, 0, source).status_code == 201, "completion floor first chunk")
+            need(upload(http, server.base, mid, 1, source).status_code == 201, "completion floor second chunk")
         store = root / "data" / "v1_product" / "message_store"
-        available = shutil.disk_usage(store).free
-        floor = max(0, available - (CHUNK_BYTES + 65536 + 32000))
-        server.extra_env["FAMILY_LINK_H34_FREE_DISK_FLOOR_BYTES"] = str(floor)
+        # Set the floor only after both durable chunks have been admitted.  A
+        # huge floor makes the canonical-WAV rejection independent of ordinary
+        # filesystem free-space drift during process restart.
+        server.extra_env["FAMILY_LINK_H34_FREE_DISK_FLOOR_BYTES"] = str(10**18)
         server.restart()
         with httpx.Client(timeout=20) as http:
-            second = upload(http, server.base, mid, 1, source)
-            need(second.status_code == 201, f"second chunk should fit floor: {second.status_code} {second.text}")
             refused = complete(http, server.base, mid, digest(source + source), 2)
             need(refused.status_code == 507, f"canonical WAV floor did not reject: {refused.status_code} {refused.text}")
             status = http.get(f"{server.base}/v1/messages/{mid}/upload", headers=auth("sender"))
@@ -490,7 +489,9 @@ def completion_disk_case(root: Path) -> dict:
         with httpx.Client(timeout=20) as http:
             done = complete(http, server.base, mid, digest(source + source), 2)
             need(done.status_code in (200, 201), f"completion after lowering floor: {done.status_code} {done.text}")
-        return {"status": "pass", "chunk_count_before_refusal": 2, "admission_status": 507, "completion_intent_before_recovery": False, "recovered_completion": True}
+        return {"status": "pass", "chunk_count_before_refusal": 2, "admission_status": 507,
+                "floor_bytes": 10**18, "completion_intent_before_recovery": False,
+                "recovered_completion": True}
     finally:
         server.stop()
 
@@ -572,6 +573,117 @@ def transient_completion_storage_recovery_case(root: Path) -> dict:
                 "recovery_state": "finalizing", "quarantined": False,
                 "media_sha256": expected_wav, "media_bytes": CHUNK_BYTES + 44,
                 "inbox_count": 1, "restarts": 3}
+    finally:
+        server.stop()
+
+
+def suffix_range_case(root: Path) -> dict:
+    """A suffix range has exact bytes, digest, and response metadata."""
+    root.mkdir(parents=True)
+    source = b"\x00\x10" * (CHUNK_BYTES // 2)
+    expected_wav = _wav_header(CHUNK_BYTES, RATE, 1) + source
+    expected_sha = digest(expected_wav)
+    suffix_bytes = 128
+    server = Server(root)
+    server.start()
+    try:
+        with httpx.Client(timeout=20) as http:
+            mid = create(http, server.base)
+            need(upload(http, server.base, mid, 0, source).status_code == 201,
+                 "suffix range setup upload")
+            need(complete(http, server.base, mid, digest(source), 1).status_code in (200, 201),
+                 "suffix range setup completion")
+            observed_sha, observed_bytes, headers = stream_hash(
+                http, f"{server.base}/v1/messages/{mid}/audio",
+                {**auth("recipient"), "Range": f"bytes=-{suffix_bytes}"}, 206)
+            start = len(expected_wav) - suffix_bytes
+            need(observed_sha == digest(expected_wav[start:]), "suffix range hash")
+            need(observed_bytes == suffix_bytes, "suffix range byte count")
+            need(headers.get("content-range") == f"bytes {start}-{len(expected_wav) - 1}/{len(expected_wav)}",
+                 "suffix Content-Range")
+            need(headers.get("content-length") == str(suffix_bytes), "suffix Content-Length")
+            need(headers.get("accept-ranges") == "bytes", "suffix Accept-Ranges")
+            need(headers.get("etag") == f'"{expected_sha}"', "suffix ETag")
+        return {"status": "pass", "suffix_bytes": suffix_bytes, "start": start,
+                "media_sha256": expected_sha, "content_range": headers["content-range"]}
+    finally:
+        server.stop()
+
+
+def completed_before_and_trash_auth_case(root: Path) -> dict:
+    """Timestamp selectors are exact and the trash index is admin-only."""
+    root.mkdir(parents=True)
+    source = b"\x00\x10" * (CHUNK_BYTES // 2)
+    expected_wav_bytes = CHUNK_BYTES + 44
+    server = Server(root)
+    server.start()
+    try:
+        with httpx.Client(timeout=20) as http:
+            first = create(http, server.base)
+            need(upload(http, server.base, first, 0, source).status_code == 201,
+                 "completed-before first upload")
+            first_done = complete(http, server.base, first, digest(source), 1)
+            need(first_done.status_code in (200, 201), "completed-before first completion")
+            time.sleep(0.01)
+            second = create(http, server.base)
+            need(upload(http, server.base, second, 0, source).status_code == 201,
+                 "completed-before second upload")
+            second_done = complete(http, server.base, second, digest(source), 1)
+            need(second_done.status_code in (200, 201), "completed-before second completion")
+            cutoff = second_done.json()["completed_at"]
+            preview = http.post(server.base + "/v1/admin/messages/cull/preview", headers=auth("admin"),
+                                json={"completed_before": cutoff})
+            need(preview.status_code == 200, f"completed-before preview: {preview.status_code} {preview.text}")
+            payload = preview.json()
+            need(payload.get("count") == 1 and payload.get("bytes") == expected_wav_bytes,
+                 "completed-before count/bytes")
+            need(payload.get("affected_inbox_references") == 1,
+                 "completed-before inbox references")
+            need(payload.get("messages") == [{"message_id": first, "bytes": expected_wav_bytes,
+                                               "inbox_references": 1}],
+                 "completed-before exact message selection")
+            exact = http.post(server.base + "/v1/admin/messages/cull/preview", headers=auth("admin"),
+                              json={"message_ids": [first]})
+            need(exact.status_code == 200, "trash authorization setup preview")
+            culled = http.post(server.base + "/v1/admin/messages/cull", headers=auth("admin"),
+                               json={"selection_token": exact.json()["selection_token"]})
+            need(culled.status_code == 200 and culled.json().get("trashed") == [first],
+                 "trash authorization setup cull")
+            child_trash = http.get(server.base + "/v1/admin/messages/trash", headers=auth("sender"))
+            need(child_trash.status_code == 403, "child GET trash forbidden")
+            admin_trash = http.get(server.base + "/v1/admin/messages/trash", headers=auth("admin"))
+            need(admin_trash.status_code == 200 and [row["message_id"] for row in admin_trash.json()["trash"]] == [first],
+                 "admin GET trash exact result")
+        return {"status": "pass", "completed_before": cutoff, "selected_message_id": first,
+                "excluded_message_id": second, "bytes": expected_wav_bytes,
+                "child_trash_status": 403}
+    finally:
+        server.stop()
+
+
+def preview_token_expiry_case(root: Path) -> dict:
+    """A zero-second configured token TTL rejects a freshly issued token."""
+    root.mkdir(parents=True)
+    source = b"\x00\x10" * (CHUNK_BYTES // 2)
+    server = Server(root, extra_env={"FAMILY_LINK_H34_PREVIEW_TTL_SECONDS": "0"})
+    server.start()
+    try:
+        with httpx.Client(timeout=20) as http:
+            mid = create(http, server.base)
+            need(upload(http, server.base, mid, 0, source).status_code == 201,
+                 "expiry setup upload")
+            need(complete(http, server.base, mid, digest(source), 1).status_code in (200, 201),
+                 "expiry setup completion")
+            preview = http.post(server.base + "/v1/admin/messages/cull/preview", headers=auth("admin"),
+                                json={"message_ids": [mid]})
+            need(preview.status_code == 200, "expiry preview")
+            expired = http.post(server.base + "/v1/admin/messages/cull", headers=auth("admin"),
+                                json={"selection_token": preview.json()["selection_token"]})
+            need(expired.status_code == 400, f"zero-TTL token accepted: {expired.status_code} {expired.text}")
+            visible = http.get(f"{server.base}/v1/messages/{mid}/audio", headers=auth("recipient"))
+            need(visible.status_code == 200, "expired token changed message visibility")
+        return {"status": "pass", "ttl_seconds": 0, "cull_status": 400,
+                "message_remained_visible": True}
     finally:
         server.stop()
 
@@ -737,6 +849,11 @@ def run(argv: list[str] | None = None) -> int:
             result["checks"]["low_disk_completion"] = completion_disk_case(Path(td) / "low-disk-completion")
             result["checks"]["transient_completion_storage_recovery"] = transient_completion_storage_recovery_case(
                 Path(td) / "transient-completion-storage")
+            result["checks"]["suffix_range"] = suffix_range_case(Path(td) / "suffix-range")
+            result["checks"]["completed_before_and_trash_auth"] = completed_before_and_trash_auth_case(
+                Path(td) / "completed-before-and-trash-auth")
+            result["checks"]["preview_token_expiry"] = preview_token_expiry_case(
+                Path(td) / "preview-token-expiry")
             for mode in ("audio_type", "invalid_trashed_at", "orphan_trash", "utf8_manifest", "utf8_deletion"):
                 result["checks"]["quarantine_" + mode] = corrupt_store_case(Path(td) / ("corrupt-" + mode), mode)
             result["checks"]["journaled_orphan_trash"] = journaled_orphan_trash_case(Path(td) / "journaled-orphan")
