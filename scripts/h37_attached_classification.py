@@ -19,7 +19,7 @@ H35_EPOCH='a1617be8cb2d2343e744c31cc7d1b933'
 H35_CAPTURE=Path.home()/'family-link-h35-sd-discovery-preflight-20261005'
 H35_BACKUP=Path.home()/'family-link-attached-discovery-backup-20261005'
 SECTORS=121_503_744; SECTOR_BYTES=512; CAP=131_072; RAW_MAX=1<<20
-RAW_MARKERS=('flash-attempt-private.json','capture-private.jsonl','capture-raw-private.bin','host-preflight-private.json','capture-ready-private.json','read-plan-private.json','dispatch-ledger-private.json','sector-snapshot-private.bin.json','capture-metadata-private.json','restore-proof-private.json')
+RAW_MARKERS=('flash-attempt-private.json','capture-private.jsonl','capture-raw-private.bin','host-preflight-private.json','capture-ready-private.json','read-plan-private.json','dispatch-ledger-private.json','sector-snapshot-private.bin.json','capture-metadata-private.json','restore-proof-private.json','current-device-proof-private.json')
 
 stop=h32.stop; digest=h32.digest; atomic_json=h32.atomic_json
 
@@ -335,7 +335,14 @@ def flash_capture(port,bd,rd,importer=importlib.import_module):
     ref=read_h35_identity()
     meta=importlib.import_module('h37_sd_metadata')
     parser=meta.ProtocolParser(m['epoch'],v['elf_sha256'],H35_EPOCH,ref)
-    h32.verify_device(port,b,hold=True)
+    live_device=h32.verify_device(port,b,hold=True)
+    proof_device={k:live_device[k] for k in ('chip','chip_description','flash_manufacturer','flash_device','flash_bytes','fingerprint_sha256')}
+    proof={'schema':1,'status':'verified','epoch':m['epoch'],'source_sha256':v['source']['sha256'],
+        'elf_sha256':v['elf_sha256'],'backup_device_fingerprint_sha256':b['device']['fingerprint_sha256'],
+        'live_device':proof_device,'matches_backup':live_device['fingerprint_sha256']==b['device']['fingerprint_sha256'],
+        'reset_held':True}
+    if not proof['matches_backup']:stop('current device proof differs from original backup')
+    atomic_json(rd/'current-device-proof-private.json',proof,0o600)
     fresh=rd/'preflash-full-private.bin';h32.esptool(port,['--after','no_reset','read_flash','0',hex(h32.FLASH),str(fresh)],1200)
     if fresh.stat().st_size!=h32.FLASH or digest(fresh)!=b['full']['sha256']:stop('connected flash differs from original backup')
     app=Path(v['images']['app']['path']);atomic_json(rd/'flash-attempt-private.json',{'epoch':m['epoch'],'app_sha256':digest(app),'offset':h32.APP_OFF,'bytes':app.stat().st_size,'status':'attempted'},0o600)
@@ -530,17 +537,21 @@ def host_checks():
         with full.open('wb') as f:f.truncate(h32.FLASH)
         bind={'full':{'bytes':h32.FLASH,'sha256':digest(full)},'device':{'chip':'esp32-s3','flash_bytes':h32.FLASH,'fingerprint_sha256':'a'*64}}
         manifest={'epoch':'b'*32,'build_dir':str(rd/'build')}
-        images={'images':{'app':{'path':str(app),'sha256':digest(app)}},'elf_sha256':'c'*64}
+        images={'images':{'app':{'path':str(app),'sha256':digest(app)}},'elf_sha256':'c'*64,'source':{'sha256':'e'*64}}
         originals=[];restore_calls=[];esptool_calls=[]
         def assign(scope,name,value):originals.append((scope,name,scope[name]));scope[name]=value
         def fake_backup(path):return bind
         def fake_run(path,backup_dir):return manifest
         def fake_validate(path,backup_dir):return images
         def fake_identity():return 'd'*64
-        def fake_verify(*args,**kwargs):return None
+        def fake_verify(*args,**kwargs):return {'chip':'esp32-s3','chip_description':'ESP32-S3 fixture','flash_manufacturer':'fixture','flash_device':'fixture','flash_bytes':h32.FLASH,'fingerprint_sha256':bind['device']['fingerprint_sha256'],'mac':'00:00:00:00:00:00'}
         def fake_esptool(port,args,*rest,**kwargs):
             esptool_calls.append(args)
             if 'read_flash' in args:
+                proof_path=rd/'current-device-proof-private.json'
+                if not proof_path.is_file() or proof_path.stat().st_mode&0o777!=0o600:stop('current device proof missing or not private before full read')
+                proof_record=json.loads(proof_path.read_text())
+                if proof_record.get('epoch')!=manifest['epoch'] or proof_record.get('source_sha256')!='e'*64 or proof_record.get('elf_sha256')!=images['elf_sha256'] or proof_record.get('backup_device_fingerprint_sha256')!=bind['device']['fingerprint_sha256'] or proof_record.get('matches_backup') is not True or proof_record.get('live_device',{}).get('mac') is not None:stop('current device proof binding or field allowlist differs')
                 dest=Path(args[-1])
                 with dest.open('wb') as f:f.truncate(h32.FLASH)
                 return None
