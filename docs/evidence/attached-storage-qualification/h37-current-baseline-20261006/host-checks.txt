@@ -1,0 +1,107 @@
+Command: ./.venv/bin/python scripts/h37_attached_classification.py host-checks
+Exit code: 0
+
+H37 synthetic checks passed: 42
+{
+  "status": "pass",
+  "synthetic_only": true,
+  "serial_distribution": "pyserial",
+  "serial_version": "3.5",
+  "controller_preflight_checks": [
+    {
+      "case": "used_flash-attempt-private.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_capture-private.jsonl",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_capture-raw-private.bin",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_host-preflight-private.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_capture-ready-private.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_read-plan-private.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_dispatch-ledger-private.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_sector-snapshot-private.bin.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_capture-metadata-private.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_restore-proof-private.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "used_current-device-proof-private.json",
+      "status": "refused_unchanged",
+      "callbacks": 0,
+      "imports": 0
+    },
+    {
+      "case": "missing_serial",
+      "status": "failed_closed",
+      "callbacks": 0,
+      "imports": 1
+    },
+    {
+      "case": "missing_write",
+      "status": "failed_closed",
+      "callbacks": 0,
+      "imports": 1
+    },
+    {
+      "case": "restore_failure_propagates",
+      "status": "pass",
+      "restore_calls": 1
+    },
+    {
+      "case": "flash_failure_invokes_finally_restore",
+      "status": "pass",
+      "restore_calls": 1
+    },
+    {
+      "case": "bounded_command_write_no_flush",
+      "status": "pass",
+      "short_write": "rejected",
+      "oversize": "rejected",
+      "write_exception": "propagated"
+    }
+  ]
+}
