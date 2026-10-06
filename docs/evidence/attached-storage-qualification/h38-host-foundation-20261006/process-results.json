@@ -1,0 +1,10 @@
+{
+  "disk-guard": {
+    "command": ".venv/bin/python scripts/h38_disk_guard_checks.py",
+    "actual_exit_code": 0
+  },
+  "format-footprint": {
+    "command": ".venv/bin/python scripts/h38_fatfs_format_checks.py",
+    "actual_exit_code": 0
+  }
+}

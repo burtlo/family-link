@@ -1,0 +1,63 @@
+{
+  "compile_exit_code": 0,
+  "compiler": "Apple clang version 21.0.0 (clang-2100.3.34.2)",
+  "evidence_scope": "host_mock_actual_pinned_fatfs_source_only",
+  "firmware_qualification": false,
+  "harness_exit_code": 0,
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "host_ffconf": {
+    "exfat": false,
+    "lfn_mode": "none",
+    "note": "Formatter-footprint fixture only; compare every effective H38 FatFs setting before firmware build.",
+    "trim_compiled_in": true
+  },
+  "note": "The actual shared guard is exercised with a mock backend; this does not qualify firmware, hardware, or DMA placement.",
+  "observed": {
+    "callback_read_calls": "2",
+    "callback_write_calls": "263",
+    "data_clusters": "130811",
+    "driver_calls": "265",
+    "erase_interface": "absent",
+    "fat_sectors": "1025",
+    "format_bytes": "1055744",
+    "format_sectors": "2062",
+    "max_callback_sectors": "8",
+    "max_driver_call": "8",
+    "negative_bounds": "pass",
+    "negative_budget": "pass",
+    "negative_read_budget": "pass",
+    "partial_dispatch": "pass",
+    "physical_bounds": "pass",
+    "production_guard": "pass",
+    "split_8_plus_1": "pass",
+    "trim_intercepted": "1"
+  },
+  "production_guard_qualification": false,
+  "profile": {
+    "alignment_sectors": 1,
+    "allocation_unit_bytes": 4096,
+    "fat_count": 2,
+    "format_flags": "FM_FAT32|FM_SFD",
+    "sector_bytes": 512,
+    "virtual_disk_sectors": 1048576,
+    "work_buffer_bytes": 4096,
+    "write_budget_bytes": 4194304
+  },
+  "sdk": "v5.4.2",
+  "sdk_source_path_private": true,
+  "source_sha256": {
+    "diskio.h": "60beaaca712a9d5126f41362fa68ce7f30e26e115b310a20d79e5639b6fcc3b5",
+    "esp_idf_version.h": "84c57a8d9a2aa0ae6186d86c1b16f79865e91c8991a9ab3e022149584cb0657c",
+    "ff.c": "b6511bc0102f42b941897cd9f96f75206b6851fedbebc6dcb17c220cb1d4bede",
+    "ff.h": "7bae240d9934c35599b1e49431b6bec65a7269d09284aca40191c8c5fd3be475",
+    "ffconf.h": "9d3a18bd5f23b9bfc6b38668d1da59274c280d22b86d281c58d441da60942fd5",
+    "h38_disk_guard.c": "f5e7ffe2dda3f74ca7d1c922cd1ff12a2ff95b4e7d2f2677b5e5aad5730dfe64",
+    "h38_disk_guard.h": "924e3f837eb8ffa55f020583fe62837a572e91269ad6d5335431d32df306e957",
+    "host_freertos.h": "9b9bf81d8dd78cfda16392083a51364a1fa462fe6cf1e3c64c59013978a62d93",
+    "host_runner.py": "aa038e70755c6a751b85a8d0cf56974bd0e62a7608dcd73371311cb690ff634a",
+    "host_sdkconfig.h": "0c014070e624d07ec96e4c17ce087a3406e4c724495c47291fac5614a336e029",
+    "host_semphr.h": "b3adf106d95b8934f690943f2921308b90be5b766c4c8ba250c792de56400201",
+    "mock_driver.c": "08b923a9da5fe791d85b6f6ed22c7f8d53180b7113c1eedd2999ed35dbaea2b7"
+  },
+  "status": "pass"
+}
