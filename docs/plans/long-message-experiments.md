@@ -133,10 +133,17 @@ do not advance to the durable outbox.
 Separately, the corrected H35 SDMMC discovery fixture detected an attached card:
 121,503,744 sectors × 512 bytes (62,209,916,928 bytes), 4-bit bus at 20 MHz.
 The strict sanitized result is [here](../evidence/attached-storage-qualification/h35-preflight-retry-20261005/summary.md).
-This is transport discovery only: the medium has not been preserved or inspected,
-ownership remains unknown, and no attached backend is qualified. H32 remains
-failed and the durable outbox remains blocked. Resolve read-only preservation
-and ownership before any mount or write.
+This is transport discovery only; filesystem metadata/content have not been
+inspected and no attached backend is qualified. On 2026-10-05, the owner
+authorized the identified microSD as disposable experiment media and waived
+backup/restoration of prior card contents (“microSD card does not need to be
+backed up. I have removed all the files from it. Please use it without backing
+up and restoring the content on the microSD.”). This does not establish
+forensic blankness or authorize other media, BOX/internal data, or server data.
+The next gate is H37's bounded read-only classification before mount, format,
+or write; subsequent card experiments still require reviewed exact bounds and
+source/evidence gates, with per-epoch BOX/NVS backup and restoration. H32
+remains failed and the durable outbox remains blocked.
 
 ## Phase 5 — Prove the durable outbox
 

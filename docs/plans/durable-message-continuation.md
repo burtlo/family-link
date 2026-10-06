@@ -10,11 +10,17 @@ The first H35 attempt failed before application launch with
 independently verified, and the reviewed failure evidence was committed as
 `7f89a07`. The corrected immutable retry detected SDMMC, passed strict
 allowlist/public-mapping review, and independently verified full restoration.
-It establishes transport detection only: the 62.2 GB medium has not been
-read-only preserved, its filesystem has not been inspected, and ownership is
-unknown. The next step is read-only media preservation and ownership resolution
-before any mount or write. Preserve the first failed H35 epoch unchanged; it is
-not a retry candidate. Follow [the continuation
+It establishes transport detection only: the 62.2 GB medium's filesystem has
+not been inspected. On 2026-10-05, the owner authorized this identified
+microSD as disposable experiment media and waived backup/restoration of prior
+card contents, saying: “microSD card does not need to be backed up. I have
+removed all the files from it. Please use it without backing up and restoring
+the content on the microSD.” This does not prove forensic blankness or extend
+to BOX/internal data, server data, or other media. Next, independently review
+and commit H37's read-only classification plan, then perform bounded sector
+classification before any mount, format, or write. Full card imaging is not a
+dependency; per-epoch BOX/NVS backup and restore remain mandatory. Preserve the
+first failed H35 epoch unchanged; it is not a retry candidate. Follow [the continuation
 checkpoint](continuation-checkpoint-2026-10-05.md) for exact status and next
 actions; do not follow the historical H32 retry instructions below as current
 work.
