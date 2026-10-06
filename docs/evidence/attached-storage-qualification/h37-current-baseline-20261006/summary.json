@@ -1,0 +1,33 @@
+{
+  "app_sha256": "34425ae8b4af3f7d4dc881e982557587831440c9cf23597d65b153b63a231794",
+  "elf_sha256": "0f5ec610ed8f7c0999617887ed03244130b6abc23074999cb721d419eb90f21d",
+  "epoch": "43d7e2e5792ca6c1e494ff7cb06f3353",
+  "filesystem_contents": "not_inspected",
+  "geometry": {
+    "bus_width": 4,
+    "capacity_bytes": 62209916928,
+    "ddr": 0,
+    "real_freq_khz": 20000,
+    "sector_bytes": 512,
+    "sectors": 121503744
+  },
+  "media_backup": "waived_by_owner_2026-10-05",
+  "media_writes": 0,
+  "partitions": [
+    {
+      "end_lba": 121503743,
+      "scheme": "mbr",
+      "start_lba": 32768
+    }
+  ],
+  "read_bytes": 1024,
+  "read_count": 2,
+  "restored": "verified",
+  "scheme": "mbr",
+  "signatures": [
+    "exfat"
+  ],
+  "source_sha256": "9fa20d02800acb0eaf103425a257d124b4a74d869cdb7e300d972ebd10aed07d",
+  "terminal": "read_complete",
+  "verdict": "classified"
+}

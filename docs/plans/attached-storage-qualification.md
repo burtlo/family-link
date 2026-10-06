@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Doc kind | Experiment plan defined before implementation |
-| Status | Corrected H35 retry detected SDMMC; strict allowlist/public-mapping review and independent full BOX restoration review passed. Owner authorized the identified microSD as disposable experiment media and waived card-content backup/restore. H37 read-only classification is pending; no attached backend qualified |
-| Date | 2026-10-05 (status updated after H35 implementation commit `5170a92`) |
+| Status | H37 Stage A read-only classification passed for the identified microSD and independent review verified complete current BOX restoration. Owner authorized disposable card use and waived prior card-content backup/restore. Filesystem contents were not inspected; no attached backend is qualified |
+| Date | 2026-10-06 (H37 Stage A evidence committed) |
 | Scope | Isolated BOX-3 storage fixture, host controls, strict evidence parser |
 | Product partition choice | Open: single-factory versus dual OTA |
-| Next gate | Independently review and commit H37 read-only classification plan; classify card metadata before mount/format/write. Then use reviewed exact card bounds for authorized tests; full-card backup/restore is waived |
+| Next gate | Create and independently review a separate H38 filesystem/mount/I/O plan using H37’s classified MBR/exFAT metadata and exact partition bounds. Do not mount, format, or write until that plan and its source/evidence gates are committed; full-card backup/restore remains waived |
 
 ## Reason and boundaries
 
@@ -32,9 +32,11 @@ Keep X02, `firmware/v1/`, product defaults, production partitions, server behavi
 
 **Stage A pass:** one device-visible medium and transport are bound to a new immutable epoch; bounded metadata/signature classification, geometry, and candidate target bounds are established; device restore is possible; owner-authorized disposable use and skipped card backup are recorded. Stage A does not qualify storage.
 
+**H37 Stage A result (epoch `43d7e2e5792ca6c1e494ff7cb06f3353`):** read-only classification completed with terminal `read_complete`, two 512-byte sector reads (1,024 bytes total), zero media writes, and verified BOX restoration. The medium reports 121,503,744 sectors of 512 bytes on a 4-bit, 20 MHz bus. The public summary identifies one MBR partition spanning LBAs 32,768–121,503,743 and an exFAT signature. Filesystem contents and names were not inspected. See the [sanitized summary](../evidence/attached-storage-qualification/h37-current-baseline-20261006/summary.json) and [timing summary](../evidence/attached-storage-qualification/h37-current-baseline-20261006/timing-summary.json). The measured times apply only to the two metadata reads. Independent verification confirmed full BOX restoration/readback and startup identity; startup observation does not establish PIN/UI/network health. Stage A does not qualify the backend. H38 is a separate, not-yet-started plan for bounded filesystem and mount/I/O qualification.
+
 ## Media authority and exact write boundaries
 
-The identified microSD is owner-authorized disposable experiment media, but it is not established as forensically blank. The waiver is bounded to this card and does not authorize touching another disk, BOX/internal flash or NVS, server data, or unrelated files. Stage A classification remains mandatory before mount/format/write. Other unidentified/shared media retain preservation-only handling.
+The identified microSD is owner-authorized disposable experiment media, but it is not established as forensically blank. The waiver is bounded to this card and does not authorize touching another disk, BOX/internal flash or NVS, server data, or unrelated files. Stage A classification is a prerequisite for mount/format/write and is complete for this identified card; later mutation still requires a separate reviewed manifest and H38 gates. Other unidentified/shared media retain preservation-only handling.
 
 Select and record exactly one mode:
 

@@ -140,10 +140,7 @@ backup/restoration of prior card contents (“microSD card does not need to be
 backed up. I have removed all the files from it. Please use it without backing
 up and restoring the content on the microSD.”). This does not establish
 forensic blankness or authorize other media, BOX/internal data, or server data.
-The next gate is H37's bounded read-only classification before mount, format,
-or write; subsequent card experiments still require reviewed exact bounds and
-source/evidence gates, with per-epoch BOX/NVS backup and restoration. H32
-remains failed and the durable outbox remains blocked.
+H37 Stage A has now completed bounded read-only classification for the identified card. The [sanitized result](../evidence/attached-storage-qualification/h37-current-baseline-20261006/summary.json) records an MBR partition and exFAT signature; filesystem contents/names were not inspected, and no SD writes occurred. Independent review verified full BOX restoration/readback. Stage A does not qualify the backend. The next gate is a separately reviewed H38 filesystem/mount/I/O plan with exact bounds and source/evidence gates; H38 has not started, and no mount/format/write follows from Stage A alone. Per-epoch BOX/NVS backup and restoration remain mandatory. H32 remains failed and the durable outbox remains blocked.
 
 ## Phase 5 — Prove the durable outbox
 

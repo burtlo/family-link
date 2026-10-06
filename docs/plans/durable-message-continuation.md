@@ -1,29 +1,8 @@
 # Durable message experiments: continuation instructions
 
-Updated 2026-10-05. This is an operator handoff, read alongside the [ordered experiments](long-message-experiments.md). The detailed current stopping point and resume sequence are in the [continuation checkpoint](continuation-checkpoint-2026-10-05.md). That checkpoint supersedes the older “Immediate work” instructions below where they conflict.
+Updated 2026-10-06. This is an operator handoff, read alongside the [ordered experiments](long-message-experiments.md). The detailed current stopping point and resume sequence are in the [continuation checkpoint](continuation-checkpoint-2026-10-05.md). That checkpoint supersedes the older “Immediate work” instructions below where they conflict.
 
-**Current checkpoint:** H34 is complete; H32 failed its PCM deadline gate and
-remains unqualified. The H32 write-coalescing candidate stopped at the
-[read-only feasibility gate](../evidence/onchip-storage-qualification/coalescing-preflight.md).
-The first H35 attempt failed before application launch with
-`host_capture_dependency_failure`; its complete restoration and boot were
-independently verified, and the reviewed failure evidence was committed as
-`7f89a07`. The corrected immutable retry detected SDMMC, passed strict
-allowlist/public-mapping review, and independently verified full restoration.
-It establishes transport detection only: the 62.2 GB medium's filesystem has
-not been inspected. On 2026-10-05, the owner authorized this identified
-microSD as disposable experiment media and waived backup/restoration of prior
-card contents, saying: “microSD card does not need to be backed up. I have
-removed all the files from it. Please use it without backing up and restoring
-the content on the microSD.” This does not prove forensic blankness or extend
-to BOX/internal data, server data, or other media. Next, independently review
-and commit H37's read-only classification plan, then perform bounded sector
-classification before any mount, format, or write. Full card imaging is not a
-dependency; per-epoch BOX/NVS backup and restore remain mandatory. Preserve the
-first failed H35 epoch unchanged; it is not a retry candidate. Follow [the continuation
-checkpoint](continuation-checkpoint-2026-10-05.md) for exact status and next
-actions; do not follow the historical H32 retry instructions below as current
-work.
+**Current checkpoint:** H34 server storage is complete; H32 remains unqualified after its PCM cadence failure. H35 detected SDMMC, and the owner authorized disposable use of this identified microSD while waiving backup/restoration of prior card contents. H37 Stage A read-only classification is complete for epoch `43d7e2e5792ca6c1e494ff7cb06f3353`: the bounded reads found one MBR partition with an exFAT signature, with filesystem contents/names uninspected and zero media writes. Independent review verified full BOX restoration/readback. Stage A does not qualify the backend. The next storage step is a separately reviewed H38 filesystem/mount/I/O plan; H38 has not started. No mount, format, or write is authorized by the Stage A result alone. Per-epoch BOX/NVS preservation and restoration remain mandatory. See the [Stage A summary](../evidence/attached-storage-qualification/h37-current-baseline-20261006/summary.json) and [continuation checkpoint](continuation-checkpoint-2026-10-05.md) for current evidence and gates. Historical H32 retry instructions below are not the current work.
 
 ## Working agreement
 
