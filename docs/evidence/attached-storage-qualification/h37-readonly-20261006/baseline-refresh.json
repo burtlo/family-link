@@ -1,0 +1,29 @@
+{
+  "schema": "h37-current-box-baseline-refresh-v1",
+  "operation": "read_only_current_baseline_capture",
+  "actual_exit_code": 0,
+  "full_device_image_bytes": 16777216,
+  "full_image_exactly_matches_failed_preflash_snapshot": true,
+  "separate_nvs_dump": "captured_and_verified_for_exact_configured_regions",
+  "separate_partition_table_dump": "captured_and_verified_for_exact_configured_region",
+  "comparison_to_prior_original_baseline": {
+    "application_region_unchanged": true,
+    "partition_table_unchanged": true,
+    "application_descriptors_unchanged": true,
+    "application_image_regions_unchanged": true,
+    "all_bytes_outside_nvs_identical": true,
+    "nvs_changed_bytes": 5978,
+    "nvs_changed_sector_intervals": [
+      "[0xa000,0xb000)",
+      "[0xd000,0xe000)",
+      "[0xe000,0xf000)"
+    ],
+    "nvs_change_cause": "unknown"
+  },
+  "independent_review": "GO",
+  "current_device_state": "downloadloader_held; original_app_not_launched; no_app_flash_or_sd_access",
+  "card_backup_required_for_this_operation": false,
+  "new_h37_epoch_started": false,
+  "next_gate": "complete_source_private_live_device_proof_patch_and_H37_controller_tests_then_prepare_a_new_immutable_epoch",
+  "prior_snapshots": "retained_immutably; no_automatic_rollback_to_older_NVS"
+}
