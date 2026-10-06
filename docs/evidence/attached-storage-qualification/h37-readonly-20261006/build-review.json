@@ -2,7 +2,7 @@
   "schema": "h37-readonly-build-review-v1",
   "status": "preflash_review_passed",
   "preflash_go": true,
-  "hardware_status": "in_progress_no_result_claimed",
+  "hardware_status": "preflash_stopped_no_classification_result",
   "source_revision": "4a63f8728694835325120f2dd99fd2e8bde18d19928ec525d8b83c12609aadcd",
   "epoch": "2d405fdac5e5dc72534315eaab3798cb",
   "build_id": "9d6738e",

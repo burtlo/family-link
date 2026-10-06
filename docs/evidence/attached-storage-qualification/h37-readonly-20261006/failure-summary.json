@@ -1,0 +1,27 @@
+{
+  "schema": "h37-preflash-stop-v1",
+  "epoch": "2d405fdac5e5dc72534315eaab3798cb",
+  "operation": "flash_capture",
+  "actual_exit_code": 1,
+  "result": "stopped_connected_flash_differs_from_original_backup",
+  "flash_attempt_marker": false,
+  "application_write": false,
+  "capture_created": false,
+  "sd_access": false,
+  "restore_proof": false,
+  "offline_device_image_comparison": {
+    "image_size_bytes": 16777216,
+    "changed_regions": [
+      {"region": "NVS", "sector_interval": "[0xa000,0xb000)", "changed_bytes": 3937},
+      {"region": "NVS", "sector_interval": "[0xd000,0xe000)", "changed_bytes": 598},
+      {"region": "NVS", "sector_interval": "[0xe000,0xf000)", "changed_bytes": 1443}
+    ],
+    "changed_bytes_total": 5978,
+    "all_bytes_outside_these_NVS_sectors_unchanged": true,
+    "partition_table_unchanged": true
+  },
+  "cause": "unknown",
+  "current_device_state": "downloadloader_held; original_app_not_launched; boot_not_verified",
+  "next_gate": "fresh_authoritative_current_BOX_image_and_separate_NVS_reads_while_held_no_reset; audit_application_table_and_device_bindings; then use a new immutable H37 epoch with source_build_review",
+  "old_epoch_policy": "immutable; do not reuse or automatically restore its older NVS snapshot"
+}
