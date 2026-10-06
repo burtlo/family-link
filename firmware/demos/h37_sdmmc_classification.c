@@ -292,7 +292,10 @@ void app_main(void)
             unsigned char hash[32]; char hash_hex[65]; size_t encoded=0;
             if (mbedtls_sha256(sector_data,bytes,hash,0)!=0 ||
                 mbedtls_base64_encode((unsigned char *)b64,sizeof(b64),&encoded,sector_data,bytes)!=0 || encoded>5464) { stage_t s=ST_RESOURCES; fail(s,ESP_FAIL); }
-            for (int i=0;i<32;i++) snprintf(hash_hex+2*i,3,"%02x",hash[i]); hash_hex[64]='\0';
+            for (int i=0;i<32;i++) {
+                snprintf(hash_hex+2*i,3,"%02x",hash[i]);
+            }
+            hash_hex[64]='\0';
             char prefix[256]; int plen=snprintf(prefix,sizeof(prefix),"seq=%" PRIu32 ",lba=%" PRIu32 ",count=%" PRIu32 ",charged_total=%" PRIu32 ",error=0,elapsed_us=%" PRIi64 ",len=%u,sha256=%s,b64=",
                 seq,lba,count,charged_total,elapsed,(unsigned)bytes,hash_hex);
             int head=snprintf(tx_record,sizeof(tx_record),"H37,1,READ_RESULT,epoch=%s,elf_sha256=%s,%s",H37_RUN_EPOCH,elf_hex,prefix);
