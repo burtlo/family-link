@@ -34,8 +34,8 @@ if(NOT EXISTS "${SECRETS}")
     set(SECRETS "${CMAKE_CURRENT_LIST_DIR}/../secrets.example.h")
 endif()
 
-if(FAMILY_DEMO STREQUAL "h32_onchip_storage" OR FAMILY_DEMO STREQUAL "h35_sdmmc_discovery")
-    # h32 is an isolated storage qualification image.  Keep product, Wi-Fi,
+if(FAMILY_DEMO STREQUAL "h32_onchip_storage" OR FAMILY_DEMO STREQUAL "h35_sdmmc_discovery" OR FAMILY_DEMO STREQUAL "h37_sdmmc_classification")
+    # H32/H35/H37 are isolated storage qualification images. Keep product, Wi-Fi,
     # display, and identity code out of the binary and out of its measurements.
     set(COMMON_SRCS "")
 else()
@@ -53,14 +53,14 @@ set(MAIN_PRIVATE_REQUIRES "")
 # such as FAMILY_DEMO. Declare the union here so H32 receives its SDK headers;
 # unused static libraries do not add product code to the linked image.
 if(CMAKE_BUILD_EARLY_EXPANSION)
-    list(APPEND MAIN_PRIVATE_REQUIRES app_update spi_flash fatfs wear_levelling sdmmc esp_driver_sdmmc esp_driver_gpio)
+    list(APPEND MAIN_PRIVATE_REQUIRES app_update spi_flash fatfs wear_levelling sdmmc esp_driver_sdmmc esp_driver_gpio esp_driver_usb_serial_jtag esp_timer mbedtls)
 endif()
 if(FAMILY_DEMO STREQUAL "h30_opus_local" OR FAMILY_DEMO STREQUAL "h31_opus_chunks"
         OR FAMILY_DEMO STREQUAL "x02_opus_size_probe" OR FAMILY_DEMO STREQUAL "x02_opus_dep_only")
     list(APPEND MAIN_PRIVATE_REQUIRES opus)
 endif()
-if(FAMILY_DEMO STREQUAL "h35_sdmmc_discovery")
-    set(MAIN_PRIV_REQUIRES esp_timer mbedtls sdmmc esp_driver_sdmmc esp_driver_gpio)
+if(FAMILY_DEMO STREQUAL "h35_sdmmc_discovery" OR FAMILY_DEMO STREQUAL "h37_sdmmc_classification")
+    set(MAIN_PRIV_REQUIRES esp_timer mbedtls sdmmc esp_driver_sdmmc esp_driver_gpio esp_driver_usb_serial_jtag)
 elseif(FAMILY_DEMO STREQUAL "h32_onchip_storage")
     set(MAIN_PRIV_REQUIRES
         esp_timer
@@ -140,6 +140,17 @@ if(FAMILY_DEMO STREQUAL "h35_sdmmc_discovery")
     endif()
     target_compile_definitions(${COMPONENT_LIB} PRIVATE H35_RUN_EPOCH="${H35_RUN_EPOCH}")
 endif()
-if(NOT FAMILY_DEMO STREQUAL "h32_onchip_storage" AND NOT FAMILY_DEMO STREQUAL "h35_sdmmc_discovery")
+if(FAMILY_DEMO STREQUAL "h37_sdmmc_classification")
+    foreach(_epoch H37_RUN_EPOCH H35_RUN_EPOCH)
+        string(LENGTH "${${_epoch}}" _epoch_length)
+        if(NOT DEFINED ${_epoch} OR NOT "${${_epoch}}" MATCHES "^[0-9a-f]+$" OR NOT _epoch_length EQUAL 32)
+            message(FATAL_ERROR "${_epoch} must be exactly 32 lowercase hex characters")
+        endif()
+    endforeach()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE
+        H37_RUN_EPOCH="${H37_RUN_EPOCH}"
+        H35_RUN_EPOCH="${H35_RUN_EPOCH}")
+endif()
+if(NOT FAMILY_DEMO STREQUAL "h32_onchip_storage" AND NOT FAMILY_DEMO STREQUAL "h35_sdmmc_discovery" AND NOT FAMILY_DEMO STREQUAL "h37_sdmmc_classification")
     target_link_options(${COMPONENT_LIB} INTERFACE ${WHO_LINK_OPTS})
 endif()
