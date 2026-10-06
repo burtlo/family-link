@@ -1,0 +1,29 @@
+{
+  "schema": "h37-readonly-build-review-v1",
+  "status": "preflash_review_passed",
+  "preflash_go": true,
+  "hardware_status": "in_progress_no_result_claimed",
+  "source_revision": "4a63f8728694835325120f2dd99fd2e8bde18d19928ec525d8b83c12609aadcd",
+  "epoch": "2d405fdac5e5dc72534315eaab3798cb",
+  "build_id": "9d6738e",
+  "build_toolchain": "ESP-IDF 5.4.2",
+  "prepare_exit_code": 0,
+  "build_exit_code": 0,
+  "validate_exit_code": 0,
+  "application_bytes": 264816,
+  "factory_partition_bytes": 1536000,
+  "factory_partition_headroom_bytes": 1271184,
+  "factory_partition_headroom_percent": 82.76,
+  "application_erase_interval": "[0x10000,0x51000)",
+  "application_sha256": "aca28b012686f22b69f6847c8b85444afe5bf0f3eb793465005dd8675bf0ecdd",
+  "elf_sha256": "c198bacc9350e49420fbc05c15a074a84d18d056a71a847bae945a63cbd4c8da",
+  "independent_review": {
+    "source_sdk_table_device_bindings": "passed",
+    "dma_buffer_internal_alignment_4096": "passed",
+    "linked_image_sd_write_or_erase": "none_found",
+    "linked_image_filesystem_nvs_wifi_initialization": "none_found",
+    "linked_image_flash_write_or_efuse_programming": "none_found",
+    "unavoidable_startup_check": "S3 eFuse read/check is present; no programming call or mutation path found"
+  },
+  "scope": "Preflash source/build review only; no flash or classification result is represented."
+}
