@@ -2,7 +2,8 @@
 """Private H38 source/build gates and bounded held-device controller.
 
 The hardware path remains gated by independent source, linked-image, and fresh
-current-backup reviews. Hardware use is a separate operator action.
+current-backup reviews, unless the operator explicitly selects the existing verified
+restore image and waives current-content preservation. Hardware use is a separate operator action.
 """
 from __future__ import annotations
 
@@ -1215,8 +1216,27 @@ def _wait_current_backup_review(run_dir: Path, request: dict,
         return review
 
 
+def _existing_restore_target(baseline: dict) -> tuple[Path, dict]:
+    """Use the validated immutable image; never describe it as a current backup."""
+    full = Path(baseline["_directory"]) / "original-flash.bin"
+    for app in baseline["apps"]:
+        data = h32.region(full, app["offset"], app["size"])
+        if h32.dh(data) != app["partition_sha256"] or h32.app_desc(data) != app["descriptor"]:
+            stop("existing restore application metadata differs from validated full image")
+    proof = {"schema": 1, "status": "verified", "restore_source": "existing_verified_baseline",
+             "full_sha256": baseline["full"]["sha256"],
+             "partition_sha256": baseline["partition_table"]["sha256"],
+             "nvs_sha256": baseline["nvs"]["sha256"],
+             "device_fingerprint_sha256": baseline["device"]["fingerprint_sha256"],
+             "apps": [{"name": app["name"], "offset": app["offset"],
+                       "descriptor": app["descriptor"], "sha256": app["partition_sha256"]}
+                      for app in baseline["apps"]]}
+    return full, proof
+
+
 def run_epoch(port: str, run_dir: Path, baseline_dir: Path, *,
-              now=time.monotonic, serial_importer=importlib.import_module) -> dict:
+              now=time.monotonic, serial_importer=importlib.import_module,
+              use_existing_restore_image: bool = False) -> dict:
     """Hardware path: callable only after source, build, and independent link gates."""
     run_dir = private_dir(run_dir)
     manifest = validate(run_dir, baseline_dir)
@@ -1249,18 +1269,25 @@ def run_epoch(port: str, run_dir: Path, baseline_dir: Path, *,
     restore = None
     current_review_approved = False
     experiment_flash_started = False
+    outside_interval_checked = False
     capture_abort_exception = None
     try:
         # The master clock already runs. All calls hold the chip in the loader.
         clocks.require_new_work(PREFLASH_ALLOWANCE_MS + contract.CAPTURE_LIMITS["capture_wall_ms"])
-        current_full, current_proof = _fresh_current_backup(port, run_dir, baseline, clocks)
-        review_request = _current_backup_review_request(run_dir, meta, intent, current_proof)
-        current_review = _wait_current_backup_review(run_dir, review_request, clocks)
-        current_review_approved = True
-        h32.atomic_json(run_dir / "current-backup-review-proof-private.json", {
-            "schema": 1, "status": "approved", "reviewer": current_review["reviewer"],
-            "request_sha256": h32.digest(run_dir / "current-backup-review-request-private.json"),
-            "review_sha256": h32.digest(run_dir / "current-backup-review-private.json")}, 0o600)
+        if use_existing_restore_image:
+            _bounded_verify_device(port, baseline, clocks,
+                                   PREFLASH_ALLOWANCE_MS + contract.CAPTURE_LIMITS["capture_wall_ms"])
+            current_full, current_proof = _existing_restore_target(baseline)
+            h32.atomic_json(run_dir / "existing-restore-target-private.json", current_proof, 0o600)
+        else:
+            current_full, current_proof = _fresh_current_backup(port, run_dir, baseline, clocks)
+            review_request = _current_backup_review_request(run_dir, meta, intent, current_proof)
+            current_review = _wait_current_backup_review(run_dir, review_request, clocks)
+            current_review_approved = True
+            h32.atomic_json(run_dir / "current-backup-review-proof-private.json", {
+                "schema": 1, "status": "approved", "reviewer": current_review["reviewer"],
+                "request_sha256": h32.digest(run_dir / "current-backup-review-request-private.json"),
+                "review_sha256": h32.digest(run_dir / "current-backup-review-private.json")}, 0o600)
         # The application flash itself is bounded to 20 minutes; reserve the
         # entire subsequent capture allowance before starting this mutation.
         clocks.require_new_work(PREFLASH_ALLOWANCE_MS + contract.CAPTURE_LIMITS["capture_wall_ms"])
@@ -1274,14 +1301,16 @@ def run_epoch(port: str, run_dir: Path, baseline_dir: Path, *,
                                 hex(app.stat().st_size), str(app_readback)], clocks, future + 660_000, 180)
         if app_readback.stat().st_size != app.stat().st_size or h32.digest(app_readback) != h32.digest(app):
             stop("H38 application flash readback differs")
-        post = run_dir / "postflash-full-private.bin"
-        _bounded_esptool(port, ["--after", "no_reset", "read_flash", "0", hex(h32.FLASH), str(post)],
-                         clocks, future + 60_000, 600)
-        old = current_full.read_bytes()
-        new = post.read_bytes()
-        erase_end = h32.APP_OFF + ((app.stat().st_size + 4095) // 4096) * 4096
-        if len(new) != h32.FLASH or new[:h32.APP_OFF] != old[:h32.APP_OFF] or new[erase_end:] != old[erase_end:]:
-            stop("H38 flash changed bytes outside reviewed application erase interval")
+        if not use_existing_restore_image:
+            post = run_dir / "postflash-full-private.bin"
+            _bounded_esptool(port, ["--after", "no_reset", "read_flash", "0", hex(h32.FLASH), str(post)],
+                             clocks, future + 60_000, 600)
+            old = current_full.read_bytes()
+            new = post.read_bytes()
+            erase_end = h32.APP_OFF + ((app.stat().st_size + 4095) // 4096) * 4096
+            if len(new) != h32.FLASH or new[:h32.APP_OFF] != old[:h32.APP_OFF] or new[erase_end:] != old[erase_end:]:
+                stop("H38 flash changed bytes outside reviewed application erase interval")
+            outside_interval_checked = True
         _bounded_verify_device(port, baseline, clocks, future)
         try:
             capture = _capture_h38(port, run_dir, manifest, intent, serial_module, clocks)
@@ -1333,7 +1362,10 @@ def run_epoch(port: str, run_dir: Path, baseline_dir: Path, *,
               "trigger_detail_private": None if failure is None else str(failure),
               "reset_to_loader": reset_result,
               "reset_to_loader_process_exit_code": reset_exit_code,
-              "current_backup_verified": current_proof is not None,
+              "current_backup_verified": current_proof is not None and not use_existing_restore_image,
+              "restore_source": "existing_verified_baseline" if use_existing_restore_image else "fresh_current_backup",
+              "current_content_preservation_waived": use_existing_restore_image,
+              "outside_app_erase_interval_readback_checked": outside_interval_checked,
               "current_backup_review_approved": current_review_approved,
               "experiment_flash_started": experiment_flash_started,
               "capture_abort_exception": capture_abort_exception,
@@ -1360,6 +1392,8 @@ def main() -> None:
         if action == "prepare":
             cmd.add_argument("--h37-run-dir", type=Path, required=True)
     run = sub.add_parser("run", help="execute one reviewed H38 mutation epoch")
+    run.add_argument("--use-existing-restore-image", action="store_true",
+                     help="operator waives current contents; restore validated existing full image")
     run.add_argument("--port", required=True)
     run.add_argument("--run-dir", type=Path, required=True)
     run.add_argument("--backup-dir", type=Path, required=True)
@@ -1372,7 +1406,8 @@ def main() -> None:
         elif args.action == "build":
             result = build(args.run_dir, args.backup_dir)
         elif args.action == "run":
-            result = run_epoch(args.port, args.run_dir, args.backup_dir)
+            result = run_epoch(args.port, args.run_dir, args.backup_dir,
+                               use_existing_restore_image=args.use_existing_restore_image)
         else:
             result = validate(args.run_dir, args.backup_dir)
         print(json.dumps(result if args.action == "prepare" else

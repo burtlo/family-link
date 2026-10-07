@@ -864,6 +864,69 @@ def recovery_checks():
                 item.__exit__(None, None, None)
 
 
+def existing_restore_checks():
+    from contextlib import ExitStack
+    with tempfile.TemporaryDirectory(prefix="h38-existing-restore-") as folder:
+        root = Path(folder)
+        full = root / "original-flash.bin"
+        full.write_bytes(b"existing image")
+        baseline = {"_directory": str(root), "full": {"sha256": h38.h32.digest(full)},
+                    "partition_table": {"sha256": "a" * 64}, "nvs": {"sha256": "b" * 64},
+                    "device": {"fingerprint_sha256": "c" * 64},
+                    "apps": [{"name": "factory", "offset": 0, "size": 14,
+                              "descriptor": {"project": "original"}, "partition_sha256": h38.h32.digest(full)}]}
+        with patch.object(h38.h32, "app_desc", return_value={"project": "original"}):
+            target, proof = h38._existing_restore_target(baseline)
+        check(target == full and proof["full_sha256"] == h38.h32.digest(full), "wrong existing restore image")
+        check(proof["apps"][0]["sha256"] == h38.h32.digest(full), "existing app binding lost")
+        for fail in (False, True):
+            run = root / ("failure" if fail else "success")
+            (run / "build").mkdir(parents=True)
+            (run / "build/manifest-private.json").write_text("{}")
+            (run / "build/family_link_demo.bin").write_bytes(b"app")
+            actions = []
+            def device(*_):
+                actions.append("identity")
+            def tool(_, args, *__):
+                check(actions[0] == "identity", "flash preceded fingerprint verification")
+                actions.append(args[2])
+                if "write_flash" in args and fail:
+                    raise RuntimeError("injected flash failure")
+                if "read_flash" in args:
+                    check(args[3] == hex(h38.h32.APP_OFF), "unexpected current full backup read")
+                    Path(args[-1]).write_bytes(b"app")
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(h38.h32, "app_desc", return_value={"project": "original"}))
+                for name, kwargs in (
+                    ("private_dir", {"side_effect": lambda p: p}),
+                    ("validate", {"return_value": {}}), ("_review_gate", {}),
+                    ("_linked_review_gate", {}), ("capture_preflight", {}),
+                    ("_backup", {"return_value": dict(baseline)}),
+                    ("require_run", {"return_value": ({"baseline_full_sha256": proof["full_sha256"]}, {"epoch": "0" * 32})}),
+                    ("_bounded_verify_device", {"side_effect": device}),
+                    ("_bounded_esptool", {"side_effect": tool}),
+                    ("_fresh_current_backup", {"side_effect": AssertionError("fresh backup forbidden")}),
+                    ("_wait_current_backup_review", {"side_effect": AssertionError("current backup review forbidden")}),
+                    ("_capture_h38", {"return_value": {"status": "verified"}})):
+                    stack.enter_context(patch.object(h38, name, **kwargs))
+                restore = stack.enter_context(patch.object(h38, "_restore_current", return_value={"status": "verified"}))
+                try:
+                    h38.run_epoch("fake", run, root, now=lambda: 0.0,
+                                  serial_importer=lambda _: object(), use_existing_restore_image=True)
+                except RuntimeError:
+                    check(fail, "unexpected failure")
+                else:
+                    check(not fail, "flash failure accepted")
+                check(restore.call_count == 1 and restore.call_args.args[2].resolve() == full.resolve(),
+                      "existing image restoration skipped or wrong target")
+            result = json.loads((run / "run-result-private.json").read_text())
+            check(not result["current_backup_verified"] and not result["current_backup_review_approved"],
+                  "existing image mislabeled current backup")
+            check(result["current_content_preservation_waived"] and not result["outside_app_erase_interval_readback_checked"],
+                  "waived preservation evidence incorrect")
+            check(result["restore_source"] == "existing_verified_baseline", "restore source lost")
+
+
 def main():
     clock_checks()
     clock_freeze_checks()
@@ -875,6 +938,7 @@ def main():
     successful_dispatch_check()
     restore_current_checks()
     recovery_checks()
+    existing_restore_checks()
     print("H38 controller host-only checks passed: clocks, transport, drain, mandatory restore")
 
 
