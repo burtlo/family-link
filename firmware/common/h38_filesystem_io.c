@@ -1224,8 +1224,9 @@ static bool emit_reclaim_result(io_state_t *state)
         if (unlink(stale) != 0) { stage = H38_IO_STAGE_RECLAIM; error = saved_error(EIO); ok = false; }
     }
     if (ok) {
-        /* POSIX sync requests VFS writeback; no directory-fsync or card-cache guarantee is implied. */
-        sync();
+        /* VFS unlink delegates to FatFs f_unlink, which runs sync_fs/CTRL_SYNC
+         * before returning success. This is API-level completion only; there
+         * is no directory-fsync or card-cache durability guarantee. */
         if (!check_now(state, state->io_start_us, false, &stage, &error)) ok = false;
     }
     if (ok && !sample_space(state, &total, &after)) {
