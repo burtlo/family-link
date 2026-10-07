@@ -144,6 +144,14 @@ def run() -> int:
     add("COMPLETE",{"result":"io_complete","failure_stage":"none","error":"0","command_count":"4","read_bytes":"20000256","write_bytes":str(512+1055744+5353984),"mbr_write_count":"1","format_write_bytes":"1055744","io_write_bytes":"5353984","trim_requests":"1","erase_calls":"0","out_of_bounds_attempts":"0","io_file_count":"40","retained_file_bytes":"893440","probe_count":"5","mount_count":"6","remount_count":"5","retained_check_count":"30","reclaim_status":"ok","sd_unmount_attempted":"1","sd_unmount_error":"0","host_deinit_attempted":"1","host_deinit_error":"0","power_off_attempted":"1","power_off_error":"0","bound":"1","scope":"bounded_fat32_filesystem_io","media_writes":"2000"})
     capture=b"".join(rows)
     parsed=c.parse_capture(capture,epoch,elf,i); check(parsed.result=="io_complete","complete synthetic success"); passes+=1
+    full_cleanup_failure=edit_event(capture,"CLEANUP",b"sd_unmount_error=0",b"sd_unmount_error=-7")
+    for old,new in ((b"result=io_complete",b"result=failed"),
+                    (b"failure_stage=none",b"failure_stage=cleanup"),
+                    (b"error=0,command_count=4",b"error=-7,command_count=4"),
+                    (b"sd_unmount_error=0",b"sd_unmount_error=-7")):
+        full_cleanup_failure=edit_event(full_cleanup_failure,"COMPLETE",old,new)
+    check(c.parse_capture(full_cleanup_failure,epoch,elf,i).result=="failed",
+          "valid full-run cleanup failure rejected"); passes+=1
     mutations=(
         ("COMPLETE",b"media_writes=2000",b"media_writes=1"),
         ("COMPLETE",b"media_writes=2000",b"media_writes=13000"),
@@ -227,7 +235,9 @@ def run() -> int:
             prefix.append(line)
             break
         prefix.append(line)
-    prefix.append(record("CLEANUP",{"sd_unmount_attempted":"1","sd_unmount_error":"0","host_deinit_attempted":"1","host_deinit_error":"0","power_off_attempted":"1","power_off_error":"0"}))
+    # cycle one first unmounted cycle zero, then its attempted remount failed
+    # with mounted=0. Final cleanup must not claim an unmount of a live mount.
+    prefix.append(record("CLEANUP",{"sd_unmount_attempted":"0","sd_unmount_error":"0","host_deinit_attempted":"1","host_deinit_error":"0","power_off_attempted":"1","power_off_error":"0"}))
     failed_complete={"result":"failed","failure_stage":"remount","error":"-5","command_count":"3",
         "read_bytes":"10000000","write_bytes":"6410240","mbr_write_count":"1","format_write_bytes":"1055744",
         "io_write_bytes":"5353984","trim_requests":"1","erase_calls":"0","out_of_bounds_attempts":"0",
@@ -235,8 +245,91 @@ def run() -> int:
         "remount_count":"2","retained_check_count":"6","reclaim_status":"failed","sd_unmount_attempted":"1",
         "sd_unmount_error":"0","host_deinit_attempted":"1","host_deinit_error":"0","power_off_attempted":"1",
         "power_off_error":"0","bound":"1","scope":"bounded_fat32_filesystem_io","media_writes":"2000"}
-    prefix.append(record("COMPLETE",failed_complete))
+    early_cleanup_prefix=list(rows[:12])
+    early_cleanup_prefix.append(record("CLEANUP",{"sd_unmount_attempted":"0","sd_unmount_error":"0",
+        "host_deinit_attempted":"1","host_deinit_error":"-7","power_off_attempted":"1","power_off_error":"0"}))
+    early_cleanup_terminal=dict(failed_complete,failure_stage="cleanup",error="-7",command_count="2",
+        sd_unmount_attempted="0",sd_unmount_error="0",host_deinit_attempted="1",host_deinit_error="-7",
+        power_off_attempted="1",power_off_error="0")
+    early_cleanup_prefix.append(record("COMPLETE",early_cleanup_terminal))
+    must_fail(lambda:c.parse_capture(b"".join(early_cleanup_prefix),epoch,elf),
+              "cleanup failure accepted before full I/O and FINISH"); passes+=1
+    failed_remount_terminal=dict(failed_complete,sd_unmount_attempted="0")
+    prefix.append(record("COMPLETE",failed_remount_terminal))
     check(c.parse_capture(b"".join(prefix),epoch,elf).result=="failed","valid cycle-one failure prefix rejected"); passes+=1
+    prior_io_failure=edit_event(b"".join(prefix),"IO_RESULT",b"failure_op=none",b"failure_op=write")
+    prior_io_failure=edit_event(prior_io_failure,"IO_RESULT",b"status=ok,error=0",b"status=failed,error=-8")
+    must_fail(lambda:c.parse_capture(prior_io_failure,epoch,elf),
+              "remount failure concealed an earlier failed I/O record"); passes+=1
+    prior_semantics_failure=edit_event(b"".join(prefix),"RETAINED_RESULT",b"status=ok,error=0",b"status=failed,error=-8")
+    must_fail(lambda:c.parse_capture(prior_semantics_failure,epoch,elf),
+              "remount failure concealed an earlier semantics failure"); passes+=1
+    multiple_mount_failures=edit_event(b"".join(prefix),"MOUNT_RESULT",b"status=ok,error=0",b"status=failed,error=-8",occurrence=1)
+    must_fail(lambda:c.parse_capture(multiple_mount_failures,epoch,elf),
+              "terminal accepted multiple failed mount witnesses"); passes+=1
+    # A matching failed FORMAT_RESULT still cannot prove complete failure
+    # cleanup when acquired host/power resources are omitted from both records.
+    format_prefix=list(rows[:12])
+    format_prefix[-1]=format_prefix[-1].replace(b"status=ok,error=0",b"status=failed,error=-5")
+    format_prefix.append(record("CLEANUP",{"sd_unmount_attempted":"0","sd_unmount_error":"0",
+        "host_deinit_attempted":"0","host_deinit_error":"0","power_off_attempted":"0","power_off_error":"0"}))
+    format_terminal=dict(failed_complete,failure_stage="format",error="-5",sd_unmount_attempted="0",
+        host_deinit_attempted="0",power_off_attempted="0")
+    format_prefix.append(record("COMPLETE",format_terminal))
+    check(c.parse_capture(b"".join(format_prefix),epoch,elf).result=="incomplete",
+          "format failure omitted acquired host/power cleanup accepted as complete"); passes+=1
+    valid_format_prefix=list(format_prefix)
+    valid_format_prefix[-2]=record("CLEANUP",{"sd_unmount_attempted":"0","sd_unmount_error":"0",
+        "host_deinit_attempted":"1","host_deinit_error":"0","power_off_attempted":"1","power_off_error":"0"})
+    valid_format_terminal=dict(format_terminal,host_deinit_attempted="1",power_off_attempted="1")
+    valid_format_prefix[-1]=record("COMPLETE",valid_format_terminal)
+    valid_format_failure=b"".join(valid_format_prefix)
+    check(c.parse_capture(valid_format_failure,epoch,elf,i).result=="failed",
+          "valid format failure with expected intent rejected"); passes+=1
+    wrong_expected_intent=copy.deepcopy(i); wrong_expected_intent["private_cid_sha256"]="0"*64
+    must_fail(lambda:c.parse_capture(valid_format_failure,epoch,elf,wrong_expected_intent),
+              "failed capture ignored a successful identity binding to expected intent"); passes+=1
+    prior_host_error=edit_event(valid_format_failure,"HOST",b"error=0",b"error=-7")
+    must_fail(lambda:c.parse_capture(prior_host_error,epoch,elf),
+              "format failure concealed an earlier HOST error"); passes+=1
+    bad_transport=edit_event(valid_format_failure,"TRANSPORT",b"backend=sdmmc",b"backend=other")
+    must_fail(lambda:c.parse_capture(bad_transport,epoch,elf),
+              "failed capture accepted a non-profile transport"); passes+=1
+    bad_geometry=edit_event(valid_format_failure,"GEOMETRY",b"sectors=121503744",b"sectors=121503743")
+    must_fail(lambda:c.parse_capture(bad_geometry,epoch,elf),
+              "failed capture accepted mismatched preceding geometry"); passes+=1
+    bad_reference=edit_event(valid_format_failure,"IDENTITY_MATCH",b"reference_epoch="+c.H35_REFERENCE_EPOCH.encode(),b"reference_epoch="+b"0"*32)
+    must_fail(lambda:c.parse_capture(bad_reference,epoch,elf),
+              "failed capture accepted a mismatched H35 reference epoch"); passes+=1
+    # A truthful failed BIND may report a CID mismatch against expected intent.
+    bind_prefix=list(rows[:9])
+    bind_prefix[6]=bind_prefix[6].replace(b"serial=1",b"serial=2")
+    bind_prefix[8]=record("IDENTITY_MATCH",{"reference_epoch":c.H35_REFERENCE_EPOCH,"match":"0","error":"-7"})
+    bind_prefix.append(record("CLEANUP",{"sd_unmount_attempted":"0","sd_unmount_error":"0",
+        "host_deinit_attempted":"1","host_deinit_error":"0","power_off_attempted":"1","power_off_error":"0"}))
+    bind_terminal=dict(failed_complete,failure_stage="bind",error="-7",sd_unmount_attempted="0")
+    bind_terminal["host_deinit_attempted"]="1"; bind_terminal["power_off_attempted"]="1"
+    bind_prefix.append(record("COMPLETE",bind_terminal))
+    check(c.parse_capture(b"".join(bind_prefix),epoch,elf,i).result=="failed",
+          "truthful failed BIND CID mismatch was compared as a successful binding"); passes+=1
+    # The failed-remount witness reports whether the adapter is still mounted.
+    # mounted=1 means cleanup must attempt an unmount; mounted=0 does not.
+    live_mount=list(prefix)
+    live_mount[-3]=live_mount[-3].replace(b"mounted=0",b"mounted=1")
+    live_mount[-2]=record("CLEANUP",{"sd_unmount_attempted":"0","sd_unmount_error":"0",
+        "host_deinit_attempted":"1","host_deinit_error":"0","power_off_attempted":"1","power_off_error":"0"})
+    live_mount[-1]=record("COMPLETE",failed_remount_terminal)
+    check(c.parse_capture(b"".join(live_mount),epoch,elf).result=="incomplete",
+          "failed remount with live mount and omitted unmount accepted as complete"); passes+=1
+    # Likewise, omitting every cleanup attempt after a failed remount is only
+    # incomplete evidence even when the terminal exactly mirrors CLEANUP.
+    remount_cleanup_omitted=b"".join(prefix)
+    for old,new in ((b"host_deinit_attempted=1",b"host_deinit_attempted=0"),
+                    (b"power_off_attempted=1",b"power_off_attempted=0")):
+        remount_cleanup_omitted=edit_event(remount_cleanup_omitted,"CLEANUP",old,new)
+        remount_cleanup_omitted=edit_event(remount_cleanup_omitted,"COMPLETE",old,new)
+    check(c.parse_capture(remount_cleanup_omitted,epoch,elf).result=="incomplete",
+          "failed remount with all acquired resources omitted from cleanup accepted"); passes+=1
     # Returned layout/format/mount errors carry closed, parseable failure witnesses.
     for stage, length, event, changes in (
         ("layout", 10, "LAYOUT_RESULT", ((b"readback_base64_private="+base64.b64encode(m), b"readback_base64_private=unavailable"),
@@ -256,8 +349,9 @@ def run() -> int:
             fixture[-2]=fixture[-2].replace(b"bpb_valid=1",b"bpb_valid=0").replace(
                 b"bpb_base64_private="+base64.b64encode(bpb),
                 b"bpb_base64_private=unavailable")
-        terminal=dict(failed_complete, failure_stage=stage, error="-5")
-        fixture.extend((rows[-2], record("COMPLETE",terminal)))
+        terminal=dict(failed_complete, failure_stage=stage, error="-5", sd_unmount_attempted="0")
+        cleanup_row=rows[-2].replace(b"sd_unmount_attempted=1",b"sd_unmount_attempted=0")
+        fixture.extend((cleanup_row, record("COMPLETE",terminal)))
         check(c.parse_capture(b"".join(fixture),epoch,elf).result=="failed",
               "returned failure witness rejected: "+stage)
         passes+=1

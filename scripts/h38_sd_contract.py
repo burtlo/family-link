@@ -452,6 +452,11 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
     if any(marker in raw_lower for marker in panic_markers):
         raise ContractError("capture contains panic or watchdog evidence")
     if complete.fields["result"] == "failed":
+        failure_intent = None
+        if expected_intent is not None:
+            failure_intent = validate_intent(dict(expected_intent))
+            if failure_intent["epoch"] != expected_epoch:
+                raise ContractError("failed capture intent epoch mismatch")
         if int(complete.fields["error"]) == 0 or complete.fields["failure_stage"] == "none":
             raise ContractError("failed terminal lacks failure")
         if any(e == "COMPLETE" for e in events[:-1]):
@@ -471,6 +476,9 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
         schedule = SUCCESS_EVENT_SCHEDULE[:-2]
         if len(base) > len(schedule) or base != schedule[:len(base)]:
             raise ContractError("failed transcript is not a valid event prefix")
+        transport_rows = [r for r in rows if r.event == "TRANSPORT"]
+        if transport_rows and dict((k, transport_rows[0].fields[k]) for k in TRANSPORT) != TRANSPORT:
+            raise ContractError("failed capture transport profile mismatch")
         stage = complete.fields["failure_stage"]
         if stage == "resources":
             # Only this pre-transport-resource prefix can establish that no
@@ -508,8 +516,16 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
             if not match or int(match[-1].fields["error"]) != int(complete.fields["error"]):
                 raise ContractError("reclaim failure lacks matching result")
         elif stage == "cleanup":
-            if "CLEANUP" not in events or int(complete.fields["error"]) not in [int(_one(rows,"CLEANUP").fields[k]) for k in ("sd_unmount_error","host_deinit_error","power_off_error")]:
+            if "CLEANUP" not in events:
                 raise ContractError("cleanup failure lacks actual cleanup error")
+            if (base != SUCCESS_EVENT_SCHEDULE[:-2]
+                    or complete.fields["command_count"] != "4"):
+                raise ContractError("cleanup failure did not follow complete I/O and FINISH")
+            cleanup_errors = [int(_one(rows,"CLEANUP").fields[k])
+                              for k in ("sd_unmount_error","host_deinit_error","power_off_error")]
+            first_cleanup_error = next((error for error in cleanup_errors if error != 0), 0)
+            if first_cleanup_error == 0 or int(complete.fields["error"]) != first_cleanup_error:
+                raise ContractError("cleanup failure lacks first actual cleanup error")
         elif stage.startswith("io_"):
             # Checked against the first IO_RESULT failure below.
             if not any(r.event == "IO_RESULT" and r.fields["failure_op"] != "none" for r in rows):
@@ -527,6 +543,7 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
             return ParsedCapture(expected_epoch, expected_elf_sha256, rows, "incomplete", len(raw))
         else:
             raise ContractError("failure stage has no evidence rule")
+        cleanup_incomplete = False
         if "CLEANUP" in events:
             cl = _one(rows, "CLEANUP").fields
             if any(cl[k] not in ("0","1") for k in ("sd_unmount_attempted","host_deinit_attempted","power_off_attempted")):
@@ -539,6 +556,32 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
             for key in ("sd_unmount_attempted","sd_unmount_error","host_deinit_attempted","host_deinit_error","power_off_attempted","power_off_error"):
                 if complete.fields[key] != cl[key]:
                     raise ContractError("failed COMPLETE cleanup counters mismatch")
+            # A cleanup record is only failure evidence if its attempts cover
+            # resources that the successful transcript prefix proves were
+            # acquired. MOUNT_RESULT.mounted reports the adapter's live state,
+            # including a failed remount after an earlier successful unmount.
+            host_rows = [r for r in rows if r.event == "HOST"]
+            slot_rows = [r for r in rows if r.event == "SLOT"]
+            card_rows = [r for r in rows if r.event == "CARD"]
+            host_acquired = (any(r.fields["error"] == "0" for r in host_rows)
+                             or any(r.fields["error"] == "0" for r in slot_rows)
+                             or any(r.fields["error"] == "0" for r in card_rows))
+            power_configured = bool(host_rows or slot_rows or card_rows)
+            mount_rows = [r for r in rows if r.event == "MOUNT_RESULT"]
+            mounted = bool(mount_rows and mount_rows[-1].fields["mounted"] == "1")
+            # POWER is emitted both when gpio_config fails and when the later
+            # gpio_set_level fails. V1 cannot distinguish those resource
+            # states, so retain that narrow ambiguity instead of guessing.
+            power_state_ambiguous = stage == "power" and "POWER" in events
+            required_attempts = {
+                "sd_unmount_attempted": mounted,
+                "host_deinit_attempted": host_acquired,
+            }
+            if not power_state_ambiguous:
+                required_attempts["power_off_attempted"] = power_configured
+            if any(cl[key] != ("1" if needed else "0")
+                   for key, needed in required_attempts.items()):
+                cleanup_incomplete = True
         else:
             cleanup_values = ("sd_unmount_attempted","sd_unmount_error","host_deinit_attempted","host_deinit_error","power_off_attempted","power_off_error")
             if any(complete.fields[k] != "0" for k in cleanup_values):
@@ -567,9 +610,74 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
             raise ContractError("failure witness is not the final operation before cleanup")
         if stage == "power" and ("POWER" not in events or any(e in events for e in ("HOST", "SLOT", "CARD"))):
             raise ContractError("power failure is not the final pre-host operation")
+        if any(e in events for e in ("POWER", "HOST", "SLOT", "CARD")):
+            if int(_one(rows, "BOOT").fields["reset_reason"]) not in {1, 3, 11}:
+                raise ContractError("failed capture continued after an unapproved reset reason")
+        # A terminal can identify only the first operation failure. Everything
+        # before that matching witness must be successful; otherwise a later
+        # matching error could conceal an earlier fault in the same prefix.
+        if stage == "cleanup":
+            witness_index = next(i for i, r in enumerate(rows) if r.event == "CLEANUP")
+        elif stage == "power":
+            witness_index = next(i for i, r in enumerate(rows) if r.event == "POWER")
+        elif stage == "resources":
+            witness_index = len(rows) - (1 if events[-1] == "COMPLETE" else 0)
+        elif witness is not None:
+            witness_index = max(i for i, r in enumerate(rows) if r.event == witness)
+        else:
+            witness_index = len(rows)
+        for prior in rows[:witness_index]:
+            fields = prior.fields
+            if prior.event in {"HOST", "SLOT", "CARD"} and fields["error"] != "0":
+                raise ContractError("failure terminal follows an earlier resource error")
+            if prior.event == "IDENTITY_MATCH":
+                if (fields["reference_epoch"] != H35_REFERENCE_EPOCH
+                        or fields["match"] != "1" or fields["error"] != "0"):
+                    raise ContractError("failure terminal follows an earlier identity failure")
+            if "status" in fields and (fields["status"] != "ok" or int(fields["error"]) != 0):
+                raise ContractError("failure terminal follows an earlier failed result")
+            if prior.event == "LAYOUT_RESULT" and fields["readback_match"] != "1":
+                raise ContractError("failure terminal follows an unsuccessful layout readback")
+            if prior.event == "MOUNT_RESULT" and (fields["mounted"] != "1" or fields["fs_type"] != "3"):
+                raise ContractError("failure terminal follows an unsuccessful mount")
+            if prior.event == "IO_RESULT" and (fields["failure_op"] != "none" or fields["checksum_match"] != "1"):
+                raise ContractError("failure terminal follows an unsuccessful file operation")
+            if prior.event == "PROBE_RESULT" and fields["verified"] != "1":
+                raise ContractError("failure terminal follows an unsuccessful probe")
+            if prior.event == "RETAINED_RESULT" and fields["checksum_match"] != "1":
+                raise ContractError("failure terminal follows an unsuccessful retained-file check")
+            if prior.event == "FORMAT_RESULT" and fields["f_result"] != "0":
+                raise ContractError("failure terminal follows an unsuccessful format result")
+        geometry_rows = [r for r in rows if r.event == "GEOMETRY"]
+        if geometry_rows and stage != "geometry":
+            geom = geometry_rows[0].fields
+            if {k: geom[k] for k in ("sectors","sector_bytes","capacity_bytes","bus_width","real_freq_khz","ddr")} != {
+                "sectors":"121503744","sector_bytes":"512","capacity_bytes":"62209916928","bus_width":"4","real_freq_khz":"20000","ddr":"0"}:
+                raise ContractError("failed capture card geometry mismatch")
+        identity_rows = [r for r in rows if r.event == "IDENTITY_MATCH"]
+        if identity_rows:
+            ident = identity_rows[0].fields
+            if ident["reference_epoch"] != H35_REFERENCE_EPOCH:
+                raise ContractError("failed capture H35 reference epoch mismatch")
+            if failure_intent is not None and ident["reference_epoch"] != failure_intent["h35_reference_epoch"]:
+                raise ContractError("failed capture identity reference does not match intent")
+            if failure_intent is not None and ident["match"] == "1":
+                cid_rows = [r for r in rows if r.event == "CID_PRIVATE"]
+                if len(cid_rows) != 1:
+                    raise ContractError("failed capture identity match lacks CID witness")
+                cid = cid_rows[0].fields
+                digest = h35_cid_digest(failure_intent["h35_reference_epoch"], {
+                    "mfg_id": int(cid["mfg_id"]), "oem_id": int(cid["oem_id"]),
+                    "revision": int(cid["revision"]), "serial": int(cid["serial"]),
+                    "date": int(cid["date"]), "name_size": int(cid["name_size"]),
+                    "name_hex": cid["name_hex"],
+                })
+                if digest != failure_intent["private_cid_sha256"]:
+                    raise ContractError("failed capture private CID does not match intent")
         # Failed operations can terminate before later phases exist. Retain an
         # ordered partial transcript as failure evidence without success claims.
-        return ParsedCapture(expected_epoch, expected_elf_sha256, rows, "failed", len(raw))
+        result = "incomplete" if cleanup_incomplete else "failed"
+        return ParsedCapture(expected_epoch, expected_elf_sha256, rows, result, len(raw))
     # Phase records have a constrained order; repeated fixture records are checked below.
     head = ["BOOT","TRANSPORT","HOST","SLOT","CARD","GEOMETRY","CID_PRIVATE","READY","IDENTITY_MATCH","LAYOUT_RESULT","FORMAT_START","FORMAT_RESULT","MOUNT_RESULT"]
     if events[:len(head)] != head:
