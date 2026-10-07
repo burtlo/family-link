@@ -227,10 +227,109 @@ def current_h37_mbr(h37_run_dir: Path) -> tuple[bytes, str]:
     return old_mbr, h32.digest(snapshot_path)
 
 
-def prepare(run_dir: Path, backup_dir: Path, h37_run_dir: Path) -> dict:
+def layout_reference_request(prior_dir: Path, backup_dir: Path) -> tuple[bytes, dict]:
+    """Validate actual prior layout evidence without trusting a sector sidecar."""
+    prior_dir = private_dir(prior_dir)
+    meta = json.loads((prior_dir / "run-private.json").read_text())
+    intent_path = prior_dir / "intent-private.json"
+    intent = contract.load_intent(intent_path.read_bytes())
+    manifest_path = prior_dir / "build/manifest-private.json"
+    manifest = json.loads(manifest_path.read_text())
+    baseline = _backup(backup_dir)
+    if meta.get("epoch") != intent["epoch"] or manifest.get("epoch") != intent["epoch"] or \
+       meta.get("intent_sha256") != h32.digest(intent_path) or \
+       manifest.get("intent_sha256") != h32.digest(intent_path) or \
+       meta.get("source") != manifest.get("source") or meta.get("sdk") != manifest.get("sdk") or \
+       meta.get("tools") != manifest.get("tools") or \
+       manifest.get("git_revision") != intent["source_sdk_snapshot"]["source_revision"] or \
+       Path(meta.get("build_dir", "")).resolve() != prior_dir / "build" or \
+       Path(meta.get("backup_dir", "")).resolve() != backup_dir.resolve() or \
+       meta.get("baseline_full_sha256") != baseline["full"]["sha256"] or \
+       meta.get("device_fingerprint_sha256") != baseline["device"]["fingerprint_sha256"]:
+        stop("prior H38 layout source/build/baseline binding differs")
+    _review_gate(prior_dir, meta)
+    _linked_review_gate(prior_dir, manifest)
+    for name, artifact in manifest["artifacts"].items():
+        path = prior_dir / "build" / name
+        if not path.is_file() or path.stat().st_size != artifact["bytes"] or h32.digest(path) != artifact["sha256"]:
+            stop("prior H38 layout artifact differs")
+    for name, digest in manifest["source"]["files"].items():
+        if h32.digest(prior_dir / "build/source-snapshot" / name) != digest:
+            stop("prior H38 layout source snapshot differs")
+    _validate_runtime_elf_binding(manifest, manifest["app_descriptor"])
+    result_path = prior_dir / "run-result-private.json"
+    restore_path = prior_dir / "restore-proof-private.json"
+    result = json.loads(result_path.read_text())
+    restore = json.loads(restore_path.read_text())
+    if result.get("epoch") != intent["epoch"] or result.get("restore_verified") is not True or \
+       restore.get("status") != "verified" or restore.get("full_sha256") != baseline["full"]["sha256"]:
+        stop("prior H38 device restoration is not verified")
+    raw_path = prior_dir / "capture-raw-private.bin"
+    raw = raw_path.read_bytes()
+    if len(raw) > 1_048_576:
+        stop("prior H38 layout capture exceeds bound")
+    rows = [contract._parse_record(line) for line in raw.splitlines(keepends=True)
+            if line.startswith(b"H38,")]
+    prefix = rows[:10]
+    elf = manifest["runtime_elf_sha256"]
+    if [row.event for row in prefix] != contract.SUCCESS_EVENT_SCHEDULE[:10] or \
+       any(row.fields["epoch"] != intent["epoch"] or row.fields["elf_sha256"] != elf for row in prefix):
+        stop("prior H38 layout successful prefix differs")
+    fields = {row.event: row.fields for row in prefix}
+    if fields["BOOT"]["reset_reason"] not in {"1", "3", "11"} or \
+       any(fields["TRANSPORT"][key] != value for key, value in contract.TRANSPORT.items()) or \
+       any(fields[event]["error"] != "0" for event in ("HOST", "SLOT", "CARD")) or \
+       {key: fields["GEOMETRY"][key] for key in ("sectors", "sector_bytes", "capacity_bytes", "bus_width", "real_freq_khz", "ddr")} != \
+       {"sectors": str(contract.CARD_SECTORS), "sector_bytes": "512", "capacity_bytes": str(contract.CARD_SECTORS * 512),
+        "bus_width": "4", "real_freq_khz": "20000", "ddr": "0"} or \
+       fields["READY"]["accepts"] != "BIND" or \
+       any(fields["IDENTITY_MATCH"][key] != value for key, value in
+           {"reference_epoch": contract.H35_REFERENCE_EPOCH, "match": "1", "error": "0"}.items()):
+        stop("prior H38 layout transport/discovery/bind prefix differs")
+    cid = {key: value for key, value in fields["CID_PRIVATE"].items() if key not in ("epoch", "elf_sha256")}
+    if contract.h35_cid_digest(contract.H35_REFERENCE_EPOCH, cid) != intent["private_cid_sha256"] or \
+       intent["private_cid_sha256"] != h37.read_h35_identity():
+        stop("prior H38 layout card identity differs")
+    layout = fields["LAYOUT_RESULT"]
+    mbr = base64.b64decode(layout["readback_base64_private"], validate=True)
+    contract.validate_mbr(mbr, intent["epoch"])
+    if h32.dh(mbr) != layout["readback_sha256"] or any(layout[key] != value for key, value in
+        {"physical_lba": "0", "write_sectors": "1", "write_bytes": "512", "write_count": "1",
+         "readback_match": "1", "trim_requests": "0", "erase_calls": "0", "status": "ok", "error": "0"}.items()):
+        stop("prior H38 actual MBR write/readback evidence differs")
+    ledger_path = prior_dir / "dispatch-ledger-private.jsonl"
+    ledger = [json.loads(line) for line in ledger_path.read_text().splitlines()]
+    expected = ["BIND", "LAYOUT", "FORMAT", "IO", "FINISH"]
+    if not 2 <= len(ledger) <= 5 or [row.get("command") for row in ledger] != expected[:len(ledger)] or \
+       any(row.get("schema") != 1 or row.get("epoch") != intent["epoch"] or row.get("elf_sha256") != elf or
+           type(row.get("elapsed_ms")) is not int or row["elapsed_ms"] < 0 for row in ledger) or \
+       any(a["elapsed_ms"] > b["elapsed_ms"] for a, b in zip(ledger, ledger[1:])):
+        stop("prior H38 layout dispatch binding/order differs")
+    return mbr, {"schema": 1, "status": "pending", "epoch": intent["epoch"],
+                 "intent_sha256": h32.digest(intent_path), "manifest_sha256": h32.digest(manifest_path),
+                 "capture_sha256": h32.digest(raw_path), "dispatch_sha256": h32.digest(ledger_path),
+                 "result_sha256": h32.digest(result_path), "restore_sha256": h32.digest(restore_path),
+                 "mbr_sha256": h32.dh(mbr), "reviewer": None}
+
+
+def prior_h38_layout(prior_dir: Path, backup_dir: Path) -> tuple[bytes, str]:
+    mbr, request = layout_reference_request(prior_dir, backup_dir)
+    path = prior_dir / "layout-reference-review-private.json"
+    review = json.loads(path.read_text())
+    expected = {**request, "status": "approved", "reviewer": review.get("reviewer")}
+    if review != expected or not isinstance(review.get("reviewer"), str) or not review["reviewer"].strip():
+        stop("independent prior H38 layout reference review differs")
+    return mbr, h32.digest(path)
+
+
+def prepare(run_dir: Path, backup_dir: Path, h37_run_dir: Path,
+            prior_h38_run_dir: Path | None = None) -> dict:
     run_dir = private_dir(run_dir, absent=True)
     backup_meta = _backup(backup_dir)
     old_mbr, h37_snapshot_sha = current_h37_mbr(h37_run_dir)
+    prior_review_sha = None
+    if prior_h38_run_dir is not None:
+        old_mbr, prior_review_sha = prior_h38_layout(prior_h38_run_dir, backup_dir)
     revision = _git_revision()
     source = source_identity()
     sdk = sdk_identity()
@@ -250,6 +349,9 @@ def prepare(run_dir: Path, backup_dir: Path, h37_run_dir: Path) -> dict:
             "h37_run_dir": str(h37_run_dir.resolve()),
             "source": source, "sdk": sdk, "tools": tools,
             "created_unix": int(time.time()), "status": "prepared"}
+    if prior_h38_run_dir is not None:
+        meta["prior_h38_layout_run_dir"] = str(prior_h38_run_dir.resolve())
+        meta["prior_h38_layout_review_sha256"] = prior_review_sha
     h32.atomic_json(run_dir / "run-private.json", meta, 0o600)
     return {"status": "prepared", "epoch": intent["epoch"],
             "intent_sha256": meta["intent_sha256"]}
@@ -267,6 +369,10 @@ def require_run(run_dir: Path, backup_dir: Path | None = None) -> tuple[dict, di
     h37_snapshot = Path(meta.get("h37_run_dir", "")) / "sector-snapshot-private.bin.json"
     if not h37_snapshot.is_file() or h32.digest(h37_snapshot) != meta.get("h37_snapshot_sha256"):
         stop("preserved H37 MBR source changed")
+    if "prior_h38_layout_run_dir" in meta:
+        mbr, review_sha = prior_h38_layout(Path(meta["prior_h38_layout_run_dir"]), Path(meta["backup_dir"]))
+        if review_sha != meta.get("prior_h38_layout_review_sha256") or h32.dh(mbr) != intent["old_mbr_sha256"]:
+            stop("prior H38 layout source changed")
     if backup_dir is not None:
         backup_meta = _backup(backup_dir)
         if Path(meta["backup_dir"]).resolve() != backup_dir.resolve() or \
@@ -1391,6 +1497,8 @@ def main() -> None:
         cmd.add_argument("--backup-dir", type=Path, required=True)
         if action == "prepare":
             cmd.add_argument("--h37-run-dir", type=Path, required=True)
+            cmd.add_argument("--prior-h38-run-dir", type=Path,
+                             help="explicit independently reviewed actual changed-layout reference")
     run = sub.add_parser("run", help="execute one reviewed H38 mutation epoch")
     run.add_argument("--use-existing-restore-image", action="store_true",
                      help="operator waives current contents; restore validated existing full image")
@@ -1402,7 +1510,7 @@ def main() -> None:
         if args.action == "preflight":
             result = {"capture": capture_preflight(), "build_tools": build_tools_preflight()}
         elif args.action == "prepare":
-            result = prepare(args.run_dir, args.backup_dir, args.h37_run_dir)
+            result = prepare(args.run_dir, args.backup_dir, args.h37_run_dir, args.prior_h38_run_dir)
         elif args.action == "build":
             result = build(args.run_dir, args.backup_dir)
         elif args.action == "run":

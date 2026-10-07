@@ -87,6 +87,8 @@ static uint8_t dma_buffer[DMA_BYTES] DMA_ATTR __attribute__((aligned(4)));
 static uint8_t mbr_readback[MBR_BYTES] DMA_ATTR __attribute__((aligned(4)));
 static uint8_t bpb_sector[MBR_BYTES] DMA_ATTR __attribute__((aligned(4)));
 static char tx_record[TX_BYTES];
+/* Only the synchronous application task calls EMIT; no ISR/task shares it. */
+static char record_fields[4096];
 static sdmmc_card_t card;
 static h38_disk_guard_t guard;
 static h38_fatfs_adapter_t fatfs;
@@ -137,10 +139,9 @@ static esp_err_t emit_record(const char *event, const char *fields)
     return ESP_OK;
 }
 #define EMIT(event, ...) do { \
-    char _fields[4096]; \
-    int _n = snprintf(_fields, sizeof(_fields), __VA_ARGS__); \
-    if (_n < 0 || (size_t)_n >= sizeof(_fields)) fail(ST_RESOURCES, ESP_ERR_INVALID_SIZE); \
-    if (emit_record((event), _fields) != ESP_OK) fail(ST_TIMEOUT, ESP_ERR_TIMEOUT); \
+    int _n = snprintf(record_fields, sizeof(record_fields), __VA_ARGS__); \
+    if (_n < 0 || (size_t)_n >= sizeof(record_fields)) fail(ST_RESOURCES, ESP_ERR_INVALID_SIZE); \
+    if (emit_record((event), record_fields) != ESP_OK) fail(ST_TIMEOUT, ESP_ERR_TIMEOUT); \
 } while (0)
 
 static bool hex_lower(const char *s, size_t n)

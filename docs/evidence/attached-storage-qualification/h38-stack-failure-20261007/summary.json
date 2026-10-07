@@ -1,0 +1,50 @@
+{
+  "clean_SD_shutdown_of_crashed_session": "unproven",
+  "clocks": {
+    "capture_elapsed_ms": 121400,
+    "capture_end_elapsed_ms": 146926,
+    "master_elapsed_ms": 689013,
+    "master_overrun_ms": 0,
+    "phases": [
+      {
+        "elapsed_ms": 120014,
+        "end_elapsed_ms": 146926,
+        "end_reason": "deadline:format_phase",
+        "name": "FORMAT",
+        "start_elapsed_ms": 26911
+      }
+    ],
+    "session_elapsed_ms": 120436,
+    "session_end_elapsed_ms": 146926
+  },
+  "configured_main_stack_bytes": 12288,
+  "controller_deadline": "format_phase",
+  "current_contents_preservation": "waived_by_operator",
+  "device_disposition": "restored_and_booted",
+  "epoch": "5b505224661d683ce285e843452fe2e7",
+  "failure": "main_task_stack_overflow_after_layout",
+  "format_completion": "unproven",
+  "format_start_seen": false,
+  "independent_prior_layout_reference_review": "GO",
+  "independent_restoration_review": "GO",
+  "later_card_write_outcome": "unproven_after_crash",
+  "layout_readback": "exact_canonical_MBR_verified",
+  "layout_write_bytes": 512,
+  "linked_frames_bytes": {
+    "app_main": 5392,
+    "do_layout": 5424,
+    "emit_cid": 4192,
+    "init_card": 4336
+  },
+  "phase_commands": [
+    "BIND",
+    "LAYOUT",
+    "FORMAT"
+  ],
+  "qualified": false,
+  "restore_mode": "existing_verified_baseline",
+  "restore_verified": true,
+  "schema": 1,
+  "source_revision": "e13be1b",
+  "status": "failed_or_incomplete"
+}

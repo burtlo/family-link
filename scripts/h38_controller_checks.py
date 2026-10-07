@@ -936,6 +936,81 @@ def existing_restore_checks():
             check(result["restore_source"] == "existing_verified_baseline", "restore source lost")
 
 
+def prior_layout_checks():
+    import h38_sd_contract_checks as fixtures
+    with tempfile.TemporaryDirectory(prefix="h38-layout-reference-") as folder:
+        root = Path(folder).resolve()
+        prior = root / "prior"
+        build = prior / "build"
+        build.mkdir(parents=True)
+        prior.chmod(0o700)
+        intent = fixtures.intent()
+        (prior / "intent-private.json").write_bytes(h38.contract.canonical_intent_bytes(intent))
+        artifacts = {}
+        for name, data in (("family_link_demo.elf", b"ELF"), ("family_link_demo.bin", b"APP")):
+            (build / name).write_bytes(data)
+            artifacts[name] = {"bytes": len(data), "sha256": h38.h32.dh(data)}
+        elf = artifacts["family_link_demo.elf"]["sha256"]
+        source = {"files": {}, "sha256": "a" * 64}
+        meta = {"epoch": intent["epoch"], "intent_sha256": h38.h32.digest(prior / "intent-private.json"),
+                "build_dir": str(build), "backup_dir": str(root), "baseline_full_sha256": "b" * 64,
+                "device_fingerprint_sha256": "c" * 64, "source": source, "sdk": {}, "tools": {}}
+        manifest = {"epoch": intent["epoch"], "intent_sha256": meta["intent_sha256"],
+                    "source": source, "sdk": {}, "tools": {}, "artifacts": artifacts,
+                    "git_revision": intent["source_sdk_snapshot"]["source_revision"],
+                    "runtime_elf_sha256": elf, "app_descriptor": {"elf_sha256": elf}}
+        def save(path, value):
+            path.write_text(json.dumps(value))
+        save(prior / "run-private.json", meta)
+        save(build / "manifest-private.json", manifest)
+        save(prior / "source-review-private.json", {"schema": 1, "status": "approved", "epoch": intent["epoch"],
+             "source_sha256": source["sha256"], "sdk_sha256": h38.h32.dh(json.dumps({}, sort_keys=True).encode()), "reviewer": "independent"})
+        save(prior / "linked-review-private.json", {"schema": 1, "status": "approved", "epoch": intent["epoch"],
+             "manifest_sha256": h38.h32.digest(build / "manifest-private.json"), "elf_sha256": elf,
+             "app_sha256": artifacts["family_link_demo.bin"]["sha256"], "reviewer": "independent"})
+        result = {"epoch": intent["epoch"], "restore_verified": True}
+        save(prior / "run-result-private.json", result)
+        save(prior / "restore-proof-private.json", {"status": "verified", "full_sha256": "b" * 64})
+        rows, _ = synthetic_success_capture(intent, elf)
+        raw = b"".join(rows[:10]).replace(b"\n", b"\r\n")
+        capture_path = prior / "capture-raw-private.bin"
+        capture_path.write_bytes(raw)
+        ledger = [{"schema": 1, "epoch": intent["epoch"], "elf_sha256": elf,
+                   "command": command, "elapsed_ms": n} for n, command in enumerate(("BIND", "LAYOUT", "FORMAT"))]
+        ledger_path = prior / "dispatch-ledger-private.jsonl"
+        ledger_path.write_text("".join(json.dumps(row)+"\n" for row in ledger))
+        baseline = {"full": {"sha256": "b" * 64}, "device": {"fingerprint_sha256": "c" * 64}}
+        with patch.object(h38, "_backup", return_value=baseline), \
+             patch.object(h38.h37, "read_h35_identity", return_value=intent["private_cid_sha256"]):
+            mbr, request = h38.layout_reference_request(prior, root)
+            check(mbr == h38.contract.build_mbr(intent["epoch"]), "wrong actual layout reference")
+            save(prior / "layout-reference-review-private.json", {**request, "status": "approved", "reviewer": "independent"})
+            check(h38.prior_h38_layout(prior, root)[0] == mbr, "reviewed layout reference rejected")
+            def reject(label):
+                try:
+                    h38.prior_h38_layout(prior, root)
+                except (ValueError, OSError):
+                    return
+                raise AssertionError(label)
+            capture_path.write_bytes(raw + b"changed ignored log\n")
+            reject("changed raw evidence accepted under old review")
+            capture_path.write_bytes(raw.replace(b"readback_match=1", b"readback_match=0"))
+            reject("failed MBR readback accepted")
+            capture_path.write_bytes(raw.replace(b"readback_sha256=", b"readback_sha256=f", 1))
+            reject("altered MBR digest accepted")
+            capture_path.write_bytes(raw)
+            ledger_path.write_text("".join(json.dumps({**row, "command": "IO"} if n == 2 else row)+"\n" for n, row in enumerate(ledger)))
+            reject("unordered dispatch accepted")
+            ledger_path.write_text("".join(json.dumps(row)+"\n" for row in ledger))
+            save(prior / "run-result-private.json", {**result, "restore_verified": False})
+            reject("unverified prior restoration accepted")
+            save(prior / "run-result-private.json", result)
+            (build / "family_link_demo.bin").write_bytes(b"BAD")
+            reject("altered reviewed app accepted")
+            (build / "family_link_demo.bin").write_bytes(b"APP")
+            check(h38.prior_h38_layout(prior, root)[0] == mbr, "restored immutable evidence rejected")
+
+
 def main():
     clock_checks()
     clock_freeze_checks()
@@ -949,6 +1024,7 @@ def main():
     restore_current_checks()
     recovery_checks()
     existing_restore_checks()
+    prior_layout_checks()
     print("H38 controller host-only checks passed: clocks, transport, drain, mandatory restore")
 
 

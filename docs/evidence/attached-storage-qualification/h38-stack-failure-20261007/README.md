@@ -1,0 +1,7 @@
+# H38 corrected framing retry: main-task stack overflow
+
+CRLF parsing worked. BIND verified card identity and expected original MBR; the exact approved 512-byte layout sector was written and read back. After FORMAT dispatch the firmware reported a main-task stack overflow, rebooted with ESP_RST_PANIC, and rejected the reset. No FORMAT_START was captured. Formatting and subsequent card-write outcomes are unproven; no clean shutdown of the crashed card session is claimed.
+
+The host respected the authoritative FORMAT phase deadline and restored the existing verified image. Full 16 MiB readback, separate PT/NVS reads, partition/application identity, checked recovery process exit codes, and healthy original factory startup pass the controller. Independent restoration and exact prior-layout reference reviews returned GO. This epoch remains failed and unqualified.
+
+Independent linked-frame diagnosis found reachable nested frames exceeding the 12,288-byte main stack before library calls. The [correction plan](../../../plans/h38-stack-and-layout-retry.md) moves only the synchronous EMIT scratch buffer to static storage and requires new linked-frame review. Since the MBR changed, a fresh intent must bind the actual previous successful layout readback under independent review; BIND still reads the live card and rejects any mismatch before writes. No format rescue or automatic resume is allowed. Raw images, sectors, hashes, captures, identities and paths remain private.
