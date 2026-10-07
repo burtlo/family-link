@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -44,6 +46,8 @@ class HangoutRegistry:
 
 
 def registry_path() -> Path:
+    if override := os.environ.get("FAMILY_LINK_HANGOUT_REGISTRY"):
+        return Path(override).expanduser().resolve()
     local = ROOT / "hangout.local.yaml"
     if local.is_file():
         return local

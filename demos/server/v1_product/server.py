@@ -3,37 +3,86 @@
 from __future__ import annotations
 
 import argparse
-import json
+import asyncio
+import logging
+import time
+from contextlib import asynccontextmanager
 import os
 import secrets
+import sys
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, Header, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Header, Request, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from starlette.concurrency import run_in_threadpool
+
+from demos.server.v1_product.archive import MessageArchive, ArchiveError, identifier
 
 from demos.server._shared.hangout_registry import endpoint_for_token, load_registry
 from demos.server._shared.registry import parse_bearer
-from demos.server._shared.user_mailbox import bootstrap_mailbox, wav_duration_ms
-from demos.server.h27_sketch.codec import SketchError, unpack_sketch
+from demos.server._shared.user_mailbox import bootstrap_mailbox
 from demos.server.v1_product import ws as v1_ws
 
 ROOT = Path(os.environ.get("FAMILY_LINK_ROOT") or Path(__file__).resolve().parents[3])
-DATA_DIR = ROOT / "data" / "v1_product"
+
+
+def default_data_dir() -> Path:
+    if os.name == 'nt':
+        return Path(os.environ.get('LOCALAPPDATA') or Path.home() / 'AppData' / 'Local') / 'Family Link'
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library' / 'Application Support' / 'Family Link'
+    return Path(os.environ.get('XDG_DATA_HOME') or Path.home() / '.local' / 'share') / 'family-link'
+
+
+DATA_DIR = Path(os.environ.get('FAMILY_LINK_DATA_DIR') or default_data_dir()).expanduser().resolve()
+STORE_DIR = Path(os.environ.get('FAMILY_LINK_MESSAGE_STORE') or DATA_DIR / 'message_store').expanduser().resolve()
+# Legacy files have insufficient metadata on their own. Never reseed over them.
+if any((DATA_DIR / folder).is_dir() and any((DATA_DIR / folder).rglob('*'))
+       for folder in ('blobs', 'shared', 'sketches', 'shared_sketches')):
+    raise RuntimeError('Legacy media found in FAMILY_LINK_DATA_DIR. Export the running old mailbox and import into a NEW data folder before switching.')
+LEGACY_DIR = ROOT / 'data' / 'v1_product'
+if os.environ.get('FAMILY_LINK_START_FRESH') != '1' and not any(STORE_DIR.glob('messages/*/*/*/complete')):
+    if any((LEGACY_DIR / name).is_dir() and any(p.is_file() for p in (LEGACY_DIR / name).rglob('*'))
+           for name in ('blobs', 'shared', 'sketches', 'shared_sketches')):
+        raise RuntimeError('Existing legacy archive detected. Preserve/export its running mailbox before switching. For an explicitly separate empty installation only, set FAMILY_LINK_START_FRESH=1; old files remain untouched.')
+ARCHIVE = MessageArchive(STORE_DIR, free_floor=int(os.environ.get("FAMILY_LINK_FREE_DISK_FLOOR_BYTES", str(64 * 1024 * 1024))))
 WEB_DIR = ROOT / "demos" / "parent" / "web"
 BOX_WEB_DIR = ROOT / "demos" / "server" / "v1_product" / "web"
 TTL_S = float(os.environ.get("FAMILY_TTL_S", str(7 * 24 * 3600)))
 
 REGISTRY = load_registry()
-MAILBOX = bootstrap_mailbox(DATA_DIR, REGISTRY, ttl_s=TTL_S)
+v1_ws.REGISTRY = REGISTRY
+MAILBOX = bootstrap_mailbox(DATA_DIR, REGISTRY, ttl_s=TTL_S, archive=ARCHIVE)
 ADMIN_TOKENS: dict[str, float] = {}
 ADMIN_TTL_S = 3600.0
 
-app = FastAPI(title="family-link v1")
+@asynccontextmanager
+async def lifespan(_app):
+    logging.getLogger(__name__).info('Message archive: %s; directory fsync: %s', STORE_DIR, ARCHIVE.directory_fsync_supported)
+    try:
+        yield
+    finally:
+        ARCHIVE.close()
+
+
+app = FastAPI(title="family-link v1", lifespan=lifespan)
+
+
+@app.exception_handler(ArchiveError)
+async def archive_error(_request: Request, exc: ArchiveError):
+    return JSONResponse({'error': str(exc)}, status_code=exc.status)
+
+
+@app.exception_handler(OSError)
+async def disk_error(_request: Request, exc: OSError):
+    logging.getLogger(__name__).exception('Storage operation failed')
+    return JSONResponse({'error': 'server storage unavailable'}, status_code=507)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -99,8 +148,14 @@ def require_admin(authorization: str | None) -> bool:
 
 
 async def _notify_created(created) -> None:
-    for msg in created:
-        await v1_ws.notify_inbox(msg.to_user, msg.seq, msg.kind, msg.from_user)
+    async def push(msg):
+        try:
+            await asyncio.wait_for(v1_ws.notify_inbox(msg.to_user, msg.seq, msg.kind, msg.from_user), timeout=0.5)
+        except Exception:
+            logging.getLogger(__name__).exception('Notification failed after archive commit')
+    # Recipient notifications are independent and never hold a committed send
+    # response indefinitely behind a stalled websocket.
+    await asyncio.gather(*(push(msg) for msg in created))
 
 
 @app.get("/v1/hangout")
@@ -174,6 +229,8 @@ def put_profile(
 
 @app.get("/v1/inbox")
 def get_inbox(
+    limit: int = Query(default=8, ge=1, le=16),
+    before_seq: int | None = Query(default=None, ge=1),
     authorization: str | None = Header(default=None),
     x_user_id: str | None = Header(default=None),
 ):
@@ -182,7 +239,7 @@ def get_inbox(
     user_id = require_user_header(x_user_id)
     if user_id is None:
         return JSONResponse({"error": "X-User-Id required"}, status_code=400)
-    return MAILBOX.inbox_payload(user_id)
+    return MAILBOX.inbox_payload(user_id, limit=limit, before_seq=before_seq)
 
 
 @app.put("/v1/session/view")
@@ -246,54 +303,27 @@ async def post_message(
     if from_user is None:
         return JSONResponse({"error": "X-User-Id required"}, status_code=400)
 
-    form = await request.form()
+    if request.headers.get('content-type', '').split(';')[0].strip() == 'application/json':
+        return await create_chunk_message(request, from_user)
+    form = await request.form(max_files=2, max_fields=8)
     try:
-        kind = str(form.get("kind") or "")
-        if kind != "audio":
-            return JSONResponse({"error": "kind must be audio"}, status_code=400)
-        to_user = form.get("to_user_id")
-        to_user_id = None if to_user in (None, "") else str(to_user)
-        broadcast_raw = form.get("broadcast")
-        broadcast = str(broadcast_raw).lower() in {"1", "true", "yes"}
-        if broadcast and to_user_id:
-            return JSONResponse(
-                {"error": "use to_user_id or broadcast, not both"}, status_code=400
-            )
-        if not broadcast and not to_user_id:
-            return JSONResponse({"error": "to_user_id or broadcast required"}, status_code=400)
-        blob_item = form.get("blob")
-        sketch_item = form.get("sketch")
-        blob_bytes: bytes | None = None
-        sketch_bytes: bytes | None = None
-        if isinstance(blob_item, StarletteUploadFile):
-            blob_bytes = await blob_item.read()
-        if isinstance(sketch_item, StarletteUploadFile):
-            sketch_bytes = await sketch_item.read()
+        if str(form.get('kind') or '') != 'audio':
+            raise ArchiveError(400, 'kind must be audio')
+        to_user = form.get('to_user_id')
+        broadcast = str(form.get('broadcast') or '').lower() in {'1', 'true', 'yes'}
+        blob = form.get('blob')
+        sketch = form.get('sketch')
+        if not isinstance(blob, StarletteUploadFile):
+            raise ArchiveError(400, 'blob required')
+        created = await run_in_threadpool(
+            MAILBOX.post_audio_stream, from_user, to_user_id=str(to_user) if to_user else None,
+            broadcast=broadcast, source=blob.file,
+            sketch=sketch.file if isinstance(sketch, StarletteUploadFile) and sketch.size else None,
+            client_id=str(form['client_message_id']) if form.get('client_message_id') else None)
+    except ValueError as exc:
+        raise ArchiveError(400, str(exc)) from exc
     finally:
         await form.close()
-
-    if not blob_bytes:
-        return JSONResponse({"error": "blob required"}, status_code=400)
-    if sketch_bytes:
-        try:
-            unpack_sketch(sketch_bytes)
-        except SketchError as exc:
-            return JSONResponse({"error": f"bad sketch: {exc}"}, status_code=400)
-    else:
-        sketch_bytes = None
-
-    dur = wav_duration_ms(blob_bytes)
-    try:
-        created = MAILBOX.post_audio(
-            from_user,
-            to_user_id=to_user_id,
-            broadcast=broadcast,
-            blob=blob_bytes,
-            sketch=sketch_bytes,
-            duration_ms=dur,
-        )
-    except ValueError as exc:
-        return JSONResponse({"error": str(exc)}, status_code=400)
 
     await _notify_created(created)
     return {
@@ -304,10 +334,32 @@ async def post_message(
                 "from": m.from_user,
                 "to": m.to_user,
                 "broadcast_id": m.broadcast_id,
+                "message_id": m.message_id,
             }
             for m in created
         ]
     }
+
+
+@app.get('/v1/outgoing/{client_message_id}')
+def outgoing_receipt(client_message_id: str,
+                     authorization: str | None = Header(default=None),
+                     x_user_id: str | None = Header(default=None)):
+    if require_endpoint(authorization) is None:
+        return unauthorized()
+    user = require_user_header(x_user_id)
+    if user is None:
+        raise ArchiveError(400, 'X-User-Id required')
+    identifier(client_message_id)
+    with ARCHIVE.lock:
+        manifest = next((m for m in ARCHIVE.index.values()
+                         if m['from_user'] == user and m.get('client_message_id') == client_message_id), None)
+        if manifest is None:
+            raise ArchiveError(404, 'no committed receipt')
+        return dict(schema='family-send-receipt/1', client_message_id=client_message_id,
+                    message_id=manifest['message_id'], state='complete', from_user_id=user,
+                    recipients=manifest['recipients'], audio=manifest['audio'], sketch=manifest.get('sketch'),
+                    duration_ms=manifest['duration_ms'], power_loss_qualified=False)
 
 
 @app.get("/v1/messages/{seq}/blob")
@@ -321,10 +373,10 @@ def get_blob(
     user_id = require_user_header(x_user_id)
     if user_id is None:
         return JSONResponse({"error": "X-User-Id required"}, status_code=400)
-    data = MAILBOX.read_blob(user_id, seq)
-    if data is None:
+    path = MAILBOX.media_path(user_id, seq)
+    if path is None:
         return JSONResponse({"error": "not found"}, status_code=404)
-    return Response(data, media_type="application/octet-stream")
+    return FileResponse(path, media_type="audio/wav")
 
 
 @app.get("/v1/messages/{seq}/sketch")
@@ -338,10 +390,10 @@ def get_sketch(
     user_id = require_user_header(x_user_id)
     if user_id is None:
         return JSONResponse({"error": "X-User-Id required"}, status_code=400)
-    data = MAILBOX.read_sketch(user_id, seq)
-    if data is None:
+    path = MAILBOX.media_path(user_id, seq, sketch=True)
+    if path is None:
         return JSONResponse({"error": "not found"}, status_code=404)
-    return Response(data, media_type="application/octet-stream")
+    return FileResponse(path, media_type="application/octet-stream")
 
 
 @app.post("/v1/admin/login")
@@ -379,21 +431,19 @@ async def admin_welcome(
 ):
     if not require_admin(authorization):
         return unauthorized()
-    form = await request.form()
+    form = await request.form(max_files=1, max_fields=2)
     try:
-        blob_item = form.get("blob")
-        if not isinstance(blob_item, StarletteUploadFile):
-            return JSONResponse({"error": "blob required"}, status_code=400)
-        wav = await blob_item.read()
+        blob = form.get('blob')
+        if not isinstance(blob, StarletteUploadFile):
+            raise ArchiveError(400, 'blob required')
+        manifest = await run_in_threadpool(ARCHIVE.import_wav, 'system', REGISTRY.hangout.name,
+                                           list(REGISTRY.users), blob.file, system=True)
+        created = MAILBOX.publish_manifest(manifest)
     finally:
         await form.close()
-    if not wav:
-        return JSONResponse({"error": "empty blob"}, status_code=400)
-    dur = wav_duration_ms(wav)
-    created = MAILBOX.append_system_welcome(wav, dur)
-    for row in created:
-        await v1_ws.notify_inbox(row["user_id"], row["seq"], "audio", "system")
-    return {"ok": True, "seeded": created}
+    await _notify_created(created)
+    return {'ok': True, 'seeded': [{'user_id': m.to_user, 'seq': m.seq} for m in created]}
+
 
 
 @app.post("/v1/admin/messages")
@@ -410,34 +460,26 @@ async def admin_send_message(
         return JSONResponse({"error": "no admin user"}, status_code=500)
     from_user = admin_user.id
 
-    form = await request.form()
+    form = await request.form(max_files=2, max_fields=8)
     try:
-        kind = str(form.get("kind") or "")
-        if kind != "audio":
-            return JSONResponse({"error": "kind must be audio"}, status_code=400)
-        to_user = form.get("to_user_id")
-        to_user_id = None if to_user in (None, "") else str(to_user)
-        broadcast_raw = form.get("broadcast")
-        broadcast = str(broadcast_raw).lower() in {"1", "true", "yes"}
-        blob_item = form.get("blob")
-        blob_bytes: bytes | None = None
-        if isinstance(blob_item, StarletteUploadFile):
-            blob_bytes = await blob_item.read()
+        if str(form.get('kind') or '') != 'audio':
+            raise ArchiveError(400, 'kind must be audio')
+        blob = form.get('blob')
+        sketch = form.get('sketch')
+        if not isinstance(blob, StarletteUploadFile):
+            raise ArchiveError(400, 'blob required')
+        to_user = form.get('to_user_id')
+        created = await run_in_threadpool(
+            MAILBOX.post_audio_stream, from_user,
+            to_user_id=str(to_user) if to_user else None,
+            broadcast=str(form.get('broadcast') or '').lower() in {'1', 'true', 'yes'},
+            source=blob.file, sketch=sketch.file if isinstance(sketch, StarletteUploadFile) and sketch.size else None,
+            client_id=str(form['client_message_id']) if form.get('client_message_id') else None)
+    except ValueError as exc:
+        raise ArchiveError(400, str(exc)) from exc
     finally:
         await form.close()
-    if not blob_bytes:
-        return JSONResponse({"error": "blob required"}, status_code=400)
-    dur = wav_duration_ms(blob_bytes)
-    try:
-        created = MAILBOX.post_audio(
-            from_user,
-            to_user_id=to_user_id,
-            broadcast=broadcast,
-            blob=blob_bytes,
-            duration_ms=dur,
-        )
-    except ValueError as exc:
-        return JSONResponse({"error": str(exc)}, status_code=400)
+
     await _notify_created(created)
     return {
         "messages": [
@@ -445,6 +487,14 @@ async def admin_send_message(
             for m in created
         ]
     }
+
+
+from demos.server.v1_product.chunk_api import attach_product_chunks
+from demos.server.v1_product.body_limit import UploadLimit
+
+app.add_middleware(UploadLimit)
+create_chunk_message = attach_product_chunks(app, ARCHIVE, MAILBOX, REGISTRY,
+                                             require_endpoint, require_user_header, _notify_created)
 
 
 @app.websocket("/v1/ws")

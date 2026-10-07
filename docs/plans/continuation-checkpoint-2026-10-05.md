@@ -1,5 +1,12 @@
 # Durable long-message work: continuation checkpoint
 
+> **Execution paused — 2026-10-07:** the user will obtain supported cards and
+> asked to continue product/server work first. Do not resume the 64 GB experiment
+> or follow this historical continuation sequence. Current work is indexed in
+> [the product roadmap](product-no-storage-roadmap.md). Storage qualification and
+> a device durable outbox remain unproven and deferred.
+
+
 **Updated:** 2026-10-06
 
 **Status:** H37 Stage A completed read-only classification for epoch `43d7e2e5792ca6c1e494ff7cb06f3353`; its sanitized result and timing summary are committed under [current H37 evidence](../evidence/attached-storage-qualification/h37-current-baseline-20261006/). Two metadata reads totaled 1,024 bytes and reported an MBR partition with an exFAT signature; filesystem contents/names were not inspected and SD media writes were zero. Independent verification confirmed full current BOX restore/readback and private device/source binding. The original application launched and matched the expected project, SDK version, and ELF prefix in an 8,507-byte, 15.02-second capture. No actual panic or watchdog event was observed. The listener-induced USB reset was observed as runtime `ESP_RST_USB` code 11 and ROM `USB_UART_CHIP_RESET` code `0x15`; these are different reset-code namespaces and match the intentional startup reset. This is startup-only evidence and does not establish PIN/UI/network health; the composite helper exit 1 was due to an H32-only record requirement, while the earlier system-Python serial error occurred before port open, RTS, or capture. The H37 preflash failure and 5,978-byte NVS difference remain unexplained historical evidence; that epoch remains immutable. The [H38 bounded filesystem plan](h38-bounded-sd-filesystem.md) is reviewed for source-only implementation. Its source/mock guard and formatter foundation now passes host checks; the host/controller contract foundation, firmware/controller implementation, device build, and hardware/restoration gates remain open. No backend is qualified, and no mount/format/write is authorized by Stage A. Per-run BOX/NVS preservation and complete restoration/readback/healthy-boot proof remain mandatory. H32 remains unqualified. The recurring `estimate-message-memory-costs` automation is ACTIVE and should remain quiet while status is unchanged.

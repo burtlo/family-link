@@ -1,5 +1,12 @@
 # Plan: Prove durable long messages
 
+> **Execution paused — 2026-10-07:** the user will obtain supported cards and
+> asked to continue product/server work first. Do not resume the 64 GB experiment
+> or follow this historical continuation sequence. Current work is indexed in
+> [the product roadmap](product-no-storage-roadmap.md). Storage qualification and
+> a device durable outbox remain unproven and deferred.
+
+
 | Field                          | Value |
 |--------------------------------|-------|
 | **Doc kind**                   | `version-roadmap` |

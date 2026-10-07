@@ -1,5 +1,12 @@
 # Durable message experiments: continuation instructions
 
+> **Execution paused — 2026-10-07:** the user will obtain supported cards and
+> asked to continue product/server work first. Do not resume the 64 GB experiment
+> or follow this historical continuation sequence. Current work is indexed in
+> [the product roadmap](product-no-storage-roadmap.md). Storage qualification and
+> a device durable outbox remain unproven and deferred.
+
+
 Updated 2026-10-06. This is an operator handoff, read alongside the [ordered experiments](long-message-experiments.md). The detailed current stopping point and resume sequence are in the [continuation checkpoint](continuation-checkpoint-2026-10-05.md). That checkpoint supersedes the older “Immediate work” instructions below where they conflict.
 
 **Current checkpoint:** H34 server storage is complete; H32 remains unqualified after its PCM cadence failure. H35 detected SDMMC, and the owner authorized disposable use of this identified microSD while waiving backup/restoration of prior card contents. H37 Stage A read-only classification is complete for epoch `43d7e2e5792ca6c1e494ff7cb06f3353`: the bounded reads found one MBR partition with an exFAT signature, with filesystem contents/names uninspected and zero media writes. Independent review verified full BOX restoration/readback. Stage A does not qualify the backend. The next storage step is a separately reviewed H38 filesystem/mount/I/O plan; H38 has not started. No mount, format, or write is authorized by the Stage A result alone. Per-epoch BOX/NVS preservation and restoration remain mandatory. See the [Stage A summary](../evidence/attached-storage-qualification/h37-current-baseline-20261006/summary.json) and [continuation checkpoint](continuation-checkpoint-2026-10-05.md) for current evidence and gates. Historical H32 retry instructions below are not the current work.

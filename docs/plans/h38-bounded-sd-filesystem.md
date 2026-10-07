@@ -1,5 +1,12 @@
 # H38 — Bounded SD filesystem setup and I/O
 
+> **Execution paused — 2026-10-07:** the user will obtain supported cards and
+> asked to continue product/server work first. Do not resume the 64 GB experiment
+> or follow this historical continuation sequence. Current work is indexed in
+> [the product roadmap](product-no-storage-roadmap.md). Storage qualification and
+> a device durable outbox remain unproven and deferred.
+
+
 | Field | Value |
 |---|---|
 | **Status** | Qualification is held for replacement with a 16/32 GB SDHC card, per operator choice on 2026-10-07. The attached nominal 64 GB card exceeds the accessory's published 32 GB specification. Its three hardware attempts are failed diagnostic runs, with no storage qualification. CRLF/SDK label and stack defects are corrected; the fixed-marker buffer correction is committed and host-verified. The last run's mandatory device recovery is still in progress. A replacement requires fresh read-only card discovery, identity/geometry provenance, and a reviewed updated profile before any card write. |

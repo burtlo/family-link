@@ -3,12 +3,23 @@
 from __future__ import annotations
 
 import time
+import io
+import threading
+from functools import wraps
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from demos.server._shared.hangout_registry import HangoutRegistry, load_registry
+
+
+def serialized(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._mutation_lock:
+            return method(self, *args, **kwargs)
+    return wrapped
 
 
 @dataclass
@@ -24,6 +35,7 @@ class Message:
     has_blob: bool = False
     has_sketch: bool = False
     duration_ms: int | None = None
+    message_id: str | None = None
 
 
 @dataclass
@@ -42,7 +54,9 @@ class UserSession:
 
 
 class UserMailbox:
-    def __init__(self, registry: HangoutRegistry, data_dir: Path, ttl_s: float = 3600.0):
+    def __init__(self, registry: HangoutRegistry, data_dir: Path, ttl_s: float = 3600.0, *, archive=None):
+        self.archive = archive
+        self._mutation_lock = threading.RLock()
         self.registry = registry
         self.data_dir = data_dir
         self.ttl_s = ttl_s
@@ -55,29 +69,110 @@ class UserMailbox:
         self._shared_dir = data_dir / "shared"
         self._sketch_dir = data_dir / "sketches"
         self._shared_sketch_dir = data_dir / "shared_sketches"
-        self._blob_dir.mkdir(parents=True, exist_ok=True)
-        self._shared_dir.mkdir(parents=True, exist_ok=True)
-        self._sketch_dir.mkdir(parents=True, exist_ok=True)
-        self._shared_sketch_dir.mkdir(parents=True, exist_ok=True)
+        if archive is None:
+            self._blob_dir.mkdir(parents=True, exist_ok=True)
+            self._shared_dir.mkdir(parents=True, exist_ok=True)
+            self._sketch_dir.mkdir(parents=True, exist_ok=True)
+            self._shared_sketch_dir.mkdir(parents=True, exist_ok=True)
+        if archive is not None:
+            for manifest in archive.index.values():
+                self.publish_manifest(manifest)
+            for user in registry.users:
+                state = archive.user_state(user)
+                self.sessions[user] = UserSession(
+                    last_viewed_seq=state.get('last_viewed_seq', 0),
+                    read=set(state.get('read', [])),
+                    position_ms={int(k): v for k, v in state.get('position_ms', {}).items()},
+                )
+                self.profiles[user] = UserProfile(**state.get('profile', {}))
+
+    def _persist_user(self, user: str) -> None:
+        if self.archive is None:
+            return
+        from dataclasses import asdict
+        session = self._session(user)
+        try:
+            self.archive.save_user_state(user, dict(
+                last_viewed_seq=session.last_viewed_seq, read=sorted(session.read),
+                position_ms=session.position_ms, profile=asdict(self.profiles[user])))
+        except Exception:
+            old = self.archive.user_state(user)
+            self.sessions[user] = UserSession(last_viewed_seq=old.get('last_viewed_seq', 0),
+                read=set(old.get('read', [])), position_ms={int(k): v for k, v in old.get('position_ms', {}).items()})
+            self.profiles[user] = UserProfile(**old.get('profile', {}))
+            raise
+
+    def publish_manifest(self, manifest: dict) -> list[Message]:
+        """Publish the already committed recipient set; safe on replay."""
+        result = []
+        with self._mutation_lock:
+            for row in manifest['recipients']:
+                existing = next((m for m in self.inboxes[row['user_id']]
+                                 if m.message_id == manifest['message_id']), None)
+                if existing:
+                    result.append(existing)
+                    continue
+                msg = Message(seq=row['seq'], kind='audio', from_user=manifest['from_user'],
+                              from_label=manifest['from_label'], to_user=row['user_id'],
+                              created_at=manifest['created_at'], system=manifest['system'],
+                              broadcast_id=manifest['message_id'] if manifest['broadcast'] else None,
+                              has_blob=True, has_sketch=manifest.get('sketch') is not None,
+                              duration_ms=manifest['duration_ms'], message_id=manifest['message_id'])
+                self.inboxes[msg.to_user].append(msg)
+                self.next_seq[msg.to_user] = max(self.next_seq[msg.to_user], msg.seq + 1)
+                result.append(msg)
+        return result
+
+    @serialized
+    def media_path(self, user_id: str, seq: int, *, sketch: bool = False) -> Path | None:
+        if self.archive is None:
+            return None
+        for msg in self.inboxes[user_id]:
+            if msg.seq == seq and msg.message_id:
+                manifest = self.archive.index[msg.message_id]
+                asset = manifest.get('sketch' if sketch else 'audio')
+                if asset:
+                    return self.archive.paths[msg.message_id] / asset['path']
+        return None
+
+    @serialized
+    def post_audio_stream(self, from_user: str, *, to_user_id: str | None = None,
+                          broadcast: bool = False, source, sketch=None, client_id=None) -> list[Message]:
+        if from_user not in self.registry.users:
+            raise ValueError('unknown sender')
+        if broadcast and to_user_id:
+            raise ValueError('use recipient or broadcast, not both')
+        targets = [u for u in self.registry.users if u != from_user] if broadcast else [to_user_id]
+        if not targets or any(u not in self.registry.users for u in targets):
+            raise ValueError('invalid recipient')
+        manifest = self.archive.import_wav(from_user, self._label_for(from_user), targets, source,
+                                           sketch=sketch, broadcast=broadcast, client_id=client_id)
+        return self.publish_manifest(manifest)
+
 
     def _session(self, user_id: str) -> UserSession:
         return self.sessions[user_id]
 
     def alive(self, msg: Message) -> bool:
+        if self.archive is not None:
+            return True  # Accepted household archive is not silently expired.
         if msg.system:
             return True
         return (time.time() - msg.created_at) < self.ttl_s
 
+    @serialized
     def sorted_inbox(self, user_id: str) -> list[Message]:
         return sorted(
             [m for m in self.inboxes[user_id] if self.alive(m)],
             key=lambda m: m.seq,
         )
 
+    @serialized
     def unread_count(self, user_id: str) -> int:
         sess = self._session(user_id)
         return sum(1 for m in self.sorted_inbox(user_id) if m.seq not in sess.read)
 
+    @serialized
     def public_message(self, msg: Message, user_id: str) -> dict:
         sess = self._session(user_id)
         item = {
@@ -90,6 +185,9 @@ class UserMailbox:
             "position_ms": sess.position_ms.get(msg.seq, 0),
             "created_at": msg.created_at,
         }
+        if msg.message_id:
+            item["message_id"] = msg.message_id
+            item["audio_codec"] = "pcm_s16le"
         if msg.broadcast_id:
             item["broadcast_id"] = msg.broadcast_id
         if msg.duration_ms is not None:
@@ -117,6 +215,7 @@ class UserMailbox:
             idx = 0
         return hues[idx % len(hues)]
 
+    @serialized
     def profile_dict(self, user_id: str) -> dict:
         prof = self.profiles[user_id]
         accent = prof.accent_hex or self._default_accent(user_id)
@@ -131,6 +230,7 @@ class UserMailbox:
             "autoplay_new": prof.autoplay_new,
         }
 
+    @serialized
     def set_profile(
         self,
         user_id: str,
@@ -152,10 +252,16 @@ class UserMailbox:
                 prof.accent_hex = accent_hex.upper()
         if autoplay_new is not None:
             prof.autoplay_new = autoplay_new
+        self._persist_user(user_id)
         return self.profile_dict(user_id)
 
-    def inbox_payload(self, user_id: str) -> dict:
-        msgs = self.sorted_inbox(user_id)
+    @serialized
+    def inbox_payload(self, user_id: str, *, limit: int = 8, before_seq: int | None = None) -> dict:
+        all_msgs = self.sorted_inbox(user_id)
+        msgs = all_msgs
+        if self.archive is not None:
+            eligible = [m for m in all_msgs if before_seq is None or m.seq < before_seq]
+            msgs = eligible[-limit:]
         sess = self._session(user_id)
         if not msgs:
             view = 0
@@ -163,13 +269,18 @@ class UserMailbox:
             view = msgs[-1].seq
         else:
             view = sess.last_viewed_seq
-        return {
+        payload = {
             "user_id": user_id,
             "last_viewed_seq": view,
             "unread": self.unread_count(user_id),
             "messages": [self.public_message(m, user_id) for m in msgs],
             "profile": self.profile_dict(user_id),
         }
+        if self.archive is not None:
+            payload.update(has_more=len(eligible) > len(msgs),
+                           next_before_seq=msgs[0].seq if len(eligible) > len(msgs) else None,
+                           total_messages=len(all_msgs))
+        return payload
 
     def _label_for(self, user_id: str) -> str:
         u = self.registry.users.get(user_id)
@@ -197,7 +308,11 @@ class UserMailbox:
     def store_shared_sketch(self, blob_id: str, data: bytes) -> None:
         self._shared_sketch_path(blob_id).write_bytes(data)
 
+    @serialized
     def read_blob(self, user_id: str, seq: int) -> bytes | None:
+        if self.archive is not None:
+            path = self.media_path(user_id, seq)
+            return path.read_bytes() if path else None  # Legacy byte adapter only.
         for msg in self.inboxes[user_id]:
             if msg.seq != seq or not msg.has_blob:
                 continue
@@ -262,6 +377,9 @@ class UserMailbox:
         sketch: bytes | None = None,
         duration_ms: int | None = None,
     ) -> list[Message]:
+        if self.archive is not None:
+            return self.post_audio_stream(from_user, to_user_id=to_user_id, broadcast=broadcast,
+                                          source=io.BytesIO(blob), sketch=io.BytesIO(sketch) if sketch else None)
         if broadcast:
             targets = [
                 uid
@@ -298,7 +416,11 @@ class UserMailbox:
             )
         ]
 
+    @serialized
     def read_sketch(self, user_id: str, seq: int) -> bytes | None:
+        if self.archive is not None:
+            path = self.media_path(user_id, seq, sketch=True)
+            return path.read_bytes() if path else None
         for msg in self.inboxes[user_id]:
             if msg.seq != seq or not msg.has_sketch:
                 continue
@@ -310,7 +432,15 @@ class UserMailbox:
                 return path.read_bytes()
         return None
 
+    @serialized
     def seed_first_message(self, wav: bytes, duration_ms: int | None = None) -> None:
+        if self.archive is not None:
+            targets = [u for u in self.registry.users if not self.inboxes[u]]
+            if targets:
+                manifest = self.archive.import_wav('system', self.registry.hangout.name, targets,
+                                                   io.BytesIO(wav), system=True)
+                self.publish_manifest(manifest)
+            return
         label = self.registry.hangout.name
         for uid in self.registry.users:
             if self.next_seq[uid] > 1:
@@ -328,16 +458,22 @@ class UserMailbox:
             if sess.last_viewed_seq <= 0:
                 sess.last_viewed_seq = 1
 
+    @serialized
     def set_view(self, user_id: str, seq: int) -> None:
         self._session(user_id).last_viewed_seq = seq
+        self._persist_user(user_id)
 
+    @serialized
     def mark_read(self, user_id: str, seq: int, position_ms: int = 0) -> None:
         sess = self._session(user_id)
         sess.read.add(seq)
         sess.position_ms[seq] = position_ms
+        self._persist_user(user_id)
 
+    @serialized
     def set_position(self, user_id: str, seq: int, position_ms: int) -> None:
         self._session(user_id).position_ms[seq] = position_ms
+        self._persist_user(user_id)
 
     def reset_pin_flag(self, user_id: str, new_pin: str) -> None:
         user = self.registry.users.get(user_id)
@@ -361,7 +497,12 @@ class UserMailbox:
     def clear_pin_reset(self, user_id: str) -> None:
         self._session(user_id).pin_reset = False
 
+    @serialized
     def append_system_welcome(self, wav: bytes, duration_ms: int | None) -> list[dict]:
+        if self.archive is not None:
+            manifest = self.archive.import_wav('system', self.registry.hangout.name,
+                                               list(self.registry.users), io.BytesIO(wav), system=True)
+            return [{'user_id': m.to_user, 'seq': m.seq} for m in self.publish_manifest(manifest)]
         created = []
         for uid in self.registry.users:
             msg = self._append_message(
@@ -425,10 +566,10 @@ def minimal_wav(seconds: float = 1.0, rate: int = 16000) -> bytes:
 
 
 def bootstrap_mailbox(
-    data_dir: Path, registry: HangoutRegistry | None = None, ttl_s: float = 3600.0
+    data_dir: Path, registry: HangoutRegistry | None = None, ttl_s: float = 3600.0, *, archive=None
 ) -> UserMailbox:
     reg = registry or load_registry()
-    box = UserMailbox(reg, data_dir, ttl_s=ttl_s)
+    box = UserMailbox(reg, data_dir, ttl_s=ttl_s, archive=archive)
     wav: bytes | None = None
     if reg.welcome_wav and reg.welcome_wav.is_file():
         wav = reg.welcome_wav.read_bytes()

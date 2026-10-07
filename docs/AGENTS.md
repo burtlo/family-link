@@ -1,5 +1,23 @@
 # Notes for future agents
 
+## Current priority — 2026-10-07
+
+The user is purchasing supported memory cards. **Pause removable-storage work**;
+do not resume H38/64 GB compatibility experiments. Continue the online product,
+starting with the actual product server on the user's personal computer.
+
+The server disk archive and resumable PCM routes are implemented and host-tested;
+[run guide](../demos/server/v1_product/README.md),
+[evidence](evidence/product-no-storage/03-server-recovery/README.md),
+[current roadmap](plans/product-no-storage-roadmap.md).
+Personal-PC deployment and existing-server metadata migration are pending.
+Do not restart an old memory-based household server before exporting live
+metadata. No firmware chunk/outbox integration or UI-freeze fix is implied by
+server completion. Apply the existing device/PIN proof gates to later firmware
+work. Historical storage orchestration instructions below are not an instruction
+to restart paused experiments.
+
+
 Read this before writing code. Product intent: [`REQUIREMENTS.md`](REQUIREMENTS.md). **Approved v1 contract:** [`plans/v1-product-spec.md`](plans/v1-product-spec.md). Hardware facts: [`HARDWARE.md`](HARDWARE.md). Endpoint screen brief: [`BOX-UI.md`](BOX-UI.md). Removable media: [`STORAGE.md`](STORAGE.md). Unresolved decisions: [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md). Demo plans: [`SERVER-DEMOS.md`](SERVER-DEMOS.md), [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md), [`DEMO-MAP.md`](DEMO-MAP.md), [`plans/v1-demo-set.md`](plans/v1-demo-set.md).
 
 **Durable long-message work:** architecture [`LONG-MESSAGE-ARCHITECTURE.md`](LONG-MESSAGE-ARCHITECTURE.md), normative protocol [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md), server layout [`SERVER-MESSAGE-STORAGE.md`](SERVER-MESSAGE-STORAGE.md), streaming playback [`STREAMING-PLAYBACK.md`](STREAMING-PLAYBACK.md), sketch timing [`SKETCH-TIMELINE.md`](SKETCH-TIMELINE.md), and ordered experiments [`plans/long-message-experiments.md`](plans/long-message-experiments.md). These are plans and standards, not as-built X02 behavior.

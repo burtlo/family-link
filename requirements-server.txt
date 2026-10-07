@@ -1,6 +1,8 @@
 # Python deps for host protocol demos (FastAPI + clients).
 # Device USB tools stay in requirements.txt.
-fastapi>=0.115,<1
+fastapi>=0.115.2,<1
+# FileResponse byte-range support is required by the durable product server.
+starlette>=0.40,<2
 uvicorn[standard]>=0.32,<1
 httpx>=0.27,<1
 websockets>=14,<16
