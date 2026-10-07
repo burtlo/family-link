@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Private H38 preparation and build gate. No device operation is exposed here.
+"""Private H38 source/build gates and bounded held-device controller.
 
-The later hardware controller must use a fresh held BOX backup, mandatory full
-restore/readback, and original-application boot proof for every mutation epoch.
-This module intentionally cannot flash or send an H38 command.
+The hardware path remains gated by independent source, linked-image, and fresh
+current-backup reviews. Hardware use is a separate operator action.
 """
 from __future__ import annotations
 
@@ -41,6 +40,9 @@ SOURCE_FILES = (
     "firmware/common/h38_fatfs_adapter.c", "firmware/common/h38_fatfs_adapter.h",
     "firmware/common/h38_filesystem_io.c", "firmware/common/h38_filesystem_io.h",
     "scripts/h38_sd_contract.py", "scripts/h38_attached_filesystem.py",
+    "scripts/h32_storage_qual.py", "scripts/h37_attached_classification.py",
+    "scripts/h35_attached_discovery.py", "scripts/h37_sd_metadata.py",
+    "scripts/h38_controller_checks.py",
 )
 SDK_FILES = (
     "tools/cmake/version.cmake", "components/fatfs/src/ff.c",
@@ -204,6 +206,23 @@ def current_h37_mbr(h37_run_dir: Path) -> tuple[bytes, str]:
         raise ValueError("H37 old MBR sector invalid") from exc
     if len(old_mbr) != 512:
         stop("H37 old MBR is not one sector")
+    plan = json.loads((h37_run_dir / "read-plan-private.json").read_text())
+    ledger = json.loads((h37_run_dir / "dispatch-ledger-private.json").read_text())
+    if plan.get("schema") != 1 or plan.get("epoch") != H37_CURRENT_EPOCH or \
+       plan.get("elf_sha256") != manifest.get("elf_sha256") or \
+       ledger.get("schema") != 1 or ledger.get("epoch") != H37_CURRENT_EPOCH or \
+       ledger.get("elf_sha256") != manifest.get("elf_sha256"):
+        stop("H37 read-plan/dispatch binding differs")
+    plan_rows = [row for stage in plan.get("stages", []) for row in stage]
+    planned = [(int(row["lba"]), int(row["count"])) for row in plan_rows]
+    dispatched = [(int(row["lba"]), int(row["count"])) for row in ledger.get("dispatches", [])]
+    md = importlib.import_module("h37_sd_metadata")
+    parsed = md.parse_capture(raw_path.read_bytes(), H37_CURRENT_EPOCH,
+                              manifest["elf_sha256"], contract.H35_REFERENCE_EPOCH,
+                              h37.read_h35_identity(), planned, dispatched)
+    if parsed.terminal.get("result") != "read_complete":
+        stop("H37 raw capture is not a complete successful metadata read")
+    h37.replay_classification(parsed, h37_run_dir, H37_CURRENT_EPOCH, manifest["elf_sha256"])
     return old_mbr, h32.digest(snapshot_path)
 
 
@@ -294,6 +313,15 @@ def _config(path: Path) -> dict[str, str]:
     return settings
 
 
+def _validate_runtime_elf_binding(manifest: dict, descriptor: dict) -> None:
+    """Bind firmware-reported runtime ELF identity to the reviewed ELF file."""
+    artifacts = manifest.get("artifacts", {})
+    elf = artifacts.get("family_link_demo.elf", {})
+    if descriptor.get("elf_sha256") != manifest.get("runtime_elf_sha256") or \
+       manifest.get("runtime_elf_sha256") != elf.get("sha256"):
+        stop("runtime ELF descriptor differs from reviewed ELF artifact")
+
+
 def validate(run_dir: Path, backup_dir: Path, *, historical: bool = False) -> dict:
     meta, intent = require_run(run_dir, backup_dir)
     build = run_dir / "build"
@@ -330,10 +358,9 @@ def validate(run_dir: Path, backup_dir: Path, *, historical: bool = False) -> di
     if len(factory) != 1 or app.stat().st_size > factory[0]["size"] * 85 // 100:
         stop("H38 app exceeds reviewed factory headroom")
     desc = h32.app_desc(app.read_bytes())
-    if not desc or desc != manifest.get("app_descriptor") or \
-       desc["elf_sha256"] != manifest["runtime_elf_sha256"] or \
-       desc["idf"] != "v5.4.2":
+    if not desc or desc != manifest.get("app_descriptor") or desc["idf"] != "v5.4.2":
         stop("runtime ELF descriptor differs")
+    _validate_runtime_elf_binding(manifest, desc)
     return manifest
 
 
@@ -401,6 +428,855 @@ def build(run_dir: Path, backup_dir: Path) -> dict:
     return validate(run_dir, backup_dir)
 
 
+def _linked_review_gate(run_dir: Path, manifest: dict) -> None:
+    """A separate independent reviewer must approve the exact linked image."""
+    path = run_dir / "linked-review-private.json"
+    try:
+        review = json.loads(path.read_text())
+    except (OSError, ValueError) as exc:
+        raise ValueError("independent linked-image review gate missing") from exc
+    expected = {"schema": 1, "status": "approved", "epoch": manifest["epoch"],
+                "manifest_sha256": h32.digest(run_dir / "build/manifest-private.json"),
+                "elf_sha256": manifest["artifacts"]["family_link_demo.elf"]["sha256"],
+                "app_sha256": manifest["artifacts"]["family_link_demo.bin"]["sha256"],
+                "reviewer": review.get("reviewer")}
+    if review != expected or not isinstance(review["reviewer"], str) or not review["reviewer"]:
+        stop("independent linked-image review differs from exact H38 build")
+
+
+class DeadlineError(TimeoutError):
+    def __init__(self, name: str):
+        self.name = name
+        super().__init__(name + " deadline reached")
+
+
+class TransportError(RuntimeError):
+    """Command transport failed; no phase timer may be started."""
+
+
+class CaptureTerminalError(RuntimeError):
+    """Capture ended at a parser-validated firmware terminal with failed evidence."""
+
+
+class RunClocks:
+    """Monotonic controller clocks; a timeout never extends the recovery reserve."""
+
+    def __init__(self, now, limits=contract.CAPTURE_LIMITS):
+        self.now = now
+        self.master = now()
+        self.master_end = self.master + limits["flash_restore_ms"] / 1000
+        self.recovery_start = self.master_end - limits["restore_reserve_ms"] / 1000
+        self.capture_start = None
+        self.session_start = None
+        self.phase_start = None
+        self.phase_name = None
+        self.limits = limits
+
+    def require_new_work(self, operation_ms: int) -> None:
+        if self.now() + operation_ms / 1000 > self.recovery_start:
+            raise DeadlineError("restore_reserve")
+
+    def timeout_seconds(self, future_ms: int, cap_seconds: int) -> int:
+        """Timeout for one subprocess, leaving all future work and restore time."""
+        seconds = int(self.recovery_start - self.now() - future_ms / 1000)
+        if seconds < 1:
+            raise DeadlineError("restore_reserve")
+        return min(seconds, cap_seconds)
+
+    def start_capture(self) -> None:
+        self.require_new_work(self.limits["capture_wall_ms"])
+        self.capture_start = self.now()
+
+    def remaining_capture_ms(self) -> int:
+        if self.capture_start is None:
+            return self.limits["capture_wall_ms"]
+        remaining = self.limits["capture_wall_ms"] - int((self.now() - self.capture_start) * 1000)
+        if self.session_start is not None:
+            remaining = min(remaining, self.limits["session_ms"] -
+                            int((self.now() - self.session_start) * 1000))
+        return max(0, remaining)
+
+    def start_session(self) -> None:
+        if self.session_start is not None:
+            raise ValueError("duplicate BOOT session")
+        self.session_start = self.now()
+
+    def start_phase(self, name: str) -> None:
+        if name not in ("FORMAT", "IO") or self.phase_start is not None:
+            raise ValueError("phase clock overlap")
+        self.phase_name = name
+        self.phase_start = self.now()
+
+    def end_phase(self, name: str) -> None:
+        self.check()
+        if self.phase_name != name:
+            raise ValueError("phase completion differs")
+        self.phase_start = None
+        self.phase_name = None
+
+    def check(self) -> None:
+        now = self.now()
+        if now >= self.recovery_start:
+            raise DeadlineError("restore_reserve")
+        if self.capture_start is not None and now - self.capture_start > self.limits["capture_wall_ms"] / 1000:
+            raise DeadlineError("capture_wall")
+        if self.session_start is not None and now - self.session_start > self.limits["session_ms"] / 1000:
+            raise DeadlineError("firmware_session")
+        if self.phase_start is not None:
+            cap = contract.FORMAT["time_limit_ms"] if self.phase_name == "FORMAT" else contract.IO["time_limit_ms"]
+            if now - self.phase_start > cap / 1000:
+                raise DeadlineError(self.phase_name.lower() + "_phase")
+
+    def summary(self) -> dict:
+        now = self.now()
+        return {"master_elapsed_ms": int((now - self.master) * 1000),
+                "master_overrun_ms": max(0, int((now - self.master_end) * 1000)),
+                "capture_elapsed_ms": None if self.capture_start is None else int((now - self.capture_start) * 1000),
+                "session_elapsed_ms": None if self.session_start is None else int((now - self.session_start) * 1000)}
+
+
+PREFLASH_ALLOWANCE_MS = 1_020_000
+RECOVERY_WORST_CASE_MS = 2_685_000  # emergency reset, probes, full write/readback, and boot
+
+
+def _bounded_esptool(port: str, args: list[str], clocks: RunClocks,
+                     future_ms: int, cap_seconds: int, *, capture=False):
+    timeout = clocks.timeout_seconds(future_ms, cap_seconds)
+    try:
+        # Device output is private evidence; never forward it to the caller.
+        result = h32.esptool(port, args, timeout, capture=True)
+    except subprocess.TimeoutExpired as exc:
+        raise DeadlineError("master_preflash") from exc
+    clocks.require_new_work(future_ms)
+    return result
+
+
+def _bounded_verify_device(port: str, baseline: dict, clocks: RunClocks,
+                           future_ms: int) -> dict:
+    """H32 chip/flash identity probe with a master-clock-aware subprocess cap."""
+    chip = _bounded_esptool(port, ["--after", "no_reset", "chip_id"], clocks,
+                            future_ms + 30_000, 30, capture=True)
+    flash = _bounded_esptool(port, ["--after", "no_reset", "flash_id"], clocks,
+                             future_ms, 30, capture=True)
+    text = "\n".join((chip.stdout, chip.stderr, flash.stdout, flash.stderr))
+    description = h32.field(r"Chip is\s+([^\r\n]+)", text, "chip")
+    if "esp32-s3" not in description or \
+       h32.field(r"Detected flash size:\s*([^\s]+)", text, "flash size") not in ("16mb", "16mib"):
+        stop("connected BOX geometry differs")
+    device = {"chip": "esp32-s3", "chip_description": description,
+              "mac": h32.field(r"MAC:\s*([0-9a-f:]{17})", text, "MAC"),
+              "flash_manufacturer": h32.field(r"Manufacturer:\s*([^\r\n]+)", text, "manufacturer"),
+              "flash_device": h32.field(r"Device:\s*([^\r\n]+)", text, "flash device"),
+              "flash_bytes": h32.FLASH}
+    device["fingerprint_sha256"] = h32.dh(json.dumps(device, sort_keys=True).encode())
+    if device["fingerprint_sha256"] != baseline["device"]["fingerprint_sha256"]:
+        stop("connected BOX identity differs from backup")
+    return device
+
+
+def _fresh_current_backup(port: str, run_dir: Path, baseline: dict,
+                          clocks: RunClocks) -> tuple[Path, dict]:
+    """Take and verify current held BOX/NVS; permit only NVS drift from baseline."""
+    future = PREFLASH_ALLOWANCE_MS + contract.CAPTURE_LIMITS["capture_wall_ms"]
+    current = _bounded_verify_device(port, baseline, clocks, future)
+    full = run_dir / "current-full-private.bin"
+    pt = run_dir / "current-partition-private.bin"
+    nvs = run_dir / "current-nvs-private.bin"
+    if any(p.exists() for p in (full, pt, nvs)):
+        stop("fresh current backup paths already used")
+    _bounded_esptool(port, ["--after", "no_reset", "read_flash", "0", hex(h32.FLASH), str(full)],
+                     clocks, future + 120_000, 600)
+    _bounded_esptool(port, ["--after", "no_reset", "read_flash", hex(h32.PT_OFF), hex(h32.PT_SIZE), str(pt)],
+                     clocks, future + 60_000, 60)
+    nv = baseline["nvs"]
+    _bounded_esptool(port, ["--after", "no_reset", "read_flash", hex(nv["offset"]), hex(nv["bytes"]), str(nvs)],
+                     clocks, future, 60)
+    if full.stat().st_size != h32.FLASH or pt.stat().st_size != h32.PT_SIZE or nvs.stat().st_size != nv["bytes"]:
+        stop("fresh current BOX backup has short read")
+    if h32.region(full, h32.PT_OFF, h32.PT_SIZE) != pt.read_bytes() or \
+       h32.region(full, nv["offset"], nv["bytes"]) != nvs.read_bytes():
+        stop("separate current partition/NVS readback differs from full BOX image")
+    if h32.partitions(pt.read_bytes()) != baseline["partition_table"]["entries"]:
+        stop("current partition table differs from preserved baseline")
+    base_full = Path(baseline["_directory"]) / "original-flash.bin"
+    old = base_full.read_bytes()
+    new = full.read_bytes()
+    start, end = nv["offset"], nv["offset"] + nv["bytes"]
+    if len(old) != h32.FLASH or new[:start] != old[:start] or new[end:] != old[end:]:
+        stop("current non-NVS BOX flash differs from preserved baseline")
+    apps = []
+    for app in baseline["apps"]:
+        current_bytes = h32.region(full, app["offset"], app["size"])
+        if h32.dh(current_bytes) != app["partition_sha256"] or h32.app_desc(current_bytes) != app["descriptor"]:
+            stop("current original application differs from preserved baseline")
+        apps.append({"name": app["name"], "offset": app["offset"],
+                     "descriptor": app["descriptor"], "sha256": h32.dh(current_bytes)})
+    proof = {"schema": 1, "status": "verified", "full_sha256": h32.digest(full),
+             "partition_sha256": h32.digest(pt), "nvs_sha256": h32.digest(nvs),
+             "device_fingerprint_sha256": current["fingerprint_sha256"], "apps": apps,
+             "reset_held": True}
+    h32.atomic_json(run_dir / "current-backup-private.json", proof, 0o600)
+    return full, proof
+
+
+def _record_stream(ser, raw_file, pending: bytearray, clocks: RunClocks,
+                   captured: bytearray, host_errors: list[str]):
+    """Yield bounded ASCII H38 records and retain all raw bytes, including ROM lines."""
+    while True:
+        clocks.check()
+        newline = pending.find(b"\n")
+        if newline >= 0:
+            line = bytes(pending[:newline + 1])
+            del pending[:newline + 1]
+            if len(line) > contract.MAX_RECORD:
+                yield contract.Record("MALFORMED", {})
+                continue
+            if line.startswith(b"H38,"):
+                try:
+                    yield contract._parse_record(line)
+                except contract.ContractError:
+                    yield contract.Record("MALFORMED", {})
+            elif line.startswith(b"H38") and not line.startswith(b"H38C,"):
+                yield contract.Record("MALFORMED", {})
+            continue
+        try:
+            chunk = ser.read(512)
+        except Exception as exc:
+            if not host_errors:
+                host_errors.append("serial read failed: " + type(exc).__name__)
+            time.sleep(.05)
+            continue
+        if not chunk:
+            continue
+        if len(captured) + len(chunk) > 1_048_576:
+            if not host_errors:
+                host_errors.append("capture exceeded private raw evidence bound")
+            continue
+        captured.extend(chunk)
+        try:
+            raw_file.write(chunk)
+            raw_file.flush()
+        except Exception as exc:
+            if not host_errors:
+                host_errors.append("raw capture write failed: " + type(exc).__name__)
+        pending.extend(chunk)
+        if len(pending) > contract.MAX_RECORD and b"\n" not in pending:
+            pending.clear()
+            yield contract.Record("MALFORMED", {})
+
+
+def _send_command(ser, command: bytes, clocks: RunClocks, operation_ms: int) -> None:
+    clocks.check()
+    clocks.require_new_work(operation_ms)
+    if len(command) > contract.MAX_COMMAND or not command.endswith(b"\n"):
+        stop("H38 command exceeds frozen framing")
+    try:
+        sent = ser.write(command)
+    except Exception as exc:
+        raise TransportError("H38 command serial write failed") from exc
+    if sent != len(command):
+        raise TransportError("short H38 command transport write")
+    # Phase clock starts only after the complete bounded write returned.
+    if command.startswith(b"H38C,1,FORMAT,"):
+        clocks.start_phase("FORMAT")
+    elif command.startswith(b"H38C,1,IO,"):
+        clocks.start_phase("IO")
+
+
+def _safe_terminal(raw: bytes, intent: dict, elf: str):
+    """Only a parser-validated epoch/ELF-bound COMPLETE releases active SD."""
+    try:
+        terminal = contract.parse_capture(raw, intent["epoch"], elf, intent)
+    except (ValueError, contract.ContractError):
+        return None
+    if terminal.result not in ("io_complete", "failed"):
+        return None
+    cleanup = [row.fields for row in terminal.records if row.event == "CLEANUP"]
+    complete = [row.fields for row in terminal.records if row.event == "COMPLETE"]
+    required = ("sd_unmount_attempted", "host_deinit_attempted", "power_off_attempted")
+    if len(cleanup) != 1 or len(complete) != 1 or any(cleanup[0][key] != "1" for key in required):
+        return None
+    if any(complete[0][key] != cleanup[0][key] for key in
+           (*required, "sd_unmount_error", "host_deinit_error", "power_off_error")):
+        return None
+    return terminal
+
+
+def _capture_h38(port: str, run_dir: Path, manifest: dict, intent: dict,
+                 serial_module, clocks: RunClocks) -> dict:
+    raw_path = run_dir / "capture-raw-private.bin"
+    ledger_path = run_dir / "dispatch-ledger-private.jsonl"
+    if raw_path.exists() or ledger_path.exists():
+        stop("H38 capture paths already used")
+    elf = manifest["runtime_elf_sha256"]
+    commands = [contract.bind_command(intent, elf)] + [
+        contract.phase_command(name, intent["epoch"], elf)
+        for name in ("LAYOUT", "FORMAT", "IO", "FINISH")]
+    contract.validate_command_sequence(commands, intent, elf)
+    dispatches = []
+    records = []
+    live_failure = None
+    pending = bytearray()
+    captured = bytearray()
+    host_errors: list[str] = []
+    serial_port = serial_module.Serial(port=None, baudrate=115200, timeout=.05, write_timeout=.5)
+    serial_port.dtr = False
+    serial_port.rts = False
+    serial_port.port = port
+    with raw_path.open("xb") as raw_file, ledger_path.open("xb") as ledger_file, serial_port as ser:
+        os.chmod(raw_path, 0o600)
+        os.chmod(ledger_path, 0o600)
+        def record_dispatch(name: str) -> None:
+            entry = {"schema": 1, "epoch": intent["epoch"], "elf_sha256": elf,
+                     "command": name, "elapsed_ms": clocks.summary()["master_elapsed_ms"]}
+            try:
+                ledger_file.write((json.dumps(entry, sort_keys=True) + "\n").encode("ascii"))
+                ledger_file.flush()
+                os.fsync(ledger_file.fileno())
+                dispatches.append(entry)
+            except OSError as exc:
+                if not host_errors:
+                    host_errors.append("dispatch ledger write failed: " + type(exc).__name__)
+        try:
+            ser.reset_input_buffer()
+            clocks.start_capture()
+            # Listener is open before the first RTS/reset; clock includes boot.
+            ser.rts = True
+            time.sleep(.05)
+            ser.rts = False
+        except DeadlineError:
+            raise
+        except BaseException as exc:
+            live_failure = "capture setup failed: " + type(exc).__name__
+        safe_terminal = None
+        for record in _record_stream(ser, raw_file, pending, clocks, captured, host_errors):
+            event, fields = record.event, record.fields
+            if host_errors and live_failure is None:
+                live_failure = host_errors[0]
+            if event == "MALFORMED":
+                live_failure = "malformed H38 serial record"
+                continue
+            if live_failure is not None:
+                # Keep draining to a parser-validated terminal. A malformed or
+                # unbound COMPLETE is not proof that SD cleanup finished.
+                if event == "COMPLETE":
+                    safe_terminal = _safe_terminal(bytes(captured), intent, elf)
+                    if safe_terminal is not None:
+                        break
+                continue
+            try:
+                if fields["epoch"] != intent["epoch"] or fields["elf_sha256"] != elf:
+                    stop("H38 runtime epoch/ELF differs")
+                if not records and event != "BOOT":
+                    stop("H38 BOOT must be first record")
+                if event == "BOOT":
+                    clocks.start_session()
+                records.append(event)
+                if event in {"READY", "IDENTITY_MATCH", "LAYOUT_RESULT", "FORMAT_RESULT",
+                             "RECLAIM_RESULT", "COMPLETE"} and records.count(event) != 1:
+                    stop("duplicate H38 phase milestone")
+                # Critical live checks precede the corresponding write command.
+                if event == "GEOMETRY":
+                    expected = {"sectors": "121503744", "sector_bytes": "512",
+                                "capacity_bytes": "62209916928", "bus_width": "4",
+                                "real_freq_khz": "20000", "ddr": "0"}
+                    if any(fields[k] != v for k, v in expected.items()):
+                        stop("fresh H38 card geometry differs")
+                elif event == "CID_PRIVATE":
+                    digest = contract.h35_cid_digest(intent["h35_reference_epoch"], {
+                        "mfg_id": int(fields["mfg_id"]), "oem_id": int(fields["oem_id"]),
+                        "revision": int(fields["revision"]), "serial": int(fields["serial"]),
+                        "date": int(fields["date"]), "name_size": int(fields["name_size"]),
+                        "name_hex": fields["name_hex"]})
+                    if digest != intent["private_cid_sha256"]:
+                        stop("fresh H38 card CID differs from private H35 reference")
+                elif event == "READY":
+                    if records != contract.SUCCESS_EVENT_SCHEDULE[:8] or fields["accepts"] != "BIND":
+                        stop("H38 READY without validated card binding")
+                    _send_command(ser, commands[0], clocks, clocks.remaining_capture_ms())
+                    record_dispatch("BIND")
+                elif event == "IDENTITY_MATCH":
+                    if records != contract.SUCCESS_EVENT_SCHEDULE[:9]:
+                        stop("H38 identity record order differs")
+                    if fields["match"] != "1" or fields["error"] != "0" or fields["reference_epoch"] != intent["h35_reference_epoch"]:
+                        stop("H38 current MBR/CID/intent identity mismatch")
+                    _send_command(ser, commands[1], clocks, clocks.remaining_capture_ms())
+                    record_dispatch("LAYOUT")
+                elif event == "LAYOUT_RESULT":
+                    if records != contract.SUCCESS_EVENT_SCHEDULE[:10]:
+                        stop("H38 layout record order differs")
+                    if fields["status"] != "ok":
+                        continue
+                    sector = base64.b64decode(fields["readback_base64_private"], validate=True)
+                    contract.validate_mbr(sector, intent["epoch"])
+                    if fields["readback_match"] != "1" or fields["status"] != "ok" or fields["error"] != "0" or \
+                       h32.dh(sector) != fields["readback_sha256"] or \
+                       {k: fields[k] for k in ("physical_lba", "write_sectors", "write_bytes",
+                                                       "write_count", "trim_requests", "erase_calls")} != \
+                       {"physical_lba": "0", "write_sectors": "1", "write_bytes": "512",
+                        "write_count": "1", "trim_requests": "0", "erase_calls": "0"}:
+                        stop("H38 bounded MBR readback differs")
+                    _send_command(ser, commands[2], clocks, contract.FORMAT["time_limit_ms"])
+                    record_dispatch("FORMAT")
+                elif event == "FORMAT_START":
+                    if records != contract.SUCCESS_EVENT_SCHEDULE[:11] or \
+                       {k: fields[k] for k in ("volume_sectors", "sector_bytes", "fat_type",
+                                                       "fat_count", "allocation_unit_bytes", "format_flags",
+                                                       "work_buffer_bytes", "write_limit_bytes",
+                                                       "read_limit_bytes", "time_limit_ms")} != \
+                       {"volume_sectors": "1048576", "sector_bytes": "512", "fat_type": "FAT32",
+                        "fat_count": "2", "allocation_unit_bytes": "4096", "format_flags": "10",
+                        "work_buffer_bytes": "4096", "write_limit_bytes": "4194304",
+                        "read_limit_bytes": "16777216", "time_limit_ms": "120000"}:
+                        stop("H38 formatter request differs from fixed profile")
+                elif event == "FORMAT_RESULT":
+                    if records != contract.SUCCESS_EVENT_SCHEDULE[:12]:
+                        stop("H38 format record order differs")
+                    if fields["status"] != "ok":
+                        continue
+                    bpb = base64.b64decode(fields["bpb_base64_private"], validate=True)
+                    contract.validate_bpb(bpb)
+                    if h32.dh(bpb) != fields["bpb_sha256"] or fields["status"] != "ok" or fields["error"] != "0" or \
+                       int(fields["write_bytes"]) > contract.FORMAT["write_limit_bytes"] or \
+                       int(fields["read_bytes"]) > contract.FORMAT["read_limit_bytes"] or \
+                       int(fields["max_call_sectors"]) > contract.IO["driver_call_max_sectors"] or \
+                       fields["erase_calls"] != "0" or fields["f_result"] != "0":
+                        stop("H38 format/BPB evidence differs")
+                elif event == "MOUNT_RESULT" and fields["kind"] == "initial":
+                    if records != contract.SUCCESS_EVENT_SCHEDULE[:13]:
+                        stop("H38 initial mount record order differs")
+                    if fields["status"] != "ok":
+                        continue
+                    if fields["mounted"] != "1" or fields["fs_type"] != "3" or \
+                       fields["sector_bytes"] != "512" or fields["volume_sectors"] != "1048576" or \
+                       fields["allocation_unit_bytes"] != "4096" or fields["cluster_count"] != "130811":
+                        stop("H38 initial mount evidence differs")
+                    clocks.end_phase("FORMAT")
+                    _send_command(ser, commands[3], clocks, contract.IO["time_limit_ms"])
+                    record_dispatch("IO")
+                elif event == "RECLAIM_RESULT":
+                    if fields["status"] != "ok":
+                        continue
+                    clocks.end_phase("IO")
+                    _send_command(ser, commands[4], clocks, clocks.remaining_capture_ms())
+                    record_dispatch("FINISH")
+                elif event == "COMPLETE":
+                    clocks.check()
+                    safe_terminal = _safe_terminal(bytes(captured), intent, elf)
+                    if safe_terminal is None:
+                        live_failure = "unvalidated H38 COMPLETE"
+                        continue
+                    break
+            except DeadlineError:
+                raise
+            except Exception as exc:
+                # Stop all phase dispatches; leave the listener attached until
+                # a validated terminal arrives or the authoritative wall deadline fires.
+                live_failure = "evidence or command mismatch: " + type(exc).__name__
+                continue
+            except BaseException as exc:
+                live_failure = "capture dispatch failed: " + type(exc).__name__
+                continue
+        try:
+            raw_file.flush()
+            os.fsync(raw_file.fileno())
+        except OSError as exc:
+            if live_failure is None:
+                live_failure = "raw evidence finalization failed: " + type(exc).__name__
+    parsed = safe_terminal
+    if parsed is None:
+        raise DeadlineError("capture_terminal_missing")
+    if live_failure is not None:
+        raise CaptureTerminalError("H38 live evidence mismatch: " + live_failure)
+    if parsed.result != "io_complete":
+        raise CaptureTerminalError("H38 firmware result did not complete successfully")
+    return {"raw_sha256": h32.digest(raw_path), "raw_bytes": raw_path.stat().st_size,
+            "result": parsed.result, "dispatch_count": len(dispatches)}
+
+
+def _boot_original(port: str, run_dir: Path, serial_module, baseline: dict) -> dict:
+    """Open listener before reset and verify the restored product startup."""
+    path = run_dir / "restored-boot-private.bin"
+    if path.exists():
+        stop("restored boot capture path already used")
+    original = [a for a in baseline["apps"] if a["name"] == "factory"]
+    if len(original) != 1 or not original[0].get("descriptor"):
+        stop("preserved factory application descriptor unavailable")
+    expected = original[0]["descriptor"]
+    serial_port = serial_module.Serial(port=None, baudrate=115200, timeout=.1, write_timeout=.5)
+    serial_port.dtr = False
+    serial_port.rts = False
+    serial_port.port = port
+    with path.open("xb") as file, serial_port as ser:
+        os.chmod(path, 0o600)
+        ser.reset_input_buffer()
+        ser.rts = True
+        time.sleep(.05)
+        ser.rts = False
+        until = time.monotonic() + 45
+        while time.monotonic() < until:
+            chunk = ser.read(512)
+            if chunk:
+                if file.tell() + len(chunk) > 65_536:
+                    stop("restored boot capture exceeds bound")
+                file.write(chunk)
+                file.flush()
+                if b"Calling app_main" in path.read_bytes():
+                    break
+        os.fsync(file.fileno())
+    raw = path.read_bytes()
+    lower = raw.lower()
+    panic = any(x in lower for x in (b"guru meditation", b"backtrace:",
+                                    b"abort() was called", b"panic'ed"))
+    watchdog = any(x in lower for x in (b"task watchdog got triggered",
+                                       b"interrupt wdt timeout"))
+    lines = raw.decode("utf-8", errors="replace").splitlines()
+    loaded = next((i for i, line in enumerate(lines) if re.search(
+        r"Loaded app from partition at offset 0x0*10000\b", line, re.I)), None)
+    app_main = next((i for i, line in enumerate(lines) if "Calling app_main" in line), None)
+
+    def log_value(label: str) -> tuple[str, int] | None:
+        for index, line in enumerate(lines):
+            plain = re.sub(r"\x1b\[[0-9;]*m", "", line)
+            match = re.search(rf"(?:^|\s){re.escape(label)}:\s*(.*?)\s*$", plain)
+            if match:
+                return match.group(1).strip(), index
+        return None
+
+    project_entry = log_value("Project name")
+    version_entry = log_value("App version")
+    sdk_entry = log_value("IDF version")
+    elf_entry = log_value("ELF file SHA256")
+    project_match = project_entry is not None and project_entry[0] == expected["project"]
+    version_match = version_entry is not None and version_entry[0] == expected["version"]
+    sdk_match = sdk_entry is not None and sdk_entry[0] == expected["idf"]
+    elf_hash = None if elf_entry is None else elf_entry[0]
+    elf_match = isinstance(elf_hash, str) and elf_hash.lower().startswith(expected["elf_sha256"][:8].lower())
+    startup_indices = [entry[1] for entry in (project_entry, version_entry, sdk_entry, elf_entry)
+                       if entry is not None]
+    startup_order = loaded is not None and app_main is not None and \
+        len(startup_indices) == 4 and loaded < min(startup_indices) and max(startup_indices) < app_main
+    rom_usb_reset = b"USB_UART_CHIP_RESET" in raw or bool(re.search(rb"rst:0x15\b", lower))
+    result = {"full_boot_bytes": len(raw), "project_match": project_match,
+              "version_match": version_match, "sdk_match": sdk_match,
+              "elf_prefix_match": elf_match, "factory_offset_match": loaded is not None,
+              "startup_order_match": startup_order, "app_main_seen": app_main is not None,
+              "panic_seen": panic, "watchdog_seen": watchdog,
+              "usb_reset_code": "21" if rom_usb_reset else "none",
+              "usb_reset_namespace": "rom" if rom_usb_reset else "none"}
+    if not all(result[k] for k in ("project_match", "version_match", "sdk_match",
+                                    "elf_prefix_match", "factory_offset_match",
+                                    "startup_order_match", "app_main_seen")) or panic or watchdog:
+        stop("restored original application boot validation failed")
+    return result
+
+
+def _restore_current(port: str, run_dir: Path, full: Path, current: dict,
+                     baseline: dict, serial_module, clocks: RunClocks) -> dict:
+    """Never abandon recovery because a controller deadline elapsed."""
+    readback = run_dir / "restore-readback-private.bin"
+    pt = run_dir / "restore-partition-private.bin"
+    nvs = run_dir / "restore-nvs-private.bin"
+    if any(p.exists() for p in (readback, pt, nvs)):
+        stop("restore evidence path already used")
+    recovery_processes = []
+    recovery_processes.extend(_verify_recovery_device(port, baseline)["processes"])
+    commands = []
+    process_codes = []
+
+    def invoke(name: str, args: list[str], timeout: int):
+        try:
+            result = h32.esptool(port, args, timeout, capture=True)
+        except subprocess.CalledProcessError as exc:
+            process_codes.append({"operation": name, "returncode": exc.returncode,
+                                  "error_type": type(exc).__name__})
+            return None
+        except BaseException as exc:
+            process_codes.append({"operation": name, "returncode": None,
+                                  "error_type": type(exc).__name__})
+            return None
+        returncode = getattr(result, "returncode", None)
+        process_codes.append({"operation": name, "returncode": returncode,
+                              **({} if returncode is not None else {"error_type": "missing_exit_code"})})
+        return result
+
+    commands.append(invoke("write_flash", ["--after", "no_reset", "write_flash", "--flash_size", "16MB",
+                                             "0", str(full)], 1200))
+    commands.append(invoke("full_readback", ["--after", "no_reset", "read_flash", "0", hex(h32.FLASH), str(readback)], 1200))
+    commands.append(invoke("partition_readback", ["--after", "no_reset", "read_flash", hex(h32.PT_OFF), hex(h32.PT_SIZE), str(pt)], 60))
+    nv = baseline["nvs"]
+    commands.append(invoke("nvs_readback", ["--after", "no_reset", "read_flash", hex(nv["offset"]),
+                                              hex(nv["bytes"]), str(nvs)], 60))
+    readback_ok = _recovery_artifact_matches(readback, h32.FLASH, current["full_sha256"])
+    initial_readback_ok = readback_ok
+    if not readback_ok:
+        # A timed-out/failed write is uncertain. Once recovery is underway,
+        # make one best-effort complete rewrite and verify it independently.
+        commands.append(invoke("recovery_retry_write_flash", ["--after", "no_reset", "write_flash",
+                                                               "--flash_size", "16MB", "0", str(full)], 1200))
+        commands.append(invoke("recovery_retry_full_readback", ["--after", "no_reset", "read_flash",
+                                                                  "0", hex(h32.FLASH), str(readback)], 1200))
+        readback_ok = _recovery_artifact_matches(readback, h32.FLASH, current["full_sha256"])
+    if not readback_ok:
+        stop("full current BOX restore/readback differs after best-effort retry")
+    if not _recovery_artifact_matches(pt, h32.PT_SIZE, current["partition_sha256"]) or \
+       h32.region(readback, h32.PT_OFF, h32.PT_SIZE) != pt.read_bytes() or \
+       h32.partitions(pt.read_bytes()) != baseline["partition_table"]["entries"]:
+        stop("restored partition table differs")
+    if not _recovery_artifact_matches(nvs, nv["bytes"], current["nvs_sha256"]) or \
+       h32.region(readback, nv["offset"], nv["bytes"]) != nvs.read_bytes():
+        stop("restored current NVS differs")
+    for app in current["apps"]:
+        data = h32.region(readback, app["offset"],
+                          next(p["size"] for p in baseline["apps"] if p["name"] == app["name"]))
+        if h32.dh(data) != app["sha256"] or h32.app_desc(data) != app["descriptor"]:
+            stop("restored original application descriptor differs")
+    live = _verify_recovery_device(port, baseline)
+    recovery_processes.extend(live["processes"])
+    process_codes.extend(recovery_processes)
+    boot = _boot_original(port, run_dir, serial_module, baseline)
+    all_processes_checked = bool(process_codes) and all(row["returncode"] == 0 for row in process_codes) and initial_readback_ok
+    boot_ok = all(boot.get(key) is True for key in
+                  ("project_match", "version_match", "sdk_match", "elf_prefix_match",
+                   "factory_offset_match", "startup_order_match", "app_main_seen")) and \
+        boot.get("panic_seen") is False and boot.get("watchdog_seen") is False
+    device_binding_ok = live["device"]["fingerprint_sha256"] == current["device_fingerprint_sha256"]
+    proof = {"schema": 1, "status": "verified" if all_processes_checked and boot_ok and device_binding_ok else "failed",
+             "full_image_readback": True, "initial_full_image_readback_match": initial_readback_ok,
+             "nvs_readback": True, "partition_match": True,
+             "app_descriptor_match": True, "device_binding_match": device_binding_ok,
+             "original_project_match": boot["project_match"], "sdk_match": boot["sdk_match"],
+             "elf_prefix_match": boot["elf_prefix_match"], "panic_seen": boot["panic_seen"],
+             "watchdog_seen": boot["watchdog_seen"], "usb_reset_code": boot["usb_reset_code"],
+             "usb_reset_namespace": boot["usb_reset_namespace"],
+             "process_exit_code": next((row["returncode"] for row in reversed(process_codes)
+                                         if row["operation"] == "nvs_readback"), None),
+             "process_exit_source": "checked_recovery_subprocesses",
+             "process_exit_codes": process_codes, "full_sha256": current["full_sha256"],
+             "nvs_sha256": current["nvs_sha256"], "boot": boot, "clocks": clocks.summary()}
+    h32.atomic_json(run_dir / "restore-proof-private.json", proof, 0o600)
+    if not proof["device_binding_match"]:
+        stop("device identity differs after restore")
+    if not boot_ok:
+        stop("restored original application boot proof differs")
+    if not all_processes_checked:
+        stop("restore subprocess exit proof is incomplete or nonzero")
+    return proof
+
+
+def _recovery_artifact_matches(path: Path, byte_count: int, sha256: str) -> bool:
+    """Validate one exact private recovery readback without trusting its filename."""
+    return path.is_file() and path.stat().st_size == byte_count and h32.digest(path) == sha256
+
+
+def _verify_recovery_device(port: str, baseline: dict) -> dict:
+    """Bound each identity subprocess so four probes fit the frozen reserve."""
+    try:
+        chip = h32.esptool(port, ["--after", "no_reset", "chip_id"], 15, capture=True)
+        flash = h32.esptool(port, ["--after", "no_reset", "flash_id"], 15, capture=True)
+    except subprocess.CalledProcessError as exc:
+        raise ValueError("recovery identity subprocess exited nonzero: " + str(exc.returncode)) from exc
+    except BaseException as exc:
+        raise ValueError("recovery identity subprocess failed: " + type(exc).__name__) from exc
+    chip_code = getattr(chip, "returncode", None)
+    flash_code = getattr(flash, "returncode", None)
+    if chip_code != 0 or flash_code != 0:
+        stop("recovery device identity subprocess failed")
+    text = "\n".join((chip.stdout, chip.stderr, flash.stdout, flash.stderr))
+    description = h32.field(r"Chip is\s+([^\r\n]+)", text, "chip")
+    if "esp32-s3" not in description or \
+       h32.field(r"Detected flash size:\s*([^\s]+)", text, "flash size") not in ("16mb", "16mib"):
+        stop("recovery BOX geometry differs")
+    device = {"chip": "esp32-s3", "chip_description": description,
+              "mac": h32.field(r"MAC:\s*([0-9a-f:]{17})", text, "MAC"),
+              "flash_manufacturer": h32.field(r"Manufacturer:\s*([^\r\n]+)", text, "manufacturer"),
+              "flash_device": h32.field(r"Device:\s*([^\r\n]+)", text, "flash device"),
+              "flash_bytes": h32.FLASH}
+    device["fingerprint_sha256"] = h32.dh(json.dumps(device, sort_keys=True).encode())
+    if device["fingerprint_sha256"] != baseline["device"]["fingerprint_sha256"]:
+        stop("recovery BOX identity differs from baseline")
+    return {"device": device, "processes": [
+        {"operation": "recovery_chip_id", "returncode": chip_code},
+        {"operation": "recovery_flash_id", "returncode": flash_code}]}
+
+
+def _current_backup_review_request(run_dir: Path, meta: dict, intent: dict,
+                                   proof: dict) -> dict:
+    """Create the immutable facts an independent reviewer must approve."""
+    proof_path = run_dir / "current-backup-private.json"
+    proof_sha = h32.digest(proof_path)
+    request = {"schema": 1, "status": "pending", "epoch": intent["epoch"],
+               "intent_sha256": h32.dh(contract.canonical_intent_bytes(intent)),
+               "manifest_sha256": h32.digest(run_dir / "build/manifest-private.json"),
+               "proof_sha256": proof_sha, "full_sha256": proof["full_sha256"],
+               "partition_sha256": proof["partition_sha256"],
+               "nvs_sha256": proof["nvs_sha256"],
+               "device_fingerprint_sha256": proof["device_fingerprint_sha256"],
+               "reviewer": None}
+    path = run_dir / "current-backup-review-request-private.json"
+    if path.exists() or (run_dir / "current-backup-review-private.json").exists():
+        stop("current-backup review request path already used")
+    h32.atomic_json(path, request, 0o600)
+    return request
+
+
+def _wait_current_backup_review(run_dir: Path, request: dict,
+                                clocks: RunClocks) -> dict:
+    """Wait for a human-authored review bound to this exact fresh held backup."""
+    review_path = run_dir / "current-backup-review-private.json"
+    expected = {**request, "status": "approved", "reviewer": None}
+    while True:
+        clocks.require_new_work(PREFLASH_ALLOWANCE_MS + contract.CAPTURE_LIMITS["capture_wall_ms"])
+        try:
+            review = json.loads(review_path.read_text())
+        except FileNotFoundError:
+            time.sleep(.25)
+            continue
+        if not isinstance(review, dict):
+            stop("current-backup reviewer approval is not an object")
+        reviewer = review.get("reviewer")
+        if review != {**expected, "reviewer": reviewer} or \
+           not isinstance(reviewer, str) or not reviewer.strip():
+            stop("current-backup approval does not bind the exact fresh backup")
+        return review
+
+
+def run_epoch(port: str, run_dir: Path, baseline_dir: Path, *,
+              now=time.monotonic, serial_importer=importlib.import_module) -> dict:
+    """Hardware path: callable only after source, build, and independent link gates."""
+    run_dir = private_dir(run_dir)
+    manifest = validate(run_dir, baseline_dir)
+    _review_gate(run_dir, require_run(run_dir, baseline_dir)[0])
+    _linked_review_gate(run_dir, manifest)
+    capture_preflight(serial_importer)
+    serial_module = serial_importer("serial")
+    baseline = _backup(baseline_dir)
+    baseline["_directory"] = str(baseline_dir.resolve())
+    meta, intent = require_run(run_dir, baseline_dir)
+    for name in ("run-attempt-private.json", "restore-proof-private.json",
+                 "run-result-private.json"):
+        if (run_dir / name).exists():
+            stop("H38 mutation epoch already attempted")
+    clocks = RunClocks(now)
+    if RECOVERY_WORST_CASE_MS > contract.CAPTURE_LIMITS["restore_reserve_ms"]:
+        stop("frozen recovery reserve is smaller than checked recovery allowance")
+    h32.atomic_json(run_dir / "run-attempt-private.json", {
+        "schema": 1, "epoch": intent["epoch"], "status": "attempted",
+        "manifest_sha256": h32.digest(run_dir / "build/manifest-private.json"),
+        "baseline_full_sha256": meta["baseline_full_sha256"],
+        "restore_reserve_ms": contract.CAPTURE_LIMITS["restore_reserve_ms"],
+        "started_unix": int(time.time())}, 0o600)
+    current_full = None
+    current_proof = None
+    capture = None
+    failure = None
+    reset_result = "not_needed"
+    reset_exit_code = None
+    restore = None
+    current_review_approved = False
+    experiment_flash_started = False
+    capture_abort_exception = None
+    try:
+        # The master clock already runs. All calls hold the chip in the loader.
+        clocks.require_new_work(PREFLASH_ALLOWANCE_MS + contract.CAPTURE_LIMITS["capture_wall_ms"])
+        current_full, current_proof = _fresh_current_backup(port, run_dir, baseline, clocks)
+        review_request = _current_backup_review_request(run_dir, meta, intent, current_proof)
+        current_review = _wait_current_backup_review(run_dir, review_request, clocks)
+        current_review_approved = True
+        h32.atomic_json(run_dir / "current-backup-review-proof-private.json", {
+            "schema": 1, "status": "approved", "reviewer": current_review["reviewer"],
+            "request_sha256": h32.digest(run_dir / "current-backup-review-request-private.json"),
+            "review_sha256": h32.digest(run_dir / "current-backup-review-private.json")}, 0o600)
+        # The application flash itself is bounded to 20 minutes; reserve the
+        # entire subsequent capture allowance before starting this mutation.
+        clocks.require_new_work(PREFLASH_ALLOWANCE_MS + contract.CAPTURE_LIMITS["capture_wall_ms"])
+        app = run_dir / "build/family_link_demo.bin"
+        future = contract.CAPTURE_LIMITS["capture_wall_ms"]
+        experiment_flash_started = True
+        _bounded_esptool(port, ["--after", "no_reset", "write_flash", "--flash_size", "16MB",
+                                hex(h32.APP_OFF), str(app)], clocks, future + 840_000, 180)
+        app_readback = run_dir / "app-readback-private.bin"
+        _bounded_esptool(port, ["--after", "no_reset", "read_flash", hex(h32.APP_OFF),
+                                hex(app.stat().st_size), str(app_readback)], clocks, future + 660_000, 180)
+        if app_readback.stat().st_size != app.stat().st_size or h32.digest(app_readback) != h32.digest(app):
+            stop("H38 application flash readback differs")
+        post = run_dir / "postflash-full-private.bin"
+        _bounded_esptool(port, ["--after", "no_reset", "read_flash", "0", hex(h32.FLASH), str(post)],
+                         clocks, future + 60_000, 600)
+        old = current_full.read_bytes()
+        new = post.read_bytes()
+        erase_end = h32.APP_OFF + ((app.stat().st_size + 4095) // 4096) * 4096
+        if len(new) != h32.FLASH or new[:h32.APP_OFF] != old[:h32.APP_OFF] or new[erase_end:] != old[erase_end:]:
+            stop("H38 flash changed bytes outside reviewed application erase interval")
+        _bounded_verify_device(port, baseline, clocks, future)
+        try:
+            capture = _capture_h38(port, run_dir, manifest, intent, serial_module, clocks)
+        except CaptureTerminalError as exc:
+            failure = exc
+        except BaseException as exc:
+            if clocks.capture_start is not None:
+                capture_abort_exception = type(exc).__name__
+                while True:
+                    try:
+                        clocks.check()
+                    except DeadlineError as deadline:
+                        failure = deadline
+                        break
+                    time.sleep(.05)
+                raise failure
+            else:
+                raise
+    except BaseException as exc:
+        if failure is None:
+            failure = exc
+        if isinstance(exc, DeadlineError):
+            try:
+                # Only recovery-purpose loader reset after a wall timeout.
+                reset_process = h32.esptool(port, ["--before", "default_reset", "--after", "no_reset", "chip_id"],
+                                             60, capture=True)
+                reset_exit_code = reset_process.returncode
+                reset_result = "loader_reset_succeeded"
+            except BaseException as reset_exc:
+                reset_result = "loader_reset_failed:" + type(reset_exc).__name__
+    finally:
+        if current_full is not None and current_proof is not None:
+            try:
+                restore = _restore_current(port, run_dir, current_full, current_proof,
+                                           baseline, serial_module, clocks)
+            except BaseException as restore_exc:
+                if failure is None:
+                    failure = restore_exc
+                h32.atomic_json(run_dir / "restore-failure-private.json", {
+                    "status": "failed", "error_type": type(restore_exc).__name__,
+                    "error": str(restore_exc), "clocks": clocks.summary()}, 0o600)
+    summary = clocks.summary()
+    status = "verified" if failure is None and capture and restore and summary["master_overrun_ms"] == 0 else "failed_or_incomplete"
+    if summary["master_overrun_ms"] and failure is None:
+        failure = DeadlineError("master_overrun")
+    result = {"schema": 1, "epoch": intent["epoch"], "status": status,
+              "capture": capture, "restore_verified": restore is not None,
+              "trigger": None if failure is None else type(failure).__name__,
+              "trigger_detail": None if failure is None else
+                  (failure.name if isinstance(failure, DeadlineError) else type(failure).__name__),
+              "trigger_detail_private": None if failure is None else str(failure),
+              "reset_to_loader": reset_result,
+              "reset_to_loader_process_exit_code": reset_exit_code,
+              "current_backup_verified": current_proof is not None,
+              "current_backup_review_approved": current_review_approved,
+              "experiment_flash_started": experiment_flash_started,
+              "capture_abort_exception": capture_abort_exception,
+              "device_disposition": "restored_and_booted" if restore is not None else
+                  (("loader_held_current_backup_unverified" if reset_result == "loader_reset_succeeded"
+                    else "device_state_unknown_current_backup_unverified")
+                   if current_proof is None and not experiment_flash_started else "recovery_unverified"),
+              "clocks": clocks.summary()}
+    h32.atomic_json(run_dir / "run-result-private.json", result, 0o600)
+    if failure is not None:
+        raise failure
+    return {"status": "verified", "epoch": intent["epoch"],
+            "restored": True, "profile": contract.PROFILE}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
@@ -411,6 +1287,10 @@ def main() -> None:
         cmd.add_argument("--backup-dir", type=Path, required=True)
         if action == "prepare":
             cmd.add_argument("--h37-run-dir", type=Path, required=True)
+    run = sub.add_parser("run", help="execute one reviewed H38 mutation epoch")
+    run.add_argument("--port", required=True)
+    run.add_argument("--run-dir", type=Path, required=True)
+    run.add_argument("--backup-dir", type=Path, required=True)
     args = parser.parse_args()
     try:
         if args.action == "preflight":
@@ -419,12 +1299,21 @@ def main() -> None:
             result = prepare(args.run_dir, args.backup_dir, args.h37_run_dir)
         elif args.action == "build":
             result = build(args.run_dir, args.backup_dir)
+        elif args.action == "run":
+            result = run_epoch(args.port, args.run_dir, args.backup_dir)
         else:
             result = validate(args.run_dir, args.backup_dir)
         print(json.dumps(result if args.action == "prepare" else
                          {"status": "ready", "epoch": result.get("epoch")}, sort_keys=True))
+    except SystemExit:
+        raise SystemExit("STOP: a required H38 gate or helper rejected the operation") from None
+    except DeadlineError as exc:
+        raise SystemExit("STOP: H38 deadline reached (" + exc.name + ")") from None
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
-        raise SystemExit("STOP: " + str(exc)) from exc
+        label = "subprocess failure" if isinstance(exc, subprocess.SubprocessError) else \
+            "private evidence or validation failure" if isinstance(exc, (ValueError, KeyError)) else \
+            "private file or I/O failure"
+        raise SystemExit("STOP: H38 " + label + " (" + type(exc).__name__ + ")") from None
 
 
 if __name__ == "__main__":
