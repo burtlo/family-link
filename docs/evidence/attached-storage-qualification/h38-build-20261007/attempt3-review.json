@@ -1,0 +1,29 @@
+{
+  "app_bytes": 330144,
+  "app_sha256": "db3d6980fbabc61e03b9f17aaec1e88c49bda5f8c020b0d1d0079a6a7d48d2fd",
+  "artifact_validation": "passed",
+  "build_exit_code": 0,
+  "card_operations": 0,
+  "custom_disk_callbacks": "only_mapped_guarded_path",
+  "device_operations": 0,
+  "dma_bytes": 4096,
+  "dma_placement": "internal_dram_aligned_4",
+  "elf_bytes": 4856788,
+  "elf_sha256": "3f16f949da30a93a2fb464418ccdd22b447d0f5c858d2d554ebafd7020a38cef",
+  "epoch": "c61531fbc456189dc8b68a4a843b321d",
+  "erase_interval": {
+    "end_exclusive": 397312,
+    "start": 65536
+  },
+  "factory_bytes": 1536000,
+  "hardware_gate": "held_pending_ROM_watchdog_boot_check_correction",
+  "independent_linked_review": "GO",
+  "max_driver_sectors": 8,
+  "nvs_write_wifi_init_efuse_programming_product_paths": "absent",
+  "physical_erase_or_trim_backend": "absent",
+  "runtime_elf_matches_file": true,
+  "sdk": "v5.4.2",
+  "source_revision": "79367f07cd9913157705da6a6c8dc340f0e1b757",
+  "source_sha256": "055b1b446063b17708e294a75bf40c156e1ce677e93028d5cc0f883abf99a15f",
+  "stock_registration_or_autoformat": "absent"
+}

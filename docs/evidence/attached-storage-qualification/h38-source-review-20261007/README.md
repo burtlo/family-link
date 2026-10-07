@@ -36,3 +36,9 @@ The narrow correction removes that unsupported call. Independent review confirme
 Epoch `683da77d69c37ceee3ebe8e920cd3aed` built and validated with exit 0, and independent linked-image review returned GO. See [the sanitized artifact review](../h38-build-20261007/attempt2-review.json). Before hardware, the orchestrator found that host capture/session summaries included restoration time. The hardware gate stayed closed; this epoch performed no device or card operations.
 
 The reviewed controller correction freezes those clocks at validated `COMPLETE` receipt or the authoritative abort boundary and preserves exact FORMAT/IO phase endpoints. Only master time continues through restoration. A post-terminal evidence I/O error remains failed and goes directly to recovery because SD operations have ended. Fake-clock regressions exercise successful termination, a real capture deadline, restoration beyond the frozen deadlines, and a post-terminal I/O failure. Independent review and the controller harness pass without changing any cap or recovery reserve. A fresh immutable source/intent/build binding is required before flash.
+
+## Restoration boot-check correction
+
+The third immutable epoch built and independently passed linked-image review; its [sanitized review](../h38-build-20261007/attempt3-review.json) records the artifacts. Hardware stayed held when review found that actual ROM watchdog reset records needed explicit rejection. No flash or card operation occurred.
+
+Correction `e4501a4` rejects the pinned ROM watchdog numeric codes and exact modern/legacy tags after ANSI stripping. It distinguishes runtime USB reset 11 from ROM watchdog 11 and ROM USB 21, and ignores reset legends. Independent review returned GO and the controller host checks passed. A fresh immutable source, intent, and build binding is required before hardware.
