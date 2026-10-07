@@ -21,6 +21,13 @@ else()
     set(V1_INCLUDE "")
 endif()
 
+set(H38_SRCS "")
+if(FAMILY_DEMO STREQUAL "h38_sdmmc_filesystem")
+    list(APPEND H38_SRCS
+        "${CMAKE_CURRENT_LIST_DIR}/../common/h38_disk_guard.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../common/h38_fatfs_adapter.c"
+        "${CMAKE_CURRENT_LIST_DIR}/../common/h38_filesystem_io.c")
+endif()
 set(OPUS_PROBE_SRCS "")
 if(FAMILY_DEMO STREQUAL "x02_opus_size_probe")
     list(APPEND OPUS_PROBE_SRCS "${CMAKE_CURRENT_LIST_DIR}/../common/fl_opus_size_probe.c")
@@ -34,8 +41,8 @@ if(NOT EXISTS "${SECRETS}")
     set(SECRETS "${CMAKE_CURRENT_LIST_DIR}/../secrets.example.h")
 endif()
 
-if(FAMILY_DEMO STREQUAL "h32_onchip_storage" OR FAMILY_DEMO STREQUAL "h35_sdmmc_discovery" OR FAMILY_DEMO STREQUAL "h37_sdmmc_classification")
-    # H32/H35/H37 are isolated storage qualification images. Keep product, Wi-Fi,
+if(FAMILY_DEMO STREQUAL "h32_onchip_storage" OR FAMILY_DEMO STREQUAL "h35_sdmmc_discovery" OR FAMILY_DEMO STREQUAL "h37_sdmmc_classification" OR FAMILY_DEMO STREQUAL "h38_sdmmc_filesystem")
+    # H32/H35/H37/H38 are isolated storage qualification images. Keep product, Wi-Fi,
     # display, and identity code out of the binary and out of its measurements.
     set(COMMON_SRCS "")
 else()
@@ -53,7 +60,7 @@ set(MAIN_PRIVATE_REQUIRES "")
 # such as FAMILY_DEMO. Declare the union here so H32 receives its SDK headers;
 # unused static libraries do not add product code to the linked image.
 if(CMAKE_BUILD_EARLY_EXPANSION)
-    list(APPEND MAIN_PRIVATE_REQUIRES app_update spi_flash fatfs wear_levelling sdmmc esp_driver_sdmmc esp_driver_gpio esp_driver_usb_serial_jtag esp_timer mbedtls)
+    list(APPEND MAIN_PRIVATE_REQUIRES app_update spi_flash fatfs wear_levelling sdmmc esp_driver_sdmmc esp_driver_gpio esp_driver_usb_serial_jtag esp_timer mbedtls esp_hw_support)
 endif()
 if(FAMILY_DEMO STREQUAL "h30_opus_local" OR FAMILY_DEMO STREQUAL "h31_opus_chunks"
         OR FAMILY_DEMO STREQUAL "x02_opus_size_probe" OR FAMILY_DEMO STREQUAL "x02_opus_dep_only")
@@ -61,6 +68,8 @@ if(FAMILY_DEMO STREQUAL "h30_opus_local" OR FAMILY_DEMO STREQUAL "h31_opus_chunk
 endif()
 if(FAMILY_DEMO STREQUAL "h35_sdmmc_discovery" OR FAMILY_DEMO STREQUAL "h37_sdmmc_classification")
     set(MAIN_PRIV_REQUIRES esp_timer mbedtls sdmmc esp_driver_sdmmc esp_driver_gpio esp_driver_usb_serial_jtag)
+elseif(FAMILY_DEMO STREQUAL "h38_sdmmc_filesystem")
+    set(MAIN_PRIV_REQUIRES esp_timer mbedtls fatfs sdmmc esp_driver_sdmmc esp_driver_gpio esp_driver_usb_serial_jtag esp_hw_support)
 elseif(FAMILY_DEMO STREQUAL "h32_onchip_storage")
     set(MAIN_PRIV_REQUIRES
         esp_timer
@@ -92,6 +101,7 @@ idf_component_register(
         "${DEMO_SRC}"
         ${V1_SRCS}
         ${OPUS_PROBE_SRCS}
+        ${H38_SRCS}
         ${COMMON_SRCS}
     INCLUDE_DIRS
         "${CMAKE_CURRENT_LIST_DIR}/../common"
@@ -151,6 +161,22 @@ if(FAMILY_DEMO STREQUAL "h37_sdmmc_classification")
         H37_RUN_EPOCH="${H37_RUN_EPOCH}"
         H35_RUN_EPOCH="${H35_RUN_EPOCH}")
 endif()
-if(NOT FAMILY_DEMO STREQUAL "h32_onchip_storage" AND NOT FAMILY_DEMO STREQUAL "h35_sdmmc_discovery" AND NOT FAMILY_DEMO STREQUAL "h37_sdmmc_classification")
+if(NOT FAMILY_DEMO STREQUAL "h32_onchip_storage" AND NOT FAMILY_DEMO STREQUAL "h35_sdmmc_discovery" AND NOT FAMILY_DEMO STREQUAL "h37_sdmmc_classification" AND NOT FAMILY_DEMO STREQUAL "h38_sdmmc_filesystem")
     target_link_options(${COMPONENT_LIB} INTERFACE ${WHO_LINK_OPTS})
+endif()
+
+if(FAMILY_DEMO STREQUAL "h38_sdmmc_filesystem")
+    foreach(_epoch H38_RUN_EPOCH H35_REFERENCE_EPOCH)
+        string(LENGTH "${${_epoch}}" _epoch_length)
+        if(NOT DEFINED ${_epoch} OR NOT "${${_epoch}}" MATCHES "^[0-9a-f]+$" OR NOT _epoch_length EQUAL 32)
+            message(FATAL_ERROR "${_epoch} must be exactly 32 lowercase hex characters")
+        endif()
+    endforeach()
+    if(NOT DEFINED H38_INTENT_HEADER OR NOT EXISTS "${H38_INTENT_HEADER}")
+        message(FATAL_ERROR "H38_INTENT_HEADER must name the private generated intent header")
+    endif()
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE
+        H38_RUN_EPOCH="${H38_RUN_EPOCH}"
+        H35_REFERENCE_EPOCH="${H35_REFERENCE_EPOCH}"
+        H38_INTENT_HEADER=\"${H38_INTENT_HEADER}\")
 endif()
