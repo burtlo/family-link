@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Firmware source committed (`98f5d5c`) and independently reviewed; four H38 C objects compile off device. Host contract passes 67 synthetic checks (`32294ae`). Full controller implementation is under independent review on 2026-10-07; linked build, exact current-backup review, flash, and hardware gates remain open. No H38 hardware operation has occurred. See [source/object evidence](../evidence/attached-storage-qualification/h38-source-review-20261007/README.md). |
+| **Status** | Firmware source (`98f5d5c`) and full controller (`fb32afb`) are committed and independently reviewed for build. Four H38 C objects compile off device; the contract passes 82 synthetic checks (`0a4140e`), and controller success/recovery failure-injection checks pass. Linked build, exact current-backup review, flash, and hardware gates remain open. No H38 hardware operation has occurred. See [source/object evidence](../evidence/attached-storage-qualification/h38-source-review-20261007/README.md). |
 | **Depends on** | Committed and independently reviewed H37 Stage A evidence (`c69ee59`) |
 | **Scope** | One disposable-card FAT32 test volume, explicit bounded formatting, mount/I/O semantics, remount integrity, and reclamation |
 | **Out of scope** | Cadence, fault injection, near-full testing, removal/power testing, outbox behavior, product partition choice, production qualification |
