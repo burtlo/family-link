@@ -360,7 +360,6 @@ def _parse_record(line: bytes) -> Record:
         ("FORMAT_START", "fat_type"): {"FAT32"},
         ("FORMAT_RESULT", "fat_type"): {"FAT32"},
         ("MOUNT_RESULT", "kind"): {"initial", "remount"},
-        ("MOUNT_RESULT", "fs_type"): {"3"},
         ("IO_RESULT", "failure_op"): {"none","create","write","fflush","fsync","fclose","rename","readback","checksum","delete","free_space","retention"},
         ("COMPLETE", "result"): {"io_complete", "failed"},
         ("COMPLETE", "failure_stage"): {"none","resources","reset","power","host","slot","card","geometry","bind","layout","format","mount","io_create","io_write","io_fflush","io_fsync","io_fclose","io_rename","io_readback","io_checksum","io_delete","probe","semantics","remount","reclaim","budget","timeout","cleanup"},
@@ -370,6 +369,8 @@ def _parse_record(line: bytes) -> Record:
     for (ev, key), choices in enums.items():
         if event == ev and key in values and values[key] not in choices:
             raise ContractError(f"{event}.{key} enum invalid")
+    if event == "MOUNT_RESULT" and values["fs_type"] not in ({"3"} if values["status"] == "ok" else {"0", "3"}):
+        raise ContractError("MOUNT_RESULT.fs_type invalid for status")
     if event == "CID_PRIVATE":
         size = int(values["name_size"])
         if size > 16 or any(int(values[k]) > 0xFFFFFFFF for k in ("mfg_id","oem_id","revision","serial","date")) or len(values["name_hex"]) != size * 2 or not re.fullmatch(r"[0-9a-f]*", values["name_hex"]):

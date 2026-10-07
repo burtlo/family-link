@@ -151,6 +151,7 @@ def run() -> int:
         ("COMPLETE",b"retained_check_count=30",b"retained_check_count=29"),
         ("COMPLETE",b"retained_file_bytes=893440",b"retained_file_bytes=786432"),
         ("MOUNT_RESULT",b"fs_type=3",b"fs_type=2"),
+        ("MOUNT_RESULT",b"fs_type=3",b"fs_type=0"),
         ("MOUNT_RESULT",b"mounted=1",b"mounted=0"),
         ("MOUNT_RESULT",b"cycle=0",b"cycle=1"),
         ("DIRECTORY_RESULT",b"entries=11",b"entries=10"),
@@ -236,6 +237,30 @@ def run() -> int:
         "power_off_error":"0","bound":"1","scope":"bounded_fat32_filesystem_io","media_writes":"2000"}
     prefix.append(record("COMPLETE",failed_complete))
     check(c.parse_capture(b"".join(prefix),epoch,elf).result=="failed","valid cycle-one failure prefix rejected"); passes+=1
+    # Returned layout/format/mount errors carry closed, parseable failure witnesses.
+    for stage, length, event, changes in (
+        ("layout", 10, "LAYOUT_RESULT", ((b"readback_base64_private="+base64.b64encode(m), b"readback_base64_private=unavailable"),
+                                          (b"readback_match=1", b"readback_match=0"))),
+        ("format", 12, "FORMAT_RESULT", ((b"bpb_base64_private="+base64.b64encode(bpb), b"bpb_base64_private=unavailable"),
+                                          (b"bpb_valid=1", b"bpb_valid=0"))),
+        ("mount", 13, "MOUNT_RESULT", ((b"fs_type=3", b"fs_type=0"),
+                                       (b"mounted=1", b"mounted=0"))),
+    ):
+        fixture=list(rows[:length])
+        witness=fixture[-1]
+        for old,new in changes:
+            witness=witness.replace(old,new,1)
+        witness=witness.replace(b"status=ok,error=0",b"status=failed,error=-5")
+        fixture[-1]=witness
+        if stage == "mount":
+            fixture[-2]=fixture[-2].replace(b"bpb_valid=1",b"bpb_valid=0").replace(
+                b"bpb_base64_private="+base64.b64encode(bpb),
+                b"bpb_base64_private=unavailable")
+        terminal=dict(failed_complete, failure_stage=stage, error="-5")
+        fixture.extend((rows[-2], record("COMPLETE",terminal)))
+        check(c.parse_capture(b"".join(fixture),epoch,elf).result=="failed",
+              "returned failure witness rejected: "+stage)
+        passes+=1
     remount_failure=b"".join(prefix)
     for stage in (b"reset", b"geometry", b"budget", b"timeout", b"semantics", b"mount", b"probe"):
         altered=remount_failure.replace(b"failure_stage=remount", b"failure_stage="+stage)
