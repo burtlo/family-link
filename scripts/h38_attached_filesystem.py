@@ -574,6 +574,12 @@ class RunClocks:
 
 PREFLASH_ALLOWANCE_MS = 1_020_000
 RECOVERY_WORST_CASE_MS = 2_685_000  # emergency reset, probes, full write/readback, and boot
+ROM_WATCHDOG_RESET_CODES = frozenset((7, 8, 9, 11, 13, 16, 17, 18))
+ROM_WATCHDOG_RESET_TAGS = frozenset((
+    "TG0WDT_SYS_RESET", "TG1WDT_SYS_RESET", "RTCWDT_SYS_RESET",
+    "TG0WDT_CPU_RESET", "TGWDT_CPU_RESET", "RTCWDT_CPU_RESET", "RTCWDT_RTC_RESET",
+    "TG1WDT_CPU_RESET", "SUPER_WDT_RESET",
+))
 
 
 def _wait_for_capture_abort(clocks: RunClocks, sleep=time.sleep):
@@ -981,16 +987,31 @@ def _boot_original(port: str, run_dir: Path, serial_module, baseline: dict) -> d
     lower = raw.lower()
     panic = any(x in lower for x in (b"guru meditation", b"backtrace:",
                                     b"abort() was called", b"panic'ed"))
-    watchdog = any(x in lower for x in (b"task watchdog got triggered",
-                                       b"interrupt wdt timeout"))
+    runtime_watchdog = any(x in lower for x in (b"task watchdog got triggered",
+                                               b"interrupt wdt timeout"))
     lines = raw.decode("utf-8", errors="replace").splitlines()
+    plain_lines = [re.sub(r"\x1b\[[0-9;]*m", "", line) for line in lines]
+    rom_reset_events = []
+    for index, line in enumerate(plain_lines):
+        # ROM reset evidence is the anchored boot event. Do not infer from a
+        # legend, arbitrary mention, or the runtime ESP_RST_USB enum value.
+        match = re.match(r"^\s*rst:\s*0x([0-9a-f]+)\b(?:\s*\(([^)]*)\))?", line, re.I)
+        if match:
+            code = int(match.group(1), 16)
+            tag = (match.group(2) or "").strip().upper()
+            if tag.endswith("_RST"):
+                tag = tag[:-4] + "_RESET"
+            rom_reset_events.append((index, code, tag))
+    first_rom_reset = rom_reset_events[0] if rom_reset_events else None
+    rom_watchdog = any(code in ROM_WATCHDOG_RESET_CODES or tag in ROM_WATCHDOG_RESET_TAGS
+                       for _, code, tag in rom_reset_events)
+    watchdog = runtime_watchdog or rom_watchdog
     loaded = next((i for i, line in enumerate(lines) if re.search(
         r"Loaded app from partition at offset 0x0*10000\b", line, re.I)), None)
     app_main = next((i for i, line in enumerate(lines) if "Calling app_main" in line), None)
 
     def log_value(label: str) -> tuple[str, int] | None:
-        for index, line in enumerate(lines):
-            plain = re.sub(r"\x1b\[[0-9;]*m", "", line)
+        for index, plain in enumerate(plain_lines):
             match = re.search(rf"(?:^|\s){re.escape(label)}:\s*(.*?)\s*$", plain)
             if match:
                 return match.group(1).strip(), index
@@ -1009,7 +1030,7 @@ def _boot_original(port: str, run_dir: Path, serial_module, baseline: dict) -> d
                        if entry is not None]
     startup_order = loaded is not None and app_main is not None and \
         len(startup_indices) == 4 and loaded < min(startup_indices) and max(startup_indices) < app_main
-    rom_usb_reset = b"USB_UART_CHIP_RESET" in raw or bool(re.search(rb"rst:0x15\b", lower))
+    rom_usb_reset = first_rom_reset is not None and first_rom_reset[1] == 21
     result = {"full_boot_bytes": len(raw), "project_match": project_match,
               "version_match": version_match, "sdk_match": sdk_match,
               "elf_prefix_match": elf_match, "factory_offset_match": loaded is not None,

@@ -351,21 +351,21 @@ def capture_failure_checks():
 def boot_record_checks():
     expected = {"project": "family_link_demo", "version": "1.0", "idf": "v5.4.2",
                 "elf_sha256": "a" * 64}
-    raw = (b"rst:0x15 (USB_UART_CHIP_RESET)\n"
-           b"I (100) boot: Loaded app from partition at offset 0x10000\n"
-           b"I (200) app_start: Project name: family_link_demo\n"
-           b"I (201) app_start: App version: 1.0\n"
-           b"I (202) app_start: ELF file SHA256: aaaaaaaa\n"
-           b"I (203) app_start: IDF version: v5.4.2\n"
-           b"I (300) main_task: Calling app_main()\n")
+    startup = (b"I (100) boot: Loaded app from partition at offset 0x10000\n"
+               b"I (200) app_start: Project name: family_link_demo\n"
+               b"I (201) app_start: App version: 1.0\n"
+               b"I (202) app_start: ELF file SHA256: aaaaaaaa\n"
+               b"I (203) app_start: IDF version: v5.4.2\n"
+               b"I (300) main_task: Calling app_main()\n")
 
     class Port:
         dtr = False
         rts = False
         port = None
 
-        def __init__(self):
+        def __init__(self, raw):
             self.done = False
+            self.raw = raw
 
         def __enter__(self):
             return self
@@ -380,20 +380,51 @@ def boot_record_checks():
             if self.done:
                 return b""
             self.done = True
-            return raw
+            return self.raw
 
     class SerialModule:
-        @staticmethod
-        def Serial(**_):
-            return Port()
+        def __init__(self, raw):
+            self.raw = raw
 
-    with tempfile.TemporaryDirectory(prefix="h38-boot-log-") as folder:
-        result = h38._boot_original("fake", Path(folder), SerialModule, {"apps": [
-            {"name": "factory", "descriptor": expected}]})
+        def Serial(self, **_):
+            return Port(self.raw)
+
+    def run_boot(raw):
+        with tempfile.TemporaryDirectory(prefix="h38-boot-log-") as folder:
+            return h38._boot_original("fake", Path(folder), SerialModule(raw), {"apps": [
+                {"name": "factory", "descriptor": expected}]})
+
+    result = run_boot(b"\x1b[32mrst:0x15 (USB_UART_CHIP_RESET)\x1b[0m\n" + startup)
     check(result["factory_offset_match"] and result["startup_order_match"],
           "factory startup lines were not bound to the loaded partition")
     check(result["usb_reset_code"] == "21" and result["usb_reset_namespace"] == "rom",
           "ROM USB reset code was confused with runtime ESP_RST_USB")
+
+    # ROM RTC reset reasons are actual watchdog events even if the named tag is absent.
+    for code in (7, 8, 9, 11, 13, 16, 17, 18):
+        try:
+            run_boot(f"rst:0x{code:x}\n".encode("ascii") + startup)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"ROM watchdog reset code {code} was accepted")
+
+    # The anchored event parser ignores legend/diagnostic mentions, and runtime
+    # ESP_RST_USB=11 is not the ROM reset code 11 watchdog event.
+    legend = (b"Reset legend: rst:0x07 (TG0WDT_SYS_RESET), USB_UART_CHIP_RESET\n"
+              b"I (50) app: observed ESP_RST_USB=11\n")
+    legend_result = run_boot(legend + startup)
+    check(legend_result["watchdog_seen"] is False and legend_result["usb_reset_code"] == "none" and
+          legend_result["usb_reset_namespace"] == "none",
+          "legend/runtime USB text was misread as a ROM reset event")
+
+    for tag in ("TG0WDT_SYS_RESET", "TG0WDT_SYS_RST", "TGWDT_CPU_RST"):
+        try:
+            run_boot(f"rst:0x1f ({tag})\n".encode("ascii") + startup)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("actual ROM watchdog tag with unknown code was accepted")
 
 
 def binding_and_review_checks():
