@@ -467,9 +467,12 @@ class RunClocks:
         self.master_end = self.master + limits["flash_restore_ms"] / 1000
         self.recovery_start = self.master_end - limits["restore_reserve_ms"] / 1000
         self.capture_start = None
+        self.capture_end = None
         self.session_start = None
+        self.session_end = None
         self.phase_start = None
         self.phase_name = None
+        self.phase_history = []
         self.limits = limits
 
     def require_new_work(self, operation_ms: int) -> None:
@@ -511,16 +514,39 @@ class RunClocks:
         self.check()
         if self.phase_name != name:
             raise ValueError("phase completion differs")
+        self._finish_phase(self.now(), "milestone")
+
+    def _finish_phase(self, ended: float, reason: str) -> None:
+        if self.phase_start is None:
+            return
+        self.phase_history.append({
+            "name": self.phase_name,
+            "start_elapsed_ms": int((self.phase_start - self.master) * 1000),
+            "end_elapsed_ms": int((ended - self.master) * 1000),
+            "elapsed_ms": int((ended - self.phase_start) * 1000),
+            "end_reason": reason,
+        })
         self.phase_start = None
         self.phase_name = None
+
+    def freeze_capture(self, reason: str, ended_at: float | None = None) -> None:
+        """Freeze capture/session/active phase at a terminal or abort boundary."""
+        ended = self.now() if ended_at is None else ended_at
+        if self.capture_start is not None and self.capture_end is None:
+            self.capture_end = ended
+        if self.session_start is not None and self.session_end is None:
+            self.session_end = ended
+        self._finish_phase(ended, reason)
 
     def check(self) -> None:
         now = self.now()
         if now >= self.recovery_start:
             raise DeadlineError("restore_reserve")
-        if self.capture_start is not None and now - self.capture_start > self.limits["capture_wall_ms"] / 1000:
+        if self.capture_end is None and self.capture_start is not None and \
+           now - self.capture_start > self.limits["capture_wall_ms"] / 1000:
             raise DeadlineError("capture_wall")
-        if self.session_start is not None and now - self.session_start > self.limits["session_ms"] / 1000:
+        if self.session_end is None and self.session_start is not None and \
+           now - self.session_start > self.limits["session_ms"] / 1000:
             raise DeadlineError("firmware_session")
         if self.phase_start is not None:
             cap = contract.FORMAT["time_limit_ms"] if self.phase_name == "FORMAT" else contract.IO["time_limit_ms"]
@@ -529,14 +555,38 @@ class RunClocks:
 
     def summary(self) -> dict:
         now = self.now()
+        capture_end = self.capture_end if self.capture_end is not None else now
+        session_end = self.session_end if self.session_end is not None else now
         return {"master_elapsed_ms": int((now - self.master) * 1000),
                 "master_overrun_ms": max(0, int((now - self.master_end) * 1000)),
-                "capture_elapsed_ms": None if self.capture_start is None else int((now - self.capture_start) * 1000),
-                "session_elapsed_ms": None if self.session_start is None else int((now - self.session_start) * 1000)}
+                "capture_elapsed_ms": None if self.capture_start is None else int((capture_end - self.capture_start) * 1000),
+                "session_elapsed_ms": None if self.session_start is None else int((session_end - self.session_start) * 1000),
+                "capture_end_elapsed_ms": None if self.capture_end is None else int((self.capture_end - self.master) * 1000),
+                "session_end_elapsed_ms": None if self.session_end is None else int((self.session_end - self.master) * 1000),
+                "phases": self.phase_history + ([{
+                    "name": self.phase_name,
+                    "start_elapsed_ms": int((self.phase_start - self.master) * 1000),
+                    "end_elapsed_ms": int((now - self.master) * 1000),
+                    "elapsed_ms": int((now - self.phase_start) * 1000),
+                    "end_reason": "running",
+                }] if self.phase_start is not None else [])}
 
 
 PREFLASH_ALLOWANCE_MS = 1_020_000
 RECOVERY_WORST_CASE_MS = 2_685_000  # emergency reset, probes, full write/readback, and boot
+
+
+def _wait_for_capture_abort(clocks: RunClocks, sleep=time.sleep):
+    """Wait for an authoritative deadline only while firmware capture is active."""
+    if clocks.capture_start is None or clocks.capture_end is not None:
+        return None
+    while True:
+        try:
+            clocks.check()
+        except DeadlineError as deadline:
+            clocks.freeze_capture("deadline:" + deadline.name)
+            return deadline
+        sleep(.05)
 
 
 def _bounded_esptool(port: str, args: list[str], clocks: RunClocks,
@@ -751,6 +801,7 @@ def _capture_h38(port: str, run_dir: Path, manifest: dict, intent: dict,
         safe_terminal = None
         for record in _record_stream(ser, raw_file, pending, clocks, captured, host_errors):
             event, fields = record.event, record.fields
+            terminal_received_at = clocks.now() if event == "COMPLETE" else None
             if host_errors and live_failure is None:
                 live_failure = host_errors[0]
             if event == "MALFORMED":
@@ -762,6 +813,7 @@ def _capture_h38(port: str, run_dir: Path, manifest: dict, intent: dict,
                 if event == "COMPLETE":
                     safe_terminal = _safe_terminal(bytes(captured), intent, elf)
                     if safe_terminal is not None:
+                        clocks.freeze_capture("validated_terminal", terminal_received_at)
                         break
                 continue
             try:
@@ -866,6 +918,7 @@ def _capture_h38(port: str, run_dir: Path, manifest: dict, intent: dict,
                     if safe_terminal is None:
                         live_failure = "unvalidated H38 COMPLETE"
                         continue
+                    clocks.freeze_capture("validated_terminal", terminal_received_at)
                     break
             except DeadlineError:
                 raise
@@ -1215,14 +1268,12 @@ def run_epoch(port: str, run_dir: Path, baseline_dir: Path, *,
             failure = exc
         except BaseException as exc:
             if clocks.capture_start is not None:
-                capture_abort_exception = type(exc).__name__
-                while True:
-                    try:
-                        clocks.check()
-                    except DeadlineError as deadline:
-                        failure = deadline
-                        break
-                    time.sleep(.05)
+                if clocks.capture_end is None:
+                    capture_abort_exception = type(exc).__name__
+                    deadline = _wait_for_capture_abort(clocks)
+                    failure = deadline if deadline is not None else exc
+                else:
+                    failure = exc
                 raise failure
             else:
                 raise

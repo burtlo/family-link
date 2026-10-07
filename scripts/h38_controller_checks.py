@@ -149,6 +149,83 @@ def clock_checks():
         raise AssertionError("new mutation entered recovery reserve")
 
 
+def clock_freeze_checks():
+    tick = [0.0]
+    clock = h38.RunClocks(lambda: tick[0])
+    tick[0] = 2.0
+    clock.start_capture()
+    clock.start_session()
+    tick[0] = 3.0
+    clock.start_phase("FORMAT")
+    tick[0] = 3.25
+    clock.end_phase("FORMAT")
+    tick[0] = 4.0
+    terminal_received = tick[0]
+    # Parser validation completes after receipt; freeze elapsed at receipt time.
+    tick[0] = 4.5
+    clock.freeze_capture("validated_terminal", terminal_received)
+    frozen = clock.summary()
+    tick[0] = 3600.0  # Recovery duration belongs to master only.
+    after_restore = clock.summary()
+    check(frozen["capture_elapsed_ms"] == 2000 and frozen["session_elapsed_ms"] == 2000,
+          "terminal capture/session elapsed did not end at terminal receipt")
+    check(after_restore["capture_elapsed_ms"] == frozen["capture_elapsed_ms"] and
+          after_restore["session_elapsed_ms"] == frozen["session_elapsed_ms"],
+          "restore time leaked into frozen capture/session elapsed")
+    check(after_restore["master_elapsed_ms"] > frozen["master_elapsed_ms"],
+          "restore time did not remain in master elapsed")
+    try:
+        tick[0] = 2000.0  # Beyond capture/session caps, still before recovery reserve.
+        clock.check()
+    except h38.DeadlineError as exc:
+        raise AssertionError("frozen capture/session incorrectly hit their limits after terminal") from exc
+    fixed_end = clock.capture_end
+
+    def unexpected_wait(_):
+        raise AssertionError("post-terminal error waited for an already completed capture")
+
+    post_terminal_error = OSError("injected context-close failure")
+    try:
+        raise post_terminal_error
+    except OSError as caught:
+        deadline = h38._wait_for_capture_abort(clock, unexpected_wait)
+        preserved_failure = deadline if deadline is not None else caught
+    check(deadline is None and preserved_failure is post_terminal_error and clock.capture_end == fixed_end,
+          "post-terminal error changed frozen capture state or entered active wait")
+    phases = after_restore["phases"]
+    check(len(phases) == 1 and phases[0]["name"] == "FORMAT" and
+          phases[0]["elapsed_ms"] == 250 and phases[0]["end_reason"] == "milestone",
+          "completed phase timing endpoints were not retained")
+
+    timeout_tick = [0.0]
+    timeout_limits = dict(h38.contract.CAPTURE_LIMITS)
+    timeout_limits["capture_wall_ms"] = 100_000
+    timeout_limits["session_ms"] = 200_000
+    timeout = h38.RunClocks(lambda: timeout_tick[0], timeout_limits)
+    timeout.start_capture()
+    timeout.start_session()
+    timeout_tick[0] = 10.0
+    timeout.start_phase("IO")
+    timeout_tick[0] = 101.0
+    deadline = h38._wait_for_capture_abort(timeout, lambda _: None)
+    check(isinstance(deadline, h38.DeadlineError) and deadline.name == "capture_wall",
+          "capture timeout fixture did not hit its configured authoritative deadline")
+    at_abort = timeout.summary()
+    timeout_tick[0] = 3000.0
+    during_recovery = timeout.summary()
+    check(at_abort["capture_elapsed_ms"] == 101000 and at_abort["session_elapsed_ms"] == 101000,
+          "timeout capture did not freeze at the abort boundary")
+    check(during_recovery["capture_elapsed_ms"] == at_abort["capture_elapsed_ms"] and
+          during_recovery["session_elapsed_ms"] == at_abort["session_elapsed_ms"] and
+          during_recovery["master_elapsed_ms"] > at_abort["master_elapsed_ms"],
+          "timeout restore time changed capture/session instead of master only")
+    timeout_phase = during_recovery["phases"]
+    check(len(timeout_phase) == 1 and timeout_phase[0]["name"] == "IO" and
+          timeout_phase[0]["elapsed_ms"] == 91000 and
+          timeout_phase[0]["end_reason"] == "deadline:capture_wall",
+          "active phase timing was not frozen with the timeout capture")
+
+
 def short_write_check():
     class Port:
         def write(self, data):
@@ -578,6 +655,10 @@ def successful_dispatch_check():
     check(result["result"] == "io_complete" and result["dispatch_count"] == 5,
           "controller did not accept the synthetic parser-validated success")
     check(clocks.phase_name is None, "FORMAT/IO phase clocks remained active after terminal")
+    phase_history = clocks.summary()["phases"]
+    check([phase["name"] for phase in phase_history] == ["FORMAT", "IO"] and
+          all(phase["end_reason"] == "milestone" for phase in phase_history),
+          "successful capture did not preserve both phase timing endpoints")
 
 
 def recovery_checks():
@@ -754,6 +835,7 @@ def recovery_checks():
 
 def main():
     clock_checks()
+    clock_freeze_checks()
     short_write_check()
     capture_failure_checks()
     boot_record_checks()
