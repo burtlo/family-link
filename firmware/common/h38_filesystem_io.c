@@ -25,6 +25,8 @@
 #define H38_IO_MAX_GENERATED UINT64_C(33554432)
 #define H38_IO_MAX_RETAINED UINT64_C(2097152)
 #define H38_IO_MAX_MARKER 4096u
+/* Fixed validated metadata is 620 bytes plus its terminator. */
+#define H38_IO_MARKER_BUFFER_BYTES 1024u
 #define H38_IO_MAX_PATH 160u
 #define H38_IO_BLOCK 4096u
 #define H38_IO_MAX_MS UINT64_C(900000)
@@ -742,7 +744,7 @@ static bool marker_contents(io_state_t *state, char *out, size_t capacity,
 
 static bool write_marker(io_state_t *state)
 {
-    char content[512], part[H38_IO_MAX_PATH], final[H38_IO_MAX_PATH];
+    char content[H38_IO_MARKER_BUFFER_BYTES], part[H38_IO_MAX_PATH], final[H38_IO_MAX_PATH];
     size_t length = 0;
     FILE *file = NULL;
     int fd = -1;
@@ -803,7 +805,7 @@ static bool write_marker(io_state_t *state)
 
 static bool verify_marker(io_state_t *state)
 {
-    char path[H38_IO_MAX_PATH], expected[512], actual[512];
+    char path[H38_IO_MAX_PATH], expected[H38_IO_MARKER_BUFFER_BYTES], actual[H38_IO_MARKER_BUFFER_BYTES];
     size_t expected_length = 0;
     uint64_t tx_start = (uint64_t)esp_timer_get_time();
     h38_filesystem_io_stage_t stage = H38_IO_STAGE_NONE;
@@ -1135,7 +1137,7 @@ static bool directory_inventory(io_state_t *state, uint32_t *entries,
         count++;
         if (!strcmp(entry->d_name, "marker.txt")) {
             recognized = true;
-            char marker[512]; size_t marker_len = 0;
+            char marker[H38_IO_MARKER_BUFFER_BYTES]; size_t marker_len = 0;
             if (!marker_contents(state, marker, sizeof(marker), &marker_len) || st.st_size != (off_t)marker_len)
                 unknown_count++;
         } else if (!strcmp(entry->d_name, "probe.bin")) {

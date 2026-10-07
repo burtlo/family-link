@@ -43,7 +43,7 @@ SOURCE_FILES = (
     "scripts/h38_sd_contract.py", "scripts/h38_attached_filesystem.py",
     "scripts/h32_storage_qual.py", "scripts/h37_attached_classification.py",
     "scripts/h35_attached_discovery.py", "scripts/h37_sd_metadata.py",
-    "scripts/h38_controller_checks.py",
+    "scripts/h38_controller_checks.py", "scripts/h38_io_marker_checks.py",
 )
 SDK_FILES = (
     "tools/cmake/version.cmake", "components/fatfs/src/ff.c",
