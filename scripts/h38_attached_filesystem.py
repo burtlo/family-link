@@ -1020,7 +1020,7 @@ def _boot_original(port: str, run_dir: Path, serial_module, baseline: dict) -> d
 
     project_entry = log_value("Project name")
     version_entry = log_value("App version")
-    sdk_entry = log_value("IDF version")
+    sdk_entry = log_value("IDF version") or log_value("ESP-IDF")
     elf_entry = log_value("ELF file SHA256")
     project_match = project_entry is not None and project_entry[0] == expected["project"]
     version_match = version_entry is not None and version_entry[0] == expected["version"]

@@ -313,8 +313,13 @@ class ParsedCapture:
 def _parse_record(line: bytes) -> Record:
     if len(line) > MAX_RECORD or not line.endswith(b"\n"):
         raise ContractError("record size or termination invalid")
+    payload = line[:-1]
+    if payload.endswith(b"\r"):
+        payload = payload[:-1]
+    if any(byte < 0x20 or byte == 0x7f for byte in payload):
+        raise ContractError("record contains invalid control character")
     try:
-        text = line[:-1].decode("ascii")
+        text = payload.decode("ascii")
     except UnicodeDecodeError as exc:
         raise ContractError("record is not ASCII") from exc
     parts = text.split(",")

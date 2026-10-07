@@ -144,6 +144,26 @@ def run() -> int:
     add("COMPLETE",{"result":"io_complete","failure_stage":"none","error":"0","command_count":"4","read_bytes":"20000256","write_bytes":str(512+1055744+5353984),"mbr_write_count":"1","format_write_bytes":"1055744","io_write_bytes":"5353984","trim_requests":"1","erase_calls":"0","out_of_bounds_attempts":"0","io_file_count":"40","retained_file_bytes":"893440","probe_count":"5","mount_count":"6","remount_count":"5","retained_check_count":"30","reclaim_status":"ok","sd_unmount_attempted":"1","sd_unmount_error":"0","host_deinit_attempted":"1","host_deinit_error":"0","power_off_attempted":"1","power_off_error":"0","bound":"1","scope":"bounded_fat32_filesystem_io","media_writes":"2000"})
     capture=b"".join(rows)
     parsed=c.parse_capture(capture,epoch,elf,i); check(parsed.result=="io_complete","complete synthetic success"); passes+=1
+    for wire in (capture.replace(b"\n", b"\r\n"),
+                 b"".join(line.replace(b"\n", b"\r\n") if n % 2 else line
+                          for n, line in enumerate(rows))):
+        result=c.parse_capture(wire,epoch,elf,i)
+        check(result.result=="io_complete" and result.raw_bytes==len(wire),"CRLF/mixed wire framing or raw count"); passes+=1
+    for malformed in (partial[:-1]+b"\r", partial[:-1]+b"\r\r\n",
+                      partial.replace(b"reset_reason=1",b"reset_reason=1\rX"),
+                      partial.replace(b"reset_reason=1",b"reset_reason=1\t"),
+                      partial.replace(b"reset_reason=1",b"reset_reason=1\x7f"),
+                      partial.replace(b"reset_reason=1",b"reset_reason=1\x0b")):
+        must_fail(lambda malformed=malformed:c._parse_record(malformed),"invalid wire control accepted"); passes+=1
+    with_limit=capture.splitlines(keepends=True)[-1]
+    old_limit=c.MAX_RECORD
+    try:
+        c.MAX_RECORD=len(with_limit)+1
+        c._parse_record(with_limit[:-1]+b"\r\n"); passes+=1
+        c.MAX_RECORD=len(with_limit)
+        must_fail(lambda:c._parse_record(with_limit[:-1]+b"\r\n"),"normalized record bypassed original wire cap"); passes+=1
+    finally:
+        c.MAX_RECORD=old_limit
     full_cleanup_failure=edit_event(capture,"CLEANUP",b"sd_unmount_error=0",b"sd_unmount_error=-7")
     for old,new in ((b"result=io_complete",b"result=failed"),
                     (b"failure_stage=none",b"failure_stage=cleanup"),

@@ -400,6 +400,15 @@ def boot_record_checks():
     check(result["usb_reset_code"] == "21" and result["usb_reset_namespace"] == "rom",
           "ROM USB reset code was confused with runtime ESP_RST_USB")
 
+    pinned_startup = startup.replace(b"IDF version:", b"ESP-IDF:").replace(b"\n", b"\r\n")
+    check(run_boot(pinned_startup)["sdk_match"], "pinned ESP-IDF log label rejected")
+    try:
+        run_boot(pinned_startup.replace(b"ESP-IDF: v5.4.2", b"ESP-IDF: v5.4.1"))
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("wrong pinned SDK value accepted")
+
     # ROM RTC reset reasons are actual watchdog events even if the named tag is absent.
     for code in (7, 8, 9, 11, 13, 16, 17, 18):
         try:
@@ -627,12 +636,15 @@ def restore_current_checks():
                   f"restore mismatch {mode} was not recorded")
 
 
-def successful_dispatch_check():
+def successful_dispatch_check(crlf=False):
     import h38_sd_contract_checks as fixtures
 
     intent = fixtures.intent()
     elf = "d" * 64
     rows, raw = synthetic_success_capture(intent, elf)
+    if crlf:
+        rows = [line.replace(b"\n", b"\r\n") for line in rows]
+        raw = b"".join(rows)
     check(h38.contract.parse_capture(raw, intent["epoch"], elf, intent).result == "io_complete",
           "controller success fixture failed the real H38 parser")
 
@@ -643,6 +655,7 @@ def successful_dispatch_check():
 
         def __init__(self):
             self.writes = []
+            self.chunks = iter(rows)
 
         def __enter__(self):
             return self
@@ -652,6 +665,10 @@ def successful_dispatch_check():
 
         def reset_input_buffer(self):
             pass
+
+        def read(self, _):
+            tick[0] += .001
+            return next(self.chunks, b"")
 
         def write(self, data):
             self.writes.append(data)
@@ -667,17 +684,9 @@ def successful_dispatch_check():
     tick = [0.0]
     clocks = h38.RunClocks(lambda: tick[0])
 
-    def stream(_ser, raw_file, _pending, _clocks, captured, _host_errors):
-        for line in rows:
-            tick[0] += .001
-            captured.extend(line)
-            raw_file.write(line)
-            yield h38.contract._parse_record(line)
-
     with tempfile.TemporaryDirectory(prefix="h38-success-dispatch-") as folder:
-        with patch.object(h38, "_record_stream", side_effect=stream):
-            result = h38._capture_h38("fake", Path(folder), {"runtime_elf_sha256": elf},
-                                      intent, SerialModule, clocks)
+        result = h38._capture_h38("fake", Path(folder), {"runtime_elf_sha256": elf},
+                                  intent, SerialModule, clocks)
         ledger = [json.loads(line) for line in (Path(folder) / "dispatch-ledger-private.jsonl").read_text().splitlines()]
     sent = [command.split(b",")[2].decode("ascii") for command in port.writes]
     check(sent == ["BIND", "LAYOUT", "FORMAT", "IO", "FINISH"],
@@ -936,6 +945,7 @@ def main():
     binding_and_review_checks()
     recovery_readback_checks()
     successful_dispatch_check()
+    successful_dispatch_check(crlf=True)
     restore_current_checks()
     recovery_checks()
     existing_restore_checks()

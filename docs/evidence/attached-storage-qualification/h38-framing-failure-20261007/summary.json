@@ -1,0 +1,30 @@
+{
+  "card_layout_changed": false,
+  "card_read_bytes": 0,
+  "card_write_bytes": 0,
+  "clocks": {
+    "capture_elapsed_ms": 1200052,
+    "capture_end_elapsed_ms": 1225451,
+    "master_elapsed_ms": 1767615,
+    "master_overrun_ms": 0,
+    "phases": [],
+    "session_elapsed_ms": null,
+    "session_end_elapsed_ms": null
+  },
+  "corrected_offline_original_boot_check": "passed",
+  "current_contents_preservation": "waived_by_operator",
+  "epoch": "ed16ddb828e448efebd45a3ea4112b2f",
+  "failure": "CRLF_rejected_by_host_parser",
+  "firmware_terminal": "timeout_before_BIND",
+  "full_restore_readback_match": true,
+  "independent_restoration_review": "GO_stored_image_and_actual_boot_evidence",
+  "individual_recovery_process_codes": "not_persisted_before_boot_label_rejection",
+  "original_boot_checker": "failed_missing_pinned_ESP_IDF_label",
+  "partition_nvs_app_readbacks_match": true,
+  "phase_commands": 0,
+  "qualified": false,
+  "restore_mode": "existing_verified_baseline",
+  "schema": 1,
+  "source_revision": "c9b4c2d",
+  "status": "failed_or_incomplete"
+}
