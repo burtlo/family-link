@@ -294,6 +294,10 @@ WHO_ALIASES = {
     "arlo": "box-b",
     "a": "box-a",
     "b": "box-b",
+    "lynn": "endpoint-lynn",
+    "endpoint-lynn": "endpoint-lynn",
+    "audrey": "endpoint-audrey",
+    "endpoint-audrey": "endpoint-audrey",
 }
 
 # 31-char unique tags in firmware/common/who.c (32-byte slots with NUL).
@@ -326,6 +330,15 @@ def resolve_who(
     fallback = {
         "box-a": ("box-a", "change-me-a", "Mazi", "Arlo"),
         "box-b": ("box-b", "change-me-b", "Arlo", "Mazi"),
+        "endpoint-lynn": ("endpoint-lynn", "change-me-lynn", "Lynn", "friend"),
+        "lynn": ("lynn", "change-me-lynn", "Lynn", "friend"),
+        "endpoint-audrey": (
+            "endpoint-audrey",
+            "change-me-audrey",
+            "Audrey",
+            "friend",
+        ),
+        "audrey": ("audrey", "change-me-audrey", "Audrey", "friend"),
     }
     v1_tokens = {
         "box-a": "change-me-mazi",
@@ -361,7 +374,7 @@ def resolve_who(
             row[1] = v1_tokens.get(key) or v1_tokens[device_id]
         return tuple(row)
     raise FlashError(
-        f"unknown WHO={who!r}. Try WHO=mazi or WHO=arlo (also box-a / box-b)."
+        f"unknown WHO={who!r}. Try WHO=mazi|lynn|audrey|arlo (or box-a / box-b)."
     )
 
 
