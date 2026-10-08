@@ -1,0 +1,18 @@
+{
+  "bounded_profile": "sdmmc_bounded_fat32_v1",
+  "card_geometry_class": "sdhc_32gb",
+  "epoch": "5374073963356b0568c4fb2124b9a7df",
+  "failure_stage": "io_semantics_then_host_io_deadline",
+  "format_observed": "fat32_initial_mount_ok",
+  "h35_reference_epoch": "d971e8c3fa1806b0d1b00bc10a6192e4",
+  "h37_reference_epoch": "a8a144e6ccaddf20809ff2dc7faf838c",
+  "host_fixes_committed": [
+    "h38_prepare_h37_sdhc_binding",
+    "h38_io_h35_reference_compile_bind"
+  ],
+  "layout_observed": "mbr_write_count_1",
+  "media_writes_reported": 264,
+  "restore_public": "attempted_mandatory_incomplete_host_record",
+  "terminal": "failed",
+  "verdict": "failed_incomplete"
+}
