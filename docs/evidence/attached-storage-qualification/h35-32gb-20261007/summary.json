@@ -1,0 +1,23 @@
+{
+  "app_sha256": "8c8e3b636328baecfef78801533ccbd6d1e04af4ca649fc82d7a82970570025b",
+  "elf_sha256": "78437e394498cc61259b74955ba1b8d81bb4479aca22ae022b57f52147b3ac02",
+  "epoch": "d971e8c3fa1806b0d1b00bc10a6192e4",
+  "filesystem": "not_inspected",
+  "geometry": {
+    "bus_width": "4",
+    "capacity_bytes": "31268536320",
+    "card_max_freq_khz": "20000",
+    "ddr": "0",
+    "real_freq_khz": "20000",
+    "sector_bytes": "512",
+    "sectors": "61071360"
+  },
+  "media_backup": "not_obtained",
+  "media_writes": "none",
+  "qualification": "unqualified",
+  "restored": "verified",
+  "result": "detected",
+  "scope": "discovery_only",
+  "source_sha256": "b497d6e0a4b64d4bb2c4c4df78f68e0f178b20bfe499720c07b2e8b807e0d132",
+  "status": "present"
+}
