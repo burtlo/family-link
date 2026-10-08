@@ -457,11 +457,10 @@ def validate(run_dir: Path, backup_dir: Path, *, historical: bool = False) -> di
     table = h32.partitions((build / "partition_table/partition-table.bin").read_bytes())
     if table != backup_meta["partition_table"]["entries"]:
         stop("built partition table differs from current BOX baseline")
-    factory = [p for p in table if p["name"] == "factory" and p["type"] == 0 and
-               p["subtype"] == 0 and p["offset"] == h32.APP_OFF]
+    app_slot = h32.qual_app_partition(table)
     app = build / "family_link_demo.bin"
-    if len(factory) != 1 or app.stat().st_size > factory[0]["size"] * 85 // 100:
-        stop("H38 app exceeds reviewed factory headroom")
+    if app.stat().st_size > app_slot["size"] * 85 // 100:
+        stop("H38 app exceeds reviewed app-slot headroom")
     desc = h32.app_desc(app.read_bytes())
     if not desc or desc != manifest.get("app_descriptor") or desc["idf"] != "v5.4.2":
         stop("runtime ELF descriptor differs")
@@ -1050,10 +1049,12 @@ def _boot_original(port: str, run_dir: Path, serial_module, baseline: dict) -> d
     path = run_dir / "restored-boot-private.bin"
     if path.exists():
         stop("restored boot capture path already used")
-    original = [a for a in baseline["apps"] if a["name"] == "factory"]
+    qual = h32.qual_app_partition(baseline["partition_table"]["entries"])
+    original = [a for a in baseline["apps"] if a["name"] == qual["name"]]
     if len(original) != 1 or not original[0].get("descriptor"):
-        stop("preserved factory application descriptor unavailable")
+        stop("preserved application descriptor unavailable for qual app slot")
     expected = original[0]["descriptor"]
+    qual_offset = qual["offset"]
     serial_port = serial_module.Serial(port=None, baudrate=115200, timeout=.1, write_timeout=.5)
     serial_port.dtr = False
     serial_port.rts = False
@@ -1099,7 +1100,7 @@ def _boot_original(port: str, run_dir: Path, serial_module, baseline: dict) -> d
                        for _, code, tag in rom_reset_events)
     watchdog = runtime_watchdog or rom_watchdog
     loaded = next((i for i, line in enumerate(lines) if re.search(
-        r"Loaded app from partition at offset 0x0*10000\b", line, re.I)), None)
+        rf"Loaded app from partition at offset 0x0*{qual_offset:x}\b", line, re.I)), None)
     app_main = next((i for i, line in enumerate(lines) if "Calling app_main" in line), None)
 
     def log_value(label: str) -> tuple[str, int] | None:
@@ -1383,12 +1384,13 @@ def run_epoch(port: str, run_dir: Path, baseline_dir: Path, *,
         # entire subsequent capture allowance before starting this mutation.
         clocks.require_new_work(PREFLASH_ALLOWANCE_MS + contract.CAPTURE_LIMITS["capture_wall_ms"])
         app = run_dir / "build/family_link_demo.bin"
+        app_off = h32.qual_app_partition(baseline["partition_table"]["entries"])["offset"]
         future = contract.CAPTURE_LIMITS["capture_wall_ms"]
         experiment_flash_started = True
         _bounded_esptool(port, ["--after", "no_reset", "write_flash", "--flash_size", "16MB",
-                                hex(h32.APP_OFF), str(app)], clocks, future + 840_000, 180)
+                                hex(app_off), str(app)], clocks, future + 840_000, 180)
         app_readback = run_dir / "app-readback-private.bin"
-        _bounded_esptool(port, ["--after", "no_reset", "read_flash", hex(h32.APP_OFF),
+        _bounded_esptool(port, ["--after", "no_reset", "read_flash", hex(app_off),
                                 hex(app.stat().st_size), str(app_readback)], clocks, future + 660_000, 180)
         if app_readback.stat().st_size != app.stat().st_size or h32.digest(app_readback) != h32.digest(app):
             stop("H38 application flash readback differs")
@@ -1398,8 +1400,8 @@ def run_epoch(port: str, run_dir: Path, baseline_dir: Path, *,
                              clocks, future + 60_000, 600)
             old = current_full.read_bytes()
             new = post.read_bytes()
-            erase_end = h32.APP_OFF + ((app.stat().st_size + 4095) // 4096) * 4096
-            if len(new) != h32.FLASH or new[:h32.APP_OFF] != old[:h32.APP_OFF] or new[erase_end:] != old[erase_end:]:
+            erase_end = app_off + ((app.stat().st_size + 4095) // 4096) * 4096
+            if len(new) != h32.FLASH or new[:app_off] != old[:app_off] or new[erase_end:] != old[erase_end:]:
                 stop("H38 flash changed bytes outside reviewed application erase interval")
             outside_interval_checked = True
         _bounded_verify_device(port, baseline, clocks, future)
