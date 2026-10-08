@@ -194,23 +194,6 @@ def current_h37_mbr(h37_run_dir: Path) -> tuple[bytes, str, dict]:
     raw_path = h37_run_dir / "capture-raw-private.bin"
     snapshot_path = h37_run_dir / "sector-snapshot-private.bin.json"
     snapshot = json.loads(snapshot_path.read_text())
-    if run.get("schema") != 1 or run.get("epoch") != h37_epoch or \
-       Path(run.get("build_dir", "")).resolve() != h37_run_dir / "build" or \
-       capture.get("status") != "captured" or capture.get("epoch") != h37_epoch or \
-       capture.get("manifest_sha256") != h32.digest(manifest_path) or \
-       capture.get("raw_sha256") != h32.digest(raw_path) or \
-       capture.get("raw_bytes") != raw_path.stat().st_size or \
-       manifest.get("epoch") != h37_epoch or \
-       snapshot.get("schema") != 1 or snapshot.get("epoch") != h37_epoch or \
-       snapshot.get("elf_sha256") != manifest.get("elf_sha256") or \
-       set(snapshot.get("sectors", {})) != {"0", "32768"}:
-        stop("H37 current capture/old-MBR evidence binding differs")
-    try:
-        old_mbr = base64.b64decode(snapshot["sectors"]["0"], validate=True)
-    except (ValueError, KeyError) as exc:
-        raise ValueError("H37 old MBR sector invalid") from exc
-    if len(old_mbr) != 512:
-        stop("H37 old MBR is not one sector")
     plan = json.loads((h37_run_dir / "read-plan-private.json").read_text())
     ledger = json.loads((h37_run_dir / "dispatch-ledger-private.json").read_text())
     if plan.get("schema") != 1 or plan.get("epoch") != h37_epoch or \
@@ -220,11 +203,31 @@ def current_h37_mbr(h37_run_dir: Path) -> tuple[bytes, str, dict]:
         stop("H37 read-plan/dispatch binding differs")
     plan_rows = [row for stage in plan.get("stages", []) for row in stage]
     planned = [(int(row["lba"]), int(row["count"])) for row in plan_rows]
+    expected_snapshot_sectors = {str(lba) for lba, _ in planned}
+    if run.get("schema") != 1 or run.get("epoch") != h37_epoch or \
+       Path(run.get("build_dir", "")).resolve() != h37_run_dir / "build" or \
+       capture.get("status") != "captured" or capture.get("epoch") != h37_epoch or \
+       capture.get("manifest_sha256") != h32.digest(manifest_path) or \
+       capture.get("raw_sha256") != h32.digest(raw_path) or \
+       capture.get("raw_bytes") != raw_path.stat().st_size or \
+       manifest.get("epoch") != h37_epoch or \
+       snapshot.get("schema") != 1 or snapshot.get("epoch") != h37_epoch or \
+       snapshot.get("elf_sha256") != manifest.get("elf_sha256") or \
+       set(snapshot.get("sectors", {})) != expected_snapshot_sectors:
+        stop("H37 current capture/old-MBR evidence binding differs")
+    try:
+        old_mbr = base64.b64decode(snapshot["sectors"]["0"], validate=True)
+    except (ValueError, KeyError) as exc:
+        raise ValueError("H37 old MBR sector invalid") from exc
+    if len(old_mbr) != 512:
+        stop("H37 old MBR is not one sector")
     dispatched = [(int(row["lba"]), int(row["count"])) for row in ledger.get("dispatches", [])]
+    _, h35_geometry = h37._read_h35_identity_geometry(run_meta=run)
     md = importlib.import_module("h37_sd_metadata")
     parsed = md.parse_capture(raw_path.read_bytes(), h37_epoch,
                               manifest["elf_sha256"], h35_epoch,
-                              h37.read_h35_identity(), planned, dispatched)
+                              h37.read_h35_identity(run_meta=run), planned, dispatched,
+                              expected_geometry=h35_geometry)
     if parsed.terminal.get("result") != "read_complete":
         stop("H37 raw capture is not a complete successful metadata read")
     h37.replay_classification(parsed, h37_run_dir, h37_epoch, manifest["elf_sha256"])
