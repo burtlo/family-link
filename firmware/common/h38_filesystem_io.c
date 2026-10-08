@@ -15,7 +15,10 @@
 #include "mbedtls/sha256.h"
 
 #define H38_IO_PROFILE "sdmmc_bounded_fat32_v1"
-#define H38_IO_H35_REFERENCE "a1617be8cb2d2343e744c31cc7d1b933"
+#ifndef H35_REFERENCE_EPOCH
+#error H35_REFERENCE_EPOCH is required
+#endif
+#define H38_IO_H35_REFERENCE H35_REFERENCE_EPOCH
 #define H38_IO_SECTOR_BYTES 512u
 #include "h38_disk_guard.h"
 #define H38_IO_CARD_SECTORS H38_GUARD_CARD_SECTORS
