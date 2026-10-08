@@ -1,0 +1,19 @@
+{
+  "bounded_profile": "sdmmc_bounded_fat32_v1",
+  "card_geometry_class": "sdhc_32gb",
+  "epoch": "4d9b4346164e14f2add083c0c7aa0654",
+  "failure_stage": "none",
+  "format_observed": "fat32_initial_mount_ok",
+  "h35_reference_epoch": "9d20759bb3748d690220157dbf37549e",
+  "h37_reference_epoch": "ae4f28673e5f2bf515d41dcad91d425f",
+  "host_fixes_committed": [
+    "h38_qual_app_partition_ota_layout"
+  ],
+  "layout_observed": "mbr_write_count_1",
+  "media_writes_reported": 2074,
+  "operator_hardware": "lynn_box_b048",
+  "restore_public": "verified_mandatory_readback",
+  "restore_source": "existing_verified_baseline",
+  "terminal": "io_complete",
+  "verdict": "pass"
+}

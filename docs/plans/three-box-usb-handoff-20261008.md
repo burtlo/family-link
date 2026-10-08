@@ -13,7 +13,7 @@ Operator plan for bringing up **three ESP32-S3-BOX-3** units **one at a time** o
 | Person | Flash `WHO=` | Kit id(s) in `kits.local.yaml` | USB serial (stable) | microSD / SENSOR | Attached-storage status |
 |--------|----------------|--------------------------------|---------------------|------------------|-------------------------|
 | **Mazi** | `mazi` | `box-a` | `E8:F6:0A:A8:D2:98` | 32 GB card — **H38 bounded pass** on this card | **Done** for Stage B (`io_complete`). Public evidence: [`h38-32gb-20261008`](../evidence/attached-storage-qualification/h38-32gb-20261008/). Firmware on desk: **h31 Wi‑Fi demo** (not x02). Backup: `~/family-link-storage-experiments/family-link-attached-discovery-backup-20261007` |
-| **Lynn** | `lynn` or product `endpoint-lynn` | `endpoint-lynn`, `lynn` | `E8:F6:0A:A8:B0:48` | 32 GB card — **H35 + H37 prep** on this hardware; **H38 not run** | Prep manifest: `~/family-link-storage-experiments/box-b-qual-prep.json`. Private dirs still named `h35-boxb-*` / `h37-boxb-*` / backup `…-backup-box-b-20261008` (immutable epochs). **Next qual gate:** H38 bounded run on this card |
+| **Lynn** | `lynn` or product `endpoint-lynn` | `endpoint-lynn`, `lynn` | `E8:F6:0A:A8:B0:48` | 32 GB card — **H38 Stage B pass** (`io_complete`) | Public evidence: [`h38-lynn-20261008`](../evidence/attached-storage-qualification/h38-lynn-20261008/). Private qualifying epoch: `~/family-link-storage-experiments/h38-lynn-20261008-attempt3`. Prep dirs still named `h35-boxb-*` / `h37-boxb-*` / backup `…-backup-box-b-20261008`. **No H38 rerun** on this card unless starting a new epoch on purpose |
 | **Audrey** | `audrey` (when added to hangout) | `endpoint-audrey`, `audrey` | `E8:F6:0A:A8:AD:7C` | Card present; **no qual epochs** | **Greenfield:** full backup → H35 → H37 → (later H38). Do **not** reuse Mazi or Lynn private captures |
 
 **Naming correction:** Early chat called Lynn’s unit “Box B” for parallel qual; **Arlo** (`box-b`) is a **different** box at the office. Lynn’s qual lineage is tied to USB serial **`B0:48`**, not Audrey’s **`AD:7C`**.
@@ -63,13 +63,10 @@ Repeat for the next physical box after unplugging the first.
 
 ### Lynn (`B0:48`)
 
-- **Verify** SENSOR + same 32 GB card; confirm backup fingerprint still matches (`family-link-attached-discovery-backup-box-b-20261008`).
-- **Next storage work:** H38 `preflight` → `prepare` → `build` → `validate` → `run` with explicit:
-  - `--backup-dir ~/family-link-storage-experiments/family-link-attached-discovery-backup-box-b-20261008`
-  - `--h35-capture-dir ~/family-link-storage-experiments/h35-boxb-20261008`
-  - `--h37-run-dir ~/family-link-storage-experiments/h37-boxb-20261008`
-  - `--port` for this serial only
-- See [`ATTACHED-STORAGE.md`](../ATTACHED-STORAGE.md) operator workflow; git tree must be clean for H38 `prepare`.
+- **Stage B done** (2026-10-08): epoch `4d9b4346164e14f2add083c0c7aa0654`, `restore_verified` on private attempt3 dir.
+- **Verify** desk firmware is restored product/demo baseline on **ota_0** (`factory_demo`); SENSOR + same 32 GB card if you extend qual later.
+- Future H38 on **this** card needs fresh H37 or `--prior-h38-run-dir` (post-`LAYOUT` MBR); see [`ATTACHED-STORAGE.md`](../ATTACHED-STORAGE.md).
+- Lynn BOX uses **ota_0 @ 0x20000** backup layout — H38 runs should use `--use-existing-restore-image` when flash still matches `family-link-attached-discovery-backup-box-b-20261008`.
 
 ### Audrey (`AD:7C`)
 
