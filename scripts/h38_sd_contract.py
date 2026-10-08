@@ -663,7 +663,8 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
             if prior.event in {"HOST", "SLOT", "CARD"} and fields["error"] != "0":
                 raise ContractError("failure terminal follows an earlier resource error")
             if prior.event == "IDENTITY_MATCH":
-                if (fields["reference_epoch"] != H35_REFERENCE_EPOCH
+                expected_ref = (failure_intent or {}).get("h35_reference_epoch", H35_REFERENCE_EPOCH)
+                if (fields["reference_epoch"] != expected_ref
                         or fields["match"] != "1" or fields["error"] != "0"):
                     raise ContractError("failure terminal follows an earlier identity failure")
             if "status" in fields and (fields["status"] != "ok" or int(fields["error"]) != 0):

@@ -380,7 +380,8 @@ static bool verify_file(io_state_t *state, const char *path, size_t bytes,
 
 static bool sample_space(io_state_t *state, uint64_t *total, uint64_t *free_bytes)
 {
-    if (esp_vfs_fat_info(state->root, total, free_bytes) != ESP_OK) return false;
+    const char *base = h38_fatfs_base_path(state->ctx->adapter);
+    if (!base || esp_vfs_fat_info(base, total, free_bytes) != ESP_OK) return false;
     return *free_bytes <= *total;
 }
 
