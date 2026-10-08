@@ -30,4 +30,4 @@ Immutable private epochs under `~/family-link-storage-experiments/` include `h38
 
 ## Next gate
 
-Before another hardware epoch: rebind `old_mbr_sha256` to the on-card MBR (prior successful `LAYOUT` reference with verified restore, or a new H37 read-only capture on the same card identity), then run one fresh immutable H38 epoch with the fixed firmware.
+Superseded for qualification: a passing epoch is recorded in [`h38-32gb-20261008/README.md`](../h38-32gb-20261008/README.md) (`d953a7fbfd1f9054aacff6f6c79f8ae1`). Retain this folder as the partial-attempt history only.
