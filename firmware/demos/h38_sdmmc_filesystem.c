@@ -753,6 +753,8 @@ void app_main(void)
              guard_failure_error(io_result.failure_error ? io_result.failure_error : err));
     if (h38_guard_end_phase(&guard) != H38_GUARD_OK)
         fail(guard_failure_stage(ST_BUDGET), guard_failure_error(ESP_ERR_TIMEOUT));
+    /* IO can run for minutes without host traffic; do not apply IDLE_MS here. */
+    last_activity_us = esp_timer_get_time();
     if (!expect_phase_command("FINISH", "4")) fail(ST_SEMANTICS, ESP_ERR_INVALID_ARG);
     command_count = 4;
     complete_success();
