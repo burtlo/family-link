@@ -165,7 +165,7 @@ def capture_preflight(rd,importer=importlib.import_module):
     if error:stop(error)
     return serial
 
-def read_h35_identity(capture_dir: Path | None = None, run_meta: dict | None = None):
+def _read_h35_identity_geometry(capture_dir: Path | None = None, run_meta: dict | None = None):
     # H35 identity is private evidence and must be read from that immutable capture.
     cap=h35_capture_dir(capture_dir,run_meta)
     p=cap/'capture-private.txt'
@@ -196,7 +196,10 @@ def read_h35_identity(capture_dir: Path | None = None, run_meta: dict | None = N
     try: geometry={k:int(g[k]) for k in ('sectors','sector_bytes','capacity_bytes','bus_width','real_freq_khz','ddr')}
     except (KeyError,ValueError):stop('H35 geometry reference invalid')
     require_card_geometry(geometry)
-    return ident['sha256']
+    return ident['sha256'], geometry
+
+def read_h35_identity(capture_dir: Path | None = None, run_meta: dict | None = None):
+    return _read_h35_identity_geometry(capture_dir, run_meta)[0]
 
 def read_h35_reference(capture_dir: Path | None = None, run_meta: dict | None = None):
     """Return (reference_epoch, private_cid_sha256) from the bound H35 capture."""
@@ -234,8 +237,9 @@ def card_geometry_from_run(rd):
     planned=[(int(x['lba']),int(x['count'])) for x in plan_rows]
     dispatched=[(int(x['lba']),int(x['count'])) for x in ledger['dispatches']]
     md=importlib.import_module('h37_sd_metadata')
+    _,h35_geometry=_read_h35_identity_geometry(run_meta=m)
     parsed=md.parse_capture(raw,m['epoch'],v['elf_sha256'],m.get('h35_reference_epoch',H35_EPOCH),
-                            read_h35_identity(),planned,dispatched)
+                            read_h35_identity(run_meta=m),planned,dispatched,expected_geometry=h35_geometry)
     for rec in parsed.rows:
         if rec.event=='GEOMETRY':
             return {k:int(rec.fields[k]) for k in ('sectors','sector_bytes','capacity_bytes','bus_width','real_freq_khz','ddr')}
@@ -400,9 +404,9 @@ def flash_capture(port,bd,rd,importer=importlib.import_module):
     serial=capture_preflight(rd,importer)
     m=require_run(rd,bd);b=backup(bd);v=validate(rd,bd);out=rd/'capture-private.jsonl'
     h35_ref=m.get('h35_reference_epoch',H35_EPOCH_LEGACY)
-    ref=read_h35_identity(run_meta=m)
+    ref,h35_geometry=_read_h35_identity_geometry(run_meta=m)
     meta=importlib.import_module('h37_sd_metadata')
-    parser=meta.ProtocolParser(m['epoch'],v['elf_sha256'],h35_ref,ref)
+    parser=meta.ProtocolParser(m['epoch'],v['elf_sha256'],h35_ref,ref,expected_geometry=h35_geometry)
     live_device=h32.verify_device(port,b,hold=True)
     proof_device={k:live_device[k] for k in ('chip','chip_description','flash_manufacturer','flash_device','flash_bytes','fingerprint_sha256')}
     proof={'schema':1,'status':'verified','epoch':m['epoch'],'source_sha256':v['source']['sha256'],
@@ -464,7 +468,8 @@ def flash_capture(port,bd,rd,importer=importlib.import_module):
         dispatch_ledger=json.loads((rd/'dispatch-ledger-private.json').read_text())
         dispatches=[(x['lba'],x['count']) for x in dispatch_ledger['dispatches']]
         parsed=meta.parse_capture(raw_path.read_bytes(),m['epoch'],v['elf_sha256'],h35_ref,ref,
-            [(x['lba'],x['count']) for stage in json.loads((rd/'read-plan-private.json').read_text())['stages'] for x in stage],dispatches)
+            [(x['lba'],x['count']) for stage in json.loads((rd/'read-plan-private.json').read_text())['stages'] for x in stage],dispatches,
+            expected_geometry=h35_geometry)
         if parsed.terminal.get('result')!='read_complete':stop('firmware emitted failed terminal: '+parsed.terminal.get('failure_stage','unknown'))
         if stream_failure is not None:raise stream_failure
         if classified is None or classified[1] is None:stop('failed sector read cannot produce a classification')
@@ -489,7 +494,7 @@ def aggregate(rd,bd,output):
     if meta.get('status')!='captured' or meta.get('epoch')!=m['epoch'] or meta.get('raw_sha256')!=digest(raw) or meta.get('raw_bytes')!=raw.stat().st_size or meta.get('transcript_sha256')!=digest(log) or meta.get('transcript_bytes')!=log.stat().st_size or meta.get('manifest_sha256')!=digest(Path(m['build_dir'])/'manifest.json') or meta.get('original_full_sha256')!=m['original_full_sha256'] or meta.get('device_fingerprint_sha256')!=m['device_fingerprint_sha256']:stop('capture metadata binding differs')
     if proof.get('status')!='verified' or proof.get('full_sha256')!=m['original_full_sha256'] or proof.get('device_fingerprint_sha256')!=m['device_fingerprint_sha256']:stop('full restore proof missing')
     h35_ref=m.get('h35_reference_epoch',H35_EPOCH_LEGACY)
-    md=importlib.import_module('h37_sd_metadata');raw_bytes=raw.read_bytes();ref=read_h35_identity(run_meta=m)
+    md=importlib.import_module('h37_sd_metadata');raw_bytes=raw.read_bytes();ref,h35_geometry=_read_h35_identity_geometry(run_meta=m)
     extracted=md.extract_h37_record_lines(raw_bytes)
     if b''.join(extracted)!=log.read_bytes():stop('raw capture to H37 transcript extraction differs')
     plan=json.loads((rd/'read-plan-private.json').read_text());ledger=json.loads((rd/'dispatch-ledger-private.json').read_text())
@@ -497,7 +502,7 @@ def aggregate(rd,bd,output):
     plan_rows=[x for stage in plan['stages'] for x in stage]
     planned=[(int(x['lba']),int(x['count'])) for x in plan_rows]
     dispatched=[(int(x['lba']),int(x['count'])) for x in ledger['dispatches']]
-    parsed=md.parse_capture(raw_bytes,m['epoch'],v['elf_sha256'],h35_ref,ref,planned,dispatched)
+    parsed=md.parse_capture(raw_bytes,m['epoch'],v['elf_sha256'],h35_ref,ref,planned,dispatched,expected_geometry=h35_geometry)
     result,geometry,_,_=replay_classification(parsed,rd,m['epoch'],v['elf_sha256'])
     safe=md.sanitized_summary(result,parsed)
     for part in safe.get('partitions',[]):part.pop('type_code',None)

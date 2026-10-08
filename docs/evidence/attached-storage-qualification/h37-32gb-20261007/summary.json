@@ -1,0 +1,33 @@
+{
+  "app_sha256": "da4a7ba6d9e1b8669a1b2722beb499e40ed6056efe0eefe4ea2ad415b63e20f0",
+  "elf_sha256": "003b4351bfbd890ceb670a5935df50ee1de5b83ba4a919651615dd09653f6b24",
+  "epoch": "a8a144e6ccaddf20809ff2dc7faf838c",
+  "filesystem_contents": "not_inspected",
+  "geometry": {
+    "bus_width": 4,
+    "capacity_bytes": 31268536320,
+    "ddr": 0,
+    "real_freq_khz": 20000,
+    "sector_bytes": 512,
+    "sectors": 61071360
+  },
+  "media_backup": "waived_by_owner_2026-10-05",
+  "media_writes": 0,
+  "partitions": [
+    {
+      "end_lba": 61071359,
+      "scheme": "mbr",
+      "start_lba": 8192
+    }
+  ],
+  "read_bytes": 1024,
+  "read_count": 2,
+  "restored": "verified",
+  "scheme": "mbr",
+  "signatures": [
+    "fat32"
+  ],
+  "source_sha256": "e5aad7ef21ddca36940e2abf87ef3a0525bb6527c22caeb549f333c062420e09",
+  "terminal": "read_complete",
+  "verdict": "classified"
+}
