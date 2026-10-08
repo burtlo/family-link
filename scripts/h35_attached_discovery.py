@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
-"""Private, fail-closed H35 controller. Discovery never authorizes media writes."""
+"""Private, fail-closed H35 controller. Discovery never authorizes media writes.
+
+Private epochs live under ``~/family-link-storage-experiments/``. Suggested new
+run directory: ``h35-YYYYMMDD`` (see ``attached_storage_paths.default_h35_run_dir``).
+After a successful capture, point H37/H38 at it via ``--h35-capture-dir``,
+``FAMILY_LINK_H35_CAPTURE_DIR``, ``current-h35-capture.json``, or ``parse --set-current``.
+"""
 from __future__ import annotations
 import argparse,importlib,importlib.metadata,json,os,re,secrets,subprocess,sys,time
 import tempfile
 from pathlib import Path
 import h32_storage_qual as h32
+from attached_storage_paths import (
+    DEFAULT_BOX_BACKUP_DIR,
+    default_h35_run_dir,
+    write_current_h35_capture_pointer,
+)
 ROOT=h32.ROOT; FW=h32.FW
 stop=h32.stop; digest=h32.digest; atomic_json=h32.atomic_json
 CAPTURE_USED_MARKERS=('flash-attempt-private.json','capture-private.txt',
@@ -428,12 +439,13 @@ def host_checks():
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('command',choices=['inventory','prepare-run','build','validate-build','flash-capture','parse','restore','host-checks']);p.add_argument('--port');p.add_argument('--backup-dir',type=Path);p.add_argument('--run-dir',type=Path);p.add_argument('--output',type=Path);p.add_argument('--seconds',type=int,default=45);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('command',choices=['inventory','prepare-run','build','validate-build','flash-capture','parse','restore','host-checks']);p.add_argument('--port');p.add_argument('--backup-dir',type=Path,default=DEFAULT_BOX_BACKUP_DIR);p.add_argument('--run-dir',type=Path);p.add_argument('--output',type=Path);p.add_argument('--seconds',type=int,default=45);p.add_argument('--set-current',action='store_true',help='after parse, write current-h35-capture.json pointer');a=p.parse_args()
     if a.command=='host-checks':host_checks();return
     if a.command=='inventory':h32.inventory(h32.one_port(a.port));return
-    if not a.backup_dir:p.error('--backup-dir required')
-    if a.command=='restore':backup(a.backup_dir);h32.restore(h32.one_port(a.port),a.backup_dir);return
-    if not a.run_dir:p.error('--run-dir required')
+    if a.command=='restore':
+        if not a.backup_dir:p.error('--backup-dir required')
+        backup(a.backup_dir);h32.restore(h32.one_port(a.port),a.backup_dir);return
+    if not a.run_dir:a.run_dir=default_h35_run_dir()
     if a.command=='prepare-run':prepare(a.run_dir,a.backup_dir)
     elif a.command=='build':build(a.run_dir,a.backup_dir)
     elif a.command=='validate-build':print(json.dumps(validate(a.run_dir,a.backup_dir),indent=2))
@@ -441,4 +453,5 @@ def main():
     elif a.command=='parse':
         if not a.output:p.error('--output required')
         aggregate(a.run_dir,a.backup_dir,a.output)
+        if a.set_current:write_current_h35_capture_pointer(a.run_dir)
 if __name__=='__main__':main()

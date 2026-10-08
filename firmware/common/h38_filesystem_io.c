@@ -17,7 +17,8 @@
 #define H38_IO_PROFILE "sdmmc_bounded_fat32_v1"
 #define H38_IO_H35_REFERENCE "a1617be8cb2d2343e744c31cc7d1b933"
 #define H38_IO_SECTOR_BYTES 512u
-#define H38_IO_CARD_SECTORS UINT64_C(121503744)
+#include "h38_disk_guard.h"
+#define H38_IO_CARD_SECTORS H38_GUARD_CARD_SECTORS
 #define H38_IO_VOLUME_START UINT64_C(32768)
 #define H38_IO_VOLUME_SECTORS UINT64_C(1048576)
 #define H38_IO_CLUSTER_BYTES UINT64_C(4096)
@@ -25,7 +26,7 @@
 #define H38_IO_MAX_GENERATED UINT64_C(33554432)
 #define H38_IO_MAX_RETAINED UINT64_C(2097152)
 #define H38_IO_MAX_MARKER 4096u
-/* Fixed validated metadata is 620 bytes plus its terminator. */
+/* Marker length depends on decimal card_sector_count (reference 32 GB class: 619 bytes + NUL). */
 #define H38_IO_MARKER_BUFFER_BYTES 1024u
 #define H38_IO_MAX_PATH 160u
 #define H38_IO_BLOCK 4096u

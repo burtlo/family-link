@@ -44,8 +44,7 @@ def synthetic_success_capture(intent, elf):
     add("TRANSPORT", dict(c.TRANSPORT))
     for event in ("HOST", "SLOT", "CARD"):
         add(event, {"error": "0"})
-    add("GEOMETRY", {"sectors": "121503744", "sector_bytes": "512", "capacity_bytes": "62209916928",
-                      "bus_width": "4", "real_freq_khz": "20000", "ddr": "0"})
+    add("GEOMETRY", c.geometry_record_fields(c.REFERENCE_SDHC32_SECTORS))
     add("CID_PRIVATE", {"mfg_id": "1", "oem_id": "1", "revision": "1", "serial": "1", "date": "1",
                          "name_size": "0", "name_hex": ""})
     add("READY", {"accepts": "BIND"})

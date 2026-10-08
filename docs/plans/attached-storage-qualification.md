@@ -7,7 +7,7 @@
 | Date | 2026-10-06 (H37 Stage A evidence committed) |
 | Scope | Isolated BOX-3 storage fixture, host controls, strict evidence parser |
 | Product partition choice | Open: single-factory versus dual OTA |
-| Next gate | Create and independently review a separate H38 filesystem/mount/I/O plan using H37’s classified MBR/exFAT metadata and exact partition bounds. Do not mount, format, or write until that plan and its source/evidence gates are committed; full-card backup/restore remains waived |
+| Next gate | **32 GB SDHC track:** per-card geometry binding, fresh **H35 + H37** on the replacement card, then H38 bounded I/O — [`h38-sdhc-geometry-qualification.md`](h38-sdhc-geometry-qualification.md). The 2026-10-06 H37 on the retired 64 GB card is archival only. |
 
 ## Reason and boundaries
 

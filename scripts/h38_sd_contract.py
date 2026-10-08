@@ -21,10 +21,19 @@ except ImportError:
     from h37_sd_metadata import h35_cid_digest
 
 SECTOR_BYTES = 512
-CARD_SECTORS = 121_503_744
 VOLUME_START = 32_768
 VOLUME_SECTORS = 1_048_576
 VOLUME_END = VOLUME_START + VOLUME_SECTORS
+# Published SENSOR accessory class: SDHC up to 32 GiB (512-byte sectors).
+SDHC_MIN_SECTORS = VOLUME_END
+SDHC_MAX_SECTORS = 67_108_864
+# Reference capacity for offline synthetic fixtures (not a hardware constant).
+REFERENCE_SDHC32_SECTORS = 62_586_880
+# Retired 64 GB card; do not use for new intent or hardware.
+RETIRED_64GB_SECTORS = 121_503_744
+CARD_SECTORS = REFERENCE_SDHC32_SECTORS  # legacy alias for tests importing CARD_SECTORS
+H35_REFERENCE_EPOCH_LEGACY = "a1617be8cb2d2343e744c31cc7d1b933"
+H35_REFERENCE_EPOCH = H35_REFERENCE_EPOCH_LEGACY
 MAX_COMMAND = 512
 MAX_RECORD = 8192
 PROFILE = "sdmmc_bounded_fat32_v1"
@@ -106,19 +115,19 @@ def validate_intent(value: Any) -> dict[str, Any]:
                          ("private_cid_sha256", HEX64), ("old_mbr_sha256", HEX64)):
         if type(value[key]) is not str or not pattern.fullmatch(value[key]):
             raise ContractError(f"intent {key} has invalid encoding")
-    if value["h35_reference_epoch"] != H35_REFERENCE_EPOCH:
-        raise ContractError("intent H35 reference epoch mismatch")
     for k, expected in (("schema", "h38-intent-v1"), ("profile", PROFILE), ("exit_state", EXIT_STATE)):
         if type(value[k]) is not str or value[k] != expected:
             raise ContractError(f"intent {k} differs from frozen profile")
-    fixed_ints = {
-        "card_sector_bytes": 512, "card_sector_count": CARD_SECTORS,
+    if _strict_int(value["card_sector_bytes"], "card_sector_bytes") != SECTOR_BYTES:
+        raise ContractError("intent card_sector_bytes differs from frozen profile")
+    validate_card_sector_count(value["card_sector_count"])
+    fixed_volume = {
         "volume_start_lba": VOLUME_START, "volume_sector_count": VOLUME_SECTORS,
         "mbr_bytes": 512,
     }
-    for k, expected in fixed_ints.items():
+    for k, expected in fixed_volume.items():
         if _strict_int(value[k], k) != expected:
-            raise ContractError(f"intent {k} differs from frozen geometry")
+            raise ContractError(f"intent {k} differs from frozen volume geometry")
     _closed(value["format"], FORMAT, "format")
     _closed(value["io"], IO, "io")
     _closed(value["capture_limits"], CAPTURE_LIMITS, "capture_limits")
@@ -165,6 +174,23 @@ def intent_sha256(value: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical_intent_bytes(value)).hexdigest()
 
 
+def validate_card_sector_count(sectors: Any) -> int:
+    count = _strict_int(sectors, "card_sector_count", SDHC_MIN_SECTORS, SDHC_MAX_SECTORS)
+    return count
+
+
+def geometry_record_fields(card_sector_count: int) -> dict[str, str]:
+    count = validate_card_sector_count(card_sector_count)
+    return {
+        "sectors": str(count),
+        "sector_bytes": str(SECTOR_BYTES),
+        "capacity_bytes": str(count * SECTOR_BYTES),
+        "bus_width": "4",
+        "real_freq_khz": "20000",
+        "ddr": "0",
+    }
+
+
 def build_mbr(epoch: str) -> bytes:
     if type(epoch) is not str or not HEX32.fullmatch(epoch):
         raise ContractError("invalid epoch for MBR")
@@ -177,12 +203,13 @@ def build_mbr(epoch: str) -> bytes:
     return bytes(mbr)
 
 
-def validate_mbr(raw: bytes, epoch: str) -> None:
+def validate_mbr(raw: bytes, epoch: str, card_sector_count: int | None = None) -> None:
     expected = build_mbr(epoch)
     if type(raw) is not bytes or len(raw) != SECTOR_BYTES or raw != expected:
         raise ContractError("MBR differs from exact canonical sector")
+    limit = validate_card_sector_count(card_sector_count or SDHC_MAX_SECTORS)
     start, count = struct.unpack_from("<II", raw, 454)
-    if start > CARD_SECTORS or count > CARD_SECTORS - start or start + count != VOLUME_END:
+    if start > limit or count > limit - start or start + count != VOLUME_END:
         raise ContractError("MBR extent overflow or mismatch")
 
 
@@ -654,15 +681,15 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
             if prior.event == "FORMAT_RESULT" and fields["f_result"] != "0":
                 raise ContractError("failure terminal follows an unsuccessful format result")
         geometry_rows = [r for r in rows if r.event == "GEOMETRY"]
-        if geometry_rows and stage != "geometry":
+        if geometry_rows and stage != "geometry" and failure_intent is not None:
             geom = geometry_rows[0].fields
-            if {k: geom[k] for k in ("sectors","sector_bytes","capacity_bytes","bus_width","real_freq_khz","ddr")} != {
-                "sectors":"121503744","sector_bytes":"512","capacity_bytes":"62209916928","bus_width":"4","real_freq_khz":"20000","ddr":"0"}:
+            expected_geom = geometry_record_fields(failure_intent["card_sector_count"])
+            if {k: geom[k] for k in expected_geom} != expected_geom:
                 raise ContractError("failed capture card geometry mismatch")
         identity_rows = [r for r in rows if r.event == "IDENTITY_MATCH"]
         if identity_rows:
             ident = identity_rows[0].fields
-            if ident["reference_epoch"] != H35_REFERENCE_EPOCH:
+            if failure_intent is not None and ident["reference_epoch"] != failure_intent["h35_reference_epoch"]:
                 raise ContractError("failed capture H35 reference epoch mismatch")
             if failure_intent is not None and ident["reference_epoch"] != failure_intent["h35_reference_epoch"]:
                 raise ContractError("failed capture identity reference does not match intent")
@@ -718,8 +745,8 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
         if _one(rows, event).fields["error"] != "0":
             raise ContractError(f"successful capture has {event} error")
     geom = _one(rows, "GEOMETRY").fields
-    if {k: geom[k] for k in ("sectors","sector_bytes","capacity_bytes","bus_width","real_freq_khz","ddr")} != {
-        "sectors":"121503744","sector_bytes":"512","capacity_bytes":"62209916928","bus_width":"4","real_freq_khz":"20000","ddr":"0"}:
+    expected_geom = geometry_record_fields(intent["card_sector_count"])
+    if {k: geom[k] for k in expected_geom} != expected_geom:
         raise ContractError("card geometry mismatch")
     ident = _one(rows, "IDENTITY_MATCH").fields
     if ident["reference_epoch"] != intent["h35_reference_epoch"] or ident["match"] != "1" or ident["error"] != "0":
@@ -736,7 +763,7 @@ def parse_capture(raw: bytes, expected_epoch: str, expected_elf_sha256: str,
         raise ContractError("successful capture reset cause is outside the approved set")
     layout, fmt, fresult = _one(rows,"LAYOUT_RESULT"), _one(rows,"FORMAT_START"), _one(rows,"FORMAT_RESULT")
     layout_bytes = base64.b64decode(layout.fields["readback_base64_private"], validate=True)
-    validate_mbr(layout_bytes, expected_epoch)
+    validate_mbr(layout_bytes, expected_epoch, intent["card_sector_count"])
     if hashlib.sha256(layout_bytes).hexdigest() != layout.fields["readback_sha256"] or layout.fields["readback_match"] != "1":
         raise ContractError("MBR readback evidence mismatch")
     if (layout.fields["physical_lba"] != "0" or layout.fields["write_sectors"] != "1"

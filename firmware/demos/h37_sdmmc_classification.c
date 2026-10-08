@@ -37,7 +37,8 @@ enum {
     BYTE_BUDGET=131072, MAX_SECTORS=8, SECTOR_BYTES=512,
     POWER_GPIO=43
 };
-static const uint32_t EXPECTED_SECTORS=121503744u;
+static const uint32_t H37_VOLUME_END_LBA=1081344u;
+static const uint32_t H37_SDHC_MAX_SECTORS=67108864u;
 static const uint32_t EXPECTED_FREQ_KHZ=20000u;
 static char elf_hex[65];
 static bool usb_installed, host_initialized, power_configured, bound;
@@ -252,8 +253,9 @@ void app_main(void)
     EMIT("GEOMETRY","sectors=%" PRIu32 ",sector_bytes=%d,capacity_bytes=%" PRIu64 ",bus_width=%u,real_freq_khz=%d,ddr=%u",
         (uint32_t)card.csd.capacity,card.csd.sector_size,capacity,width,card.real_freq_khz,(unsigned)card.is_ddr);
     if ((esp_timer_get_time()-start_us)/1000>DISCOVERY_MS) { stage_t s=ST_TIMEOUT; fail(s,ESP_ERR_TIMEOUT); }
-    if (!card.is_mem || card.is_mmc || card.is_sdio || card.csd.capacity!=EXPECTED_SECTORS ||
-        card.csd.sector_size!=SECTOR_BYTES || width!=4 || card.real_freq_khz!=(int)EXPECTED_FREQ_KHZ) { stage_t s=ST_GEOMETRY; fail(s,ESP_ERR_INVALID_SIZE); }
+    if (!card.is_mem || card.is_mmc || card.is_sdio || card.csd.sector_size!=SECTOR_BYTES ||
+        card.csd.capacity<H37_VOLUME_END_LBA || card.csd.capacity>H37_SDHC_MAX_SECTORS ||
+        width!=4 || card.real_freq_khz!=(int)EXPECTED_FREQ_KHZ) { stage_t s=ST_GEOMETRY; fail(s,ESP_ERR_INVALID_SIZE); }
     emit_cid(&card);
     if ((esp_timer_get_time()-start_us)/1000>=DISCOVERY_MS) { stage_t s=ST_TIMEOUT; fail(s,ESP_ERR_TIMEOUT); }
     last_activity_us=esp_timer_get_time();

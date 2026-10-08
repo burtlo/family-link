@@ -1,0 +1,83 @@
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x15 (USB_UART_CHIP_RESET),boot:0xa (SPI_FAST_FLASH_BOOT)
+Saved PC:0x420090a3
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x1564
+load:0x403c8700,len:0x4
+load:0x403c8704,len:0xc80
+load:0x403cb700,len:0x2ee0
+entry 0x403c8914
+I (18) boot: ESP-IDF v5.4.2 2nd stage bootloader
+I (18) boot: compile time Oct  4 2026 20:42:23
+I (18) boot: Multicore bootloader
+I (18) boot: chip revision: v0.2
+I (18) boot: efuse block revision: v1.4
+I (19) boot.esp32s3: Boot SPI Speed : 80MHz
+I (19) boot.esp32s3: SPI Mode       : DIO
+I (19) boot.esp32s3: SPI Flash Size : 16MB
+I (19) boot: Enabling RNG early entropy source...
+I (19) boot: Partition Table:
+I (20) boot: ## Label            Usage          Type ST Offset   Length
+I (20) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (20) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (21) boot:  2 factory          factory app      00 00 00010000 00220000
+I (21) boot:  3 outbox           Unknown data     01 81 00230000 00dd0000
+I (21) boot: End of partition table
+I (22) esp_image: segment 0: paddr=00010020 vaddr=3c030020 size=0db00h ( 56064) map
+I (32) esp_image: segment 1: paddr=0001db28 vaddr=3fc94400 size=024f0h (  9456) load
+I (34) esp_image: segment 2: paddr=00020020 vaddr=42000020 size=2e154h (188756) map
+I (68) esp_image: segment 3: paddr=0004e17c vaddr=3fc968f0 size=00c64h (  3172) load
+I (69) esp_image: segment 4: paddr=0004ede8 vaddr=40374000 size=103e8h ( 66536) load
+I (84) esp_image: segment 5: paddr=0005f1d8 vaddr=600fe000 size=0001ch (    28) load
+I (90) boot: Loaded app from partition at offset 0x10000
+I (91) boot: Disabling RNG early entropy source...
+I (92) octal_psram: vendor id    : 0x0d (AP)
+I (92) octal_psram: dev id       : 0x03 (generation 4)
+I (92) octal_psram: density      : 0x05 (128 Mbit)
+I (92) octal_psram: good-die     : 0x01 (Pass)
+I (92) octal_psram: Latency      : 0x01 (Fixed)
+I (93) octal_psram: VCC          : 0x00 (1.8V)
+I (93) octal_psram: SRF          : 0x01 (Fast Refresh)
+I (93) octal_psram: BurstType    : 0x01 (Hybrid Wrap)
+I (93) octal_psram: BurstLen     : 0x01 (32 Byte)
+I (93) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)
+I (94) octal_psram: DriveStrength: 0x00 (1/1)
+I (94) MSPI Timing: PSRAM timing tuning index: 6
+I (95) esp_psram: Found 16MB PSRAM device
+I (95) esp_psram: Speed: 80MHz
+I (95) cpu_start: Multicore app
+I (947) esp_psram: SPI SRAM memory test OK
+I (956) cpu_start: Pro cpu start user code
+I (956) cpu_start: cpu freq: 160000000 Hz
+I (956) app_init: Application information:
+I (957) app_init: Project name:     family_link_demo
+I (957) app_init: App version:      450c6fe-dirty
+I (957) app_init: Compile time:     Oct  4 2026 20:41:41
+I (957) app_init: ELF file SHA256:  24a9f5579...
+I (957) app_init: ESP-IDF:          v5.4.2
+I (957) efuse_init: Min chip rev:     v0.0
+I (958) efuse_init: Max chip rev:     v0.99 
+I (958) efuse_init: Chip rev:         v0.2
+I (958) heap_init: Initializing. RAM available for dynamic allocation:
+I (958) heap_init: At 3FC97F40 len 000517D0 (325 KiB): RAM
+I (958) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (959) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (959) heap_init: At 600FE01C len 00001FCC (7 KiB): RTCRAM
+I (959) esp_psram: Adding pool of 16384K of PSRAM memory to heap allocator
+I (960) spi_flash: detected chip: gd
+I (960) spi_flash: flash io: dio
+I (961) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (961) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (962) main_task: Started on CPU0
+I (972) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations
+I (972) main_task: Calling app_main()
+H32,SENTINEL,mode=experiment,value=48333232,created=no,status=pass
+H32,HARDWARE,flash_bytes=16777216,flash_id=host_verified,psram_bytes=16777216,reset=11,idf=v5.4.2
+H32,PARTITION,factory_offset=0x10000,factory_size=0x220000,running_offset=0x10000,running_size=0x220000,outbox_offset=0x230000,outbox_size=0xdd0000,status=pass
+H32,MOUNT,event=enter
+H32,ERASE_SCAN,bytes=4096,partition_bytes=14483456,elapsed_us=811,performed=no,sample_erased=yes,format_on_first_mount=no
+W (1002) vfs_fat_spiflash: f_mount failed (13)
+E (1002) vfs_fat_spiflash: esp_vfs_fat_spiflash_unmount_rw_wl(210): partition isn't registered, call esp_vfs_fat_spiflash_mount_rw_wl first
+H32,FAIL,run=00000000,stage=mount,reason=unsafe_or_io,action=halt

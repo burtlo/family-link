@@ -175,6 +175,10 @@ if(FAMILY_DEMO STREQUAL "h38_sdmmc_filesystem")
     if(NOT DEFINED H38_INTENT_HEADER OR NOT EXISTS "${H38_INTENT_HEADER}")
         message(FATAL_ERROR "H38_INTENT_HEADER must name the private generated intent header")
     endif()
+    if(DEFINED H38_CARD_SECTOR_COUNT)
+        target_compile_definitions(${COMPONENT_LIB} PRIVATE
+            H38_CARD_SECTOR_COUNT=${H38_CARD_SECTOR_COUNT})
+    endif()
     target_compile_definitions(${COMPONENT_LIB} PRIVATE
         H38_RUN_EPOCH="${H38_RUN_EPOCH}"
         H35_REFERENCE_EPOCH="${H35_REFERENCE_EPOCH}"

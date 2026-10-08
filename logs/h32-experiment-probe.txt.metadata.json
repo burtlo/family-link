@@ -1,0 +1,44 @@
+{
+  "capture_start_reset": "idf_monitor_rts_dtr",
+  "chip": "esp32-s3 (qfn56) (revision v0.2)",
+  "device_fingerprint_sha256": "ec66fae0e2c0a26d38e3001b5e1ca073e1d5192b1599c25b40af72c5d981c23f",
+  "fixture_sha256": "65100d070d19d7365e63b74228c2f4bf9d4e87945488eef1c73bc16b9667f153",
+  "flash_bytes": 16777216,
+  "git_commit": "450c6fed1d466edee8a0218ba9ada10df3950b7b",
+  "idf_version": "ESP-IDF v5.4.2",
+  "images": {
+    "app": {
+      "bytes": 324128,
+      "offset": 65536,
+      "path": "firmware/build/h32_onchip_storage/family_link_demo.bin",
+      "sha256": "ac3308d0f5d74c2329a84e64867985a3687ce26603ea9d620bff7403e52752cf"
+    },
+    "bootloader": {
+      "bytes": 20784,
+      "offset": 0,
+      "path": "firmware/build/h32_onchip_storage/bootloader/bootloader.bin",
+      "sha256": "580892414667f8c97a5a9cf60e6442675878583040f6b3ad38044c4b4f11bdaf"
+    },
+    "partition_table": {
+      "bytes": 3072,
+      "offset": 32768,
+      "path": "firmware/build/h32_onchip_storage/partition_table/partition-table.bin",
+      "sha256": "ca85e18a7545259b1033b2045088f0d43b20871dc08c37a3a2b356b1af4851bc"
+    }
+  },
+  "mode": "experiment",
+  "port": "/dev/cu.usbmodem101",
+  "schema": 1,
+  "source": {
+    "files": {
+      "firmware/demos/h32_onchip_storage.c": "26c29a9e5729789c9de2b2de189c161f8479a0ee8462e9e6f5c4949c83ad30aa",
+      "firmware/main/CMakeLists.txt": "f10a7088947b765065ba6a63cf2940545c50174f8a83f74e8ef66492cefac0f6",
+      "firmware/partitions/h32_onchip_storage.csv": "65100d070d19d7365e63b74228c2f4bf9d4e87945488eef1c73bc16b9667f153",
+      "firmware/sdkconfig.h32.defaults": "7960fd8359b3cdf0f10161806da957890b4e666a538d5ec198de44280ea09807",
+      "scripts/h32_storage_qual.py": "e1ece8280c78566d6775d09f46f39d020f56e5ded9e45ec2b212e4d3e6f40dbf"
+    },
+    "git_dirty": true,
+    "sha256": "323633f5ed5be97b7a2a99be2c11eb4d045af5b92dcf0b2daedd1e0e890451d7"
+  },
+  "test_reset": "esp_restart"
+}

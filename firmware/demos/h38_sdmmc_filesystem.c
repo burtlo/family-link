@@ -23,15 +23,16 @@
 #include "mbedtls/sha256.h"
 #include "diskio.h"
 #include "ff.h"
-#include "h38_disk_guard.h"
-#include "h38_fatfs_adapter.h"
-#include "h38_filesystem_io.h"
-#include "sdmmc_cmd.h"
 
 #ifndef H38_INTENT_HEADER
 #error H38_INTENT_HEADER must name private generated manifest constants
 #endif
 #include H38_INTENT_HEADER
+
+#include "h38_disk_guard.h"
+#include "h38_fatfs_adapter.h"
+#include "h38_filesystem_io.h"
+#include "sdmmc_cmd.h"
 
 #ifndef H38_RUN_EPOCH
 #error H38_RUN_EPOCH is required
@@ -73,7 +74,8 @@ enum {
     DISCOVERY_MS = 45000, COMMAND_TIMEOUT_MS = 1000, POWER_GPIO = 43,
     MBR_BYTES = 512
 };
-static const uint32_t EXPECTED_SECTORS = 121503744u;
+#define H38_VOLUME_END_LBA 1081344u
+#define H38_SDHC_MAX_SECTORS 67108864u
 static const uint32_t EXPECTED_FREQ_KHZ = 20000u;
 static char elf_hex[65];
 static bool usb_installed, host_initialized, power_configured, bound;
@@ -618,8 +620,9 @@ static esp_err_t init_card(void)
     EMIT("GEOMETRY", "sectors=%" PRIu32 ",sector_bytes=%" PRIu32 ",capacity_bytes=%" PRIu64 ",bus_width=%u,real_freq_khz=%d,ddr=%u",
          sectors, secbytes, capacity, width, card.real_freq_khz, (unsigned)card.is_ddr);
     init_stage = ST_GEOMETRY;
-    if (!card.is_mem || card.is_mmc || card.is_sdio || sectors != EXPECTED_SECTORS ||
-        secbytes != 512u || width != 4u || card.real_freq_khz != (int)EXPECTED_FREQ_KHZ)
+    if (!card.is_mem || card.is_mmc || card.is_sdio || sectors != (uint32_t)H38_CARD_SECTOR_COUNT ||
+        secbytes != 512u || width != 4u || card.real_freq_khz != (int)EXPECTED_FREQ_KHZ ||
+        sectors < H38_VOLUME_END_LBA || sectors > H38_SDHC_MAX_SECTORS)
         return ESP_ERR_INVALID_SIZE;
     if (compute_cid_digest(&card, cid_digest_hex) != 0) return ESP_FAIL;
     emit_cid();

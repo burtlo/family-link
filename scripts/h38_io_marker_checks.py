@@ -27,6 +27,10 @@ def main() -> None:
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+#define H38_CARD_SECTOR_COUNT 62586880u
+#define H38_GUARD_CARD_SECTORS ((uint64_t)H38_CARD_SECTOR_COUNT)
+#define H38_IO_VOLUME_START UINT64_C(32768)
+#define H38_IO_VOLUME_SECTORS UINT64_C(1048576)
 typedef struct {
     const char *epoch, *runtime_elf_sha256, *source_revision, *intent_sha256;
     const char *h35_reference_epoch, *private_cid_sha256;
@@ -45,7 +49,7 @@ int main(void) {
     assert(H38_IO_MAX_MARKER == 4096u && H38_IO_MARKER_BUFFER_BYTES == 1024u);
     assert(!marker_contents(&state, actual, 512, &n));
     assert(marker_contents(&state, actual, sizeof(actual), &n));
-    assert(n == 620 && actual[n] == '\0' && n < H38_IO_MAX_MARKER);
+    assert(n == 619 && actual[n] == '\0' && n < H38_IO_MAX_MARKER);
     assert(strstr(actual,"schema=h38-marker-v1\n") == actual);
     assert(strstr(actual,"allocation_unit_bytes=4096\n") != NULL);
     assert(!marker_contents(&state, copy, n, &exact));
@@ -53,7 +57,7 @@ int main(void) {
     assert(exact == n && !memcmp(actual,copy,n+1));
     char oversized[2049]; fill(oversized,2048); context.epoch = oversized;
     assert(!marker_contents(&state, actual, sizeof(actual), &exact));
-    puts("H38 actual C marker checks passed: 620 bytes, 1024 capacity, truncation boundaries");
+    puts("H38 actual C marker checks passed: 619 bytes, 1024 capacity, truncation boundaries");
     return 0;
 }
 '''

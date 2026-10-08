@@ -1,22 +1,38 @@
 # Notes for future agents
 
-## Current priority — 2026-10-07
+## Current priority — 2026-10-07 (updated)
 
-The user is purchasing supported memory cards. **Pause removable-storage work**;
-do not resume H38/64 GB compatibility experiments. Continue the online product,
-starting with the actual product server on the user's personal computer.
+**Attached storage qualification is active again.** Supported **16/32 GB microSDHC**
+cards are on hand. Resume the isolated H35 → H37 → **H38 bounded I/O** track on
+**ESP32-S3-BOX-3 + SENSOR** (SDMMC, not dock USB). The overspec **64 GB** card and
+its geometry (`121,503,744` sectors) are **retired** — do not reuse that H37 epoch,
+intent constants, or public baseline for new hardware.
 
-The server disk archive and resumable PCM routes are implemented and host-tested;
+**Execution plan:** [`plans/h38-sdhc-geometry-qualification.md`](plans/h38-sdhc-geometry-qualification.md)
+implements per-card geometry and identity binding, then runs the frozen H38 v1
+`io_complete` profile in [`plans/h38-bounded-sd-filesystem.md`](plans/h38-bounded-sd-filesystem.md).
+**Out of scope until separately planned:** H32 cadence, fault matrix, near-full card,
+physical removal, production partition choice, durable-outbox product integration.
+
+**Product/server work** (personal-PC v1 server, metadata migration) may continue in
+parallel. Server disk archive and resumable PCM routes are host-tested —
 [run guide](../demos/server/v1_product/README.md),
 [evidence](evidence/product-no-storage/03-server-recovery/README.md),
-[current roadmap](plans/product-no-storage-roadmap.md).
-Personal-PC deployment and existing-server metadata migration are pending.
-Do not restart an old memory-based household server before exporting live
-metadata. No firmware chunk/outbox integration or UI-freeze fix is implied by
-server completion. Apply the existing device/PIN proof gates to later firmware
-work. Historical storage orchestration instructions below are not an instruction
-to restart paused experiments.
+[roadmap](plans/product-no-storage-roadmap.md).
+Do not conflate server completion with qualified BOX removable storage or on-chip H32.
 
+**Boundaries unchanged:** do not modify `firmware/v1/` or x02 product behavior for
+H38; flash only the isolated H38 demo interval during the epoch, then **mandatory**
+full 16 MiB + NVS restore and readback. Private backups and captures stay under
+[`~/family-link-storage-experiments/`](~/family-link-storage-experiments/) (see
+`scripts/attached_storage_paths.py`); commit **sanitized** evidence under
+[`evidence/attached-storage-qualification/`](evidence/attached-storage-qualification/).
+
+**BOX backup vs normal flashing:** H38 uses the same `h32_storage_qual` full
+16 MiB read/flash/restore path as other demos (`make flash DEMO=…`). The extra
+requirements are **evidence binding** (fingerprint + hashes in private run JSON),
+**app-interval-only** flash for the island fixture, and **mandatory restore +
+readback** before the epoch counts as done—not a different backup technology.
 
 Read this before writing code. Product intent: [`REQUIREMENTS.md`](REQUIREMENTS.md). **Approved v1 contract:** [`plans/v1-product-spec.md`](plans/v1-product-spec.md). Hardware facts: [`HARDWARE.md`](HARDWARE.md). Endpoint screen brief: [`BOX-UI.md`](BOX-UI.md). Removable media: [`STORAGE.md`](STORAGE.md). Unresolved decisions: [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md). Demo plans: [`SERVER-DEMOS.md`](SERVER-DEMOS.md), [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md), [`DEMO-MAP.md`](DEMO-MAP.md), [`plans/v1-demo-set.md`](plans/v1-demo-set.md).
 

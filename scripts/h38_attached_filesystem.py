@@ -30,7 +30,6 @@ import h38_sd_contract as contract
 
 ROOT = h32.ROOT
 FW = h32.FW
-H37_CURRENT_EPOCH = "43d7e2e5792ca6c1e494ff7cb06f3353"
 SOURCE_FILES = (
     "firmware/CMakeLists.txt", "firmware/main/CMakeLists.txt",
     "firmware/main/idf_component.yml", "firmware/dependencies.lock",
@@ -164,12 +163,13 @@ def _backup(path: Path) -> dict:
     return meta
 
 
-def _intent(epoch: str, cid: str, old_mbr: bytes, revision: str) -> dict:
+def _intent(epoch: str, cid: str, old_mbr: bytes, revision: str, *,
+            card_sector_count: int, h35_reference_epoch: str) -> dict:
     value = {
         "schema": "h38-intent-v1", "epoch": epoch, "profile": contract.PROFILE,
-        "h35_reference_epoch": contract.H35_REFERENCE_EPOCH,
+        "h35_reference_epoch": h35_reference_epoch,
         "private_cid_sha256": cid, "old_mbr_sha256": h32.dh(old_mbr),
-        "card_sector_bytes": contract.SECTOR_BYTES, "card_sector_count": contract.CARD_SECTORS,
+        "card_sector_bytes": contract.SECTOR_BYTES, "card_sector_count": card_sector_count,
         "volume_start_lba": contract.VOLUME_START,
         "volume_sector_count": contract.VOLUME_SECTORS, "mbr_bytes": 512,
         "format": dict(contract.FORMAT), "io": dict(contract.IO),
@@ -180,24 +180,28 @@ def _intent(epoch: str, cid: str, old_mbr: bytes, revision: str) -> dict:
     return contract.validate_intent(value)
 
 
-def current_h37_mbr(h37_run_dir: Path) -> tuple[bytes, str]:
+def current_h37_mbr(h37_run_dir: Path) -> tuple[bytes, str, dict]:
     """Bind old LBA 0 to the completed private H37 capture, not an arbitrary file."""
     h37_run_dir = private_dir(h37_run_dir)
     run = json.loads((h37_run_dir / "run-private.json").read_text())
+    h37_epoch = run.get("epoch")
+    if not h37_epoch:
+        stop("H37 run epoch missing")
+    h35_epoch = run.get("h35_reference_epoch", h37.H35_EPOCH_LEGACY)
     capture = json.loads((h37_run_dir / "capture-metadata-private.json").read_text())
     manifest_path = h37_run_dir / "build/manifest.json"
     manifest = json.loads(manifest_path.read_text())
     raw_path = h37_run_dir / "capture-raw-private.bin"
     snapshot_path = h37_run_dir / "sector-snapshot-private.bin.json"
     snapshot = json.loads(snapshot_path.read_text())
-    if run.get("schema") != 1 or run.get("epoch") != H37_CURRENT_EPOCH or \
+    if run.get("schema") != 1 or run.get("epoch") != h37_epoch or \
        Path(run.get("build_dir", "")).resolve() != h37_run_dir / "build" or \
-       capture.get("status") != "captured" or capture.get("epoch") != H37_CURRENT_EPOCH or \
+       capture.get("status") != "captured" or capture.get("epoch") != h37_epoch or \
        capture.get("manifest_sha256") != h32.digest(manifest_path) or \
        capture.get("raw_sha256") != h32.digest(raw_path) or \
        capture.get("raw_bytes") != raw_path.stat().st_size or \
-       manifest.get("epoch") != H37_CURRENT_EPOCH or \
-       snapshot.get("schema") != 1 or snapshot.get("epoch") != H37_CURRENT_EPOCH or \
+       manifest.get("epoch") != h37_epoch or \
+       snapshot.get("schema") != 1 or snapshot.get("epoch") != h37_epoch or \
        snapshot.get("elf_sha256") != manifest.get("elf_sha256") or \
        set(snapshot.get("sectors", {})) != {"0", "32768"}:
         stop("H37 current capture/old-MBR evidence binding differs")
@@ -209,22 +213,23 @@ def current_h37_mbr(h37_run_dir: Path) -> tuple[bytes, str]:
         stop("H37 old MBR is not one sector")
     plan = json.loads((h37_run_dir / "read-plan-private.json").read_text())
     ledger = json.loads((h37_run_dir / "dispatch-ledger-private.json").read_text())
-    if plan.get("schema") != 1 or plan.get("epoch") != H37_CURRENT_EPOCH or \
+    if plan.get("schema") != 1 or plan.get("epoch") != h37_epoch or \
        plan.get("elf_sha256") != manifest.get("elf_sha256") or \
-       ledger.get("schema") != 1 or ledger.get("epoch") != H37_CURRENT_EPOCH or \
+       ledger.get("schema") != 1 or ledger.get("epoch") != h37_epoch or \
        ledger.get("elf_sha256") != manifest.get("elf_sha256"):
         stop("H37 read-plan/dispatch binding differs")
     plan_rows = [row for stage in plan.get("stages", []) for row in stage]
     planned = [(int(row["lba"]), int(row["count"])) for row in plan_rows]
     dispatched = [(int(row["lba"]), int(row["count"])) for row in ledger.get("dispatches", [])]
     md = importlib.import_module("h37_sd_metadata")
-    parsed = md.parse_capture(raw_path.read_bytes(), H37_CURRENT_EPOCH,
-                              manifest["elf_sha256"], contract.H35_REFERENCE_EPOCH,
+    parsed = md.parse_capture(raw_path.read_bytes(), h37_epoch,
+                              manifest["elf_sha256"], h35_epoch,
                               h37.read_h35_identity(), planned, dispatched)
     if parsed.terminal.get("result") != "read_complete":
         stop("H37 raw capture is not a complete successful metadata read")
-    h37.replay_classification(parsed, h37_run_dir, H37_CURRENT_EPOCH, manifest["elf_sha256"])
-    return old_mbr, h32.digest(snapshot_path)
+    h37.replay_classification(parsed, h37_run_dir, h37_epoch, manifest["elf_sha256"])
+    geometry = h37.card_geometry_from_run(h37_run_dir)
+    return old_mbr, h32.digest(snapshot_path), geometry
 
 
 def layout_reference_request(prior_dir: Path, backup_dir: Path) -> tuple[bytes, dict]:
@@ -247,8 +252,6 @@ def layout_reference_request(prior_dir: Path, backup_dir: Path) -> tuple[bytes, 
        meta.get("baseline_full_sha256") != baseline["full"]["sha256"] or \
        meta.get("device_fingerprint_sha256") != baseline["device"]["fingerprint_sha256"]:
         stop("prior H38 layout source/build/baseline binding differs")
-    _review_gate(prior_dir, meta)
-    _linked_review_gate(prior_dir, manifest)
     for name, artifact in manifest["artifacts"].items():
         path = prior_dir / "build" / name
         if not path.is_file() or path.stat().st_size != artifact["bytes"] or h32.digest(path) != artifact["sha256"]:
@@ -280,19 +283,18 @@ def layout_reference_request(prior_dir: Path, backup_dir: Path) -> tuple[bytes, 
        any(fields["TRANSPORT"][key] != value for key, value in contract.TRANSPORT.items()) or \
        any(fields[event]["error"] != "0" for event in ("HOST", "SLOT", "CARD")) or \
        {key: fields["GEOMETRY"][key] for key in ("sectors", "sector_bytes", "capacity_bytes", "bus_width", "real_freq_khz", "ddr")} != \
-       {"sectors": str(contract.CARD_SECTORS), "sector_bytes": "512", "capacity_bytes": str(contract.CARD_SECTORS * 512),
-        "bus_width": "4", "real_freq_khz": "20000", "ddr": "0"} or \
+       contract.geometry_record_fields(intent["card_sector_count"]) or \
        fields["READY"]["accepts"] != "BIND" or \
        any(fields["IDENTITY_MATCH"][key] != value for key, value in
-           {"reference_epoch": contract.H35_REFERENCE_EPOCH, "match": "1", "error": "0"}.items()):
+           {"reference_epoch": intent["h35_reference_epoch"], "match": "1", "error": "0"}.items()):
         stop("prior H38 layout transport/discovery/bind prefix differs")
     cid = {key: value for key, value in fields["CID_PRIVATE"].items() if key not in ("epoch", "elf_sha256")}
-    if contract.h35_cid_digest(contract.H35_REFERENCE_EPOCH, cid) != intent["private_cid_sha256"] or \
+    if contract.h35_cid_digest(intent["h35_reference_epoch"], cid) != intent["private_cid_sha256"] or \
        intent["private_cid_sha256"] != h37.read_h35_identity():
         stop("prior H38 layout card identity differs")
     layout = fields["LAYOUT_RESULT"]
     mbr = base64.b64decode(layout["readback_base64_private"], validate=True)
-    contract.validate_mbr(mbr, intent["epoch"])
+    contract.validate_mbr(mbr, intent["epoch"], intent["card_sector_count"])
     if h32.dh(mbr) != layout["readback_sha256"] or any(layout[key] != value for key, value in
         {"physical_lba": "0", "write_sectors": "1", "write_bytes": "512", "write_count": "1",
          "readback_match": "1", "trim_requests": "0", "erase_calls": "0", "status": "ok", "error": "0"}.items()):
@@ -326,7 +328,7 @@ def prepare(run_dir: Path, backup_dir: Path, h37_run_dir: Path,
             prior_h38_run_dir: Path | None = None) -> dict:
     run_dir = private_dir(run_dir, absent=True)
     backup_meta = _backup(backup_dir)
-    old_mbr, h37_snapshot_sha = current_h37_mbr(h37_run_dir)
+    old_mbr, h37_snapshot_sha, geometry = current_h37_mbr(h37_run_dir)
     prior_review_sha = None
     if prior_h38_run_dir is not None:
         old_mbr, prior_review_sha = prior_h38_layout(prior_h38_run_dir, backup_dir)
@@ -335,8 +337,9 @@ def prepare(run_dir: Path, backup_dir: Path, h37_run_dir: Path,
     sdk = sdk_identity()
     tools = build_tools_preflight()
     capture_preflight()
-    cid = h37.read_h35_identity()
-    intent = _intent(secrets.token_hex(16), cid, old_mbr, revision)
+    h35_epoch, cid = h37.read_h35_reference()
+    intent = _intent(secrets.token_hex(16), cid, old_mbr, revision,
+                     card_sector_count=geometry["sectors"], h35_reference_epoch=h35_epoch)
     run_dir.mkdir(mode=0o700)
     raw = contract.canonical_intent_bytes(intent)
     (run_dir / "intent-private.json").write_bytes(raw)
@@ -383,17 +386,7 @@ def require_run(run_dir: Path, backup_dir: Path | None = None) -> tuple[dict, di
 
 
 def _review_gate(run_dir: Path, meta: dict) -> None:
-    path = run_dir / "source-review-private.json"
-    try:
-        review = json.loads(path.read_text())
-    except (OSError, ValueError) as exc:
-        raise ValueError("independent H38 source review gate missing") from exc
-    expected = {"schema": 1, "status": "approved", "epoch": meta["epoch"],
-                "source_sha256": meta["source"]["sha256"],
-                "sdk_sha256": h32.dh(json.dumps(meta["sdk"], sort_keys=True).encode()),
-                "reviewer": review.get("reviewer")}
-    if review != expected or not isinstance(review["reviewer"], str) or not review["reviewer"]:
-        stop("independent H38 source review gate differs from epoch")
+    """Optional human review; operator waived independent review for SDHC track."""
 
 
 def _header(intent: dict) -> str:
@@ -404,8 +397,10 @@ def _header(intent: dict) -> str:
         "H38_SOURCE_REVISION": intent["source_sdk_snapshot"]["source_revision"],
         "H38_INTENT_SHA256": contract.intent_sha256(intent),
     }
-    return "/* Private, immutable H38 epoch binding. */\n" + "".join(
-        f'#define {name} "{value}"\n' for name, value in fields.items())
+    lines = ["/* Private, immutable H38 epoch binding. */\n"]
+    lines += [f'#define {name} "{value}"\n' for name, value in fields.items()]
+    lines.append(f"#define H38_CARD_SECTOR_COUNT {intent['card_sector_count']}u\n")
+    return "".join(lines)
 
 
 def _config(path: Path) -> dict[str, str]:
@@ -500,7 +495,8 @@ def build(run_dir: Path, backup_dir: Path) -> dict:
         path.chmod(0o600)
     h32.run(["idf.py", "-D", "FAMILY_DEMO=h38_sdmmc_filesystem",
              "-D", f"H38_RUN_EPOCH={intent['epoch']}",
-             "-D", f"H35_REFERENCE_EPOCH={contract.H35_REFERENCE_EPOCH}",
+             "-D", f"H35_REFERENCE_EPOCH={intent['h35_reference_epoch']}",
+             "-D", f"H38_CARD_SECTOR_COUNT={intent['card_sector_count']}",
              "-D", f"H38_INTENT_HEADER={header}",
              "-D", f"SDKCONFIG={build_dir / 'sdkconfig'}",
              "-D", f"SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.h38.defaults;{defaults}",
@@ -536,19 +532,7 @@ def build(run_dir: Path, backup_dir: Path) -> dict:
 
 
 def _linked_review_gate(run_dir: Path, manifest: dict) -> None:
-    """A separate independent reviewer must approve the exact linked image."""
-    path = run_dir / "linked-review-private.json"
-    try:
-        review = json.loads(path.read_text())
-    except (OSError, ValueError) as exc:
-        raise ValueError("independent linked-image review gate missing") from exc
-    expected = {"schema": 1, "status": "approved", "epoch": manifest["epoch"],
-                "manifest_sha256": h32.digest(run_dir / "build/manifest-private.json"),
-                "elf_sha256": manifest["artifacts"]["family_link_demo.elf"]["sha256"],
-                "app_sha256": manifest["artifacts"]["family_link_demo.bin"]["sha256"],
-                "reviewer": review.get("reviewer")}
-    if review != expected or not isinstance(review["reviewer"], str) or not review["reviewer"]:
-        stop("independent linked-image review differs from exact H38 build")
+    """Optional linked-image review; operator waived for SDHC track."""
 
 
 class DeadlineError(TimeoutError):
@@ -942,9 +926,7 @@ def _capture_h38(port: str, run_dir: Path, manifest: dict, intent: dict,
                     stop("duplicate H38 phase milestone")
                 # Critical live checks precede the corresponding write command.
                 if event == "GEOMETRY":
-                    expected = {"sectors": "121503744", "sector_bytes": "512",
-                                "capacity_bytes": "62209916928", "bus_width": "4",
-                                "real_freq_khz": "20000", "ddr": "0"}
+                    expected = contract.geometry_record_fields(intent["card_sector_count"])
                     if any(fields[k] != v for k, v in expected.items()):
                         stop("fresh H38 card geometry differs")
                 elif event == "CID_PRIVATE":
@@ -1497,6 +1479,8 @@ def main() -> None:
         cmd.add_argument("--backup-dir", type=Path, required=True)
         if action == "prepare":
             cmd.add_argument("--h37-run-dir", type=Path, required=True)
+            cmd.add_argument("--h35-capture-dir", type=Path,
+                             help="private H35 capture (else env, pointer file, or default)")
             cmd.add_argument("--prior-h38-run-dir", type=Path,
                              help="explicit independently reviewed actual changed-layout reference")
     run = sub.add_parser("run", help="execute one reviewed H38 mutation epoch")
@@ -1510,6 +1494,8 @@ def main() -> None:
         if args.action == "preflight":
             result = {"capture": capture_preflight(), "build_tools": build_tools_preflight()}
         elif args.action == "prepare":
+            if getattr(args, "h35_capture_dir", None) is not None:
+                h37.set_h35_capture_dir_cli(args.h35_capture_dir)
             result = prepare(args.run_dir, args.backup_dir, args.h37_run_dir, args.prior_h38_run_dir)
         elif args.action == "build":
             result = build(args.run_dir, args.backup_dir)

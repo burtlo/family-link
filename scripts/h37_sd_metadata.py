@@ -37,10 +37,17 @@ TRANSPORT_FIELDS = {
     "session_ms": "240000", "command_ms": "5000", "idle_ms": "15000",
     "discovery_ms": "45000", "usb_rx_bytes": "512", "usb_tx_bytes": "8192",
 }
-EXPECTED_CARD_GEOMETRY = {
-    "sectors": 121503744, "sector_bytes": 512, "capacity_bytes": 62209916928,
-    "bus_width": 4, "real_freq_khz": 20000, "ddr": 0,
+REFERENCE_SDHC32_SECTORS = 62_586_880
+
+REFERENCE_CARD_GEOMETRY = {
+    "sectors": REFERENCE_SDHC32_SECTORS,
+    "sector_bytes": 512,
+    "capacity_bytes": REFERENCE_SDHC32_SECTORS * 512,
+    "bus_width": 4,
+    "real_freq_khz": 20000,
+    "ddr": 0,
 }
+EXPECTED_CARD_GEOMETRY = REFERENCE_CARD_GEOMETRY
 EVENT_FIELDS = {
     "BOOT": {"reset_reason"},
     "TRANSPORT": set(TRANSPORT_FIELDS),

@@ -44,7 +44,7 @@ def intent() -> dict:
         "schema":"h38-intent-v1", "epoch":"1234567890abcdef1234567890abcdef",
         "profile":c.PROFILE,"exit_state":c.EXIT_STATE,
         "h35_reference_epoch":c.H35_REFERENCE_EPOCH,"private_cid_sha256":"a"*64,
-        "old_mbr_sha256":"b"*64,"card_sector_bytes":512,"card_sector_count":c.CARD_SECTORS,
+        "old_mbr_sha256":"b"*64,"card_sector_bytes":512,"card_sector_count":c.REFERENCE_SDHC32_SECTORS,
         "volume_start_lba":c.VOLUME_START,"volume_sector_count":c.VOLUME_SECTORS,"mbr_bytes":512,
         "format":copy.deepcopy(c.FORMAT),"io":copy.deepcopy(c.IO),
         "capture_limits":copy.deepcopy(c.CAPTURE_LIMITS),
@@ -92,7 +92,7 @@ def run() -> int:
     bad_commands=list(commands); bad_commands.append(commands[-1])
     must_fail(lambda:c.validate_command_sequence(bad_commands,i,"d"*64),"extra command accepted"); passes+=1
     must_fail(lambda:c.bind_command(i,"D"*64),"uppercase ELF digest accepted"); passes+=1
-    m=c.build_mbr(i["epoch"]); c.validate_mbr(m,i["epoch"])
+    m=c.build_mbr(i["epoch"]); c.validate_mbr(m,i["epoch"],i["card_sector_count"])
     check(len(m)==512 and m[510:]==b"\x55\xaa","canonical MBR built"); passes+=1
     for pos in (446,450,454,458,510):
         broken=bytearray(m); broken[pos]^=1
@@ -119,7 +119,7 @@ def run() -> int:
     add=lambda event, fields: rows.append(record(event,fields))
     add("BOOT",{"reset_reason":"1"}); add("TRANSPORT",tr)
     add("HOST",{"error":"0"}); add("SLOT",{"error":"0"}); add("CARD",{"error":"0"})
-    add("GEOMETRY",{"sectors":"121503744","sector_bytes":"512","capacity_bytes":"62209916928","bus_width":"4","real_freq_khz":"20000","ddr":"0"})
+    add("GEOMETRY",c.geometry_record_fields(c.REFERENCE_SDHC32_SECTORS))
     add("CID_PRIVATE",{"mfg_id":"1","oem_id":"1","revision":"1","serial":"1","date":"1","name_size":"0","name_hex":""})
     add("READY",{"accepts":"BIND"}); add("IDENTITY_MATCH",{"reference_epoch":c.H35_REFERENCE_EPOCH,"match":"1","error":"0"})
     add("LAYOUT_RESULT",{"physical_lba":"0","write_sectors":"1","write_bytes":"512","write_count":"1","readback_match":"1","readback_sha256":hashlib.sha256(m).hexdigest(),"readback_base64_private":base64.b64encode(m).decode(),"trim_requests":"0","erase_calls":"0","status":"ok","error":"0"})
@@ -315,8 +315,9 @@ def run() -> int:
     bad_transport=edit_event(valid_format_failure,"TRANSPORT",b"backend=sdmmc",b"backend=other")
     must_fail(lambda:c.parse_capture(bad_transport,epoch,elf),
               "failed capture accepted a non-profile transport"); passes+=1
-    bad_geometry=edit_event(valid_format_failure,"GEOMETRY",b"sectors=121503744",b"sectors=121503743")
-    must_fail(lambda:c.parse_capture(bad_geometry,epoch,elf),
+    ref=str(c.REFERENCE_SDHC32_SECTORS).encode()
+    bad_geometry=edit_event(valid_format_failure,"GEOMETRY",b"sectors="+ref,b"sectors="+str(c.REFERENCE_SDHC32_SECTORS-1).encode())
+    must_fail(lambda:c.parse_capture(bad_geometry,epoch,elf,i),
               "failed capture accepted mismatched preceding geometry"); passes+=1
     bad_reference=edit_event(valid_format_failure,"IDENTITY_MATCH",b"reference_epoch="+c.H35_REFERENCE_EPOCH.encode(),b"reference_epoch="+b"0"*32)
     must_fail(lambda:c.parse_capture(bad_reference,epoch,elf),
