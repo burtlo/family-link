@@ -1,16 +1,23 @@
 # Notes for future agents
 
-## Current priority — 2026-10-07 (updated)
+## Attached storage qualification
 
-**Attached storage qualification is active again.** Supported **16/32 GB microSDHC**
-cards are on hand. Resume the isolated H35 → H37 → **H38 bounded I/O** track on
-**ESP32-S3-BOX-3 + SENSOR** (SDMMC, not dock USB). The overspec **64 GB** card and
-its geometry (`121,503,744` sectors) are **retired** — do not reuse that H37 epoch,
-intent constants, or public baseline for new hardware.
+Use [`ATTACHED-STORAGE.md`](ATTACHED-STORAGE.md) for the implemented H35/H37/H38
+SDMMC path, operator workflow, evidence rules, current pass, and remaining gates.
 
-**Execution plan:** [`plans/h38-sdhc-geometry-qualification.md`](plans/h38-sdhc-geometry-qualification.md)
-implements per-card geometry and identity binding, then runs the frozen H38 v1
-`io_complete` profile in [`plans/h38-bounded-sd-filesystem.md`](plans/h38-bounded-sd-filesystem.md).
+## Current priority — 2026-10-08 (updated)
+
+**H38 Stage B (bounded FAT32 I/O) passed** on the bound **32 GB** SDHC track —
+see [`evidence/attached-storage-qualification/h38-32gb-20261008/`](evidence/attached-storage-qualification/h38-32gb-20261008/README.md)
+and [`ATTACHED-STORAGE.md`](ATTACHED-STORAGE.md). A **new card or BOX** repeats
+H35 → H37 → H38 per that guide. The overspec **64 GB** card and
+`121,503,744`-sector geometry are **retired** — do not reuse that H37 epoch,
+intent constants, or public baseline.
+
+**Completed on this card:** per-card geometry binding
+([`plans/h38-sdhc-geometry-qualification.md`](plans/h38-sdhc-geometry-qualification.md))
+and the frozen H38 v1 `io_complete` profile
+([`plans/h38-bounded-sd-filesystem.md`](plans/h38-bounded-sd-filesystem.md)).
 **Out of scope until separately planned:** H32 cadence, fault matrix, near-full card,
 physical removal, production partition choice, durable-outbox product integration.
 

@@ -1,5 +1,8 @@
 # Storage — what to buy, what breaks, what is missing
 
+For implemented SENSOR microSD qualification, operator steps, and test evidence,
+see [`ATTACHED-STORAGE.md`](ATTACHED-STORAGE.md).
+
 **Canonical inbox:** voicemails and photos the parent reads live on **the server you run** ([`DEVICE-DEMOS.md`](DEVICE-DEMOS.md) h10). Playhead is server-side too.
 
 **Outbox (pending upload):** when a child records and the POST fails — Wi-Fi blip, server down, timeout — the clip must sit somewhere until retry succeeds. **That path is not built yet.** Today the take is **discarded**. Local storage (on-chip FAT, USB stick, or SENSOR microSD) is for that **outbox**, not for replacing the server archive.

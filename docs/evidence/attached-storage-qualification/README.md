@@ -1,19 +1,35 @@
 # Attached-storage qualification evidence
 
-**Status:** The first H35 attempt stopped with `host_capture_dependency_failure`; its restoration/privacy review passed. The corrected retry detected SDMMC, passed independent full restoration review, and passed strict allowlist parsing and public-mapping/privacy review. It remains discovery-only; preservation and ownership are unresolved.
+Canonical overview and operator boundaries: [`ATTACHED-STORAGE.md`](../../ATTACHED-STORAGE.md). Full stage definitions: [`attached-storage-qualification.md`](../../plans/attached-storage-qualification.md).
 
-This directory records the isolated H35 SDMMC discovery work. The first attempt reached application readback and verified its flash bounds, but the host controller failed before serial capture was created or reported ready. This is a host capture dependency failure, not an inconclusive media result and not evidence that a card is absent. Independent closeout review verified all 16,777,216 restored bytes against the original and confirmed partition, NVS, application-descriptor, and device-proof bindings. The 8,397-byte boot capture matches the original project/version/ELF-prefix and shows healthy startup; the word “panic” appears only in the reset legend. The privacy and public-mapping review passed.
+## 32 GB SDHC track (current authority)
 
-## Current evidence
+| Stage | Folder | Verdict | Notes |
+|---|---|---|---|
+| Phase 0 geometry binding | (software, in tree) | **Landed** | Per [`h38-sdhc-geometry-qualification.md`](../../plans/h38-sdhc-geometry-qualification.md) |
+| H35 discovery | [h35-32gb-20261007](h35-32gb-20261007/summary.json) | **Pass** (discovery only) | `detected`, 61,071,360 sectors; not backend qualification |
+| H37 classification | [h37-32gb-20261007](h37-32gb-20261007/README.md) | **Pass** (Stage A) | `read_complete`, zero media writes; FAT32 signature at metadata reads |
+| H38 bounded I/O | [h38-32gb-20261008](h38-32gb-20261008/README.md) | **Pass** (Stage B profile) | `io_complete`, mandatory BOX restore verified — see [summary.json](h38-32gb-20261008/summary.json) |
 
-- [Corrected preflight retry](h35-preflight-retry-20261005/summary.md) detected SDMMC, passed strict allowlist parsing (exit 0), and passed independent restoration and public-mapping/privacy review. Its [sanitized JSON summary](h35-preflight-retry-20261005/summary.json) marks the result discovery-only and unqualified.
-- [H35 epoch summary](h35-20261005/summary.md) records the build, bounded flash/readback checks, capture failure, and independently verified restoration.
-- The application is an isolated discovery fixture built with ESP-IDF 5.4.2. The validated app image is 278,816 bytes; the factory partition is 1,536,000 bytes. The app-only flash interval is `[0x10000, 0x55000)`.
-- Independent comparison confirms the app readback matched the validated build. The 16 MiB pre-flash and post-flash images differed only within the app interval. The controller restore proof and independent review verify all 16,777,216 restored bytes against the original, with partition, NVS, application-descriptor, and device-proof bindings in agreement. The original boot capture is 8,397 bytes with SHA-256 `65e2e4c459b4ca90035e4e39425599733cbe210b505bf32fab7b836333573388`.
-- The first failed epoch produced no serial capture or discovery result; see [its unchanged summary](h35-20261005/summary.md). The corrected retry has a raw capture and card-detection records. Its sanitized allowlist output passed parser and public-mapping/privacy review. No filesystem or ownership gate has been completed.
+**Qualified today:** frozen **H38 v1** bounded FAT32 layout/format/mount/I/O on the bound 32 GB card only. **Not qualified:** H32 cadence, fault matrix, near-full, physical removal, production partition choice, durable outbox.
 
-Private raw data, CID digest, device identity, complete-image/NVS hashes, and run locations remain outside the repository. The first detached launcher did not retain its exit code; the corrected retry ran in a managed session. The full acceptance and safety criteria are in [the attached-storage qualification plan](../../plans/attached-storage-qualification.md).
+### Partial / failed history (same track)
+
+| Folder | Verdict |
+|---|---|
+| [h38-32gb-20261007](h38-32gb-20261007/README.md) | Failed/incomplete — LAYOUT+FORMAT OK; IO phase did not reach `io_complete` |
+| [h38-stack-failure-20261007](h38-stack-failure-20261007/README.md), [h38-framing-failure-20261007](h38-framing-failure-20261007/README.md) | 64 GB–era hardware diagnostics (archival) |
+| [h37-readonly-20261006](h37-readonly-20261006/README.md) | Retired **64 GB** card attempts (superseded by 32 GB H37 above) |
+
+## Historical footnote — 2026-10-05 H35 (retired card lineage)
+
+The first H35 attempt stopped with `host_capture_dependency_failure`; restoration/privacy review passed. The corrected retry detected SDMMC and passed strict allowlist and public-mapping review — discovery only.
+
+- [Corrected preflight retry](h35-preflight-retry-20261005/summary.md) — discovery-only, unqualified.
+- [H35 epoch summary](h35-20261005/summary.md) — build bounds, capture failure, verified BOX restoration.
+
+Private raw captures, digests, and run locations stay outside the repository.
 
 ## Qualification boundary
 
-H35 is a read-only SDMMC discovery fixture. Even a successful card initialization would establish only that the fixture detected and identified an SD card at the reported level. It would not establish filesystem type or contents, ownership, backup coverage, mount safety, write behavior, durability, recording cadence, fault recovery, near-full behavior, or backend qualification. Those gates remain separate and require the preservation and authority process in the plan.
+H35 establishes detection/identity only. H37 Stage A establishes read-only metadata classification. H38 Stage B establishes the reviewed bounded filesystem/I/O profile when `io_complete` and restore gates pass. None of these alone establishes full attached-backend or product qualification without the later stages in the master plan.

@@ -1,15 +1,15 @@
 # H38 — Bounded SD filesystem setup and I/O
 
-> **Active track — 2026-10-07:** supported **16/32 GB SDHC** cards are in use.
-> Implement per-card geometry per
+> **32 GB track — Stage B passed 2026-10-08** ([`h38-32gb-20261008`](../evidence/attached-storage-qualification/h38-32gb-20261008/README.md)).
+> New hardware repeats per-card geometry per
 > [`h38-sdhc-geometry-qualification.md`](h38-sdhc-geometry-qualification.md), then
-> run this frozen H38 v1 profile. The **64 GB** card and `121,503,744`-sector
+> this frozen H38 v1 profile. The **64 GB** card and `121,503,744`-sector
 > constants are **retired** for new epochs.
 
 
 | Field | Value |
 |---|---|
-| **Status** | **Stage B not started on replacement media.** Software gates (host contract, disk guard, FatFs mock, linked-image review) passed for the historical 64 GB-bound tree; **Phase 0 geometry binding** in the SDHC plan must land before hardware on the 32 GB card. Prior 64 GB hardware attempts remain failed diagnostics only. |
+| **Status** | **Stage B passed** on bound **32 GB** SDHC — public evidence [`h38-32gb-20261008`](../evidence/attached-storage-qualification/h38-32gb-20261008/README.md) (`verdict=pass`, `terminal=io_complete`, mandatory restore verified). Geometry binding per [`h38-sdhc-geometry-qualification.md`](h38-sdhc-geometry-qualification.md) is complete for this card. **64 GB** hardware attempts and intent constants are **archival only**; do not reuse for new epochs. Partial same-card attempt: [`h38-32gb-20261007`](../evidence/attached-storage-qualification/h38-32gb-20261007/README.md). |
 | **Depends on** | Fresh **H35 + H37** on the identified 32 GB card; see [`h38-sdhc-geometry-qualification.md`](h38-sdhc-geometry-qualification.md). Historical H37 epoch `43d7e2e5792ca6c1e494ff7cb06f3353` is archival only. |
 | **Scope** | One disposable-card FAT32 test volume, explicit bounded formatting, mount/I/O semantics, remount integrity, and reclamation |
 | **Out of scope** | Cadence, fault injection, near-full testing, removal/power testing, outbox behavior, product partition choice, production qualification |

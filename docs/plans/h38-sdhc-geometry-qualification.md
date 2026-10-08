@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| **Status** | **Phase 0 (geometry binding) landed in tree** — hardware H35/H37/H38 not run on 32 GB card yet |
+| **Status** | **Complete for bound 32 GB card:** Phase 0 landed; hardware **H35** ([`h35-32gb-20261007`](../evidence/attached-storage-qualification/h35-32gb-20261007/summary.json)), **H37** ([`h37-32gb-20261007`](../evidence/attached-storage-qualification/h37-32gb-20261007/README.md)), **H38** bounded I/O pass ([`h38-32gb-20261008`](../evidence/attached-storage-qualification/h38-32gb-20261008/README.md), epoch `d953a7fbfd1f9054aacff6f6c79f8ae1`). Partial attempt: [`h38-32gb-20261007`](../evidence/attached-storage-qualification/h38-32gb-20261007/README.md). |
 | **Private data root** | `~/family-link-storage-experiments/` (`scripts/attached_storage_paths.py`) |
 | **Supersedes** | 64 GB geometry constants and H37 epoch `43d7e2e5792ca6c1e494ff7cb06f3353` for all new prepare/build/run work |
 | **Depends on** | [`h38-bounded-sd-filesystem.md`](h38-bounded-sd-filesystem.md) (frozen protocol, I/O matrix, parser gates) |
@@ -137,7 +137,7 @@ Use `--use-existing-restore-image` only if backup dir contains a **verified** fu
 
 - Bounded **H38 v1** passed or failed (stage).
 - Cadence / fault / near-full / removal **not done**.
-- Durable-outbox on attached storage **still blocked** until H38 passes and later stages; on-chip H32 remains unqualified.
+- Durable-outbox on attached storage **still blocked** until Stages C–D (cadence, fault, near-full, etc.) and product integration; bounded H38 v1 **passed** on this 32 GB card. On-chip H32 remains unqualified.
 - BOX restored to **h31** or agreed baseline; user-normal operation.
 
 ## Stop conditions
@@ -156,7 +156,7 @@ Use `--use-existing-restore-image` only if backup dir contains a **verified** fu
 | **Exact `card_sector_count`** | Determined only by Phase 2 H37 `GEOMETRY` — do not hard-code before measurement. |
 | **h31 restore baseline** | Fail-closed scripts require a **16 MiB + NVS** private backup matching the device. Operator waived “extra” backup; first `prepare`/`run` should still **record** h31 (or confirm an existing private image) so restore returns to h31, not wake-word stock. |
 | **Prior H38 LAYOUT on this card** | If none, omit `--prior-h38-run-dir`. If a partial 64 GB-era layout existed on a **different** card, irrelevant. |
-| **Plan doc cross-links** | After Phase 0 commit, trim the “execution paused” banner in `h38-bounded-sd-filesystem.md` and add a one-line pointer here. |
+| **Plan doc cross-links** | Done — `h38-bounded-sd-filesystem.md` status and evidence index reflect the 2026-10-08 pass. |
 
 ## Estimated effort
 
