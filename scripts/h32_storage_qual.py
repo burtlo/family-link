@@ -154,14 +154,22 @@ def app_desc(blob):
     return {"version":cstr(blob[at+16:at+48]),"project":cstr(blob[at+48:at+80]),
             "idf":cstr(blob[at+112:at+144]),"elf_sha256":blob[at+144:at+176].hex()}
 
+def qual_app_partition(ps):
+    """App slot for H35/H37 app-only flash: legacy factory at 0x10000 or a single ota_0."""
+    legacy=[p for p in ps if p["name"]=="factory" and p["type"]==0 and p["subtype"]==0 and p["offset"]==APP_OFF]
+    if len(legacy)==1: return legacy[0]
+    ota=[p for p in ps if p["name"]=="ota_0" and p["type"]==0 and p["subtype"]==16]
+    if len(ota)==1: return ota[0]
+    stop("attached qual requires factory at 0x10000 or a single ota_0 app partition")
+
 def backup(port,out):
     if out.resolve().is_relative_to(ROOT.resolve()): stop("backup must be outside repository")
     dev=probe(port); out.mkdir(parents=True,exist_ok=False); out.chmod(0o700); full=out/"original-flash.bin"
     esptool(port,["read_flash","0",hex(FLASH),str(full)],1200)
     if full.stat().st_size!=FLASH: stop("wrong full backup size")
     ps=partitions(region(full,PT_OFF,PT_SIZE)); n=[p for p in ps if tup(p)[:3]==("nvs",1,2)]
-    factory=[p for p in ps if p["name"]=="factory" and p["type"]==0 and p["offset"]==APP_OFF]
-    if len(n)!=1 or len(factory)!=1: stop("sentinel requires one nvs and factory app at 0x10000")
+    if len(n)!=1: stop("backup requires exactly one nvs partition")
+    qual_app_partition(ps)
     pt=out/"original-partitions.bin"; nv=out/"original-nvs.bin"; n=n[0]
     esptool(port,["read_flash",hex(PT_OFF),hex(PT_SIZE),str(pt)])
     esptool(port,["read_flash",hex(n["offset"]),hex(n["size"]),str(nv)])

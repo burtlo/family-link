@@ -72,8 +72,8 @@ def build(rd,bd):
     before=source_identity(); d.mkdir(mode=0o700)
     ps=b['partition_table']['entries']
     if any(p['flags'] not in (0,1) for p in ps): stop('unsupported original partition flags')
-    factory=[p for p in ps if p['name']=='factory' and p['type']==0 and p['subtype']==0 and p['offset']==h32.APP_OFF]
-    if len(factory)!=1: stop('original factory slot required')
+    factory=[h32.qual_app_partition(ps)]
+    app_off=factory[0]['offset']
     csv=d/'original-partitions.csv'
     csv.write_text('# Original private backup partition map\n'+''.join(f"{p['name']},0x{p['type']:x},0x{p['subtype']:x},0x{p['offset']:x},0x{p['size']:x},{'encrypted' if p['flags']==1 else ''}\n" for p in ps))
     defaults=d/'partition.defaults'
@@ -84,7 +84,7 @@ def build(rd,bd):
     for rel,sha in before['files'].items():
         p=snap/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes((ROOT/rel).read_bytes())
         if digest(p)!=sha: stop('source snapshot changed')
-    images={n:{'path':str(p),'bytes':p.stat().st_size,'sha256':digest(p),'offset':off} for n,p,off in [('app',d/'family_link_demo.bin',h32.APP_OFF),('partition_table',d/'partition_table/partition-table.bin',h32.PT_OFF),('bootloader',d/'bootloader/bootloader.bin',0)]}
+    images={n:{'path':str(p),'bytes':p.stat().st_size,'sha256':digest(p),'offset':off} for n,p,off in [('app',d/'family_link_demo.bin',app_off),('partition_table',d/'partition_table/partition-table.bin',h32.PT_OFF),('bootloader',d/'bootloader/bootloader.bin',0)]}
     sdk_files={str(p.relative_to(h32.IDF)):digest(p) for p in [h32.IDF/'tools/cmake/version.cmake',h32.IDF/'components/esp_system/include/esp_system.h',h32.IDF/'components/sdmmc/sdmmc_cmd.c',h32.IDF/'components/esp_driver_sdmmc/src/sdmmc_host.c']}
     manifest={'schema':1,'epoch':m['epoch'],'source':before,'sdk':sdk_files,'idf_version':h32.idf_version(),'git_commit':h32.git_head(),'sdkconfig_sha256':digest(d/'sdkconfig'),'partition_csv_sha256':digest(csv),'partitions':h32.partitions((d/'partition_table/partition-table.bin').read_bytes()),'images':images,'elf_sha256':digest(d/'family_link_demo.elf'),'app_descriptor':h32.app_desc((d/'family_link_demo.bin').read_bytes()),'factory':factory[0]}
     atomic_json(d/'manifest.json',manifest,0o600); validate(rd,bd)
@@ -105,8 +105,8 @@ def validate(rd,bd,historical=False):
         if not p.resolve().is_relative_to(d.resolve()) or p.stat().st_size!=x['bytes'] or digest(p)!=x['sha256']: stop('image binding mismatch')
     ps=h32.partitions(Path(v['images']['partition_table']['path']).read_bytes())
     if ps!=b['partition_table']['entries'] or ps!=v['partitions']: stop('partition layout differs from original')
-    factory=next(p for p in ps if p['name']=='factory' and p['type']==0 and p['subtype']==0)
-    if factory!=v['factory'] or factory['offset']!=h32.APP_OFF or v['images']['app']['offset']!=factory['offset'] or v['images']['app']['bytes']>factory['size']*85//100: stop('factory bounds/headroom invalid')
+    factory=h32.qual_app_partition(ps)
+    if factory!=v['factory'] or v['images']['app']['offset']!=factory['offset'] or v['images']['app']['bytes']>factory['size']*85//100: stop('app slot bounds/headroom invalid')
     if digest(d/'family_link_demo.elf')!=v['elf_sha256'] or h32.app_desc(Path(v['images']['app']['path']).read_bytes())!=v['app_descriptor'] or v['app_descriptor']['elf_sha256']!=v['elf_sha256']: stop('ELF descriptor binding differs')
     config=(d/'sdkconfig').read_text()
     if 'CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y' not in config or 'CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y' not in config: stop('required native USB/16MB configuration missing')
@@ -272,16 +272,17 @@ def flash_capture(port,bd,rd,seconds,importer=importlib.import_module):
     h32.esptool(port,['--after','no_reset','read_flash','0',hex(h32.FLASH),str(fresh)],1200)
     if fresh.stat().st_size!=h32.FLASH or digest(fresh)!=b['full']['sha256']: stop('connected flash differs from original backup')
     app=Path(v['images']['app']['path'])
-    atomic_json(rd/'flash-attempt-private.json',{'epoch':m['epoch'],'app_sha256':digest(app),'offset':h32.APP_OFF,'bytes':app.stat().st_size,'removable_writes':'none','status':'attempted'},0o600)
+    app_off=v['images']['app']['offset']
+    atomic_json(rd/'flash-attempt-private.json',{'epoch':m['epoch'],'app_sha256':digest(app),'offset':app_off,'bytes':app.stat().st_size,'removable_writes':'none','status':'attempted'},0o600)
     failure=None
     try:
-        h32.esptool(port,['--after','no_reset','write_flash','--flash_size','16MB',hex(h32.APP_OFF),str(app)])
-        h32.match_read(port,h32.APP_OFF,app,rd/'app-readback-private.bin')
+        h32.esptool(port,['--after','no_reset','write_flash','--flash_size','16MB',hex(app_off),str(app)])
+        h32.match_read(port,app_off,app,rd/'app-readback-private.bin')
         # Verify every byte outside sector-rounded application erase/write range.
         check=rd/'postflash-full-private.bin'
         h32.esptool(port,['--after','no_reset','read_flash','0',hex(h32.FLASH),str(check)],1200)
-        original=fresh.read_bytes(); changed=check.read_bytes(); end=h32.APP_OFF+((app.stat().st_size+4095)//4096)*4096
-        if len(changed)!=h32.FLASH or changed[:h32.APP_OFF]!=original[:h32.APP_OFF] or changed[end:]!=original[end:]: stop('flash changed bytes outside application erase sectors')
+        original=fresh.read_bytes(); changed=check.read_bytes(); end=app_off+((app.stat().st_size+4095)//4096)*4096
+        if len(changed)!=h32.FLASH or changed[:app_off]!=original[:app_off] or changed[end:]!=original[end:]: stop('flash changed bytes outside application erase sectors')
         h32.verify_device(port,b,hold=True)
         ser=serial.Serial(port=None,baudrate=115200,timeout=.2); ser.dtr=False; ser.rts=False; ser.port=port
         with ser, out.open('xb') as f:

@@ -105,8 +105,8 @@ def build(rd,bd):
     m=require_run(rd,bd);b=backup(bd);d=Path(m['build_dir'])
     if d.exists():stop('build directory already exists; prepare a new epoch')
     before=source_identity();d.mkdir(mode=0o700)
-    ps=b['partition_table']['entries'];factory=[p for p in ps if p['name']=='factory' and p['type']==0 and p['subtype']==0 and p['offset']==h32.APP_OFF]
-    if len(factory)!=1:stop('original factory slot required')
+    ps=b['partition_table']['entries'];factory=[h32.qual_app_partition(ps)]
+    app_off=factory[0]['offset']
     csv=d/'original-partitions.csv';csv.write_text('# Original private backup partition map\n'+''.join(f"{p['name']},0x{p['type']:x},0x{p['subtype']:x},0x{p['offset']:x},0x{p['size']:x},{'encrypted' if p['flags']==1 else ''}\n" for p in ps))
     defaults=d/'partition.defaults';defaults.write_text(f'CONFIG_PARTITION_TABLE_CUSTOM=y\nCONFIG_PARTITION_TABLE_CUSTOM_FILENAME="{csv}"\nCONFIG_PARTITION_TABLE_OFFSET=0x8000\n')
     h35_ref=m.get('h35_reference_epoch',H35_EPOCH_LEGACY)
@@ -116,7 +116,7 @@ def build(rd,bd):
     for rel,sha in before['files'].items():
         p=snap/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes((ROOT/rel).read_bytes())
         if digest(p)!=sha:stop('source snapshot changed')
-    images={n:{'path':str(p),'bytes':p.stat().st_size,'sha256':digest(p),'offset':off} for n,p,off in [('app',d/'family_link_demo.bin',h32.APP_OFF),('partition_table',d/'partition_table/partition-table.bin',h32.PT_OFF),('bootloader',d/'bootloader/bootloader.bin',0)]}
+    images={n:{'path':str(p),'bytes':p.stat().st_size,'sha256':digest(p),'offset':off} for n,p,off in [('app',d/'family_link_demo.bin',app_off),('partition_table',d/'partition_table/partition-table.bin',h32.PT_OFF),('bootloader',d/'bootloader/bootloader.bin',0)]}
     manifest={'schema':1,'epoch':m['epoch'],'source':before,'sdk':sdk_identity(),'tools':tool_versions(),'git_commit':h32.git_head(),'sdkconfig_sha256':digest(d/'sdkconfig'),'partition_csv_sha256':digest(csv),'partitions':h32.partitions(Path(images['partition_table']['path']).read_bytes()),'images':images,'elf_sha256':digest(d/'family_link_demo.elf'),'app_descriptor':h32.app_desc(Path(images['app']['path']).read_bytes()),'factory':factory[0],'h35_reference_epoch':h35_ref}
     atomic_json(d/'manifest.json',manifest,0o600);validate(rd,bd)
 
@@ -138,8 +138,8 @@ def validate(rd,bd,historical=False):
         if not p.resolve().is_relative_to(d.resolve()) or p.stat().st_size!=x['bytes'] or digest(p)!=x['sha256']:stop('image binding mismatch')
     ps=h32.partitions(Path(v['images']['partition_table']['path']).read_bytes())
     if ps!=b['partition_table']['entries'] or ps!=v['partitions']:stop('partition layout differs from original')
-    f=v['factory'];app=v['images']['app'];
-    if f['offset']!=h32.APP_OFF or app['offset']!=f['offset'] or app['bytes']>f['size']*85//100:stop('factory bounds/headroom invalid')
+    f=h32.qual_app_partition(ps);app=v['images']['app'];
+    if f!=v['factory'] or app['offset']!=f['offset'] or app['bytes']>f['size']*85//100:stop('app slot bounds/headroom invalid')
     if digest(d/'family_link_demo.elf')!=v['elf_sha256'] or h32.app_desc(Path(app['path']).read_bytes())!=v['app_descriptor'] or v['app_descriptor']['elf_sha256']!=v['elf_sha256']:stop('ELF descriptor binding differs')
     cfg=(d/'sdkconfig').read_text()
     if 'CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y' not in cfg or 'CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y' not in cfg:stop('required native USB/16MB configuration missing')
@@ -417,14 +417,15 @@ def flash_capture(port,bd,rd,importer=importlib.import_module):
     atomic_json(rd/'current-device-proof-private.json',proof,0o600)
     fresh=rd/'preflash-full-private.bin';h32.esptool(port,['--after','no_reset','read_flash','0',hex(h32.FLASH),str(fresh)],1200)
     if fresh.stat().st_size!=h32.FLASH or digest(fresh)!=b['full']['sha256']:stop('connected flash differs from original backup')
-    app=Path(v['images']['app']['path']);atomic_json(rd/'flash-attempt-private.json',{'epoch':m['epoch'],'app_sha256':digest(app),'offset':h32.APP_OFF,'bytes':app.stat().st_size,'status':'attempted'},0o600)
+    app=Path(v['images']['app']['path']);app_off=v['images']['app']['offset']
+    atomic_json(rd/'flash-attempt-private.json',{'epoch':m['epoch'],'app_sha256':digest(app),'offset':app_off,'bytes':app.stat().st_size,'status':'attempted'},0o600)
     failure=None
     try:
-        h32.esptool(port,['--after','no_reset','write_flash','--flash_size','16MB',hex(h32.APP_OFF),str(app)])
-        h32.match_read(port,h32.APP_OFF,app,rd/'app-readback-private.bin')
+        h32.esptool(port,['--after','no_reset','write_flash','--flash_size','16MB',hex(app_off),str(app)])
+        h32.match_read(port,app_off,app,rd/'app-readback-private.bin')
         post=rd/'postflash-full-private.bin';h32.esptool(port,['--after','no_reset','read_flash','0',hex(h32.FLASH),str(post)],1200)
-        old=fresh.read_bytes();new=post.read_bytes();end=h32.APP_OFF+((app.stat().st_size+4095)//4096)*4096
-        if len(new)!=h32.FLASH or new[:h32.APP_OFF]!=old[:h32.APP_OFF] or new[end:]!=old[end:]:stop('flash changed bytes outside app erase sectors')
+        old=fresh.read_bytes();new=post.read_bytes();end=app_off+((app.stat().st_size+4095)//4096)*4096
+        if len(new)!=h32.FLASH or new[:app_off]!=old[:app_off] or new[end:]!=old[end:]:stop('flash changed bytes outside app erase sectors')
         h32.verify_device(port,b,hold=True)
         raw_path=rd/'capture-raw-private.bin'
         if raw_path.exists():stop('private raw capture already exists')
