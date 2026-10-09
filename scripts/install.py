@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Create repo .venv and install root requirements.txt (host USB tools).
+"""Create repo .venv, host USB Python deps, and ESP-IDF (esp32s3 toolchain).
 
-Invoked by `make install` via scripts/make/install.sh, which uses
-scripts/make/python.sh only to pick a *host* Python (python3 on PATH).
-This script then creates .venv and pip-installs into it.
+Invoked by `make install` (`scripts/make/python.sh host-run`) with a *host*
+Python (python3 on PATH) before `.venv` exists.
 
-ESP-IDF is not installed here; see the v1 POC archive for firmware toolchains.
+Environment:
+  FAMILY_IDF_DIR      Clone/install tree (default: ~/esp/esp-idf)
+  FAMILY_IDF_VERSION  ESP-IDF git branch/tag (default: v5.4.2)
+  FAMILY_IDF_SKIP=1   Skip ESP-IDF (venv + pip only)
+  FAMILY_IDF_REINSTALL=1  Re-run install.sh/bat esp32s3 even if IDF tree exists
 """
 
 from __future__ import annotations
@@ -21,6 +24,10 @@ VENV = ROOT / ".venv"
 REQUIREMENTS = ROOT / "requirements.txt"
 MIN_PY = (3, 9)
 
+IDF_CLONE_DEFAULT = Path.home() / "esp" / "esp-idf"
+IDF_VERSION = os.environ.get("FAMILY_IDF_VERSION", "v5.4.2")
+IDF_TARGET = os.environ.get("FAMILY_IDF_TARGET", "esp32s3")
+
 
 def _venv_python() -> Path:
     if os.name == "nt":
@@ -34,6 +41,105 @@ def _run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
 
 def _have(cmd: str) -> bool:
     return shutil.which(cmd) is not None
+
+
+def _idf_dest() -> Path:
+    raw = os.environ.get("FAMILY_IDF_DIR") or os.environ.get("IDF_PATH")
+    if raw and str(raw).strip():
+        return Path(raw).expanduser().resolve()
+    return IDF_CLONE_DEFAULT.expanduser().resolve()
+
+
+def _idf_tree_present(dest: Path) -> bool:
+    return (dest / "export.sh").is_file() or (dest / "export.bat").is_file()
+
+
+def _idf_clone(dest: Path) -> None:
+    if not _have("git"):
+        sys.exit("git is required to clone ESP-IDF. Install Git and re-run make install.")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    print(f"-> git clone --progress --depth 1 --branch {IDF_VERSION} → {dest}")
+    rc = _run(
+        [
+            "git",
+            "clone",
+            "--progress",
+            "--depth",
+            "1",
+            "--branch",
+            IDF_VERSION,
+            "https://github.com/espressif/esp-idf.git",
+            str(dest),
+        ]
+    ).returncode
+    if rc != 0:
+        sys.exit("git clone of esp-idf failed (network / disk?)")
+    print("-> git submodule update --init --depth 1 --progress")
+    rc = _run(
+        [
+            "git",
+            "submodule",
+            "update",
+            "--init",
+            "--depth",
+            "1",
+            "--progress",
+            "--jobs",
+            "8",
+        ],
+        cwd=str(dest),
+    ).returncode
+    if rc != 0:
+        sys.exit("esp-idf submodule update failed")
+
+
+def _idf_install_tools(dest: Path) -> None:
+    if os.name == "nt":
+        install = dest / "install.bat"
+        if not install.is_file():
+            sys.exit(f"no install.bat in {dest}")
+        print(f"-> install.bat {IDF_TARGET} (downloads toolchain; may take several minutes)")
+        rc = _run(["cmd", "/c", str(install), IDF_TARGET], cwd=str(dest)).returncode
+        if rc != 0:
+            sys.exit("IDF install.bat failed")
+        return
+    install = dest / "install.sh"
+    if not install.is_file():
+        sys.exit(f"no install.sh in {dest}")
+    print(f"-> ./install.sh {IDF_TARGET} (downloads toolchain; may take several minutes)")
+    rc = _run(["bash", str(install), IDF_TARGET], cwd=str(dest)).returncode
+    if rc != 0:
+        sys.exit("IDF install.sh failed")
+
+
+def ensure_esp_idf() -> Path:
+    """Clone ESP-IDF if missing; run Espressif install script for the SoC target."""
+    if os.environ.get("FAMILY_IDF_SKIP") == "1":
+        print("-> ESP-IDF skipped (FAMILY_IDF_SKIP=1)")
+        return _idf_dest()
+
+    dest = _idf_dest()
+    present = _idf_tree_present(dest)
+    reinstall = os.environ.get("FAMILY_IDF_REINSTALL") == "1"
+
+    print()
+    print("== esp-idf")
+    print(f"dest:    {dest}")
+    print(f"version: {IDF_VERSION}")
+    print(f"target:  {IDF_TARGET}")
+
+    if not present:
+        _idf_clone(dest)
+        _idf_install_tools(dest)
+    elif reinstall:
+        print("-> re-running tool install (FAMILY_IDF_REINSTALL=1)")
+        _idf_install_tools(dest)
+    else:
+        print("-> ESP-IDF tree already present; skipping clone and tool install")
+        print("   (set FAMILY_IDF_REINSTALL=1 to re-run install.sh)")
+
+    print(f"-> IDF_PATH={dest}")
+    return dest
 
 
 def _try_install_python() -> None:
@@ -147,6 +253,8 @@ def main() -> int:
     if ver.returncode == 0:
         print(ver.stdout.rstrip())
 
+    ensure_esp_idf()
+
     if sys.platform.startswith("linux"):
         print()
         print("Linux note: Espressif USB Serial/JTAG is VID 303A.")
@@ -154,6 +262,8 @@ def main() -> int:
         print("for idVendor=303a and add your user to the dialout/uucp group.")
 
     print()
+    print("Installed. Next: make help")
+    print("Firmware builds: set IDF_PATH (see above) and use ESP-IDF export in your shell.")
     return 0
 
 

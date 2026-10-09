@@ -29,9 +29,16 @@ endef
 
 export PYTHONUNBUFFERED := 1
 
-# Run repo Python from Make recipes (uses .venv after `make install`):
-#   $(GITBASH) "$(ROOT)/scripts/make/python.sh" run scripts/foo.py
-# Bootstrap only (no .venv): host-run — see scripts/make/python.sh
+MAKE_PY_SH := $(ROOT)/scripts/make/python.sh
+
+# Repo-root Python via scripts/make/python.sh (host-run = bootstrap; run = .venv if present).
+define py_host_run
+	@$(GITBASH) -c "cd '$(ROOT)' && '$(MAKE_PY_SH)' host-run $(1)"
+endef
+
+define py_run
+	@$(GITBASH) -c "cd '$(ROOT)' && '$(MAKE_PY_SH)' run $(1)"
+endef
 
 .PHONY: help install
 
@@ -41,5 +48,5 @@ help:
 	@$(GITBASH) "$(ROOT)/scripts/make/help.sh"
 
 install:
-	$(call step_msg,Installing Python venv and host USB tools)
-	@$(GITBASH) "$(ROOT)/scripts/make/install.sh"
+	$(call step_msg,Installing venv host tools and ESP-IDF if needed)
+	$(call py_host_run,scripts/install.py)

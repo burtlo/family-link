@@ -9,6 +9,7 @@ echo
 echo "\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////"
 echo
 echo "  SETUP"
-echo "    make install     Python .venv + requirements.txt (esptool, pyserial)"
+echo "    make install     .venv + esptool/pyserial + ESP-IDF (esp32s3) if missing"
+echo "                     FAMILY_IDF_SKIP=1 for venv only; FAMILY_IDF_DIR to relocate"
 echo
 echo
