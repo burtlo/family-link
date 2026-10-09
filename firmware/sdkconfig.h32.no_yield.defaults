@@ -1,3 +1,0 @@
-# H32 comparison only. Product defaults are unchanged.
-CONFIG_FREERTOS_HZ=100
-# CONFIG_SPI_FLASH_YIELD_DURING_ERASE is not set

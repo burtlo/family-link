@@ -1,7 +1,0 @@
-# Reference layout matching the preserved BOX-3 partition table. The H35
-# controller regenerates and validates the exact table from the selected
-# backup; it flashes only the application, never this table.
-# Name, Type, SubType, Offset, Size, Flags
-nvs, data, nvs, 0x9000, 0x6000,
-phy_init, data, phy, 0xf000, 0x1000,
-factory, app, factory, 0x10000, 0x177000,

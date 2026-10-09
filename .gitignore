@@ -20,26 +20,25 @@ secrets/
 credentials.json
 *-credentials.json
 
-# ESP-IDF
-sdkconfig
-sdkconfig.old
-sdkconfig.local
-build/
-managed_components/
-dependencies.lock
-firmware/secrets.h
-firmware/secrets.*.h
-!firmware/secrets-profile.example.h
-firmware/build/
-
 # Local config overrides (real tokens, PINs, Wi-Fi, kit USB map)
 *.local.yaml
 
 data/
-.tools/
-firmware/assets/persona/
-demos/server/h18_playback/assets/*.wav
 
-# IDE
-.idea/
-.vscode/
+# v1 poc
+poc-v1/data/
+poc-v1/.venv/
+poc-v1/firmware/
+poc-v1/firmware/assets/persona/
+poc-v1/demos/server/h18_playback/assets/*.wav
+poc-v1/*.local.yaml
+poc-v1/sdkconfig
+poc-v1/sdkconfig.old
+poc-v1/sdkconfig.local
+poc-v1/build/
+poc-v1/managed_components/
+poc-v1/dependencies.lock
+poc-v1/firmware/secrets.h
+poc-v1/firmware/secrets.*.h
+!poc-v1/firmware/secrets-profile.example.h
+poc-v1/firmware/build/
