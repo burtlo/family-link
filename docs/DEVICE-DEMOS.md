@@ -321,7 +321,7 @@ GET  <url>                 →  16 kHz s16le WAV (stream while playing)
 - Device `GET`s `i=0` first, paints sender / time / unread / bar starting at `position_ms`.
 - **Play** / **Pause** streams `url` into the ES8311 (not a full download-then-play like h09).
 - **ROOMVOL** slider: mute + 78…100 by twos (13 notches). Starts muted. Codec **75–100 is audible enough in an active room (fans + cooking)** — that is why the first on-notch is 78. `ROOMVOL_SHOW_LEVEL` paints the codec number for level checks (dev); the product look hides it.
-- Codec **100 is in-range** (`esp_codec_dev` maps 100 → 0 dB). Espressif’s BOX-3 BSP example uses 50; this tree’s working playback demos use 50–70. No Espressif doc says 100 is past the speaker. The kit is an **8 Ω / 1 W** cone ([`HARDWARE.md`](HARDWARE.md): desk-volume, not a room). Smooth playback that still breaks up at 100 is **further testing** (90 vs 100, melody vs voice) before capping `ROOMVOL_MAX`.
+- Codec **100 is in-range** (`esp_codec_dev` maps 100 → 0 dB). Espressif’s BOX-3 BSP example uses 50; this tree’s working playback demos use 50–70. No Espressif doc says 100 is past the speaker. The kit is an **8 Ω / 1 W** cone ([`HARDWARE.md`](hardware/HARDWARE.md): desk-volume, not a room). Smooth playback that still breaks up at 100 is **further testing** (90 vs 100, melody vs voice) before capping `ROOMVOL_MAX`.
 - **Boot** (GPIO0) loads the next catalog entry and wraps. Message 1 is the generated melody; 2…N are inbox voice clips imported into `demos/server/h18_playback/assets/` (`voice-05` … `voice-22`; `voice-01`–`04` were empty and are skipped). Speaker stream stays open across clips so GPIO46 PA does not drop after clip 1.
 - `-- PASS h18` after the JSON is on screen. Tap Play to hear the clip; bar should move.
 - **Web twin:** `http://localhost:8080/box/` — same `GET /demo/h18/message?i=N` catalog in a 320×240 LCD plus bezel. **B** / **N** / **→** = Boot (next). **M** = mute latch. Hold **C** or Space = red circle. Mouse click/drag on the glass = touch (Play, timeline, ROOMVOL).
@@ -396,7 +396,7 @@ Unmute opens the mic once for the session and POSTs ~1 s WAV chunks to `/v1/diar
 - Same **mute = away / open** heartbeat as **h20**, but each POST may carry a batch of `{seq, ms, lvl, msg}` lines from an in-RAM ring on the box.
 - The host appends to `data/h24_device_log/{device_id}.jsonl` and returns `logs_ack` so the box drops acked lines.
 - Logs today: boot reason, Wi-Fi join, mute changes, red-circle taps, peer presence changes, heartbeat failures.
-- **RAM only** — power loss clears unsent lines. This demo is the upload path to exercise before adding SD/NVS for a persistent outbox ([`STORAGE.md`](STORAGE.md)).
+- **RAM only** — power loss clears unsent lines. This demo is the upload path to exercise before adding SD/NVS for a persistent outbox ([`STORAGE.md`](hardware/STORAGE.md)).
 
 **Pass:** `-- PASS h24` after the first heartbeat 200 with `logs_ack >= 1`. `make demo-device-log` smoke-tests the host. Tail files with `GET /v1/logs` (bearer token).
 

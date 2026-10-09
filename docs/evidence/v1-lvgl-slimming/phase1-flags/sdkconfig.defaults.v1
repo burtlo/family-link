@@ -1,0 +1,57 @@
+# x02 / v1 product shell only — merged via firmware/CMakeLists.txt (SDKCONFIG_DEFAULTS).
+# Phase 1: LVGL feature flags. Fonts stay on shared sdkconfig.defaults until Phase 2.
+
+# Do not compile LVGL's example/demo trees into the product image.
+CONFIG_LV_BUILD_DEMOS=n
+CONFIG_LV_BUILD_EXAMPLES=n
+
+# Widgets v1 does not use (see docs/plans/v1-lvgl-slimming.md API inventory).
+# Keep: BUTTON, CANVAS, IMAGE, LABEL, SLIDER (+ BAR via Kconfig select), SWITCH.
+CONFIG_LV_USE_ANIMIMG=n
+CONFIG_LV_USE_ARC=n
+CONFIG_LV_USE_ARCLABEL=n
+CONFIG_LV_USE_BUTTONMATRIX=n
+CONFIG_LV_USE_CALENDAR=n
+CONFIG_LV_USE_CHART=n
+CONFIG_LV_USE_CHECKBOX=n
+CONFIG_LV_USE_DROPDOWN=n
+CONFIG_LV_USE_IMAGEBUTTON=n
+CONFIG_LV_USE_KEYBOARD=n
+CONFIG_LV_USE_LED=n
+CONFIG_LV_USE_LINE=n
+CONFIG_LV_USE_LIST=n
+CONFIG_LV_USE_MENU=n
+CONFIG_LV_USE_MSGBOX=n
+CONFIG_LV_USE_ROLLER=n
+CONFIG_LV_USE_SCALE=n
+CONFIG_LV_USE_SPAN=n
+CONFIG_LV_USE_SPINBOX=n
+CONFIG_LV_USE_SPINNER=n
+CONFIG_LV_USE_TABLE=n
+CONFIG_LV_USE_TABVIEW=n
+CONFIG_LV_USE_TEXTAREA=n
+CONFIG_LV_USE_TILEVIEW=n
+CONFIG_LV_USE_WIN=n
+CONFIG_LV_USE_BARCODE=n
+CONFIG_LV_USE_QRCODE=n
+CONFIG_LV_USE_GIF=n
+
+# Font ladder: match effective Phase 0 config (firmware/sdkconfig overrode shared defaults to
+# Montserrat 14 only). Phase 2 will replace this block with the locked v1 six-size set.
+# CONFIG_LV_FONT_MONTSERRAT_16 is not set
+# CONFIG_LV_FONT_MONTSERRAT_18 is not set
+# CONFIG_LV_FONT_MONTSERRAT_20 is not set
+# CONFIG_LV_FONT_MONTSERRAT_22 is not set
+# CONFIG_LV_FONT_MONTSERRAT_24 is not set
+# CONFIG_LV_FONT_MONTSERRAT_26 is not set
+# CONFIG_LV_FONT_MONTSERRAT_28 is not set
+# CONFIG_LV_FONT_MONTSERRAT_30 is not set
+# CONFIG_LV_FONT_MONTSERRAT_32 is not set
+# CONFIG_LV_FONT_MONTSERRAT_34 is not set
+# CONFIG_LV_FONT_MONTSERRAT_36 is not set
+# CONFIG_LV_FONT_MONTSERRAT_38 is not set
+# CONFIG_LV_FONT_MONTSERRAT_40 is not set
+# CONFIG_LV_FONT_MONTSERRAT_42 is not set
+# CONFIG_LV_FONT_MONTSERRAT_44 is not set
+# CONFIG_LV_FONT_MONTSERRAT_46 is not set
+# CONFIG_LV_FONT_MONTSERRAT_48 is not set

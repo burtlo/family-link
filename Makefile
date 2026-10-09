@@ -51,7 +51,7 @@ export PYTHONUNBUFFERED := 1
 	device-os device-software device-env \
 	device-flash device-partitions device-fs device-data \
 	idf-install flash flash-list flash-monitor build-firmware monitor \
-	v1-timing check-v1-parity \
+	v1-timing check-v1-parity check-v1-fonts \
 	h01 h02 h03 h04 h05 h06 h07 h08 h09 h10 h11 h12 h13 h14 h15 h16 h17 \
 	h18 h19 h20 h21 h22 h23 h24 h25 h26 h27 h28 h29 h30 h31 \
 	x01 x02 \
@@ -279,6 +279,10 @@ v1-timing:
 check-v1-parity:
 	$(call step_msg,Checking timing.yaml vs firmware vs web twin)
 	@$(PYTHON) scripts/check_v1_parity.py
+
+check-v1-fonts:
+	$(call step_msg,Checking firmware/v1 Montserrat references)
+	@$(PYTHON) scripts/check_v1_fonts.py
 
 # --- V1 server (product host) ---
 

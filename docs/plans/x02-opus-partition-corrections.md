@@ -32,7 +32,7 @@ The subsequent partition model contains three kinds of errors: incorrect hexadec
 
 This correction is analysis work. It does not authorize a custom production partition table, a change to `sdkconfig.defaults`, device erasure, flashing, an OTA implementation, an outbox implementation, or changes to X02 behavior.
 
-**Related docs:** [`x02-opus-partition-feasibility.md`](x02-opus-partition-feasibility.md), [`phase4-partition-strategies.md`](../evidence/x02-opus-partition/phase4-partition-strategies.md), [`phase3-planned-reserve.md`](../evidence/x02-opus-partition/phase3-planned-reserve.md), [`long-message-experiments.md`](long-message-experiments.md), [`STORAGE.md`](../STORAGE.md), [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md).
+**Related docs:** [`x02-opus-partition-feasibility.md`](x02-opus-partition-feasibility.md), [`phase4-partition-strategies.md`](../evidence/x02-opus-partition/phase4-partition-strategies.md), [`phase3-planned-reserve.md`](../evidence/x02-opus-partition/phase3-planned-reserve.md), [`long-message-experiments.md`](long-message-experiments.md), [`STORAGE.md`](../hardware/STORAGE.md), [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md).
 
 ## Known corrections to reproduce
 

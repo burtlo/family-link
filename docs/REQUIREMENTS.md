@@ -1,5 +1,7 @@
 # Requirements
 
+> **Canonical copy:** [`product/requirements.md`](product/requirements.md). This file remains for existing links.
+
 Source: the product conversation (split household, Marco Polo access failure, Switch/Minecraft hangouts, Wi-Fi already known). Approved v1 contract: [`plans/v1-product-spec.md`](plans/v1-product-spec.md) (2026-09-04).
 
 ## Problem

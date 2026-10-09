@@ -2,7 +2,7 @@
 
 The BOX-3 has **no onboard camera**. Anything the child sends as a picture (or, later, a short moving clip) needs a **UVC/MJPEG** camera on the **dock USB-A** port.
 
-v1 product is still **snapshots, not a camera roll, not a video call** ([`REQUIREMENTS.md`](REQUIREMENTS.md)). Hangout and voicemail do not wait on this port. This file is how the dock camera actually works, what “streaming” can mean on this SoC, and what to refuse.
+v1 product is still **snapshots, not a camera roll, not a video call** ([`REQUIREMENTS.md`](../REQUIREMENTS.md)). Hangout and voicemail do not wait on this port. This file is how the dock camera actually works, what “streaming” can mean on this SoC, and what to refuse.
 
 Until a camera is on the desk:
 
@@ -160,5 +160,5 @@ If you later **claim the unused flash** (~12 MiB wear-leveled FAT after a 2–
 
 - Kit facts and expansion: [`HARDWARE.md`](HARDWARE.md)
 - Audio I/O (do not steal USB pins): [`SPEAKER.md`](SPEAKER.md)
-- Photo receive demo: [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md) h13
-- “Child → you photos in v1?” still open: [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md)
+- Photo receive demo: [`DEVICE-DEMOS.md`](../DEVICE-DEMOS.md) h13
+- “Child → you photos in v1?” still open: [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md)

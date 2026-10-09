@@ -5,7 +5,7 @@
  * heartbeat results, button taps). Unsent lines ride on POST /v1/heartbeat;
  * the host acks seq and appends to data/h24_device_log/ on the Mac.
  *
- * RAM-only today — buying SD (see docs/STORAGE.md) would let the ring and
+ * RAM-only today — buying SD (see docs/hardware/STORAGE.md) would let the ring and
  * ack cursor survive reboot before upload.
  *
  * Host:

@@ -1,0 +1,1 @@
+ 1496384 build/x02_product_shell/family_link_demo.bin

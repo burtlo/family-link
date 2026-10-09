@@ -16,7 +16,7 @@ Kids and Lynn need predictable waits, retries, and failure copy when Wi-Fi or th
 
 | Phase | Outcome | Status |
 |-------|---------|--------|
-| [1 — Freeze operational contract](#phase-1--freeze-operational-contract) | `docs/OPERATIONAL-CONTRACT.md` with decided rows + explicit OPEN items | `todo` |
+| [1 — Freeze operational contract](#phase-1--freeze-operational-contract) | This plan’s matrix with decided rows + explicit OPEN items | `todo` |
 | [2 — Close decided small gaps](#phase-2--close-decided-small-gaps) | Login failure classes, toast duration, shared timeouts, copy alignment | `todo` |
 | [3 — Signed-in offline policy](#phase-3--signed-in-offline-policy) | Ribbon + play/send rules match a maintainer-approved offline contract | `todo` |
 | [4 — Outbox requirements gate](#phase-4--outbox-requirements-gate) | Written outbox acceptance criteria or explicit deferral; no invented UX | `todo` |
@@ -26,7 +26,7 @@ Kids and Lynn need predictable waits, retries, and failure copy when Wi-Fi or th
 
 ## Background
 
-A validation pass scored each retry / failure stage against [`BOX-UI.md`](../BOX-UI.md), [`v1-product-spec.md`](v1-product-spec.md), [`shared/v1/timing.yaml`](../../shared/v1/timing.yaml), [`STORAGE.md`](../STORAGE.md), and as-built `firmware/v1/` + `demos/server/v1_product/web/box.js`.
+A validation pass scored each retry / failure stage against [`BOX-UI.md`](../BOX-UI.md), [`v1-product-spec.md`](v1-product-spec.md), [`shared/v1/timing.yaml`](../../shared/v1/timing.yaml), [`STORAGE.md`](../hardware/STORAGE.md), and as-built `firmware/v1/` + `demos/server/v1_product/web/box.js`.
 
 **Already decided (do not reopen):** Connecting stays until the server answers or Wi-Fi fails — no timeout-to-error-screen. Network failure during PIN `checking...` → connecting, never infinite checking. Upload **discard-on-fail** is current as-built until outbox is explicitly in scope. Resolved PIN / record / timing decisions in [`v1-product-spec.md`](v1-product-spec.md) stand.
 
@@ -40,11 +40,11 @@ A validation pass scored each retry / failure stage against [`BOX-UI.md`](../BOX
 | Upload / Wi-Fi join / boot hangout timeouts not in yaml | PARTIAL | Hardcoded 20s / 25s / 15s vs shared timing |
 | Offline ribbon missing `saved messages still play` | PARTIAL | BOX-UI quotes secondary copy; firmware shows `offline` only |
 | Offline playback needs server blob | CONFLICT | Docs imply local play; as-built toasts `can't play right now` |
-| Outbox / failed upload UX | MISSING / OPEN | [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md), [`STORAGE.md`](../STORAGE.md) — discard until decided |
+| Outbox / failed upload UX | MISSING / OPEN | [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md), [`STORAGE.md`](../hardware/STORAGE.md) — discard until decided |
 | Twin connect / PIN / offline | MISSING | Isolation Phase 3 covers connecting UI; this plan extends operational parity |
 | PIN-reset toast wording | PARTIAL | Spec `PIN was reset` / `ask Lynn` vs code `PIN reset - ask Lynn` |
 
-**Related docs:** [`BOX-UI.md`](../BOX-UI.md) (Connecting, Connection confidence, copy rules), [`STORAGE.md`](../STORAGE.md), [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md), [`v1-isolation-remaining.md`](v1-isolation-remaining.md) Phase 3, [`web-firmware-parity-check`](../../.cursor/skills/web-firmware-parity-check/SKILL.md).
+**Related docs:** [`BOX-UI.md`](../BOX-UI.md) (Connecting, Connection confidence, copy rules), [`STORAGE.md`](../hardware/STORAGE.md), [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md), [`v1-isolation-remaining.md`](v1-isolation-remaining.md) Phase 3, [`web-firmware-parity-check`](../../.cursor/skills/web-firmware-parity-check/SKILL.md).
 
 **Out of scope:** Reopening v1 merge media (live voice, photos, drawing). Island demos. Inventing outbox UI before Phase 4 decisions. Full LVGL carousel rewrite.
 
@@ -56,7 +56,7 @@ A validation pass scored each retry / failure stage against [`BOX-UI.md`](../BOX
 
 **Deliverables**
 
-- Add [`docs/OPERATIONAL-CONTRACT.md`](../OPERATIONAL-CONTRACT.md) with:
+- Extend this plan (`operational-contract.md`) with:
   - **Stage matrix** for Wi-Fi, hangout probe, connecting, PIN (local / wrong / transport / lockout), signed-in offline, pick timeout, mute gate, upload (success + discard-on-fail), playback offline, twin notes.
   - **Failure-message policy** as hard rules (calm wait vs actionable vs ask Lynn; never hostnames/ports/secrets; when clear partial PIN; toast vs persistent screen).
   - **Retry constants table** mapped to `shared/v1/timing.yaml` (and a short “not yet in yaml” list).
@@ -147,7 +147,7 @@ Default recommendation if unblocked for v1 merge: **A**, and edit BOX-UI to drop
 
 **Deliverables**
 
-- Facilitated decision against [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md) (“Failed outbound upload”) and [`STORAGE.md`](../STORAGE.md):
+- Facilitated decision against [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md) (“Failed outbound upload”) and [`STORAGE.md`](../hardware/STORAGE.md):
   - Keep **discard-on-fail** for v1 merge, **or**
   - Specify: persistence medium (PSRAM-only vs on-chip FAT vs USB/SD), retry trigger (Wi-Fi up / heartbeat / connecting recovery), idle copy (e.g. count-only `N not sent yet`), max queue, power-loss behavior.
 - Write results into OPERATIONAL-CONTRACT Stage 9 row + OPEN resolution.
@@ -206,4 +206,4 @@ Remove or move into OPERATIONAL-CONTRACT as each is decided.
 - Code: `firmware/v1/v1_auth.c`, `v1_connect.c`, `v1_record.c`, `v1_carousel.c`, `v1_api.c`, `x02_main.c`
 - Twin: `demos/server/v1_product/web/box.js`, `v1_timing.js`
 - Timing: `shared/v1/timing.yaml`
-- Docs: [`BOX-UI.md`](../BOX-UI.md), [`STORAGE.md`](../STORAGE.md), [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md), [`v1-product-spec.md`](v1-product-spec.md), [`v1-isolation-remaining.md`](v1-isolation-remaining.md)
+- Docs: [`BOX-UI.md`](../BOX-UI.md), [`STORAGE.md`](../hardware/STORAGE.md), [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md), [`v1-product-spec.md`](v1-product-spec.md), [`v1-isolation-remaining.md`](v1-isolation-remaining.md)

@@ -6,7 +6,7 @@
 | **Areas** | Gateway embed UI, operator SQLite, … |
 | **Status** | `current` |
 | **Introduced** | e.g. gateway v0.2, PR #… |
-| **Originated from** | [`plans/example-plan.md`](../plans/example-plan.md) |
+| **Originated from** | [`plans/_template.md`](../plans/_template.md) |
 | **Related features** | None |
 | **Depends on** | Session auth, operator SQLite, … |
 | **Last updated** | See git history |
@@ -78,8 +78,8 @@ How to confirm behavior without re-reading the full implementation:
 
 ## References
 
-- Delivery plan (historical): [`plans/example-plan.md`](../plans/example-plan.md)
-- Operator docs (run/configure): [`configuration.md`](../configuration.md)
+- Delivery plan (historical): [`plans/_template.md`](../plans/_template.md)
+- Operator docs (run/configure): [`README.md`](../README.md)
 - PRs / commits: …
 
 ---
@@ -119,7 +119,7 @@ Plans are delivery history. Feature records are the **source of truth for as-bui
 
 - Add YAML front matter — metadata stays in the Markdown table.
 - Move **At a glance** below the title or bury it under long background prose.
-- Duplicate operator install/run docs — link to `docs/supervisor.md`, `docs/configuration.md`, etc.
+- Duplicate operator install/run docs — link to [`docs/README.md`](../README.md) and authoritative feature docs.
 - Ship this **Authoring notes** section — delete it before publishing.
 
 **At a glance is the contract.** Anyone skimming the doc (human or agent) should learn what the feature does and its key rules from that section plus **System behavior and contracts**.

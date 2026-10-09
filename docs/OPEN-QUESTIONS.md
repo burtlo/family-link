@@ -1,5 +1,7 @@
 # Open questions
 
+> **Indexed copy:** Unresolved items are summarized and maintained in [`decisions/open-questions.md`](decisions/open-questions.md) with links to accepted ADRs in [`decisions/README.md`](decisions/README.md). This file remains the legacy location until a later consolidation pass removes it.
+
 Decided items stay in [`REQUIREMENTS.md`](REQUIREMENTS.md). This file is only what was never locked. Do not pick these silently in a way that is hard to undo (public hosting, storing kids’ audio forever, wake word).
 
 ## Product
@@ -7,12 +9,12 @@ Decided items stay in [`REQUIREMENTS.md`](REQUIREMENTS.md). This file is only wh
 - **Name.** Shortlist in [`NAMES.md`](NAMES.md). Folder is still `family-link`.
 - **Children’s display names / device IDs.** Two children; exact names not recorded here on purpose. Ask before putting them on a lock screen.
 - **Can kids type text** on the 320×240 touchscreen, or is outbound **audio-only** until a keyboard exists?
-- **Child → parent photos.** Deferred — out of v1 merge per [`plans/v1-product-spec.md`](docs/plans/v1-product-spec.md).
+- **Child → parent photos.** Deferred — out of v1 merge per [`plans/v1-product-spec.md`](plans/v1-product-spec.md).
 - **PIN model.** Resolved — see [`plans/v1-product-spec.md`](plans/v1-product-spec.md): per-user PIN; Lynn resets via `/app`; 1 min relock; web creds separate from box PIN.
 - **Max clip length.** Resolved for v1 merge: **3 min** cap, **5s** silence auto-stop, long-press stop, 150ms trim.
 - **Retention duration.** Administrator preview/cull/trash/restore is the decided architecture; the automatic retention duration and trash grace period remain open. See [`SERVER-MESSAGE-STORAGE.md`](SERVER-MESSAGE-STORAGE.md).
 - **Failed outbound upload.** Resolved direction: durable local chunk outbox, retry until an exact server acknowledgement, and show a privacy-safe pending count. See [`LONG-MESSAGE-ARCHITECTURE.md`](LONG-MESSAGE-ARCHITECTURE.md) and [`plans/durable-outbox-demo.md`](plans/durable-outbox-demo.md).
-- **Quiet hours / volume.** Household at the other house; 1 W speaker next to a Switch. Hardware options: [`SPEAKER.md`](SPEAKER.md).
+- **Quiet hours / volume.** Household at the other house; 1 W speaker next to a Switch. Hardware options: [`SPEAKER.md`](hardware/SPEAKER.md).
 - **Ages.** Affects PIN, whether they can type, whether Minecraft PTT must be an arcade button.
 - **How much “pet” on the LCD.** Locked idle is already count-only for *content*. A face + badge is compatible; how lively (blink rate, glow, chirps) in the other house is not decided. Demo plan: [`PERSONALITY-DEMOS.md`](PERSONALITY-DEMOS.md).
 - **Character look / name.** v1 uses **geometry (slot 0) + 12 built-in fun creature avatars**; user picks on shoulder settings. `/app` upload gallery is phase 2. See [`plans/carousel-ui-refresh.md`](plans/carousel-ui-refresh.md).
@@ -40,7 +42,7 @@ Tryout on **this Mac’s LAN** is easy. Production is not:
 - Parent side: **hold-to-talk** as well, or phone is hot-mic while the session is open?
 - If **both kids** are in Minecraft before phase 3 mixing exists: two sequential sessions, or wait?
 - Session timeout? Who can barge in?
-- In-game vs beside-the-game is decided (beside). Still: headphones on the Switch vs box speaker — expected to be messy; measure on hardware. Headset on the **box** (parent voice in cans, boom mic on Pmod) is an option in [`SPEAKER.md`](SPEAKER.md).
+- In-game vs beside-the-game is decided (beside). Still: headphones on the Switch vs box speaker — expected to be messy; measure on hardware. Headset on the **box** (parent voice in cans, boom mic on Pmod) is an option in [`SPEAKER.md`](hardware/SPEAKER.md).
 
 ## Hardware / firmware
 
@@ -54,7 +56,7 @@ Tryout on **this Mac’s LAN** is easy. Production is not:
 
 - Safari PWA vs a small native wrapper. Mic+photos work in Safari with HTTPS.
 - One parent only for v1, or a second adult account later?
-- **Amazfit 2 watch sidecar.** Custom Zepp OS mini app + Side Service vs phone-only. Opus on watch vs WAV on box. See [`WATCH.md`](WATCH.md). Not started.
+- **Amazfit 2 watch sidecar.** Exploratory only; not integrated in this repo (abandoned for v1).
 
 ## Repo hygiene
 

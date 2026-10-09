@@ -62,7 +62,7 @@ This document records the product decisions behind messages longer than the curr
 - h22 already records and uploads approximately one-second chunks and writes multipart sections sequentially: [h22_diary.c](../firmware/demos/h22_diary.c) and [h22 server](../demos/server/h22_diary/server.py).
 - h30 proves local 16/24 kbps Opus encode/decode on BOX-3; h31 proves two-second Opus chunks, idempotency, Ogg finalization, range playback, and seek indexing: [opus-demo.md](plans/opus-demo.md).
 - Current v1 media is separated across direct, shared, and sketch directories while mailbox state is rebuilt in memory: [user_mailbox.py](../demos/server/_shared/user_mailbox.py).
-- Current storage and accessory constraints are documented in [STORAGE.md](STORAGE.md) and [HARDWARE.md](HARDWARE.md).
+- Current storage and accessory constraints are documented in [STORAGE.md](hardware/STORAGE.md) and [HARDWARE.md](hardware/HARDWARE.md).
 
 ## Focused documents
 

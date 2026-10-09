@@ -1,0 +1,10 @@
+Captured: 2026-10-08 (desk, macOS)
+Host: Darwin MacBookPro.lan 27.0.0 arm64
+
+ESP-IDF: v5.4.2 (IDF_PATH=/Users/lynnfrank/esp/esp-idf)
+Python: 3.14.7 (/Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env)
+esptool.py: v4.12.0 (from build log)
+
+Target: esp32s3 (ESP32-S3-BOX-3, N16R16)
+FAMILY_DEMO: x02_product_shell
+Build directory: firmware/build/x02_product_shell (-B, per scripts/flash.py)

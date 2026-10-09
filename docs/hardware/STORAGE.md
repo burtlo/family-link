@@ -1,13 +1,15 @@
 # Storage — what to buy, what breaks, what is missing
 
+> **Consolidated reference:** [`storage-summary.md`](storage-summary.md). SD operator workflow: [`ATTACHED-STORAGE.md`](ATTACHED-STORAGE.md).
+
 For implemented SENSOR microSD qualification, operator steps, and test evidence,
 see [`ATTACHED-STORAGE.md`](ATTACHED-STORAGE.md).
 
-**Canonical inbox:** voicemails and photos the parent reads live on **the server you run** ([`DEVICE-DEMOS.md`](DEVICE-DEMOS.md) h10). Playhead is server-side too.
+**Canonical inbox:** voicemails and photos the parent reads live on **the server you run** ([`DEVICE-DEMOS.md`](../DEVICE-DEMOS.md) h10). Playhead is server-side too.
 
 **Outbox (pending upload):** when a child records and the POST fails — Wi-Fi blip, server down, timeout — the clip must sit somewhere until retry succeeds. **That path is not built yet.** Today the take is **discarded**. Local storage (on-chip FAT, USB stick, or SENSOR microSD) is for that **outbox**, not for replacing the server archive.
 
-The planned durable design and implementation experiment are now specified in [`LONG-MESSAGE-ARCHITECTURE.md`](LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md), and [`plans/durable-outbox-demo.md`](plans/durable-outbox-demo.md). Those documents do not change the current as-built warning above.
+The planned durable design and implementation experiment are now specified in [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), and [`plans/durable-outbox-demo.md`](../plans/durable-outbox-demo.md). Those documents do not change the current as-built warning above.
 
 On-chip flash / PSRAM facts: [`HARDWARE.md`](HARDWARE.md). Camera + USB port sharing: [`UVC-CAMERA.md`](UVC-CAMERA.md).
 
@@ -27,11 +29,11 @@ So a **temporary Wi-Fi outage** during send, a **sleeping Mac** hosting combined
 
 **After power loss:** PSRAM is empty. Any clip that never reached the server is lost even if upload had been “about to retry.”
 
-This is called out as a gap in [`DEMO-MAP.md`](DEMO-MAP.md) (*upload retry / “sent” feedback*) and [`plans/v1-demo-set.md`](plans/v1-demo-set.md).
+This is called out as a gap in [`DEMO-MAP.md`](../DEMO-MAP.md) (*upload retry / “sent” feedback*) and [`plans/v1-demo-set.md`](../plans/v1-demo-set.md).
 
 ## Minutes-long diary messages (product target)
 
-Real use looks like **Marco Polo-length rambles** — a few **minutes**, not ten seconds. [`REQUIREMENTS.md`](REQUIREMENTS.md) treats that as in scope. The **10 s cap is only in demo firmware** (**h05**, **h08**, **x01**) to prove upload once before anyone tuned timeouts or chunking.
+Real use looks like **Marco Polo-length rambles** — a few **minutes**, not ten seconds. [`REQUIREMENTS.md`](../REQUIREMENTS.md) treats that as in scope. The **10 s cap is only in demo firmware** (**h05**, **h08**, **x01**) to prove upload once before anyone tuned timeouts or chunking.
 
 Wire format today is **16 kHz s16le mono** ≈ **32 KB/s** (256 kbps).
 
@@ -59,7 +61,7 @@ Prefer **upload while recording** in small pieces — **h22** already proves the
 
 For a **3 minute** hold with **5 s** chunks: ~**36 POSTs** × ~160 KB ≈ **5.8 MB** total — same audio, but each POST stays small (~170 kbps for ~2 s upload budget per chunk on a bad link).
 
-**Opus** (~16 kbps mono) cuts a 3 min message to roughly **360–400 KB** plus Ogg overhead. The h30/h31 island demos proved BOX-3 encode/decode, two-second chunk upload, server-side Ogg finalization, and range playback; see [`plans/opus-demo.md`](plans/opus-demo.md). X02 has not integrated this path yet.
+**Opus** (~16 kbps mono) cuts a 3 min message to roughly **360–400 KB** plus Ogg overhead. The h30/h31 island demos proved BOX-3 encode/decode, two-second chunk upload, server-side Ogg finalization, and range playback; see [`plans/opus-demo.md`](../plans/opus-demo.md). X02 has not integrated this path yet.
 
 ### Parent playback
 
@@ -270,9 +272,9 @@ Firmware **does not mount USB MSC** in this tree yet. Buy when implementing **ou
 
 ## On-chip flash (nothing to buy)
 
-The WROOM-1 module has **16 MiB** soldered flash. Today **15,175,680 B** of tail flash is **unpartitioned** (`SINGLE_APP_LARGE` factory ends at `0x187000`) — not a volume until you flash a custom partition table. Corrected modeled on-chip outbox under the candidate **2.125 MiB** single-app + FAT layout: **12,258,797 B** (**11.691 MiB**, or **12.259 MB**) modeled usable (~**31.5** three-minute Opus messages at planning size) — see [`evidence/x02-opus-partition/phase4-corrections.md`](evidence/x02-opus-partition/phase4-corrections.md). That is a **firmware change**, not a shopping trip.
+The WROOM-1 module has **16 MiB** soldered flash. Today **15,175,680 B** of tail flash is **unpartitioned** (`SINGLE_APP_LARGE` factory ends at `0x187000`) — not a volume until you flash a custom partition table. Corrected modeled on-chip outbox under the candidate **2.125 MiB** single-app + FAT layout: **12,258,797 B** (**11.691 MiB**, or **12.259 MB**) modeled usable (~**31.5** three-minute Opus messages at planning size) — see [`evidence/x02-opus-partition/phase4-corrections.md`](../evidence/x02-opus-partition/phase4-corrections.md). That is a **firmware change**, not a shopping trip.
 
-**Partition feasibility (2026-10-04):** full X02 + retained Opus does **not** fit the current **1.5 MiB** factory slot (probe **1,665,808** B, **−129,808** B). Both a **2.125 MiB single-factory** layout and a **dual-OTA layout with two 2.125 MiB slots** have tool-validated geometry and useful modeled on-chip outbox capacity. The production choice remains open pending a decision about physical recovery versus remote update and rollback. See [`plans/x02-opus-partition-feasibility.md`](plans/x02-opus-partition-feasibility.md) and evidence [`evidence/x02-opus-partition/`](evidence/x02-opus-partition/); neither layout is selected in `sdkconfig` or device-proven.
+**Partition feasibility (2026-10-04):** full X02 + retained Opus does **not** fit the current **1.5 MiB** factory slot (probe **1,665,808** B, **−129,808** B). Both a **2.125 MiB single-factory** layout and a **dual-OTA layout with two 2.125 MiB slots** have tool-validated geometry and useful modeled on-chip outbox capacity. The production choice remains open pending a decision about physical recovery versus remote update and rollback. See [`plans/x02-opus-partition-feasibility.md`](../plans/x02-opus-partition-feasibility.md) and evidence [`evidence/x02-opus-partition/`](../evidence/x02-opus-partition/); neither layout is selected in `sdkconfig` or device-proven.
 
 ---
 
@@ -323,5 +325,5 @@ No special speed class. Back up `data/` if you care about the clips.
 - Upload failure behavior in firmware: **h08**, **x01** `do_record`, **h22** diary chunks
 - Silicon map: [`HARDWARE.md`](HARDWARE.md)
 - USB camera vs stick on one port: [`UVC-CAMERA.md`](UVC-CAMERA.md)
-- Playhead on server: [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md) h10
+- Playhead on server: [`DEVICE-DEMOS.md`](../DEVICE-DEMOS.md) h10
 - Inspect partitions from the Mac: `python scripts/device.py storage`

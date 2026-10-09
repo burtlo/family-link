@@ -1,6 +1,6 @@
 # Box UI — endpoint screen design brief
 
-Child- and adult-facing screens on the **BOX-3 kiosk**. Paste [Stitch prompt](#stitch-prompt) into [Google Stitch](https://stitch.withgoogle.com/) (or any UI generator). Hardware facts: [`HARDWARE.md`](HARDWARE.md). Product contract: [`plans/v1-product-spec.md`](plans/v1-product-spec.md). Requirements: [`REQUIREMENTS.md`](REQUIREMENTS.md).
+Child- and adult-facing screens on the **BOX-3 kiosk**. Paste [Stitch prompt](#stitch-prompt) into [Google Stitch](https://stitch.withgoogle.com/) (or any UI generator). Hardware facts: [`HARDWARE.md`](hardware/HARDWARE.md). Product contract: [`plans/v1-product-spec.md`](plans/v1-product-spec.md). Requirements: [`REQUIREMENTS.md`](REQUIREMENTS.md).
 
 Status: **approved** (2026-09-04). Carousel refresh **shipped** on box + web twin (2026-09-05) — see [`plans/carousel-ui-refresh.md`](plans/carousel-ui-refresh.md).
 
@@ -460,7 +460,7 @@ See [Carousel rules](#carousel-rules) — center card, peek tap, position restor
 
 ## References
 
-- Hardware: [`HARDWARE.md`](HARDWARE.md)
+- Hardware: [`HARDWARE.md`](hardware/HARDWARE.md)
 - Requirements: [`REQUIREMENTS.md`](REQUIREMENTS.md)
 - Playback / buttons / list demos: [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md) (h17, h18, h19)
 - Presence / talk: [`TWO-BOX.md`](TWO-BOX.md), [`plans/mazi-arlo-open-line.md`](plans/mazi-arlo-open-line.md)

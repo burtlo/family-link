@@ -1,6 +1,6 @@
 # Attached-storage qualification evidence
 
-Canonical overview and operator boundaries: [`ATTACHED-STORAGE.md`](../../ATTACHED-STORAGE.md). Full stage definitions: [`attached-storage-qualification.md`](../../plans/attached-storage-qualification.md).
+Canonical overview and operator boundaries: [`ATTACHED-STORAGE.md`](../../hardware/ATTACHED-STORAGE.md). Full stage definitions: [`attached-storage-qualification.md`](../../plans/attached-storage-qualification.md).
 
 ## 32 GB SDHC track (current authority)
 

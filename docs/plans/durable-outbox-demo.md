@@ -32,7 +32,7 @@ The on-chip `data,fat` partition is the first outbox backend. Complete [`onchip-
 
 This is an island demo. Do not implement it inside X02.
 
-**Related docs:** [`onchip-storage-qualification.md`](onchip-storage-qualification.md), [`STORAGE.md`](../STORAGE.md), [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md).
+**Related docs:** [`onchip-storage-qualification.md`](onchip-storage-qualification.md), [`STORAGE.md`](../hardware/STORAGE.md), [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md).
 
 ## Local filesystem contract
 
@@ -182,7 +182,7 @@ This order favors duplicate recovery over recording loss.
 - Exact UI states and privacy-safe pending count behavior.
 - Documented interaction with sign-out, recipient selection, silence stop, and recording cap.
 - Feature record or dated result document identifying the tested storage hardware and firmware revision.
-- Update [STORAGE.md](../STORAGE.md) from “not built” to the measured as-built state only after implementation passes.
+- Update [STORAGE.md](../hardware/STORAGE.md) from “not built” to the measured as-built state only after implementation passes.
 
 **Acceptance**
 
@@ -197,6 +197,6 @@ This order favors duplicate recovery over recording loss.
 
 - Chunk capture proof: [`firmware/demos/h22_diary.c`](../../firmware/demos/h22_diary.c)
 - Chunk server proof: [`demos/server/h22_diary/server.py`](../../demos/server/h22_diary/server.py)
-- Storage constraints: [`STORAGE.md`](../STORAGE.md)
+- Storage constraints: [`STORAGE.md`](../hardware/STORAGE.md)
 - Protocol: [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md)
 - On-chip backend prerequisite: [`onchip-storage-qualification.md`](onchip-storage-qualification.md)

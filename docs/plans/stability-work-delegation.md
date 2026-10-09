@@ -2,7 +2,7 @@
 
 **Created:** 2026-09-10  
 **Source:** [`stability-synthesis.md`](../../stability-synthesis.md) + prior implementation plan  
-**Maintainer decisions:** No literal "grill me" section found in repo. Use [`v1-product-spec.md`](v1-product-spec.md) § "Resolved decisions (formerly open)", [`OPEN-QUESTIONS.md`](../../OPEN-QUESTIONS.md) resolved items, and [`BOX-UI.md`](../../BOX-UI.md) as authoritative — do not reopen PIN model, record caps, or parent-client choices.
+**Maintainer decisions:** No literal "grill me" section found in repo. Use [`v1-product-spec.md`](v1-product-spec.md) § "Resolved decisions (formerly open)", [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md) resolved items, and [`BOX-UI.md`](../BOX-UI.md) as authoritative — do not reopen PIN model, record caps, or parent-client choices.
 
 ---
 

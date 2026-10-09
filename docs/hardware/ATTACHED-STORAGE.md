@@ -64,20 +64,20 @@ canonical intent to the build and enforces host and firmware time/byte limits.
 
 1. **H35 discovery:** prove that SDMMC detects this card and record its geometry
    and private identity. The 32 GB card passed with `result=detected`; see
-   [`h35-32gb-20261007/summary.json`](evidence/attached-storage-qualification/h35-32gb-20261007/summary.json).
+   [`h35-32gb-20261007/summary.json`](../evidence/attached-storage-qualification/h35-32gb-20261007/summary.json).
 2. **H37 read-only classification:** read only the metadata sectors selected by
    the classifier, confirm the H35 identity and geometry, and require
    `read_complete`, zero writes, and verified BOX restoration. The card passed
    with two 512-byte reads, an MBR partition, and a FAT32 signature; see
-   [`h37-32gb-20261007/`](evidence/attached-storage-qualification/h37-32gb-20261007/).
+   [`h37-32gb-20261007/`](../evidence/attached-storage-qualification/h37-32gb-20261007/).
 3. **H38 bounded filesystem/I/O:** bind the card and current MBR, replace only
    LBA 0 with the reviewed layout, format a virtual 512 MiB FAT32 volume at
    `[32768,1081344)`, run the fixed I/O profile, and restore the BOX. Epoch
    `d953a7fbfd1f9054aacff6f6c79f8ae1` passed with `io_complete`; see
-   [`h38-32gb-20261008/`](evidence/attached-storage-qualification/h38-32gb-20261008/).
+   [`h38-32gb-20261008/`](../evidence/attached-storage-qualification/h38-32gb-20261008/).
 
 The detailed pass criteria and limits remain normative in
-[`plans/h38-bounded-sd-filesystem.md`](plans/h38-bounded-sd-filesystem.md).
+[`plans/h38-bounded-sd-filesystem.md`](../plans/h38-bounded-sd-filesystem.md).
 The H38 pass qualifies only `sdmmc_bounded_fat32_v1` on the bound 32 GB card.
 
 ## Per-card and per-epoch binding
@@ -174,13 +174,13 @@ Stop rather than bypass a gate when:
 ## Detailed references
 
 - Overall staged campaign:
-  [`plans/attached-storage-qualification.md`](plans/attached-storage-qualification.md)
+  [`plans/attached-storage-qualification.md`](../plans/attached-storage-qualification.md)
 - SDHC geometry and identity migration:
-  [`plans/h38-sdhc-geometry-qualification.md`](plans/h38-sdhc-geometry-qualification.md)
+  [`plans/h38-sdhc-geometry-qualification.md`](../plans/h38-sdhc-geometry-qualification.md)
 - Frozen H38 profile and parser contract:
-  [`plans/h38-bounded-sd-filesystem.md`](plans/h38-bounded-sd-filesystem.md)
+  [`plans/h38-bounded-sd-filesystem.md`](../plans/h38-bounded-sd-filesystem.md)
 - Sanitized run evidence:
-  [`evidence/attached-storage-qualification/`](evidence/attached-storage-qualification/)
+  [`evidence/attached-storage-qualification/`](../evidence/attached-storage-qualification/)
 
 Plan status tables and this evidence index were updated after the 2026-10-08 pass.
 Committed run evidence remains the authority for what completed on hardware; plans

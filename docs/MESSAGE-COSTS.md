@@ -109,4 +109,4 @@ Audio capture/processing time is the recording duration itself. Sketch point cap
 
 ## Source basis and caveats
 
-The values come from `V1_SAMPLE_RATE=16000`, 16-bit mono capture, `V1_RECORD_MAX_SEC=180`, the packed sketch header/point structs (8 bytes each), the 30-second sketch limit, and the X02 multipart upload implementation. See [STORAGE.md](STORAGE.md), [v1_record.c](../firmware/v1/v1_record.c), [v1_sketch.h](../firmware/common/v1_sketch.h), the [v1 product server](../demos/server/v1_product/server.py), and [Makefile targets](../Makefile).
+The values come from `V1_SAMPLE_RATE=16000`, 16-bit mono capture, `V1_RECORD_MAX_SEC=180`, the packed sketch header/point structs (8 bytes each), the 30-second sketch limit, and the X02 multipart upload implementation. See [STORAGE.md](hardware/STORAGE.md), [v1_record.c](../firmware/v1/v1_record.c), [v1_sketch.h](../firmware/common/v1_sketch.h), the [v1 product server](../demos/server/v1_product/server.py), and [Makefile targets](../Makefile).

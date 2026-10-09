@@ -29,7 +29,7 @@ This record corrects **derived** Phase 4/5 partition geometry, capacity arithmet
 | phase4 product-ready row | **Corrected arithmetic** | High reserve: free **380,144 B**, only **45,910 B** beyond policy |
 | feasibility Results / STORAGE tail | **Corrected arithmetic + open decision** | Align numbers; state tradeoff (≈**5** queued 3‑min messages vs OTA rollback) and leave layout open |
 | [long-message-experiments.md](../../plans/long-message-experiments.md) Phase 1 | **Product decision** | Record both validated layouts; do not name a default before recovery/update requirements are decided |
-| [HARDWARE.md](../../HARDWARE.md) / [MESSAGE-PROTOCOL.md](../../MESSAGE-PROTOCOL.md) | **Product decision** | Replace the inherited single-factory recommendation with both validated candidates and the open recovery/update decision |
+| [HARDWARE.md](../../hardware/HARDWARE.md) / [MESSAGE-PROTOCOL.md](../../MESSAGE-PROTOCOL.md) | **Product decision** | Replace the inherited single-factory recommendation with both validated candidates and the open recovery/update decision |
 | Phase 1–3 raw `*-size*.txt` | preserved | **No rewrite** |
 
 ## Reproducible calculation

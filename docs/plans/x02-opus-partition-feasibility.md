@@ -32,7 +32,7 @@ Adding `opus` to `PRIV_REQUIRES` is not a valid combined-size measurement by its
 
 This plan does not authorize Opus behavior in X02, a production partition migration, erasing attached storage, or flashing every device.
 
-**Related docs:** [`opus-demo.md`](opus-demo.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`STORAGE.md`](../STORAGE.md), [`durable-outbox-demo.md`](durable-outbox-demo.md).
+**Related docs:** [`opus-demo.md`](opus-demo.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), [`LONG-MESSAGE-ARCHITECTURE.md`](../LONG-MESSAGE-ARCHITECTURE.md), [`STORAGE.md`](../hardware/STORAGE.md), [`durable-outbox-demo.md`](durable-outbox-demo.md).
 
 ## Questions this experiment must answer
 
@@ -214,7 +214,7 @@ Decoded layouts, usable-outbox formula, and migration notes: [phase4-partition-s
 - Exact outbox capacity and storage assumption.
 - Required changes to `sdkconfig.defaults`, partition CSV, build variant, flashing process, and recovery instructions.
 - Identification of probe-only files to retain as a reproducible size target or remove after results are captured.
-- Updates to [`HARDWARE.md`](../HARDWARE.md), [`STORAGE.md`](../STORAGE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), and [`long-message-experiments.md`](long-message-experiments.md) when evidence changes their estimates or status.
+- Updates to [`HARDWARE.md`](../hardware/HARDWARE.md), [`STORAGE.md`](../hardware/STORAGE.md), [`MESSAGE-PROTOCOL.md`](../MESSAGE-PROTOCOL.md), and [`long-message-experiments.md`](long-message-experiments.md) when evidence changes their estimates or status.
 
 **Optional one-device boot proof**
 
@@ -321,4 +321,4 @@ All raw reports: [`docs/evidence/x02-opus-partition/`](../evidence/x02-opus-part
 - X02 sources: [`firmware/v1/`](../../firmware/v1)
 - Opus wrapper: [`firmware/common/fl_opus.c`](../../firmware/common/fl_opus.c)
 - Opus result: [`opus-demo.md`](opus-demo.md)
-- Device storage constraints: [`STORAGE.md`](../STORAGE.md)
+- Device storage constraints: [`STORAGE.md`](../hardware/STORAGE.md)

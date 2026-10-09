@@ -1,5 +1,7 @@
 # ESP32-S3-BOX-3 — specs vs requirements
 
+> **Consolidated reference:** [`overview.md`](overview.md) and sibling files in this folder.
+
 Collected 2026-08-17 from Espressif’s user guide, [esp-box](https://github.com/espressif/esp-box), Zephyr’s board doc, Adafruit, and Digi-Key. Street prices move; treat them as a class, not a quote.
 
 ## Buy this SKU
@@ -67,11 +69,11 @@ The dock is the desk stand. It also carries the only realistic **photo capture**
 
 ## On-device storage
 
-The answering machine **does not keep the inbox on the box.** NVS holds Wi-Fi + token. Playhead and blobs live on the server ([`DEVICE-DEMOS.md`](DEVICE-DEMOS.md) h10).
+The answering machine **does not keep the inbox on the box.** NVS holds Wi-Fi + token. Playhead and blobs live on the server ([`DEVICE-DEMOS.md`](../DEVICE-DEMOS.md) h10).
 
 | Pool | Size | Role today |
 |---|---|---|
-| **SPI flash** (WROOM-1) | **16 MiB** | Firmware + NVS in **1.5 MiB** factory partition today (`SINGLE_APP_LARGE`). **15,175,680 B** unpartitioned tail (`0xE79000`) — not a filesystem until a custom partition table. Measured **2026-10-04:** X02 shell **1,484,272** B (~3.4% free); X02+Opus size probe **1,665,808** B (**overflows** current slot by **129,808** B). Feasibility outcome (corrected geometry): [`plans/x02-opus-partition-feasibility.md`](plans/x02-opus-partition-feasibility.md), [`evidence/x02-opus-partition/phase4-corrections.md`](evidence/x02-opus-partition/phase4-corrections.md). |
+| **SPI flash** (WROOM-1) | **16 MiB** | Firmware + NVS in **1.5 MiB** factory partition today (`SINGLE_APP_LARGE`). **15,175,680 B** unpartitioned tail (`0xE79000`) — not a filesystem until a custom partition table. Measured **2026-10-04:** X02 shell **1,484,272** B (~3.4% free); X02+Opus size probe **1,665,808** B (**overflows** current slot by **129,808** B). Feasibility outcome (corrected geometry): [`plans/x02-opus-partition-feasibility.md`](../plans/x02-opus-partition-feasibility.md), [`evidence/x02-opus-partition/phase4-corrections.md`](../evidence/x02-opus-partition/phase4-corrections.md). |
 | **PSRAM** | **16 MiB** | Working RAM (one ~320 KB WAV, one 153.6 KB preview). Lost on reset. |
 | **Server disk** | Yours | Canonical inbox. |
 

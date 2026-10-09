@@ -115,7 +115,7 @@ Open the unit, find **ES8311 HPOUT** in the [schematic](https://github.com/espre
 
 ## External microphone
 
-Onboard mics are fine at desk distance but pick up the TV and the speaker. A **boom mic** or **headset mic** beside the child’s mouth is the realistic Minecraft fix ([`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md): Switch headphones vs box speaker).
+Onboard mics are fine at desk distance but pick up the TV and the speaker. A **boom mic** or **headset mic** beside the child’s mouth is the realistic Minecraft fix ([`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md): Switch headphones vs box speaker).
 
 ### Pmod I2S digital mic (INMP441) — recommended, dock only
 
@@ -208,6 +208,6 @@ CTIA wiring (most phone/gaming headsets):
 ## Related
 
 - Kit facts: [`HARDWARE.md`](HARDWARE.md)
-- Codec feasibility: [`DEVICE-DEMOS.md`](DEVICE-DEMOS.md)
-- Switch + headset open question: [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md)
-- Do not rewrite I2S0: [`AGENTS.md`](AGENTS.md)
+- Codec feasibility: [`DEVICE-DEMOS.md`](../DEVICE-DEMOS.md)
+- Switch + headset open question: [`OPEN-QUESTIONS.md`](../OPEN-QUESTIONS.md)
+- Do not rewrite I2S0: [`AGENTS.md`](../AGENTS.md)

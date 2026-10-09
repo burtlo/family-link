@@ -4,7 +4,7 @@ Operator plan for bringing up **three ESP32-S3-BOX-3** units **one at a time** o
 
 **Not in this session:** **Arlo** (`box-b`) — separate hardware at the office; bind later with `WHO=arlo` and `PORT=`. Do not confuse Arlo with **Lynn’s** storage-qual unit below.
 
-**Canonical USB roster:** [`kits.local.yaml`](../../kits.local.yaml) (gitignored). **Storage overview:** [`ATTACHED-STORAGE.md`](../ATTACHED-STORAGE.md).
+**Canonical USB roster:** [`kits.local.yaml`](../../kits.local.yaml) (gitignored). **Storage overview:** [`ATTACHED-STORAGE.md`](../hardware/ATTACHED-STORAGE.md).
 
 ---
 
@@ -65,7 +65,7 @@ Repeat for the next physical box after unplugging the first.
 
 - **Stage B done** (2026-10-08): epoch `4d9b4346164e14f2add083c0c7aa0654`, `restore_verified` on private attempt3 dir.
 - **Verify** desk firmware is restored product/demo baseline on **ota_0** (`factory_demo`); SENSOR + same 32 GB card if you extend qual later.
-- Future H38 on **this** card needs fresh H37 or `--prior-h38-run-dir` (post-`LAYOUT` MBR); see [`ATTACHED-STORAGE.md`](../ATTACHED-STORAGE.md).
+- Future H38 on **this** card needs fresh H37 or `--prior-h38-run-dir` (post-`LAYOUT` MBR); see [`ATTACHED-STORAGE.md`](../hardware/ATTACHED-STORAGE.md).
 - Lynn BOX uses **ota_0 @ 0x20000** backup layout — H38 runs should use `--use-existing-restore-image` when flash still matches `family-link-attached-discovery-backup-box-b-20261008`.
 
 ### Audrey (`AD:7C`)
@@ -101,4 +101,4 @@ Repeat for the next physical box after unplugging the first.
 | H37 epoch | `~/family-link-storage-experiments/h37-boxb-20261008` |
 | Prep summary | `~/family-link-storage-experiments/box-b-qual-prep.json` |
 
-Mazi passed-track private dirs remain under `h35-32gb-20261007`, `h37-32gb-20261007b`, backup `family-link-attached-discovery-backup-20261007` (see [`ATTACHED-STORAGE.md`](../ATTACHED-STORAGE.md)).
+Mazi passed-track private dirs remain under `h35-32gb-20261007`, `h37-32gb-20261007b`, backup `family-link-attached-discovery-backup-20261007` (see [`ATTACHED-STORAGE.md`](../hardware/ATTACHED-STORAGE.md)).

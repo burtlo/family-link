@@ -8,7 +8,7 @@
 | **Targets**                    | Three endpoints (Lynn, Mazi, Arlo); async audio mailbox; web admin    |
 | **Last updated**               | 2026-09-09                                                            |
 | **Supersedes / superseded by** | Supersedes one-box + parent-phone v1 framing in older docs            |
-| **As-built**                   | None — link to [`docs/features/`](../features/_template.md) when shipped |
+| **As-built**                   | [`docs/features/README.md`](../features/README.md) (2026-10-08 recovery) |
 
 **UI detail:** [`BOX-UI.md`](../BOX-UI.md). **Demo runbook:** [`v1-demo-set.md`](v1-demo-set.md). **Requirements:** [`REQUIREMENTS.md`](../REQUIREMENTS.md).
 

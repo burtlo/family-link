@@ -10,14 +10,14 @@ Analysis only — **no** project-owned partition CSV or `sdkconfig` change in th
 
 | Input | Value | Source |
 |-------|------:|--------|
-| Module flash | **16 MiB** (16,777,216 B, `0x1000000`) | N16R16, [HARDWARE.md](../../HARDWARE.md) |
+| Module flash | **16 MiB** (16,777,216 B, `0x1000000`) | N16R16, [HARDWARE.md](../../hardware/HARDWARE.md) |
 | X02 baseline app image | 1,484,272 B | Phase 1 |
 | X02 + Opus probe app image | 1,665,808 B | Phase 2 |
 | Planned long-message flash (not in probe) | **80–178 KiB** (low / mid / high — do not collapse to one midpoint) | [phase3-planned-reserve.md](phase3-planned-reserve.md) |
 | Policy margin @ **current** 1.5 MiB slot | **262,144 B** | `max(256 KiB, 15%×1,536,000)` |
 | Policy margin @ **2.125 MiB** candidate slot | **334,234 B** | `max(256 KiB, ceil(15%×2,228,224))` |
 | **Product-ready check** | `slot − (probe + reserve) ≥ required_margin(slot)` | [partition-model-output.txt](partition-model-output.txt) |
-| 3‑min Opus @16 kbps mono (preferred) | **~360–400 KB** per message (+ Ogg/container) | [STORAGE.md](../../STORAGE.md) |
+| 3‑min Opus @16 kbps mono (preferred) | **~360–400 KB** per message (+ Ogg/container) | [STORAGE.md](../../hardware/STORAGE.md) |
 | Per-message planning size | **389,120 B** (~380 KiB) | Mid of 360–400 KB range |
 
 Probe on the **current 1.5 MiB factory slot** is a **hard failure** (−129,808 B). X02 alone was already **marginal** (+51,728 B &lt; 256 KiB policy). No strategy that keeps **1.5 MiB** app without trimming can reach **product-ready** app headroom with Opus.
@@ -58,7 +58,7 @@ Selected in [`firmware/sdkconfig.defaults`](../../../firmware/sdkconfig.defaults
 - **Factory app ends at** `0x10000 + 0x177000` = **`0x187000`** (1,601,536 B from flash base).
 - **Unallocated tail:** `0x1000000 − 0x187000` = **`0xE79000`** = **15,175,680 B** (~**14.48 MiB**). Rounded desk copy “~14.4 MiB” is informal; use exact bytes for planning. Tail is **not** a mounted volume until a custom partition table defines it.
 - **OTA:** none (`otadata` / second app slot absent).
-- **On-chip outbox today:** **0 B usable** (no FAT/WL partition; failed uploads are not persisted — [STORAGE.md](../../STORAGE.md)).
+- **On-chip outbox today:** **0 B usable** (no FAT/WL partition; failed uploads are not persisted — [STORAGE.md](../../hardware/STORAGE.md)).
 
 ### Current layout vs product needs
 
@@ -124,7 +124,7 @@ Assumptions for all custom layouts:
 
 - **App bytes/slot:** 1,536,000 B — **probe still overflows**; product-ready Opus + reserve **not achievable** without **feature trimming** or a different build profile.
 - **On-chip usable outbox:** **~0 B** (tail remains unpartitioned or could be left unused deliberately).
-- **Removable outbox:** **External** — practical capacity **gigabytes** once mount code exists; **not** available on every desk configuration (BOX on SENSOR loses DOCK USB-A; see [STORAGE.md](../../STORAGE.md)).
+- **Removable outbox:** **External** — practical capacity **gigabytes** once mount code exists; **not** available on every desk configuration (BOX on SENSOR loses DOCK USB-A; see [STORAGE.md](../../hardware/STORAGE.md)).
 - **OTA:** Unchanged (none).
 
 **Note:** Allocating the 14.4 MiB tail **only** to on-chip FAT while keeping a 1.5 MiB app does **not** solve the **application** blocker; this strategy is listed as a **product/storage** choice (accessory-backed queue), not a flash geometry that fixes codec integration size.
@@ -179,7 +179,7 @@ modeled_usable = floor(raw_outbox × 0.92 × 0.92)
 | (b) Dual OTA | 12,189,696 | **10,317,358** | **26.5** |
 | **Δ (a − b)** | 2,293,760 | 1,941,439 | **~5.0 messages** |
 
-Chunked upload ([STORAGE.md](../../STORAGE.md)) can keep **one** logical diary in the outbox as **many small retained chunks**; message **count** is still bounded by total bytes. PCM 3‑min diaries (~5.8 MiB) would dominate — **~2** full PCM diaries in (a) usable space vs **~30+** Opus diaries at the same geometry.
+Chunked upload ([STORAGE.md](../../hardware/STORAGE.md)) can keep **one** logical diary in the outbox as **many small retained chunks**; message **count** is still bounded by total bytes. PCM 3‑min diaries (~5.8 MiB) would dominate — **~2** full PCM diaries in (a) usable space vs **~30+** Opus diaries at the same geometry.
 
 ---
 
