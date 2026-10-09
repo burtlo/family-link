@@ -41,7 +41,28 @@ Entry point for humans and agents. **Product truth**, **implementation truth**, 
 
 Run host: `make v1-server` · Flash box: `make x02` · Tests: `python3 -m unittest discover -s demos/server/v1_product/tests`
 
-## 4. What remains to build
+## 4. Client engineering standards and v1 assessments
+
+The standards are portable guidance for the next client generation. The
+assessments explain the v1 evidence behind them without making v1 architecture
+normative.
+
+| Doc | Role |
+|-----|------|
+| [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) | Presentation/session/I/O boundaries, async operations, UI lifecycle, resource budgets, and verification |
+| [`v1-assessments/carousel-playback.md`](v1-assessments/carousel-playback.md) | Carousel, focus, playback, and inbox refresh assessment |
+| [`v1-assessments/authentication-connectivity.md`](v1-assessments/authentication-connectivity.md) | Wi-Fi, server readiness, roster, PIN, and login assessment |
+| [`v1-assessments/recording-send.md`](v1-assessments/recording-send.md) | Recipient picker, capture, upload, and receipt assessment |
+
+Expanded concept guides with concrete v1 examples:
+
+- [`v1-assessments/async-operation-envelope.md`](v1-assessments/async-operation-envelope.md)
+- [`v1-assessments/ui-update-taxonomy.md`](v1-assessments/ui-update-taxonomy.md)
+- [`v1-assessments/session-stage-vs-background-poller.md`](v1-assessments/session-stage-vs-background-poller.md)
+- [`v1-assessments/operational-contract-shape.md`](v1-assessments/operational-contract-shape.md)
+- [`v1-assessments/resource-budget-envelope.md`](v1-assessments/resource-budget-envelope.md)
+
+## 5. What remains to build
 
 | Doc | Role |
 |-----|------|
@@ -50,7 +71,7 @@ Run host: `make v1-server` · Flash box: `make x02` · Tests: `python3 -m unitte
 
 Normative **future** messaging (not x02 as-built): [`MESSAGE-PROTOCOL.md`](MESSAGE-PROTOCOL.md), [`LONG-MESSAGE-ARCHITECTURE.md`](LONG-MESSAGE-ARCHITECTURE.md).
 
-## 5. Decisions and evidence
+## 6. Decisions and evidence
 
 | Doc | Role |
 |-----|------|
@@ -60,7 +81,7 @@ Normative **future** messaging (not x02 as-built): [`MESSAGE-PROTOCOL.md`](MESSA
 
 Device incident catalog: [`decisions/device-incidents.md`](decisions/device-incidents.md) (links repo-root [`../stability-synthesis.md`](../stability-synthesis.md)).
 
-## 6. Experiments and demos
+## 7. Experiments and demos
 
 | Doc | Role |
 |-----|------|
@@ -69,6 +90,6 @@ Device incident catalog: [`decisions/device-incidents.md`](decisions/device-inci
 | [`SERVER-DEMOS.md`](SERVER-DEMOS.md) | Host protocol islands |
 | [`plans/v1-demo-set.md`](plans/v1-demo-set.md) | v1 verification runbook |
 
-## 7. Agents working in this repo
+## 8. Agents working in this repo
 
 [`AGENTS.md`](AGENTS.md) — short operational guide (build, boundaries, where to update docs).
