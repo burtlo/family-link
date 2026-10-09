@@ -1,0 +1,45 @@
+---
+description: poc-v1 is read-only reference archive; do not edit or link into it
+alwaysApply: true
+---
+
+# poc-v1 reference archive
+
+The directory `poc-v1/` holds the **v1 proof-of-concept archive** (firmware, demos, legacy docs). It is **not** the active product tree.
+
+## Do not modify
+
+- Never create, edit, rename, or delete files under `poc-v1/`.
+- Never run refactors, fixes, or cleanups there, even if those files are open.
+- If a task implies changing v1 code, **reimplement or document under the active tree** (`docs/`, future app roots) and leave the archive unchanged.
+
+Exception: the user **explicitly** names `poc-v1/` and asks to change that archive.
+
+## Do not link
+
+In new or updated artifacts **outside** `poc-v1/`:
+
+- Do not add markdown links, path references, or code citations that point at `poc-v1/...`.
+- Do not direct the user to open `poc-v1/...` as the place to implement work.
+
+When attribution is needed, use **“v1 POC archive”** or **“legacy v1 implementation”** without filesystem paths.
+
+## How to use reference material
+
+You **may** read `poc-v1/` to recover facts, behavior, constants, UX copy, or design rationale.
+
+When you use something from the archive:
+
+1. **Extract only what you need** into the deliverable.
+2. **Rewrite** under the active tree so the artifact stands alone.
+3. Prefer **quoted excerpts or paraphrase** over pointers back to the archive.
+4. Treat v1 as **as-built evidence**, not owner-approved product policy, unless the same content exists in root `docs/` or the user confirms intent.
+
+## Active documentation
+
+- Product, standards, and assessments: root [`docs/`](../../docs/README.md).
+- Repo-wide agent boundaries: [`docs/AGENTS.md`](../../docs/AGENTS.md).
+
+## Conflicts
+
+If root `docs/` and `poc-v1/` disagree, **root `docs/` and explicit user instructions win**; use the archive only to describe what v1 actually did.

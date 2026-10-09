@@ -1,6 +1,8 @@
-# Family Link documentation
+# Family Link documentation (v1 POC archive)
 
-Entry point for humans and agents. **Product truth**, **implementation truth**, and **historical evidence** live in different places — do not treat the v1 codebase as the specification for the next product generation.
+> **Active documentation** for new product work: [`../../docs/README.md`](../../docs/README.md) and [`../../docs/AGENTS.md`](../../docs/AGENTS.md).
+
+Entry point for **v1 as-built** docs inside the archive. **Product truth** for the next generation is authored under repo-root `docs/` — do not treat the v1 codebase as the specification for a rewrite.
 
 ## 1. What Family Link is
 
@@ -8,7 +10,7 @@ Entry point for humans and agents. **Product truth**, **implementation truth**, 
 |-----|------|
 | [`product/vision.md`](product/vision.md) | Goals and user experience (product-centered) |
 | [`product/requirements.md`](product/requirements.md) | v1 merge requirements (summary) |
-| [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) | Workflow for new experience specs (skill: `author-experience-specification`) |
+| [`../../docs/product/experience-specification-authoring.md`](../../docs/product/experience-specification-authoring.md) | Workflow for new experience specs (skill: `author-experience-specification`) |
 | [`plans/v1-product-spec.md`](plans/v1-product-spec.md) | Approved v1 contract |
 | [`BOX-UI.md`](BOX-UI.md) | Endpoint screen and interaction brief |
 
@@ -50,18 +52,18 @@ normative.
 
 | Doc | Role |
 |-----|------|
-| [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) | Presentation/session/I/O boundaries, async operations, UI lifecycle, resource budgets, and verification |
-| [`v1-assessments/carousel-playback.md`](v1-assessments/carousel-playback.md) | Carousel, focus, playback, and inbox refresh assessment |
-| [`v1-assessments/authentication-connectivity.md`](v1-assessments/authentication-connectivity.md) | Wi-Fi, server readiness, roster, PIN, and login assessment |
-| [`v1-assessments/recording-send.md`](v1-assessments/recording-send.md) | Recipient picker, capture, upload, and receipt assessment |
+| [`../../docs/standards/client-application-coding-standards.md`](../../docs/standards/client-application-coding-standards.md) | Presentation/session/I/O boundaries, async operations, UI lifecycle, resource budgets, and verification |
+| [`../../docs/v1-assessments/carousel-playback.md`](../../docs/v1-assessments/carousel-playback.md) | Carousel, focus, playback, and inbox refresh assessment |
+| [`../../docs/v1-assessments/authentication-connectivity.md`](../../docs/v1-assessments/authentication-connectivity.md) | Wi-Fi, server readiness, roster, PIN, and login assessment |
+| [`../../docs/v1-assessments/recording-send.md`](../../docs/v1-assessments/recording-send.md) | Recipient picker, capture, upload, and receipt assessment |
 
 Expanded concept guides with concrete v1 examples:
 
-- [`v1-assessments/async-operation-envelope.md`](v1-assessments/async-operation-envelope.md)
-- [`v1-assessments/ui-update-taxonomy.md`](v1-assessments/ui-update-taxonomy.md)
-- [`v1-assessments/session-stage-vs-background-poller.md`](v1-assessments/session-stage-vs-background-poller.md)
-- [`v1-assessments/operational-contract-shape.md`](v1-assessments/operational-contract-shape.md)
-- [`v1-assessments/resource-budget-envelope.md`](v1-assessments/resource-budget-envelope.md)
+- [`v1-assessments/async-operation-envelope.md`](../../docs/v1-assessments/async-operation-envelope.md)
+- [`v1-assessments/ui-update-taxonomy.md`](../../docs/v1-assessments/ui-update-taxonomy.md)
+- [`v1-assessments/session-stage-vs-background-poller.md`](../../docs/v1-assessments/session-stage-vs-background-poller.md)
+- [`v1-assessments/operational-contract-shape.md`](../../docs/v1-assessments/operational-contract-shape.md)
+- [`v1-assessments/resource-budget-envelope.md`](../../docs/v1-assessments/resource-budget-envelope.md)
 
 ## 5. What remains to build
 

@@ -21,6 +21,7 @@ scope. Otherwise use the current session and the implementation it investigated.
 
 Read primary sources before relying on summaries:
 
+- [`docs/AGENTS.md`](../../docs/AGENTS.md) and applicable [`docs/standards/`](../../docs/standards/client-application-coding-standards.md) (v1 POC code under `poc-v1/` is read-only reference per [`.cursor/rules/poc-v1-reference-archive.mdc`](../../.cursor/rules/poc-v1-reference-archive.mdc));
 - user and agent transcripts;
 - terminal/build output;
 - runtime logs, crash traces, reset reasons, and saved evidence;

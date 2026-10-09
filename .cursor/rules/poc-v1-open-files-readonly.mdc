@@ -1,0 +1,11 @@
+---
+description: Reinforce read-only when poc-v1 files are in context
+globs: poc-v1/**
+alwaysApply: false
+---
+
+# poc-v1 open files
+
+Files under `poc-v1/` are **archive-only**. Do not edit them.
+
+Extract needed detail into root `docs/` or new implementation paths. Follow the `poc-v1-reference-archive` rule.

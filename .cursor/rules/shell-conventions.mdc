@@ -1,0 +1,33 @@
+---
+description: Use PowerShell on Windows and zsh on macOS for terminal commands
+alwaysApply: true
+---
+
+# Shell conventions
+
+Use the shell that matches the host OS (see session `user_info` / `Shell` when present).
+
+## Windows — PowerShell
+
+Assume **PowerShell** (prefer **PowerShell 7** / `pwsh` syntax), not `cmd.exe`.
+
+- Use PowerShell cmdlets: `Get-ChildItem -Recurse`, `Test-Path`, `Compare-Object`, `fc.exe` only when calling the cmd binary explicitly.
+- Do **not** use cmd-only switches on PowerShell aliases (`dir /s /b`, `fc /b` without `fc.exe`).
+- Chain with `;` or separate invocations; `&&` is valid in **PowerShell 7+** only — avoid it if the session might be Windows PowerShell 5.1.
+- Prefer forward slashes or quoted Windows paths; escape backslashes in strings when needed.
+
+## macOS / Linux — zsh or bash
+
+Assume **zsh** (login shell) or POSIX `sh`/`bash` behavior.
+
+- Use Unix paths, `&&`, `|`, heredocs, and standard utilities (`find`, `grep`, `test`).
+- Do not use PowerShell cmdlets unless the user explicitly runs `pwsh`.
+
+## Cross-platform scripts
+
+- Prefer project scripts (`make`, `npm run`, `python`) over shell-specific one-liners when both OSes must work.
+- If a command is OS-specific, say which OS it targets before running it.
+
+## Workspace terminal settings
+
+This repo sets integrated and automation terminal profiles in [`.vscode/settings.json`](../../.vscode/settings.json). If Agent ignores them on Windows, enable **Cursor Settings → Chat → Inline Editing & Terminal → Legacy Terminal Tool** and restart Cursor.

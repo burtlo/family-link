@@ -27,12 +27,16 @@ input to the workflow — not as an approved spec.
 1. Read [`docs/README.md`](../../docs/README.md) and
    [`docs/AGENTS.md`](../../docs/AGENTS.md) for documentation boundaries
    (product truth versus as-built code).
-2. Scope one coherent experience or journey. If the input spans several,
+2. Obey [`.cursor/rules/poc-v1-reference-archive.mdc`](../../.cursor/rules/poc-v1-reference-archive.mdc):
+   the `poc-v1/` tree is read-only reference — extract facts into active `docs/`
+   without linking archive paths.
+3. Scope one coherent experience or journey. If the input spans several,
    propose boundaries and confirm before deep interviewing.
-3. Gather applicable sources per the authoring doc (vision, requirements,
-   BOX-UI as examples only, v1 assessments, standards). Record conflicts. Do
-   not adopt V1 or code behavior as owner intent without confirmation.
-4. Decide the deliverable: new spec versus revision of an owner draft. Use a path
+4. Gather applicable sources per the authoring doc (owner input, active `docs/`,
+   v1 assessments under `docs/v1-assessments/`, standards; vision/requirements/BOX-UI
+   from the v1 archive only as historical examples). Record conflicts. Do not adopt
+   V1 or code behavior as owner intent without confirmation.
+5. Decide the deliverable: new spec versus revision of an owner draft. Use a path
    the user names, or default to `docs/product/experiences/<slug>.md` when
    creating a new file.
 
