@@ -1,0 +1,4 @@
+# Host-side tools for USB/ROM access to the ESP32-S3-BOX-3.
+# Firmware later uses ESP-IDF; these diagnostics only need esptool.
+esptool>=5.0,<6
+pyserial>=3.5

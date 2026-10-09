@@ -28,6 +28,14 @@ Assume **zsh** (login shell) or POSIX `sh`/`bash` behavior.
 - Prefer project scripts (`make`, `npm run`, `python`) over shell-specific one-liners when both OSes must work.
 - If a command is OS-specific, say which OS it targets before running it.
 
+## Agent terminal (Shell tool)
+
+Before running commands, read session **`user_info`** (`OS Version`, `Shell`, workspace path). Do not assume macOS because the repo has bash Makefiles or Unix paths in docs.
+
+- Run commands **directly** in the Shell tool session. On Windows the session is already PowerShell — do **not** wrap commands in `pwsh -NoProfile -Command "..."` unless the user explicitly asked for a nested shell.
+- Avoid PowerShell variables (e.g. `$null`, `$?`) inside **double-quoted** strings passed to a subprocess or `-Command`; outer parsing can strip them and break redirection (`2>` with no target). Prefer a direct Shell invocation, single-quoted `-Command` blocks only when nesting is unavoidable, or `| Out-Null` instead of `2>$null`.
+- Prefer repo entrypoints (`make install`, `python -m pip …`, paths under `.venv\Scripts` or `.venv/bin`) over clever one-liners.
+
 ## Workspace terminal settings
 
 This repo sets integrated and automation terminal profiles in [`.vscode/settings.json`](../../.vscode/settings.json). If Agent ignores them on Windows, enable **Cursor Settings → Chat → Inline Editing & Terminal → Legacy Terminal Tool** and restart Cursor.
