@@ -20,6 +20,7 @@ Historical v1 product docs (vision, requirements, plans, features) remain in the
 | Doc | Role |
 |-----|------|
 | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) | Portable rules for the next client generation |
+| [`standards/project-configuration.md`](standards/project-configuration.md) | Repository commands, flows, host defaults, and product-config boundary |
 | [`v1-assessments/carousel-playback.md`](v1-assessments/carousel-playback.md) | Carousel, focus, playback (v1 evidence) |
 | [`v1-assessments/authentication-connectivity.md`](v1-assessments/authentication-connectivity.md) | Wi‑Fi, roster, PIN, login (v1 evidence) |
 | [`v1-assessments/recording-send.md`](v1-assessments/recording-send.md) | Capture, upload, receipt (v1 evidence) |

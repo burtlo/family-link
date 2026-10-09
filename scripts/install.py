@@ -4,11 +4,8 @@
 Invoked by `make install` (`scripts/make/python.sh host-run`) with a *host*
 Python (python3 on PATH) before `.venv` exists.
 
-Environment:
-  FAMILY_IDF_DIR      Clone/install tree (default: ~/esp/esp-idf)
-  FAMILY_IDF_VERSION  ESP-IDF git branch/tag (default: v5.4.2)
-  FAMILY_IDF_SKIP=1   Skip ESP-IDF (venv + pip only)
-  FAMILY_IDF_REINSTALL=1  Re-run install.sh/bat esp32s3 even if IDF tree exists
+Defaults: project.defaults.ini at repo root (see scripts/project_config.py).
+Every setting may be overridden by its uppercase qualified environment name.
 """
 
 from __future__ import annotations
@@ -19,165 +16,173 @@ import subprocess
 import sys
 from pathlib import Path
 
+from project_config import ProjectConfig, ProjectConfigError
+
 ROOT = Path(__file__).resolve().parent.parent
-VENV = ROOT / ".venv"
-REQUIREMENTS = ROOT / "requirements.txt"
-MIN_PY = (3, 9)
 
-IDF_CLONE_DEFAULT = Path.home() / "esp" / "esp-idf"
-IDF_VERSION = os.environ.get("FAMILY_IDF_VERSION", "v5.4.2")
-IDF_TARGET = os.environ.get("FAMILY_IDF_TARGET", "esp32s3")
+EXIT_OK = 0
 
 
-def _venv_python() -> Path:
+class InstallError(ProjectConfigError):
+    """Install step failed."""
+
+
+def _venv_python(venv: Path) -> Path:
     if os.name == "nt":
-        return VENV / "Scripts" / "python.exe"
-    return VENV / "bin" / "python"
+        return venv / "Scripts" / "python.exe"
+    return venv / "bin" / "python"
 
 
 def _run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, check=False, text=True, **kwargs)
 
 
+def _require_rc(rc: int, message: str) -> None:
+    if rc != 0:
+        raise InstallError(message)
+
+
 def _have(cmd: str) -> bool:
     return shutil.which(cmd) is not None
-
-
-def _idf_dest() -> Path:
-    raw = os.environ.get("FAMILY_IDF_DIR") or os.environ.get("IDF_PATH")
-    if raw and str(raw).strip():
-        return Path(raw).expanduser().resolve()
-    return IDF_CLONE_DEFAULT.expanduser().resolve()
 
 
 def _idf_tree_present(dest: Path) -> bool:
     return (dest / "export.sh").is_file() or (dest / "export.bat").is_file()
 
 
-def _idf_clone(dest: Path) -> None:
+def _idf_clone(dest: Path, config: ProjectConfig) -> None:
     if not _have("git"):
-        sys.exit("git is required to clone ESP-IDF. Install Git and re-run make install.")
+        raise InstallError("git is required to clone ESP-IDF. Install Git and re-run make install.")
     dest.parent.mkdir(parents=True, exist_ok=True)
-    print(f"-> git clone --progress --depth 1 --branch {IDF_VERSION} → {dest}")
-    rc = _run(
-        [
-            "git",
-            "clone",
-            "--progress",
-            "--depth",
-            "1",
-            "--branch",
-            IDF_VERSION,
-            "https://github.com/espressif/esp-idf.git",
-            str(dest),
-        ]
-    ).returncode
-    if rc != 0:
-        sys.exit("git clone of esp-idf failed (network / disk?)")
+    version = config.text("idf.version", required=True)
+    print(f"-> git clone --progress --depth 1 --branch {version} → {dest}")
+    _require_rc(
+        _run(
+            [
+                "git",
+                "clone",
+                "--progress",
+                "--depth",
+                "1",
+                "--branch",
+                version,
+                "https://github.com/espressif/esp-idf.git",
+                str(dest),
+            ]
+        ).returncode,
+        "git clone of esp-idf failed (network / disk?)",
+    )
     print("-> git submodule update --init --depth 1 --progress")
-    rc = _run(
-        [
-            "git",
-            "submodule",
-            "update",
-            "--init",
-            "--depth",
-            "1",
-            "--progress",
-            "--jobs",
-            "8",
-        ],
-        cwd=str(dest),
-    ).returncode
-    if rc != 0:
-        sys.exit("esp-idf submodule update failed")
+    _require_rc(
+        _run(
+            [
+                "git",
+                "submodule",
+                "update",
+                "--init",
+                "--depth",
+                "1",
+                "--progress",
+                "--jobs",
+                "8",
+            ],
+            cwd=str(dest),
+        ).returncode,
+        "esp-idf submodule update failed",
+    )
 
 
-def _idf_install_tools(dest: Path) -> None:
+def _idf_install_tools(dest: Path, config: ProjectConfig) -> None:
+    target = config.text("idf.target", required=True)
     if os.name == "nt":
         install = dest / "install.bat"
         if not install.is_file():
-            sys.exit(f"no install.bat in {dest}")
-        print(f"-> install.bat {IDF_TARGET} (downloads toolchain; may take several minutes)")
-        rc = _run(["cmd", "/c", str(install), IDF_TARGET], cwd=str(dest)).returncode
-        if rc != 0:
-            sys.exit("IDF install.bat failed")
+            raise InstallError(f"no install.bat in {dest}")
+        print(f"-> install.bat {target} (downloads toolchain; may take several minutes)")
+        _require_rc(
+            _run(["cmd", "/c", str(install), target], cwd=str(dest)).returncode,
+            "IDF install.bat failed",
+        )
         return
     install = dest / "install.sh"
     if not install.is_file():
-        sys.exit(f"no install.sh in {dest}")
-    print(f"-> ./install.sh {IDF_TARGET} (downloads toolchain; may take several minutes)")
-    rc = _run(["bash", str(install), IDF_TARGET], cwd=str(dest)).returncode
-    if rc != 0:
-        sys.exit("IDF install.sh failed")
+        raise InstallError(f"no install.sh in {dest}")
+    print(f"-> ./install.sh {target} (downloads toolchain; may take several minutes)")
+    _require_rc(
+        _run(["bash", str(install), target], cwd=str(dest)).returncode,
+        "IDF install.sh failed",
+    )
 
 
-def ensure_esp_idf() -> Path:
+def ensure_esp_idf(config: ProjectConfig) -> Path:
     """Clone ESP-IDF if missing; run Espressif install script for the SoC target."""
-    if os.environ.get("FAMILY_IDF_SKIP") == "1":
-        print("-> ESP-IDF skipped (FAMILY_IDF_SKIP=1)")
-        return _idf_dest()
+    dest = config.path_value("idf.path")
+    if config.boolean("idf.skip"):
+        print("-> ESP-IDF skipped (IDF_SKIP=true)")
+        return dest
 
-    dest = _idf_dest()
     present = _idf_tree_present(dest)
-    reinstall = os.environ.get("FAMILY_IDF_REINSTALL") == "1"
+    reinstall = config.boolean("idf.reinstall")
 
     print()
     print("== esp-idf")
     print(f"dest:    {dest}")
-    print(f"version: {IDF_VERSION}")
-    print(f"target:  {IDF_TARGET}")
+    print(f"version: {config.text('idf.version', required=True)}")
+    print(f"target:  {config.text('idf.target', required=True)}")
 
     if not present:
-        _idf_clone(dest)
-        _idf_install_tools(dest)
+        _idf_clone(dest, config)
+        _idf_install_tools(dest, config)
     elif reinstall:
-        print("-> re-running tool install (FAMILY_IDF_REINSTALL=1)")
-        _idf_install_tools(dest)
+        print("-> re-running tool install (IDF_REINSTALL=true)")
+        _idf_install_tools(dest, config)
     else:
         print("-> ESP-IDF tree already present; skipping clone and tool install")
-        print("   (set FAMILY_IDF_REINSTALL=1 to re-run install.sh)")
+        print("   (set IDF_REINSTALL=true to re-run install.sh)")
 
     print(f"-> IDF_PATH={dest}")
     return dest
 
 
-def _try_install_python() -> None:
-    """Best-effort system Python from a package manager. Never required if
-    the interpreter running this script is already new enough."""
+def _run_pkg_install(cmd: list[str], label: str) -> None:
+    print(f"-> {' '.join(cmd)}")
+    _require_rc(_run(cmd).returncode, f"{label} failed (exit non-zero)")
+
+
+def _try_install_python(minimum: tuple[int, ...]) -> None:
+    """Best-effort system Python from a package manager. Caller must still re-run install."""
     plat = sys.platform
-    print("Python >= 3.9 is required. Trying a package manager…")
+    required = ".".join(str(part) for part in minimum)
+    print(f"Python >= {required} is required. Trying a package manager…")
     if plat == "darwin" and _have("brew"):
-        print("-> brew install python")
-        _run(["brew", "install", "python"])
+        _run_pkg_install(["brew", "install", "python"], "brew install python")
         return
     if plat.startswith("linux"):
         if _have("apt-get"):
-            print("-> apt-get install -y python3 python3-venv python3-pip")
             cmd = ["apt-get", "install", "-y", "python3", "python3-venv", "python3-pip"]
             if os.geteuid() != 0 and _have("sudo"):
                 cmd = ["sudo"] + cmd
-            _run(cmd)
+            _run_pkg_install(cmd, "apt-get install python3")
             return
         if _have("dnf"):
-            print("-> dnf install -y python3 python3-pip")
             cmd = ["dnf", "install", "-y", "python3", "python3-pip"]
             if os.geteuid() != 0 and _have("sudo"):
                 cmd = ["sudo"] + cmd
-            _run(cmd)
+            _run_pkg_install(cmd, "dnf install python3")
             return
         if _have("pacman"):
-            print("-> pacman -S --noconfirm python python-pip")
             cmd = ["pacman", "-S", "--noconfirm", "python", "python-pip"]
             if os.geteuid() != 0 and _have("sudo"):
                 cmd = ["sudo"] + cmd
-            _run(cmd)
+            _run_pkg_install(cmd, "pacman install python")
             return
     if plat == "win32" and _have("winget"):
-        print("-> winget install -e --id Python.Python.3.12")
-        _run(["winget", "install", "-e", "--id", "Python.Python.3.12"])
+        _run_pkg_install(
+            ["winget", "install", "-e", "--id", "Python.Python.3.12"],
+            "winget install Python",
+        )
         return
-    print(
+    raise InstallError(
         "Could not install Python automatically.\n"
         "  macOS:  https://brew.sh then `brew install python`\n"
         "  Linux:  python3 python3-venv python3-pip from your distro\n"
@@ -185,75 +190,101 @@ def _try_install_python() -> None:
     )
 
 
+def _venv_import_ok(py: str) -> bool:
+    return _run([py, "-c", "import venv, ensurepip"], capture_output=True).returncode == 0
+
+
 def _ensure_venv_module(py: str) -> None:
-    probe = _run([py, "-c", "import venv, ensurepip"], capture_output=True)
-    if probe.returncode == 0:
+    if _venv_import_ok(py):
         return
     print("Python venv/ensurepip missing; installing distro packages…")
     if sys.platform.startswith("linux") and _have("apt-get"):
         cmd = ["apt-get", "install", "-y", "python3-venv", "python3-pip"]
         if os.geteuid() != 0 and _have("sudo"):
             cmd = ["sudo"] + cmd
-        rc = _run(cmd).returncode
-        if rc != 0:
-            sys.exit("Failed to install python3-venv. Install it and re-run make install.")
+        _require_rc(_run(cmd).returncode, "Failed to install python3-venv. Install it and re-run make install.")
+        if not _venv_import_ok(py):
+            raise InstallError(
+                "python3-venv was installed but this interpreter still cannot import venv. "
+                "Re-run make install with python3 from your distro."
+            )
         return
-    sys.exit(
+    raise InstallError(
         "This Python cannot create a venv.\n"
         "  Debian/Ubuntu: sudo apt-get install python3-venv python3-pip\n"
         "  Then re-run: make install"
     )
 
 
-def main() -> int:
+def _install_host_packages(py: Path, requirements: Path) -> None:
+    print("-> python -m pip install --upgrade pip")
+    _require_rc(
+        _run([str(py), "-m", "pip", "install", "--upgrade", "pip"]).returncode,
+        "pip upgrade failed (network?)",
+    )
+
+    print(f"-> python -m pip install -r {requirements.name}")
+    _require_rc(
+        _run([str(py), "-m", "pip", "install", "-r", str(requirements)]).returncode,
+        "pip install failed. Check the network, then retry `make install`.\n"
+        "Manual: https://pypi.org/project/esptool/",
+    )
+
+    ver = _run(
+        [
+            str(py),
+            "-c",
+            "import esptool, serial; print('esptool', getattr(esptool, '__version__', '?')); "
+            "print('pyserial', serial.__version__)",
+        ],
+        capture_output=True,
+    )
+    if ver.returncode != 0:
+        detail = (ver.stderr or ver.stdout or "").strip()
+        msg = "Installed packages failed import check (esptool, pyserial)."
+        if detail:
+            msg = f"{msg}\n{detail}"
+        raise InstallError(msg)
+    print(ver.stdout.rstrip())
+
+
+def run_install(config: ProjectConfig) -> None:
+    config.validate()
+    minimum_python = config.version_tuple("python.minimum")
+    venv = config.path_value("python.venv")
+    requirements = config.path_value("python.requirements")
+
     print("== install")
     print(f"repo:     {ROOT}")
     print(f"platform: {sys.platform} ({os.name})")
     print(f"python:   {sys.executable} ({sys.version.split()[0]})")
 
-    if sys.version_info < MIN_PY:
-        _try_install_python()
-        sys.exit(
-            f"Need Python {MIN_PY[0]}.{MIN_PY[1]}+; this interpreter is "
+    if sys.version_info < minimum_python:
+        _try_install_python(minimum_python)
+        required = ".".join(str(part) for part in minimum_python)
+        raise InstallError(
+            f"Need Python {required}+; this interpreter is "
             f"{sys.version_info.major}.{sys.version_info.minor}. "
             "Re-run make install with python3."
         )
 
-    if not REQUIREMENTS.is_file():
-        sys.exit(f"missing {REQUIREMENTS}")
+    if not requirements.is_file():
+        raise InstallError(f"missing {requirements}")
 
     _ensure_venv_module(sys.executable)
 
-    print(f"-> python -m venv {VENV}")
-    created = _run([sys.executable, "-m", "venv", str(VENV)])
-    if created.returncode != 0:
-        sys.exit("venv creation failed")
-
-    py = _venv_python()
-    if not py.is_file():
-        sys.exit(f"venv python not found at {py}")
-
-    print("-> python -m pip install --upgrade pip")
-    pip_up = _run([str(py), "-m", "pip", "install", "--upgrade", "pip"])
-    if pip_up.returncode != 0:
-        sys.exit("pip upgrade failed (network?)")
-
-    print(f"-> python -m pip install -r {REQUIREMENTS.name}")
-    pkgs = _run([str(py), "-m", "pip", "install", "-r", str(REQUIREMENTS)])
-    if pkgs.returncode != 0:
-        sys.exit(
-            "pip install failed. Check the network, then retry `make install`.\n"
-            "Manual: https://pypi.org/project/esptool/"
-        )
-
-    ver = _run(
-        [str(py), "-c", "import esptool, serial; print('esptool', getattr(esptool, '__version__', '?')); print('pyserial', serial.__version__)"],
-        capture_output=True,
+    print(f"-> python -m venv {venv}")
+    _require_rc(
+        _run([sys.executable, "-m", "venv", str(venv)]).returncode,
+        "venv creation failed",
     )
-    if ver.returncode == 0:
-        print(ver.stdout.rstrip())
 
-    ensure_esp_idf()
+    py = _venv_python(venv)
+    if not py.is_file():
+        raise InstallError(f"venv python not found at {py}")
+
+    _install_host_packages(py, requirements)
+    ensure_esp_idf(config)
 
     if sys.platform.startswith("linux"):
         print()
@@ -264,7 +295,15 @@ def main() -> int:
     print()
     print("Installed. Next: make help")
     print("Firmware builds: set IDF_PATH (see above) and use ESP-IDF export in your shell.")
-    return 0
+
+
+def main() -> int:
+    try:
+        run_install(ProjectConfig())
+    except ProjectConfigError as exc:
+        print(exc, file=sys.stderr)
+        return exc.exit_code
+    return EXIT_OK
 
 
 if __name__ == "__main__":

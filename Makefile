@@ -29,24 +29,38 @@ endef
 
 export PYTHONUNBUFFERED := 1
 
-MAKE_PY_SH := $(ROOT)/scripts/make/python.sh
+# Optional INI for config/install: make config CONFIG=path/to.ini
+CONFIG ?=
+ifdef CONFIG
+export PROJECT_CONFIG := $(CONFIG)
+endif
 
-# Repo-root Python via scripts/make/python.sh (host-run = bootstrap; run = .venv if present).
+MAKE_PY_SH := $(ROOT)/scripts/make/python.sh
+_CONFIG_PY_ARGS := $(if $(CONFIG),--config "$(CONFIG)",)
+
+# Python scripts (repo root + interpreter selection live in scripts/make/python.sh).
 define py_host_run
-	@$(GITBASH) -c "cd '$(ROOT)' && '$(MAKE_PY_SH)' host-run $(1)"
+	@$(GITBASH) "$(MAKE_PY_SH)" host-run $(1)
 endef
 
 define py_run
-	@$(GITBASH) -c "cd '$(ROOT)' && '$(MAKE_PY_SH)' run $(1)"
+	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help install
+.PHONY: help config install test
 
 .DEFAULT_GOAL := help
 
 help:
 	@$(GITBASH) "$(ROOT)/scripts/make/help.sh"
 
+config:
+	$(call py_host_run,scripts/project_config.py $(_CONFIG_PY_ARGS) dump)
+
 install:
 	$(call step_msg,Installing venv host tools and ESP-IDF if needed)
 	$(call py_host_run,scripts/install.py)
+
+test:
+	$(call step_msg,Testing project configuration)
+	$(call py_run,-m unittest discover -s scripts/tests)

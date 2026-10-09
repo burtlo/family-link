@@ -4,14 +4,15 @@
 # Usage:
 #   scripts/make/python.sh host              # print bootstrap interpreter (python3 | python)
 #   scripts/make/python.sh venv              # print repo .venv python if present, else host
-#   scripts/make/python.sh run <args...>     # exec venv python with arguments
-#   scripts/make/python.sh host-run <args...># exec host python (e.g. before .venv exists)
+#   scripts/make/python.sh run <args...>      # cd repo root; exec .venv python (else host)
+#   scripts/make/python.sh host-run <args...> # cd repo root; exec host python (bootstrap)
 #
-# Source from other scripts/make/*.sh:
+# From the root Makefile:
+#   $(GITBASH) "$(ROOT)/scripts/make/python.sh" host-run scripts/install.py
+#
+# Source from other scripts/make/*.sh (low-level; no automatic cd):
 #   # shellcheck source=scripts/make/python.sh
 #   source "$(dirname "${BASH_SOURCE[0]}")/python.sh"
-#   cd "$(make_repo_root)"
-#   exec "$(make_host_python)" scripts/install.py "$@"
 
 set -euo pipefail
 
@@ -61,9 +62,11 @@ _make_python_main() {
       make_venv_python
       ;;
     run)
+      cd "$(make_repo_root)"
       exec "$(make_venv_python)" "$@"
       ;;
     host-run)
+      cd "$(make_repo_root)"
       exec "$(make_host_python)" "$@"
       ;;
     '')
