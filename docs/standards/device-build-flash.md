@@ -24,6 +24,21 @@ The merged `firmware.bin` contains bootloader, partition table and application;
 the package also retains component images, ELF, effective sdkconfig, partition
 layout, IDF flash metadata, size report and SHA-256 hashes.
 
+The component restriction is set before including ESP-IDF's project setup.
+Each package retains `size-components.json` from `idf.py size-components`, so
+linked component contributions can be inspected alongside the total size report.
+
+### Toolchain version pin
+
+`idf.path` (`IDF_PATH`) must point to a Git checkout for which
+`git describe --tags --exact-match` returns the configured `idf.version`
+(currently `v5.4.2`). The exact tag must be available locally. Detached HEAD at
+that tagged commit is supported; a shallow clone must include the tag. A fork
+can pass the same check if its HEAD resolves to the expected tag; commits beyond
+the tag are rejected even if `idf.py --version` reports the same release family.
+This checks tag identity, not remote provenance or uncommitted SDK changes.
+The check is intentionally strict; it does not fall back to a version string.
+
 `make flash` requires exactly one connected registered kit. Named targets resolve
 deployment alias -> endpoint -> physical kit -> USB serial -> current port.
 There is no remembered-port or first-device fallback. `make flash.all` preflights

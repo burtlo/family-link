@@ -58,7 +58,11 @@ def idf_environment(config):
     result = subprocess.run(["git", "describe", "--tags", "--exact-match"], cwd=idf,
                             capture_output=True, text=True, timeout=30)
     if result.returncode or result.stdout.strip() != config.text("idf.version", required=True):
-        raise ProjectConfigError("ESP-IDF checkout does not match configured idf.version")
+        expected = config.text("idf.version", required=True)
+        actual = result.stdout.strip() or "no exact tag available"
+        raise ProjectConfigError(
+            f"ESP-IDF checkout requires exact tag {expected}; found {actual}. "
+            "Ensure that tag is available locally and HEAD points to it; see docs/standards/device-build-flash.md")
     return env, [python, str(idf / "tools" / "idf.py")]
 
 
@@ -88,6 +92,8 @@ def build(config):
     run(args + ["merge-bin", "-o", str(output / "firmware.bin")], env=env, timeout=timeout)
     run(args + ["size", "--format", "json", "--output-file", str(output / "size.json")],
         env=env, timeout=timeout)
+    run(args + ["size-components", "--format", "json", "--output-file", str(output / "size-components.json")],
+        env=env, timeout=timeout)
     metadata = json.loads((output / "flasher_args.json").read_text())
     with tempfile.TemporaryDirectory(prefix=".package-", dir=artifacts) as directory:
         staging = Path(directory) / "package"
@@ -100,7 +106,7 @@ def build(config):
             name = f"{index}-{original.name}"
             shutil.copyfile(original, staging / name)
             images.append({"offset": offset, "file": name})
-        for name in ("firmware.bin", "size.json", "sdkconfig", "flasher_args.json"):
+        for name in ("firmware.bin", "size.json", "size-components.json", "sdkconfig", "flasher_args.json"):
             shutil.copyfile(output / name, staging / name)
         shutil.copyfile(output / "family_link_bootstrap.elf", staging / "firmware.elf")
         shutil.copyfile(source / "partitions.csv", staging / "partitions.csv")
