@@ -1,0 +1,5 @@
+idf_component_register(SRCS "app_main.c" INCLUDE_DIRS "." REQUIRES esp_system esp_hw_support esp_app_format)
+if(NOT FAMILY_BUILD_ID)
+    message(FATAL_ERROR "Build through make build to supply FAMILY_BUILD_ID")
+endif()
+target_compile_definitions(${COMPONENT_LIB} PRIVATE FAMILY_BUILD_ID="${FAMILY_BUILD_ID}")

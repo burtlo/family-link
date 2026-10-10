@@ -29,6 +29,19 @@ LOCAL = REPO / "config" / "deployment" / "local.yaml"
 
 
 class DeploymentConfigTests(unittest.TestCase):
+    def test_explicit_host_config_selects_roster_and_schema_together(self):
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            schema = root / "reject.json"
+            schema.write_text(json.dumps({"not": {}}), encoding="utf-8")
+            config = ProjectConfig(environ={
+                "CONFIG_DEPLOYMENT_LOCAL": str(root / "absent.yaml"),
+                "CONFIG_DEPLOYMENT_EXAMPLE": str(EXAMPLE),
+                "CONFIG_DEPLOYMENT_SCHEMA": str(schema),
+            })
+            with self.assertRaises(DeploymentConfigError):
+                load_active_deployment(config)
+
     def test_committed_example_parses_and_validates(self) -> None:
         deployment = load_deployment(EXAMPLE, source="example")
         self.assertEqual("example-hangout", deployment.meta.id)

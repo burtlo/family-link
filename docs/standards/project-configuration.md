@@ -48,6 +48,22 @@ Host inspection commands:
 Each `[flow.<name>]` section lists command names in `commands`. Add build,
 flash, or evaluate commands only when the active product tree implements them.
 
+## Device firmware mechanics
+
+`[firmware]` defines `source`, `build`, `artifacts`, `logs` (paths resolved from
+the repository root) and positive `boot_seconds`. These use the same qualified
+environment overrides, e.g. `FIRMWARE_ARTIFACTS`; empty overrides are errors for
+consumed paths. `PROJECT_CONFIG` / Make `CONFIG=` selects the whole host INI,
+not a partial overlay.
+
+`make build`, `make devices`, `make flash`, `make flash.all` and named
+`make flash.<nickname>` targets use these settings. Dotted command names are
+preserved in the command catalog and snapshot. The implementation and post-repair
+flows include test and build; hardware writes are explicit and excluded.
+
+Device selection reuses deployment aliases and kits rather than host identity
+settings. See [device build and flash](device-build-flash.md).
+
 ## Validation and inspection
 
 ```text

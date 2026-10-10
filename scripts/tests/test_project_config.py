@@ -36,6 +36,27 @@ from project_config import (  # noqa: E402
 
 
 class ProjectConfigTests(unittest.TestCase):
+    def test_firmware_settings_honor_alternate_ini_and_environment(self):
+        with tempfile.TemporaryDirectory() as raw_dir:
+            root = Path(raw_dir)
+            alternate = root / "host.ini"
+            alternate.write_text(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8").replace(
+                "artifacts = artifacts/device/bootstrap", "artifacts = artifacts/custom"), encoding="utf-8")
+            config = ProjectConfig(environ={"PROJECT_CONFIG": str(alternate), "FIRMWARE_BOOT_SECONDS": "7"})
+            snapshot = config.dump_snapshot()
+            self.assertEqual(REPO / "artifacts" / "custom", config.path_value("firmware.artifacts"))
+            self.assertEqual(7, snapshot["resolved"]["settings"]["firmware.boot_seconds"])
+            self.assertEqual("environment", snapshot["provenance"]["settings"]["firmware.boot_seconds"])
+            self.assertIn("flash.mazi", snapshot["resolved"]["commands"])
+
+    def test_empty_firmware_override_is_authoritative(self):
+        with self.assertRaises(ProjectConfigError):
+            ProjectConfig(environ={"FIRMWARE_ARTIFACTS": ""}).validate()
+
+    def test_invalid_boot_timeout_rejected(self):
+        with self.assertRaises(ProjectConfigError):
+            ProjectConfig(environ={"FIRMWARE_BOOT_SECONDS": "0"}).validate()
+
     def test_default_configuration_is_valid(self) -> None:
         config = ProjectConfig(environ={})
 
@@ -43,7 +64,7 @@ class ProjectConfigTests(unittest.TestCase):
 
         self.assertEqual(DEFAULT_CONFIG_PATH, config.path)
         self.assertEqual("family-link", config.text("project.id"))
-        self.assertEqual(("test",), tuple(item.name for item in config.flow("implementation")))
+        self.assertEqual(("test", "build"), tuple(item.name for item in config.flow("implementation")))
         self.assertEqual(
             REPO / "config" / "deployment" / "example.yaml",
             config.path_value("config.deployment.example"),

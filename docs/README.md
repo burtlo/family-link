@@ -17,6 +17,8 @@ Historical v1 product docs (vision, requirements, plans, features) remain in the
 
 ## Client engineering
 
+Device bootstrap commands: [build and flash](standards/device-build-flash.md).
+
 | Doc | Role |
 |-----|------|
 | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) | Portable rules for the next client generation |

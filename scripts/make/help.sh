@@ -27,4 +27,12 @@ echo
 echo "  TEST"
 echo "    make test        Runs the active repository unit tests."
 echo
+echo "  DEVICE BOOTSTRAP"
+echo "    make build         Build and package fresh v2 bootstrap firmware; no USB needed."
+echo "    make devices       Show nicknames, USB bindings and detected ports."
+echo "    make flash         Flash the existing package to one connected registered kit."
+echo "    make flash.mazi    Select a kit nickname (also arlo, lynn, audrey)."
+echo "    make flash.all     Preflight every roster kit, then flash sequentially."
+echo "    make device.bind KIT=arlo PORT=COM7    Explicit one-time USB binding."
+echo
 echo

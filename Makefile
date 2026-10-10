@@ -47,7 +47,7 @@ define py_run
 	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help config config.host config.deployment install test
+.PHONY: help config config.host config.deployment install test build devices flash flash.all device.bind
 
 .DEFAULT_GOAL := help
 
@@ -69,3 +69,21 @@ install:
 test:
 	$(call step_msg,Testing project configuration)
 	$(call py_run,-m unittest discover -s scripts/tests)
+
+build:
+	$(call py_run,scripts/firmware.py build)
+
+devices:
+	$(call py_run,scripts/firmware.py devices)
+
+flash:
+	$(call py_run,scripts/firmware.py flash)
+
+flash.all:
+	$(call py_run,scripts/firmware.py flash --all)
+
+flash.%:
+	$(call py_run,scripts/firmware.py flash --kit "$*")
+
+device.bind:
+	$(call py_run,scripts/firmware.py bind --kit "$(KIT)" --port "$(PORT)")

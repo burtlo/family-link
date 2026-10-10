@@ -318,6 +318,7 @@ def load_deployment(
     path: Path,
     *,
     source: str = "file",
+    project: ProjectConfig | None = None,
 ) -> Deployment:
     try:
         raw_doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -329,7 +330,7 @@ def load_deployment(
     if not isinstance(raw_doc, dict):
         raise DeploymentConfigError(f"deployment root must be a mapping in {path}")
 
-    validate_document_schema(raw_doc)
+    validate_document_schema(raw_doc, project=project)
 
     meta_raw = _require_mapping(raw_doc.get("deployment"), "deployment")
     meta_id = _optional_str(meta_raw, "id")
@@ -384,8 +385,9 @@ def load_active_deployment(
     *,
     environ: Mapping[str, str] | None = None,
 ) -> Deployment:
-    path, source = resolve_deployment_path(project, environ=environ)
-    return load_deployment(path, source=source)
+    cfg = project if project is not None else ProjectConfig(environ=environ)
+    path, source = resolve_deployment_path(cfg)
+    return load_deployment(path, source=source, project=cfg)
 
 
 def _redact_token(token: str) -> str:

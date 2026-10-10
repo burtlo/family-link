@@ -1,4 +1,10 @@
 .venv/
+build/
+artifacts/
+logs/
+client/device/sdkconfig
+client/device/sdkconfig.old
+client/device/managed_components/
 __pycache__/
 *.py[cod]
 *.egg-info/

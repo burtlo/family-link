@@ -35,6 +35,11 @@ _FALSE_VALUES = frozenset(("0", "false", "no", "off"))
 
 # Code-defined types for settings consumed by scripts (catalog / validation).
 _SETTING_SPECS: dict[str, dict[str, object]] = {
+    "firmware.source": {"type": "path", "required": False},
+    "firmware.build": {"type": "path", "required": False},
+    "firmware.artifacts": {"type": "path", "required": False},
+    "firmware.logs": {"type": "path", "required": False},
+    "firmware.boot_seconds": {"type": "integer", "required": False, "minimum": 1},
     "project.config_version": {"type": "integer", "required": True, "minimum": 1},
     "project.id": {"type": "string", "required": True},
     "project.name": {"type": "string", "required": True},
@@ -270,7 +275,7 @@ class ProjectConfig:
     def command_names(self) -> tuple[str, ...]:
         prefix = "command."
         names = {
-            section[len(prefix) :].split(".", 1)[0]
+            section[len(prefix) :]
             for section in self._parser.sections()
             if section.startswith(prefix)
         }
@@ -356,6 +361,7 @@ class ProjectConfig:
             minimum = 1 if (
                 qualified_name.endswith(".timeout_seconds")
                 or qualified_name == "project.config_version"
+                or qualified_name == "firmware.boot_seconds"
             ) else None
             return self.integer(qualified_name, default=default, minimum=minimum)
         if kind == "version":
@@ -476,6 +482,13 @@ class ProjectConfig:
         self.path_value("config.deployment.example")
         self.path_value("config.deployment.local")
         self.path_value("config.deployment.schema")
+
+        for name, spec in _SETTING_SPECS.items():
+            if name.startswith("firmware.") and self.has(name):
+                if spec["type"] == "path":
+                    self.path_value(name)
+                elif spec["type"] == "integer":
+                    self.integer(name, minimum=int(spec.get("minimum", 1)))
 
         for name in self.command_names():
             self.command(name)

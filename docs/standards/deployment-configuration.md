@@ -36,3 +36,17 @@ python scripts/deployment_config.py dump
 | `config/deployment/deployment.schema.v1.json` | Versioned structural contract |
 
 Copy `example.yaml` to `local.yaml` and expand to your full kit count.
+
+## Physical kit selection
+
+For flash operations, aliases are kit nicknames describing positions, not owners
+or logged-in users. Resolve alias -> endpoint -> kit, then match `kit.usb_serial`
+against currently enumerated ports. A port name is transient and is not saved as
+identity. Missing bindings, duplicate bindings and ambiguous connected matches
+are rejected before writing firmware.
+
+`make devices` displays the current mapping. `make device.bind KIT=<nickname>
+PORT=<port>` explicitly binds one connected kit in the resolved local roster.
+This honors host roster-path overrides and never edits the example roster.
+Flash operations do not change bindings. Endpoint tokens, PINs and secret profiles
+are neither printed by device discovery nor embedded in the bootstrap image.
