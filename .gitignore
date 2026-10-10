@@ -35,7 +35,7 @@ data/
 # v1 poc
 poc-v1/data/
 poc-v1/.venv/
-poc-v1/firmware/
+poc-v1/firmware/managed_components/
 poc-v1/firmware/assets/persona/
 poc-v1/demos/server/h18_playback/assets/*.wav
 poc-v1/*.local.yaml

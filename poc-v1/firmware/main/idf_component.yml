@@ -1,0 +1,4 @@
+## ESP32-S3-BOX-3 board support. Demos must use this BSP — no hand-wired pins.
+dependencies:
+  espressif/esp-box-3: "^3.1.0"
+  espressif/esp_websocket_client: "^1.4.0"
