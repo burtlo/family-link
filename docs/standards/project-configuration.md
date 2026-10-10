@@ -1,28 +1,28 @@
 # Project configuration
 
-Family Link separates two configuration domains:
+Family Link uses a single **`config/`** tree with two domains:
 
-1. **Repository mechanics and host defaults** live in root
-   `project.defaults.ini`. These settings describe how to install, inspect,
-   build, test, evaluate, and flash the active project as those operations
-   become available.
-2. **Product-domain configuration**—people, kits, devices, deployments, and
-   secrets—belongs in purpose-specific YAML files. Those documents may contain
-   nested entities and relationships and are not repository command metadata.
+1. **Host / repository mechanics** — [`config/host.defaults.ini`](../../config/host.defaults.ini):
+   install, inspect, build, test, evaluate, and flash mechanics as they become
+   available.
+2. **Product deployment roster** — YAML under [`config/deployment/`](../../config/deployment/):
+   people, kits, endpoints, aliases (see
+   [`deployment-configuration.md`](deployment-configuration.md)).
 
 ## Resolution
 
-`scripts/project_config.py` is the stdlib-only loader. It uses the root
-`project.defaults.ini` unless `PROJECT_CONFIG` names another file. A relative
-`PROJECT_CONFIG` path is resolved from the repository root.
+`scripts/project_config.py` loads `config/host.defaults.ini` unless
+`PROJECT_CONFIG` names another file. Relative `PROJECT_CONFIG` paths resolve from
+the repository root.
 
 INI section names are lowercase dotted prefixes and keys are lowercase. Every
 value has an automatic environment override formed by uppercasing its fully
 qualified name and replacing dots with underscores:
 
 ```text
-[idf] path                         -> IDF_PATH
-[command.install] timeout_seconds -> COMMAND_INSTALL_TIMEOUT_SECONDS
+[idf] path                              -> IDF_PATH
+[config.deployment] example            -> CONFIG_DEPLOYMENT_EXAMPLE
+[command.install] timeout_seconds        -> COMMAND_INSTALL_TIMEOUT_SECONDS
 ```
 
 An environment variable is authoritative even when its value is empty. Scripts
@@ -37,34 +37,36 @@ Each `[command.<name>]` section defines:
 - `cwd`: a repository-relative working directory without `..`;
 - `timeout_seconds`: a positive integer.
 
-Each `[flow.<name>]` section lists command names in `commands`. The initial
-contract exposes setup, implementation, and post-repair flows. Add build,
-flash, or evaluate commands only when the active product tree implements them;
-absence means that the operation is not yet available.
+Host inspection commands:
 
-This borrows the useful repository-command contract from implementation-flow
-systems without adopting a flow engine, job ledger, or agent runtime. Make
-targets remain the executable public interface.
+| Make target | Role |
+|-------------|------|
+| `make config.host` | Host INI snapshot (`family-link.project-config.snapshot/v1`) |
+| `make config.deployment` | Roster snapshot (`family-link.deployment.snapshot/v1`, redacted) |
+| `make config` | Alias for `make config.host` |
+
+Each `[flow.<name>]` section lists command names in `commands`. Add build,
+flash, or evaluate commands only when the active product tree implements them.
 
 ## Validation and inspection
 
 ```text
-make config
-make config CONFIG=path/to/custom.ini
+make config.host
+make config.deployment
+make config.host CONFIG=path/to/custom.ini
 make test
 python scripts/project_config.py dump
 python scripts/project_config.py validate
-python scripts/project_config.py get idf.path
-python scripts/project_config.py command install
-python scripts/project_config.py flow implementation
+python scripts/deployment_config.py validate
+python scripts/deployment_config.py dump
 ```
 
 Configuration errors return a non-zero process status.
 
-## Agent snapshot (`make config`)
+## Agent snapshot (`make config.host`)
 
-`make config` prints a versioned JSON document (`family-link.project-config.snapshot/v1`)
-with separate top-level keys:
+`make config.host` prints a versioned JSON document
+(`family-link.project-config.snapshot/v1`) with separate top-level keys:
 
 | Key | Role |
 |-----|------|

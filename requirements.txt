@@ -2,3 +2,5 @@
 # Firmware later uses ESP-IDF; these diagnostics only need esptool.
 esptool>=5.0,<6
 pyserial>=3.5
+PyYAML>=6.0,<7
+jsonschema>=4.23,<5

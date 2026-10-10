@@ -14,11 +14,13 @@ echo
 echo "\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////"
 echo
 echo "  CONFIGURATION"
-echo "    Host defaults live in project.defaults.ini at the repo root."
-echo "    Use another file: make config CONFIG=path/to.ini  (or export PROJECT_CONFIG)."
+echo "    Host defaults: config/host.defaults.ini"
+echo "    Use another host INI: make config.host CONFIG=path/to.ini  (or export PROJECT_CONFIG)."
 echo "    Override any value with an uppercase env var (e.g. IDF_SKIP=true)."
 echo
-echo "    make config      Prints the resolved settings as JSON—catalog, values, and provenance."
+echo "    make config.host        Host snapshot JSON (toolchain, commands, flows)."
+echo "    make config.deployment  Product roster snapshot JSON (redacted)."
+echo "    make config             Same as make config.host."
 echo
 echo "\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////"
 echo

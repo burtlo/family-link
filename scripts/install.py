@@ -4,7 +4,7 @@
 Invoked by `make install` (`scripts/make/python.sh host-run`) with a *host*
 Python (python3 on PATH) before `.venv` exists.
 
-Defaults: project.defaults.ini at repo root (see scripts/project_config.py).
+Defaults: config/host.defaults.ini (see scripts/project_config.py).
 Every setting may be overridden by its uppercase qualified environment name.
 """
 

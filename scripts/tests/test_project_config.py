@@ -44,6 +44,10 @@ class ProjectConfigTests(unittest.TestCase):
         self.assertEqual(DEFAULT_CONFIG_PATH, config.path)
         self.assertEqual("family-link", config.text("project.id"))
         self.assertEqual(("test",), tuple(item.name for item in config.flow("implementation")))
+        self.assertEqual(
+            REPO / "config" / "deployment" / "example.yaml",
+            config.path_value("config.deployment.example"),
+        )
 
     def test_uppercase_qualified_environment_variable_overrides_value(self) -> None:
         config = ProjectConfig(
@@ -57,11 +61,11 @@ class ProjectConfigTests(unittest.TestCase):
         self.assertEqual(321, config.command("test").timeout_seconds)
 
     def test_config_path_environment_override_is_repo_relative(self) -> None:
-        with tempfile.TemporaryDirectory(dir=DEFAULT_CONFIG_PATH.parent) as raw_dir:
+        with tempfile.TemporaryDirectory(dir=REPO) as raw_dir:
             temporary = Path(raw_dir)
             path = temporary / "custom.ini"
             path.write_text(DEFAULT_CONFIG_PATH.read_text(encoding="utf-8"), encoding="utf-8")
-            relative = path.relative_to(DEFAULT_CONFIG_PATH.parent)
+            relative = path.relative_to(REPO)
 
             config = ProjectConfig(environ={CONFIG_PATH_ENV: str(relative)})
 
@@ -71,7 +75,7 @@ class ProjectConfigTests(unittest.TestCase):
         command = ProjectConfig(environ={}).command("install")
 
         self.assertEqual(("make", "install"), command.argv)
-        self.assertEqual(DEFAULT_CONFIG_PATH.parent, command.cwd)
+        self.assertEqual(REPO, command.cwd)
         self.assertGreater(command.timeout_seconds, 0)
 
     def test_unknown_flow_command_fails_validation(self) -> None:

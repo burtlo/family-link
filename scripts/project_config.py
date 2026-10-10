@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load Family Link repository mechanics from ``project.defaults.ini``.
+"""Load Family Link host mechanics from ``config/host.defaults.ini``.
 
 The file uses lowercase INI sections and keys. Each value may be overridden by
 an environment variable formed from its fully qualified name:
@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Mapping, Optional, Sequence, Union
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_CONFIG_PATH = ROOT / "project.defaults.ini"
+DEFAULT_CONFIG_PATH = ROOT / "config" / "host.defaults.ini"
 CONFIG_PATH_ENV = "PROJECT_CONFIG"
 SNAPSHOT_DOCUMENT = "family-link.project-config.snapshot/v1"
 DOCS_RELATIVE = "docs/standards/project-configuration.md"
@@ -46,6 +46,9 @@ _SETTING_SPECS: dict[str, dict[str, object]] = {
     "idf.target": {"type": "string", "required": True},
     "idf.skip": {"type": "boolean", "required": True},
     "idf.reinstall": {"type": "boolean", "required": True},
+    "config.deployment.example": {"type": "path", "required": True},
+    "config.deployment.local": {"type": "path", "required": True},
+    "config.deployment.schema": {"type": "path", "required": True},
 }
 
 _COMMAND_SECTION_KEYS: dict[str, dict[str, object]] = {
@@ -406,8 +409,8 @@ class ProjectConfig:
             "repository_config_format": "ini",
             "product_config_format": "yaml",
             "product_config_note": (
-                "People, kits, devices, deployments, and secrets use separate "
-                "YAML files (for example kits.local.yaml), not this INI contract."
+                "Product roster YAML lives under config/deployment/; paths are "
+                "in [config.deployment] on the host INI. Use make config.deployment."
             ),
             "docs": str(ROOT / DOCS_RELATIVE),
         }
@@ -470,6 +473,9 @@ class ProjectConfig:
         self.text("idf.target", required=True)
         self.boolean("idf.skip")
         self.boolean("idf.reinstall")
+        self.path_value("config.deployment.example")
+        self.path_value("config.deployment.local")
+        self.path_value("config.deployment.schema")
 
         for name in self.command_names():
             self.command(name)

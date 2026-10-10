@@ -29,7 +29,7 @@ endef
 
 export PYTHONUNBUFFERED := 1
 
-# Optional INI for config/install: make config CONFIG=path/to.ini
+# Optional host INI: make config.host CONFIG=path/to.ini
 CONFIG ?=
 ifdef CONFIG
 export PROJECT_CONFIG := $(CONFIG)
@@ -47,15 +47,20 @@ define py_run
 	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help config install test
+.PHONY: help config config.host config.deployment install test
 
 .DEFAULT_GOAL := help
 
 help:
 	@$(GITBASH) "$(ROOT)/scripts/make/help.sh"
 
-config:
+config: config.host
+
+config.host:
 	$(call py_host_run,scripts/project_config.py $(_CONFIG_PY_ARGS) dump)
+
+config.deployment:
+	$(call py_run,scripts/deployment_config.py $(_CONFIG_PY_ARGS) dump)
 
 install:
 	$(call step_msg,Installing venv host tools and ESP-IDF if needed)

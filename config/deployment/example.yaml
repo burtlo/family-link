@@ -1,0 +1,42 @@
+# Committed deployment roster (placeholders). Copy to local.yaml for a real desk roster.
+$schema: config/deployment/deployment.schema.v1.json
+
+deployment:
+  id: example-hangout
+  name: Example hangout
+
+users:
+  - id: user-admin
+    name: Admin user
+    pin: "0000"
+    web_admin: true
+    web_password: change-me-admin
+  - id: user-child
+    name: Child user
+    pin: "1111"
+
+endpoints:
+  - id: endpoint-alpha
+    name: Endpoint alpha
+    token: change-me-alpha
+    hangout_id: example-hangout
+    peer: endpoint-beta
+  - id: endpoint-beta
+    name: Endpoint beta
+    token: change-me-beta
+    hangout_id: example-hangout
+    peer: endpoint-alpha
+
+kits:
+  - id: kit-alpha
+    endpoint_id: endpoint-alpha
+    secrets_profile: default
+    usb_serial: ""
+  - id: kit-beta
+    endpoint_id: endpoint-beta
+    secrets_profile: default
+    usb_serial: ""
+
+aliases:
+  alpha: endpoint-alpha
+  beta: endpoint-beta

@@ -22,6 +22,7 @@ credentials.json
 
 # Local config overrides (real tokens, PINs, Wi-Fi, kit USB map)
 *.local.yaml
+config/deployment/local.yaml
 
 data/
 

@@ -7,7 +7,8 @@
 | Area | Role |
 |------|------|
 | [`docs/`](README.md) | Active product documentation, standards, v1 assessments, experience-spec workflow |
-| [`../project.defaults.ini`](../project.defaults.ini) | Agent-readable repository commands, flows, and host defaults |
+| [`../config/host.defaults.ini`](../config/host.defaults.ini) | Host commands, flows, and toolchain defaults |
+| [`../config/deployment/`](../config/deployment/example.yaml) | Product roster (example + gitignored `local.yaml`) |
 | `poc-v1/` | **Read-only** v1 POC archive (firmware, demos, legacy docs). Reference only — see below |
 | [`.cursor/rules/poc-v1-reference-archive.mdc`](../.cursor/rules/poc-v1-reference-archive.mdc) | Enforces archive boundaries for agents |
 
@@ -25,7 +26,8 @@ For v1 build/flash commands and archive-local indexes, humans working inside the
 
 | Need | Start here |
 |------|------------|
-| Build, test, install, and future flash/evaluate mechanics | [`../project.defaults.ini`](../project.defaults.ini) · contract: [`standards/project-configuration.md`](standards/project-configuration.md) |
+| Build, test, install, and future flash/evaluate mechanics | [`../config/host.defaults.ini`](../config/host.defaults.ini) · [`standards/project-configuration.md`](standards/project-configuration.md) |
+| Desk kits, endpoints, users | [`../config/deployment/example.yaml`](../config/deployment/example.yaml) · [`standards/deployment-configuration.md`](standards/deployment-configuration.md) · `make config.deployment` |
 | Experience spec authoring | [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) · skill: [`.cursor/skills/author-experience-specification/SKILL.md`](../.cursor/skills/author-experience-specification/SKILL.md) |
 | Client coding standards | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) |
 | v1 evidence assessments | [`v1-assessments/`](v1-assessments/carousel-playback.md) (historical evidence, not normative architecture) |
