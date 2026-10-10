@@ -12,6 +12,8 @@ Read [`AGENTS.md`](AGENTS.md) before inventing product behavior or touching code
 |-----|------|
 | [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) | Interview workflow and spec structure for new experiences |
 | `docs/product/experiences/<slug>.md` | Owner-approved experience specifications (create as needed) |
+| [`product/device-ui-specification-authoring.md`](product/device-ui-specification-authoring.md) | Workflow and required structure for fixed-hardware layouts, components, and screens |
+| [`product/device-ui/`](product/device-ui/README.md) | V2 device UI foundations, reusable layouts, components, and screen compositions |
 
 Historical v1 product docs (vision, requirements, plans, features) remain in the **v1 POC archive** until migrated into `docs/product/`.
 
@@ -38,6 +40,7 @@ Device bootstrap commands: [build and flash](standards/device-build-flash.md).
 | Skill | Role |
 |-------|------|
 | [`.cursor/skills/author-experience-specification/SKILL.md`](../.cursor/skills/author-experience-specification/SKILL.md) | Author or revise experience specs |
+| [`.cursor/skills/author-device-ui-specification/SKILL.md`](../.cursor/skills/author-device-ui-specification/SKILL.md) | Author or revise fixed-hardware device UI specs |
 | [`.cursor/skills/deep-implementation-retrospective/SKILL.md`](../.cursor/skills/deep-implementation-retrospective/SKILL.md) | Evidence-based engineering retrospective |
 
 Mirrors under `.agents/skills/` for Codex.
