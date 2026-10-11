@@ -28,10 +28,22 @@ typedef struct {
     lab02_inbox_item_t items[LAB02_INBOX_MAX_ITEMS];
 } lab02_inbox_model_t;
 
+typedef struct {
+    uint32_t revision;
+    uint16_t total_count;
+    uint16_t item_count;
+    int page_offset;
+    lab02_inbox_item_t items[LAB02_DEFAULT_PAGE_SIZE];
+} lab02_inbox_page_t;
+
 bool lab02_inbox_model_parse(const char *json, size_t len, lab02_inbox_model_t *out);
 /** Merge one fl.inbox-page/2 response at page_offset (lab cursor). Updates count to total_count. */
 bool lab02_inbox_model_merge_v2_page(lab02_inbox_model_t *model, int page_offset, const char *json,
                                      size_t len, uint32_t *inbox_revision_out);
+bool lab02_inbox_model_parse_v2_page(const char *json, size_t len, int page_offset,
+                                    lab02_inbox_page_t *out);
+bool lab02_inbox_model_apply_v2_page(lab02_inbox_model_t *model,
+                                    const lab02_inbox_page_t *page);
 const lab02_inbox_item_t *lab02_inbox_model_item(const lab02_inbox_model_t *m, int index);
 
 #ifdef __cplusplus

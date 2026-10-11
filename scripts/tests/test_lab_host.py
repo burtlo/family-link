@@ -1,11 +1,12 @@
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lab_host import (  # noqa: E402
-    ROOT,
     _defaults_files_for_lab_build,
     _prepare_lab_build_directory,
     _refresh_stale_sdkconfig,
@@ -35,7 +36,6 @@ class LabHostSdkconfigTests(unittest.TestCase):
         build = Path("build_prepare")
         build.mkdir(exist_ok=True)
         (build / "CMakeFiles").mkdir()
-        (build / "sdkconfig.defaults.deployment.kit").write_text("CONFIG_FOO=y\n", encoding="utf-8")
         _prepare_lab_build_directory(build)
         self.assertTrue(build.is_dir())
         self.assertEqual([], list(build.iterdir()))
@@ -44,12 +44,13 @@ class LabHostSdkconfigTests(unittest.TestCase):
         config = ProjectConfig()
         spec = get_lab("lab02")
         var = resolve_variant(spec, "phaseb")
-        build_dir = ROOT / var.build_dir
-        build_dir.parent.mkdir(parents=True, exist_ok=True)
-        build_dir.mkdir(exist_ok=True)
-        (build_dir / "marker").write_text("x", encoding="utf-8")
-        clean_lab(config, "lab02", "phaseb")
-        self.assertFalse(build_dir.exists())
+        with tempfile.TemporaryDirectory() as temp, patch("lab_host.ROOT", Path(temp)):
+            build_dir = Path(temp) / var.build_dir
+            build_dir.parent.mkdir(parents=True, exist_ok=True)
+            build_dir.mkdir(exist_ok=True)
+            (build_dir / "marker").write_text("x", encoding="utf-8")
+            clean_lab(config, "lab02", "phaseb")
+            self.assertFalse(build_dir.exists())
 
     def test_phaseb_build_requires_kit(self):
         config = ProjectConfig()

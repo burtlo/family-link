@@ -121,7 +121,7 @@ def build(config):
 
 
 def package_for(config):
-    artifacts = config.path_value("firmware.artifacts")
+    artifacts = config.path_value("firmware.artifacts").resolve()
     try:
         pointer = json.loads((artifacts / "current.json").read_text())
         package = (artifacts / pointer["package"]).resolve()

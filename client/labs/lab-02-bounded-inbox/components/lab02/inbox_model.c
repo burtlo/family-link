@@ -143,7 +143,21 @@ static bool parse_v2_item(cJSON *it, lab02_inbox_item_t *dst)
 bool lab02_inbox_model_merge_v2_page(lab02_inbox_model_t *model, int page_offset, const char *json,
                                       size_t len, uint32_t *inbox_revision_out)
 {
-    if (!model || !json || page_offset < 0) {
+    lab02_inbox_page_t page;
+    if (!lab02_inbox_model_parse_v2_page(json, len, page_offset, &page) ||
+        !lab02_inbox_model_apply_v2_page(model, &page)) {
+        return false;
+    }
+    if (inbox_revision_out) {
+        *inbox_revision_out = page.revision;
+    }
+    return true;
+}
+
+bool lab02_inbox_model_parse_v2_page(const char *json, size_t len, int page_offset,
+                                    lab02_inbox_page_t *out)
+{
+    if (!json || !out || page_offset < 0 || page_offset >= LAB02_INBOX_MAX_ITEMS) {
         return false;
     }
     cJSON *root = cJSON_ParseWithLength(json, len);
@@ -156,46 +170,67 @@ bool lab02_inbox_model_merge_v2_page(lab02_inbox_model_t *model, int page_offset
         cJSON_Delete(root);
         return false;
     }
-    copy_str(model->schema, sizeof(model->schema), "fl.inbox-page/2");
     cJSON *rev = cJSON_GetObjectItem(root, "inbox_revision");
-    if (rev && cJSON_IsNumber(rev) && inbox_revision_out) {
-        *inbox_revision_out = (uint32_t)rev->valueint;
-    }
     cJSON *total = cJSON_GetObjectItem(root, "total_count");
-    int total_count = total && cJSON_IsNumber(total) ? total->valueint : 0;
+    cJSON *offset = cJSON_GetObjectItem(root, "page_offset");
     cJSON *items = cJSON_GetObjectItem(root, "items");
-    if (!items || !cJSON_IsArray(items)) {
+    if (!rev || !cJSON_IsNumber(rev) || rev->valueint < 0 || !total ||
+        !cJSON_IsNumber(total) || total->valueint < 0 ||
+        total->valueint > LAB02_INBOX_MAX_ITEMS || !offset || !cJSON_IsNumber(offset) ||
+        offset->valueint != page_offset || !items || !cJSON_IsArray(items)) {
         cJSON_Delete(root);
         return false;
     }
     int n = cJSON_GetArraySize(items);
+    if (n < 0 || n > LAB02_DEFAULT_PAGE_SIZE || page_offset + n > LAB02_INBOX_MAX_ITEMS) {
+        cJSON_Delete(root);
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    out->revision = (uint32_t)rev->valueint;
+    out->total_count = (uint16_t)total->valueint;
+    out->item_count = (uint16_t)n;
+    out->page_offset = page_offset;
     for (int i = 0; i < n; i++) {
-        int idx = page_offset + i;
-        if (idx >= LAB02_INBOX_MAX_ITEMS) {
-            break;
-        }
-        if (!parse_v2_item(cJSON_GetArrayItem(items, i), &model->items[idx])) {
-            continue;
+        if (!parse_v2_item(cJSON_GetArrayItem(items, i), &out->items[i])) {
+            cJSON_Delete(root);
+            return false;
         }
     }
-    if (total_count > LAB02_INBOX_MAX_ITEMS) {
-        total_count = LAB02_INBOX_MAX_ITEMS;
+    cJSON_Delete(root);
+    return true;
+}
+
+bool lab02_inbox_model_apply_v2_page(lab02_inbox_model_t *model,
+                                    const lab02_inbox_page_t *page)
+{
+    if (!model || !page || page->item_count > LAB02_DEFAULT_PAGE_SIZE ||
+        page->page_offset < 0 || page->page_offset + page->item_count > LAB02_INBOX_MAX_ITEMS) {
+        return false;
     }
-    if (total_count > 0) {
-        model->count = (uint16_t)total_count;
-    } else if (page_offset + n > (int)model->count) {
-        model->count = (uint16_t)(page_offset + n);
+    copy_str(model->schema, sizeof(model->schema), "fl.inbox-page/2");
+    int clear_count = LAB02_DEFAULT_PAGE_SIZE;
+    if (page->page_offset + clear_count > LAB02_INBOX_MAX_ITEMS) {
+        clear_count = LAB02_INBOX_MAX_ITEMS - page->page_offset;
     }
+    memset(&model->items[page->page_offset], 0,
+           (size_t)clear_count * sizeof(model->items[0]));
+    for (uint16_t i = 0; i < page->item_count; i++) {
+        model->items[page->page_offset + i] = page->items[i];
+    }
+    model->count = page->total_count;
     if (model->page_size == 0) {
         model->page_size = LAB02_DEFAULT_PAGE_SIZE;
     }
-    cJSON_Delete(root);
-    return model->count > 0;
+    return true;
 }
 
 const lab02_inbox_item_t *lab02_inbox_model_item(const lab02_inbox_model_t *m, int index)
 {
     if (!m || index < 0 || index >= (int)m->count) {
+        return NULL;
+    }
+    if (m->items[index].message_id[0] == 0) {
         return NULL;
     }
     return &m->items[index];

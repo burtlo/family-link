@@ -1,131 +1,218 @@
 #include "lab02/page_provider_http.h"
 
-#include "lab02/card_pool.h"
-#include "lab02/instrumentation.h"
-#include "lab02/layout.h"
-#include "lab02/page_provider.h"
+#include "lab02/lab02_session.h"
+#include "lab02/lab02_session_io.h"
 #include "lab02/trace_emit.h"
 #include "lab02_platform/wifi.h"
 
 #include "esp_http_client.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
 static const char *TAG = "lab02_http";
 
-#define HTTP_BUF_SIZE 16384
-#define MAX_PAGES 32
+typedef enum {
+    LAB02_HTTP_FETCH_OK,
+    LAB02_HTTP_FETCH_FAIL,
+    LAB02_HTTP_FETCH_TIMEOUT,
+} lab02_http_fetch_result_t;
 
-static lab02_inbox_model_t s_model;
-static lab02_page_provider_t *s_pp;
-static bool s_active;
-static uint32_t s_loaded_pages;
-static uint32_t s_inbox_revision;
+#define HTTP_BUF_SIZE LAB02_PAGE_JSON_MAX
 
-static char s_pending_json[HTTP_BUF_SIZE];
-static int s_pending_offset = -1;
-static volatile bool s_pending_ready;
-static SemaphoreHandle_t s_fetch_sem;
-static int s_requested_page = -1;
+static bool s_io_started;
+static char s_fetch_scratch[HTTP_BUF_SIZE];
+static lab02_inbox_page_t s_result_page;
 static TaskHandle_t s_worker;
+static TaskHandle_t s_boot_worker;
+static uint32_t s_boot_session_id;
+static bool ensure_workers(void);
 
-static int page_for_index(int focus, uint16_t page_size)
+static int page_offset_for_index(int page)
 {
-    if (page_size == 0) {
-        page_size = LAB02_DEFAULT_PAGE_SIZE;
-    }
-    return focus / (int)page_size;
+    return page * (int)LAB02_DEFAULT_PAGE_SIZE;
 }
 
-static bool http_fetch_page(int page_offset, char *buf, size_t buf_len, size_t *out_len)
+static bool http_errno_timed_out(int eno)
+{
+    return eno == ETIMEDOUT || eno == EWOULDBLOCK;
+}
+
+static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, size_t buf_len,
+                                               size_t *out_len)
 {
     if (strlen(CONFIG_LAB02_SERVER_URL) == 0) {
-        return false;
+        return LAB02_HTTP_FETCH_FAIL;
     }
     char url[192];
-    snprintf(url, sizeof(url), "%s/v2/inbox?cursor=%d&limit=%d", CONFIG_LAB02_SERVER_URL,
-             page_offset, (int)LAB02_DEFAULT_PAGE_SIZE);
+    int url_len = snprintf(url, sizeof(url), "%s/v2/inbox?cursor=%d&limit=%d",
+                           CONFIG_LAB02_SERVER_URL, page_offset, (int)LAB02_DEFAULT_PAGE_SIZE);
+    if (url_len < 0 || url_len >= (int)sizeof(url)) {
+        return LAB02_HTTP_FETCH_FAIL;
+    }
     esp_http_client_config_t cfg = {
         .url = url,
-        .timeout_ms = 10000,
+        .timeout_ms = 3000,
     };
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
     if (!client) {
-        return false;
+        return LAB02_HTTP_FETCH_FAIL;
     }
     esp_err_t err = esp_http_client_open(client, 0);
     if (err != ESP_OK) {
+        int eno = esp_http_client_get_errno(client);
         esp_http_client_cleanup(client);
-        return false;
+        if (http_errno_timed_out(eno) || err == ESP_ERR_HTTP_CONNECT) {
+            return LAB02_HTTP_FETCH_TIMEOUT;
+        }
+        return LAB02_HTTP_FETCH_FAIL;
     }
     int total = esp_http_client_fetch_headers(client);
     if (total < 0) {
-        total = 0;
+        int eno = esp_http_client_get_errno(client);
+        esp_http_client_cleanup(client);
+        if (http_errno_timed_out(eno)) {
+            return LAB02_HTTP_FETCH_TIMEOUT;
+        }
+        return LAB02_HTTP_FETCH_FAIL;
+    }
+    int status = esp_http_client_get_status_code(client);
+    if (status != 200 || total >= (int)buf_len) {
+        esp_http_client_cleanup(client);
+        return LAB02_HTTP_FETCH_FAIL;
     }
     size_t written = 0;
+    bool read_error = false;
+    bool deadline_expired = false;
+    int64_t deadline_us = esp_timer_get_time() + 12000000;
     while (written < buf_len - 1) {
+        if (esp_timer_get_time() >= deadline_us) {
+            deadline_expired = true;
+            break;
+        }
         int r = esp_http_client_read(client, buf + written, (int)(buf_len - 1 - written));
-        if (r <= 0) {
+        if (r < 0) {
+            read_error = true;
+            break;
+        }
+        if (r == 0) {
             break;
         }
         written += (size_t)r;
     }
+    bool full = written == buf_len - 1;
     buf[written] = 0;
     *out_len = written;
+    int eno = esp_http_client_get_errno(client);
     esp_http_client_cleanup(client);
-    lab02_trace_emit("page_fetch", 0, page_offset, NULL, NULL);
-    return written > 0;
+    if (deadline_expired || http_errno_timed_out(eno)) {
+        return LAB02_HTTP_FETCH_TIMEOUT;
+    }
+    if (read_error || full || (total > 0 && written != (size_t)total)) {
+        return http_errno_timed_out(eno) ? LAB02_HTTP_FETCH_TIMEOUT : LAB02_HTTP_FETCH_FAIL;
+    }
+    if (written > 0) {
+        lab02_trace_emit("page_fetch", 0, page_offset, NULL, NULL);
+        return LAB02_HTTP_FETCH_OK;
+    }
+    if (http_errno_timed_out(eno)) {
+        return LAB02_HTTP_FETCH_TIMEOUT;
+    }
+    return LAB02_HTTP_FETCH_FAIL;
 }
 
 static void worker_task(void *arg)
 {
     (void)arg;
     for (;;) {
-        if (xSemaphoreTake(s_fetch_sem, portMAX_DELAY) != pdTRUE) {
+        lab02_fetch_req_t req;
+        if (!lab02_session_http_take_fetch_request(&req)) {
             continue;
         }
-        int page = s_requested_page;
-        if (page < 0) {
-            continue;
-        }
-        int offset = page * (int)LAB02_DEFAULT_PAGE_SIZE;
-        char tmp[HTTP_BUF_SIZE];
+        int offset = page_offset_for_index(req.page_index);
         size_t len = 0;
-        if (!http_fetch_page(offset, tmp, sizeof(tmp), &len)) {
-            ESP_LOGW(TAG, "fetch page %d failed", page);
-            continue;
+        lab02_http_fetch_result_t res =
+            http_fetch_page(offset, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
+        if (res == LAB02_HTTP_FETCH_OK &&
+            !lab02_inbox_model_parse_v2_page(s_fetch_scratch, len, offset, &s_result_page)) {
+            res = LAB02_HTTP_FETCH_FAIL;
         }
-        if (len >= sizeof(s_pending_json)) {
-            ESP_LOGW(TAG, "page %d response too large", page);
-            continue;
+        if (res == LAB02_HTTP_FETCH_OK) {
+            lab02_session_http_fetch_finished(LAB02_FETCH_OK, req.session_id, req.op_id,
+                                              req.page_index,
+                                              &s_result_page, false);
+        } else if (res == LAB02_HTTP_FETCH_TIMEOUT) {
+            lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, req.session_id, req.op_id,
+                                              req.page_index,
+                                              NULL, false);
+        } else {
+            lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, req.session_id, req.op_id,
+                                              req.page_index,
+                                              NULL, false);
         }
-        memcpy(s_pending_json, tmp, len + 1);
-        s_pending_offset = offset;
-        s_pending_ready = true;
     }
 }
 
-static void request_page_async(int page)
+static void boot_task(void *arg)
 {
-    if (page < 0 || page >= MAX_PAGES) {
+    (void)arg;
+    uint32_t session_id = s_boot_session_id;
+    lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, session_id);
+    if (!lab02_board_wifi_connect()) {
+        ESP_LOGE(TAG, "Wi-Fi failed");
+        lab02_session_http_mark_stage(LAB02_LOAD_ERROR, session_id);
+        vTaskDelete(NULL);
         return;
     }
-    if (s_loaded_pages & (1U << page)) {
+    lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, session_id);
+    size_t len = 0;
+    lab02_http_fetch_result_t boot_res =
+        http_fetch_page(0, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
+    if (boot_res == LAB02_HTTP_FETCH_TIMEOUT) {
+        ESP_LOGE(TAG, "initial page fetch timed out");
+        lab02_trace_emit("fetch_timeout", 0, 0, NULL, "boot");
+        lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, session_id, 0, 0, NULL, true);
+        vTaskDelete(NULL);
         return;
     }
-    s_requested_page = page;
-    xSemaphoreGive(s_fetch_sem);
+    if (boot_res != LAB02_HTTP_FETCH_OK) {
+        ESP_LOGE(TAG, "initial page fetch failed");
+        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, 0, 0, NULL, true);
+        vTaskDelete(NULL);
+        return;
+    }
+    if (!lab02_inbox_model_parse_v2_page(s_fetch_scratch, len, 0, &s_result_page)) {
+        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, 0, 0, NULL, true);
+        vTaskDelete(NULL);
+        return;
+    }
+    lab02_session_http_fetch_finished(LAB02_FETCH_OK, session_id, 0, 0, &s_result_page, true);
+    lab02_session_snapshot_t snap = lab02_session_snapshot();
+    if (session_id == lab02_session_generation() && snap.load_stage == LAB02_LOAD_READY) {
+        if (ensure_workers()) {
+            printf("LAB02_HTTP_READY revision=%u items=%u\n", (unsigned)snap.inbox_revision,
+                   (unsigned)snap.total_count);
+        } else {
+            lab02_session_http_mark_stage(LAB02_LOAD_ERROR, session_id);
+        }
+    }
+    vTaskDelete(NULL);
 }
 
-bool lab02_page_provider_http_active(void)
+static bool ensure_workers(void)
 {
-    return s_active;
+    if (!s_worker) {
+        if (xTaskCreate(worker_task, "lab02_http", 8192, NULL, 4, &s_worker) != pdPASS) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool lab02_page_provider_http_init(lab02_page_provider_t *pp)
@@ -133,88 +220,30 @@ bool lab02_page_provider_http_init(lab02_page_provider_t *pp)
     if (!pp || strlen(CONFIG_LAB02_SERVER_URL) == 0) {
         return false;
     }
-    memset(pp, 0, sizeof(*pp));
-    memset(&s_model, 0, sizeof(s_model));
-    s_model.page_size = LAB02_DEFAULT_PAGE_SIZE;
-    s_pp = pp;
-    pp->model = &s_model;
-
-    if (!lab02_board_wifi_connect()) {
-        ESP_LOGE(TAG, "Wi-Fi failed");
+    if (!lab02_session_begin_http(pp)) {
         return false;
     }
-
-    char buf[HTTP_BUF_SIZE];
-    size_t len = 0;
-    if (!http_fetch_page(0, buf, sizeof(buf), &len)) {
-        ESP_LOGE(TAG, "initial page fetch failed");
-        return false;
-    }
-    uint32_t rev = 0;
-    if (!lab02_inbox_model_merge_v2_page(&s_model, 0, buf, len, &rev)) {
-        ESP_LOGE(TAG, "parse initial page failed");
-        return false;
-    }
-    s_inbox_revision = rev;
-    s_loaded_pages = 1U;
-    lab02_page_metadata_build(pp->model, &pp->meta);
-    s_active = true;
-    s_fetch_sem = xSemaphoreCreateBinary();
-    if (!s_worker) {
-        xTaskCreate(worker_task, "lab02_http", 8192, NULL, 4, &s_worker);
-    }
-    printf("LAB02_HTTP_READY revision=%u items=%u url=%s\n", (unsigned)s_inbox_revision,
-           (unsigned)s_model.count, CONFIG_LAB02_SERVER_URL);
+    s_io_started = false;
     return true;
 }
 
-void lab02_page_provider_http_start(void)
+void lab02_page_provider_http_start_io(void)
 {
-    request_page_async(1);
-}
-
-void lab02_page_provider_http_prefetch_for_focus(int focus_index)
-{
-    if (!s_active || !s_pp) {
+    if (s_io_started || strlen(CONFIG_LAB02_SERVER_URL) == 0) {
         return;
     }
-    int page = page_for_index(focus_index, s_pp->meta.page_size);
-    request_page_async(page);
-    request_page_async(page + 1);
+    s_io_started = true;
+    s_boot_session_id = lab02_session_generation();
+    if (!s_boot_worker) {
+        if (xTaskCreate(boot_task, "lab02_http_boot", 8192, NULL, 4, &s_boot_worker) != pdPASS) {
+            s_io_started = false;
+            lab02_session_http_mark_stage(LAB02_LOAD_ERROR, s_boot_session_id);
+        }
+    }
 }
 
-bool lab02_page_provider_http_apply_if_idle(lab02_carousel_t *c)
+bool lab02_page_provider_http_active(void)
 {
-    if (!s_active || !c || !s_pending_ready) {
-        return false;
-    }
-    if (c->snap.scroll_lock) {
-        return false;
-    }
-    s_pending_ready = false;
-    uint32_t rev = 0;
-    size_t len = strlen(s_pending_json);
-    if (!lab02_inbox_model_merge_v2_page(&s_model, s_pending_offset, s_pending_json, len, &rev)) {
-        ESP_LOGW(TAG, "pending merge failed");
-        return false;
-    }
-    s_inbox_revision = rev;
-    int page = s_pending_offset / (int)LAB02_DEFAULT_PAGE_SIZE;
-    if (page >= 0 && page < MAX_PAGES) {
-        s_loaded_pages |= (1U << page);
-    }
-    lab02_page_metadata_build(c->provider.model, &c->provider.meta);
-    int old_count = c->item_count;
-    c->item_count = (int)c->provider.model->count;
-    if (c->focus_index >= c->item_count && c->item_count > 0) {
-        c->focus_index = c->item_count - 1;
-    }
-    lab02_trace_emit("page_apply", 0, c->focus_index, NULL, NULL);
-    if (c->content_spacer) {
-        int32_t w = LAB02_CARD_GAP + c->item_count * (LAB02_CARD_W + LAB02_CARD_GAP);
-        lv_obj_set_size(c->content_spacer, w, LAB02_CARD_H);
-    }
-    uint32_t gen = lab02_instrumentation_next_generation();
-    lab02_card_pool_rebind(&c->pool, &c->provider, c->focus_index, gen);
-    return c->item_count != old_count;
+    lab02_session_snapshot_t snap = lab02_session_snapshot();
+    return snap.http_active;
 }

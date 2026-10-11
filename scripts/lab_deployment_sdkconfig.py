@@ -13,6 +13,19 @@ def sdkconfig_quoted_value(value: str) -> str:
     return f'"{escaped}"'
 
 
+def deployment_kit_defaults_path(build_dir: Path, kit: Kit) -> Path:
+    """Outside build_dir so ESP-IDF set-target/fullclean never sees a dirty tree."""
+    return build_dir.parent / f"{build_dir.name}.deployment.{kit.id}.defaults"
+
+
+def deployment_defaults_sidecars(build_dir: Path) -> list[Path]:
+    parent = build_dir.parent
+    prefix = f"{build_dir.name}.deployment."
+    if not parent.is_dir():
+        return []
+    return sorted(p for p in parent.iterdir() if p.name.startswith(prefix))
+
+
 def deployment_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str]:
     lines: list[str] = []
     if deployment.lab.phaseb_server_url:
@@ -47,13 +60,13 @@ def write_deployment_kit_sdkconfig(
     kit: Kit,
     deployment: Deployment,
 ) -> Path | None:
-    """Write sdkconfig.defaults.deployment.kit; invalidate sdkconfig when content changes."""
+    """Write kit deployment defaults beside build_dir; invalidate sdkconfig when content changes."""
     lines = deployment_kit_sdkconfig_lines(deployment, kit)
     if not lines:
         return None
-    build_dir.mkdir(parents=True, exist_ok=True)
-    path = build_dir / "sdkconfig.defaults.deployment.kit"
-    meta = build_dir / "sdkconfig.defaults.deployment.kit.sha256"
+    build_dir.parent.mkdir(parents=True, exist_ok=True)
+    path = deployment_kit_defaults_path(build_dir, kit)
+    meta = path.with_suffix(path.suffix + ".sha256")
     content = "\n".join(lines) + "\n"
     digest = deployment_kit_sdkconfig_digest(deployment, kit)
     if meta.is_file() and meta.read_text(encoding="utf-8").strip() == digest and path.is_file():

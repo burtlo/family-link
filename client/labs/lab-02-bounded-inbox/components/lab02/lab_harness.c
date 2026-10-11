@@ -1,4 +1,5 @@
 #include "lab02/carousel_controller.h"
+#include "lab02/lab02_session.h"
 #include "lab02/trace_emit.h"
 #include "lab02_platform/board.h"
 
@@ -16,6 +17,29 @@ static void harness_show_step(int step_one_based, int total, const char *who)
     char line[56];
     snprintf(line, sizeof(line), "AUTO %d/%d  %s", step_one_based, total, who ? who : "—");
     lab02_board_status_set(line);
+}
+
+/** Wait for HTTP boot (or fixture attach) so item_count is not read at shell-only zero. */
+static bool harness_wait_inbox(lab02_carousel_t *c, int max_wait_ms)
+{
+    int waited = 0;
+    while (waited < max_wait_ms) {
+        if (c && lab02_board_lvgl_lock(200)) {
+            lab02_carousel_pump(c);
+            lab02_board_lvgl_unlock();
+        }
+        lab02_session_snapshot_t snap = lab02_session_snapshot();
+        if (snap.load_stage == LAB02_LOAD_ERROR) {
+            return false;
+        }
+        if (snap.load_stage == LAB02_LOAD_READY) {
+            return true;
+        }
+        vTaskDelay(pdMS_TO_TICKS(250));
+        waited += 250;
+    }
+    lab02_session_snapshot_t snap = lab02_session_snapshot();
+    return snap.load_stage == LAB02_LOAD_READY;
 }
 
 static void harness_step(lab02_carousel_t *c, int index, int step_one_based, int total)
@@ -43,6 +67,15 @@ static void harness_task(void *arg)
         printf("HARNESS_DONE status=no_carousel\n");
         vTaskDelete(NULL);
         return;
+    }
+    if (!harness_wait_inbox(c, 30000)) {
+        printf("HARNESS_DONE status=inbox_not_ready\n");
+        vTaskDelete(NULL);
+        return;
+    }
+    if (lab02_board_lvgl_lock(500)) {
+        lab02_carousel_pump(c);
+        lab02_board_lvgl_unlock();
     }
     int n = c->item_count;
     int steps = n < 20 ? n : 20;

@@ -13,6 +13,7 @@ from deployment_config import (
     SecretsProfile,
 )
 from lab_deployment_sdkconfig import (
+    deployment_kit_defaults_path,
     deployment_kit_sdkconfig_lines,
     sdkconfig_quoted_value,
     write_deployment_kit_sdkconfig,
@@ -58,10 +59,12 @@ class LabDeploymentSdkconfigTests(unittest.TestCase):
         dep_a = _deployment(secrets_profiles={"sunset": SecretsProfile(wifi_ssid="A", wifi_password="1")})
         dep_b = _deployment(secrets_profiles={"sunset": SecretsProfile(wifi_ssid="B", wifi_password="1")})
         with tempfile.TemporaryDirectory() as raw:
-            build = Path(raw)
+            build = Path(raw) / "lab-build"
+            build.mkdir()
             sdk = build / "sdkconfig"
             sdk.write_text("CONFIG_FOO=y\n", encoding="utf-8")
             write_deployment_kit_sdkconfig(build, kit, dep_a)
+            self.assertTrue(deployment_kit_defaults_path(build, kit).is_file())
             self.assertFalse(sdk.is_file())
             sdk.write_text("CONFIG_FOO=y\n", encoding="utf-8")
             write_deployment_kit_sdkconfig(build, kit, dep_b)

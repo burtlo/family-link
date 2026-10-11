@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from deployment_config import load_active_deployment
 from device_targets import ports, select
 from device_targets import kit_for
-from lab_deployment_sdkconfig import write_deployment_kit_sdkconfig
+from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
 from firmware import idf_environment, run
 from lab_registry import (
     LabSpec,
@@ -214,10 +214,11 @@ def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Non
         try:
             run(base + ["fullclean"], env=env, timeout=timeout)
             print(f"Cleaned lab.{spec.make_name} variant={var.name} (idf fullclean) -> {_rel(build_dir)}")
-            return
         except (ProjectConfigError, OSError, subprocess.SubprocessError):
             pass
     shutil.rmtree(build_dir)
+    for sidecar in deployment_defaults_sidecars(build_dir):
+        sidecar.unlink(missing_ok=True)
     print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
 
 
@@ -350,8 +351,7 @@ def build_lab(
         f"-DSDKCONFIG={build_dir / 'sdkconfig'}",
     ]
     timeout = config.integer("command.lab.build.timeout_seconds", default=1200, minimum=1)
-    if not (build_dir / "CMakeCache.txt").is_file():
-        run(base + ["set-target", spec.target], env=env, timeout=timeout)
+    # set-target runs fullclean when -B exists; idf.py build configures a fresh tree via -DIDF_TARGET.
     run(base + ["build"], env=env, timeout=timeout)
     print(f"Built lab.{spec.make_name} variant={var.name} -> {build_dir}")
     return build_dir

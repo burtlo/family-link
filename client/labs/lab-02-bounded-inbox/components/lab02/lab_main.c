@@ -3,12 +3,16 @@
 #include "lab02/carousel_controller.h"
 #include "lab02/eager_carousel.h"
 #include "lab02/instrumentation.h"
+#include "lab02/lab02_session.h"
+#include "lab02/page_provider_http.h"
 #include "lab02_fixtures/fixtures.h"
 
 #include "lab02_platform/board.h"
 
 #include "esp_app_desc.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 
@@ -35,6 +39,24 @@ static const char *fixture_name(void)
     return "inbox_16";
 #endif
 }
+
+#if !CONFIG_LAB02_EAGER_BASELINE
+static void session_pump_task(void *arg)
+{
+    (void)arg;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(120));
+        if (!lab02_board_lvgl_lock(80)) {
+            continue;
+        }
+        lab02_carousel_t *c = lab02_carousel_instance();
+        if (c) {
+            lab02_carousel_pump(c);
+        }
+        lab02_board_lvgl_unlock();
+    }
+}
+#endif
 
 static const char *mode_name(void)
 {
@@ -83,12 +105,25 @@ void lab02_app_start(void)
     }
 #else
     static lab02_carousel_t carousel;
-    if (!lab02_carousel_init(&carousel)) {
+    bool carousel_ready = lab02_carousel_init(&carousel);
+    if (!carousel_ready) {
         lab02_board_status_set("carousel init failed");
+    } else if (lab02_page_provider_http_active()) {
+        lab02_board_status_set("loading inbox…");
     }
 #endif
 
     lab02_board_lvgl_unlock();
+
+#if !CONFIG_LAB02_EAGER_BASELINE
+    if (carousel_ready && strlen(CONFIG_LAB02_SERVER_URL) > 0) {
+        if (xTaskCreate(session_pump_task, "lab02_sess", 4096, NULL, 3, NULL) == pdPASS) {
+            lab02_session_start_http_io();
+        } else {
+            lab02_board_status_set("session unavailable");
+        }
+    }
+#endif
 
 #if CONFIG_LAB_AUTO_HARNESS
     lab02_harness_start();

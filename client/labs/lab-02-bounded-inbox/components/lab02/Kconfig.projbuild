@@ -43,8 +43,9 @@ menu "LAB-02 Bounded Inbox"
         default 0
         range 0 5000
         help
-            Scenario S-delay: sleep on the UI thread before applying bind labels.
-            Use a small value (e.g. 50) to verify gestures are not blocked by bind work.
+            Scenario S-delay: defer label application with an LVGL timer without
+            sleeping on the UI thread. Use a small value (e.g. 50) to verify
+            gestures stay responsive and stale binds cannot appear.
 
     config LAB02_SERVER_URL
         string "Phase B paging server URL (fl.inbox-page/2)"

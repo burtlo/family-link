@@ -1,5 +1,6 @@
 set(LAB02_SRCS
     lab_main.c
+    lab02_session.c
     inbox_model.c
     inbox_page_metadata.c
     page_provider.c

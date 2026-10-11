@@ -44,9 +44,6 @@ void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t
     for (int s = 0; s < LAB02_CARD_POOL_SIZE; s++) {
         int idx = focus + slot_offset(s);
         lab02_card_view_t *view = &pool->views[s];
-        if (lab02_card_view_is_stale(view, generation)) {
-            lab02_instrumentation_get()->stale_bind_drops++;
-        }
         if (idx < 0 || idx >= count) {
             lab02_card_view_unbind(view, generation);
             continue;
@@ -54,7 +51,9 @@ void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t
         const lab02_inbox_item_t *item = lab02_page_provider_item(pp, idx);
         lab02_card_view_bind(view, idx, generation, item);
         lab02_card_view_set_pos_for_index(view, idx);
-        lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+        if (!view->pending_bind) {
+            lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+        }
         lab02_card_view_style_root(view->root, idx == focus);
     }
 }

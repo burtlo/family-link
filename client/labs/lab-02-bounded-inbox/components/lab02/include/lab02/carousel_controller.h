@@ -20,10 +20,13 @@ typedef struct {
     lab02_snap_state_t snap;
     int focus_index;
     int item_count;
+    bool programmatic_scroll;
 } lab02_carousel_t;
 
 bool lab02_carousel_init(lab02_carousel_t *c);
 void lab02_carousel_set_focus(lab02_carousel_t *c, int index, bool animate);
+/** Apply session I/O results to carousel layout (call outside snap lock). */
+void lab02_carousel_pump(lab02_carousel_t *c);
 lab02_carousel_t *lab02_carousel_instance(void);
 
 #ifdef __cplusplus

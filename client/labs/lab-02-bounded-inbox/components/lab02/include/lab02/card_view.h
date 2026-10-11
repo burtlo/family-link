@@ -17,6 +17,9 @@ typedef struct {
     int bound_index;
     uint32_t bind_generation;
     char bound_message_id[24];
+    lv_timer_t *bind_timer;
+    lab02_inbox_item_t pending_item;
+    bool pending_bind;
 } lab02_card_view_t;
 
 void lab02_card_view_style_root(lv_obj_t *card, bool focused);
