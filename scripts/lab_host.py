@@ -155,15 +155,74 @@ def parse_serial_file(spec: LabSpec, serial_path: Path, metrics_path: Path) -> N
     )
 
 
-def _sdkconfig_defaults_env(project: Path, variant_defaults: tuple[Path, ...]) -> dict[str, str]:
+def _sdkconfig_defaults_files(
+    project: Path, variant_defaults: tuple[Path, ...]
+) -> list[Path]:
     if variant_defaults:
-        files = [str(ROOT / path) for path in variant_defaults]
-    elif (ROOT / project / "sdkconfig.defaults").is_file():
-        files = [str(ROOT / project / "sdkconfig.defaults")]
-    else:
+        return [ROOT / path for path in variant_defaults]
+    default = ROOT / project / "sdkconfig.defaults"
+    return [default] if default.is_file() else []
+
+
+def _sdkconfig_defaults_env(project: Path, variant_defaults: tuple[Path, ...]) -> dict[str, str]:
+    files = _sdkconfig_defaults_files(project, variant_defaults)
+    if not files:
         return {}
     sep = ";" if os.name == "nt" else ":"
-    return {"SDKCONFIG_DEFAULTS": sep.join(files)}
+    return {"SDKCONFIG_DEFAULTS": sep.join(str(path) for path in files)}
+
+
+def _sdkconfig_assignment_lines(path: Path) -> list[str]:
+    """Non-comment CONFIG_*= lines from a defaults or sdkconfig file."""
+    if not path.is_file():
+        return []
+    lines: list[str] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("CONFIG_") and "=" in line:
+            lines.append(line)
+    return lines
+
+
+def _sdkconfig_missing_assignments(sdkconfig_path: Path, defaults_files: list[Path]) -> list[str]:
+    """Defaults entries absent from an existing sdkconfig (IDF does not re-merge defaults)."""
+    if not sdkconfig_path.is_file() or not defaults_files:
+        return []
+    existing = sdkconfig_path.read_text(encoding="utf-8")
+    required: list[str] = []
+    seen: set[str] = set()
+    for path in defaults_files:
+        for line in _sdkconfig_assignment_lines(path):
+            key = line.split("=", 1)[0]
+            if key in seen:
+                continue
+            seen.add(key)
+            required.append(line)
+    missing: list[str] = []
+    for line in required:
+        key = line.split("=", 1)[0]
+        if f"{key}=" not in existing:
+            missing.append(line)
+    return missing
+
+
+def _refresh_stale_sdkconfig(build_dir: Path, defaults_files: list[Path]) -> bool:
+    sdkconfig = build_dir / "sdkconfig"
+    missing = _sdkconfig_missing_assignments(sdkconfig, defaults_files)
+    if not missing:
+        return False
+    if sdkconfig.is_file():
+        print(
+            f"Removing stale { _rel(sdkconfig) } (missing {len(missing)} variant default(s), "
+            f"e.g. {missing[0].split('=', 1)[0]})"
+        )
+        sdkconfig.unlink()
+    old = build_dir / "sdkconfig.old"
+    if old.is_file():
+        old.unlink()
+    return True
 
 
 def build_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Path:
@@ -172,10 +231,12 @@ def build_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Pat
     if config.text("idf.target", required=True) != spec.target:
         raise ProjectConfigError(f"Lab {spec.make_name} target {spec.target} differs from configured idf.target")
     env, idf = idf_environment(config)
-    env.update(_sdkconfig_defaults_env(spec.project_dir, var.sdkconfig_defaults))
     project = ROOT / spec.project_dir
     build_dir = ROOT / var.build_dir
+    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
     build_dir.mkdir(parents=True, exist_ok=True)
+    _refresh_stale_sdkconfig(build_dir, defaults_files)
+    env.update(_sdkconfig_defaults_env(spec.project_dir, var.sdkconfig_defaults))
     base = idf + [
         "-C",
         str(project),

@@ -92,6 +92,7 @@ Registry variant keys (`scripted`, `eager`, …) back those targets. Advanced: `
 - `variants.default` names the variant used when `VARIANT` is unset.
 - Each variant key (except `default`) defines `build_dir` (repo-relative, usually under `build/labs/`) and optional `sdkconfig_defaults` (paths relative to `project_dir`).
 - Use distinct `build_dir` values per variant so recycle and eager builds do not overwrite each other.
+- ESP-IDF applies `sdkconfig.defaults` only when `sdkconfig` is created. `scripts/lab_host.py` deletes a stale `build_dir/sdkconfig` when variant defaults are missing from it (so `make lab.<name>.scripted` picks up `CONFIG_LAB_AUTO_HARNESS`).
 
 ### `run` (operator + capture defaults)
 
