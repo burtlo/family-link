@@ -112,6 +112,16 @@ class DeploymentConfigTests(unittest.TestCase):
             with self.assertRaisesRegex(DeploymentConfigError, "duplicate endpoint token"):
                 load_deployment(path)
 
+    def test_kit_secrets_profile_must_exist(self) -> None:
+        with tempfile.TemporaryDirectory() as raw_dir:
+            path = Path(raw_dir) / "bad.yaml"
+            text = EXAMPLE.read_text(encoding="utf-8").replace(
+                "secrets_profile: default", "secrets_profile: missing", 1
+            )
+            path.write_text(text, encoding="utf-8")
+            with self.assertRaisesRegex(DeploymentConfigError, "not defined in secrets_profiles"):
+                load_deployment(path)
+
     def test_kit_must_reference_known_endpoint(self) -> None:
         with tempfile.TemporaryDirectory() as raw_dir:
             path = Path(raw_dir) / "bad.yaml"

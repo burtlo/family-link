@@ -28,7 +28,7 @@ bool lab02_page_provider_local_init(lab02_page_provider_t *pp)
 
 const lab02_inbox_item_t *lab02_page_provider_item(const lab02_page_provider_t *pp, int index)
 {
-    if (!pp || !s_loaded) {
+    if (!pp || !pp->model) {
         return NULL;
     }
     return lab02_inbox_model_item(pp->model, index);

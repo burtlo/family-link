@@ -1,0 +1,11 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-02",
+  "lab_revision": "v2",
+  "firmware_path": "client/labs/lab-02-bounded-inbox",
+  "server_path": "server/labs/lab-02-paging",
+  "fixture_schema": "fl.inbox-page/2",
+  "fixture_revision": "v1",
+  "protocol": "http-paging",
+  "trace_schema": "lab-trace/v1"
+}

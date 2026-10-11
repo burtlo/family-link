@@ -236,10 +236,19 @@ def run_mode_hint_lines(spec: LabSpec) -> list[str]:
     name = spec.make_name
     lines = ["Run modes:"]
     lines.append(f"  Manual (you scroll on device)     make lab.{name} [KIT=<nickname>]")
+    lines.append(f"  Clean default variant build dir   make lab.{name}.clean")
     if "scripted" in spec.variants:
         lines.append(f"  Auto-scroll (device runs script)  make lab.{name}.scripted [KIT=<nickname>]")
+        lines.append(f"  Clean scripted build dir          make lab.{name}.scripted.clean")
     if "eager" in spec.variants:
         lines.append(f"  Eager comparison build            make lab.{name}.eager [KIT=<nickname>]")
+        lines.append(f"  Clean eager build dir             make lab.{name}.eager.clean")
+    if "phaseb" in spec.variants:
+        lines.append(
+            f"  Phase B HTTP paging               make lab.{name}.server; "
+            f"make lab.{name}.phaseb.build KIT=<nickname> (required); make lab.{name}.phaseb KIT=…"
+        )
+        lines.append(f"  Clean Phase B build dir           make lab.{name}.phaseb.clean")
     if spec.trace_parser:
         lines.append(f"  Parse last capture (metrics.json) make lab.{name}.parse [RUN_ID=…]")
     return lines

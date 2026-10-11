@@ -11,7 +11,7 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
@@ -64,6 +64,17 @@ class Endpoint:
 
 
 @dataclass(frozen=True)
+class LabDeskSettings:
+    phaseb_server_url: str = ""
+
+
+@dataclass(frozen=True)
+class SecretsProfile:
+    wifi_ssid: str = ""
+    wifi_password: str = ""
+
+
+@dataclass(frozen=True)
 class Kit:
     id: str
     endpoint_id: str
@@ -80,6 +91,14 @@ class Deployment:
     endpoints: tuple[Endpoint, ...]
     kits: tuple[Kit, ...]
     aliases: dict[str, str]
+    lab: LabDeskSettings = LabDeskSettings()
+    secrets_profiles: dict[str, SecretsProfile] = field(default_factory=dict)
+
+    def secrets_profile_for_kit(self, kit: Kit) -> SecretsProfile | None:
+        name = kit.secrets_profile.strip()
+        if not name:
+            return None
+        return self.secrets_profiles.get(name)
 
     def endpoint_by_id(self, endpoint_id: str) -> Endpoint | None:
         for item in self.endpoints:
@@ -157,6 +176,8 @@ def build_catalog(schema_path: Path | None = None) -> dict[str, object]:
             "kit endpoint_id must name a defined endpoint id",
             "every endpoint id has exactly one kit (kit endpoint_id set equals endpoint ids)",
             "endpoint peer, when set, must name another endpoint id in the same file",
+            "every kit must set secrets_profile to a key in secrets_profiles",
+            "secrets_profiles entry: wifi_password requires wifi_ssid",
         ],
         "docs": str(ROOT / DOCS_RELATIVE),
     }
@@ -293,6 +314,38 @@ def _parse_kits(raw: Any, endpoint_ids: set[str]) -> tuple[Kit, ...]:
     return tuple(out)
 
 
+_PROFILE_NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+
+
+def _parse_secrets_profiles(raw: Any) -> dict[str, SecretsProfile]:
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise DeploymentConfigError("secrets_profiles must be a mapping")
+    out: dict[str, SecretsProfile] = {}
+    for key, value in raw.items():
+        name = str(key).strip()
+        if not name or not _PROFILE_NAME_RE.fullmatch(name):
+            raise DeploymentConfigError(f"invalid secrets_profiles key {key!r}")
+        if name in out:
+            raise DeploymentConfigError(f"duplicate secrets_profiles key {name!r}")
+        if not isinstance(value, dict):
+            raise DeploymentConfigError(f"secrets_profiles.{name} must be a mapping")
+        out[name] = SecretsProfile(
+            wifi_ssid=_optional_str(value, "wifi_ssid"),
+            wifi_password=_optional_str(value, "wifi_password"),
+        )
+    return out
+
+
+def _parse_lab(raw: Any) -> LabDeskSettings:
+    if raw is None:
+        return LabDeskSettings()
+    if not isinstance(raw, dict):
+        raise DeploymentConfigError("lab must be a mapping")
+    return LabDeskSettings(phaseb_server_url=_optional_str(raw, "phaseb_server_url"))
+
+
 def _parse_aliases(raw: Any, endpoint_ids: set[str]) -> dict[str, str]:
     if raw is None:
         return {}
@@ -345,6 +398,8 @@ def load_deployment(
     users = _parse_users(raw_doc.get("users"))
     kits = _parse_kits(raw_doc.get("kits"), endpoint_ids)
     aliases = _parse_aliases(raw_doc.get("aliases"), endpoint_ids)
+    lab = _parse_lab(raw_doc.get("lab"))
+    secrets_profiles = _parse_secrets_profiles(raw_doc.get("secrets_profiles"))
 
     deployment = Deployment(
         path=path.resolve(),
@@ -354,6 +409,8 @@ def load_deployment(
         endpoints=endpoints,
         kits=kits,
         aliases=aliases,
+        lab=lab,
+        secrets_profiles=secrets_profiles,
     )
     validate_deployment(deployment)
     return deployment
@@ -378,6 +435,20 @@ def validate_deployment(deployment: Deployment) -> None:
             )
         if extra:
             raise DeploymentConfigError(f"kits reference unknown endpoints: {sorted(extra)!r}")
+    profile_names = set(deployment.secrets_profiles)
+    for kit in deployment.kits:
+        profile_name = kit.secrets_profile.strip()
+        if not profile_name:
+            raise DeploymentConfigError(f"kit {kit.id!r}: secrets_profile is required")
+        if profile_name not in profile_names:
+            raise DeploymentConfigError(
+                f"kit {kit.id!r}: secrets_profile {profile_name!r} is not defined in secrets_profiles"
+            )
+    for name, profile in deployment.secrets_profiles.items():
+        if profile.wifi_password and not profile.wifi_ssid:
+            raise DeploymentConfigError(
+                f"secrets_profiles.{name}: wifi_password requires wifi_ssid"
+            )
 
 
 def load_active_deployment(
@@ -439,6 +510,16 @@ def dump_snapshot(deployment: Deployment) -> dict[str, object]:
             }
             for kit in deployment.kits
         ],
+        "secrets_profiles": {
+            name: {
+                "wifi_ssid": "[redacted]" if profile.wifi_ssid else "",
+                "wifi_password": "[redacted]" if profile.wifi_password else "",
+            }
+            for name, profile in sorted(deployment.secrets_profiles.items())
+        },
+        "lab": {
+            "phaseb_server_url": deployment.lab.phaseb_server_url or "",
+        },
         "aliases": dict(sorted(deployment.aliases.items())),
     }
 

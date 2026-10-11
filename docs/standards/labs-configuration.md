@@ -71,6 +71,7 @@ Every ESP-IDF lab sources [`client/labs/kconfig/lab_common.projbuild`](../../cli
 | You scroll the UI during capture | `make lab.<name>` |
 | Device auto-scrolls (scripted) | `make lab.<name>.scripted` |
 | LAB-02 eager 16-widget comparison | `make lab.lab02.eager` |
+| Drop a variant’s build tree | `make lab.<name>.<variant>.clean` (e.g. `make lab.lab02.phaseb.clean`) |
 
 Registry variant keys (`scripted`, `eager`, …) back those targets. Advanced: `VARIANT=scripted` still works. Lab-specific Kconfig (fixtures, etc.) stays in each lab’s `Kconfig.projbuild` menu.
 
@@ -148,6 +149,7 @@ a registry entry and project tree — not new Makefile rules.
 | `make lab.<name>.help` | Operator instructions from the registry |
 | `make lab.<name>` | Print operator briefing, then build if needed, flash, capture serial |
 | `make lab.<name>.build` | Build only (`VARIANT=…`) |
+| `make lab.<name>.clean` | Remove that variant’s `build_dir` (`idf.py fullclean` when configured, else delete tree) |
 | `make lab.<name>.flash` | Flash (`KIT=` or `PORT=`) |
 | `make lab.<name>.capture` | Capture (`FLASH=0` to skip flash) |
 | `make lab.<name>.parse` | Parse `serial.txt` → `metrics.json` (`RUN_ID=` or latest capture) |

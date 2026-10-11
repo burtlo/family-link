@@ -1,6 +1,7 @@
 #include "lab02/carousel_controller.h"
 
 #include "lab02/instrumentation.h"
+#include "lab02/page_provider_http.h"
 #include "lab02/trace_emit.h"
 
 #include <stdio.h>
@@ -16,14 +17,15 @@ static int32_t content_w(int item_count)
     return LAB02_CARD_GAP + item_count * (LAB02_CARD_W + LAB02_CARD_GAP);
 }
 
-static void update_count_label(lab02_carousel_t *c)
+static void update_status_label(lab02_carousel_t *c)
 {
     if (!c->count_lab) {
         return;
     }
-    char buf[48];
-    snprintf(buf, sizeof(buf), "LAB-02  %d msgs  page_size=%u pages=%u", c->item_count,
-             (unsigned)c->provider.meta.page_size, (unsigned)c->provider.meta.page_count);
+    char buf[72];
+    const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, c->focus_index);
+    const char *who = (item && item->sender_name[0]) ? item->sender_name : "—";
+    snprintf(buf, sizeof(buf), "LAB-02  %d/%d  %s", c->focus_index + 1, c->item_count, who);
     lv_label_set_text(c->count_lab, buf);
 }
 
@@ -35,6 +37,7 @@ static void on_snap_done(void *user)
     }
     uint32_t gen = lab02_instrumentation_next_generation();
     lab02_card_pool_rebind(&c->pool, &c->provider, c->focus_index, gen);
+    lab02_page_provider_http_apply_if_idle(c);
 }
 
 static void scroll_event_cb(lv_event_t *e)
@@ -60,7 +63,7 @@ bool lab02_carousel_init(lab02_carousel_t *c)
         return false;
     }
     memset(c, 0, sizeof(*c));
-    if (!lab02_page_provider_local_init(&c->provider)) {
+    if (!lab02_page_provider_init(&c->provider)) {
         return false;
     }
     c->item_count = (int)c->provider.model->count;
@@ -74,7 +77,7 @@ bool lab02_carousel_init(lab02_carousel_t *c)
     c->count_lab = lv_label_create(c->screen);
     lv_obj_set_style_text_color(c->count_lab, lv_color_hex(LAB02_UI_TEXT), 0);
     lv_obj_align(c->count_lab, LV_ALIGN_TOP_MID, 0, 2);
-    update_count_label(c);
+    update_status_label(c);
 
     c->scroll = lv_obj_create(c->screen);
     lv_obj_set_pos(c->scroll, 0, LAB02_CARD_Y);
@@ -119,6 +122,9 @@ void lab02_carousel_set_focus(lab02_carousel_t *c, int index, bool animate)
         uint32_t gen = lab02_instrumentation_next_generation();
         lab02_card_pool_rebind(&c->pool, &c->provider, c->focus_index, gen);
     }
+    update_status_label(c);
+    lab02_page_provider_http_prefetch_for_focus(c->focus_index);
+    lab02_page_provider_http_apply_if_idle(c);
 }
 
 lab02_carousel_t *lab02_carousel_instance(void)

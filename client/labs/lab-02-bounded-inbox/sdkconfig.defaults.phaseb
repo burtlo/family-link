@@ -1,0 +1,6 @@
+# Phase B: credentials from config/deployment/local.yaml when you build with
+# KIT=<nickname> (kit secrets_profile → secrets_profiles.*.wifi_* and lab.phaseb_server_url).
+# Or set CONFIG_LAB02_* in menuconfig / a local sdkconfig.defaults overlay.
+
+CONFIG_ESP_WIFI_ENABLED=y
+CONFIG_ESP_WIFI_STA_DISCONNECTED_PM_ENABLE=n

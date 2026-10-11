@@ -13,6 +13,7 @@
 #include "sdkconfig.h"
 
 #include <stdio.h>
+#include <string.h>
 
 static const char *TAG = "lab02_main";
 
@@ -40,6 +41,9 @@ static const char *mode_name(void)
 #if CONFIG_LAB02_EAGER_BASELINE
     return "eager";
 #else
+    if (strlen(CONFIG_LAB02_SERVER_URL) > 0) {
+        return "http";
+    }
     return "recycle";
 #endif
 }

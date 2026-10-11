@@ -25,6 +25,11 @@ labs:
         sdkconfig_defaults:
           - sdkconfig.defaults
           - ../kconfig/sdkconfig.defaults.scripted
+      phaseb:
+        build_dir: build/labs/lab-02-bounded-inbox-phaseb
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.phaseb
     trace_parser: client/labs/lab-02-bounded-inbox/tools/parse_lab_trace.py
     run:
       capture_seconds_default: 120
@@ -34,5 +39,6 @@ labs:
         - Manual: make lab.lab02
         - Auto-scroll: make lab.lab02.scripted
         - Eager comparison: make lab.lab02.eager - 16-widget baseline (see lab README).
+        - Phase B HTTP paging: make lab.lab02.server; set secrets_profiles + lab.phaseb_server_url in local.yaml; make lab.lab02.phaseb.build KIT=<nickname>.
         Name the scenario in RUN_ID (e.g. S-fix-16) when you publish evidence.
       instructions_doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios

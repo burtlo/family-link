@@ -29,6 +29,9 @@ typedef struct {
 } lab02_inbox_model_t;
 
 bool lab02_inbox_model_parse(const char *json, size_t len, lab02_inbox_model_t *out);
+/** Merge one fl.inbox-page/2 response at page_offset (lab cursor). Updates count to total_count. */
+bool lab02_inbox_model_merge_v2_page(lab02_inbox_model_t *model, int page_offset, const char *json,
+                                     size_t len, uint32_t *inbox_revision_out);
 const lab02_inbox_item_t *lab02_inbox_model_item(const lab02_inbox_model_t *m, int index);
 
 #ifdef __cplusplus

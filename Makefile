@@ -51,9 +51,11 @@ endef
 
 # Lab device firmware (registry: config/labs.registry.yaml). Optional: KIT PORT SECONDS FLASH RUN_ID
 # Prefer make lab.<name>.scripted / .eager over VARIANT= (advanced).
-.PHONY: lab.%.build lab.%.flash lab.%.capture lab.%.help
-.PHONY: lab.%.scripted lab.%.scripted.build lab.%.scripted.flash lab.%.scripted.capture
-.PHONY: lab.%.eager lab.%.eager.build lab.%.eager.flash lab.%.eager.capture
+.PHONY: lab.%.build lab.%.flash lab.%.capture lab.%.clean lab.%.help
+.PHONY: lab.%.scripted lab.%.scripted.build lab.%.scripted.flash lab.%.scripted.capture lab.%.scripted.clean
+.PHONY: lab.%.phaseb lab.%.phaseb.build lab.%.phaseb.flash lab.%.phaseb.capture lab.%.phaseb.clean
+.PHONY: lab.%.eager lab.%.eager.build lab.%.eager.flash lab.%.eager.capture lab.%.eager.clean
+.PHONY: lab.lab02.server
 .PHONY: lab.%.parse
 
 .DEFAULT_GOAL := help
@@ -110,6 +112,9 @@ lab.%.parse:
 lab.%.scripted.build:
 	$(call py_run,scripts/lab_host.py build $* --variant scripted)
 
+lab.%.scripted.clean:
+	$(call py_run,scripts/lab_host.py clean $* --variant scripted)
+
 lab.%.scripted.flash:
 	$(call py_run,scripts/lab_host.py flash $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
 
@@ -119,8 +124,29 @@ lab.%.scripted.capture:
 lab.%.scripted:
 	$(call py_run,scripts/lab_host.py run $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
+lab.lab02.server:
+	@$(GITBASH) -c "$(ROOT)/.venv/bin/python server/labs/lab-02-paging/server.py"
+
+lab.%.phaseb.build:
+	$(call py_run,scripts/lab_host.py build $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+
+lab.%.phaseb.clean:
+	$(call py_run,scripts/lab_host.py clean $* --variant phaseb)
+
+lab.%.phaseb.flash:
+	$(call py_run,scripts/lab_host.py flash $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+
+lab.%.phaseb.capture:
+	$(call py_run,scripts/lab_host.py capture $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+
+lab.%.phaseb:
+	$(call py_run,scripts/lab_host.py run $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+
 lab.%.eager.build:
 	$(call py_run,scripts/lab_host.py build $* --variant eager)
+
+lab.%.eager.clean:
+	$(call py_run,scripts/lab_host.py clean $* --variant eager)
 
 lab.%.eager.flash:
 	$(call py_run,scripts/lab_host.py flash $* --variant eager $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
@@ -133,6 +159,9 @@ lab.%.eager:
 
 lab.%.build:
 	$(call py_run,scripts/lab_host.py build $* $(if $(VARIANT),--variant "$(VARIANT)",))
+
+lab.%.clean:
+	$(call py_run,scripts/lab_host.py clean $* $(if $(VARIANT),--variant "$(VARIANT)",))
 
 lab.%.flash:
 	$(call py_run,scripts/lab_host.py flash $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))

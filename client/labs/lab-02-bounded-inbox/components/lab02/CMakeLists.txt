@@ -2,6 +2,7 @@ set(LAB02_SRCS
     lab_main.c
     inbox_model.c
     inbox_page_metadata.c
+    page_provider.c
     page_provider_local.c
     page_provider_http.c
     carousel_controller.c
@@ -23,5 +24,5 @@ idf_component_register(
     SRCS ${LAB02_SRCS}
     INCLUDE_DIRS "include"
     REQUIRES lab02_platform lab02_fixtures json esp_timer nvs_flash lvgl__lvgl
-    PRIV_REQUIRES esp_app_format
+    PRIV_REQUIRES esp_app_format esp_http_client
 )

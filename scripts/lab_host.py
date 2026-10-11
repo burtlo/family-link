@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -17,6 +18,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from deployment_config import load_active_deployment
 from device_targets import ports, select
+from device_targets import kit_for
+from lab_deployment_sdkconfig import write_deployment_kit_sdkconfig
 from firmware import idf_environment, run
 from lab_registry import (
     LabSpec,
@@ -166,10 +169,85 @@ def _sdkconfig_defaults_files(
 
 def _sdkconfig_defaults_env(project: Path, variant_defaults: tuple[Path, ...]) -> dict[str, str]:
     files = _sdkconfig_defaults_files(project, variant_defaults)
+    return _sdkconfig_defaults_env_from_files(files)
+
+
+def _sdkconfig_defaults_env_from_files(files: list[Path]) -> dict[str, str]:
     if not files:
         return {}
-    sep = ";" if os.name == "nt" else ":"
-    return {"SDKCONFIG_DEFAULTS": sep.join(str(path) for path in files)}
+    # ESP-IDF / CMake list variables use ';' on all platforms (':' is not split).
+    return {"SDKCONFIG_DEFAULTS": ";".join(str(path) for path in files)}
+
+
+def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
+    return variant_name == "phaseb"
+
+
+def _prepare_lab_build_directory(build_dir: Path) -> None:
+    """ESP-IDF set-target refuses fullclean on a non-CMake directory; start empty or configured."""
+    if (build_dir / "CMakeCache.txt").is_file():
+        return
+    if build_dir.is_dir():
+        shutil.rmtree(build_dir)
+    build_dir.mkdir(parents=True, exist_ok=True)
+
+
+def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> None:
+    spec = get_lab(make_name)
+    var = resolve_variant(spec, variant)
+    build_dir = ROOT / var.build_dir
+    if not build_dir.is_dir():
+        print(f"Already clean: {_rel(build_dir)}")
+        return
+    if (build_dir / "CMakeCache.txt").is_file():
+        env, idf = idf_environment(config)
+        project = ROOT / spec.project_dir
+        base = idf + [
+            "-C",
+            str(project),
+            "-B",
+            str(build_dir),
+            f"-DIDF_TARGET={spec.target}",
+            f"-DSDKCONFIG={build_dir / 'sdkconfig'}",
+        ]
+        timeout = config.integer("command.lab.build.timeout_seconds", default=1200, minimum=1)
+        try:
+            run(base + ["fullclean"], env=env, timeout=timeout)
+            print(f"Cleaned lab.{spec.make_name} variant={var.name} (idf fullclean) -> {_rel(build_dir)}")
+            return
+        except (ProjectConfigError, OSError, subprocess.SubprocessError):
+            pass
+    shutil.rmtree(build_dir)
+    print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
+
+
+def _defaults_files_for_lab_build(
+    config: ProjectConfig,
+    spec: LabSpec,
+    var,
+    build_dir: Path,
+    kit: str,
+    port: str,
+) -> list[Path]:
+    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
+    if not _variant_uses_deployment_kit_secrets(var.name):
+        return defaults_files
+    if not kit.strip():
+        raise ProjectConfigError(
+            "Phase B build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
+            "e.g. make lab.lab02.phaseb.build KIT=lynn"
+        )
+    deployment = load_active_deployment(config)
+    resolved = kit_for(deployment, kit)
+    overlay = write_deployment_kit_sdkconfig(build_dir, resolved, deployment)
+    if overlay is None:
+        print(
+            f"Note: kit {resolved.id} (secrets_profile={resolved.secrets_profile}) "
+            "has no Wi-Fi in secrets_profiles or lab.phaseb_server_url; "
+            "Phase B credentials must come from menuconfig or sdkconfig.defaults."
+        )
+        return defaults_files
+    return defaults_files + [overlay]
 
 
 def _sdkconfig_assignment_lines(path: Path) -> list[str]:
@@ -225,7 +303,33 @@ def _refresh_stale_sdkconfig(build_dir: Path, defaults_files: list[Path]) -> boo
     return True
 
 
-def build_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Path:
+def ensure_lab_built(
+    config: ProjectConfig,
+    make_name: str,
+    variant: str | None,
+    *,
+    kit: str = "",
+    port: str = "",
+) -> Path:
+    """Build when artifacts are missing or sdkconfig is stale vs variant defaults."""
+    spec = get_lab(make_name)
+    var = resolve_variant(spec, variant)
+    build_dir = ROOT / var.build_dir
+    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
+    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
+    if stale or not (build_dir / "flasher_args.json").is_file():
+        return build_lab(config, make_name, variant, kit=kit, port=port)
+    return build_dir
+
+
+def build_lab(
+    config: ProjectConfig,
+    make_name: str,
+    variant: str | None,
+    *,
+    kit: str = "",
+    port: str = "",
+) -> Path:
     spec = get_lab(make_name)
     var = resolve_variant(spec, variant)
     if config.text("idf.target", required=True) != spec.target:
@@ -233,10 +337,10 @@ def build_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Pat
     env, idf = idf_environment(config)
     project = ROOT / spec.project_dir
     build_dir = ROOT / var.build_dir
-    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
-    build_dir.mkdir(parents=True, exist_ok=True)
+    _prepare_lab_build_directory(build_dir)
+    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
     _refresh_stale_sdkconfig(build_dir, defaults_files)
-    env.update(_sdkconfig_defaults_env(spec.project_dir, var.sdkconfig_defaults))
+    env.update(_sdkconfig_defaults_env_from_files(defaults_files))
     base = idf + [
         "-C",
         str(project),
@@ -246,7 +350,8 @@ def build_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Pat
         f"-DSDKCONFIG={build_dir / 'sdkconfig'}",
     ]
     timeout = config.integer("command.lab.build.timeout_seconds", default=1200, minimum=1)
-    run(base + ["set-target", spec.target], env=env, timeout=timeout)
+    if not (build_dir / "CMakeCache.txt").is_file():
+        run(base + ["set-target", spec.target], env=env, timeout=timeout)
     run(base + ["build"], env=env, timeout=timeout)
     print(f"Built lab.{spec.make_name} variant={var.name} -> {build_dir}")
     return build_dir
@@ -495,6 +600,12 @@ def main() -> int:
     build_p = sub.add_parser("build")
     build_p.add_argument("lab")
     build_p.add_argument("--variant", default=os.environ.get("VARIANT", ""))
+    build_p.add_argument("--kit", default=os.environ.get("KIT", ""))
+    build_p.add_argument("--port", default=os.environ.get("PORT", ""))
+
+    clean_p = sub.add_parser("clean", help="Remove variant build directory (make lab.<name>.clean)")
+    clean_p.add_argument("lab")
+    clean_p.add_argument("--variant", default=os.environ.get("VARIANT", ""))
 
     flash_p = sub.add_parser("flash")
     flash_p.add_argument("lab")
@@ -545,7 +656,10 @@ def main() -> int:
         spec = get_lab(args.lab)
         variant = args.variant or None
         if args.action == "build":
-            build_lab(config, args.lab, variant)
+            build_lab(config, args.lab, variant, kit=args.kit, port=args.port)
+            return 0
+        if args.action == "clean":
+            clean_lab(config, args.lab, variant)
             return 0
         if args.action == "flash":
             var = resolve_variant(spec, variant)
@@ -563,9 +677,7 @@ def main() -> int:
             stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
             rid = args.run_id or f"{stamp}-{var.name}-capture-{uuid.uuid4().hex[:6]}"
             if args.action == "run" and not args.no_build:
-                build_dir = ROOT / var.build_dir
-                if not (build_dir / "flasher_args.json").is_file():
-                    build_lab(config, args.lab, variant)
+                ensure_lab_built(config, args.lab, variant, kit=args.kit, port=args.port)
             capture_lab(
                 config,
                 args.lab,

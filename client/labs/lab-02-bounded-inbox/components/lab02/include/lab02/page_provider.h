@@ -14,6 +14,7 @@ typedef struct {
     lab02_page_metadata_t meta;
 } lab02_page_provider_t;
 
+bool lab02_page_provider_init(lab02_page_provider_t *pp);
 bool lab02_page_provider_local_init(lab02_page_provider_t *pp);
 const lab02_inbox_item_t *lab02_page_provider_item(const lab02_page_provider_t *pp, int index);
 

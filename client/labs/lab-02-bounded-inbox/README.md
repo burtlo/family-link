@@ -1,6 +1,6 @@
 # LAB-02 — Bounded inbox and card recycling (Phase A)
 
-ESP-IDF lab firmware for **three** reusable message card views, local fixture paging, horizontal snap, and bind generations. Phase B HTTP paging is **not** included.
+ESP-IDF lab firmware for **three** reusable message card views, local or HTTP paging, horizontal snap, and bind generations.
 
 ## Boot marker
 
@@ -21,6 +21,10 @@ make lab.lab02 KIT=lynn                    # manual: you scroll during capture
 make lab.lab02.scripted KIT=lynn           # auto-scroll on device
 make lab.lab02.eager KIT=lynn              # eager 16-widget comparison
 make lab.lab02.capture KIT=lynn FLASH=0 SECONDS=60
+make lab.lab02.server                       # Phase B paging fixture (host)
+make lab.lab02.phaseb.build KIT=lynn          # Phase B: KIT= required; Wi-Fi from secrets_profiles via kit
+make lab.lab02.phaseb.clean                   # drop Phase B build dir (after sdkconfig/deployment changes)
+make lab.lab02.phaseb KIT=lynn                # flash + capture (builds with same KIT when needed)
 ```
 
 Fixture size: menuconfig **LAB-02 Bounded Inbox → Embedded inbox fixture size** (default 16), then rebuild.
@@ -65,11 +69,11 @@ See [evidence STATUS](../../../docs/labs/evidence/lab-02/STATUS.md) for the Phas
 | Recycle carousel (3 views) + snap | Done — touch scroll on hardware |
 | Bind generation + stale drop counter | Done |
 | Eager 16-widget path | Done (Kconfig) |
-| `page_provider_http` | Stub only (Phase B) |
+| `page_provider_http` | Phase B (`fl.inbox-page/2`, async apply off snap) |
 | L1 host tests | `make test` (`scripts/tests/test_lab02_host.py`) |
 | `S-delay` slow bind | Kconfig `LAB02_SLOW_BIND_MS` |
 | Device capture | `make lab.lab02` / `scripts/lab_host.py` |
-| Phase B server | Not in tree |
+| Phase B server | `server/labs/lab-02-paging/`, `make lab.lab02.server` |
 
 ## Manifest
 

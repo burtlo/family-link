@@ -27,6 +27,8 @@ def main() -> int:
                 events["boot_ready"] += 1
             elif "HARNESS_DONE" in line:
                 events["harness_done"] += 1
+            elif "LAB02_HTTP_READY" in line:
+                events["http_ready"] += 1
             continue
         t_us, event, gen, focus, msg, extra = m.groups()
         events[event] += 1

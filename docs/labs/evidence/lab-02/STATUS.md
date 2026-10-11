@@ -14,7 +14,8 @@ Last updated: 2026-10-11 (Phase A implementation landed; hardware evidence pendi
 | `S-delay` (`LAB02_SLOW_BIND_MS`) | Ready | Kconfig inject; verify UI stays responsive |
 | Eager vs recycle comparison | **Open** | Two flashes; link `comparison_run_id` in manifests |
 | `REPORT-LAB-02-v1.md` | **Open** | After L3 runs |
-| Phase B server | Not started | `server/labs/lab-02-paging/` |
+| Phase B server | Ready (host tests) | `make lab.lab02.server` |
+| Phase B firmware (`page_provider_http`) | Ready (build) | `make lab.lab02.phaseb` after menuconfig URL + Wi-Fi |
 
 ## Capture workflow
 

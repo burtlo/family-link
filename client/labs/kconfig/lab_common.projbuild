@@ -1,6 +1,6 @@
 # Shared Kconfig for every ESP-IDF project under client/labs/.
-# In each lab's Kconfig.projbuild (project root):
-#   source "../kconfig/lab_common.projbuild"
+# Copy this menu into each lab's components/<lab>/Kconfig.projbuild (ESP-IDF only
+# loads Kconfig under component dirs; source paths cannot reach this file).
 
 menu "Family Link device lab"
 
