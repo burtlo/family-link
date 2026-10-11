@@ -60,7 +60,7 @@ shell with an empty lower slot or a dedicated empty presentation per
 
 | ID | Question | Blocks |
 |---|---|---|
-| `UI-OPEN-001` | Snap animation duration/easing on device | Feel parity with v1 web twin |
+| `UI-OPEN-001` | Snap/focus animation timing after v1 carousel performance work | Owner sign-off on device |
 
 ## Revision history
 

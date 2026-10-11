@@ -2,7 +2,7 @@
 
 ID: `COMP-USER-CARD`  
 Type: Component  
-Revision: 0.1  
+Revision: 0.2  
 Status: Draft — geometry and states owner-aligned  
 Owner: Product owner  
 Approval: No visual approval claimed  
@@ -11,14 +11,13 @@ Target: v2 fixed-hardware 320 × 240 landscape canvas
 ## Purpose
 
 Visual contract for one hangout user card in horizontal carousels (sign-in roster,
-message inbox, send-user picker). Behavior (tap, focus index, data binding) stays
-in experience and screen specs.
+message inbox, send-user picker). Behavior stays in experience and screen specs.
 
 ## Anatomy
 
 ```text
 ┌──────────────────── 132 px ────────────────────┐
-│  gradient face (user message color)            │
+│  card face (catalog background + gradient)       │
 │           ┌──────────┐                         │
 │           │ avatar   │  66 px circle            │
 │           └──────────┘                         │
@@ -27,74 +26,64 @@ in experience and screen specs.
         corner radius 8 px
 ```
 
-| Region | Content | Token / rule |
+| Region | Content | Rule |
 |---|---|---|
-| Face | Solid vertical gradient | `fl-color-user-message-top` → `fl-color-user-message-bottom` ([`THEME-DARK`](../themes/THEME-DARK.md)) |
-| Avatar | User portrait or placeholder | **66 px** diameter — `fl-avatar-roster` (matches v1 sign-in roster as-built) |
-| Name | Single line, centered, ellipsized | `fl-type-16`, weight **600**; color `fl-color-text-primary` unless light gradient requires inversion |
+| Face | Catalog **card background** | [`FOUNDATION-CARD-BACKGROUNDS`](../foundations/FOUNDATION-CARD-BACKGROUNDS.md) — user picks an allowed entry; not ad hoc hex |
+| Name | Single line, centered | `fl-type-16`, weight **600**; **`fl-color-text-on-card`** from the same catalog entry (auto high-contrast) |
+| Avatar | Portrait | **66 px** — `fl-avatar-roster`; **always present** (profile supplies default; avatar set catalog is a separate spec) |
 
-No secondary metadata on the sign-in roster card.
+Long names: **ellipsize at end** (`...`). No adaptive font sizing (fixed three
+sizes only per foundation).
+
+Duplicate display names: show **as-is** (product does not require disambiguation).
 
 ## Geometry (roster / carousel)
 
-Values derive from v1 as-built roster carousel and are adapted to the v2 lower
-split slot (160 px chrome height).
+| Token | Value |
+|---|---|
+| `fl-card-roster-width` | **132 px** |
+| `fl-card-roster-height` | **133 px** (vertically centered in lower chrome) |
+| `fl-card-roster-gap` | **12 px** |
+| `fl-card-roster-radius` | **8 px** |
 
-| Token | Value | Notes |
-|---|---|---|
-| `fl-card-roster-width` | **132 px** | Fixed card width |
-| `fl-card-roster-height` | **133 px** | v1 card height; **vertically centered** in lower `slot_chrome_bounds` |
-| `fl-card-roster-gap` | **12 px** | Horizontal gap between cards |
-| `fl-card-roster-radius` | **8 px** | Corner radius |
-
-Touch target: the full card hit region is at least **`fl-touch-min-height`**
-([`FOUNDATION-DEVICE-CANVAS`](../foundations/FOUNDATION-DEVICE-CANVAS.md)).
+Touch: full card ≥ **`fl-touch-min-height`**.
 
 ## Visual states
 
 ### Default (not focused)
 
-Reference behavior from v1 as-built roster carousel:
-
-- **Opacity:** ~58% of focused card (`fl-card-unfocused-opacity` ≈ 0.58).
-- **Scale:** 0.9 relative to focused (`fl-card-unfocused-scale` ≈ 0.9).
+- Opacity ≈ **0.58**, scale ≈ **0.9** (targets; snap timing **OPEN** — see motion foundation).
 
 ### Focused (carousel center)
 
-- **Opacity:** 1.0.
-- **Scale:** 1.0.
-- Focus **must not** rely on color alone; scale and opacity carry the primary cue.
+- Opacity **1.0**, scale **1.0**.
 
-### Picked (send-user selection)
+### Picked (send-user)
 
-When used on the send-user screen, a card that is **selected for send** shows a
-**2 px** outline in `fl-color-accent` ([`THEME-DARK`](../themes/THEME-DARK.md)).
-This is separate from carousel focus (v1 used the same card chrome with a gold
-border for `picker-card.picked`).
+- **2 px** outline `fl-color-accent`.
 
 ### Pressed
 
-**OPEN** — may reuse brief opacity dip; must not conflict with focus animation.
+- Brief **opacity dip** on press (owner-decided).
 
 ## Roster size
 
-Layout and snap math are identical for **4** or **8** users (product minimum eight
-supported; typical hangouts ≤ 4). No distinct density mode.
+Same layout for **4** or **8** users.
 
 ## Dependencies
 
 - [`THEME-DARK`](../themes/THEME-DARK.md)
-- [`FOUNDATION-DEVICE-CANVAS`](../foundations/FOUNDATION-DEVICE-CANVAS.md)
-- [`PANEL-BODY-ROSTER-CAROUSEL`](../panels/PANEL-BODY-ROSTER-CAROUSEL.md)
+- [`FOUNDATION-CARD-BACKGROUNDS`](../foundations/FOUNDATION-CARD-BACKGROUNDS.md)
+- [`FOUNDATION-MOTION`](../foundations/FOUNDATION-MOTION.md)
 
 ## OPEN items
 
-| ID | Question | Blocks |
-|---|---|---|
-| `UI-OPEN-001` | Light-gradient text contrast on hardware | Name color inversion |
-| `UI-OPEN-002` | Pressed-state treatment | Touch feedback polish |
+| ID | Question |
+|---|---|
+| `UI-OPEN-001` | Carousel snap animation after v1 performance sign-off |
 
 ## Revision history
 
-- **0.1 — 2026-10-10:** v1-derived geometry; avatar 66 px; focus scale/opacity;
-  accent border for pick mode.
+- **0.2 — 2026-10-10:** Catalog backgrounds + on-card text; always avatar; ellipsis;
+  pressed opacity; snap timing deferred.
+- **0.1 — 2026-10-10:** Initial v1-derived geometry.

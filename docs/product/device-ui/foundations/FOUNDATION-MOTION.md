@@ -2,42 +2,43 @@
 
 ID: `FOUNDATION-MOTION`  
 Type: Foundation  
-Revision: 0.1  
-Status: Draft — owner direction recorded; timing unverified  
+Revision: 0.2  
+Status: Draft — stage transitions owner-aligned (h19 cover-down)  
 Owner: Product owner  
 Approval: No visual approval claimed  
 Target: v2 fixed-hardware device UI (LVGL)
 
 ## Purpose
 
-Records cross-screen and in-shell motion **intent** before firmware proves what
-the display stack can do reliably. v1 implementation did not fully explore
-transitions; treat durations and easing as proposals until measured.
+Records motion policy for v2. Stage changes use the h19-validated
+**cover-down** family unless a screen spec says otherwise.
 
-## Owner direction
+## Normative pattern
 
-| Use case | Intended treatment | Status |
-|---|---|---|
-| Stage change (for example roster → PIN) | **Cross-fade** between screen roots | **PROPOSED** — verify on device |
-| Carousel snap | Scale/opacity focus change (see `COMP-USER-CARD`) | **Owner-aligned** with v1 as-built reference |
-| Panel module swap within one shell | Prefer cross-fade or instant cut; no slide unless specified | **OPEN** |
+[`TRANSITION-COVER-DOWN`](../patterns/TRANSITION-COVER-DOWN.md) — **400 ms**,
+ease-in-out quint, forward and reverse as defined there.
 
-## Engineering discovery (required before normative timing)
+Cross-fade is **withdrawn** as the default roster ↔ PIN policy (owner, 2026-10-10).
 
-1. LVGL opacity / transform performance at 320 × 240 RGB565.
-2. Whether cross-fade of full framebuffer is acceptable versus dual-buffer blend.
-3. Interaction with **Level 2** UI updates (see UI update taxonomy).
-4. Whether touch must be disabled for the fade duration (carousel already locks
-   during snap in v1 reference).
+## Carousel focus motion
+
+Roster carousel **snap/focus** animation (scale/opacity) is **not** signed off.
+The v1 product web twin is **not** authoritative. Tuning and performance work
+remain on the v1 device carousel implementation before v2 copies timing constants.
+
+| Item | Status |
+|---|---|
+| Focus scale/opacity targets | See [`COMP-USER-CARD`](../components/COMP-USER-CARD.md) numeric targets |
+| Snap duration/easing on device | **OPEN** — owner pending performance sign-off |
 
 ## OPEN items
 
 | ID | Question | Blocks |
 |---|---|---|
-| `UI-OPEN-001` | Cross-fade duration and easing for stage transitions | `SCR-*` motion columns |
-| `UI-OPEN-002` | Fallback when fade is too slow or unsupported | Implementation |
+| `UI-OPEN-001` | Carousel snap animation after v1 performance tweaks | Roster feel parity |
+| `UI-OPEN-002` | Shared transition helper vs per-screen LVGL roots | Firmware architecture |
 
 ## Revision history
 
-- **0.1 — 2026-10-10:** Cross-fade proposed for stage transitions; discovery
-  outstanding.
+- **0.2 — 2026-10-10:** Cover-down default; carousel snap deferred; web twin rejected.
+- **0.1 — 2026-10-10:** Cross-fade proposed (superseded for login stages).

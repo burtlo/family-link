@@ -103,9 +103,8 @@ If refresh fails, the experience leaves this screen for connecting (`EXP-021`).
 ### User selected
 
 Focused card centers where geometry allows, then stage moves to PIN entry.
-Transition **SHOULD** cross-fade per
-[`FOUNDATION-MOTION`](../foundations/FOUNDATION-MOTION.md) once verified
-(`UI-OPEN-001`).
+Transition to PIN uses forward **cover-down** per
+[`TRANSITION-COVER-DOWN`](../patterns/TRANSITION-COVER-DOWN.md).
 
 ### One user
 
@@ -161,18 +160,17 @@ upper content bounds.
 
 1. [`THEME-DARK`](../themes/THEME-DARK.md)
 2. [`FOUNDATION-DEVICE-CANVAS`](../foundations/FOUNDATION-DEVICE-CANVAS.md)
-3. [`FOUNDATION-MOTION`](../foundations/FOUNDATION-MOTION.md) — cross-fade timing OPEN
+3. [`TRANSITION-COVER-DOWN`](../patterns/TRANSITION-COVER-DOWN.md)
 4. Panel and component docs listed above
 
 ## OPEN items
 
 | ID | Question | Blocks |
 |---|---|---|
-| `UI-OPEN-001` | Cross-fade duration/easing roster → PIN | Motion polish |
-| `UI-OPEN-002` | Long names, missing avatars, duplicate names on card | Edge-case UX |
+| `UI-OPEN-001` | Carousel snap animation (after v1 performance sign-off) | Roster feel |
 
-Resolved in 0.3: card geometry, avatar size, focus treatment, center snap,
-theme surface, heading type size, updating-hangout presentation.
+Resolved in 0.3+: card geometry, ellipsis, catalog backgrounds, cover-down to PIN,
+updating-hangout UI.
 
 ## Readiness
 

@@ -2,8 +2,8 @@
 
 ID: `FOUNDATION-DEVICE-CANVAS`  
 Type: Foundation  
-Revision: 0.2  
-Status: Draft — margin, touch, typography, and Montserrat decided; colors in THEME-DARK  
+Revision: 0.3  
+Status: Draft — margin, touch, Montserrat **600**, typography ladder; colors in THEME-DARK  
 Owner: Product owner  
 Approval: No visual approval claimed  
 Target: v2 fixed-hardware 320 × 240 landscape canvas
@@ -105,7 +105,7 @@ desk legibility.
 | Item | Rule |
 |---|---|
 | Family | **Montserrat** — owner-approved for v2 (confirm flash/glyph budget at link time) |
-| Weight | **500** default UI chrome; **600** for emphasized single-line titles and card names (matches v1 as-built roster) |
+| Weight | **600** (SemiBold) for all device UI text at **`fl-type-16`**, **`fl-type-24`**, and **`fl-type-32`** — owner-decided; link one weight per size at firmware build time |
 | Encoding | Use ASCII `...` not Unicode ellipsis on device (historical RGB565 / font glyph limitation) |
 
 Color tokens live in [`THEME-DARK`](../themes/THEME-DARK.md), not in this document.
@@ -164,20 +164,21 @@ padding, type size, or touch size:
 
 | ID | Question | Blocks |
 |---|---|---|
-| `UI-OPEN-001` | Confirm Montserrat flash budget and required glyph subset on device | Firmware font linking |
+| `UI-OPEN-001` | Link **three** Montserrat **600** sizes (16 / 24 / 32) with minimal glyph subset; v1 shipped **six** built-in LVGL sizes (~14–46 KiB flash each per slimming evidence) — fewer sizes and subsetting reduce `.rodata`; exact delta is a build measurement | Firmware font linking |
 | `UI-OPEN-002` | *(Superseded 2026-10-10)* Default colors — see [`THEME-DARK`](../themes/THEME-DARK.md) | — |
 | `UI-OPEN-003` | *(Superseded 2026-10-10)* Split-pane insets — see `LAYOUT-SPLIT-PANE` 0.2 | — |
 
 ## Readiness
 
 - **Owner review:** Ready for margin, touch, slider, typography, and Montserrat.
-- **Visual approval:** Pending hardware check of Montserrat weights and theme on RGB565.
-- **Implementation:** Agents MAY use these tokens in specs and new UI code; font
-  family and full palette remain OPEN.
+- **Visual approval:** Pending hardware check of Montserrat 600 glyphs and theme on RGB565.
+- **Implementation:** Agents MAY use these tokens in specs and new UI code; glyph
+  subset flash budget remains OPEN (`UI-OPEN-001`).
 
 ## Revision history
 
-- **0.2 — 2026-10-10:** Montserrat approved; weights 500/600; colors delegated to `THEME-DARK`.
+- **0.3 — 2026-10-10:** Owner standardizes on Montserrat weight **600** for all UI sizes.
+- **0.2 — 2026-10-10:** Montserrat approved; colors delegated to `THEME-DARK`.
 - **0.1 — 2026-10-10:** Initial foundation: 12 px margin / 296×216 well,
   touch and slider rules, typography ladder 16 / 24 / 32 (replacing v1
   multi-size Montserrat sprawl).

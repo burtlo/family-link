@@ -25,7 +25,7 @@ roster, empty hangout, and roster refresh-wait states.
 | Property | Value |
 |---|---|
 | Token | `fl-type-24` |
-| Weight | **600** (matches v1 sign-in / picker title emphasis) |
+| Weight | **600** ([`FOUNDATION-DEVICE-CANVAS`](../foundations/FOUNDATION-DEVICE-CANVAS.md)) |
 | Color | `fl-color-text-primary` |
 | Lines | One line; ellipsize end if needed |
 

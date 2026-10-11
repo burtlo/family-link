@@ -2,8 +2,8 @@
 
 ID: `COMP-PIN-KEYPAD`  
 Type: Component  
-Revision: 0.4  
-Status: Draft — v1 key sizing/spacing and 3×3 digits 1–9 adopted; no zero key
+Revision: 0.5  
+Status: Draft — v1 product shell geometry adapted to split lower slot  
 Owner: Product owner  
 Approval: No visual approval claimed  
 Target: v2 fixed-hardware 320 × 240 landscape canvas
@@ -16,12 +16,11 @@ Numeric keypad for four-digit PIN entry on [`SCR-PIN-ENTRY`](../screens/SCR-PIN-
 
 | Rule | Value |
 |---|---|
-| Grid | **3 × 3** positions for digits **1–9** |
-| Digit 0 | Not present; PINs use digits 1–9 only |
-| Key geometry | **98 × 42 px** keys, **6 px** horizontal/vertical gaps, **8 px** horizontal canvas inset, adapted from v1 `h03_touch_pin.c` to the lower split-pane slot |
-| Clear row | No on-screen clear row specified. BOOT behavior belongs to `EXP-LOGIN` / `DEC-037`: no digits returns to roster; 1–3 digits clear in place; after digit four BOOT is ignored |
+| Grid | **3 × 3** digits **1–9** only |
+| Digit 0 | **Not present** |
+| Clear row | **Not present** — BOOT / experience policy |
 
-Digit order follows conventional phone pad:
+Digit order:
 
 ```text
 1  2  3
@@ -29,26 +28,33 @@ Digit order follows conventional phone pad:
 7  8  9
 ```
 
-The v1 geometry reference is [`h03_touch_pin.c`](../../../../poc-v1/firmware/demos/h03_touch_pin.c).
-Its 0 and Clear keys are not carried into v2; the owner decided on digits 1–9
-only and BOOT-based clearing behavior.
+## Geometry (v1 product shell, split-adapted)
+
+Derived from the legacy v1 product PIN screen (three rows in the lower **⅔**
+content band). v2 mounts the same math in the lower `slot_chrome_bounds` (160 px
+tall), **without** v1 top/bottom ribbons.
+
+| Constant | Value |
+|---|---|
+| Horizontal pad | **4 px** (`start_x`) |
+| Key gaps | **4 px** (`gap_x`, `gap_y`) |
+| Key width | `(320 − 2×pad − 2×gap_x) / 3` → **101 px** |
+| Key height | `(band_h − 2×pad − 2×gap_y) / 3` with `band_h = 160` → **48 px** |
+| Vertical origin | **10 px** below split (`y = 80` on canvas) — same offset as v1 `scroll_card_y + pad` mapped into the lower pane |
+
+Corner radius: **8 px** (`fl-card-roster-radius` / v1 card radius).
+
+Pressed fill uses a darker card tone from theme (v1 used a dedicated press hex on
+RGB565; match v1 device appearance).
 
 ## Typography and touch
 
-- Digit labels: **`fl-type-32`**
-- Each key touch target ≥ **`fl-touch-min-height`** (48–56 px band per foundation)
-
-The v1 geometry is retained for the nine keys. Place the three-row grid within
-the lower split-pane slot; exact vertical offset and alignment against PIN
-progress remain **OPEN**.
+- Digit labels: **`fl-type-24`** on keys (v1 PIN title size on keypad labels);
+  owner global weight **600**.
+- Each key satisfies **`fl-touch-min-height`**.
 
 ## Revision history
 
-- **0.4 — 2026-10-10:** Owner approved the v1 keypad geometry setup; adopted
-  h03's 98×42 px key size, 6 px gaps, and 8 px horizontal inset for the 1–9
-  grid in the lower split slot.
-- **0.3 — 2026-10-10:** Owner confirmed PINs use digits 1–9 only, no zero key;
-  conditional BOOT behavior is linked to the experience contract.
-- **0.2 — 2026-10-10:** Owner replies confirmed the 1–9 grid but conflicted on
-  zero-key and clear behavior; those questions were OPEN at that revision.
-- **0.1 — 2026-10-10:** Initial 3×3 keypad draft.
+- **0.5 — 2026-10-10:** v1 product keypad math (not h03 demo); vertical position
+  mapped into split lower slot.
+- **0.4 — 2026-10-10:** Prior h03-based draft superseded.

@@ -41,7 +41,8 @@ impact review; specifications must not silently scale.
 Shared margin, touch, slider, and typography tokens live in
 [`FOUNDATION-DEVICE-CANVAS`](foundations/FOUNDATION-DEVICE-CANVAS.md). Default
 colors live in [`THEME-DARK`](themes/THEME-DARK.md). Stage motion intent is in
-[`FOUNDATION-MOTION`](foundations/FOUNDATION-MOTION.md) (timing OPEN).
+[`FOUNDATION-MOTION`](foundations/FOUNDATION-MOTION.md); stage changes use
+[`TRANSITION-COVER-DOWN`](patterns/TRANSITION-COVER-DOWN.md) (h19).
 
 ## Composition model
 
@@ -65,7 +66,8 @@ Drawing and other edge-to-edge experiences use an explicit full-canvas layout.
 |---|---|---|
 | `FOUNDATION-DEVICE-CANVAS` | [Device canvas](foundations/FOUNDATION-DEVICE-CANVAS.md) | Draft — margin, touch, Montserrat **16 / 24 / 32** |
 | `FOUNDATION-MOTION` | [Motion](foundations/FOUNDATION-MOTION.md) | Draft — cross-fade proposed; timing OPEN |
-| `THEME-DARK` | [Dark theme](themes/THEME-DARK.md) | Draft — surface `#101418`, accent, per-user message color |
+| `THEME-DARK` | [Dark theme](themes/THEME-DARK.md) | Draft — token placement map (single scheme) |
+| `FOUNDATION-CARD-BACKGROUNDS` | [Card backgrounds](foundations/FOUNDATION-CARD-BACKGROUNDS.md) | Placeholder — catalog TBD |
 
 ### Layouts
 
@@ -78,6 +80,7 @@ Drawing and other edge-to-edge experiences use an explicit full-canvas layout.
 | Document | Role |
 |---|---|
 | [Panel module contract](patterns/PANEL-MODULE-CONTRACT.md) | Chrome vs content inset; swappable `PANEL-*`; background override |
+| [Cover-down transition](patterns/TRANSITION-COVER-DOWN.md) | h19 stage motion (400 ms, ease-in-out quint) |
 
 Planned examples include a horizontal carousel layout, PIN pad grid, and
 full-canvas drawing layout. Planned entries are not requirements until authored
@@ -103,7 +106,8 @@ and reviewed.
 |---|---|---|---|
 | `SCR-SIGN-IN-ROSTER` | [Sign-in roster](screens/SCR-SIGN-IN-ROSTER.md) | `EXP-LOGIN` | Draft — roster visuals owner-aligned |
 | `SCR-EMPTY-HANGOUT` | [Empty hangout](screens/SCR-EMPTY-HANGOUT.md) | `EXP-LOGIN` | Draft — fixed empty copy |
-| `SCR-PIN-ENTRY` | [PIN entry](screens/SCR-PIN-ENTRY.md) | `EXP-LOGIN` | Draft; masked progress, error placement, keypad setup decided; some layout/states OPEN |
+| `SCR-PIN-ENTRY` | [PIN entry](screens/SCR-PIN-ENTRY.md) | `EXP-LOGIN` | Draft — v1 layout, cover-down; `checking...` OPEN |
+| `SCR-PIN-COOLDOWN` | [PIN cooldown](screens/SCR-PIN-COOLDOWN.md) | `EXP-LOGIN` | Draft — full-screen countdown |
 
 ## Authority and readiness
 
