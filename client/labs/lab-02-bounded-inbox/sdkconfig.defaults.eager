@@ -1,0 +1,4 @@
+# Append for eager comparison builds:
+# idf.py ... -B build/labs/lab-02-bounded-inbox-eager build -- -DSDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.eager"
+CONFIG_LAB02_EAGER_BASELINE=y
+CONFIG_LAB02_FIXTURE_16=y

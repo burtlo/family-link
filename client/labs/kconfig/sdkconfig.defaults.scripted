@@ -1,0 +1,2 @@
+# Auto-scroll build: device runs scripted traversal after boot (CONFIG_LAB_AUTO_HARNESS).
+CONFIG_LAB_AUTO_HARNESS=y

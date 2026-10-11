@@ -54,6 +54,8 @@ _SETTING_SPECS: dict[str, dict[str, object]] = {
     "config.deployment.example": {"type": "path", "required": True},
     "config.deployment.local": {"type": "path", "required": True},
     "config.deployment.schema": {"type": "path", "required": True},
+    "labs.registry": {"type": "path", "required": True},
+    "labs.schema": {"type": "path", "required": True},
 }
 
 _COMMAND_SECTION_KEYS: dict[str, dict[str, object]] = {
@@ -416,7 +418,9 @@ class ProjectConfig:
             "product_config_format": "yaml",
             "product_config_note": (
                 "Product roster YAML lives under config/deployment/; paths are "
-                "in [config.deployment] on the host INI. Use make config.deployment."
+                "in [config.deployment] on the host INI. Use make config.deployment. "
+                "Device labs host registry: config/labs.registry.yaml via [labs]; "
+                "use make config.labs."
             ),
             "docs": str(ROOT / DOCS_RELATIVE),
         }
@@ -482,6 +486,8 @@ class ProjectConfig:
         self.path_value("config.deployment.example")
         self.path_value("config.deployment.local")
         self.path_value("config.deployment.schema")
+        self.path_value("labs.registry")
+        self.path_value("labs.schema")
 
         for name, spec in _SETTING_SPECS.items():
             if name.startswith("firmware.") and self.has(name):

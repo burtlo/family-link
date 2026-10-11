@@ -1,0 +1,38 @@
+# Host registry for device lab firmware (make lab.<name>, scripts/lab_host.py).
+# Product lab IDs (LAB-02, …) and docs: docs/labs/README.md
+# Standard: docs/standards/labs-configuration.md
+$schema: config/labs/labs.registry.schema.v1.json
+document: family-link.labs-registry/v1
+
+labs:
+  lab02:
+    lab_id: LAB-02
+    evidence_slug: lab-02
+    project_dir: client/labs/lab-02-bounded-inbox
+    target: esp32s3
+    description: Bounded inbox and three-view card recycling (Phase A)
+    variants:
+      default: recycle
+      recycle:
+        build_dir: build/labs/lab-02-bounded-inbox
+      eager:
+        build_dir: build/labs/lab-02-bounded-inbox-eager
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.eager
+      scripted:
+        build_dir: build/labs/lab-02-bounded-inbox-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - ../kconfig/sdkconfig.defaults.scripted
+    trace_parser: client/labs/lab-02-bounded-inbox/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 120
+      flash_by_default: true
+      instructions: |
+        Choose one run style (listed again at the end of make lab.lab02.help):
+        - Manual: make lab.lab02
+        - Auto-scroll: make lab.lab02.scripted
+        - Eager comparison: make lab.lab02.eager - 16-widget baseline (see lab README).
+        Name the scenario in RUN_ID (e.g. S-fix-16) when you publish evidence.
+      instructions_doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios

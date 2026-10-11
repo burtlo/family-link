@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "family-link.labs-registry.schema/v1",
+  "title": "Family Link device labs registry",
+  "description": "Structural contract for config/labs.registry.yaml. Repo-relative paths, existing project trees, variant defaults, and optional trace_parser files are enforced by scripts/lab_registry.py after schema validation.",
+  "type": "object",
+  "required": ["document", "labs"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional pointer to this file for editors and tooling."
+    },
+    "document": {
+      "type": "string",
+      "const": "family-link.labs-registry/v1"
+    },
+    "labs": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/lab_entry"
+      }
+    }
+  },
+  "$defs": {
+    "lab_entry": {
+      "type": "object",
+      "required": ["project_dir", "variants"],
+      "additionalProperties": false,
+      "properties": {
+        "lab_id": {
+          "type": "string",
+          "pattern": "^LAB-[0-9]{2}$"
+        },
+        "evidence_slug": {
+          "type": "string",
+          "pattern": "^lab-[0-9]{2}(-[a-z0-9-]+)?$"
+        },
+        "project_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "default": "esp32s3"
+        },
+        "description": {
+          "type": "string"
+        },
+        "variants": {
+          "$ref": "#/$defs/variants_map"
+        },
+        "trace_parser": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run": {
+          "$ref": "#/$defs/run_defaults"
+        }
+      }
+    },
+    "variants_map": {
+      "type": "object",
+      "minProperties": 2,
+      "required": ["default"],
+      "properties": {
+        "default": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "patternProperties": {
+        "^(?!default$)[a-z][a-z0-9_-]*$": {
+          "$ref": "#/$defs/variant_build"
+        }
+      },
+      "additionalProperties": false
+    },
+    "variant_build": {
+      "type": "object",
+      "required": ["build_dir"],
+      "additionalProperties": false,
+      "properties": {
+        "build_dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sdkconfig_defaults": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "run_defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [
+        { "required": ["instructions"] },
+        { "required": ["instructions_doc"] }
+      ],
+      "properties": {
+        "capture_seconds_default": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Serial capture duration for make lab.<name>; shown in operator help. Override with SECONDS=."
+        },
+        "flash_by_default": {
+          "type": "boolean"
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Short operator steps printed by make lab.<name> and make lab.<name>.help."
+        },
+        "instructions_doc": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^#\\s]+\\.md(#[\\w-]+)?$",
+          "description": "Repo-relative markdown path with optional #anchor for extended runbook."
+        }
+      }
+    }
+  }
+}

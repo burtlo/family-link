@@ -2,7 +2,8 @@
 
 Status: proposed lab work; no demo has been built or measured by this plan.  
 Purpose: recreate x02's user journeys as separately testable v2 pieces before joining them in one client.  
-Companion: [inbox, card reuse, and audio/sketch labs](inbox-carousel-playback-evaluation.md) (`LAB-01`–`LAB-05`).
+Companion: [inbox, card reuse, and audio/sketch labs](inbox-carousel-playback-evaluation.md) (`LAB-01`–`LAB-05`).  
+Layout and assistant workflow: [lab index](README.md), [repository layout](repository-layout.md), [assistant guide](assistant-guide.md).
 
 ## Product basis and limits
 
@@ -12,7 +13,7 @@ Labs may compare proposed behavior and reveal feasibility. A lab result does **n
 
 ## How to package each new demo
 
-- Build a **new implementation** in active v2 lab code outside the read-only v1 archive. Give each demo its own entry/build target, fixture manifest, trace schema, and assessment. The historical demo is reference material and may be run unmodified as a comparison; do not instrument it in place.
+- Build a **new implementation** in active v2 lab code outside the read-only v1 archive (`client/labs/<slug>/` per [repository layout](repository-layout.md) and the [lab ID registry](README.md#lab-id-registry)). Give each demo its own ESP-IDF project, fixture manifest, trace schema, and assessment. The historical demo is reference material and may be run unmodified as a comparison; do not instrument it in place.
 - Package any required **new server fixture implementation in the same demo version**. Its manifest identifies firmware build, server build or `none`, protocol/fixture revision, fault script, and media hashes. A changed server response or timing script creates a new pair version. Use isolated lab data and credentials, never a live household archive.
 - Separate a model/virtual-clock test from a device run. A virtual clock can verify a 60-second or five-minute schedule quickly; the device run verifies actual task scheduling, display, input, and resource pressure. Record both levels accurately.
 - Reuse the common capture fields and target measurement table in the [companion plan](inbox-carousel-playback-evaluation.md#common-method-and-evidence). Every scenario records stage and operation IDs, terminal event, UI update level, p50/p95/p99/worst latency, LVGL and pixel/media high-water and largest free block, queue depth/overflow, and a screenshot or screen video when visual behavior matters.
@@ -99,4 +100,4 @@ Labs may compare proposed behavior and reveal feasibility. A lab result does **n
 
 ## Promotion to implementation
 
-For each demo, file a short report with its firmware/server pair, fixture manifest, raw evidence, measurement table, observed result, and recommended change. Link the report from the affected experience, communication contract, or UI assessment. Promote a measured limit to the [LVGL budget foundation](../product/device-ui/foundations/FOUNDATION-LVGL-BUDGET.md) only after the target run and owner review required there. A lab may establish feasibility or reject a design; product and wire decisions still follow their own authoring workflow.
+For each demo, file a short report under [`docs/labs/evidence/`](evidence/README.md) with its firmware/server pair, fixture manifest, raw evidence, measurement table, observed result, and recommended change. Promote stable modules to [`client/shared/`](repository-layout.md#shared-client-code) before composing them in [`client/device/`](../../client/device/). Link the report from the affected experience, communication contract, or UI assessment. Promote a measured limit to the [LVGL budget foundation](../product/device-ui/foundations/FOUNDATION-LVGL-BUDGET.md) only after the target run and owner review required there. A lab may establish feasibility or reject a design; product and wire decisions still follow their own authoring workflow.

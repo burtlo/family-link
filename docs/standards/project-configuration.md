@@ -1,6 +1,6 @@
 # Project configuration
 
-Family Link uses a single **`config/`** tree with two domains:
+Family Link uses a single **`config/`** tree with three domains:
 
 1. **Host / repository mechanics** — [`config/host.defaults.ini`](../../config/host.defaults.ini):
    install, inspect, build, test, evaluate, and flash mechanics as they become
@@ -8,6 +8,9 @@ Family Link uses a single **`config/`** tree with two domains:
 2. **Product deployment roster** — YAML under [`config/deployment/`](../../config/deployment/):
    people, kits, endpoints, aliases (see
    [`deployment-configuration.md`](deployment-configuration.md)).
+3. **Device labs host registry** — [`config/labs.registry.yaml`](../../config/labs.registry.yaml)
+   with schema under [`config/labs/`](../../config/labs/labs.registry.schema.v1.json)
+   (see [`labs-configuration.md`](labs-configuration.md)).
 
 ## Resolution
 
@@ -22,6 +25,7 @@ qualified name and replacing dots with underscores:
 ```text
 [idf] path                              -> IDF_PATH
 [config.deployment] example            -> CONFIG_DEPLOYMENT_EXAMPLE
+[labs] registry                        -> LABS_REGISTRY
 [command.install] timeout_seconds        -> COMMAND_INSTALL_TIMEOUT_SECONDS
 ```
 
@@ -43,6 +47,7 @@ Host inspection commands:
 |-------------|------|
 | `make config.host` | Host INI snapshot (`family-link.project-config.snapshot/v1`) |
 | `make config.deployment` | Roster snapshot (`family-link.deployment.snapshot/v1`, redacted) |
+| `make config.labs` | Labs registry snapshot (`family-link.labs-registry.snapshot/v1`) |
 | `make config` | Alias for `make config.host` |
 
 Each `[flow.<name>]` section lists command names in `commands`. Add build,
@@ -64,17 +69,45 @@ flows include test and build; hardware writes are explicit and excluded.
 Device selection reuses deployment aliases and kits rather than host identity
 settings. See [device build and flash](device-build-flash.md).
 
+## Device lab firmware
+
+`[labs] registry` and `[labs] schema` point at the committed labs registry and
+JSON Schema. Each registry entry defines a **make name** (`lab02` → `make lab.lab02`),
+ESP-IDF project path, build variants, and capture defaults. Product lab ids and
+evidence workflow live under [`docs/labs/`](../labs/README.md).
+
+Full field reference, validation, and boundaries:
+[`labs-configuration.md`](labs-configuration.md). Implementation:
+[`scripts/lab_host.py`](../../scripts/lab_host.py),
+[`scripts/lab_registry.py`](../../scripts/lab_registry.py).
+
+| Make target | Role |
+|-------------|------|
+| `make lab.help` | List registered labs |
+| `make lab.<name>.help` | Operator instructions for that lab |
+| `make lab.<name>` | Build if needed, flash, capture serial |
+| `make lab.<name>.scripted` | Auto-scroll run (when lab defines a `scripted` variant) |
+| `make lab.<name>.build` | Build only (manual/recycle image by default) |
+| `make lab.<name>.flash` | Flash (`KIT=` or `PORT=`) |
+| `make lab.<name>.capture` | Capture (`FLASH=0` to skip flash) |
+
+Add a new lab by extending the registry YAML and creating `client/labs/<project>/`;
+no Makefile change is required beyond the shared `lab.%` pattern rules.
+
 ## Validation and inspection
 
 ```text
 make config.host
 make config.deployment
+make config.labs
 make config.host CONFIG=path/to/custom.ini
 make test
 python scripts/project_config.py dump
 python scripts/project_config.py validate
 python scripts/deployment_config.py validate
 python scripts/deployment_config.py dump
+python scripts/lab_registry.py validate
+python scripts/lab_registry.py dump
 ```
 
 Configuration errors return a non-zero process status.

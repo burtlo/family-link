@@ -5,6 +5,12 @@ logs/
 client/device/sdkconfig
 client/device/sdkconfig.old
 client/device/managed_components/
+
+# v2 lab firmware (ESP-IDF local trees; sources under client/labs/ are tracked)
+client/labs/*/sdkconfig
+client/labs/*/sdkconfig.old
+client/labs/*/dependencies.lock
+client/labs/*/managed_components/
 __pycache__/
 *.py[cod]
 *.egg-info/

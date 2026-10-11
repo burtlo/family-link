@@ -1,0 +1,16 @@
+# Shared Kconfig for every ESP-IDF project under client/labs/.
+# In each lab's Kconfig.projbuild (project root):
+#   source "../kconfig/lab_common.projbuild"
+
+menu "Family Link device lab"
+
+    config LAB_AUTO_HARNESS
+        bool "Auto-scroll inbox after boot (scripted traversal)"
+        default n
+        help
+            When enabled, the lab firmware auto-scrolls through the inbox after boot
+            (implementation is per lab). You do not need to touch the screen during
+            capture; wait for HARNESS_DONE on serial. Same option in every lab project.
+            Host builds: make lab.<name>.scripted
+
+endmenu

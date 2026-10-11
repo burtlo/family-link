@@ -7,8 +7,12 @@
 | Area | Role |
 |------|------|
 | [`docs/`](README.md) | Active product documentation, standards, v1 assessments, experience-spec workflow |
+| [`client/device/`](../client/device/) | Product v2 firmware (bootstrap today) |
+| [`client/labs/`](../client/labs/) | **Projected** per-lab ESP-IDF projects — see [`docs/labs/repository-layout.md`](labs/repository-layout.md) |
+| [`server/labs/`](../server/labs/) | **Projected** lab fixture servers |
 | [`../config/host.defaults.ini`](../config/host.defaults.ini) | Host commands, flows, and toolchain defaults |
 | [`../config/deployment/`](../config/deployment/example.yaml) | Product roster (example + gitignored `local.yaml`) |
+| [`../config/labs.registry.yaml`](../config/labs.registry.yaml) | Device labs host registry (`make lab.<name>`) |
 | `poc-v1/` | **Read-only** v1 POC archive (firmware, demos, legacy docs). Reference only — see below |
 | [`.cursor/rules/poc-v1-reference-archive.mdc`](../.cursor/rules/poc-v1-reference-archive.mdc) | Enforces archive boundaries for agents |
 
@@ -28,10 +32,12 @@ For v1 build/flash commands and archive-local indexes, humans working inside the
 |------|------------|
 | Build, test, install, and future flash/evaluate mechanics | [`../config/host.defaults.ini`](../config/host.defaults.ini) · [`standards/project-configuration.md`](standards/project-configuration.md) |
 | Desk kits, endpoints, users | [`../config/deployment/example.yaml`](../config/deployment/example.yaml) · [`standards/deployment-configuration.md`](standards/deployment-configuration.md) · `make config.deployment` |
+| Device labs (host registry, flash/capture) | [`labs/README.md`](labs/README.md) · [`standards/labs-configuration.md`](standards/labs-configuration.md) · `make config.labs` · `make lab.help` |
 | Experience spec authoring | [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) · skill: [`.cursor/skills/author-experience-specification/SKILL.md`](../.cursor/skills/author-experience-specification/SKILL.md) |
 | Client/server contract authoring | [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) · skill: [`.cursor/skills/author-communication-contract/SKILL.md`](../.cursor/skills/author-communication-contract/SKILL.md) |
 | Client coding standards | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) |
 | v1 evidence assessments | [`v1-assessments/`](v1-assessments/carousel-playback.md) (historical evidence, not normative architecture) |
+| Device labs (v2) | [`labs/README.md`](labs/README.md) · [`labs/assistant-guide.md`](labs/assistant-guide.md) · [`standards/labs-configuration.md`](standards/labs-configuration.md) |
 | Deep retrospective method | [`.cursor/skills/deep-implementation-retrospective/SKILL.md`](../.cursor/skills/deep-implementation-retrospective/SKILL.md) |
 
 Codex/Cursor skill copies also live under [`.agents/skills/`](../.agents/skills/author-experience-specification/SKILL.md) (keep in sync with `.cursor/skills/`).
@@ -52,7 +58,10 @@ When sources conflict, state the conflict and required decision. Do not silently
 | Client/server exchange, identity, retry, and recovery contract | `docs/product/communication-contracts/<scope>.md` |
 | Product policy or authoring workflow | `docs/product/` |
 | Portable client rules | `docs/standards/` |
-| New implementation | Outside `poc-v1/` (future app directories at repo root) |
+| Product firmware | [`client/device/`](../client/device/) |
+| Lab firmware / lab servers | [`client/labs/<slug>/`](../client/labs/) · [`server/labs/<slug>/`](../server/labs/) per [`labs/repository-layout.md`](labs/repository-layout.md) |
+| Lab evidence reports | [`docs/labs/evidence/`](labs/evidence/README.md) |
+| Other new implementation | Outside `poc-v1/` at repo root |
 
 Do not update `poc-v1/` for forward product work.
 

@@ -1,0 +1,22 @@
+#pragma once
+
+/** BOX-3 320x240; snap geometry aligned with v1 roster carousel (extracted constants). */
+#define LAB02_LCD_W 320
+#define LAB02_LCD_H 240
+#define LAB02_RIBBON_H 20
+#define LAB02_CONTENT_H (240 - 2 * LAB02_RIBBON_H)
+#define LAB02_HEADER_H (LAB02_CONTENT_H / 3)
+#define LAB02_CARD_W 132
+#define LAB02_CARD_H (LAB02_CONTENT_H - LAB02_HEADER_H)
+#define LAB02_CARD_GAP 12
+#define LAB02_CARD_Y (LAB02_RIBBON_H + LAB02_HEADER_H)
+#define LAB02_CARD_RADIUS 8
+#define LAB02_CARD_POOL_SIZE 3
+#define LAB02_INBOX_MAX_ITEMS 256
+#define LAB02_DEFAULT_PAGE_SIZE 16
+
+#define LAB02_UI_BG 0x101418
+#define LAB02_UI_CARD 0x1C2228
+#define LAB02_UI_TEXT 0xF0F4F0
+#define LAB02_UI_TEXT_MUT 0xB0B8C0
+#define LAB02_UI_ACCENT 0xE8C040

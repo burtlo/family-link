@@ -30,8 +30,9 @@ Device bootstrap commands: [build and flash](standards/device-build-flash.md).
 | Doc | Role |
 |-----|------|
 | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) | Portable rules for the next client generation |
-| [`standards/project-configuration.md`](standards/project-configuration.md) | `config.host` / `config.deployment`, commands, flows, host INI |
+| [`standards/project-configuration.md`](standards/project-configuration.md) | `config.host` / `config.deployment` / `config.labs`, commands, flows, host INI |
 | [`standards/deployment-configuration.md`](standards/deployment-configuration.md) | Desk roster YAML schema and validation |
+| [`standards/labs-configuration.md`](standards/labs-configuration.md) | Device labs host registry (`config/labs.registry.yaml`) and `make lab.*` |
 | [`v1-assessments/carousel-playback.md`](v1-assessments/carousel-playback.md) | Carousel, focus, playback (v1 evidence) |
 | [`v1-assessments/authentication-connectivity.md`](v1-assessments/authentication-connectivity.md) | Wi‑Fi, roster, PIN, login (v1 evidence) |
 | [`v1-assessments/recording-send.md`](v1-assessments/recording-send.md) | Capture, upload, receipt (v1 evidence) |
@@ -42,6 +43,10 @@ Device bootstrap commands: [build and flash](standards/device-build-flash.md).
 | [`v1-assessments/operational-contract-shape.md`](v1-assessments/operational-contract-shape.md) | Stages, failures, retries, timeouts |
 | [`v1-assessments/resource-budget-envelope.md`](v1-assessments/resource-budget-envelope.md) | Limits and measurement |
 | [`v1-assessments/v2-implementation-practices.md`](v1-assessments/v2-implementation-practices.md) | Referenced synthesis of v1, demos, and x02 with v2 implementation gates |
+| [`labs/README.md`](labs/README.md) | Lab index (`LAB-01`–`LAB-13`), links to layout and assistant guide |
+| [`labs/repository-layout.md`](labs/repository-layout.md) | Projected `client/labs/`, `server/labs/`, build, artifacts, and evidence paths |
+| [`labs/lab-02-implementation-outline.md`](labs/lab-02-implementation-outline.md) | LAB-02 tree, phases, verification scenarios, milestones |
+| [`labs/assistant-guide.md`](labs/assistant-guide.md) | Workflow for agents and humans implementing or running labs |
 | [`labs/inbox-carousel-playback-evaluation.md`](labs/inbox-carousel-playback-evaluation.md) | Proposed device labs, capture requirements, and decision triggers for large inboxes and audio/sketch playback |
 | [`labs/v2-experience-demo-roadmap.md`](labs/v2-experience-demo-roadmap.md) | Additional new demos for login, session, capture/send, settings, and the composed v2 journey |
 

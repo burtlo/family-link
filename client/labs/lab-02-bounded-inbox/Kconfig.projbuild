@@ -1,0 +1,41 @@
+source "../kconfig/lab_common.projbuild"
+
+menu "LAB-02 Bounded Inbox"
+
+    config LAB02_EAGER_BASELINE
+        bool "Eager 16-card baseline (comparison build)"
+        default n
+        help
+            Build the eager comparison path (all cards for 16-item fixture).
+            Use a separate build directory (e.g. build/labs/lab-02-bounded-inbox-eager).
+
+    choice LAB02_FIXTURE
+        prompt "Embedded inbox fixture size"
+        default LAB02_FIXTURE_16
+        help
+            Select which embedded inbox JSON to load at boot.
+
+        config LAB02_FIXTURE_8
+            bool "8 items"
+        config LAB02_FIXTURE_16
+            bool "16 items"
+        config LAB02_FIXTURE_64
+            bool "64 items"
+        config LAB02_FIXTURE_256
+            bool "256 items"
+    endchoice
+
+    config LAB02_SLOW_BIND_MS
+        int "Injected slow bind delay (ms), 0 = off"
+        default 0
+        range 0 5000
+        help
+            Scenario S-delay: sleep on the UI thread before applying bind labels.
+            Use a small value (e.g. 50) to verify gestures are not blocked by bind work.
+
+    config LAB02_SERVER_URL
+        string "Phase B paging server URL (unused in Phase A)"
+        default ""
+        depends on !LAB02_EAGER_BASELINE
+
+endmenu

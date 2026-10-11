@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "inbox-summary/v1 (LAB-02)",
+  "type": "object",
+  "required": ["schema", "items"],
+  "properties": {
+    "schema": { "const": "inbox-summary/v1" },
+    "revision": { "type": "string" },
+    "page_size": { "type": "integer", "minimum": 1, "maximum": 64 },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["message_id", "sender_name"],
+        "properties": {
+          "message_id": { "type": "string" },
+          "sender_id": { "type": "string" },
+          "sender_name": { "type": "string" },
+          "preview": { "type": "string" },
+          "duration_ms": { "type": "integer" },
+          "seq": { "type": "integer" },
+          "unread": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

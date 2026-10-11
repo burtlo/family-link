@@ -3,6 +3,7 @@
 Status: proposed experiments; **no run or target measurement is claimed here**.  
 Scope: v2 BOX-3 carousel and media design before integration with the full experience.  
 Broader x02 journey: [v2 experience demo and lab roadmap](v2-experience-demo-roadmap.md) (`LAB-06`–`LAB-13`).  
+Implementation layout: [lab repository layout](repository-layout.md) (`client/labs/`, `server/labs/`, evidence). Assistant workflow: [lab assistant guide](assistant-guide.md).  
 Sources: [carousel module assessment](../product/device-ui/assessments/ASSESS-MODULE-v1-carousel.md), [x02 shell assessment](../product/device-ui/assessments/ASSESS-SHELL-x02.md), [demo explorer index](../product/device-ui/assessments/DEMO-EXPLORER-INDEX.md), [LVGL budget foundation](../product/device-ui/foundations/FOUNDATION-LVGL-BUDGET.md), [sketch experience](../product/experiences/sketch-record-and-playback.md), and [proposed inbox/media contract](../product/communication-contracts/inbox-and-media.md).
 
 ## Questions these labs must answer
@@ -19,11 +20,14 @@ The v1 **16-message limit is a fetched-page/client bound**, not evidence that th
 
 Create a **new implementation** of each selected demo in an active lab code tree
 outside the v1 archive, with its own build target, instrumentation, and version.
-Reproduce only the behavior needed for the experiment; do not edit the original
-demo or add probes to its source. The original may be run unmodified as a
-comparison. Record the original revision and the new implementation revision
-separately. This keeps the original as evidence and gives the evaluator a clean
-place to change allocations, timing, rendering, and fault injection.
+Use the paths in [repository layout](repository-layout.md) (for example
+`client/labs/lab-02-bounded-inbox/` for `LAB-02`). Reproduce only the behavior
+needed for the experiment; do not edit the original demo or add probes to its
+source. The original may be run unmodified as a comparison. Record the original
+revision and the new implementation revision separately. Publish run results under
+[`docs/labs/evidence/`](evidence/README.md). This keeps the original as evidence
+and gives the evaluator a clean place to change allocations, timing, rendering,
+and fault injection.
 
 | Reference behavior | New lab implementation and instrumentation | Server included in the lab version |
 |---|---|---|
@@ -73,7 +77,12 @@ The [demo index](../product/device-ui/assessments/DEMO-EXPLORER-INDEX.md#ledger-
 
 ## LAB-02 — bounded inbox and card recycling
 
-**Run:** Implement a small standalone v2 carousel lab with a metadata page model, stable message IDs, and a controller binding **center plus immediate neighbors** to three reusable card views. Exercise 8/16/64/256-item fixtures, 20 repeated end-to-end traversals, rapid reversals, page arrival and focused-item removal during snap, delayed view writes, and repeated bind/unbind. Run a comparison build that eagerly creates all cards at 16 items.
+**Code (projected):** `client/labs/lab-02-bounded-inbox/`; Phase B server
+`server/labs/lab-02-paging/`. See [lab registry](README.md#lab-id-registry) and
+[LAB-02 implementation outline](lab-02-implementation-outline.md) (tree, scenario
+IDs, phases, milestones).
+
+**Run:** Implement a small standalone v2 carousel lab with a metadata page model, stable message IDs, and a controller binding **center plus immediate neighbors** to three reusable card views. Exercise 8/16/64/256-item fixtures, 20 repeated end-to-end traversals, rapid reversals, page arrival and focused-item removal during snap, delayed view writes, and repeated bind/unbind. Run a comparison build that eagerly creates all cards at 16 items. Phase A may use a local page provider only (`server = none`).
 
 **Capture:** Live/peak widgets and buffers versus inbox size; bind/unbind counts; frame-time distribution; input-to-focus latency; allocations per scroll event; focus ID and visual center after each snap; wrong-message content, stale image, duplicate callback, and stale async completion count; page fetch bytes and metadata memory.
 
