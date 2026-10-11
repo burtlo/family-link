@@ -29,6 +29,7 @@ For v1 build/flash commands and archive-local indexes, humans working inside the
 | Build, test, install, and future flash/evaluate mechanics | [`../config/host.defaults.ini`](../config/host.defaults.ini) · [`standards/project-configuration.md`](standards/project-configuration.md) |
 | Desk kits, endpoints, users | [`../config/deployment/example.yaml`](../config/deployment/example.yaml) · [`standards/deployment-configuration.md`](standards/deployment-configuration.md) · `make config.deployment` |
 | Experience spec authoring | [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) · skill: [`.cursor/skills/author-experience-specification/SKILL.md`](../.cursor/skills/author-experience-specification/SKILL.md) |
+| Client/server contract authoring | [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) · skill: [`.cursor/skills/author-communication-contract/SKILL.md`](../.cursor/skills/author-communication-contract/SKILL.md) |
 | Client coding standards | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) |
 | v1 evidence assessments | [`v1-assessments/`](v1-assessments/carousel-playback.md) (historical evidence, not normative architecture) |
 | Deep retrospective method | [`.cursor/skills/deep-implementation-retrospective/SKILL.md`](../.cursor/skills/deep-implementation-retrospective/SKILL.md) |
@@ -48,6 +49,7 @@ When sources conflict, state the conflict and required decision. Do not silently
 | Change type | Location |
 |-------------|----------|
 | New experience / behavioral contract | `docs/product/experiences/<slug>.md` (or path the owner names) |
+| Client/server exchange, identity, retry, and recovery contract | `docs/product/communication-contracts/<scope>.md` |
 | Product policy or authoring workflow | `docs/product/` |
 | Portable client rules | `docs/standards/` |
 | New implementation | Outside `poc-v1/` (future app directories at repo root) |

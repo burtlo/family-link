@@ -60,6 +60,24 @@ Drawing and other edge-to-edge experiences use an explicit full-canvas layout.
 
 ## Artifact index
 
+### Remaining x02 coverage
+
+The v1 x02 client is the historical stage inventory for the v2 migration. These
+handoff files name the visual artifacts still to author; they are planning
+inventories, not approved specifications:
+
+| Directory | Missing-artifact inventory | Main coverage |
+|---|---|---|
+| Components | [MISSING](components/MISSING.md) | Reusable status/error message, message card, transport, settings and recipient tiles, record canvas and swatches |
+| Layouts | [MISSING](layouts/MISSING.md) | Full-canvas, carousel-stage, record canvas/rail, receipt geometry |
+| Panels | [MISSING](panels/MISSING.md) | Status-message composition, signed-in carousel, picker, settings, color rail, send feedback |
+| Screens | [MISSING](screens/MISSING.md) | Connecting, Wi-Fi unavailable, inbox, settings, recipient picker, record, send |
+
+The active [login experience](../experiences/endpoint-login.md) and [sketch
+experience](../experiences/sketch-record-and-playback.md) govern the behavior and
+geometry they already decide. The signed-in and send stages need further
+experience work before their visual artifacts can be implementation-ready.
+
 ### Foundations
 
 | ID | Document | Status |
@@ -68,6 +86,19 @@ Drawing and other edge-to-edge experiences use an explicit full-canvas layout.
 | `FOUNDATION-MOTION` | [Motion](foundations/FOUNDATION-MOTION.md) | Draft — cross-fade proposed; timing OPEN |
 | `THEME-DARK` | [Dark theme](themes/THEME-DARK.md) | Draft — token placement map (single scheme) |
 | `FOUNDATION-CARD-BACKGROUNDS` | [Card backgrounds](foundations/FOUNDATION-CARD-BACKGROUNDS.md) | Placeholder — catalog TBD |
+| `FOUNDATION-LVGL-BUDGET` | [LVGL budget & assessments](foundations/FOUNDATION-LVGL-BUDGET.md) | Draft — two-budget model, measurement table, review template |
+
+### Assessments
+
+| Document | Role |
+|---|---|
+| [LVGL screen assessment template](assessments/TEMPLATE-LVGL-SCREEN-ASSESSMENT.md) | Copy per screen/demo; file as `ASSESS-*.md` in same folder |
+| [Demo explorer index](assessments/DEMO-EXPLORER-INDEX.md) | **Rev 0.1** — 51 island demos by theme; PASS lines; V2 flash shortlist |
+| [Demo pattern ledger](assessments/DEMO-PATTERN-LEDGER.md) | **Rev 0.2** — 51 island demos + x02 modules (SCAN + 12 DEEP); verdict summary |
+| **V2 flash shortlist (static `ASSESS-*`)** | [h19](assessments/ASSESS-DEMO-h19.md) · [h03](assessments/ASSESS-DEMO-h03.md) · [h18](assessments/ASSESS-DEMO-h18.md) · [h14](assessments/ASSESS-DEMO-h14.md) · [h02](assessments/ASSESS-DEMO-h02.md) · [p04](assessments/ASSESS-DEMO-p04.md) · [p13](assessments/ASSESS-DEMO-p13.md) · [p10](assessments/ASSESS-DEMO-p10.md) · [x02 shell](assessments/ASSESS-SHELL-x02.md) |
+| **Sketch / media tier (static `ASSESS-*`)** | [h27](assessments/ASSESS-DEMO-h27.md) · [h26](assessments/ASSESS-DEMO-h26.md) · [h28](assessments/ASSESS-DEMO-h28.md) · [h13](assessments/ASSESS-DEMO-h13.md) · [p12](assessments/ASSESS-DEMO-p12.md) · [h23](assessments/ASSESS-DEMO-h23.md) (record policy; no LVGL) |
+| **[`ASSESS-MODULE-v1-carousel`](assessments/ASSESS-MODULE-v1-carousel.md)** | Deep v1 inbox carousel / playback / sketch analysis for v2 component reuse |
+| **On-device** | Fill **Measured** columns per [`FOUNDATION-LVGL-BUDGET`](foundations/FOUNDATION-LVGL-BUDGET.md) appendix A |
 
 ### Layouts
 

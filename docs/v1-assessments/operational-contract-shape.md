@@ -2,13 +2,18 @@
 
 Status: explanatory guidance with v1 device examples  
 Standard: [Client application coding standards](../standards/client-application-coding-standards.md) §7  
-Related plan: `docs/plans/operational-contract.md`
+Related v2 workflow: [Authoring endpoint communication contracts](../product/communication-contract-authoring.md)
 
 ## Definition
 
 An operational contract defines what the user experiences while software waits,
 retries, degrades, succeeds, fails, cancels, or times out. It sits between product
 intent and implementation.
+
+When the behavior crosses a client/server boundary, use the [communication-contract
+authoring guide](../product/communication-contract-authoring.md) to specify the
+messages and state each side must agree on. The experience specification remains
+the authority for user-visible behavior.
 
 It is user- and behavior-oriented, not library- or hardware-oriented. It should
 remain useful if the client moves from LVGL to another toolkit, from FreeRTOS to

@@ -33,6 +33,7 @@ For this repository, consult these sources according to their role:
 
 - **BOX-UI brief (v1 POC archive):** examples of physical context, controls, sketches, screen behavior, copy, and acceptance scripts. Read from the read-only archive when interviewing hardware-mediated flows; extract into the spec. Do not link archive paths in new artifacts. Do not automatically adopt its V1 decisions.
 - [Operational contract shape](../v1-assessments/operational-contract-shape.md): stage structure, failure classes, retries, timeouts, preserved work, and OPEN decisions.
+- [Communication contract authoring](communication-contract-authoring.md): shared client/server messages, state ownership, duplicate and late-result semantics, and outage recovery when an experience crosses a protocol boundary.
 - [Client application coding standards](../standards/client-application-coding-standards.md): engineering constraints and verification expectations.
 - [Async operation envelope](../v1-assessments/async-operation-envelope.md): operation identity, frozen inputs, cancellation, stale results, and terminal outcomes.
 - [Session stage versus background poller](../v1-assessments/session-stage-vs-background-poller.md): dependency truth and priority of background results.

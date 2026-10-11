@@ -217,3 +217,10 @@ that every failure should use the offline toast.
 
 This is source and incident analysis only. It establishes L0/L1 review findings;
 it does not claim current device behavior was retested.
+
+## V2 device UI follow-on
+
+Module-level LVGL budget, concurrency, sketch pipeline, and v2 component
+architecture notes live in
+[`ASSESS-MODULE-v1-carousel`](../product/device-ui/assessments/ASSESS-MODULE-v1-carousel.md)
+(device UI assessments).

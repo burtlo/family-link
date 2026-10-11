@@ -12,6 +12,10 @@ copy:
 - [Authentication and connectivity](../v1-assessments/authentication-connectivity.md)
 - [Recording and send](../v1-assessments/recording-send.md)
 
+The [v1 synthesis and v2 implementation practices](../v1-assessments/v2-implementation-practices.md)
+map the assessments, including the device UI demos and x02 modules, to
+reviewable artifacts and verification gates.
+
 Normative words have their usual meanings: **MUST**, **MUST NOT**, **SHOULD**, and
 **MAY**.
 
@@ -296,3 +300,23 @@ Use review judgment for:
 8. Are retries, failures, and user-visible copy defined by the contract?
 9. Are memory, input-size, queue, and concurrency limits explicit?
 10. Is the claimed verification level backed by an artifact?
+
+## 15. Applying these standards in a feature slice
+
+For each user-visible journey or component, the implementation review MUST make
+the following evidence findable in the change or linked specifications:
+
+1. The applicable approved experience, UI specification, and communication
+   contract, plus an operational scenario table that leaves undecided product
+   rules **OPEN**.
+2. The ownership and wait map for callbacks, session transitions, and workers;
+   the operation envelopes and stage/background-event policy for affected waits.
+3. The UI update-level map, including preserved identity keys and Level 2
+   lifecycle cleanup, and target resource and time budgets before implementation.
+4. Focused failure, race, and budget checks with the achieved L0–L3 evidence
+   level stated separately for each claim.
+
+The linked [implementation practices](../v1-assessments/v2-implementation-practices.md#practices-for-each-v2-feature-slice)
+give the concrete artifact and verification gate for each step. An existing
+specification or assessment can satisfy a step; duplicate documents are not
+required.

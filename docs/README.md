@@ -14,6 +14,12 @@ Read [`AGENTS.md`](AGENTS.md) before inventing product behavior or touching code
 | `docs/product/experiences/<slug>.md` | Owner-approved experience specifications (create as needed) |
 | [`product/device-ui-specification-authoring.md`](product/device-ui-specification-authoring.md) | Workflow and required structure for fixed-hardware layouts, components, and screens |
 | [`product/device-ui/`](product/device-ui/README.md) | V2 device UI foundations, reusable layouts, components, and screen compositions |
+| [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) | Reusable client/server contract format and review questions |
+| [`product/communication-contracts/endpoint-health-and-login.md`](product/communication-contracts/endpoint-health-and-login.md) | Draft v2 health, roster, and PIN exchange contract; blocking wire decisions recorded |
+| [`product/communication-contracts/user-scoped-envelope.md`](product/communication-contracts/user-scoped-envelope.md) | Proposed signed-in authority and shared error schema |
+| [`product/communication-contracts/message-delivery.md`](product/communication-contracts/message-delivery.md) | V1 send wire capture and proposed v2 delivery schemas |
+| [`product/communication-contracts/inbox-and-media.md`](product/communication-contracts/inbox-and-media.md) | V1 inbox/media capture and proposed v2 sync, fetch, and playback-state schemas |
+| [`product/communication-contracts/user-profile.md`](product/communication-contracts/user-profile.md) | V1 icon/color capture and proposed v2 profile schemas |
 
 Historical v1 product docs (vision, requirements, plans, features) remain in the **v1 POC archive** until migrated into `docs/product/`.
 
@@ -29,11 +35,15 @@ Device bootstrap commands: [build and flash](standards/device-build-flash.md).
 | [`v1-assessments/carousel-playback.md`](v1-assessments/carousel-playback.md) | Carousel, focus, playback (v1 evidence) |
 | [`v1-assessments/authentication-connectivity.md`](v1-assessments/authentication-connectivity.md) | Wi‑Fi, roster, PIN, login (v1 evidence) |
 | [`v1-assessments/recording-send.md`](v1-assessments/recording-send.md) | Capture, upload, receipt (v1 evidence) |
+| [`v1-assessments/communication-contract-inventory.md`](v1-assessments/communication-contract-inventory.md) | V1 evidence and remaining v2 send, inbox, media, and profile contract boundaries |
 | [`v1-assessments/async-operation-envelope.md`](v1-assessments/async-operation-envelope.md) | Operation identity, cancellation, terminal outcomes |
 | [`v1-assessments/ui-update-taxonomy.md`](v1-assessments/ui-update-taxonomy.md) | Focus, selection, presentation identity |
 | [`v1-assessments/session-stage-vs-background-poller.md`](v1-assessments/session-stage-vs-background-poller.md) | Stage vs dependency truth |
 | [`v1-assessments/operational-contract-shape.md`](v1-assessments/operational-contract-shape.md) | Stages, failures, retries, timeouts |
 | [`v1-assessments/resource-budget-envelope.md`](v1-assessments/resource-budget-envelope.md) | Limits and measurement |
+| [`v1-assessments/v2-implementation-practices.md`](v1-assessments/v2-implementation-practices.md) | Referenced synthesis of v1, demos, and x02 with v2 implementation gates |
+| [`labs/inbox-carousel-playback-evaluation.md`](labs/inbox-carousel-playback-evaluation.md) | Proposed device labs, capture requirements, and decision triggers for large inboxes and audio/sketch playback |
+| [`labs/v2-experience-demo-roadmap.md`](labs/v2-experience-demo-roadmap.md) | Additional new demos for login, session, capture/send, settings, and the composed v2 journey |
 
 ## Cursor / Codex skills
 
@@ -41,6 +51,7 @@ Device bootstrap commands: [build and flash](standards/device-build-flash.md).
 |-------|------|
 | [`.cursor/skills/author-experience-specification/SKILL.md`](../.cursor/skills/author-experience-specification/SKILL.md) | Author or revise experience specs |
 | [`.cursor/skills/author-device-ui-specification/SKILL.md`](../.cursor/skills/author-device-ui-specification/SKILL.md) | Author or revise fixed-hardware device UI specs |
+| [`.cursor/skills/author-communication-contract/SKILL.md`](../.cursor/skills/author-communication-contract/SKILL.md) | Author or revise client/server communication contracts |
 | [`.cursor/skills/deep-implementation-retrospective/SKILL.md`](../.cursor/skills/deep-implementation-retrospective/SKILL.md) | Evidence-based engineering retrospective |
 
 Mirrors under `.agents/skills/` for Codex.
