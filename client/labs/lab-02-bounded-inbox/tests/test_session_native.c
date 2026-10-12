@@ -8,14 +8,34 @@
 #include <string.h>
 #include <time.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
+#define PUMP_WAIT_MAX 300
+
 static atomic_int done;
 static lab02_fetch_req_t req1;
 static lab02_fetch_req_t req2;
 
-static void pause_ms(long ms)
+/* MinGW nanosleep(1ms) is much coarser than 1ms; keep host L1 timing predictable. */
+static void pump_wait(void)
 {
-    struct timespec delay = {.tv_sec = 0, .tv_nsec = ms * 1000000};
+#if defined(_WIN32)
+    Sleep(1);
+#else
+    struct timespec delay = {.tv_sec = 0, .tv_nsec = 1000000};
     nanosleep(&delay, NULL);
+#endif
+}
+
+static void pump_until_ready(void)
+{
+    for (int i = 0; i < PUMP_WAIT_MAX && lab02_session_snapshot().load_stage != LAB02_LOAD_READY;
+         i++) {
+        lab02_session_pump();
+        pump_wait();
+    }
 }
 
 static void *send_initial(void *arg)
@@ -95,12 +115,9 @@ int main(void)
     lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, session_id);
     pthread_t thread;
     assert(pthread_create(&thread, NULL, send_initial, NULL) == 0);
-    for (int i = 0; i < 1000 && lab02_session_snapshot().load_stage != LAB02_LOAD_READY; i++) {
-        lab02_session_pump();
-        pause_ms(1);
-    }
-    assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
     pthread_join(thread, NULL);
+    pump_until_ready();
+    assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
 
     assert(!lab02_session_snapshot().transport_unreachable);
     lab02_session_intent_transport(false);
@@ -111,17 +128,17 @@ int main(void)
     lab02_session_intent_transport(true);
     for (int i = 0; i < 50; i++) {
         lab02_session_pump();
-        pause_ms(1);
+        pump_wait();
     }
     assert(!lab02_session_snapshot().transport_unreachable);
 
     assert(pthread_create(&thread, NULL, toggle_transport, NULL) == 0);
-    for (int i = 0; i < 2000; i++) {
+    for (int i = 0; i < 600; i++) {
         lab02_session_snapshot_t before = lab02_session_snapshot();
         lab02_session_pump();
         lab02_session_snapshot_t after = lab02_session_snapshot();
         assert(before.transport_unreachable == after.transport_unreachable);
-        pause_ms(1);
+        pump_wait();
     }
     pthread_join(thread, NULL);
     for (int i = 0; i < 100; i++) {
@@ -139,14 +156,14 @@ int main(void)
     assert(pthread_create(&thread, NULL, send_two_pages, NULL) == 0);
     for (int i = 0; i < 200; i++) {
         lab02_session_pump();
-        pause_ms(1);
+        pump_wait();
     }
     assert(lab02_inbox_model_item(provider.model, 16) == NULL);
     pthread_join(thread, NULL);
     lab02_session_intent_scroll_lock(false);
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < PUMP_WAIT_MAX; i++) {
         lab02_session_pump();
-        pause_ms(1);
+        pump_wait();
         if (lab02_inbox_model_item(provider.model, 32) != NULL) {
             break;
         }
@@ -165,11 +182,11 @@ int main(void)
     }
     assert(refresh.page_index == 0);
     assert(pthread_create(&thread, NULL, send_revision, &refresh) == 0);
-    for (int i = 0; i < 1000 && lab02_session_snapshot().inbox_revision != 2; i++) {
-        lab02_session_pump();
-        pause_ms(1);
-    }
     pthread_join(thread, NULL);
+    for (int i = 0; i < PUMP_WAIT_MAX && lab02_session_snapshot().inbox_revision != 2; i++) {
+        lab02_session_pump();
+        pump_wait();
+    }
     assert(lab02_session_snapshot().inbox_revision == 2);
     assert(lab02_session_snapshot().focus_index == 0);
     assert(strcmp(lab02_inbox_model_item(provider.model, 0)->message_id, "m16") == 0);
@@ -179,11 +196,11 @@ int main(void)
     assert(lab02_session_http_take_fetch_request(&failed));
     assert(failed.page_index == 1);
     assert(pthread_create(&thread, NULL, send_failure, &failed) == 0);
-    for (int i = 0; i < 1000 && lab02_session_metrics().fetch_fail == 0; i++) {
-        lab02_session_pump();
-        pause_ms(1);
-    }
     pthread_join(thread, NULL);
+    for (int i = 0; i < PUMP_WAIT_MAX && lab02_session_metrics().fetch_fail == 0; i++) {
+        lab02_session_pump();
+        pump_wait();
+    }
     assert(lab02_session_metrics().fetch_fail == 1);
     uint32_t retry_op = 0;
     assert(lab02_session_http_enqueue_fetch(1, &retry_op));

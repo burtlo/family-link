@@ -10,7 +10,9 @@ This executes `scripts/tests/test_lab02_host.py` (fixture JSON validation and sn
 and `scripts/tests/test_lab02_model_native.py`. When a host C compiler and ESP-IDF cJSON
 source are available, the latter compiles the actual C page parser and session reducer.
 It exercises malformed pages, replacement after removal, result ownership, snap
-deferral, revision reconciliation, failure retry, and queue overflow.
+deferral, transport updates while page apply is deferred (LAB02-F002), overlapping
+snap cancellation / scroll-lock pairing (LAB02-F003), revision reconciliation,
+failure retry, and queue overflow.
 
 **L2/L3:** on-device scenarios — see [lab README](../README.md) and [evidence STATUS](../../../../docs/labs/evidence/lab-02/STATUS.md).
 

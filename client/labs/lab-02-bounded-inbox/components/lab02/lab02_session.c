@@ -50,6 +50,9 @@ static bool s_refresh_failed;
 static bool s_transport_unreachable;
 static int64_t s_next_recovery_us;
 static uint32_t s_deferred_op;
+#define LAB02_DEFERRED_FETCH_CAP 4
+static lab02_sess_event_t s_deferred_fetches[LAB02_DEFERRED_FETCH_CAP];
+static int s_deferred_fetch_count;
 
 static lab02_session_metrics_t s_metrics;
 
@@ -345,6 +348,8 @@ void lab02_session_reset(void)
     s_transport_unreachable = false;
     s_next_recovery_us = 0;
     s_deferred_op = 0;
+    s_deferred_fetch_count = 0;
+    memset(s_deferred_fetches, 0, sizeof(s_deferred_fetches));
     memset(&s_metrics, 0, sizeof(s_metrics));
 }
 
@@ -451,6 +456,10 @@ void lab02_session_intent_scroll_lock(bool locked)
     bool was_locked = s_scroll_locked;
     s_scroll_locked = locked;
     if (was_locked && !locked) {
+        for (int i = 0; i < s_deferred_fetch_count; i++) {
+            handle_fetch_done(&s_deferred_fetches[i]);
+        }
+        s_deferred_fetch_count = 0;
         s_deferred_op = 0;
         lab02_session_pump();
     }
@@ -507,12 +516,18 @@ void lab02_session_pump(void)
         }
         if (ev.kind == LAB02_SESS_EV_FETCH_DONE && ev.outcome == LAB02_FETCH_OK &&
             s_scroll_locked) {
-            if (s_deferred_op != ev.op_id) {
+            if (s_deferred_fetch_count >= LAB02_DEFERRED_FETCH_CAP) {
+                break;
+            }
+            xQueueReceive(s_event_q, &ev, 0);
+            bool first_deferred = s_deferred_fetch_count == 0;
+            s_deferred_fetches[s_deferred_fetch_count++] = ev;
+            if (first_deferred) {
                 s_deferred_op = ev.op_id;
                 s_metrics.apply_deferred++;
                 lab02_trace_emit("apply_deferred", ev.op_id, ev.page_index, NULL, NULL);
             }
-            break;
+            continue;
         }
         xQueueReceive(s_event_q, &ev, 0);
         if (ev.kind == LAB02_SESS_EV_FETCH_DONE) {

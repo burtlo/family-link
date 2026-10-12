@@ -17,6 +17,23 @@ static void scroll_x_exec(void *obj, int32_t v)
     lv_obj_scroll_to_x((lv_obj_t *)obj, v, LV_ANIM_OFF);
 }
 
+static void snap_anim_teardown(bool invoke_done_cb)
+{
+    if (!s_anim_st) {
+        return;
+    }
+    lab02_snap_state_t *st = s_anim_st;
+    void (*done)(void *) = s_anim_done;
+    void *user = s_anim_user;
+    s_anim_done = NULL;
+    s_anim_user = NULL;
+    s_anim_st = NULL;
+    st->scroll_lock = false;
+    if (invoke_done_cb && done) {
+        done(user);
+    }
+}
+
 static void snap_anim_done(lv_anim_t *a)
 {
     lv_obj_t *scroller = (lv_obj_t *)lv_anim_get_user_data(a);
@@ -24,17 +41,11 @@ static void snap_anim_done(lv_anim_t *a)
         lv_obj_scroll_to_x(scroller, s_anim_target, LV_ANIM_OFF);
     }
     if (s_anim_st) {
-        s_anim_st->scroll_lock = false;
         s_anim_st->snap_target_x = s_anim_target;
     }
     lab02_trace_emit("snap_end", 0, -1, NULL, NULL);
     lab02_instrumentation_get()->snap_count++;
-    if (s_anim_done) {
-        s_anim_done(s_anim_user);
-    }
-    s_anim_done = NULL;
-    s_anim_user = NULL;
-    s_anim_st = NULL;
+    snap_anim_teardown(true);
 }
 
 void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t target_x,
@@ -52,6 +63,7 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
         }
         return;
     }
+    snap_anim_teardown(true);
     lv_anim_delete(scroller, scroll_x_exec);
     s_anim_target = target_x;
     s_anim_st = st;
