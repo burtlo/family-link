@@ -23,13 +23,16 @@ boot starts the fetch worker after the result is acknowledged.
 
 Each queued request carries a session generation, monotonically increasing
 operation ID, page index, and monotonic submission time. The worker returns one
-success, failure, or timeout event. The result page is immutable until the
-session acknowledges that event; the worker cannot overwrite it while a snap
-defers application. A stale session or operation result is rejected. The fetch
-queue has eight slots; rejection is counted and traced. The session processes at
-most one completion per UI pump and retries a missing focused page on a one
-second cadence. A failed focused page shows “page unavailable; retrying”.
-If background page-zero refresh fails, existing items are labeled “cached”.
+success, failure, or timeout event. On success the worker copies the parsed page
+into the session event queue and releases its fetch slot immediately; the worker
+may start the next fetch while a snap defers **application** (not queueing). A
+stale session or operation result is rejected. The fetch queue has eight slots;
+rejection is counted and traced. Session events use a bounded queue; overflow
+increments `fetch_event_dropped`. The session processes at most one completion
+per UI pump and retries a missing focused page on a one second cadence. A failed
+focused page shows “page unavailable; retrying”. If background page-zero refresh
+fails, existing items are labeled “cached”. STA disconnect sets transport
+unavailable copy (“reconnecting…”) without erasing the load stage.
 
 The initial fetch uses the same event path. Its failure transitions to an
 unavailable stage; automatic boot retry and product copy remain **OPEN**.

@@ -34,9 +34,14 @@ static TaskHandle_t s_boot_worker;
 static uint32_t s_boot_session_id;
 static bool ensure_workers(void);
 
+static void on_wifi_transport(bool reachable)
+{
+    lab02_session_intent_transport(reachable);
+}
+
 static int page_offset_for_index(int page)
 {
-    return page * (int)LAB02_DEFAULT_PAGE_SIZE;
+    return page * (int)lab02_session_http_page_size();
 }
 
 static bool http_errno_timed_out(int eno)
@@ -52,7 +57,8 @@ static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, siz
     }
     char url[192];
     int url_len = snprintf(url, sizeof(url), "%s/v2/inbox?cursor=%d&limit=%d",
-                           CONFIG_LAB02_SERVER_URL, page_offset, (int)LAB02_DEFAULT_PAGE_SIZE);
+                           CONFIG_LAB02_SERVER_URL, page_offset,
+                           (int)lab02_session_http_page_size());
     if (url_len < 0 || url_len >= (int)sizeof(url)) {
         return LAB02_HTTP_FETCH_FAIL;
     }
@@ -163,6 +169,7 @@ static void boot_task(void *arg)
 {
     (void)arg;
     uint32_t session_id = s_boot_session_id;
+    lab02_board_wifi_set_transport_notifier(on_wifi_transport);
     lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, session_id);
     if (!lab02_board_wifi_connect()) {
         ESP_LOGE(TAG, "Wi-Fi failed");
@@ -199,7 +206,8 @@ static void boot_task(void *arg)
             printf("LAB02_HTTP_READY revision=%u items=%u\n", (unsigned)snap.inbox_revision,
                    (unsigned)snap.total_count);
         } else {
-            lab02_session_http_mark_stage(LAB02_LOAD_ERROR, session_id);
+            ESP_LOGW(TAG, "background fetch worker unavailable; page 0 only");
+            lab02_trace_emit("worker_spawn_fail", 0, 0, NULL, NULL);
         }
     }
     vTaskDelete(NULL);

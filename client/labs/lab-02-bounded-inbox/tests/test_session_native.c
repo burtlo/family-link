@@ -8,7 +8,6 @@
 #include <string.h>
 #include <time.h>
 
-static atomic_int first_ack;
 static atomic_int done;
 static lab02_fetch_req_t req1;
 static lab02_fetch_req_t req2;
@@ -44,7 +43,6 @@ static void *send_two_pages(void *arg)
     strcpy(page.items[0].message_id, "m16");
     lab02_session_http_fetch_finished(LAB02_FETCH_OK, req1.session_id, req1.op_id, 1,
                                       &page, false);
-    atomic_store(&first_ack, 1);
     memset(&page, 0, sizeof(page));
     page.revision = 1;
     page.total_count = 256;
@@ -79,6 +77,15 @@ static void *send_failure(void *arg)
     return NULL;
 }
 
+static void *toggle_transport(void *arg)
+{
+    (void)arg;
+    for (int i = 0; i < 500; i++) {
+        lab02_session_intent_transport((i & 1) != 0);
+    }
+    return NULL;
+}
+
 int main(void)
 {
     lab02_page_provider_t provider;
@@ -94,6 +101,34 @@ int main(void)
     }
     assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
     pthread_join(thread, NULL);
+
+    assert(!lab02_session_snapshot().transport_unreachable);
+    lab02_session_intent_transport(false);
+    assert(!lab02_session_snapshot().transport_unreachable);
+    lab02_session_pump();
+    assert(lab02_session_snapshot().transport_unreachable);
+    assert(lab02_session_take_presentation_dirty());
+    lab02_session_intent_transport(true);
+    for (int i = 0; i < 50; i++) {
+        lab02_session_pump();
+        pause_ms(1);
+    }
+    assert(!lab02_session_snapshot().transport_unreachable);
+
+    assert(pthread_create(&thread, NULL, toggle_transport, NULL) == 0);
+    for (int i = 0; i < 2000; i++) {
+        lab02_session_snapshot_t before = lab02_session_snapshot();
+        lab02_session_pump();
+        lab02_session_snapshot_t after = lab02_session_snapshot();
+        assert(before.transport_unreachable == after.transport_unreachable);
+        pause_ms(1);
+    }
+    pthread_join(thread, NULL);
+    for (int i = 0; i < 100; i++) {
+        lab02_session_pump();
+    }
+    assert(!lab02_session_snapshot().transport_unreachable);
+
     assert(lab02_session_http_take_fetch_request(&req1));
     assert(req1.page_index == 1);
     assert(lab02_session_http_enqueue_fetch(2, &req2.op_id));
@@ -102,19 +137,21 @@ int main(void)
 
     lab02_session_intent_scroll_lock(true);
     assert(pthread_create(&thread, NULL, send_two_pages, NULL) == 0);
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 200; i++) {
         lab02_session_pump();
         pause_ms(1);
     }
-    assert(atomic_load(&first_ack) == 0);
     assert(lab02_inbox_model_item(provider.model, 16) == NULL);
+    pthread_join(thread, NULL);
     lab02_session_intent_scroll_lock(false);
-    for (int i = 0; i < 1000 && !atomic_load(&done); i++) {
+    for (int i = 0; i < 1000; i++) {
         lab02_session_pump();
         pause_ms(1);
+        if (lab02_inbox_model_item(provider.model, 32) != NULL) {
+            break;
+        }
     }
-    pthread_join(thread, NULL);
-    assert(atomic_load(&first_ack) == 1 && atomic_load(&done) == 1);
+    assert(atomic_load(&done) == 1);
     assert(strcmp(lab02_inbox_model_item(provider.model, 16)->message_id, "m16") == 0);
     assert(strcmp(lab02_inbox_model_item(provider.model, 32)->message_id, "m32") == 0);
     assert(lab02_session_metrics().apply_deferred == 1);

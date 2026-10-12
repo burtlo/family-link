@@ -33,6 +33,7 @@ typedef struct {
     bool http_active;
     bool focused_page_failed;
     bool cached_due_to_refresh_failure;
+    bool transport_unreachable;
 } lab02_session_snapshot_t;
 
 typedef struct {
@@ -61,7 +62,12 @@ const lab02_page_provider_t *lab02_session_provider(void);
 
 void lab02_session_intent_focus(int focus_index);
 void lab02_session_intent_scroll_lock(bool locked);
+/** Wi-Fi / IP reachability (Phase B); posts session event — apply in pump only. */
+void lab02_session_intent_transport(bool reachable);
 bool lab02_session_intent_refresh(void);
+
+/** Page stride for HTTP cursor math and paging (model page_size or default). */
+uint16_t lab02_session_http_page_size(void);
 
 /**
  * Drain worker events and apply deferred merges. Call from presentation when LVGL is

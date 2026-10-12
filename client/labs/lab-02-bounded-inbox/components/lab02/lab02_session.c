@@ -14,6 +14,7 @@
 typedef enum {
     LAB02_SESS_EV_FETCH_DONE,
     LAB02_SESS_EV_STAGE,
+    LAB02_SESS_EV_TRANSPORT,
 } lab02_sess_ev_kind_t;
 
 typedef struct {
@@ -22,10 +23,11 @@ typedef struct {
     uint32_t session_id;
     uint32_t op_id;
     int page_index;
-    const lab02_inbox_page_t *page;
     bool initial;
+    bool has_page;
+    lab02_inbox_page_t page;
     lab02_load_stage_t stage;
-    int64_t posted_us;
+    bool transport_reachable;
 } lab02_sess_event_t;
 
 static lab02_inbox_model_t s_model;
@@ -45,6 +47,7 @@ static uint32_t s_inflight_op[LAB02_HTTP_MAX_PAGES];
 static uint32_t s_loaded_pages;
 static uint32_t s_failed_pages;
 static bool s_refresh_failed;
+static bool s_transport_unreachable;
 static int64_t s_next_recovery_us;
 static uint32_t s_deferred_op;
 
@@ -53,9 +56,36 @@ static lab02_session_metrics_t s_metrics;
 static QueueHandle_t s_fetch_q;
 static QueueHandle_t s_event_q;
 static SemaphoreHandle_t s_fetch_slots;
-static SemaphoreHandle_t s_result_ack;
 
 static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh);
+
+static uint16_t effective_page_size(void)
+{
+    if (s_model.page_size > 0) {
+        return s_model.page_size;
+    }
+    return LAB02_DEFAULT_PAGE_SIZE;
+}
+
+static bool post_session_event(const lab02_sess_event_t *ev)
+{
+    if (!s_event_q || !ev) {
+        return false;
+    }
+    if (xQueueSend(s_event_q, ev, 0) != pdTRUE) {
+        s_metrics.fetch_event_dropped++;
+        lab02_trace_emit("fetch_event_dropped", 0, 0, NULL, NULL);
+        return false;
+    }
+    return true;
+}
+
+static void release_fetch_slot(bool initial)
+{
+    if (!initial && s_fetch_slots) {
+        xSemaphoreGive(s_fetch_slots);
+    }
+}
 
 static bool stage_allowed(lab02_load_stage_t from, lab02_load_stage_t to)
 {
@@ -131,7 +161,7 @@ static void prefetch_for_focus(int focus)
     if (!m || m->count == 0) {
         return;
     }
-    int page = page_for_focus(focus, m ? m->page_size : LAB02_DEFAULT_PAGE_SIZE);
+    int page = page_for_focus(focus, effective_page_size());
     uint32_t op = 0;
     if (page > 0) {
         (void)enqueue_fetch(page - 1, &op, false);
@@ -158,8 +188,9 @@ static void reconcile_focus_id(void)
             return;
         }
     }
-    int page = page_for_focus(s_focus_index, LAB02_DEFAULT_PAGE_SIZE);
-    int last_page = s_model.count > 0 ? (s_model.count - 1) / LAB02_DEFAULT_PAGE_SIZE : 0;
+    uint16_t psz = effective_page_size();
+    int page = page_for_focus(s_focus_index, psz);
+    int last_page = s_model.count > 0 ? (s_model.count - 1) / (int)psz : 0;
     bool neighbors_loaded = (s_loaded_pages & (1U << page)) != 0 &&
         (page == 0 || (s_loaded_pages & (1U << (page - 1))) != 0) &&
         (page >= last_page || (s_loaded_pages & (1U << (page + 1))) != 0);
@@ -171,15 +202,16 @@ static void reconcile_focus_id(void)
 static bool apply_page(const lab02_sess_event_t *ev)
 {
     int page = ev->page_index;
-    if (!ev->initial && ev->page && s_inbox_revision != 0 &&
-        ev->page->revision < s_inbox_revision) {
+    const lab02_inbox_page_t *page_data = ev->has_page ? &ev->page : NULL;
+    if (!ev->initial && page_data && s_inbox_revision != 0 &&
+        page_data->revision < s_inbox_revision) {
         s_inflight_op[page] = 0;
         s_metrics.apply_stale++;
         lab02_trace_emit("apply_stale", ev->op_id, page, NULL, "old_revision");
         return false;
     }
-    if (!ev->initial && ev->page && s_inbox_revision != 0 &&
-        ev->page->revision > s_inbox_revision && page != 0) {
+    if (!ev->initial && page_data && s_inbox_revision != 0 &&
+        page_data->revision > s_inbox_revision && page != 0) {
         s_inflight_op[page] = 0;
         s_metrics.apply_stale++;
         lab02_trace_emit("apply_stale", ev->op_id, page, NULL, "new_revision_needs_page0");
@@ -187,16 +219,16 @@ static bool apply_page(const lab02_sess_event_t *ev)
         (void)enqueue_fetch(0, &refresh_op, true);
         return false;
     }
-    if (!ev->initial && ev->page && page == 0 && s_inbox_revision != 0 &&
-        ev->page->revision != s_inbox_revision) {
+    if (!ev->initial && page_data && page == 0 && s_inbox_revision != 0 &&
+        page_data->revision != s_inbox_revision) {
         for (int p = 1; p < LAB02_HTTP_MAX_PAGES; p++) {
             s_inflight_op[p] = 0;
         }
         memset(&s_model, 0, sizeof(s_model));
-        s_model.page_size = LAB02_DEFAULT_PAGE_SIZE;
+        s_model.page_size = effective_page_size();
         s_loaded_pages = 0;
     }
-    if (!ev->page || !lab02_inbox_model_apply_v2_page(&s_model, ev->page)) {
+    if (!page_data || !lab02_inbox_model_apply_v2_page(&s_model, page_data)) {
         if (!ev->initial) {
             s_inflight_op[page] = 0;
             s_failed_pages |= (1U << page);
@@ -212,7 +244,7 @@ static bool apply_page(const lab02_sess_event_t *ev)
         }
         return false;
     }
-    s_inbox_revision = ev->page->revision;
+    s_inbox_revision = page_data->revision;
     if (page == 0) {
         s_refresh_failed = false;
     }
@@ -310,6 +342,7 @@ void lab02_session_reset(void)
     s_loaded_pages = 0;
     s_failed_pages = 0;
     s_refresh_failed = false;
+    s_transport_unreachable = false;
     s_next_recovery_us = 0;
     s_deferred_op = 0;
     memset(&s_metrics, 0, sizeof(s_metrics));
@@ -348,10 +381,7 @@ bool lab02_session_begin_http(lab02_page_provider_t *pp)
     if (!s_fetch_slots) {
         s_fetch_slots = xSemaphoreCreateCounting(LAB02_FETCH_QUEUE_CAP, LAB02_FETCH_QUEUE_CAP);
     }
-    if (!s_result_ack) {
-        s_result_ack = xSemaphoreCreateBinary();
-    }
-    return s_fetch_q && s_event_q && s_fetch_slots && s_result_ack;
+    return s_fetch_q && s_event_q && s_fetch_slots;
 }
 
 lab02_session_snapshot_t lab02_session_snapshot(void)
@@ -366,10 +396,16 @@ lab02_session_snapshot_t lab02_session_snapshot(void)
         .presentation_dirty = s_presentation_dirty,
         .http_active = s_http_mode,
         .focused_page_failed = s_http_mode &&
-            ((s_failed_pages & (1U << page_for_focus(s_focus_index, LAB02_DEFAULT_PAGE_SIZE))) != 0),
+            ((s_failed_pages & (1U << page_for_focus(s_focus_index, effective_page_size()))) != 0),
         .cached_due_to_refresh_failure = s_http_mode && s_refresh_failed,
+        .transport_unreachable = s_http_mode && s_transport_unreachable,
     };
     return snap;
+}
+
+uint16_t lab02_session_http_page_size(void)
+{
+    return effective_page_size();
 }
 
 lab02_session_metrics_t lab02_session_metrics(void)
@@ -412,7 +448,32 @@ void lab02_session_intent_focus(int focus_index)
 
 void lab02_session_intent_scroll_lock(bool locked)
 {
+    bool was_locked = s_scroll_locked;
     s_scroll_locked = locked;
+    if (was_locked && !locked) {
+        s_deferred_op = 0;
+        lab02_session_pump();
+    }
+}
+
+static void apply_transport_reachable(bool reachable)
+{
+    bool unreachable = !reachable;
+    if (s_transport_unreachable == unreachable) {
+        return;
+    }
+    s_transport_unreachable = unreachable;
+    s_presentation_dirty = true;
+}
+
+void lab02_session_intent_transport(bool reachable)
+{
+    lab02_sess_event_t ev = {
+        .kind = LAB02_SESS_EV_TRANSPORT,
+        .transport_reachable = reachable,
+        .session_id = s_session_generation,
+    };
+    (void)post_session_event(&ev);
 }
 
 bool lab02_session_intent_refresh(void)
@@ -435,35 +496,32 @@ void lab02_session_pump(void)
     while (s_event_q && xQueuePeek(s_event_q, &ev, 0) == pdTRUE) {
         if (ev.session_id != s_session_generation) {
             xQueueReceive(s_event_q, &ev, 0);
-            if (ev.kind == LAB02_SESS_EV_FETCH_DONE) {
-                xSemaphoreGive(s_result_ack);
+            if (ev.kind == LAB02_SESS_EV_FETCH_DONE && !ev.initial) {
+                int page = ev.page_index;
+                if (page >= 0 && page < LAB02_HTTP_MAX_PAGES &&
+                    s_inflight_op[page] == ev.op_id) {
+                    s_inflight_op[page] = 0;
+                }
             }
             continue;
         }
         if (ev.kind == LAB02_SESS_EV_FETCH_DONE && ev.outcome == LAB02_FETCH_OK &&
             s_scroll_locked) {
-            if (esp_timer_get_time() - ev.posted_us < 1000000) {
-                if (s_deferred_op != ev.op_id) {
-                    s_deferred_op = ev.op_id;
-                    s_metrics.apply_deferred++;
-                    lab02_trace_emit("apply_deferred", ev.op_id, ev.page_index, NULL, NULL);
-                }
-                break;
+            if (s_deferred_op != ev.op_id) {
+                s_deferred_op = ev.op_id;
+                s_metrics.apply_deferred++;
+                lab02_trace_emit("apply_deferred", ev.op_id, ev.page_index, NULL, NULL);
             }
-            xQueueReceive(s_event_q, &ev, 0);
-            ev.outcome = LAB02_FETCH_TIMEOUT;
-            handle_fetch_done(&ev);
-            xSemaphoreGive(s_result_ack);
-            completions++;
             break;
         }
         xQueueReceive(s_event_q, &ev, 0);
         if (ev.kind == LAB02_SESS_EV_FETCH_DONE) {
             handle_fetch_done(&ev);
-            xSemaphoreGive(s_result_ack);
             completions++;
         } else if (ev.kind == LAB02_SESS_EV_STAGE) {
             transition_stage(ev.stage);
+        } else if (ev.kind == LAB02_SESS_EV_TRANSPORT) {
+            apply_transport_reachable(ev.transport_reachable);
         }
         if (completions >= 1) {
             break;
@@ -474,7 +532,7 @@ void lab02_session_pump(void)
         if (!lab02_inbox_model_item(&s_model, s_focus_index) &&
             now >= s_next_recovery_us) {
             uint32_t op = 0;
-            int page = page_for_focus(s_focus_index, LAB02_DEFAULT_PAGE_SIZE);
+            int page = page_for_focus(s_focus_index, effective_page_size());
             if (enqueue_fetch(page, &op, false)) {
                 s_metrics.fetch_retry++;
             }
@@ -518,8 +576,8 @@ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh)
     if (!s_http_mode || !s_fetch_q || page_index < 0 || page_index >= LAB02_HTTP_MAX_PAGES) {
         return false;
     }
-    if (!refresh && s_model.count > 0 &&
-        page_index * LAB02_DEFAULT_PAGE_SIZE >= s_model.count) {
+    uint16_t psz = effective_page_size();
+    if (!refresh && s_model.count > 0 && page_index * psz >= s_model.count) {
         return false;
     }
     if (!refresh && (s_loaded_pages & (1U << page_index))) {
@@ -565,15 +623,20 @@ void lab02_session_http_fetch_finished(lab02_fetch_outcome_t outcome, uint32_t s
         .session_id = session_id,
         .op_id = op_id,
         .page_index = page_index,
-        .page = page,
         .initial = initial,
-        .posted_us = esp_timer_get_time(),
+        .has_page = page != NULL && outcome == LAB02_FETCH_OK,
     };
-    xQueueSend(s_event_q, &ev, portMAX_DELAY);
-    xSemaphoreTake(s_result_ack, portMAX_DELAY);
-    if (!initial && s_fetch_slots) {
-        xSemaphoreGive(s_fetch_slots);
+    if (ev.has_page) {
+        ev.page = *page;
     }
+    if (!post_session_event(&ev)) {
+        if (!initial && page_index >= 0 && page_index < LAB02_HTTP_MAX_PAGES) {
+            s_inflight_op[page_index] = 0;
+        }
+        release_fetch_slot(initial);
+        return;
+    }
+    release_fetch_slot(initial);
 }
 
 bool lab02_session_http_take_fetch_request(lab02_fetch_req_t *out)
@@ -591,7 +654,7 @@ void lab02_session_http_mark_stage(lab02_load_stage_t stage, uint32_t session_id
         .stage = stage,
         .session_id = session_id,
     };
-    xQueueSend(s_event_q, &ev, portMAX_DELAY);
+    (void)post_session_event(&ev);
 }
 
 uint32_t lab02_session_generation(void)

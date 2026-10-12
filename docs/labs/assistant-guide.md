@@ -20,6 +20,7 @@ You are not replacing experience specs, communication contracts, or UI approvals
 | 4 | Read [repository layout](repository-layout.md) and create only the paths for your lab. |
 | 5 | For **LAB-02**, read [implementation outline](lab-02-implementation-outline.md) before scaffolding. |
 | 6 | Skim [client coding standards](../standards/client-application-coding-standards.md) — single UI owner, terminal operations, verification ladder. |
+| 7 | Before Phase B / L3 capture, optional: **client-code-review** on `client/labs/<slug>/` ([prompt](../standards/client-code-review-agent.md)); copy the **Fix and verify packet** from Handoff into a new chat (ID alone is not enough — see standard). |
 
 **Legacy v1 demos:** You may read the v1 POC archive to recover behavior, timing, or wire shapes. Extract facts into lab code and active docs; do not modify archive sources or add markdown links to `poc-v1/...` in new artifacts outside the archive.
 

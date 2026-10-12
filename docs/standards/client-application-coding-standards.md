@@ -316,6 +316,11 @@ the following evidence findable in the change or linked specifications:
 4. Focused failure, race, and budget checks with the achieved L0–L3 evidence
    level stated separately for each claim.
 
+For agent-assisted reviews of `client/labs/` or `client/device/`, use
+[client-code-review-agent.md](client-code-review-agent.md) (Cursor skill:
+`client-code-review`). Fix one **confirmed defect** ID per cycle, then verify;
+do not batch-fix an entire report without naming IDs.
+
 The linked [implementation practices](../v1-assessments/v2-implementation-practices.md#practices-for-each-v2-feature-slice)
 give the concrete artifact and verification gate for each step. An existing
 specification or assessment can satisfy a step; duplicate documents are not

@@ -209,7 +209,10 @@ bool lab02_inbox_model_apply_v2_page(lab02_inbox_model_t *model,
         return false;
     }
     copy_str(model->schema, sizeof(model->schema), "fl.inbox-page/2");
-    int clear_count = LAB02_DEFAULT_PAGE_SIZE;
+    if (model->page_size == 0) {
+        model->page_size = LAB02_DEFAULT_PAGE_SIZE;
+    }
+    int clear_count = (int)model->page_size;
     if (page->page_offset + clear_count > LAB02_INBOX_MAX_ITEMS) {
         clear_count = LAB02_INBOX_MAX_ITEMS - page->page_offset;
     }
@@ -219,9 +222,6 @@ bool lab02_inbox_model_apply_v2_page(lab02_inbox_model_t *model,
         model->items[page->page_offset + i] = page->items[i];
     }
     model->count = page->total_count;
-    if (model->page_size == 0) {
-        model->page_size = LAB02_DEFAULT_PAGE_SIZE;
-    }
     return true;
 }
 

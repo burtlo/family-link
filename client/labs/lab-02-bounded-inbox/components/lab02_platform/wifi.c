@@ -16,6 +16,13 @@ static const char *TAG = "lab02_wifi";
 #define WIFI_CONNECTED_BIT BIT0
 
 static EventGroupHandle_t s_wifi_events;
+static lab02_wifi_transport_fn s_transport_notifier;
+static bool s_handlers_registered;
+
+void lab02_board_wifi_set_transport_notifier(lab02_wifi_transport_fn fn)
+{
+    s_transport_notifier = fn;
+}
 
 static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
@@ -23,9 +30,15 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
         esp_wifi_connect();
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         xEventGroupClearBits(s_wifi_events, WIFI_CONNECTED_BIT);
+        if (s_transport_notifier) {
+            s_transport_notifier(false);
+        }
         esp_wifi_connect();
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         xEventGroupSetBits(s_wifi_events, WIFI_CONNECTED_BIT);
+        if (s_transport_notifier) {
+            s_transport_notifier(true);
+        }
     }
 }
 
@@ -51,10 +64,13 @@ bool lab02_board_wifi_connect(void)
     esp_netif_create_default_wifi_sta();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, on_wifi_event,
-                                                        NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, on_wifi_event,
-                                                        NULL, NULL));
+    if (!s_handlers_registered) {
+        ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
+                                                            on_wifi_event, NULL, NULL));
+        ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                                                            on_wifi_event, NULL, NULL));
+        s_handlers_registered = true;
+    }
     wifi_config_t wcfg = {0};
     strncpy((char *)wcfg.sta.ssid, CONFIG_LAB02_WIFI_SSID, sizeof(wcfg.sta.ssid) - 1);
     strncpy((char *)wcfg.sta.password, CONFIG_LAB02_WIFI_PASSWORD, sizeof(wcfg.sta.password) - 1);

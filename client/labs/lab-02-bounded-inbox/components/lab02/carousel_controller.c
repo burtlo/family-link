@@ -54,7 +54,8 @@ static void update_status_label(lab02_carousel_t *c)
     }
     char buf[96];
     lab02_session_snapshot_t snap = lab02_session_snapshot();
-    if (snap.load_stage == LAB02_LOAD_CONNECTING || snap.load_stage == LAB02_LOAD_FETCHING) {
+    if (snap.http_active && snap.load_stage != LAB02_LOAD_READY &&
+        snap.load_stage != LAB02_LOAD_ERROR) {
         snprintf(buf, sizeof(buf), "LAB-02  loading inbox…");
         lv_label_set_text(c->count_lab, buf);
         return;
@@ -66,6 +67,11 @@ static void update_status_label(lab02_carousel_t *c)
     }
     if (c->item_count <= 0) {
         snprintf(buf, sizeof(buf), "LAB-02  empty");
+        lv_label_set_text(c->count_lab, buf);
+        return;
+    }
+    if (snap.transport_unreachable) {
+        snprintf(buf, sizeof(buf), "LAB-02  reconnecting…");
         lv_label_set_text(c->count_lab, buf);
         return;
     }
