@@ -27,6 +27,7 @@ typedef enum {
 #define HTTP_BUF_SIZE LAB02_PAGE_JSON_MAX
 
 static bool s_io_started;
+static bool s_http_ready_logged;
 static char s_fetch_scratch[HTTP_BUF_SIZE];
 static lab02_inbox_page_t s_result_page;
 static TaskHandle_t s_worker;
@@ -200,23 +201,28 @@ static void boot_task(void *arg)
         return;
     }
     lab02_session_http_fetch_finished(LAB02_FETCH_OK, session_id, 0, 0, &s_result_page, true);
-    lab02_session_snapshot_t snap = lab02_session_snapshot();
-    if (session_id == lab02_session_generation() && snap.load_stage == LAB02_LOAD_READY) {
-        if (ensure_workers()) {
-            printf("LAB02_HTTP_READY revision=%u items=%u\n", (unsigned)snap.inbox_revision,
-                   (unsigned)snap.total_count);
-        } else {
-            ESP_LOGW(TAG, "background fetch worker unavailable; page 0 only");
-            lab02_trace_emit("worker_spawn_fail", 0, 0, NULL, NULL);
-        }
-    }
     vTaskDelete(NULL);
+}
+
+void lab02_page_provider_http_notify_initial_ready(uint32_t inbox_revision, uint16_t total_count)
+{
+    if (s_http_ready_logged) {
+        return;
+    }
+    if (!ensure_workers()) {
+        ESP_LOGW(TAG, "background fetch worker unavailable; page 0 only");
+        lab02_trace_emit("worker_spawn_fail", 0, 0, NULL, NULL);
+        return;
+    }
+    s_http_ready_logged = true;
+    printf("LAB02_HTTP_READY revision=%u items=%u\n", (unsigned)inbox_revision,
+           (unsigned)total_count);
 }
 
 static bool ensure_workers(void)
 {
     if (!s_worker) {
-        if (xTaskCreate(worker_task, "lab02_http", 8192, NULL, 4, &s_worker) != pdPASS) {
+        if (xTaskCreate(worker_task, "lab02_http", 10240, NULL, 4, &s_worker) != pdPASS) {
             return false;
         }
     }
@@ -241,9 +247,10 @@ void lab02_page_provider_http_start_io(void)
         return;
     }
     s_io_started = true;
+    s_http_ready_logged = false;
     s_boot_session_id = lab02_session_generation();
     if (!s_boot_worker) {
-        if (xTaskCreate(boot_task, "lab02_http_boot", 8192, NULL, 4, &s_boot_worker) != pdPASS) {
+        if (xTaskCreate(boot_task, "lab02_http_boot", 10240, NULL, 4, &s_boot_worker) != pdPASS) {
             s_io_started = false;
             lab02_session_http_mark_stage(LAB02_LOAD_ERROR, s_boot_session_id);
         }

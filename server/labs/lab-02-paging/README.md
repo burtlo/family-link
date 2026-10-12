@@ -32,6 +32,8 @@ Defaults: listen `0.0.0.0:8765`, seed inbox from `client/labs/lab-02-bounded-inb
 
 `delay_ms` applies to the **next** `GET /v2/inbox` only.
 
+Scripts change server state only. The device **polls page 0 about every 5s** (no push). Watch the top ribbon `focus/total` or scroll after a `push_item`.
+
 ## Device firmware
 
 1. menuconfig **LAB-02 → Phase B paging server URL** (e.g. `http://192.168.1.42:8765`).

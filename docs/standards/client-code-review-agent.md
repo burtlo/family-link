@@ -1,304 +1,318 @@
-# Client implementation review agent prompt
+# Client implementation review orchestrator
 
-Use this prompt for one implementation under `client/labs/<lab>/` or
-`client/device/`. Replace `<TARGET>`, `<SCOPE>`, and (if relevant) `<BASE>`
-before giving an assignment to an agent.
+Use this workflow for one implementation under `client/labs/<lab>/` or
+`client/device/`. Supply a target and, when relevant, a comparison base and
+specification links. Invoke through the **client-code-review** skill in Codex
+or Cursor. This document is a reusable workflow, not an automatically loaded
+`AGENTS.md` file.
 
-| Role | Edits code? | Typical chat |
-|------|-------------|--------------|
-| **Review assignment** | No | Dedicated review pass |
-| **Fix assignment** | Yes | **New** Agent chat (or after you paste only the Fix block) |
-| **Verification assignment** | No | **New** chat after the fix lands |
+One orchestrator owns the review, dependency plan, assignments, and final
+finding status. It delegates the existing standards review to a read-only
+subagent, implementation to a fixing subagent, and verification to a separate
+read-only subagent. All work is sequential: finish an assignment before starting
+the next. Do not run parallel edits, reviews, or verification against a changing
+source state. Additional specialist reviewers are outside this workflow's
+current scope.
 
-Do not run Fix or Verification in the same turn as Review unless you
-explicitly abandon the review-only boundary and paste a **Fix assignment**
-block. The reviewer must not implement, batch-fix every finding, or spawn fix
-subagents.
+## Modes and authority
 
-This is a reusable task prompt; it is not an automatically loaded `AGENTS.md`
-file. Invoke it from Cursor via the **client-code-review** skill
-([`.cursor/skills/client-code-review/SKILL.md`](../../.cursor/skills/client-code-review/SKILL.md)).
+| User request | Orchestrator behavior |
+|-------------|-----------------------|
+| Review (default) | Review and plan; do not change implementation |
+| Review, implement, and verify | Review, plan, then resolve confirmed defects within the authorized target |
+| Fix / Fix and verify named findings | Use the accessible review context; plan and implement selected findings, with independent verification |
+| Fix all / resolve confirmed findings after a review | Resolve confirmed defects from that review sequentially; exclude unproven risks and OPEN product choices |
+| Verify named findings | Dispatch independent verification only; do not edit implementation |
 
-## Finding IDs (`<SCOPE>-F###`)
+A review request alone does not authorize implementation. An authorized
+remediation request does not require permission again for routine assignments
+or each confirmed defect. Product decisions remain with the owner; do not
+silently expand the target, invent policy, or turn draft proposals into approved
+behavior.
 
-Every finding in a review report uses one ID for the life of that report.
+The orchestrator may save review and workflow evidence. Reviewer and verifier
+subagents do not edit source or maintained documents; existing checks may
+produce normal build/test artifacts. Only the active fixing subagent edits the
+implementation. Preserve unrelated staged, unstaged, and untracked work.
 
-| Part | Rule | Example |
-|------|------|---------|
-| `<SCOPE>` | Short uppercase slug for the target (lab or product slice) | `LAB02` for lab-02-bounded-inbox |
-| `F###` | Three-digit sequence **in this report only**, assigned once, severity order (P0 first) | `LAB02-F001`, `LAB02-F002` |
+If subagents are unavailable, report the limitation. A read-only review and
+plan may still be produced directly, identified as such. Do not substitute the
+fixer's self-check for mandatory independent verification or start remediation
+that cannot receive it. Use an available separate agent context when possible;
+manual cross-chat handoff is a fallback, not the normal user workflow.
 
-- Use **`LAB02-F001`**, not `LAB02-001` or `F001` alone.
-- One root cause → one ID. Do not split duplicates; do not merge unrelated bugs.
-- **Confirmed defect** IDs are the default handoff to Fix.
-- **Plausible risk** and **OPEN product choice** IDs are listed for traceability;
-  they are **not** fixable until the user opts in (see Fix assignment).
-- A later re-review at a new SHA may publish a **new** report with new IDs; refer
-  to the prior report path or commit when continuing work on an older ID.
+## Orchestrator workflow
 
-**IDs are not in the codebase.** `LAB02-F001` is a label inside one review
-report only. A new Agent chat that receives bare `Fix and verify LAB02-F001`
-has **no** finding text. Agents must **not** search the repo, git history, or
-transcripts for `F001` strings. The human must attach context (see **Fix and
-verify packet** below).
+### 1. Establish the boundary and governing sources
 
-## Fix and verify packet (required context for Fix / Verify)
+Record target, scope slug, branch, HEAD, requested base, mode, and whether
+committed, staged, unstaged, and untracked files are included. Without a base,
+review the current implementation and related working-tree changes. Capture
+an identifiable source snapshot, including relevant WIP: HEAD alone does not
+identify reviewed uncommitted contents. Use a saved diff plus relevant
+untracked contents or content hashes where needed. Do not commit, reset, stash,
+or discard user work merely to establish provenance.
 
-Every fix or verify pass needs a **packet**: the finding fields for one ID,
-plus target and review provenance. The review **Handoff** must emit a filled
-packet for the recommended ID. The human copies **the whole packet** into the
-fix chat (and adds `@client-code-review`), or saves the full review under
-`docs/labs/evidence/<lab-slug>/reviews/` and `@`-mentions that file.
+Read `docs/AGENTS.md` and the full
+[client coding standard](client-application-coding-standards.md). Locate the
+target's README, manifest, design notes, lab definition or product experience,
+device UI specifications, communication contracts, and evidence report.
+Follow relevant source links and verify their applicability; follow code into
+shared components, host scripts, fixtures, servers, and tests that affect the
+target.
+
+The implementation author should make governing specifications findable in
+the target's README or manifest. The reviewer must check those links and locate
+applicable active sources, rather than assuming the coding standard supplies
+all product requirements. Missing traceability is an evidence gap, not permission
+to invent behavior.
+
+Build an **applicable sources** table with document path and revision, relevant
+sections or requirement IDs, authority/approval status, and affected paths or
+scenarios. Use these connections within the existing review:
+
+| Concern | Governing sources and connections |
+|---------|----------------------------------|
+| Engineering invariants | Coding standard; ownership map, operation envelopes, queues, and tests |
+| Experience conformance | Applicable experience specification and owner decisions; stages, interruptions, failure UX, and preserved work |
+| Presentation and lifecycle | Experience plus applicable screen, layout, component, foundation, and theme specifications; rendering paths and lifecycle evidence |
+| Communication and persistence | Applicable communication contracts plus experience success/failure rules; client, fixtures/server, retry and side-effect paths |
+| Resources and runtime | Applicable target budgets, lab plan, and runtime evidence; timing, allocation, input, and queue bounds |
+
+These are source connections, not separate review profiles or new standards.
+One document may govern multiple concerns. For example, an endpoint-login
+experience can govern both stage behavior and UI continuity while delegating
+geometry to a screen specification and wire details to a communication contract.
+
+Approved active specifications and explicit owner-decided requirements govern
+behavior within their recorded scope. A draft containing accepted decisions does
+not imply approval of every statement or implementation readiness. Record OPEN,
+proposed, and superseded material separately. Standards govern implementation;
+plans and assessments supply scope and evidence. State source conflicts and the
+required decision; do not silently choose the easiest implementation.
+
+### 2. Dispatch the standards reviewer
+
+Give a fresh read-only subagent the **Review assignment** below, the source
+boundary, applicable sources, and relevant raw artifacts. Request one review
+against the full standard and applicable specifications. Do not give it an
+expected finding list. Wait for completion before changing source.
+
+### 3. Consolidate findings and plan the work
+
+Check each finding's trigger, effect, requirement, classification, and evidence.
+Resolve duplicates by root cause, preserve counterevidence and unresolved
+conflicts, and assign final finding IDs once. Do not turn unsupported suspicions
+into confirmed defects. Keep the original finding text available throughout
+remediation; append status and evidence rather than rewriting its history.
+
+Produce an ordered **execution plan** for actionable findings with:
+
+- finding IDs and one coherent change per work unit;
+- true prerequisites, including product decisions or proof needed first;
+- the reason each dependency exists and the condition that satisfies it;
+- coupled findings that require one change and per-finding verification;
+- verification scenarios and required evidence level;
+- proposed order and rationale for independent work units.
+
+If no dependency ordering is required, state **No dependency ordering required**
+and explain the chosen sequential order (normally severity, then impact).
+Shared files alone are not a prerequisite. Severity is not a dependency: an
+underlying ownership fix may precede a higher-severity symptom when the causal
+relationship requires it. Do not force all findings into one dependency chain.
+
+Normally use one confirmed defect per work unit. Group findings only when the
+same root cause or tightly coupled implementation requires one coherent change;
+retain individual outcomes. A later fix may render a finding obsolete: recheck
+its trigger before editing and record counterevidence instead of making an
+unnecessary change.
+
+In review-only mode, return the review and plan here. If there are no confirmed
+defects, say so; do not manufacture a recommended fix or empty assignment.
+
+### 4. Execute authorized work sequentially
+
+For each eligible work unit, dispatch one fixing subagent with the **Fix
+assignment** and complete context below. Wait for it to finish and stop editing.
+Record its diff, relevant source state, tests, and per-ID explanation. Then
+dispatch a different fresh subagent for **Verification assignment**. Do not reuse
+the fixing agent as verifier or fork its full conversation into verification.
+No source edits may run during verification.
+
+The orchestrator transfers context itself. The user does not need to copy a
+packet, open another chat, or reattach a report already available in this task.
+Retain finding text, source provenance, assignments, and results in an accessible
+review artifact or this task's context. For labs, saved review artifacts belong
+under `docs/labs/evidence/<lab-slug>/reviews/`; for product work use a
+user-designated evidence path or a task artifact. Saved artifacts must contain
+complete findings, the plan, and appended outcomes, not just IDs.
+
+When verification reports **not fixed** or demonstrates a regression, allow
+one additional focused fix attempt by default, followed by a new independent
+verification pass; honor a user-specified retry limit. Do not broaden the fix
+or repeat indefinitely. If the limit is reached, record the failure and leave
+dependent work blocked. **Unverified** due solely to missing evidence requires
+evidence collection, not another code change or a consumed fix retry.
+Independently executable authorized work may continue sequentially. An
+unverified prerequisite remains unsatisfied. If a product decision is needed,
+surface it without blocking unrelated work.
+
+After all completed changes, run the relevant integrated checks once to detect
+interactions. Reverify affected earlier findings if later changes invalidate
+their evidence. Report any resulting failures; do not preserve a verified status
+whose source state or supporting scenario is no longer valid.
+
+### 5. Close with evidence and disposition
+
+Return the review, execution order/dependencies, changes, commands/results, and
+per-finding disposition with evidence level and source provenance. Distinguish
+**verified fixed**, **not fixed**, **unverified**, **disproven**, **deferred**, and
+**blocked** (state the prerequisite). OPEN choices and unproven risks remain
+explicit. Report verification failures even when implementation tests passed.
+
+Do not claim full completion while required evidence or dependent work remains
+open. Device confirmation may require owner observations or target access;
+state exactly what evidence is missing without calling a host build a device
+verification.
+
+## Finding IDs and assignment context
+
+Use `<SCOPE>-F###`, for example `LAB02-F001`. The uppercase scope identifies the
+target; the sequence is assigned once per report, initially in severity order.
+IDs remain stable as status or execution order changes. One root cause gets one
+ID. A new review has its own provenance; an ID is unique only with its report.
+
+IDs are labels in a report, not lookup keys in source, issues, or git. When the
+finding is available in this task or an attached/saved report, read that context
+directly. For a bare ID with no accessible report, ask for the report or finding
+text; do not search the codebase or git history for the ID. Existing pasted
+packets remain accepted for compatibility, but are not required for normal
+orchestration.
+
+Each implementation or verification assignment must include:
 
 ```text
-Fix and verify packet — <SCOPE>-F00N
-
-Target: <TARGET>
-Scope: <SCOPE>
-Review provenance: <review chat URL or path to saved review.md> @ <HEAD sha>
-Classification: <confirmed defect | plausible risk | OPEN product>
-Priority: Pn
-
-Location: <absolute path>:<line range>
+Finding: <report identity> / <SCOPE>-F00N
+Target and scope: <target> / <scope>
+Review provenance: <artifact or accessible context> / <HEAD and WIP snapshot>
+Classification and priority: <confirmed defect | plausible risk | OPEN product> / Pn
+Location: <absolute path>:<tight line range at reviewed state>
 Trigger: <reachable steps>
 Effect: <user-visible or invariant failure>
-Requirement: <standard § or spec>
-Smallest fix: <one coherent change class>
-Verify scenario: <how to prove fixed; L1 command or L3 note>
-
-Command (optional): Fix and verify <SCOPE>-F00N
+Requirement: <applicable standard/spec section or requirement ID and authority>
+Smallest fix: <one coherent change class; advisory, confirm against current code>
+Verify scenario: <original failure and relevant boundary case>
+Required evidence: <L0-L3 and reason>
+Dependencies: <IDs/decisions and satisfaction criteria, or none>
+Current source state and permitted edits: <state, WIP ownership, assigned boundary>
 ```
 
-Fix/verify agents: if the message has only an ID or one line (`Fix and verify
-LAB02-F001`) with **no** packet fields and **no** `@` review file or review
-chat, **stop immediately**. Ask the user to paste the **Fix and verify packet**
-from Handoff or `@` the saved review. Do not implement from an ID lookup.
+For verification, also supply the exact fix diff/source state, changed files,
+and implementation test artifacts. The verifier must inspect the source and
+run or assess evidence independently, rather than accepting the fixer's summary.
 
-## User commands (what to type next)
+## Review assignment (read-only subagent)
 
-After a review, prefer **one confirmed defect** per fix cycle, then verify.
-**Always bring the packet** (paste or `@` file); the ID alone is not enough.
+Review the assigned target for actionable defects and compliance with the full
+client coding standard and applicable active specifications. Do not implement,
+refactor, write implementation tests, or spawn fixing agents.
 
-| You bring | Agent uses |
-|-----------|------------|
-| **Fix and verify packet** (from Handoff) + `@client-code-review` | **Fix and verify assignment** |
-| Saved review `.md` + `Fix and verify <SCOPE>-F00N` + skill | Read that file’s finding subsection for `<ID>` |
-| `@` link to review Agent chat + `Fix and verify <SCOPE>-F00N` | Read that chat’s finding for `<ID>` (if accessible) |
-| Packet + `Fix <SCOPE>-F00N` only | **Fix assignment** |
-| Packet + `Verify <SCOPE>-F00N` only | **Verification assignment** |
-| Named IDs + packets for each | **Fix batch** / **Fix and verify batch** |
+1. Confirm the supplied boundary and governing sources. Identify conflicts,
+   OPEN decisions, and evidence gaps.
+2. Use `docs/v1-assessments/v2-implementation-practices.md` to identify useful
+   artifacts and verification gates. Read focused concept guides when the path
+   needs them: async operation envelope, UI update taxonomy, session stage versus
+   background poller, operational contract, and resource budget envelope. V1
+   assessments are historical failure examples, not required architecture or
+   measured results for this target.
+3. Trace an ownership and wait map: input/timer → presentation → session →
+   I/O/worker → completion → model → UI. Inspect actual calls and ownership,
+   bounded presentation work, single-writer transitions, immutable operation
+   input, exactly one terminal outcome, stale-result rejection, cancellation,
+   timeout, queue-full behavior, UI handle lifetime, update level, preserved
+   identity, resource bounds, persistence/remote side effects, and failure UX.
+   Component names do not prove the rules are satisfied.
+4. Derive nominal, interruption, failure, race, and boundary scenarios from
+   applicable requirements and code. Establish a reachable trigger and violated
+   invariant for each suspected defect. Run the smallest relevant existing test
+   or static check when feasible. Distinguish defects, risks, evidence gaps,
+   and OPEN choices; avoid style-only findings.
+5. Return the report below to the orchestrator. Use temporary finding labels
+   until the orchestrator assigns final IDs; include all required fields.
 
-Avoid **`fix all`**, **`Fix assignment all`**, or fixing every ID in the report
-in one pass. That bypasses smallest-fix discipline, mixes defects with risks
-and OPEN product items, and skips independent verification.
+### Review report
 
-If you truly need multiple fixes, name IDs explicitly (`Fix batch LAB02-F001,LAB02-F002`)
-and expect the agent to confirm scope and order before editing.
+Preserve these sections in the consolidated report:
 
-## Review assignment
+1. **Review boundary** — target, scope, branch/HEAD, base, WIP snapshot, mode,
+   edit policy.
+2. **Applicable sources** — requirement connections, authority, conflicts, OPEN
+   decisions.
+3. **Ownership / wait map** — short diagram or call/ownership chain.
+4. **Findings** — confirmed defects first, then plausible risks and OPEN product
+   choices; severity within each group. Each finding has priority P0–P3,
+   classification, absolute path/tight line range, trigger, effect, requirement,
+   smallest coherent fix, verification scenario, and required evidence level.
+5. **Residual risks** — tradeoffs and unresolved concerns, with finding references
+   where applicable.
+6. **Evidence gaps** — missing artifacts and what would close each; do not assign
+   defect IDs to evidence gaps or git hygiene.
+7. **Commands and results** — checks actually run and pass/fail.
+8. **Evidence levels** — claim → achieved L0–L3 and supporting artifact.
+9. **Execution plan** — prerequisites, sequential order, coupling, verification
+   gates; explicitly state when no dependency ordering is required.
+10. **Outcomes** — per-ID disposition and evidence, or “Review only; no fixes
+    attempted.” Optional repository notes may record WIP constraints.
 
-Review `<TARGET>` (`<SCOPE>`) for actionable defects and compliance with
-`docs/standards/client-application-coding-standards.md`. **Do not edit files.**
+If there are no actionable findings, say so. A reviewer supplies findings and
+observed relationships; the orchestrator owns the consolidated plan and outcomes.
 
-### Reviewer must not
+## Fix assignment (one active fixing subagent)
 
-- Implement fixes, write tests for implementation, or refactor production code.
-- Offer to “turn findings into fixes” without emitting the **Handoff** section below.
-- Start Fix or Verification work in this chat when the user says “fix all” or
-  similar; reply with the **Handoff** recommendation and tell them to open a new
-  Agent chat with one Fix block (or a named `Fix batch`).
-- Spawn subagents to fix or verify unless the user explicitly requests
-  orchestration outside this review prompt.
+Reproduce or trace the original trigger and confirm it still exists in the
+current working tree. Read the cited requirement and applicable specifications.
+Counterevidence may invalidate a finding; report it instead of editing needlessly.
 
-### Review steps
+- **Confirmed defect:** implement within authorized remediation scope.
+- **Plausible risk:** do not implement a speculative fix. If authorized, gather
+  focused proof first, using a test or trace where useful. The orchestrator may
+  reclassify it as confirmed only with a reachable trigger and violated requirement.
+- **OPEN product choice:** leave unresolved until the owner supplies the decision.
 
-1. Establish the review boundary. Report the branch and HEAD, the requested
-   base (`<BASE>` if supplied), and whether the review includes committed,
-   staged, unstaged, and untracked files. If no base is supplied, review the
-   current implementation and all related working-tree changes. Follow code
-   paths into shared components, host scripts, fixtures, servers, and tests when
-   they affect the target. Preserve all work in progress.
-2. Read `docs/AGENTS.md` and the full client coding standard. Locate the
-   target's README, manifest, design or architecture notes, applicable lab
-   definition or product experience, device UI specification, communication
-   contract, and evidence report. State which sources are applicable and any
-   conflict or OPEN decision. Product behavior comes from approved active
-   specifications; standards govern implementation; plans and assessments
-   supply scope and evidence. Check each document's claims against current
-   code and recorded results.
-3. Use `docs/v1-assessments/v2-implementation-practices.md` to identify useful
-   artifacts and verification gates. Read focused concept guides only when the
-   reviewed path needs them: async operation envelope, UI update taxonomy,
-   session stage versus background poller, operational contract, and resource
-   budget envelope. Treat v1 feature assessments as historical examples of
-   failure modes, never as required architecture or measured results for the
-   current implementation.
-4. Build a short ownership and wait map for the affected paths: input or timer
-   callback → presentation → session → I/O or worker → completion → model → UI.
-   Trace real calls and data ownership. Check bounded presentation work,
-   single-writer session transitions, immutable operation input, exactly one
-   terminal outcome, stale-result rejection, cancellation, timeout, queue-full
-   behavior, UI handle lifetime, update level, preserved identity, resource
-   bounds, and failure UX where applicable. Inspect persistence and remote
-   side effects when the target has them. Do not assume a rule is satisfied
-   merely because a component has the expected name.
-5. Derive scenarios from the target's active plan and code. Exercise nominal,
-   interrupted, failure, race, and boundary cases relevant to its actual
-   features. For each suspected defect, establish a reachable trigger and the
-   violated invariant. Run the smallest relevant existing test or static check
-   when feasible. Do not write tests or change implementation during review.
-   Distinguish a code defect from missing evidence or an OPEN product choice.
-6. Report using the **Review report format** below. Assign `<SCOPE>-F###` IDs.
-   Each finding needs priority P0–P3, classification (**confirmed defect**,
-   **plausible risk needing a test**, or **OPEN product choice**), absolute path
-   and tight line range, trigger, failure effect, governing requirement,
-   smallest useful fix, and a verification scenario. Avoid style-only findings.
-   If there are no actionable findings, say so under Findings.
+Make the smallest coherent change for the assigned failure class and preserve
+unrelated WIP. Add or update focused tests when they prove a missing failure or
+race boundary. Ownership/concurrency refactors must first establish existing
+behavior through characterization tests or traces as required by the standard.
+Do not expand features or silently settle product policy.
 
-### Review report format (required section order)
+Return changed files, exact diff/source state, causal explanation per finding,
+commands/results, evidence actually reached, and any remaining limitations.
+Implementation self-checks are useful but do not replace independent verification.
+Do not dispatch the next fix or verify your own change as the final judge.
 
-Use these headings in order. Do not replace them with a single “bottom line”
-paragraph.
+## Verification assignment (independent read-only subagent)
 
-1. **Review boundary** — table: target, scope, branch/HEAD, base, WIP scope, edit policy.
-2. **Applicable sources** — what governed this review; OPEN product called out.
-3. **Ownership / wait map** — short diagram or bullet chain for the reviewed path.
-4. **Findings** — by severity; subsections `### <SCOPE>-F### — Pn — classification`.
-   List **confirmed defects** before **plausible risks**. Do not file evidence
-   gaps or git hygiene as F-IDs.
-5. **Residual risks** — OPEN product, design tradeoffs, and plausible risks you
-   did not recommend for fix this cycle (reference F-IDs).
-6. **Evidence gaps** — L3 / checklist items; what artifact would close each.
-7. **Repository notes** (optional) — uncommitted WIP, “pin SHA before device run”;
-   not defects.
-8. **Commands and results** — what you ran and pass/fail.
-9. **Evidence levels** — table: claim → L0–L3.
-10. **Handoff** — required; see below.
+Use a fresh agent distinct from the fixer, with the original finding,
+requirements, source provenance, exact fix diff, and relevant raw evidence.
+Inspect nearby callers and affected paths yourself. Attempt the original failure
+and at least one relevant boundary case. Run focused checks and assess for new
+blocking paths, stale handles/results, duplicate terminal events, lost work,
+and unbounded resource use as applicable. Assess each finding in a coupled unit.
 
-### Handoff (required; end every review with this)
+Do not edit implementation or maintained documents. Report **fixed**,
+**not fixed**, or **unverified** per finding, with commands/results, exact source
+state, evidence level, and missing evidence. If the original finding is invalid,
+provide counterevidence for the orchestrator's **disproven** disposition. Report
+regressions with their trigger and requirement; the orchestrator decides their
+scope and subsequent assignment.
 
-**Recommended next:** exactly one `<SCOPE>-F###` to fix first (prefer the
-highest-severity **confirmed defect**), one sentence why, and what you are
-**not** doing this cycle (e.g. plausible risks, L3 evidence, OPEN product).
-
-Emit a complete **Fix and verify packet** for that ID (template above) with
-every field filled from the finding subsection. Include **Review provenance:**
-this chat and `HEAD` sha from the review boundary.
-
-**Next step for the human:** open a **new** Agent chat, `@client-code-review`,
-**paste the entire Fix and verify packet** (do not paste only the one-line
-command). Optional: save the full review to
-`docs/labs/evidence/<lab-slug>/reviews/` and `@` that file instead of pasting.
-
-Do not tell the user to type `Fix and verify LAB02-F001` without the packet.
-Do not end with “I can fix … if you want” or “fix all” without the warnings in
-**User commands**.
-
-## Fix assignment
-
-**Prerequisite:** a **Fix and verify packet** for `<ID>`, or a saved review /
-review chat the agent can read. If missing, stop and ask — do not search the
-repo for `<ID>`.
-
-Address finding `<ID>` for `<TARGET>`. `<ID>` must be a single `<SCOPE>-F###`
-from a review report unless **Fix batch** rules apply.
-
-Reproduce or trace its trigger first and confirm it still exists in the current
-working tree. Read the cited standard and applicable active specification.
-
-| Classification in report | Fix without extra user OK? |
-|--------------------------|----------------------------|
-| **Confirmed defect** | Yes |
-| **Plausible risk needing a test** | No — stop and ask, or add test-first proof |
-| **OPEN product choice** | No — stop; needs owner/spec decision |
-
-Make the smallest coherent fix for **that** failure class, preserving unrelated
-staged, unstaged, and untracked work. Add or update a focused test when it
-proves a failure or race boundary missing from existing coverage. Do not
-silently settle an OPEN product decision.
-
-If the user requests **fix all** or an unnamed set of IDs: refuse the blanket
-request; list **confirmed defect** IDs in priority order; recommend fixing **one**
-ID, then Verification, then the next.
-
-### Fix batch (optional)
-
-Only when the user names IDs explicitly, e.g. `Fix batch LAB02-F001,LAB02-F002`:
-
-- Confirm each ID’s classification and that fixes are the same failure class
-  or tightly coupled (e.g. two bootstrap paths to the same terminal stage).
-- Fix in priority order; one coherent commit worth of change if possible.
-- Report per-ID what changed and what was deferred.
-
-Report changed files, causal explanation, commands and results, and evidence
-level actually reached. If the finding is invalid, give counterevidence with
-exact paths and lines instead of changing code.
-
-Remind the user to run **Verification assignment** for each fixed ID, or use
-**Fix and verify** for the same ID in one chat.
-
-## Fix and verify assignment (convenience, human still in the loop)
-
-Use when the user supplies a **Fix and verify packet** (or `@` review artifact)
-for exactly one `<ID>`, optionally with the line `Fix and verify <SCOPE>-F00N`.
-The packet is the source of truth; the ID line is only a label.
-
-**Do not** combine with **Review assignment** in the same task. **Do not** treat
-as permission to fix every ID in a report. **Do not** grep the codebase for
-`<SCOPE>-F###` when the packet is missing.
-
-### Phase 1 — Fix
-
-Run **Fix assignment** for `<ID>`. Complete edits and tests before Phase 2.
-
-### Phase 2 — Verify (same chat, no further edits)
-
-After Phase 1, stop editing code. Run **Verification assignment** for the same
-`<ID>`. Re-state the original trigger and requirement from the user’s pasted
-finding or an on-disk review note before judging the diff.
-
-Output must use these headings in order:
-
-1. `## Fix — <ID>` — files changed, causal explanation, commands and results.
-2. `## Verify — <ID>` — **fixed** | **not fixed** | **unverified**, evidence,
-   L0–L3.
-
-If **not fixed**, do not start another fix loop in the same turn; tell the user
-what failed and ask whether to retry **Fix** or **Fix and verify** for that ID.
-
-### Fix and verify batch
-
-For `Fix and verify batch LAB02-F001,LAB02-F002`: run Phase 1+2 for F001, then
-Phase 1+2 for F002. Do not skip verify for an ID you fixed. Same classification
-and coupling rules as **Fix batch**.
-
-### When a separate verify chat is still better
-
-Use a **new** chat for **Verify** only when the fix was large, touched session
-architecture, or you want a cold read without the fixer’s thread context. The
-combined mode is the default convenience path for a single **confirmed defect**
-with a clear host/L1 check.
-
-### Persist the review (recommended for cross-chat handoff)
-
-Offer to save the full review under
-`docs/labs/evidence/<lab-slug>/reviews/` (e.g. `YYYY-MM-DD-<scope>-review.md`).
-Then the fix chat can be: `@client-code-review` `@that-file.md` `Fix and verify
-LAB02-F001`. The agent reads the `### LAB02-F001` subsection from the file —
-still not from a repo-wide ID search.
-
-## Verification assignment
-
-Independently verify finding `<ID>` (`<SCOPE>-F###`) for `<TARGET>` after the
-fix. Re-read the original review text for that ID, trigger, governing
-requirement, fix diff, and nearby callers. Attempt the original failure and at
-least one relevant boundary case. Run focused checks and inspect for new blocking
-paths, stale handles or results, duplicate terminal events, lost user work, or
-unbounded resource use as applicable.
-
-State **fixed**, **not fixed**, or **unverified**, with evidence and L0–L3 level.
-Keep device-dependent claims open until target traces or observations exist.
-Do not edit code in this verification pass.
-
-If **not fixed** or regression found, say which ID failed and recommend a new
-Fix assignment for that ID only — not a broad re-fix of the whole report.
+Apply the standard's verification ladder: build success is only L0; a
+device-specific defect must not be called fixed below L2 without an explicit,
+recorded verification waiver. Timing, memory, input, and lifecycle defects
+normally require L3. Do not infer target confirmation from host tests. Only an
+explicit user/owner instruction can authorize a waiver; record the finding,
+waived evidence requirement, authorizing instruction, and remaining limitation
+in the final outcome. The orchestrator, fixer, and verifier cannot grant
+themselves a waiver, and inability to access hardware does not imply one.
+Return failure evidence or evidence gaps to the orchestrator for the appropriate
+retry or evidence-collection path, rather than repairing the code yourself.

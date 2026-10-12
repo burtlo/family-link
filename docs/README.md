@@ -30,7 +30,7 @@ Device bootstrap commands: [build and flash](standards/device-build-flash.md).
 | Doc | Role |
 |-----|------|
 | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) | Portable rules for the next client generation |
-| [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) | Implementation review + **Fix and verify packet** handoff (IDs are per-report, not in repo); skill `client-code-review` |
+| [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) | Orchestrated implementation review, dependency plan, sequential fixes, and independent verification (IDs are per-report); skill `client-code-review` |
 | [`standards/project-configuration.md`](standards/project-configuration.md) | `config.host` / `config.deployment` / `config.labs`, commands, flows, host INI |
 | [`standards/deployment-configuration.md`](standards/deployment-configuration.md) | Desk roster YAML schema and validation |
 | [`standards/labs-configuration.md`](standards/labs-configuration.md) | Device labs host registry (`config/labs.registry.yaml`) and `make lab.*` |

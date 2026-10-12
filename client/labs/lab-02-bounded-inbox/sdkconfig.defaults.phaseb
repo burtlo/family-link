@@ -4,3 +4,6 @@
 
 CONFIG_ESP_WIFI_ENABLED=y
 CONFIG_ESP_WIFI_STA_DISCONNECTED_PM_ENABLE=n
+
+# Wi-Fi/IP handlers run on sys_evt; session events are large (page payload).
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096

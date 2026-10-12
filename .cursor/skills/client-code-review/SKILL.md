@@ -1,69 +1,63 @@
 ---
 name: client-code-review
 description: >-
-  Reviews Family Link client implementations (labs under client/labs/, product
-  under client/device/) against client-application-coding-standards using
-  scoped finding IDs (e.g. LAB02-F001) with Fix and verify packets for
-  cross-chat handoff. Use for client code review, Fix, Verify, Fix and verify,
-  or client-code-review-agent. IDs are not stored in the repo; never search the
-  codebase for F-IDs without a packet or @ review file.
+  Orchestrates Family Link client implementation review against coding standards
+  and applicable specifications, dependency planning, sequential fixes, and
+  independent verification. Use for client review, Fix, Verify, Fix and verify,
+  or client-code-review-agent requests for client/labs/ or client/device/.
 disable-model-invocation: true
 ---
 
 # Client code review
 
-Canonical workflow:
+Read the canonical workflow in full:
 [`docs/standards/client-code-review-agent.md`](../../../docs/standards/client-code-review-agent.md).
 
-Read that document **in full** for the active mode.
+Act as one orchestrator. Delegate the standards review to a read-only subagent,
+implementation to a fixing subagent, and verification to a separate fresh
+read-only subagent. Execute assignments sequentially; never run concurrent edits
+or verify source while it is changing. Specialist review profiles are deferred.
 
-## Critical: IDs are not lookup keys
+## Choose mode from user intent
 
-`<SCOPE>-F###` exists only inside **one review report**. It is not in source
-code, issues, or git.
+- **Review** (default): review and dependency plan; no implementation edits.
+- **Review, implement, and verify**: resolve confirmed defects within the
+  authorized target, using the plan and independent verification.
+- **Fix / Fix and verify** named findings, or **fix all confirmed findings**:
+  use the accessible review context and resolve the selected confirmed defects
+  sequentially, with independent verification of every implementation fix.
+- **Verify**: independent read-only verification of the selected findings.
 
-If the user sends only `Fix and verify LAB02-F001` (or similar) with **no**
-**Fix and verify packet**, **no** `@` saved review under
-`docs/labs/evidence/.../reviews/`, and **no** accessible review chat context:
+Do not ask again for routine assignments already authorized by remediation
+intent. OPEN product decisions and unproven risks are not automatic fix scope.
+Every plan states prerequisites and sequential order, including an explicit
+**No dependency ordering required** when applicable.
 
-1. **Stop.** Do not grep, search, or explore the repo for `F001` / `LAB02-F001`.
-2. Ask them to paste the **Fix and verify packet** from the review **Handoff**
-   (whole block), or `@` the saved review file, or `@` the review Agent chat.
+## Keep context within the workflow
 
-Then proceed in **Fix and verify** (or Fix / Verify) mode using the packet fields.
+The orchestrator transfers complete finding context and source provenance to
+subagents. Use findings already available in this task or an attached/saved
+review; the user does not need a new chat or a pasted packet. Existing packets
+remain valid input.
 
-## Choose mode
+`<SCOPE>-F###` identifies a finding only within its report. If a bare ID has no
+accessible report or finding text, ask for that context; do not search source or
+git history for the ID. Keep final IDs stable and record per-ID outcomes.
 
-| User brings | Mode | Edit code? |
-|-------------|------|------------|
-| Review request (default) | **Review assignment** | No |
-| **Fix and verify packet** (+ optional ID line) | **Fix and verify assignment** | Phase 1 only |
-| `@` review `.md` + `Fix and verify <ID>` | **Fix and verify** (read finding from file) | Phase 1 only |
-| Packet + `Fix <ID>` | **Fix assignment** | Yes |
-| Packet + `Verify <ID>` | **Verification assignment** | No |
-| Packets + explicit batch IDs | **Fix** / **Fix and verify batch** | Per rules |
+Identify applicable experience, device UI, communication, and engineering
+requirements, including approval status and OPEN decisions. Preserve WIP and
+record the relevant uncommitted source state, not just HEAD.
 
-**fix all** / bare ID without packet → refuse; point at Handoff packet.
+Fixer self-checks do not replace independent verification. Give the verifier
+fresh context and raw artifacts, without inheriting the fixer's conversation.
+If independent subagents are unavailable, report that limitation and follow the
+canonical fallback; do not silently claim self-verification as independent.
 
-## Review mode
-
-1. Run **Review assignment**; assign `<SCOPE>-F001`, …
-2. **Handoff** must include a complete **Fix and verify packet** for the
-   recommended ID (all fields + review provenance @ HEAD).
-3. Tell the human: new chat, `@client-code-review`, **paste entire packet** —
-   not the one-line command alone.
-
-## Fix and verify mode
-
-1. Confirm packet (or review file subsection for `<ID>`) is present.
-2. Phase 1: **Fix assignment** — edits and tests.
-3. Phase 2: **Verification assignment** — no edits; `## Fix — <ID>` then
-   `## Verify — <ID>`.
-
-## Related standards
+## Related sources
 
 - [`docs/AGENTS.md`](../../../docs/AGENTS.md)
-- [`docs/standards/client-application-coding-standards.md`](../../../docs/standards/client-application-coding-standards.md)
+- [`Client coding standard`](../../../docs/standards/client-application-coding-standards.md)
 
-v1 POC: read-only per
+Keep this entry point synchronized with `.cursor/skills/client-code-review/SKILL.md`.
+The v1 POC is read-only per
 [`.cursor/rules/poc-v1-reference-archive.mdc`](../../../.cursor/rules/poc-v1-reference-archive.mdc).

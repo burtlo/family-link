@@ -36,7 +36,7 @@ For v1 build/flash commands and archive-local indexes, humans working inside the
 | Experience spec authoring | [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) · skill: [`.cursor/skills/author-experience-specification/SKILL.md`](../.cursor/skills/author-experience-specification/SKILL.md) |
 | Client/server contract authoring | [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) · skill: [`.cursor/skills/author-communication-contract/SKILL.md`](../.cursor/skills/author-communication-contract/SKILL.md) |
 | Client coding standards | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) |
-| Client implementation review (read-only → fix → verify) | [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) · skill: [`.cursor/skills/client-code-review/SKILL.md`](../.cursor/skills/client-code-review/SKILL.md) |
+| Client review orchestration (review → dependency plan → sequential fix → independent verify) | [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) · skill: [`.cursor/skills/client-code-review/SKILL.md`](../.cursor/skills/client-code-review/SKILL.md) |
 | v1 evidence assessments | [`v1-assessments/`](v1-assessments/carousel-playback.md) (historical evidence, not normative architecture) |
 | Device labs (v2) | [`labs/README.md`](labs/README.md) · [`labs/assistant-guide.md`](labs/assistant-guide.md) · [`standards/labs-configuration.md`](standards/labs-configuration.md) |
 | Deep retrospective method | [`.cursor/skills/deep-implementation-retrospective/SKILL.md`](../.cursor/skills/deep-implementation-retrospective/SKILL.md) |

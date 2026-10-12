@@ -19,6 +19,8 @@ Produced by lab-specific parsers (e.g. `client/labs/lab-02-bounded-inbox/tools/p
 | `peaks.live_widget_count` | LVGL objects tied to cards |
 | `counts.bind` / `counts.unbind` | Totals for run |
 | `counts.stale_bind_events` | Should be 0 |
+| `event_counts.harness_done` | Successful auto-harness completion (once per run; trace canonical) |
+| `event_counts.harness_abort` | `HARNESS_DONE status=…` without `LAB_TRACE` success |
 | `counts.wrong_content_events` | Should be 0 |
 | `metadata.fixture_size` | 8, 16, 64, or 256 |
 | `metadata.mode` | `recycle` or `eager` |

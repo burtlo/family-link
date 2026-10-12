@@ -1,5 +1,6 @@
 #include "lab02/lab02_session.h"
 #include "lab02/lab02_session_io.h"
+#include "lab02/page_provider_http.h"
 
 #include "lab02/trace_emit.h"
 
@@ -56,6 +57,10 @@ static lab02_session_metrics_t s_metrics;
 static QueueHandle_t s_fetch_q;
 static QueueHandle_t s_event_q;
 static SemaphoreHandle_t s_fetch_slots;
+static SemaphoreHandle_t s_post_mutex;
+/** Queue slots are full-size; never allocate lab02_sess_event_t on small stacks (e.g. sys_evt). */
+static lab02_sess_event_t s_post_buf;
+static lab02_sess_event_t s_pump_ev;
 
 static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh);
 
@@ -67,17 +72,27 @@ static uint16_t effective_page_size(void)
     return LAB02_DEFAULT_PAGE_SIZE;
 }
 
-static bool post_session_event(const lab02_sess_event_t *ev)
+static bool post_session_event_prepared(void)
 {
-    if (!s_event_q || !ev) {
+    if (!s_event_q || !s_post_mutex) {
         return false;
     }
-    if (xQueueSend(s_event_q, ev, 0) != pdTRUE) {
+    if (xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) {
+        return false;
+    }
+    memset(&s_post_buf, 0, sizeof(s_post_buf));
+    return true;
+}
+
+static bool post_session_event_commit(void)
+{
+    bool ok = xQueueSend(s_event_q, &s_post_buf, 0) == pdTRUE;
+    if (!ok) {
         s_metrics.fetch_event_dropped++;
         lab02_trace_emit("fetch_event_dropped", 0, 0, NULL, NULL);
-        return false;
     }
-    return true;
+    xSemaphoreGive(s_post_mutex);
+    return ok;
 }
 
 static void release_fetch_slot(bool initial)
@@ -253,6 +268,8 @@ static bool apply_page(const lab02_sess_event_t *ev)
         transition_stage(LAB02_LOAD_READY);
         s_loaded_pages = 1U;
         s_last_refresh_us = esp_timer_get_time();
+        s_inflight_op[page] = 0;
+        lab02_page_provider_http_notify_initial_ready(s_inbox_revision, s_model.count);
     } else if (page >= 0 && page < LAB02_HTTP_MAX_PAGES) {
         s_loaded_pages |= (1U << page);
         s_inflight_op[page] = 0;
@@ -381,7 +398,10 @@ bool lab02_session_begin_http(lab02_page_provider_t *pp)
     if (!s_fetch_slots) {
         s_fetch_slots = xSemaphoreCreateCounting(LAB02_FETCH_QUEUE_CAP, LAB02_FETCH_QUEUE_CAP);
     }
-    return s_fetch_q && s_event_q && s_fetch_slots;
+    if (!s_post_mutex) {
+        s_post_mutex = xSemaphoreCreateMutex();
+    }
+    return s_fetch_q && s_event_q && s_fetch_slots && s_post_mutex;
 }
 
 lab02_session_snapshot_t lab02_session_snapshot(void)
@@ -468,12 +488,13 @@ static void apply_transport_reachable(bool reachable)
 
 void lab02_session_intent_transport(bool reachable)
 {
-    lab02_sess_event_t ev = {
-        .kind = LAB02_SESS_EV_TRANSPORT,
-        .transport_reachable = reachable,
-        .session_id = s_session_generation,
-    };
-    (void)post_session_event(&ev);
+    if (!post_session_event_prepared()) {
+        return;
+    }
+    s_post_buf.kind = LAB02_SESS_EV_TRANSPORT;
+    s_post_buf.transport_reachable = reachable;
+    s_post_buf.session_id = s_session_generation;
+    (void)post_session_event_commit();
 }
 
 bool lab02_session_intent_refresh(void)
@@ -491,37 +512,37 @@ bool lab02_session_intent_refresh(void)
 
 void lab02_session_pump(void)
 {
-    lab02_sess_event_t ev;
     int completions = 0;
-    while (s_event_q && xQueuePeek(s_event_q, &ev, 0) == pdTRUE) {
-        if (ev.session_id != s_session_generation) {
-            xQueueReceive(s_event_q, &ev, 0);
-            if (ev.kind == LAB02_SESS_EV_FETCH_DONE && !ev.initial) {
-                int page = ev.page_index;
+    while (s_event_q && xQueuePeek(s_event_q, &s_pump_ev, 0) == pdTRUE) {
+        if (s_pump_ev.session_id != s_session_generation) {
+            xQueueReceive(s_event_q, &s_pump_ev, 0);
+            if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE && !s_pump_ev.initial) {
+                int page = s_pump_ev.page_index;
                 if (page >= 0 && page < LAB02_HTTP_MAX_PAGES &&
-                    s_inflight_op[page] == ev.op_id) {
+                    s_inflight_op[page] == s_pump_ev.op_id) {
                     s_inflight_op[page] = 0;
                 }
             }
             continue;
         }
-        if (ev.kind == LAB02_SESS_EV_FETCH_DONE && ev.outcome == LAB02_FETCH_OK &&
+        if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE && s_pump_ev.outcome == LAB02_FETCH_OK &&
             s_scroll_locked) {
-            if (s_deferred_op != ev.op_id) {
-                s_deferred_op = ev.op_id;
+            if (s_deferred_op != s_pump_ev.op_id) {
+                s_deferred_op = s_pump_ev.op_id;
                 s_metrics.apply_deferred++;
-                lab02_trace_emit("apply_deferred", ev.op_id, ev.page_index, NULL, NULL);
+                lab02_trace_emit("apply_deferred", s_pump_ev.op_id, s_pump_ev.page_index, NULL,
+                                  NULL);
             }
             break;
         }
-        xQueueReceive(s_event_q, &ev, 0);
-        if (ev.kind == LAB02_SESS_EV_FETCH_DONE) {
-            handle_fetch_done(&ev);
+        xQueueReceive(s_event_q, &s_pump_ev, 0);
+        if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE) {
+            handle_fetch_done(&s_pump_ev);
             completions++;
-        } else if (ev.kind == LAB02_SESS_EV_STAGE) {
-            transition_stage(ev.stage);
-        } else if (ev.kind == LAB02_SESS_EV_TRANSPORT) {
-            apply_transport_reachable(ev.transport_reachable);
+        } else if (s_pump_ev.kind == LAB02_SESS_EV_STAGE) {
+            transition_stage(s_pump_ev.stage);
+        } else if (s_pump_ev.kind == LAB02_SESS_EV_TRANSPORT) {
+            apply_transport_reachable(s_pump_ev.transport_reachable);
         }
         if (completions >= 1) {
             break;
@@ -617,19 +638,24 @@ void lab02_session_http_fetch_finished(lab02_fetch_outcome_t outcome, uint32_t s
                                        uint32_t op_id,
                                        int page_index, const lab02_inbox_page_t *page, bool initial)
 {
-    lab02_sess_event_t ev = {
-        .kind = LAB02_SESS_EV_FETCH_DONE,
-        .outcome = outcome,
-        .session_id = session_id,
-        .op_id = op_id,
-        .page_index = page_index,
-        .initial = initial,
-        .has_page = page != NULL && outcome == LAB02_FETCH_OK,
-    };
-    if (ev.has_page) {
-        ev.page = *page;
+    if (!post_session_event_prepared()) {
+        if (!initial && page_index >= 0 && page_index < LAB02_HTTP_MAX_PAGES) {
+            s_inflight_op[page_index] = 0;
+        }
+        release_fetch_slot(initial);
+        return;
     }
-    if (!post_session_event(&ev)) {
+    s_post_buf.kind = LAB02_SESS_EV_FETCH_DONE;
+    s_post_buf.outcome = outcome;
+    s_post_buf.session_id = session_id;
+    s_post_buf.op_id = op_id;
+    s_post_buf.page_index = page_index;
+    s_post_buf.initial = initial;
+    s_post_buf.has_page = page != NULL && outcome == LAB02_FETCH_OK;
+    if (s_post_buf.has_page) {
+        s_post_buf.page = *page;
+    }
+    if (!post_session_event_commit()) {
         if (!initial && page_index >= 0 && page_index < LAB02_HTTP_MAX_PAGES) {
             s_inflight_op[page_index] = 0;
         }
@@ -649,12 +675,13 @@ bool lab02_session_http_take_fetch_request(lab02_fetch_req_t *out)
 
 void lab02_session_http_mark_stage(lab02_load_stage_t stage, uint32_t session_id)
 {
-    lab02_sess_event_t ev = {
-        .kind = LAB02_SESS_EV_STAGE,
-        .stage = stage,
-        .session_id = session_id,
-    };
-    (void)post_session_event(&ev);
+    if (!post_session_event_prepared()) {
+        return;
+    }
+    s_post_buf.kind = LAB02_SESS_EV_STAGE;
+    s_post_buf.stage = stage;
+    s_post_buf.session_id = session_id;
+    (void)post_session_event_commit();
 }
 
 uint32_t lab02_session_generation(void)

@@ -117,7 +117,7 @@ void lab02_app_start(void)
 
 #if !CONFIG_LAB02_EAGER_BASELINE
     if (carousel_ready && strlen(CONFIG_LAB02_SERVER_URL) > 0) {
-        if (xTaskCreate(session_pump_task, "lab02_sess", 4096, NULL, 3, NULL) == pdPASS) {
+        if (xTaskCreate(session_pump_task, "lab02_sess", 10240, NULL, 3, NULL) == pdPASS) {
             lab02_session_start_http_io();
         } else {
             lab02_board_status_set("session unavailable");

@@ -1,9 +1,19 @@
 """L1 host checks for LAB-02 fixtures and snap math (parity with snap_math.c)."""
+import importlib.util
 import json
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+_PARSE_SPEC = importlib.util.spec_from_file_location(
+    "parse_lab_trace",
+    ROOT / "client/labs/lab-02-bounded-inbox/tools/parse_lab_trace.py",
+)
+_PARSE_MOD = importlib.util.module_from_spec(_PARSE_SPEC)
+assert _PARSE_SPEC.loader is not None
+_PARSE_SPEC.loader.exec_module(_PARSE_MOD)
+parse_trace = _PARSE_MOD.parse_trace
 FIXTURES = ROOT / "client/labs/lab-02-bounded-inbox/fixtures"
 LAB02_LAYOUT = {
     "LCD_W": 320,
@@ -215,6 +225,28 @@ class Lab02SnapMathTests(unittest.TestCase):
         n = 256
         target = snap_target_x_for_index(128, n)
         self.assertEqual(snap_index_from_scroll_x(target, n), 128)
+
+
+class Lab02ParseLabTraceTests(unittest.TestCase):
+    def test_harness_done_not_double_counted(self):
+        lines = [
+            "LAB_TRACE t_us=1 event=harness_done gen=0 focus=0 msg=-\n",
+            "HARNESS_DONE steps=16\n",
+        ]
+        counts = parse_trace(lines)["event_counts"]
+        self.assertEqual(counts.get("harness_done"), 1)
+        self.assertNotIn("harness_abort", counts)
+
+    def test_harness_done_printf_fallback(self):
+        lines = ["HARNESS_DONE steps=16\n"]
+        counts = parse_trace(lines)["event_counts"]
+        self.assertEqual(counts.get("harness_done"), 1)
+
+    def test_harness_abort_without_success_done(self):
+        lines = ["HARNESS_DONE status=inbox_not_ready\n"]
+        counts = parse_trace(lines)["event_counts"]
+        self.assertNotIn("harness_done", counts)
+        self.assertEqual(counts.get("harness_abort"), 1)
 
 
 if __name__ == "__main__":

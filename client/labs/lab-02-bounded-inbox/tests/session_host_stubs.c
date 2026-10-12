@@ -122,3 +122,8 @@ void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
 }
 
 void lab02_page_provider_http_start_io(void) {}
+void lab02_page_provider_http_notify_initial_ready(uint32_t inbox_revision, uint16_t total_count)
+{
+    (void)inbox_revision;
+    (void)total_count;
+}

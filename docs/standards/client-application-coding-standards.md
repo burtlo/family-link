@@ -317,9 +317,12 @@ the following evidence findable in the change or linked specifications:
    level stated separately for each claim.
 
 For agent-assisted reviews of `client/labs/` or `client/device/`, use
-[client-code-review-agent.md](client-code-review-agent.md) (Cursor skill:
-`client-code-review`). Fix one **confirmed defect** ID per cycle, then verify;
-do not batch-fix an entire report without naming IDs.
+[client-code-review-agent.md](client-code-review-agent.md) (Codex/Cursor skill:
+`client-code-review`). One orchestrator delegates review, plans dependencies,
+and executes authorized fixes sequentially, normally one **confirmed defect**
+per coherent change. Each implementation fix requires a separate independent
+verification agent. Identify applicable product, UI, and communication
+specifications alongside these standards; leave OPEN product choices unresolved.
 
 The linked [implementation practices](../v1-assessments/v2-implementation-practices.md#practices-for-each-v2-feature-slice)
 give the concrete artifact and verification gate for each step. An existing
