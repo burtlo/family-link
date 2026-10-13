@@ -1,0 +1,83 @@
+C0_TRACE scenario=surviving-id-displacement event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=1 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=1 focus=0 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=1 focus=0 msg=m0 op_id=1 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_admitted gen=2 focus=1 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=1 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=2569
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=3 focus=0 msg=m0 session=1 revision=1 state=bound
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=3 focus=1 msg=m1 session=1 revision=1 state=bound
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=3 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=3 focus=2 msg=m2 session=1 revision=1 state=bound
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=2 page=1 response_revision=1 initial=0 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=2 focus=1 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=2 focus=0 msg=m0 op_id=2 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=2 focus=1 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1755
+C0_TRACE scenario=surviving-id-displacement event=fetch_admitted gen=3 focus=12 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=fetch_admitted gen=4 focus=11 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=fetch_admitted gen=5 focus=13 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=unbind gen=5 focus=0 msg=m0 
+C0_TRACE scenario=surviving-id-displacement event=unbind gen=5 focus=1 msg=m1 
+C0_TRACE scenario=surviving-id-displacement event=unbind gen=5 focus=2 msg=m2 
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=5 focus=199 msg=- session=1 revision=1 state=loading
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=5 focus=200 msg=- session=1 revision=1 state=loading
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=5 focus=201 msg=- session=1 revision=1 state=loading
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=3 page=12 response_revision=1 initial=0 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=3 focus=12 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=3 focus=200 msg=m200 op_id=3 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=3 focus=12 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1658
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=6 focus=199 msg=m199 session=1 revision=1 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=6 focus=199 msg=m199 session=1 revision=1 state=bound
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=6 focus=200 msg=m200 session=1 revision=1 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=6 focus=200 msg=m200 session=1 revision=1 state=bound
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=6 focus=201 msg=m201 session=1 revision=1 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=6 focus=201 msg=m201 session=1 revision=1 state=bound
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=4 page=11 response_revision=1 initial=0 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=4 focus=11 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=4 focus=200 msg=m200 op_id=4 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=4 focus=11 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=3221
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=5 page=13 response_revision=1 initial=0 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=5 focus=13 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=5 focus=200 msg=m200 op_id=5 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=5 focus=13 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=4654
+C0_STATE scenario=surviving-id-displacement point=viewed-m200 session=1 revision=1 focus=200 focus_id=m200 snap_id=0 snap_locked=0 session_locked=0 scroll_x=28718 window={slot:0,index:199,id:m199,gen:6,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 199},{slot:1,index:200,id:m200,gen:6,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 200},{slot:2,index:201,id:m201,gen:6,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 201},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-28718,x2:-28587,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=5
+C0_TRACE scenario=surviving-id-displacement event=fetch_admitted gen=6 focus=0 msg=- 
+C0_REQUEST scenario=surviving-id-displacement session=1 op_id=6 page=0 submitted_us=235568679633
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=6 page=0 response_revision=101 initial=0 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=6 focus=0 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=6 focus=155 msg=m200 op_id=6 revision=101 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_admitted gen=7 focus=9 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=fetch_admitted gen=8 focus=8 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=6 focus=0 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1384
+C0_TRACE scenario=surviving-id-displacement event=unbind gen=9 focus=199 msg=m199 
+C0_TRACE scenario=surviving-id-displacement event=unbind gen=9 focus=200 msg=m200 
+C0_TRACE scenario=surviving-id-displacement event=unbind gen=9 focus=201 msg=m201 
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=9 focus=153 msg=- session=1 revision=101 state=loading
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=9 focus=154 msg=- session=1 revision=101 state=loading
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=9 focus=155 msg=- session=1 revision=101 state=loading
+C0_STATE scenario=surviving-id-displacement point=revision-applied session=1 revision=101 focus=155 focus_id=- snap_id=0 snap_locked=0 session_locked=0 scroll_x=22156 window={slot:0,index:153,id:-,gen:9,hidden:0,x1:-112,x2:19,state:1,revision:101,session:1,sender:Loading message…},{slot:1,index:154,id:-,gen:9,hidden:0,x1:32,x2:163,state:1,revision:101,session:1,sender:Loading message…},{slot:2,index:155,id:-,gen:9,hidden:0,x1:176,x2:307,state:1,revision:101,session:1,sender:Loading message…},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-22156,x2:-22025,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=6
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=7 page=9 response_revision=101 initial=0 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=7 focus=9 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=7 focus=155 msg=m200 op_id=7 revision=101 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=7 focus=9 msg=- session=1 revision=101 attempt=1 outcome=success elapsed_us=13092
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=10 focus=153 msg=m253 session=1 revision=101 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=10 focus=153 msg=m253 session=1 revision=101 state=bound
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=10 focus=154 msg=m254 session=1 revision=101 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=10 focus=154 msg=m254 session=1 revision=101 state=bound
+C0_TRACE scenario=surviving-id-displacement event=card_state gen=10 focus=155 msg=m255 session=1 revision=101 state=loading
+C0_TRACE scenario=surviving-id-displacement event=bind gen=10 focus=155 msg=m255 session=1 revision=101 state=bound
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=8 page=8 response_revision=101 initial=0 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=8 focus=8 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=8 focus=155 msg=m255 op_id=8 revision=101 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=8 focus=8 msg=- session=1 revision=101 attempt=1 outcome=success elapsed_us=14614
+C0_STATE scenario=surviving-id-displacement point=neighbor-pages-loaded session=1 revision=101 focus=155 focus_id=m255 snap_id=0 snap_locked=0 session_locked=0 scroll_x=22156 window={slot:0,index:153,id:m253,gen:10,hidden:0,x1:-112,x2:19,state:2,revision:101,session:1,sender:Sender 253},{slot:1,index:154,id:m254,gen:10,hidden:0,x1:32,x2:163,state:2,revision:101,session:1,sender:Sender 254},{slot:2,index:155,id:m255,gen:10,hidden:0,x1:176,x2:307,state:2,revision:101,session:1,sender:Sender 255},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-22156,x2:-22025,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=8
+C4_OBSERVATION expected_surviving_id=m200 expected_index=100 actual_focus=155 actual_id=m255 revision=101
+C0_TRACE scenario=surviving-id-displacement event=fetch_admitted gen=9 focus=6 msg=- 
+C0_REQUEST scenario=surviving-id-displacement session=1 op_id=9 page=6 submitted_us=235568706628
+C0_DELIVERY scenario=surviving-id-displacement session=1 op_id=9 page=6 response_revision=101 initial=0 snap_id=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_delivery_retained gen=9 focus=6 msg=- 
+C0_TRACE scenario=surviving-id-displacement event=page_apply gen=9 focus=155 msg=m255 op_id=9 revision=101 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=surviving-id-displacement event=fetch_terminal gen=9 focus=6 msg=- session=1 revision=101 attempt=1 outcome=success elapsed_us=1379
+C0_STATE scenario=surviving-id-displacement point=surviving-page-eventually-loaded session=1 revision=101 focus=155 focus_id=m255 snap_id=0 snap_locked=0 session_locked=0 scroll_x=22156 window={slot:0,index:153,id:m253,gen:10,hidden:0,x1:-112,x2:19,state:2,revision:101,session:1,sender:Sender 253},{slot:1,index:154,id:m254,gen:10,hidden:0,x1:32,x2:163,state:2,revision:101,session:1,sender:Sender 254},{slot:2,index:155,id:m255,gen:10,hidden:0,x1:176,x2:307,state:2,revision:101,session:1,sender:Sender 255},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-22156,x2:-22025,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=9
+C4_FINAL expected_surviving_id=m200 actual_focus=155 actual_id=m255

@@ -1,0 +1,595 @@
+C0_TRACE scenario=pool-bounds event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=pool-bounds session=1 op_id=1 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=1 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=1 focus=0 msg=m0 op_id=1 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=2 focus=1 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=1 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1563
+C0_TRACE scenario=pool-bounds event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=3 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=3 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=3 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=3 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=4 focus=2 msg=m2 
+C0_TRACE scenario=pool-bounds event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_TRACE scenario=pool-bounds event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=pool-bounds event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_STATE scenario=pool-bounds point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-494,x2:-363,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=3 focus=0 msg=- 
+C0_REQUEST scenario=pool-bounds session=1 op_id=3 page=0 submitted_us=236080086350
+C0_DELIVERY scenario=pool-bounds session=1 op_id=3 page=0 response_revision=8 initial=0 snap_id=0
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=3 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=3 focus=4 msg=m4 op_id=3 revision=8 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=3 focus=0 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1292
+C0_TRACE scenario=pool-bounds event=unbind gen=5 focus=3 msg=m3 
+C0_TRACE scenario=pool-bounds event=card_state gen=5 focus=3 msg=m3 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=unbind gen=5 focus=4 msg=m4 
+C0_TRACE scenario=pool-bounds event=card_state gen=5 focus=4 msg=m4 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=unbind gen=5 focus=5 msg=m5 
+C0_TRACE scenario=pool-bounds event=card_state gen=5 focus=5 msg=m5 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=apply_stale gen=2 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=2 focus=1 msg=- session=1 revision=1 attempt=1 outcome=stale elapsed_us=6710
+C0_TRACE scenario=pool-bounds event=bind_stale gen=5 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=6 focus=3 msg=m3 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=5 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=6 focus=4 msg=m4 
+C0_TRACE scenario=pool-bounds event=card_state gen=6 focus=6 msg=m6 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=6 focus=7 msg=m7 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=6 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=7 focus=6 msg=m6 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=6 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=7 focus=7 msg=m7 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=5 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=7 focus=5 msg=m5 
+C0_TRACE scenario=pool-bounds event=card_state gen=7 focus=0 msg=m0 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=7 focus=1 msg=m1 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=7 focus=2 msg=m2 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=13 focus=3 msg=m3 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=7 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=15 focus=0 msg=m0 
+C0_TRACE scenario=pool-bounds event=card_state gen=21 focus=4 msg=m4 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=7 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=23 focus=1 msg=m1 
+C0_TRACE scenario=pool-bounds event=card_state gen=29 focus=5 msg=m5 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=7 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=31 focus=2 msg=m2 
+C0_TRACE scenario=pool-bounds event=card_state gen=37 focus=6 msg=m6 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=13 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=39 focus=3 msg=m3 
+C0_TRACE scenario=pool-bounds event=card_state gen=45 focus=7 msg=m7 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=21 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=47 focus=4 msg=m4 
+C0_TRACE scenario=pool-bounds event=snap_start gen=0 focus=6 msg=m6 session=1 snap_id=1 before=pending after=running revision=8 start_x=844 target_x=782
+C0_TRACE scenario=pool-bounds event=bind gen=45 focus=7 msg=m7 session=1 revision=8 state=bound
+C0_TRACE scenario=pool-bounds event=bind gen=37 focus=6 msg=m6 session=1 revision=8 state=bound
+C0_TRACE scenario=pool-bounds event=bind gen=29 focus=5 msg=m5 session=1 revision=8 state=bound
+C0_TRACE scenario=pool-bounds event=snap_end gen=0 focus=6 msg=m6 session=1 snap_id=1 outcome=success reason=completed before=running after=terminal revision=8 elapsed_us=1972 target_x=782
+C0_STATE scenario=pool-bounds point=bounded session=1 revision=8 focus=6 focus_id=m6 snap_id=1 snap_locked=0 session_locked=0 scroll_x=782 window={slot:0,index:-1,id:-,gen:47,hidden:1,x1:-194,x2:-63,state:0,revision:8,session:1,sender:},{slot:1,index:5,id:m5,gen:29,hidden:0,x1:-50,x2:81,state:2,revision:8,session:1,sender:Sender 5},{slot:2,index:6,id:m6,gen:37,hidden:0,x1:94,x2:225,state:2,revision:8,session:1,sender:Sender 6},{slot:3,index:7,id:m7,gen:45,hidden:0,x1:238,x2:369,state:2,revision:8,session:1,sender:Sender 7} starts=1 ends=1 deferred=0 stale=1 applied=2
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=4 focus=0 msg=- 
+C0_REQUEST scenario=pool-bounds session=1 op_id=4 page=0 submitted_us=236080097218
+C0_DELIVERY scenario=pool-bounds session=1 op_id=4 page=0 response_revision=16 initial=0 snap_id=1
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=4 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=4 focus=6 msg=m6 op_id=4 revision=16 snap_id=1 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=4 focus=0 msg=- session=1 revision=8 attempt=1 outcome=success elapsed_us=1296
+C0_TRACE scenario=pool-bounds event=unbind gen=71 focus=5 msg=m5 
+C0_TRACE scenario=pool-bounds event=card_state gen=71 focus=5 msg=m5 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=unbind gen=71 focus=6 msg=m6 
+C0_TRACE scenario=pool-bounds event=card_state gen=71 focus=6 msg=m6 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=unbind gen=71 focus=7 msg=m7 
+C0_TRACE scenario=pool-bounds event=card_state gen=71 focus=7 msg=m7 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=71 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=72 focus=5 msg=m5 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=71 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=72 focus=6 msg=m6 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=71 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=72 focus=7 msg=m7 
+C0_TRACE scenario=pool-bounds event=card_state gen=72 focus=13 msg=m13 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=72 focus=14 msg=m14 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=72 focus=15 msg=m15 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=72 focus=13 msg=m13 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=73 focus=13 msg=m13 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=72 focus=14 msg=m14 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=73 focus=14 msg=m14 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=72 focus=15 msg=m15 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=73 focus=15 msg=m15 
+C0_TRACE scenario=pool-bounds event=card_state gen=73 focus=0 msg=m0 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=73 focus=1 msg=m1 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=73 focus=2 msg=m2 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=79 focus=3 msg=m3 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=73 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=81 focus=0 msg=m0 
+C0_TRACE scenario=pool-bounds event=card_state gen=87 focus=4 msg=m4 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=73 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=89 focus=1 msg=m1 
+C0_TRACE scenario=pool-bounds event=card_state gen=95 focus=5 msg=m5 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=73 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=97 focus=2 msg=m2 
+C0_TRACE scenario=pool-bounds event=card_state gen=103 focus=6 msg=m6 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=79 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=105 focus=3 msg=m3 
+C0_TRACE scenario=pool-bounds event=card_state gen=111 focus=7 msg=m7 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=87 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=113 focus=4 msg=m4 
+C0_TRACE scenario=pool-bounds event=card_state gen=119 focus=8 msg=m8 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=95 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=121 focus=5 msg=m5 
+C0_TRACE scenario=pool-bounds event=card_state gen=127 focus=9 msg=m9 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=103 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=129 focus=6 msg=m6 
+C0_TRACE scenario=pool-bounds event=card_state gen=135 focus=10 msg=m10 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=111 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=137 focus=7 msg=m7 
+C0_TRACE scenario=pool-bounds event=card_state gen=143 focus=11 msg=m11 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=119 focus=8 msg=m8 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=145 focus=8 msg=m8 
+C0_TRACE scenario=pool-bounds event=card_state gen=151 focus=12 msg=m12 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=127 focus=9 msg=m9 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=153 focus=9 msg=m9 
+C0_TRACE scenario=pool-bounds event=card_state gen=159 focus=13 msg=m13 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=135 focus=10 msg=m10 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=161 focus=10 msg=m10 
+C0_TRACE scenario=pool-bounds event=card_state gen=167 focus=14 msg=m14 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=143 focus=11 msg=m11 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=169 focus=11 msg=m11 
+C0_TRACE scenario=pool-bounds event=card_state gen=175 focus=15 msg=m15 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=151 focus=12 msg=m12 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=177 focus=12 msg=m12 
+C0_TRACE scenario=pool-bounds event=snap_start gen=0 focus=14 msg=m14 session=1 snap_id=2 before=pending after=running revision=16 start_x=1996 target_x=1934
+C0_TRACE scenario=pool-bounds event=bind gen=175 focus=15 msg=m15 session=1 revision=16 state=bound
+C0_TRACE scenario=pool-bounds event=bind gen=167 focus=14 msg=m14 session=1 revision=16 state=bound
+C0_TRACE scenario=pool-bounds event=bind gen=159 focus=13 msg=m13 session=1 revision=16 state=bound
+C0_TRACE scenario=pool-bounds event=snap_end gen=0 focus=14 msg=m14 session=1 snap_id=2 outcome=success reason=completed before=running after=terminal revision=16 elapsed_us=1695 target_x=1934
+C0_STATE scenario=pool-bounds point=bounded session=1 revision=16 focus=14 focus_id=m14 snap_id=2 snap_locked=0 session_locked=0 scroll_x=1934 window={slot:0,index:-1,id:-,gen:177,hidden:1,x1:-194,x2:-63,state:0,revision:16,session:1,sender:},{slot:1,index:13,id:m13,gen:159,hidden:0,x1:-50,x2:81,state:2,revision:16,session:1,sender:Sender 13},{slot:2,index:14,id:m14,gen:167,hidden:0,x1:94,x2:225,state:2,revision:16,session:1,sender:Sender 14},{slot:3,index:15,id:m15,gen:175,hidden:0,x1:238,x2:369,state:2,revision:16,session:1,sender:Sender 15} starts=2 ends=2 deferred=0 stale=1 applied=3
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=5 focus=0 msg=- 
+C0_REQUEST scenario=pool-bounds session=1 op_id=5 page=0 submitted_us=236080110962
+C0_DELIVERY scenario=pool-bounds session=1 op_id=5 page=0 response_revision=64 initial=0 snap_id=2
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=5 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=6 focus=1 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=5 focus=14 msg=m14 op_id=5 revision=64 snap_id=2 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=5 focus=0 msg=- session=1 revision=16 attempt=1 outcome=success elapsed_us=1293
+C0_TRACE scenario=pool-bounds event=unbind gen=200 focus=13 msg=m13 
+C0_TRACE scenario=pool-bounds event=card_state gen=200 focus=13 msg=m13 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=unbind gen=200 focus=14 msg=m14 
+C0_TRACE scenario=pool-bounds event=card_state gen=200 focus=14 msg=m14 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=unbind gen=200 focus=15 msg=m15 
+C0_TRACE scenario=pool-bounds event=card_state gen=200 focus=15 msg=m15 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=7 focus=3 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=8 focus=2 msg=- 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=200 focus=13 msg=m13 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=201 focus=13 msg=m13 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=200 focus=14 msg=m14 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=201 focus=14 msg=m14 
+C0_TRACE scenario=pool-bounds event=bind_stale gen=200 focus=15 msg=m15 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=201 focus=15 msg=m15 
+C0_TRACE scenario=pool-bounds event=card_state gen=201 focus=61 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=201 focus=62 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=201 focus=63 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=202 focus=0 msg=m0 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=202 focus=1 msg=m1 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=202 focus=2 msg=m2 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=208 focus=3 msg=m3 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=202 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=210 focus=0 msg=m0 
+C0_TRACE scenario=pool-bounds event=card_state gen=216 focus=4 msg=m4 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=202 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=218 focus=1 msg=m1 
+C0_TRACE scenario=pool-bounds event=card_state gen=224 focus=5 msg=m5 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=202 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=226 focus=2 msg=m2 
+C0_TRACE scenario=pool-bounds event=card_state gen=232 focus=6 msg=m6 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=208 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=234 focus=3 msg=m3 
+C0_TRACE scenario=pool-bounds event=card_state gen=240 focus=7 msg=m7 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=216 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=242 focus=4 msg=m4 
+C0_TRACE scenario=pool-bounds event=card_state gen=248 focus=8 msg=m8 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=224 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=250 focus=5 msg=m5 
+C0_TRACE scenario=pool-bounds event=card_state gen=256 focus=9 msg=m9 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=232 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=258 focus=6 msg=m6 
+C0_TRACE scenario=pool-bounds event=card_state gen=264 focus=10 msg=m10 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=240 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=266 focus=7 msg=m7 
+C0_TRACE scenario=pool-bounds event=card_state gen=272 focus=11 msg=m11 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=248 focus=8 msg=m8 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=274 focus=8 msg=m8 
+C0_TRACE scenario=pool-bounds event=card_state gen=280 focus=12 msg=m12 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=256 focus=9 msg=m9 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=282 focus=9 msg=m9 
+C0_TRACE scenario=pool-bounds event=card_state gen=288 focus=13 msg=m13 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=264 focus=10 msg=m10 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=290 focus=10 msg=m10 
+C0_TRACE scenario=pool-bounds event=card_state gen=296 focus=14 msg=m14 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=272 focus=11 msg=m11 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=298 focus=11 msg=m11 
+C0_TRACE scenario=pool-bounds event=card_state gen=304 focus=15 msg=m15 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=280 focus=12 msg=m12 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=306 focus=12 msg=m12 
+C0_TRACE scenario=pool-bounds event=card_state gen=312 focus=16 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=288 focus=13 msg=m13 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=314 focus=13 msg=m13 
+C0_TRACE scenario=pool-bounds event=card_state gen=320 focus=17 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=296 focus=14 msg=m14 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=322 focus=14 msg=m14 
+C0_TRACE scenario=pool-bounds event=card_state gen=328 focus=18 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=304 focus=15 msg=m15 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=330 focus=15 msg=m15 
+C0_TRACE scenario=pool-bounds event=card_state gen=336 focus=19 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=344 focus=20 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=352 focus=21 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=360 focus=22 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=368 focus=23 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=376 focus=24 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=384 focus=25 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=392 focus=26 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=400 focus=27 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=408 focus=28 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=416 focus=29 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=424 focus=30 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=432 focus=31 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=440 focus=32 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=448 focus=33 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=456 focus=34 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=464 focus=35 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=472 focus=36 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=480 focus=37 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=488 focus=38 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=496 focus=39 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=504 focus=40 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=512 focus=41 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=520 focus=42 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=528 focus=43 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=536 focus=44 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=544 focus=45 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=552 focus=46 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=560 focus=47 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=568 focus=48 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=576 focus=49 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=584 focus=50 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=592 focus=51 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=600 focus=52 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=608 focus=53 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=616 focus=54 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=624 focus=55 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=632 focus=56 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=640 focus=57 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=648 focus=58 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=656 focus=59 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=664 focus=60 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=672 focus=61 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=680 focus=62 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=688 focus=63 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=snap_start gen=0 focus=62 msg=- session=1 snap_id=3 before=pending after=running revision=64 start_x=8908 target_x=8846
+C0_TRACE scenario=pool-bounds event=snap_end gen=0 focus=62 msg=- session=1 snap_id=3 outcome=success reason=completed before=running after=terminal revision=64 elapsed_us=1721 target_x=8846
+C0_STATE scenario=pool-bounds point=bounded session=1 revision=64 focus=62 focus_id=- snap_id=3 snap_locked=0 session_locked=0 scroll_x=8846 window={slot:0,index:-1,id:-,gen:690,hidden:1,x1:-194,x2:-63,state:0,revision:64,session:1,sender:},{slot:1,index:61,id:-,gen:672,hidden:0,x1:-50,x2:81,state:1,revision:64,session:1,sender:Loading message…},{slot:2,index:62,id:-,gen:680,hidden:0,x1:94,x2:225,state:1,revision:64,session:1,sender:Loading message…},{slot:3,index:63,id:-,gen:688,hidden:0,x1:238,x2:369,state:1,revision:64,session:1,sender:Loading message…} starts=3 ends=3 deferred=0 stale=1 applied=4
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=9 focus=0 msg=- 
+C0_REQUEST scenario=pool-bounds session=1 op_id=9 page=0 submitted_us=236080140701
+C0_DELIVERY scenario=pool-bounds session=1 op_id=9 page=0 response_revision=256 initial=0 snap_id=3
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=9 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=9 focus=62 msg= op_id=9 revision=256 snap_id=3 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=10 focus=3 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=11 focus=2 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=12 focus=4 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=9 focus=0 msg=- session=1 revision=64 attempt=1 outcome=success elapsed_us=1289
+C0_TRACE scenario=pool-bounds event=card_state gen=714 focus=61 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=714 focus=62 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=714 focus=63 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=apply_stale gen=7 focus=3 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=7 focus=3 msg=- session=1 revision=64 attempt=1 outcome=stale elapsed_us=29743
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=13 focus=15 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=14 focus=14 msg=- 
+C0_TRACE scenario=pool-bounds event=apply_stale gen=6 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=6 focus=1 msg=- session=1 revision=64 attempt=1 outcome=stale elapsed_us=29821
+C0_TRACE scenario=pool-bounds event=apply_stale gen=8 focus=2 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=8 focus=2 msg=- session=1 revision=64 attempt=1 outcome=stale elapsed_us=29748
+C0_TRACE scenario=pool-bounds event=card_state gen=715 focus=253 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=715 focus=254 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=715 focus=255 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=716 focus=0 msg=m0 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=716 focus=1 msg=m1 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=716 focus=2 msg=m2 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=722 focus=3 msg=m3 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=716 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=724 focus=0 msg=m0 
+C0_TRACE scenario=pool-bounds event=card_state gen=730 focus=4 msg=m4 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=716 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=732 focus=1 msg=m1 
+C0_TRACE scenario=pool-bounds event=card_state gen=738 focus=5 msg=m5 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=716 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=740 focus=2 msg=m2 
+C0_TRACE scenario=pool-bounds event=card_state gen=746 focus=6 msg=m6 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=722 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=748 focus=3 msg=m3 
+C0_TRACE scenario=pool-bounds event=card_state gen=754 focus=7 msg=m7 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=730 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=756 focus=4 msg=m4 
+C0_TRACE scenario=pool-bounds event=card_state gen=762 focus=8 msg=m8 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=738 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=764 focus=5 msg=m5 
+C0_TRACE scenario=pool-bounds event=card_state gen=770 focus=9 msg=m9 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=746 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=772 focus=6 msg=m6 
+C0_TRACE scenario=pool-bounds event=card_state gen=778 focus=10 msg=m10 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=754 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=780 focus=7 msg=m7 
+C0_TRACE scenario=pool-bounds event=card_state gen=786 focus=11 msg=m11 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=762 focus=8 msg=m8 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=788 focus=8 msg=m8 
+C0_TRACE scenario=pool-bounds event=card_state gen=794 focus=12 msg=m12 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=770 focus=9 msg=m9 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=796 focus=9 msg=m9 
+C0_TRACE scenario=pool-bounds event=card_state gen=802 focus=13 msg=m13 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=778 focus=10 msg=m10 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=804 focus=10 msg=m10 
+C0_TRACE scenario=pool-bounds event=card_state gen=810 focus=14 msg=m14 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=786 focus=11 msg=m11 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=812 focus=11 msg=m11 
+C0_TRACE scenario=pool-bounds event=card_state gen=818 focus=15 msg=m15 session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=794 focus=12 msg=m12 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=820 focus=12 msg=m12 
+C0_TRACE scenario=pool-bounds event=card_state gen=826 focus=16 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=802 focus=13 msg=m13 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=828 focus=13 msg=m13 
+C0_TRACE scenario=pool-bounds event=card_state gen=834 focus=17 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=810 focus=14 msg=m14 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=836 focus=14 msg=m14 
+C0_TRACE scenario=pool-bounds event=card_state gen=842 focus=18 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=bind_stale gen=818 focus=15 msg=m15 reason=superseded
+C0_TRACE scenario=pool-bounds event=unbind gen=844 focus=15 msg=m15 
+C0_TRACE scenario=pool-bounds event=card_state gen=850 focus=19 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=858 focus=20 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=866 focus=21 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=874 focus=22 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=882 focus=23 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=890 focus=24 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=898 focus=25 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=906 focus=26 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=914 focus=27 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=922 focus=28 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=930 focus=29 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=938 focus=30 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=946 focus=31 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=954 focus=32 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=15 focus=1 msg=- 
+C0_TRACE scenario=pool-bounds event=card_state gen=962 focus=33 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=970 focus=34 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=978 focus=35 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=986 focus=36 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=994 focus=37 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1002 focus=38 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1010 focus=39 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1018 focus=40 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1026 focus=41 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1034 focus=42 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1042 focus=43 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1050 focus=44 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1058 focus=45 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1066 focus=46 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1074 focus=47 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1082 focus=48 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1090 focus=49 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1098 focus=50 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1106 focus=51 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1114 focus=52 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1122 focus=53 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1130 focus=54 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1138 focus=55 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1146 focus=56 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1154 focus=57 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1162 focus=58 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1170 focus=59 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1178 focus=60 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1186 focus=61 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1194 focus=62 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1202 focus=63 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1210 focus=64 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1218 focus=65 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1226 focus=66 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1234 focus=67 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1242 focus=68 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1250 focus=69 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1258 focus=70 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1266 focus=71 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1274 focus=72 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1282 focus=73 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1290 focus=74 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1298 focus=75 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1306 focus=76 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1314 focus=77 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1322 focus=78 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1330 focus=79 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1338 focus=80 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1346 focus=81 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1354 focus=82 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1362 focus=83 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1370 focus=84 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1378 focus=85 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1386 focus=86 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1394 focus=87 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1402 focus=88 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1410 focus=89 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1418 focus=90 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=16 focus=5 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=17 focus=6 msg=- 
+C0_TRACE scenario=pool-bounds event=card_state gen=1426 focus=91 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1434 focus=92 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1442 focus=93 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1450 focus=94 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1458 focus=95 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1466 focus=96 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1474 focus=97 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1482 focus=98 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1490 focus=99 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1498 focus=100 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1506 focus=101 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1514 focus=102 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1522 focus=103 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1530 focus=104 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1538 focus=105 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1546 focus=106 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1554 focus=107 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1562 focus=108 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1570 focus=109 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1578 focus=110 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1586 focus=111 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1594 focus=112 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1602 focus=113 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1610 focus=114 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1618 focus=115 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1626 focus=116 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1634 focus=117 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1642 focus=118 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1650 focus=119 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1658 focus=120 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1666 focus=121 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1674 focus=122 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1682 focus=123 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1690 focus=124 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1698 focus=125 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1706 focus=126 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1714 focus=127 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1722 focus=128 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1730 focus=129 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1738 focus=130 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1746 focus=131 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1754 focus=132 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1762 focus=133 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1770 focus=134 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1778 focus=135 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1786 focus=136 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1794 focus=137 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1802 focus=138 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1810 focus=139 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1818 focus=140 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1826 focus=141 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1834 focus=142 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1842 focus=143 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1850 focus=144 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1858 focus=145 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1866 focus=146 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1874 focus=147 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1882 focus=148 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1890 focus=149 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1898 focus=150 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pool-bounds event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_queue_full gen=0 focus=8 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pool-bounds event=card_state gen=1906 focus=151 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1914 focus=152 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1922 focus=153 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1930 focus=154 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1938 focus=155 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1946 focus=156 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1954 focus=157 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1962 focus=158 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1970 focus=159 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1978 focus=160 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1986 focus=161 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=1994 focus=162 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2002 focus=163 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2010 focus=164 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2018 focus=165 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2026 focus=166 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2034 focus=167 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2042 focus=168 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2050 focus=169 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2058 focus=170 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2066 focus=171 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2074 focus=172 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2082 focus=173 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2090 focus=174 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2098 focus=175 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2106 focus=176 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2114 focus=177 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2122 focus=178 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2130 focus=179 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2138 focus=180 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2146 focus=181 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2154 focus=182 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2162 focus=183 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2170 focus=184 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2178 focus=185 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2186 focus=186 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2194 focus=187 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2202 focus=188 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2210 focus=189 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2218 focus=190 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2226 focus=191 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2234 focus=192 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2242 focus=193 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2250 focus=194 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2258 focus=195 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2266 focus=196 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2274 focus=197 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2282 focus=198 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2290 focus=199 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2298 focus=200 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2306 focus=201 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2314 focus=202 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2322 focus=203 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2330 focus=204 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2338 focus=205 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2346 focus=206 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2354 focus=207 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2362 focus=208 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2370 focus=209 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2378 focus=210 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pool-bounds event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pool-bounds event=card_state gen=2386 focus=211 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2394 focus=212 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2402 focus=213 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2410 focus=214 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2418 focus=215 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2426 focus=216 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2434 focus=217 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2442 focus=218 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2450 focus=219 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2458 focus=220 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2466 focus=221 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2474 focus=222 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2482 focus=223 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2490 focus=224 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2498 focus=225 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2506 focus=226 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2514 focus=227 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2522 focus=228 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2530 focus=229 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2538 focus=230 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2546 focus=231 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2554 focus=232 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2562 focus=233 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2570 focus=234 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2578 focus=235 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2586 focus=236 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2594 focus=237 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2602 focus=238 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2610 focus=239 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2618 focus=240 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2626 focus=241 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2634 focus=242 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2642 focus=243 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2650 focus=244 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2658 focus=245 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2666 focus=246 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2674 focus=247 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2682 focus=248 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2690 focus=249 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2698 focus=250 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2706 focus=251 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2714 focus=252 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2722 focus=253 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2730 focus=254 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=2738 focus=255 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=snap_start gen=0 focus=254 msg=- session=1 snap_id=4 before=pending after=running revision=256 start_x=36556 target_x=36494
+C0_TRACE scenario=pool-bounds event=snap_end gen=0 focus=254 msg=- session=1 snap_id=4 outcome=success reason=completed before=running after=terminal revision=256 elapsed_us=1520 target_x=36494
+C0_STATE scenario=pool-bounds point=bounded session=1 revision=256 focus=254 focus_id=- snap_id=4 snap_locked=0 session_locked=0 scroll_x=36494 window={slot:0,index:-1,id:-,gen:2740,hidden:1,x1:-194,x2:-63,state:0,revision:256,session:1,sender:},{slot:1,index:253,id:-,gen:2722,hidden:0,x1:-50,x2:81,state:1,revision:256,session:1,sender:Loading message…},{slot:2,index:254,id:-,gen:2730,hidden:0,x1:94,x2:225,state:1,revision:256,session:1,sender:Loading message…},{slot:3,index:255,id:-,gen:2738,hidden:0,x1:238,x2:369,state:1,revision:256,session:1,sender:Loading message…} starts=4 ends=4 deferred=0 stale=4 applied=5
+C0_RESULT scenario=pool-bounds characterization=PASS acceptance=F001-C2

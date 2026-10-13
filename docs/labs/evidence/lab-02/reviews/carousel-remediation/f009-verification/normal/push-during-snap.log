@@ -1,0 +1,110 @@
+C0_TRACE scenario=push-during-snap event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=push-during-snap session=1 op_id=1 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=push-during-snap event=fetch_delivery_retained gen=1 focus=0 msg=- 
+C0_TRACE scenario=push-during-snap event=page_apply gen=1 focus=0 msg=m0 op_id=1 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=push-during-snap event=fetch_admitted gen=2 focus=1 msg=- 
+C0_TRACE scenario=push-during-snap event=fetch_terminal gen=1 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1818
+C0_TRACE scenario=push-during-snap event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=3 focus=0 msg=m0 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=3 focus=1 msg=m1 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=card_state gen=3 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=3 focus=2 msg=m2 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=push-during-snap event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=push-during-snap event=unbind gen=4 focus=2 msg=m2 
+C0_TRACE scenario=push-during-snap event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_STATE scenario=push-during-snap point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-494,x2:-363,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=push-during-snap event=fetch_admitted gen=3 focus=0 msg=- 
+C0_REQUEST scenario=push-during-snap session=1 op_id=3 page=0 submitted_us=236309138620
+C0_TRACE scenario=push-during-snap event=snap_start gen=0 focus=8 msg=m8 session=1 snap_id=1 before=pending after=running revision=1 start_x=494 target_x=1070
+C0_TRACE scenario=push-during-snap event=unbind gen=6 focus=3 msg=m3 
+C0_TRACE scenario=push-during-snap event=card_state gen=6 focus=6 msg=m6 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=6 focus=6 msg=m6 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=refresh_intent_rejected_during_snap
+C0_DELIVERY scenario=push-during-snap session=1 op_id=3 page=0 response_revision=2 initial=0 snap_id=1
+C0_TRACE scenario=push-during-snap event=fetch_delivery_retained gen=3 focus=0 msg=- 
+C0_TRACE scenario=push-during-snap event=model_pending gen=3 focus=0 msg=- revision=2 applied_revision=1 reason=motion_reconciliation_pending
+C0_TRACE scenario=push-during-snap event=fetch_terminal gen=3 focus=0 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1886
+C0_STATE scenario=push-during-snap point=arrival session=1 revision=1 focus=8 focus_id=m8 snap_id=1 snap_locked=1 session_locked=1 scroll_x=650 window={slot:0,index:6,id:m6,gen:6,hidden:0,x1:226,x2:357,state:2,revision:1,session:1,sender:Sender 6},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:-62,x2:69,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:82,x2:213,state:2,revision:1,session:1,sender:Sender 5},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-650,x2:-519,state:0,revision:0,session:0,sender:—} starts=1 ends=0 deferred=1 stale=0 applied=1
+C0_TRACE scenario=push-during-snap event=unbind gen=7 focus=4 msg=m4 
+C0_TRACE scenario=push-during-snap event=card_state gen=7 focus=7 msg=m7 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=7 focus=7 msg=m7 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=card_state gen=8 focus=8 msg=m8 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=8 focus=8 msg=m8 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=unbind gen=9 focus=5 msg=m5 
+C0_TRACE scenario=push-during-snap event=unbind gen=10 focus=6 msg=m6 
+C0_TRACE scenario=push-during-snap event=card_state gen=10 focus=9 msg=m9 session=1 revision=1 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=10 focus=9 msg=m9 session=1 revision=1 state=bound
+C0_TRACE scenario=push-during-snap event=snap_end gen=0 focus=8 msg=m8 session=1 snap_id=1 outcome=success reason=completed before=running after=terminal revision=1 elapsed_us=7518 target_x=1070
+C0_TRACE scenario=push-during-snap event=fetch_admitted gen=4 focus=1 msg=- 
+C0_TRACE scenario=push-during-snap event=page_apply gen=3 focus=8 msg=m8 op_id=3 revision=2 snap_id=1 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=push-during-snap event=apply_stale gen=2 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=push-during-snap event=fetch_terminal gen=2 focus=1 msg=- session=1 revision=1 attempt=1 outcome=stale elapsed_us=12629
+C0_TRACE scenario=push-during-snap event=unbind gen=11 focus=7 msg=m7 
+C0_TRACE scenario=push-during-snap event=card_state gen=11 focus=7 msg=m7 session=1 revision=2 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=11 focus=7 msg=m7 session=1 revision=2 state=bound
+C0_TRACE scenario=push-during-snap event=unbind gen=11 focus=8 msg=m8 
+C0_TRACE scenario=push-during-snap event=card_state gen=11 focus=8 msg=m8 session=1 revision=2 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=11 focus=8 msg=m8 session=1 revision=2 state=bound
+C0_TRACE scenario=push-during-snap event=unbind gen=11 focus=9 msg=m9 
+C0_TRACE scenario=push-during-snap event=card_state gen=11 focus=9 msg=m9 session=1 revision=2 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=11 focus=9 msg=m9 session=1 revision=2 state=bound
+C0_STATE scenario=push-during-snap point=terminal session=1 revision=2 focus=8 focus_id=m8 snap_id=1 snap_locked=0 session_locked=0 scroll_x=1070 window={slot:0,index:9,id:m9,gen:11,hidden:0,x1:238,x2:369,state:2,revision:2,session:1,sender:Sender 9},{slot:1,index:7,id:m7,gen:11,hidden:0,x1:-50,x2:81,state:2,revision:2,session:1,sender:Sender 7},{slot:2,index:-1,id:-,gen:9,hidden:1,x1:-338,x2:-207,state:0,revision:1,session:1,sender:},{slot:3,index:8,id:m8,gen:11,hidden:0,x1:94,x2:225,state:2,revision:2,session:1,sender:Sender 8} starts=1 ends=1 deferred=1 stale=1 applied=2
+C0_TRACE scenario=push-during-snap event=fetch_admitted gen=5 focus=0 msg=- 
+C0_REQUEST scenario=push-during-snap session=1 op_id=5 page=0 submitted_us=236309150898
+C0_TRACE scenario=push-during-snap event=snap_start gen=0 focus=10 msg=m10 session=1 snap_id=2 before=pending after=running revision=2 start_x=1070 target_x=1358
+C0_DELIVERY scenario=push-during-snap session=1 op_id=5 page=0 response_revision=3 initial=0 snap_id=2
+C0_TRACE scenario=push-during-snap event=fetch_delivery_retained gen=5 focus=0 msg=- 
+C0_TRACE scenario=push-during-snap event=model_pending gen=5 focus=0 msg=- revision=3 applied_revision=2 reason=motion_reconciliation_pending
+C0_TRACE scenario=push-during-snap event=fetch_terminal gen=5 focus=0 msg=- session=1 revision=2 attempt=1 outcome=success elapsed_us=1634
+C0_TRACE scenario=push-during-snap event=snap_end gen=0 focus=10 msg=m10 session=1 snap_id=2 outcome=stale reason=superseded before=running after=terminal revision=2 elapsed_us=1631 target_x=1358
+C0_TRACE scenario=push-during-snap event=fetch_admitted gen=6 focus=1 msg=- 
+C0_TRACE scenario=push-during-snap event=page_apply gen=5 focus=7 msg=m6 op_id=5 revision=3 snap_id=2 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=push-during-snap event=apply_stale gen=4 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=push-during-snap event=fetch_terminal gen=4 focus=1 msg=- session=1 revision=2 attempt=1 outcome=stale elapsed_us=6392
+C0_TRACE scenario=push-during-snap event=snap_start gen=0 focus=7 msg=m6 session=1 snap_id=3 before=pending after=running revision=3 start_x=1082 target_x=926
+C0_TRACE scenario=push-during-snap event=unbind gen=13 focus=7 msg=m7 
+C0_TRACE scenario=push-during-snap event=card_state gen=13 focus=7 msg=m6 session=1 revision=3 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=13 focus=7 msg=m6 session=1 revision=3 state=bound
+C0_TRACE scenario=push-during-snap event=unbind gen=13 focus=8 msg=m8 
+C0_TRACE scenario=push-during-snap event=card_state gen=13 focus=8 msg=m7 session=1 revision=3 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=13 focus=8 msg=m7 session=1 revision=3 state=bound
+C0_TRACE scenario=push-during-snap event=unbind gen=13 focus=9 msg=m9 
+C0_TRACE scenario=push-during-snap event=card_state gen=13 focus=9 msg=m8 session=1 revision=3 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=13 focus=9 msg=m8 session=1 revision=3 state=bound
+C0_TRACE scenario=push-during-snap event=card_state gen=16 focus=6 msg=m5 session=1 revision=3 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=16 focus=6 msg=m5 session=1 revision=3 state=bound
+C0_TRACE scenario=push-during-snap event=unbind gen=17 focus=9 msg=m8 
+C0_TRACE scenario=push-during-snap event=snap_end gen=0 focus=7 msg=m6 session=1 snap_id=3 outcome=success reason=completed before=running after=terminal revision=3 elapsed_us=2197 target_x=926
+C0_STATE scenario=push-during-snap point=mutation-replacement-terminal session=1 revision=3 focus=7 focus_id=m6 snap_id=3 snap_locked=0 session_locked=0 scroll_x=926 window={slot:0,index:-1,id:-,gen:17,hidden:1,x1:382,x2:513,state:0,revision:3,session:1,sender:},{slot:1,index:7,id:m6,gen:13,hidden:0,x1:94,x2:225,state:2,revision:3,session:1,sender:Sender 6},{slot:2,index:6,id:m5,gen:16,hidden:0,x1:-50,x2:81,state:2,revision:3,session:1,sender:Sender 5},{slot:3,index:8,id:m7,gen:13,hidden:0,x1:238,x2:369,state:2,revision:3,session:1,sender:Sender 7} starts=3 ends=3 deferred=2 stale=2 applied=3
+C0_TRACE scenario=push-during-snap event=fetch_admitted gen=7 focus=0 msg=- 
+C0_REQUEST scenario=push-during-snap session=1 op_id=7 page=0 submitted_us=236309159245
+C0_TRACE scenario=push-during-snap event=snap_start gen=0 focus=10 msg=m9 session=1 snap_id=4 before=pending after=running revision=3 start_x=926 target_x=1358
+C0_DELIVERY scenario=push-during-snap session=1 op_id=7 page=0 response_revision=4 initial=0 snap_id=4
+C0_TRACE scenario=push-during-snap event=fetch_delivery_retained gen=7 focus=0 msg=- 
+C0_TRACE scenario=push-during-snap event=model_pending gen=7 focus=0 msg=- revision=4 applied_revision=3 reason=motion_reconciliation_pending
+C0_TRACE scenario=push-during-snap event=fetch_terminal gen=7 focus=0 msg=- session=1 revision=3 attempt=1 outcome=success elapsed_us=1628
+C0_TRACE scenario=push-during-snap event=snap_end gen=0 focus=10 msg=m9 session=1 snap_id=4 outcome=stale reason=reversed before=running after=terminal revision=3 elapsed_us=1631 target_x=1358
+C0_TRACE scenario=push-during-snap event=fetch_admitted gen=8 focus=1 msg=- 
+C0_TRACE scenario=push-during-snap event=page_apply gen=7 focus=6 msg=m6 op_id=7 revision=4 snap_id=4 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=push-during-snap event=apply_stale gen=6 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=push-during-snap event=fetch_terminal gen=6 focus=1 msg=- session=1 revision=3 attempt=1 outcome=stale elapsed_us=8349
+C0_TRACE scenario=push-during-snap event=unbind gen=22 focus=7 msg=m6 
+C0_TRACE scenario=push-during-snap event=unbind gen=22 focus=6 msg=m5 
+C0_TRACE scenario=push-during-snap event=unbind gen=22 focus=8 msg=m7 
+C0_TRACE scenario=push-during-snap event=card_state gen=22 focus=1 msg=m1 session=1 revision=4 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=22 focus=1 msg=m1 session=1 revision=4 state=bound
+C0_TRACE scenario=push-during-snap event=card_state gen=22 focus=2 msg=m2 session=1 revision=4 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=22 focus=2 msg=m2 session=1 revision=4 state=bound
+C0_TRACE scenario=push-during-snap event=card_state gen=22 focus=3 msg=m3 session=1 revision=4 state=loading
+C0_TRACE scenario=push-during-snap event=bind gen=22 focus=3 msg=m3 session=1 revision=4 state=bound
+C0_TRACE scenario=push-during-snap event=snap_start gen=0 focus=2 msg=m2 session=1 snap_id=5 before=pending after=running revision=4 start_x=206 target_x=206
+C0_TRACE scenario=push-during-snap event=snap_end gen=0 focus=2 msg=m2 session=1 snap_id=5 outcome=success reason=no_motion before=running after=terminal revision=4 elapsed_us=2 target_x=206
+C0_STATE scenario=push-during-snap point=mutation-reversal-terminal session=1 revision=4 focus=2 focus_id=m2 snap_id=5 snap_locked=0 session_locked=0 scroll_x=206 window={slot:0,index:1,id:m1,gen:22,hidden:0,x1:-50,x2:81,state:2,revision:4,session:1,sender:Sender 1},{slot:1,index:2,id:m2,gen:22,hidden:0,x1:94,x2:225,state:2,revision:4,session:1,sender:Sender 2},{slot:2,index:3,id:m3,gen:22,hidden:0,x1:238,x2:369,state:2,revision:4,session:1,sender:Sender 3},{slot:3,index:-1,id:-,gen:22,hidden:1,x1:958,x2:1089,state:0,revision:3,session:1,sender:} starts=5 ends=5 deferred=3 stale=3 applied=4
+C0_RESULT scenario=push-during-snap characterization=PASS acceptance=F001-C2

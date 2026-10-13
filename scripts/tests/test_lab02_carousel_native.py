@@ -69,6 +69,13 @@ def run_characterization(artifact_dir, slow_bind_ms=0):
                          scenario + ".log", 10)
         if f"F008_RUNTIME scenario={scenario} PASS" not in output:
             raise AssertionError(f"missing actual click/provider result for {scenario}")
+    for scenario in ("surviving-displacement", "removed-next", "removed-last", "removed-unknown",
+                     "superseded", "new-revision", "failure-retry", "queue-pressure",
+                     "admission-busy", "unmaterialized-intent", "incomplete-retry", "late-result", "timeout-retry"):
+        output = execute([str(cache / "lab02_identity"), scenario, str(artifact_dir)],
+                         "identity-" + scenario + ".log", 10)
+        if f"F009_RUNTIME scenario={scenario} PASS" not in output:
+            raise AssertionError(f"missing production identity result for {scenario}")
     # Inspect actual renderer output pixels, not a Python behavior model.
     pixels = (artifact_dir / "fast-boundary-drag20.ppm").read_bytes().split(b"\n", 3)[3]
     card_rgb = bytes.fromhex("1c2228")

@@ -447,3 +447,38 @@ is source proof because main/board are outside headless runtime. Physical
 before/after confirmation remains pendingL3, no waiver. Approved phase commit
 will record source fix and evidence without claiming full target closure.
 Next: focused F009/C4 surviving-ID resolution and fresh verifier.
+
+## APP-O-06 — confirmed removed-ID ambiguity fallback
+
+Owner explicitly answered: when the viewed message is removed and the client
+cannot identify the next surviving message from its old page window, select
+the prior index, clamped to the new last item. LAB-02 only; global bounded
+search must establish absence before fallback. This does not permit discarding
+a surviving viewed ID or guessing removal from missing pages.
+[Decision](owner-app-o06.json).
+
+F010 overlay phase committed asc4c0116192e087148f3c83de1dfe979b3184fcab
+(`fix(lab02): remove persistent loading inbox overlay`), working tree clean
+before F009. F009 implementation source frozen; [handoff](f009-implementation/report.md).
+Native23 and normal/slow120 actualLVGL prior+13 new identity scenarios pass
+in self-checks. Correlated server pages→production parser→current owner/render
+ends m200/index100. DirectHTTP firmware compile passed withheight50; canonical
+build preflight reported invalid client URL configuration, a separate gap for
+C6. Targetstatic storage adds62 symbol bytes/64 BSS bytes, no duplicate model
+or pagebuffer. Fresh independent verification follows; no L3 claim.
+
+## F009 / C4 independent verification and phase commit
+
+Fresh `/root/f009_identity_verify` accepts F009 mechanismL1/L2:23 native gates,
+normal/slow120 allprior+13 identity cases, exact retained server receipt bytes
+through productionparser/owner/LVGL, and added during-snap identity resolution
+probe. Findingm200 duringmotion preserves lock/index/viewport/maskedwindow until
+terminalunlock, then relocates100/m200. No duplicate terminals or source/index/
+WIP drift. [Report](f009-verification/report.md). No regression/repair indicated.
+Overall remains unverifiedpending representativeL3 and managedHTTP runtime
+evidence, no waiver. Sourcephase ready for owner-authorized scoped commit.
+
+C5 structured observability/schema and resource/timing gates is next. Canonical
+clientURL preflight gap must be diagnosed read-only before managedtarget runs;
+no private configuration or host policy changes are implied. C6 target visual
+confirmation of overlay/identity/retry and linked eager comparison still required.

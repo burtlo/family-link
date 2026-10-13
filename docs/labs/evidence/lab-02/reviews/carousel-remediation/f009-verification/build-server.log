@@ -1,0 +1,177 @@
+[ 96%] Built target lvgl
+[ 96%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c.o
+[ 96%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view_layout.c.o
+[ 96%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c.o
+[ 97%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c.o
+[ 97%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/snap_math.c.o
+[ 97%] Building C object CMakeFiles/server_receipt.dir/tmp/lab02-f009-fix/server_runtime.c.o
+[ 97%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/snap.c.o
+[ 98%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c.o
+[ 98%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/inbox_model.c.o
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:243:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  243 |     lv_obj_add_flag(c->count_lab, LV_OBJ_FLAG_CLICKABLE);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+  238 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:264:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  264 |     lv_obj_remove_flag(c->content_spacer, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:247:1: note: 'lv_obj_remove_flag' has been explicitly marked deprecated here
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c:14:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  247 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false).")
+      | ^
+   14 |         lv_ob/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+j_add_flag(pool->views[i].root, LV_OBJ_FLAG_HIDDEN);
+      |         ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+    238 | LV486 | #define LV__DEPRECATED("Use the dedicated lv_obj_set_<flag>() setteDErPR/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.cECA:57:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+s instead, e.g. lv_obj_set_hidden(obj, true).")
+         | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.hTE57 |     lv_o:486:43: note: expanded from macro 'LV_DEPRECATED'
+bj_add_flag(view->unread_dot,D(m  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                            ^
+sg) __attribute__((deprecated(msg)))
+      |                                           ^
+LV_OBJ_FLAG_HIDDEN);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+  238 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+In file included from /tmp/lab02-f009-fix/server_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:116:36: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  116 |                v->bind_generation, lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN),
+      |                                    ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:84:9: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+   84 |         lv_obj__obj_is_hidden(obj).")
+      | ^
+remove_flag(view->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |         ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:247:1: note: 'lv_obj_remove_flag' has been explicitly marked deprecated here
+    247 | LV_DEPRECATED("Use the dedicated lv_obj_set1 warning generated.
+_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false).")
+      | ^
+486 | #define LV_DEPRECATED(msg) __a/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+t/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:86:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+   86 |   tribute__((deprecated(msg)))
+      |                                           ^
+      lv_obj_add_flag(view->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |         ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+  238 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:88:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+   88 |     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:247:1: note: 'lv_obj_remove_flag' has been explicitly marked deprecated here
+  247 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_2 warnings generated.
+set_hidden(obj, false).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+In file included from /tmp/lab02-f009-fix/server_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:209:21: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  209 |             assert/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:128:5:( warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+!  128 |     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^
+lv_obj_h/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:247:[ 98%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/inbox_page_metadata.c.o
+1as_fl:ag( v->note: roo'lv_obj_remove_flag' has been explicitly marked deprecated here
+t,  247 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false).") LV_OBJ_FLAG_HIDDEN));
+      |                     ^
+
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use t      he dedicated lv_ob| j_is_<flag>()^
+ functions ins/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.htead, e.g.:486:43 lv_obj_is_hidden(obj).")
+      | ^
+: note: expanded from macro 'LV_DEPRECATED'
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+((deprecated(msg)))
+      |                                           ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:130:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  130 |     lv_obj_add_flag(view->root, LV_OBJ_FLAG_CLICKABLE);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+  238 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: In file included from /tmp/lab02-f009-fix/server_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:288:17: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+note:   expanded from macro 'LV_DEPRECATED'
+288 |         a  ssert(486!lv_obj_has | #define_ LV_DEPRECATED(flag(view_at(carousel.focus_index)->msg) __attribroute__((deprecateot, LV_OBJ_FLAG_HIDDEN));
+      |                 ^
+d/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+(msg)))
+      |   544 | LV_DEPRECATED(                                          ^
+"Use the dedicated lv_/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:154:5obj_is_<flag>() funct: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  154 | i  ons in  lv_obj_astead, e.g. lv_obj_is_hidden(dobjd).")
+      | ^
+_/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43:f note: lag(view->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+  238 | LV_DEPRECexpanded from macro 'LV_DEPRECATED'ATED("Use the dedicated lv_obj_set_<flag>() sett[ 98%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/instrumentation.c.o
+e[ 98%] Building C object CMakeFiles/server_receipt.dir/Users/lynnfrank/esp/esp-idf/components/json/cJSON/cJSON.c.o
+rs instead, e.g. 
+lv_obj_set_hidden(obj, true).")
+      | ^
+  486 | #define LV_DEP/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.hRECATED(msg) __attr:ibu486te__((deprecat:ed(msg)))
+43      |                                           ^
+: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__In file included from /tmp/lab02-f009-fix/server_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:293:16: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+((deprecated(msg)))
+  293 |               asse|                                           ^
+rt(lv_obj_has_flag(view_at(carousel.focus_index)->unread_dot, LV_OBJ_FLAG_HIDDEN));
+      |                ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecat/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:190:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+ed(  190 |     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:247:1: note: 'lv_obj_remove_flag' has been explicitly marked deprecated here
+  247 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+msg)))
+      |                                           ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:237:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  237 |     lv_obj_add_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+  238 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(In file included from /tmp/lab02-f009-fix/server_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:314:17: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+obj, t  314 |         asserue).")
+      | ^
+rt(!/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attributel__((dveprecate_d(obj_has_flag(view_at(carousel.focus_index)->rootmsg)))
+      |                                           ^
+, LV_OBJ_FLAG_HIDDEN));
+      |                 ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+9 warnings generated.
+5 warnings generated.
+[100%] Linking C executable server_receipt
+[100%] Built target server_receipt

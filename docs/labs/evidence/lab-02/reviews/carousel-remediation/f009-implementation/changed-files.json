@@ -1,0 +1,9 @@
+[
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_identity_runtime.c",
+  "docs/labs/lab-02-session-architecture.md",
+  "scripts/tests/test_lab02_carousel_native.py"
+]

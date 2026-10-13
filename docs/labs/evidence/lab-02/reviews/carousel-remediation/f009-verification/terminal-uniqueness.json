@@ -1,0 +1,270 @@
+{
+  "normal/identity-admission-busy.log": {
+    "terminal_count": 13,
+    "duplicate": false
+  },
+  "normal/identity-superseded.log": {
+    "terminal_count": 7,
+    "duplicate": false
+  },
+  "normal/identity-queue-pressure.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "normal/identity-failure-retry.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "normal/pool-bounds.log": {
+    "terminal_count": 9,
+    "duplicate": false
+  },
+  "normal/retry-reset-pending.log": {
+    "terminal_count": 1,
+    "duplicate": false
+  },
+  "normal/stale-after-revision.log": {
+    "terminal_count": 3,
+    "duplicate": false
+  },
+  "normal/push-during-snap.log": {
+    "terminal_count": 7,
+    "duplicate": false
+  },
+  "normal/reversal.log": {
+    "terminal_count": 4,
+    "duplicate": false
+  },
+  "normal/queue-full.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "normal/remove-during-snap.log": {
+    "terminal_count": 7,
+    "duplicate": false
+  },
+  "normal/delayed-focus.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "normal/identity-new-revision.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "normal/identity-late-result.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "normal/page-during-snap.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "normal/identity-timeout-retry.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "normal/build-final.log": {
+    "terminal_count": 0,
+    "duplicate": false
+  },
+  "normal/identity-incomplete-retry.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "normal/fast-boundary.log": {
+    "terminal_count": 1,
+    "duplicate": false
+  },
+  "normal/retry-boot-fail.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "normal/retry-success.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "normal/identity-unmaterialized-intent.log": {
+    "terminal_count": 12,
+    "duplicate": false
+  },
+  "normal/retry-reset-admitted.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "normal/identity-removed-next.log": {
+    "terminal_count": 15,
+    "duplicate": false
+  },
+  "normal/configure-final.log": {
+    "terminal_count": 0,
+    "duplicate": false
+  },
+  "normal/failed-page.log": {
+    "terminal_count": 5,
+    "duplicate": false
+  },
+  "normal/retry-background-fail.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "normal/identity-removed-last.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "normal/identity-removed-unknown.log": {
+    "terminal_count": 15,
+    "duplicate": false
+  },
+  "normal/retry-retained-worker.log": {
+    "terminal_count": 5,
+    "duplicate": false
+  },
+  "normal/held-page.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "normal/identity-surviving-displacement.log": {
+    "terminal_count": 13,
+    "duplicate": false
+  },
+  "slow120/identity-admission-busy.log": {
+    "terminal_count": 13,
+    "duplicate": false
+  },
+  "slow120/identity-superseded.log": {
+    "terminal_count": 7,
+    "duplicate": false
+  },
+  "slow120/identity-queue-pressure.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "slow120/identity-failure-retry.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "slow120/pool-bounds.log": {
+    "terminal_count": 9,
+    "duplicate": false
+  },
+  "slow120/retry-reset-pending.log": {
+    "terminal_count": 1,
+    "duplicate": false
+  },
+  "slow120/stale-after-revision.log": {
+    "terminal_count": 3,
+    "duplicate": false
+  },
+  "slow120/push-during-snap.log": {
+    "terminal_count": 7,
+    "duplicate": false
+  },
+  "slow120/reversal.log": {
+    "terminal_count": 4,
+    "duplicate": false
+  },
+  "slow120/queue-full.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/remove-during-snap.log": {
+    "terminal_count": 7,
+    "duplicate": false
+  },
+  "slow120/slow-bind.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/delayed-focus.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/identity-new-revision.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "slow120/identity-late-result.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "slow120/page-during-snap.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/identity-timeout-retry.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "slow120/build-final.log": {
+    "terminal_count": 0,
+    "duplicate": false
+  },
+  "slow120/identity-incomplete-retry.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "slow120/fast-boundary.log": {
+    "terminal_count": 1,
+    "duplicate": false
+  },
+  "slow120/retry-boot-fail.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/retry-success.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/identity-unmaterialized-intent.log": {
+    "terminal_count": 12,
+    "duplicate": false
+  },
+  "slow120/retry-reset-admitted.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/identity-removed-next.log": {
+    "terminal_count": 15,
+    "duplicate": false
+  },
+  "slow120/configure-final.log": {
+    "terminal_count": 0,
+    "duplicate": false
+  },
+  "slow120/failed-page.log": {
+    "terminal_count": 5,
+    "duplicate": false
+  },
+  "slow120/retry-background-fail.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/identity-removed-last.log": {
+    "terminal_count": 14,
+    "duplicate": false
+  },
+  "slow120/identity-removed-unknown.log": {
+    "terminal_count": 15,
+    "duplicate": false
+  },
+  "slow120/retry-retained-worker.log": {
+    "terminal_count": 5,
+    "duplicate": false
+  },
+  "slow120/held-page.log": {
+    "terminal_count": 2,
+    "duplicate": false
+  },
+  "slow120/identity-surviving-displacement.log": {
+    "terminal_count": 13,
+    "duplicate": false
+  },
+  "motion.log": {
+    "terminal_count": 13,
+    "duplicate": false
+  },
+  "server.log": {
+    "terminal_count": 13,
+    "duplicate": false
+  }
+}

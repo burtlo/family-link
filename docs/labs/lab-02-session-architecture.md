@@ -67,11 +67,42 @@ Repeated page failures remain visible and retry while that page is focused.
 The session refreshes page zero after five seconds of no active fetch, drag, or snap.
 When a later page announces a newer revision, the session requests page zero
 before accepting it. When page zero announces a newer revision, the session
-invalidates old pages and outstanding operation IDs, then refetches the focused
-page and neighbors. An older revision is discarded. The focused message ID is
-used to re-find the card after a shift. If the ID is absent after the focused
-page and its neighbors load, the lab falls back to the same clamped index.
-That removal fallback remains **OPEN** for the product contract.
+invalidates old pages and outstanding operation IDs. A known, already materialized
+viewed message ID remains the anchor until found in the new revision or all its
+pages have been completely materialized. An adjacent-page miss is not absence.
+One search page is admitted at a time using existing fetch envelopes; each pump
+performs at most three bounded identity lookups (256 comparisons each) and
+three page-ledger scans (16 bits each), with one admission attempt per 20ms.
+During unresolved identity, four card surfaces and the header expose loading;
+failure or timeout exposes Message unavailable / tap card to retry, with a tap
+mapped to the actual failed search page. An incomplete page cannot establish
+absence and terminalizes as failure requiring an owner tap. Admission contention
+retains the search for a later pump. The ordinary five-second refresh is suppressed
+while resolution is pending or failed; explicit refresh may supersede it with a
+newer revision. Existing operation timeout coverage remains unchanged (the whole
+attempt deadline gap above remains OPEN).
+
+Resolution uses the existing static 256-entry model: loaded pages are retained,
+not evicted, so the loaded-page ledger denotes currently materialized pages for
+this revision. The search may materialize the entire bounded lab inbox without
+adding a model, item, page, widget, queue or task. A found survivor stops search
+and resumes focused/neighbor prefetch. A different-index owner intent cancels the
+old anchor, even when its new ID is unmaterialized; a repeated same-index intent
+cannot adopt a different loaded ID while reconciliation is unresolved. Session
+reset and newer page-zero revisions supersede old fetch identities. Search may
+merge ordinary results during motion, but commits relocated focus only after
+unlock; APP-O-02 mutation deferral remains in force.
+
+Before discarding the old revision, the owner retains only the exact immediate
+known next/previous IDs (48 bytes) and whether the viewed item was last. After
+complete absence proof, APP-O-03 chooses that known next survivor, or previous
+when originally last. APP-O-06 (owner instruction during F009) authorizes a
+limited LAB fallback: if the next surviving identity cannot be determined from
+the old page window, select the prior index clamped to the new last item. This
+fallback is applied only after proving the viewed anchor absent; it makes no
+claim to globally nearest old order. Unknown initial focus remains an index
+intent and does not invent a stable anchor. Product-wide paging/removal policy
+remains OPEN. An older revision is discarded.
 
 ## Presentation update levels and resource envelope
 
@@ -224,3 +255,17 @@ Normal and 120ms delayed-binding configurations provide host L2 evidence;
 FreeRTOS/device input timing, allocation pressure and stack confirmation remain
 L3 requirements. Earlier automatic retry descriptions above are superseded by
 APP-O-01/04 and the C3d owner-only retry implementation.
+
+F009 resource delta: actual production HTTP target linker maps retain the same
+37,940-byte model, 23,040-byte terminal array and 2,544-byte pending mutation
+record. Added owner symbols total 62 bytes (48 ID bytes, 8-byte admission time,
+4-byte failure page, two flags); linked DRAM BSS grows 64 bytes including padding,
+with DRAM data unchanged. No new dynamic allocation or item/page-sized automatic
+buffer is introduced. Each identity lookup visits at most 256 fixed metadata
+entries; the absence ledger visits at most 16 pages at the existing 16-item lab
+stride. Four roots / 20 nodes, eight normal terminal admissions and one boot
+admission remain the limits. Model/page/operation sizes do not grow with this fix;
+whole-inbox materialization uses the existing fixed storage only. Height 50 is
+preserved. Linker sizes establish static L0 bounds, not runtime startup DMA heap,
+stack high-water, fragmentation, latency or physical target confirmation; those
+remain C5/C6 L3 work.

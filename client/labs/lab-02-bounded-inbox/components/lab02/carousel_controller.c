@@ -92,6 +92,11 @@ static void update_status_label(lab02_carousel_t *c)
         lv_label_set_text(c->count_lab, buf);
         return;
     }
+    if (snap.identity_resolving) {
+        snprintf(buf, sizeof(buf), "LAB-02  %d/%d  loading page...", c->focus_index + 1, c->item_count);
+        lv_label_set_text(c->count_lab, buf);
+        return;
+    }
     const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, c->focus_index);
     if (!item) {
         snprintf(buf, sizeof(buf), "LAB-02  %d/%d  loading page...", c->focus_index + 1,

@@ -1,0 +1,24 @@
+C0_TRACE scenario=retry-success event=io_start_admitted gen=0 focus=0 msg=- session=1 kind=http_startup
+TASK_CREATE name=lab02_http_boot ordinal=1 fail=1
+C0_TRACE scenario=retry-success event=worker_spawn_fail gen=0 focus=0 msg=- boot
+C0_TRACE scenario=retry-success event=fetch_delivery_retained gen=1 focus=0 msg=- 
+C0_TRACE scenario=retry-success event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=failure reason=worker_unavailable
+C0_TRACE scenario=retry-success event=fetch_fail gen=1 focus=0 msg=- 
+C0_TRACE scenario=retry-success event=fetch_terminal gen=1 focus=0 msg=- session=1 revision=0 attempt=1 outcome=failure elapsed_us=542
+F008_CLICK elapsed_us=5 lock_held=1 task_calls=1
+C0_TRACE scenario=retry-success event=owner_retry_initial gen=2 focus=0 msg=- attempt=2 op_id=2
+C0_TRACE scenario=retry-success event=io_start_admitted gen=0 focus=0 msg=- session=1 kind=http_startup
+TASK_CREATE name=lab02_http_boot ordinal=2 fail=0
+TASK_CREATE name=lab02_http ordinal=3 fail=0
+C0_TRACE scenario=retry-success event=fetch_delivery_retained gen=2 focus=0 msg=- 
+C0_TRACE scenario=retry-success event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+LAB02_HTTP_READY revision=1 items=64
+C0_TRACE scenario=retry-success event=page_apply gen=2 focus=0 msg=m0 op_id=2 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=retry-success event=fetch_admitted gen=3 focus=1 msg=- 
+C0_TRACE scenario=retry-success event=fetch_terminal gen=2 focus=0 msg=- session=1 revision=0 attempt=2 outcome=success elapsed_us=27
+C0_TRACE scenario=retry-success event=card_state gen=4 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=retry-success event=card_state gen=4 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=retry-success event=card_state gen=4 focus=2 msg=- session=1 revision=1 state=loading
+C0_TRACE scenario=retry-success event=fetch_delivery_rejected gen=1 focus=0 msg=- duplicate_or_unadmitted
+C0_STATE scenario=retry-success point=retry-terminal session=1 revision=1 focus=0 focus_id=m0 snap_id=0 snap_locked=0 session_locked=0 scroll_x=0 window={slot:0,index:0,id:m0,gen:4,hidden:0,x1:12,x2:143,state:1,revision:1,session:1,sender:Loading message…},{slot:1,index:1,id:m1,gen:4,hidden:0,x1:156,x2:287,state:1,revision:1,session:1,sender:Loading message…},{slot:2,index:2,id:-,gen:4,hidden:0,x1:300,x2:431,state:1,revision:1,session:1,sender:Loading message…},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:0,x2:131,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+F008_RUNTIME scenario=retry-success PASS

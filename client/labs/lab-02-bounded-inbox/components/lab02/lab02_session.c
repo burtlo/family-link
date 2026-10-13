@@ -41,6 +41,14 @@ static bool s_http_mode;
 static bool s_worker_available;
 static int s_focus_index;
 static char s_focus_message_id[sizeof(((lab02_inbox_item_t *)0)->message_id)];
+/* Identity resolution reuses the one existing metadata model. Only the exact
+ * immediate old neighbors are retained; unmaterialized IDs are never invented. */
+static bool s_resolving_focus;
+static bool s_focus_was_last;
+static int s_identity_failed_page = -1;
+static int64_t s_identity_admission_us;
+static char s_focus_next_id[24];
+static char s_focus_previous_id[24];
 static uint32_t s_inbox_revision;
 static int64_t s_last_refresh_us;
 static lab02_load_stage_t s_load_stage;
@@ -202,6 +210,7 @@ static int page_for_focus(int focus, uint16_t page_size)
 
 static void prefetch_for_focus(int focus)
 {
+    if (s_resolving_focus) return;
     if (!s_http_mode || s_load_stage != LAB02_LOAD_READY) {
         return;
     }
@@ -225,32 +234,88 @@ static void prefetch_for_focus(int focus)
     (void)lab02_session_http_enqueue_fetch(page + 1, &op);
 }
 
+static int find_identity(const char *id)
+{
+    if (!id[0]) return -1;
+    for (uint16_t i = 0; i < s_model.count; i++) {
+        if (!strcmp(s_model.items[i].message_id, id)) return i;
+    }
+    return -1;
+}
+
+static void remember_neighbors(void)
+{
+    s_focus_was_last = s_focus_index == (int)s_model.count - 1;
+    const lab02_inbox_item_t *next = lab02_inbox_model_item(&s_model, s_focus_index + 1);
+    const lab02_inbox_item_t *previous = lab02_inbox_model_item(&s_model, s_focus_index - 1);
+    snprintf(s_focus_next_id, sizeof(s_focus_next_id), "%s", next ? next->message_id : "");
+    snprintf(s_focus_previous_id, sizeof(s_focus_previous_id), "%s", previous ? previous->message_id : "");
+}
+
 static void reconcile_focus_id(void)
 {
     const lab02_inbox_item_t *current = lab02_inbox_model_item(&s_model, s_focus_index);
     if (!s_focus_message_id[0]) {
-        if (current) {
-            snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", current->message_id);
-        }
+        if (current) snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", current->message_id);
         return;
     }
-    for (uint16_t i = 0; i < s_model.count; i++) {
-        if (strcmp(s_model.items[i].message_id, s_focus_message_id) == 0) {
-            if (s_focus_index != (int)i) {
-                s_focus_index = (int)i;
-                s_presentation_dirty = true;
-            }
+    int found = find_identity(s_focus_message_id);
+    if (s_resolving_focus && s_scroll_locked) return;
+    if (found >= 0) {
+        if (s_focus_index != found || s_resolving_focus) s_presentation_dirty = true;
+        bool resolved = s_resolving_focus;
+        s_focus_index = found;
+        s_resolving_focus = false;
+        s_identity_failed_page = -1;
+        if (resolved) prefetch_for_focus(s_focus_index);
+        return;
+    }
+    if (!s_resolving_focus) return;
+    int pages = (s_model.count + effective_page_size() - 1) / effective_page_size();
+    for (int p = 0; p < pages; p++) {
+        if (!(s_loaded_pages & (1U << p))) return; /* Partial materialization proves nothing. */
+    }
+    if (!s_model.count) {
+        s_focus_message_id[0] = 0;
+        s_resolving_focus = false;
+        s_identity_failed_page = -1;
+        return;
+    }
+    /* APP-O-03 prefers the exact known old next (previous when originally
+     * last). APP-O-06 explicitly permits the clamped prior index only after
+     * complete absence proof when that known neighbor cannot be resolved. */
+    found = find_identity(s_focus_was_last ? s_focus_previous_id : s_focus_next_id);
+    if (found < 0) {
+        found = s_focus_index;
+        lab02_trace_emit("identity_fallback", 0, found, s_focus_message_id,
+                         "reason=absence_proven_old_neighbor_unknown");
+    }
+    s_focus_index = found;
+    snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", s_model.items[found].message_id);
+    s_resolving_focus = false;
+    s_identity_failed_page = -1;
+    s_presentation_dirty = true;
+    prefetch_for_focus(s_focus_index);
+}
+
+/* One search admission per 20ms; at most one search page in flight. Existing
+ * fetch envelopes own failure/timeout/stale outcomes, with owner-only retry. */
+static void advance_identity_search(void)
+{
+    if (!s_resolving_focus || s_identity_failed_page != -1 ||
+        esp_timer_get_time() < s_identity_admission_us) return;
+    s_identity_admission_us = esp_timer_get_time() + 20000;
+    int pages = (s_model.count + effective_page_size() - 1) / effective_page_size();
+    for (int p = 0; p < pages; p++) {
+        if (s_loaded_pages & (1U << p)) continue;
+        if (s_failed_pages & (1U << p)) {
+            s_identity_failed_page = p;
+            s_presentation_dirty = true;
             return;
         }
-    }
-    uint16_t psz = effective_page_size();
-    int page = page_for_focus(s_focus_index, psz);
-    int last_page = s_model.count > 0 ? (s_model.count - 1) / (int)psz : 0;
-    bool neighbors_loaded = (s_loaded_pages & (1U << page)) != 0 &&
-        (page == 0 || (s_loaded_pages & (1U << (page - 1))) != 0) &&
-        (page >= last_page || (s_loaded_pages & (1U << (page + 1))) != 0);
-    if (neighbors_loaded && current) {
-        snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", current->message_id);
+        uint32_t op = 0;
+        if (!s_inflight_op[p]) (void)enqueue_fetch(p, &op, false);
+        return;
     }
 }
 
@@ -279,14 +344,22 @@ static bool apply_page(const lab02_sess_event_t *ev)
         for (int p = 1; p < LAB02_HTTP_MAX_PAGES; p++) {
             s_inflight_op[p] = 0;
         }
+        if (!s_resolving_focus) remember_neighbors();
+        s_resolving_focus = s_focus_message_id[0] != 0;
+        s_identity_failed_page = -1;
+        s_identity_admission_us = 0;
+        uint16_t old_page_size = effective_page_size();
         memset(&s_model, 0, sizeof(s_model));
-        s_model.page_size = effective_page_size();
+        s_model.page_size = old_page_size;
         s_loaded_pages = 0;
+        s_failed_pages = 0;
+        s_pending_focus_page = -1;
     }
     if (!page_data || !lab02_inbox_model_apply_v2_page(&s_model, page_data)) {
         if (!ev->initial) {
             s_inflight_op[page] = 0;
             s_failed_pages |= (1U << page);
+            if (s_resolving_focus) s_identity_failed_page = page;
             s_presentation_dirty = true;
         }
         s_metrics.fetch_fail++;
@@ -317,6 +390,18 @@ static bool apply_page(const lab02_sess_event_t *ev)
     } else if (page >= 0 && page < LAB02_HTTP_MAX_PAGES) {
         s_loaded_pages |= (1U << page);
         s_inflight_op[page] = 0;
+    }
+    if (s_resolving_focus && find_identity(s_focus_message_id) < 0) {
+        int expected = (int)s_model.count - page_data->page_offset;
+        if (expected > (int)effective_page_size()) expected = effective_page_size();
+        if (expected < 0 || page_data->item_count != expected) {
+            s_loaded_pages &= ~(1U << page);
+            s_failed_pages |= 1U << page;
+            s_identity_failed_page = page;
+            s_metrics.fetch_fail++;
+            lab02_trace_emit("identity_page_incomplete", ev->op_id, page, s_focus_message_id,
+                             "reason=incomplete_absence_proof");
+        }
     }
     rebuild_meta();
     if (s_focus_index >= (int)s_model.count && s_model.count > 0) {
@@ -363,6 +448,7 @@ static void handle_fetch_done(const lab02_sess_event_t *ev)
         s_metrics.fetch_fail++;
         s_inflight_op[page] = 0;
         s_failed_pages |= (1U << page);
+        if (s_resolving_focus) s_identity_failed_page = page;
         if (page == 0 && !ev->initial) {
             s_refresh_failed = true;
         }
@@ -377,6 +463,7 @@ static void handle_fetch_done(const lab02_sess_event_t *ev)
         s_metrics.fetch_timeout++;
         s_inflight_op[page] = 0;
         s_failed_pages |= (1U << page);
+        if (s_resolving_focus) s_identity_failed_page = page;
         if (page == 0 && !ev->initial) {
             s_refresh_failed = true;
         }
@@ -403,6 +490,12 @@ void lab02_session_reset(void)
     s_worker_available = false;
     s_focus_index = 0;
     s_focus_message_id[0] = 0;
+    s_resolving_focus = false;
+    s_focus_was_last = false;
+    s_identity_failed_page = -1;
+    s_identity_admission_us = 0;
+    s_focus_next_id[0] = 0;
+    s_focus_previous_id[0] = 0;
     s_inbox_revision = 0;
     s_last_refresh_us = 0;
     s_load_stage = LAB02_LOAD_SHELL;
@@ -490,8 +583,9 @@ lab02_session_snapshot_t lab02_session_snapshot(void)
         .scroll_locked = s_scroll_locked,
         .presentation_dirty = s_presentation_dirty,
         .http_active = s_http_mode,
-        .focused_page_failed = s_http_mode &&
-            ((s_failed_pages & (1U << page_for_focus(s_focus_index, effective_page_size()))) != 0),
+        .identity_resolving = s_resolving_focus,
+        .focused_page_failed = s_http_mode && (s_resolving_focus ? s_identity_failed_page != -1 :
+            ((s_failed_pages & (1U << page_for_focus(s_focus_index, effective_page_size()))) != 0)),
         .cached_due_to_refresh_failure = s_http_mode && s_refresh_failed,
         .transport_unreachable = s_http_mode && s_transport_unreachable,
     };
@@ -504,6 +598,10 @@ lab02_slot_snapshot_t lab02_session_slot_snapshot(const lab02_page_provider_t *p
         .session_generation = s_session_generation, .inbox_revision = s_inbox_revision,
         .state = LAB02_SLOT_OUT_OF_RANGE};
     if (!provider || !provider->model || index < 0 || index >= provider->model->count) return slot;
+    if (s_resolving_focus) {
+        slot.state = s_identity_failed_page == -1 ? LAB02_SLOT_LOADING : LAB02_SLOT_ERROR;
+        return slot;
+    }
     slot.item = lab02_inbox_model_item(provider->model, index);
     int page = page_for_focus(index, effective_page_size());
     if (slot.item) slot.state = LAB02_SLOT_BOUND;
@@ -537,6 +635,9 @@ void lab02_session_intent_focus(int focus_index)
     if (m && m->count > 0 && focus_index >= (int)m->count) {
         focus_index = (int)m->count - 1;
     }
+    if (focus_index == s_focus_index && s_resolving_focus) return;
+    s_resolving_focus = false;
+    s_identity_failed_page = -1;
     if (focus_index == s_focus_index) {
         const lab02_inbox_item_t *focused = lab02_inbox_model_item(m, focus_index);
         if (focused) {
@@ -637,6 +738,13 @@ bool lab02_session_intent_retry_page_for_index(int index)
     const lab02_inbox_model_t *m = active_model();
     if (!m || index < 0 || index >= (int)m->count) {
         return false;
+    }
+    if (s_resolving_focus) {
+        if (s_identity_failed_page < 0) return false;
+        if (!owner_retry_page(s_identity_failed_page)) return false;
+        s_identity_failed_page = -1;
+        s_presentation_dirty = true;
+        return true;
     }
     return owner_retry_page(page_for_focus(index, effective_page_size()));
 }
@@ -818,6 +926,10 @@ void lab02_session_pump(void)
         }
         s_has_pending_revision = false;
     }
+    if (s_resolving_focus) {
+        reconcile_focus_id();
+        advance_identity_search();
+    }
     if (s_pending_focus_page >= 0 && s_load_stage == LAB02_LOAD_READY &&
         esp_timer_get_time() >= s_focus_admission_us) {
         int page = s_pending_focus_page;
@@ -829,7 +941,7 @@ void lab02_session_pump(void)
         }
         s_focus_admission_us = esp_timer_get_time() + 20000;
     }
-    if (s_http_mode && s_load_stage == LAB02_LOAD_READY && !s_scroll_locked) {
+    if (s_http_mode && s_load_stage == LAB02_LOAD_READY && !s_scroll_locked && !s_resolving_focus) {
         int64_t now = esp_timer_get_time();
         if (s_last_refresh_us == 0 || now - s_last_refresh_us >= 5000000) {
             bool active = false;

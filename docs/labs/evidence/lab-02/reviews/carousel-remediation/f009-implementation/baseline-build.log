@@ -1,0 +1,45 @@
+[ 96%] Built target lvgl
+[ 96%] Building C object CMakeFiles/lab02_c0.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c.o
+[ 96%] Building C object CMakeFiles/lab02_server_proof.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c.o
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:238:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  238 |     lv_obj_add_flag(c->count_lab, LV_OBJ_FLAG_CLICKABLE);
+      |     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:238:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+  238 |     lv_obj_add_flag(c->count_lab, LV_OBJ_FLAG_CLICKABLE);
+      |     ^
+  238 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+:238:1: note: 'lv_obj_add_flag' has been explicitly marked deprecated here
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+  238 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:259:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  259 |     lv_obj_remove_flag(c->content_spacer, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:247:1: note: 'lv_obj_remove_flag' has been explicitly marked deprecated here
+  247 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:259:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  259 |     lv_obj_remove_flag(c->content_spacer, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:247:1: note: 'lv_obj_remove_flag' has been explicitly marked deprecated here
+  247 | LV_DEPRECATED("Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+2 warnings generated.
+2 warnings generated.
+[ 96%] Linking C executable lab02_c0
+[ 96%] Linking C executable lab02_server_proof
+[100%] Built target lab02_server_proof
+[100%] Built target lab02_c0

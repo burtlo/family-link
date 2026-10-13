@@ -1,0 +1,9 @@
+{
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c": "355a4c9cfaa5251c883624979f470140aaef685a5fb7f40b67340bb5af1230ab",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": "6a95f5a74c7bf5717dab05227b79df5f85cda5f65c10ec0b0111b236e72c1904",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h": "02f705ef6e35511b8ddb75b3694bf17ef64d6f9a0d41cb9c6202dc1da4bab6f4",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt": "399d373ad5b58529af213d549710a7579eb7adcbdebf02414676471362f8a141",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_identity_runtime.c.absent": "d69c2c48e0d2fc06a5a2ad0641906b6e17f73d6a88bae6ff5868e30103f90d63",
+  "scripts/tests/test_lab02_carousel_native.py": "c9bd44fdfa38f47769169b7bdbe6d822430bd4d95e541cb300ed283aa4d0bf47",
+  "docs/labs/lab-02-session-architecture.md": "aefdbe1df7493eb2b896bf14657131174cc6b4e718e41b9aee171e6d3c1851c6"
+}

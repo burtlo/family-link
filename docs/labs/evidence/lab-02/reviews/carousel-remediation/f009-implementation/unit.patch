@@ -1,0 +1,538 @@
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c b/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+index 9f2e7d2..b862696 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+@@ -92,6 +92,11 @@ static void update_status_label(lab02_carousel_t *c)
+         lv_label_set_text(c->count_lab, buf);
+         return;
+     }
++    if (snap.identity_resolving) {
++        snprintf(buf, sizeof(buf), "LAB-02  %d/%d  loading page...", c->focus_index + 1, c->item_count);
++        lv_label_set_text(c->count_lab, buf);
++        return;
++    }
+     const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, c->focus_index);
+     if (!item) {
+         snprintf(buf, sizeof(buf), "LAB-02  %d/%d  loading page...", c->focus_index + 1,
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
+index e2fd623..51cf04e 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
+@@ -33,6 +33,7 @@ typedef struct {
+     bool presentation_dirty;
+     bool http_active;
+     bool focused_page_failed;
++    bool identity_resolving; /* Stable viewed ID awaits bounded revision search. */
+     bool cached_due_to_refresh_failure;
+     bool transport_unreachable;
+ } lab02_session_snapshot_t;
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c b/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+index e930309..da93dc0 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+@@ -41,6 +41,14 @@ static bool s_http_mode;
+ static bool s_worker_available;
+ static int s_focus_index;
+ static char s_focus_message_id[sizeof(((lab02_inbox_item_t *)0)->message_id)];
++/* Identity resolution reuses the one existing metadata model. Only the exact
++ * immediate old neighbors are retained; unmaterialized IDs are never invented. */
++static bool s_resolving_focus;
++static bool s_focus_was_last;
++static int s_identity_failed_page = -1;
++static int64_t s_identity_admission_us;
++static char s_focus_next_id[24];
++static char s_focus_previous_id[24];
+ static uint32_t s_inbox_revision;
+ static int64_t s_last_refresh_us;
+ static lab02_load_stage_t s_load_stage;
+@@ -202,6 +210,7 @@ static int page_for_focus(int focus, uint16_t page_size)
+ 
+ static void prefetch_for_focus(int focus)
+ {
++    if (s_resolving_focus) return;
+     if (!s_http_mode || s_load_stage != LAB02_LOAD_READY) {
+         return;
+     }
+@@ -225,32 +234,88 @@ static void prefetch_for_focus(int focus)
+     (void)lab02_session_http_enqueue_fetch(page + 1, &op);
+ }
+ 
++static int find_identity(const char *id)
++{
++    if (!id[0]) return -1;
++    for (uint16_t i = 0; i < s_model.count; i++) {
++        if (!strcmp(s_model.items[i].message_id, id)) return i;
++    }
++    return -1;
++}
++
++static void remember_neighbors(void)
++{
++    s_focus_was_last = s_focus_index == (int)s_model.count - 1;
++    const lab02_inbox_item_t *next = lab02_inbox_model_item(&s_model, s_focus_index + 1);
++    const lab02_inbox_item_t *previous = lab02_inbox_model_item(&s_model, s_focus_index - 1);
++    snprintf(s_focus_next_id, sizeof(s_focus_next_id), "%s", next ? next->message_id : "");
++    snprintf(s_focus_previous_id, sizeof(s_focus_previous_id), "%s", previous ? previous->message_id : "");
++}
++
+ static void reconcile_focus_id(void)
+ {
+     const lab02_inbox_item_t *current = lab02_inbox_model_item(&s_model, s_focus_index);
+     if (!s_focus_message_id[0]) {
+-        if (current) {
+-            snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", current->message_id);
+-        }
++        if (current) snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", current->message_id);
+         return;
+     }
+-    for (uint16_t i = 0; i < s_model.count; i++) {
+-        if (strcmp(s_model.items[i].message_id, s_focus_message_id) == 0) {
+-            if (s_focus_index != (int)i) {
+-                s_focus_index = (int)i;
+-                s_presentation_dirty = true;
+-            }
++    int found = find_identity(s_focus_message_id);
++    if (s_resolving_focus && s_scroll_locked) return;
++    if (found >= 0) {
++        if (s_focus_index != found || s_resolving_focus) s_presentation_dirty = true;
++        bool resolved = s_resolving_focus;
++        s_focus_index = found;
++        s_resolving_focus = false;
++        s_identity_failed_page = -1;
++        if (resolved) prefetch_for_focus(s_focus_index);
++        return;
++    }
++    if (!s_resolving_focus) return;
++    int pages = (s_model.count + effective_page_size() - 1) / effective_page_size();
++    for (int p = 0; p < pages; p++) {
++        if (!(s_loaded_pages & (1U << p))) return; /* Partial materialization proves nothing. */
++    }
++    if (!s_model.count) {
++        s_focus_message_id[0] = 0;
++        s_resolving_focus = false;
++        s_identity_failed_page = -1;
++        return;
++    }
++    /* APP-O-03 prefers the exact known old next (previous when originally
++     * last). APP-O-06 explicitly permits the clamped prior index only after
++     * complete absence proof when that known neighbor cannot be resolved. */
++    found = find_identity(s_focus_was_last ? s_focus_previous_id : s_focus_next_id);
++    if (found < 0) {
++        found = s_focus_index;
++        lab02_trace_emit("identity_fallback", 0, found, s_focus_message_id,
++                         "reason=absence_proven_old_neighbor_unknown");
++    }
++    s_focus_index = found;
++    snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", s_model.items[found].message_id);
++    s_resolving_focus = false;
++    s_identity_failed_page = -1;
++    s_presentation_dirty = true;
++    prefetch_for_focus(s_focus_index);
++}
++
++/* One search admission per 20ms; at most one search page in flight. Existing
++ * fetch envelopes own failure/timeout/stale outcomes, with owner-only retry. */
++static void advance_identity_search(void)
++{
++    if (!s_resolving_focus || s_identity_failed_page != -1 ||
++        esp_timer_get_time() < s_identity_admission_us) return;
++    s_identity_admission_us = esp_timer_get_time() + 20000;
++    int pages = (s_model.count + effective_page_size() - 1) / effective_page_size();
++    for (int p = 0; p < pages; p++) {
++        if (s_loaded_pages & (1U << p)) continue;
++        if (s_failed_pages & (1U << p)) {
++            s_identity_failed_page = p;
++            s_presentation_dirty = true;
+             return;
+         }
+-    }
+-    uint16_t psz = effective_page_size();
+-    int page = page_for_focus(s_focus_index, psz);
+-    int last_page = s_model.count > 0 ? (s_model.count - 1) / (int)psz : 0;
+-    bool neighbors_loaded = (s_loaded_pages & (1U << page)) != 0 &&
+-        (page == 0 || (s_loaded_pages & (1U << (page - 1))) != 0) &&
+-        (page >= last_page || (s_loaded_pages & (1U << (page + 1))) != 0);
+-    if (neighbors_loaded && current) {
+-        snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", current->message_id);
++        uint32_t op = 0;
++        if (!s_inflight_op[p]) (void)enqueue_fetch(p, &op, false);
++        return;
+     }
+ }
+ 
+@@ -279,14 +344,22 @@ static bool apply_page(const lab02_sess_event_t *ev)
+         for (int p = 1; p < LAB02_HTTP_MAX_PAGES; p++) {
+             s_inflight_op[p] = 0;
+         }
++        if (!s_resolving_focus) remember_neighbors();
++        s_resolving_focus = s_focus_message_id[0] != 0;
++        s_identity_failed_page = -1;
++        s_identity_admission_us = 0;
++        uint16_t old_page_size = effective_page_size();
+         memset(&s_model, 0, sizeof(s_model));
+-        s_model.page_size = effective_page_size();
++        s_model.page_size = old_page_size;
+         s_loaded_pages = 0;
++        s_failed_pages = 0;
++        s_pending_focus_page = -1;
+     }
+     if (!page_data || !lab02_inbox_model_apply_v2_page(&s_model, page_data)) {
+         if (!ev->initial) {
+             s_inflight_op[page] = 0;
+             s_failed_pages |= (1U << page);
++            if (s_resolving_focus) s_identity_failed_page = page;
+             s_presentation_dirty = true;
+         }
+         s_metrics.fetch_fail++;
+@@ -318,6 +391,18 @@ static bool apply_page(const lab02_sess_event_t *ev)
+         s_loaded_pages |= (1U << page);
+         s_inflight_op[page] = 0;
+     }
++    if (s_resolving_focus && find_identity(s_focus_message_id) < 0) {
++        int expected = (int)s_model.count - page_data->page_offset;
++        if (expected > (int)effective_page_size()) expected = effective_page_size();
++        if (expected < 0 || page_data->item_count != expected) {
++            s_loaded_pages &= ~(1U << page);
++            s_failed_pages |= 1U << page;
++            s_identity_failed_page = page;
++            s_metrics.fetch_fail++;
++            lab02_trace_emit("identity_page_incomplete", ev->op_id, page, s_focus_message_id,
++                             "reason=incomplete_absence_proof");
++        }
++    }
+     rebuild_meta();
+     if (s_focus_index >= (int)s_model.count && s_model.count > 0) {
+         s_focus_index = (int)s_model.count - 1;
+@@ -363,6 +448,7 @@ static void handle_fetch_done(const lab02_sess_event_t *ev)
+         s_metrics.fetch_fail++;
+         s_inflight_op[page] = 0;
+         s_failed_pages |= (1U << page);
++        if (s_resolving_focus) s_identity_failed_page = page;
+         if (page == 0 && !ev->initial) {
+             s_refresh_failed = true;
+         }
+@@ -377,6 +463,7 @@ static void handle_fetch_done(const lab02_sess_event_t *ev)
+         s_metrics.fetch_timeout++;
+         s_inflight_op[page] = 0;
+         s_failed_pages |= (1U << page);
++        if (s_resolving_focus) s_identity_failed_page = page;
+         if (page == 0 && !ev->initial) {
+             s_refresh_failed = true;
+         }
+@@ -403,6 +490,12 @@ void lab02_session_reset(void)
+     s_worker_available = false;
+     s_focus_index = 0;
+     s_focus_message_id[0] = 0;
++    s_resolving_focus = false;
++    s_focus_was_last = false;
++    s_identity_failed_page = -1;
++    s_identity_admission_us = 0;
++    s_focus_next_id[0] = 0;
++    s_focus_previous_id[0] = 0;
+     s_inbox_revision = 0;
+     s_last_refresh_us = 0;
+     s_load_stage = LAB02_LOAD_SHELL;
+@@ -490,8 +583,9 @@ lab02_session_snapshot_t lab02_session_snapshot(void)
+         .scroll_locked = s_scroll_locked,
+         .presentation_dirty = s_presentation_dirty,
+         .http_active = s_http_mode,
+-        .focused_page_failed = s_http_mode &&
+-            ((s_failed_pages & (1U << page_for_focus(s_focus_index, effective_page_size()))) != 0),
++        .identity_resolving = s_resolving_focus,
++        .focused_page_failed = s_http_mode && (s_resolving_focus ? s_identity_failed_page != -1 :
++            ((s_failed_pages & (1U << page_for_focus(s_focus_index, effective_page_size()))) != 0)),
+         .cached_due_to_refresh_failure = s_http_mode && s_refresh_failed,
+         .transport_unreachable = s_http_mode && s_transport_unreachable,
+     };
+@@ -504,6 +598,10 @@ lab02_slot_snapshot_t lab02_session_slot_snapshot(const lab02_page_provider_t *p
+         .session_generation = s_session_generation, .inbox_revision = s_inbox_revision,
+         .state = LAB02_SLOT_OUT_OF_RANGE};
+     if (!provider || !provider->model || index < 0 || index >= provider->model->count) return slot;
++    if (s_resolving_focus) {
++        slot.state = s_identity_failed_page == -1 ? LAB02_SLOT_LOADING : LAB02_SLOT_ERROR;
++        return slot;
++    }
+     slot.item = lab02_inbox_model_item(provider->model, index);
+     int page = page_for_focus(index, effective_page_size());
+     if (slot.item) slot.state = LAB02_SLOT_BOUND;
+@@ -537,6 +635,9 @@ void lab02_session_intent_focus(int focus_index)
+     if (m && m->count > 0 && focus_index >= (int)m->count) {
+         focus_index = (int)m->count - 1;
+     }
++    if (focus_index == s_focus_index && s_resolving_focus) return;
++    s_resolving_focus = false;
++    s_identity_failed_page = -1;
+     if (focus_index == s_focus_index) {
+         const lab02_inbox_item_t *focused = lab02_inbox_model_item(m, focus_index);
+         if (focused) {
+@@ -638,6 +739,13 @@ bool lab02_session_intent_retry_page_for_index(int index)
+     if (!m || index < 0 || index >= (int)m->count) {
+         return false;
+     }
++    if (s_resolving_focus) {
++        if (s_identity_failed_page < 0) return false;
++        if (!owner_retry_page(s_identity_failed_page)) return false;
++        s_identity_failed_page = -1;
++        s_presentation_dirty = true;
++        return true;
++    }
+     return owner_retry_page(page_for_focus(index, effective_page_size()));
+ }
+ 
+@@ -818,6 +926,10 @@ void lab02_session_pump(void)
+         }
+         s_has_pending_revision = false;
+     }
++    if (s_resolving_focus) {
++        reconcile_focus_id();
++        advance_identity_search();
++    }
+     if (s_pending_focus_page >= 0 && s_load_stage == LAB02_LOAD_READY &&
+         esp_timer_get_time() >= s_focus_admission_us) {
+         int page = s_pending_focus_page;
+@@ -829,7 +941,7 @@ void lab02_session_pump(void)
+         }
+         s_focus_admission_us = esp_timer_get_time() + 20000;
+     }
+-    if (s_http_mode && s_load_stage == LAB02_LOAD_READY && !s_scroll_locked) {
++    if (s_http_mode && s_load_stage == LAB02_LOAD_READY && !s_scroll_locked && !s_resolving_focus) {
+         int64_t now = esp_timer_get_time();
+         if (s_last_refresh_us == 0 || now - s_last_refresh_us >= 5000000) {
+             bool active = false;
+diff --git a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt
+index fd56725..16aa609 100644
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt
+@@ -37,3 +37,16 @@ target_link_libraries(lab02_initial_retry PRIVATE lvgl pthread m)
+ if(DEFINED LAB02_SLOW_BIND_MS)
+   target_compile_definitions(lab02_initial_retry PRIVATE CONFIG_LAB02_SLOW_BIND_MS=${LAB02_SLOW_BIND_MS})
+ endif()
++
++# F009 stable identity resolution, sharing actual production and LVGL sources.
++get_target_property(IDENTITY_SOURCES lab02_c0 SOURCES)
++list(REMOVE_ITEM IDENTITY_SOURCES test_carousel_baseline.c)
++add_executable(lab02_identity test_identity_runtime.c ${IDENTITY_SOURCES})
++target_compile_features(lab02_identity PRIVATE c_std_11)
++target_compile_definitions(lab02_identity PRIVATE _POSIX_C_SOURCE=200809L)
++target_compile_options(lab02_identity PRIVATE -Wall -Wextra)
++target_include_directories(lab02_identity PRIVATE . "${LAB}/tests/host_stubs" "${CORE}/include" "${CJSON_DIR}")
++target_link_libraries(lab02_identity PRIVATE lvgl pthread m)
++if(DEFINED LAB02_SLOW_BIND_MS)
++  target_compile_definitions(lab02_identity PRIVATE CONFIG_LAB02_SLOW_BIND_MS=${LAB02_SLOW_BIND_MS})
++endif()
+diff --git a/docs/labs/lab-02-session-architecture.md b/docs/labs/lab-02-session-architecture.md
+index f076429..cfd1260 100644
+--- a/docs/labs/lab-02-session-architecture.md
++++ b/docs/labs/lab-02-session-architecture.md
+@@ -67,11 +67,42 @@ Repeated page failures remain visible and retry while that page is focused.
+ The session refreshes page zero after five seconds of no active fetch, drag, or snap.
+ When a later page announces a newer revision, the session requests page zero
+ before accepting it. When page zero announces a newer revision, the session
+-invalidates old pages and outstanding operation IDs, then refetches the focused
+-page and neighbors. An older revision is discarded. The focused message ID is
+-used to re-find the card after a shift. If the ID is absent after the focused
+-page and its neighbors load, the lab falls back to the same clamped index.
+-That removal fallback remains **OPEN** for the product contract.
++invalidates old pages and outstanding operation IDs. A known, already materialized
++viewed message ID remains the anchor until found in the new revision or all its
++pages have been completely materialized. An adjacent-page miss is not absence.
++One search page is admitted at a time using existing fetch envelopes; each pump
++performs at most three bounded identity lookups (256 comparisons each) and
++three page-ledger scans (16 bits each), with one admission attempt per 20ms.
++During unresolved identity, four card surfaces and the header expose loading;
++failure or timeout exposes Message unavailable / tap card to retry, with a tap
++mapped to the actual failed search page. An incomplete page cannot establish
++absence and terminalizes as failure requiring an owner tap. Admission contention
++retains the search for a later pump. The ordinary five-second refresh is suppressed
++while resolution is pending or failed; explicit refresh may supersede it with a
++newer revision. Existing operation timeout coverage remains unchanged (the whole
++attempt deadline gap above remains OPEN).
++
++Resolution uses the existing static 256-entry model: loaded pages are retained,
++not evicted, so the loaded-page ledger denotes currently materialized pages for
++this revision. The search may materialize the entire bounded lab inbox without
++adding a model, item, page, widget, queue or task. A found survivor stops search
++and resumes focused/neighbor prefetch. A different-index owner intent cancels the
++old anchor, even when its new ID is unmaterialized; a repeated same-index intent
++cannot adopt a different loaded ID while reconciliation is unresolved. Session
++reset and newer page-zero revisions supersede old fetch identities. Search may
++merge ordinary results during motion, but commits relocated focus only after
++unlock; APP-O-02 mutation deferral remains in force.
++
++Before discarding the old revision, the owner retains only the exact immediate
++known next/previous IDs (48 bytes) and whether the viewed item was last. After
++complete absence proof, APP-O-03 chooses that known next survivor, or previous
++when originally last. APP-O-06 (owner instruction during F009) authorizes a
++limited LAB fallback: if the next surviving identity cannot be determined from
++the old page window, select the prior index clamped to the new last item. This
++fallback is applied only after proving the viewed anchor absent; it makes no
++claim to globally nearest old order. Unknown initial focus remains an index
++intent and does not invent a stable anchor. Product-wide paging/removal policy
++remains OPEN. An older revision is discarded.
+ 
+ ## Presentation update levels and resource envelope
+ 
+@@ -224,3 +255,17 @@ Normal and 120ms delayed-binding configurations provide host L2 evidence;
+ FreeRTOS/device input timing, allocation pressure and stack confirmation remain
+ L3 requirements. Earlier automatic retry descriptions above are superseded by
+ APP-O-01/04 and the C3d owner-only retry implementation.
++
++F009 resource delta: actual production HTTP target linker maps retain the same
++37,940-byte model, 23,040-byte terminal array and 2,544-byte pending mutation
++record. Added owner symbols total 62 bytes (48 ID bytes, 8-byte admission time,
++4-byte failure page, two flags); linked DRAM BSS grows 64 bytes including padding,
++with DRAM data unchanged. No new dynamic allocation or item/page-sized automatic
++buffer is introduced. Each identity lookup visits at most 256 fixed metadata
++entries; the absence ledger visits at most 16 pages at the existing 16-item lab
++stride. Four roots / 20 nodes, eight normal terminal admissions and one boot
++admission remain the limits. Model/page/operation sizes do not grow with this fix;
++whole-inbox materialization uses the existing fixed storage only. Height 50 is
++preserved. Linker sizes establish static L0 bounds, not runtime startup DMA heap,
++stack high-water, fragmentation, latency or physical target confirmation; those
++remain C5/C6 L3 work.
+diff --git a/scripts/tests/test_lab02_carousel_native.py b/scripts/tests/test_lab02_carousel_native.py
+index e7fe453..4d86940 100644
+--- a/scripts/tests/test_lab02_carousel_native.py
++++ b/scripts/tests/test_lab02_carousel_native.py
+@@ -69,6 +69,13 @@ def run_characterization(artifact_dir, slow_bind_ms=0):
+                          scenario + ".log", 10)
+         if f"F008_RUNTIME scenario={scenario} PASS" not in output:
+             raise AssertionError(f"missing actual click/provider result for {scenario}")
++    for scenario in ("surviving-displacement", "removed-next", "removed-last", "removed-unknown",
++                     "superseded", "new-revision", "failure-retry", "queue-pressure",
++                     "admission-busy", "unmaterialized-intent", "incomplete-retry", "late-result", "timeout-retry"):
++        output = execute([str(cache / "lab02_identity"), scenario, str(artifact_dir)],
++                         "identity-" + scenario + ".log", 10)
++        if f"F009_RUNTIME scenario={scenario} PASS" not in output:
++            raise AssertionError(f"missing production identity result for {scenario}")
+     # Inspect actual renderer output pixels, not a Python behavior model.
+     pixels = (artifact_dir / "fast-boundary-drag20.ppm").read_bytes().split(b"\n", 3)[3]
+     card_rgb = bytes.fromhex("1c2228")
+diff --git a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_identity_runtime.c b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_identity_runtime.c
+new file mode 100644
+index 0000000..c79d286
+--- /dev/null
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_identity_runtime.c
+@@ -0,0 +1,122 @@
++/* Production owner/controller + actual LVGL, explicit transport adapters. */
++#define main prior_regression_main
++#include "test_carousel_baseline.c"
++#undef main
++static int removed = -1, removed_second = -1;
++static lab02_inbox_page_t identity_page(int rev, int offset, int count, int shift)
++{
++    lab02_inbox_page_t p = make_page(rev, offset, count, shift);
++    for (int i = 0; i < p.item_count; i++) {
++        int id = offset + i + shift;
++        if (removed >= 0 && id >= removed) id++;
++        if (removed_second >= 0 && id >= removed_second) id++;
++        snprintf(p.items[i].message_id, sizeof(p.items[i].message_id), "m%d", id);
++        snprintf(p.items[i].sender_name, sizeof(p.items[i].sender_name), "Sender %d", id);
++    }
++    return p;
++}
++static void settle(int rev, int count, int shift)
++{
++    for (int n = 0; n < 40; n++) {
++        while (lab02_host_fetch_queue_depth()) {
++            lab02_fetch_req_t req;
++            assert(lab02_session_http_take_fetch_request(&req));
++            submit(req, identity_page(rev, req.page_offset, count, shift), false);
++        }
++        struct timespec delay = {.tv_nsec = 21000000}; nanosleep(&delay, NULL);
++        advance(30);
++        assert(lab02_session_materialized_count() <= count && count <= LAB02_INBOX_MAX_ITEMS);
++        if (!lab02_session_snapshot().identity_resolving && !lab02_host_fetch_queue_depth()) break;
++    }
++    advance(CONFIG_LAB02_SLOW_BIND_MS + 30);
++}
++static void mutation(int rev, int count, int shift)
++{
++    assert(lab02_session_intent_refresh());
++    submit(take_page(0), identity_page(rev, 0, count, shift), false);
++}
++int main(int argc, char **argv)
++{
++    setvbuf(stdout, NULL, _IONBF, 0); assert(argc == 3);
++    scenario = argv[1]; artifact_dir = argv[2];
++    lv_init(); lv_display_t *d = lv_display_create(320, 240);
++    lv_display_set_color_format(d, LV_COLOR_FORMAT_RGB888);
++    lv_display_set_buffers(d, drawbuffer, NULL, sizeof(drawbuffer), LV_DISPLAY_RENDER_MODE_PARTIAL);
++    lv_display_set_flush_cb(d, flush); assert(lab02_carousel_init(&carousel));
++    uint32_t sid = lab02_session_generation();
++    lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, sid);
++    lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, sid);
++    lab02_fetch_req_t boot; assert(lab02_session_http_initial_request(&boot));
++    submit(boot, identity_page(1, 0, 256, 0), true); settle(1, 256, 0);
++    int viewed = !strcmp(scenario, "removed-last") ? 255 : 200;
++    lab02_carousel_set_focus(&carousel, viewed, false); settle(1, 256, 0);
++    checkpoint("viewed");
++    int count = 156, expected = 100, expected_id = 200;
++    if (!strcmp(scenario, "removed-next") || !strcmp(scenario, "removed-unknown")) {
++        removed = 200; count--;
++        expected_id = 201;
++        if (!strcmp(scenario, "removed-unknown")) {
++            removed_second = 201; count--; expected = 153; expected_id = 255;
++        }
++    } else if (!strcmp(scenario, "removed-last")) {
++        removed = 255; count--; expected = 154; expected_id = 254;
++    }
++    if (!strcmp(scenario, "unmaterialized-intent")) {
++        lab02_session_intent_focus(80); /* no m80 loaded: index intent, not old m200 */
++        expected = 80; expected_id = 180;
++    }
++    lab02_fetch_req_t late = {0};
++    if (!strcmp(scenario, "late-result")) {
++        uint32_t op; assert(lab02_session_http_enqueue_fetch(4, &op)); late = take_page(4);
++    }
++    mutation(101, count, 100);
++    assert(lab02_session_snapshot().identity_resolving == (strcmp(scenario, "unmaterialized-intent") != 0));
++    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++) {
++        lab02_card_view_t *v = &carousel.pool.views[i];
++        if (v->bound_index >= 0) assert(v->state == LAB02_CARD_LOADING);
++    }
++    assert(!strstr(lv_label_get_text(carousel.count_lab), "Sender"));
++    checkpoint("unresolved");
++    if (!strcmp(scenario, "late-result")) {
++        lab02_inbox_page_t old = identity_page(1, 64, 256, 0);
++        lab02_session_http_fetch_finished(LAB02_FETCH_OK, late.session_id, late.op_id, 4, &old, false);
++        lab02_carousel_pump(&carousel);
++        assert(lab02_session_snapshot().inbox_revision == 101);
++    } else if (!strcmp(scenario, "queue-pressure")) {
++        uint32_t op;
++        for (int p = 2; p <= 8; p++) assert(lab02_session_http_enqueue_fetch(p, &op));
++        assert(!lab02_session_http_enqueue_fetch(9, &op));
++    } else if (!strcmp(scenario, "admission-busy")) {
++        submit(take_page(1), identity_page(101, 16, count, 100), false);
++        lab02_host_hold_admission(true);
++        struct timespec delay = {.tv_nsec = 21000000}; nanosleep(&delay, NULL);
++        advance(30); /* pump remains nonblocking and preserves latest search */
++        lab02_host_hold_admission(false);
++    } else if (!strcmp(scenario, "superseded")) {
++        lab02_carousel_set_focus(&carousel, 4, false); expected = 4; expected_id = 104;
++    } else if (!strcmp(scenario, "new-revision")) {
++        mutation(102, 146, 110); count = 146; expected = 90;
++        settle(102, count, 110);
++    } else if (!strcmp(scenario, "failure-retry") || !strcmp(scenario, "incomplete-retry") || !strcmp(scenario, "timeout-retry")) {
++        lab02_fetch_req_t req = take_page(1);
++        if (!strcmp(scenario, "incomplete-retry")) {
++            lab02_inbox_page_t partial = identity_page(101, 16, count, 100);
++            partial.item_count = 1;
++            submit(req, partial, false);
++        } else {
++            lab02_session_http_fetch_finished(!strcmp(scenario, "timeout-retry") ? LAB02_FETCH_TIMEOUT : LAB02_FETCH_FAIL,
++                                             req.session_id, req.op_id, req.page_index, NULL, false);
++        }
++        lab02_carousel_pump(&carousel); advance(30);
++        assert(lab02_session_snapshot().focused_page_failed);
++        checkpoint("failed");
++        assert(lab02_session_intent_retry_page_for_index(lab02_session_snapshot().focus_index));
++    }
++    if (strcmp(scenario, "new-revision")) settle(101, count, 100);
++    lab02_session_snapshot_t snap = lab02_session_snapshot();
++    assert(!snap.identity_resolving && snap.focus_index == expected);
++    char id[24]; snprintf(id, sizeof(id), "m%d", expected_id);
++    assert(!strcmp(lab02_page_provider_item(&carousel.provider, expected)->message_id, id));
++    checkpoint("terminal");
++    printf("F009_RUNTIME scenario=%s PASS focus=%d id=%s revision=%u roots=%d\n", scenario, expected, id, snap.inbox_revision, LAB02_CARD_POOL_SIZE);
++}

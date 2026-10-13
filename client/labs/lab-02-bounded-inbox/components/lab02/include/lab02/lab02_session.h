@@ -33,6 +33,7 @@ typedef struct {
     bool presentation_dirty;
     bool http_active;
     bool focused_page_failed;
+    bool identity_resolving; /* Stable viewed ID awaits bounded revision search. */
     bool cached_due_to_refresh_failure;
     bool transport_unreachable;
 } lab02_session_snapshot_t;

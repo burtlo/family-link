@@ -1,0 +1,8 @@
+{
+  "decision": "APP-O-06",
+  "scope": "LAB-02 only",
+  "trigger": "Viewed message confirmed removed; next surviving message cannot be identified from old page window",
+  "owner_answer": "Select the prior index, clamped to the new last item",
+  "limits": "Does not permit discarding a surviving viewed ID or guessing absence from unmaterialized pages",
+  "date": "2026-10-13"
+}
