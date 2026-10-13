@@ -413,3 +413,37 @@ region is23,440 bytes smaller in newer image; static terminal/pending storage
 strongly supports growth contribution, exact full attribution remains unknown.
 C5/C6 must include DMA-largest-block and effective-config measurements; revisit
 height if material, preserve working50 until evidence supports another value.
+
+## Owner steering: loading overlay and phase commits
+
+Owner explicitly requests removing persistent loading-inbox label (including
+missing font glyph) over carousel cards. F010 is confirmed from owner observation
+and separate centered board label lifetime. Fix/independently verify this small
+unit before implementing C4 confirmed F009. C4 proof is frozen with unchanged
+source/index/WIP: [report](c4-proof/report.md).
+
+Owner amends workflow: after a phase finishes independent verification, create
+a scoped commit with a clear message. Do not claim missing L3 closure. Preserve
+unrelated staged work; current verified client prerequisites need an initial
+scoped foundation commit together with the verified overlay removal, followed
+by separate future phase commits. Original no-commit instructions are superseded
+by this explicit owner authorization. C5/C6 include revisiting provisional50
+height if material and resource/timing gates; no automatic tuning.
+
+## F010 independent verification and phase commit
+
+Owner committed previous foundation as21a37df4b220eabcf6b3717601753cc8cf804360
+(`lab 02 remediation continues`). This supersedes the proposed foundation catch-up
+commit above; subsequent units receive their own scoped commits.
+
+F010 removes startup centered loading-inbox label call and replaces loading
+header text with LAB-02. Only lab_main/controller source changed. Fixer handoff:
+[f010 implementation](f010-implementation/implementation.md). Fresh verifier
+passed actual-LVGL retry-success, retry-boot-fail, delayed-focus and an added
+failed-page boundary; exact substitutions/call lifetime and unchanged WIP/index
+proved. Final HTTP firmware compile passed. [Report](f010-verification/report.md).
+No regression/repair indicated. Header mechanism hasL2; startup overlay absence
+is source proof because main/board are outside headless runtime. Physical
+before/after confirmation remains pendingL3, no waiver. Approved phase commit
+will record source fix and evidence without claiming full target closure.
+Next: focused F009/C4 surviving-ID resolution and fresh verifier.

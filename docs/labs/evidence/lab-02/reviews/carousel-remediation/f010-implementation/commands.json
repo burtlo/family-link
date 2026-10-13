@@ -1,0 +1,4 @@
+{
+  "runtime": "cmake temporary source with actual LVGL and production controller; focused retry-success + retry-boot-fail, normal delayed-focus",
+  "firmware": "source configured IDF export.sh; idf.py -C client/labs/lab-02-bounded-inbox -B build/labs/lab-02-bounded-inbox-phaseb build"
+}

@@ -121,8 +121,6 @@ void lab02_app_start(void)
     bool carousel_ready = lab02_carousel_init(&carousel);
     if (!carousel_ready) {
         lab02_board_status_set("carousel init failed");
-    } else if (lab02_page_provider_http_active()) {
-        lab02_board_status_set("loading inbox…");
     }
 #endif
 

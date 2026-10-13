@@ -67,7 +67,7 @@ static void update_status_label(lab02_carousel_t *c)
     lab02_session_snapshot_t snap = lab02_session_snapshot();
     if (snap.http_active && snap.load_stage != LAB02_LOAD_READY &&
         snap.load_stage != LAB02_LOAD_ERROR) {
-        snprintf(buf, sizeof(buf), "LAB-02  loading inbox…");
+        snprintf(buf, sizeof(buf), "LAB-02");
         lv_label_set_text(c->count_lab, buf);
         return;
     }

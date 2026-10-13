@@ -1,0 +1,17 @@
+[
+  [
+    "/tmp/lab02-f010-fix/runtime/lab02_initial_retry",
+    "retry-success",
+    "/tmp/lab02-f010-fix"
+  ],
+  [
+    "/tmp/lab02-f010-fix/runtime/lab02_initial_retry",
+    "retry-boot-fail",
+    "/tmp/lab02-f010-fix"
+  ],
+  [
+    "/tmp/lab02-f010-fix/runtime/lab02_c0",
+    "delayed-focus",
+    "/tmp/lab02-f010-fix"
+  ]
+]

@@ -1,0 +1,12 @@
+{
+  "frozen_fix_hashes_match": true,
+  "exact_two_substitutions": true,
+  "board_label_lazy_centered": true,
+  "main_remaining_status_calls": [
+    "eager init failed",
+    "carousel init failed",
+    "session unavailable"
+  ],
+  "firmware_build_assessed": "/tmp/lab02-f010-fix/firmware-build.log PASS final HTTP manual non-eager after source change",
+  "runtime_main_board_coverage": false
+}

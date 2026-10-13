@@ -228,3 +228,26 @@ C4. Required L1 contention, L2 actual click/provider, L3 touch/timing closure.
 No repair yet; no retry consumed. Original F006 mechanism evidence remains with
 its acknowledged click/target gaps, but its mechanical no-blocking claim is
 superseded for this initial-retry path.
+
+## LAB02CAR-F009 — P1 confirmed: surviving viewed ID lost outside local page window
+
+C4 [complete finding/proof](c4-proof/report.md) temporary C4-SURVIVING-ANCHOR
+is assigned stable LAB02CAR-F009. After100 preceding removals, m200 survives at
+index100 in revision101/total156. Local-neighbor reconciliation instead commits
+m255/index155, then loading page6 containing m200 does not restore the anchor.
+Actual production controller/session/model and vendored LVGL reproduce this.
+Requires bounded stable-ID resolution without treating unmaterialized absence
+as removal; CAR-PAGING5/INSERT-REMOVE1–3/BIND6, standard5. No fix attempted yet;
+nominal append and adjacent/last removal remain counterevidence in full report.
+
+## LAB02CAR-F010 — P2 confirmed: startup board status overlays ready cards
+
+Owner observes persistent loading-inbox text/missing-glyph over cards, including
+ready/cached content. Startup `lab_main.c:125` creates centered board-status
+label via `board.c:43–60`; no success clear exists. Separate carousel header
+also emits loading-inbox copy. Owner explicitly requests removing this message.
+Smallest coherent fix removes startup loading board label and loading-inbox
+header text; preserve existing retryable unavailable behavior. Verify startup
+source paths and normal/error header behavior; target confirmation remains
+required for physical overlay claim. Prioritize this small requested fix before
+F009 identity implementation.

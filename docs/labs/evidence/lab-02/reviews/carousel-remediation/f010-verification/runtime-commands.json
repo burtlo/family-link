@@ -1,0 +1,34 @@
+[
+  {
+    "command": [
+      "/tmp/lab02-f010-verify/runtime/lab02_initial_retry",
+      "retry-success",
+      "/tmp/lab02-f010-verify"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "/tmp/lab02-f010-verify/runtime/lab02_initial_retry",
+      "retry-boot-fail",
+      "/tmp/lab02-f010-verify"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "/tmp/lab02-f010-verify/runtime/lab02_c0",
+      "delayed-focus",
+      "/tmp/lab02-f010-verify"
+    ],
+    "exit": 0
+  },
+  {
+    "command": [
+      "/tmp/lab02-f010-verify/runtime/lab02_c0",
+      "failed-page",
+      "/tmp/lab02-f010-verify"
+    ],
+    "exit": 0
+  }
+]

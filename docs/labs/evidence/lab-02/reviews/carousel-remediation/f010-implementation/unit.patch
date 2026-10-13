@@ -1,0 +1,26 @@
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c b/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+index 23b0a9c..9f2e7d2 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+@@ -67,7 +67,7 @@ static void update_status_label(lab02_carousel_t *c)
+     lab02_session_snapshot_t snap = lab02_session_snapshot();
+     if (snap.http_active && snap.load_stage != LAB02_LOAD_READY &&
+         snap.load_stage != LAB02_LOAD_ERROR) {
+-        snprintf(buf, sizeof(buf), "LAB-02  loading inbox…");
++        snprintf(buf, sizeof(buf), "LAB-02");
+         lv_label_set_text(c->count_lab, buf);
+         return;
+     }
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c b/client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c
+index 5d745b3..58377b3 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c
+@@ -121,8 +121,6 @@ void lab02_app_start(void)
+     bool carousel_ready = lab02_carousel_init(&carousel);
+     if (!carousel_ready) {
+         lab02_board_status_set("carousel init failed");
+-    } else if (lab02_page_provider_http_active()) {
+-        lab02_board_status_set("loading inbox…");
+     }
+ #endif
+ 

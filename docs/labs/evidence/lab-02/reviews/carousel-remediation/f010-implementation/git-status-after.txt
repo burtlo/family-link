@@ -1,0 +1,5 @@
+ M client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+ M client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c
+ M docs/labs/evidence/lab-02/reviews/carousel-remediation/execution.md
+ M docs/labs/evidence/lab-02/reviews/carousel-remediation/review.md
+?? docs/labs/evidence/lab-02/reviews/carousel-remediation/c4-proof/

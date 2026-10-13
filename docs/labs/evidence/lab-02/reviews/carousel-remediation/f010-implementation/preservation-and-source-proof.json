@@ -1,0 +1,12 @@
+{
+  "exact_byte_changes_only": true,
+  "root_reports_preserved": true,
+  "startup_board_status_call_arguments": [
+    "eager init failed",
+    "carousel init failed",
+    "session unavailable"
+  ],
+  "production_HTTP_config_nonempty": true,
+  "production_manual_non_eager": true,
+  "production_draw_buffer_height": 50
+}

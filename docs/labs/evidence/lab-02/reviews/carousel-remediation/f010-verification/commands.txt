@@ -1,0 +1,2 @@
+cmake -S /tmp/lab02-f010-verify/runtime-source -B /tmp/lab02-f010-verify/runtime -DCJSON_DIR=/Users/lynnfrank/esp/esp-idf/components/json/cJSON -DLAB02_SLOW_BIND_MS=0
+cmake --build /tmp/lab02-f010-verify/runtime -j4

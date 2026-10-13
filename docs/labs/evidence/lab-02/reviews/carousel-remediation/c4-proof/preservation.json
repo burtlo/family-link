@@ -1,0 +1,29 @@
+{
+  "status": {
+    "unchanged": true,
+    "before_sha256": "63b3c3d0504b6700f38d92dcd8f18c4c0717596135822600176509a69360fbd9",
+    "after_sha256": "63b3c3d0504b6700f38d92dcd8f18c4c0717596135822600176509a69360fbd9"
+  },
+  "head": {
+    "unchanged": true,
+    "before_sha256": "46fc8b43e2ab254ec0dc5acfe3b44ad0545546e5179d62fc221d6157e92fa9de",
+    "after_sha256": "46fc8b43e2ab254ec0dc5acfe3b44ad0545546e5179d62fc221d6157e92fa9de"
+  },
+  "branch": {
+    "unchanged": true,
+    "before_sha256": "6403203dd5a0867eb14d104ee8a73730bd72dd9ad92e78d996a6dba0a5dcfc01",
+    "after_sha256": "6403203dd5a0867eb14d104ee8a73730bd72dd9ad92e78d996a6dba0a5dcfc01"
+  },
+  "diff": {
+    "unchanged": true,
+    "before_sha256": "bd93b037b0ad2afa7177f328776b10806b97a5e2284218deb2610e2295ce46be",
+    "after_sha256": "bd93b037b0ad2afa7177f328776b10806b97a5e2284218deb2610e2295ce46be"
+  },
+  "index": {
+    "unchanged": true,
+    "before_sha256": "1c9da5cab9563739b8a3b7821f8c08defbde68c0cbc45866d267e6d50ff386d2",
+    "after_sha256": "1c9da5cab9563739b8a3b7821f8c08defbde68c0cbc45866d267e6d50ff386d2"
+  },
+  "all_hashed_files_unchanged": true,
+  "file_count": 1939
+}
