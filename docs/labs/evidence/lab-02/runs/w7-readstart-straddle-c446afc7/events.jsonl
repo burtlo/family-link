@@ -1,0 +1,3 @@
+{"kind":"reset","method":"serial_rts_pulse","utc":"2026-10-13T03:17:57.909657+00:00"}
+{"firmware_build_id":"2f7d2a8b7bc4b4b744dec004","fixture":"inbox_64","kind":"boot_ready","mode":"recycle","outcome":"success"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"completed","workflow_status":"PASS"}

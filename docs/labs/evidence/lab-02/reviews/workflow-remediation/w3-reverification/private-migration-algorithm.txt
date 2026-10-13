@@ -1,0 +1,37 @@
+# Initial W3 migration algorithm executed once. The endpoint is always read
+# from the private YAML source; no endpoint or credential literal is stored.
+from pathlib import Path
+import hashlib, re
+
+local_path = Path("config/deployment/local.yaml")
+host_path = Path("config/host.defaults.ini")
+private_before = local_path.read_bytes()
+private_text = private_before.decode("utf-8")
+field = re.compile(r"(?m)^(  phaseb_server_url:)([^\r\n]*)(\r?\n|$)")
+matches = list(field.finditer(private_text))
+assert len(matches) == 1
+match = matches[0]
+raw_value = match.group(2).strip()
+if raw_value.startswith('"') and raw_value.endswith('"'):
+    import json
+    endpoint = json.loads(raw_value)
+elif raw_value.startswith("'") and raw_value.endswith("'"):
+    endpoint = raw_value[1:-1].replace("''", "'")
+else:
+    endpoint = raw_value.split(" #", 1)[0].strip()
+assert endpoint and endpoint.startswith("http://")
+assert "@" not in endpoint and "?" not in endpoint
+host_before = host_path.read_text(encoding="utf-8")
+assert "[labs.lab02]" not in host_before
+newline = "\r\n" if "\r\n" in host_before else "\n"
+host_after = (
+    host_before.rstrip("\r\n") + newline + newline
+    + "[labs.lab02]" + newline + "client_url = " + endpoint + newline
+)
+private_after_text = private_text[:match.start()] + private_text[match.end():]
+unrelated_before = private_text[:match.start()] + private_text[match.end():]
+assert hashlib.sha256(unrelated_before.encode()).digest() == hashlib.sha256(private_after_text.encode()).digest()
+# These are the only two file writes: append the host setting and remove the
+# selected source line. The second write preserved all remaining private bytes.
+host_path.write_text(host_after, encoding="utf-8", newline="")
+local_path.write_bytes(private_after_text.encode("utf-8"))

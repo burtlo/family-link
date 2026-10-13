@@ -8,6 +8,7 @@ Purpose: measure v2 carousel, media, login, and journey behavior on hardware **b
 | Audience | Document |
 |----------|----------|
 | Anyone scoping or running a lab | [Assistant guide](assistant-guide.md) |
+| LAB-02 remediation | [Workflow contract and durable remediation plan](lab-02-workflow-remediation-plan.md) · [Carousel application remediation plan](lab-02-carousel-remediation-plan.md) · [review record](evidence/lab-02/reviews/2026-10-12-workflow.md) |
 | Where code, servers, builds, and evidence live | [Repository layout](repository-layout.md) |
 | **LAB-02** file tree, phases, verification scenarios | [LAB-02 implementation outline](lab-02-implementation-outline.md) |
 | Run and metrics JSON shapes | [schemas/](schemas/run-manifest.v1.md) |
@@ -23,7 +24,7 @@ Use these IDs in manifests, traces, and evidence paths. Folder names are **kebab
 | ID | Folder slug (firmware) | Folder slug (server, if any) | Plan |
 |----|------------------------|------------------------------|------|
 | `LAB-01` | `lab-01-x02-baseline` | `lab-01-x02-baseline` | [Inbox plan § LAB-01](inbox-carousel-playback-evaluation.md#lab-01--x02-integrated-baseline) |
-| `LAB-02` | `lab-02-bounded-inbox` | `lab-02-paging` (Phase B) | [Inbox plan § LAB-02](inbox-carousel-playback-evaluation.md#lab-02--bounded-inbox-and-card-recycling) |
+| `LAB-02` | `lab-02-bounded-inbox` | `lab-02-paging` (managed Phase B default) | [Inbox plan § LAB-02](inbox-carousel-playback-evaluation.md#lab-02--bounded-inbox-and-card-recycling) |
 | `LAB-03` | `lab-03-audio-sketch-switch` | `lab-03-audio-sketch-switch` | [Inbox plan § LAB-03](inbox-carousel-playback-evaluation.md#lab-03--audiosketch-switching-and-pause) |
 | `LAB-04` | `lab-04-sketch-format` | optional shared with `LAB-03` | [Inbox plan § LAB-04](inbox-carousel-playback-evaluation.md#lab-04--color-sketch-format-and-preview-strategies) |
 | `LAB-05` | `lab-05-transition-peak` | `none` | [Inbox plan § LAB-05](inbox-carousel-playback-evaluation.md#lab-05--transition-and-simultaneous-resource-peak) |
@@ -38,11 +39,11 @@ Use these IDs in manifests, traces, and evidence paths. Folder names are **kebab
 
 Recommended first implementation: **`LAB-02`** Phase A (local page provider, no server). Follow [LAB-02 implementation outline](lab-02-implementation-outline.md) and [assistant guide — suggested order](assistant-guide.md#suggested-implementation-order).
 
-**Run on hardware:** register in [`config/labs.registry.yaml`](../../config/labs.registry.yaml) per [labs configuration standard](../standards/labs-configuration.md), then `make lab.help` and `make lab.lab02`. Step-by-step for assistants: [assistant guide § Host commands and registering a lab](assistant-guide.md#host-commands-make-lab).
+**Run on hardware:** `make lab.lab02` runs managed HTTP with manual free traversal; `make lab.lab02.scripted` runs the harness without operator touch. Step-by-step for assistants: [assistant guide § Host commands and registering a lab](assistant-guide.md#host-commands-make-lab).
 
 ## Evidence
 
-Published run artifacts and decision reports live under [`evidence/`](evidence/README.md), not inside firmware source trees. Each report links to a **lab version** string, for example `LAB-02/v3 = firmware <build-id> + server none + fixture inbox-summary/v2`.
+Published run artifacts and decision reports live under [`evidence/`](evidence/README.md), not inside firmware source trees. Each report links to a **lab version** string, for example `LAB-02/v1 = firmware <build-id> + server <revision> + fixture inbox-summary/v1`.
 
 ## Related standards
 

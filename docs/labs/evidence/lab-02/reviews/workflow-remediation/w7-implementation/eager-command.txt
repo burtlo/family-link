@@ -1,0 +1,1 @@
+bash "/Users/lynnfrank/src/family-link/scripts/make/python.sh" run scripts/lab_host.py run lab02 --variant eager      

@@ -1,0 +1,13 @@
+{
+  "head": "0b02b30086f1c8c8e985458912646b0d473b967b",
+  "documents": {
+    "docs/labs/lab-02-workflow-remediation-plan.md": "130ac7675187bcad459628fd2d0173b2ec60586ed77ef5baa6acf458db7837ba",
+    "docs/labs/evidence/lab-02/reviews/2026-10-12-workflow.md": "8e9a652cf28ad8040114b3426b2cfcba12e86aecd1e8671393d967cadc741ab2",
+    "docs/labs/evidence/lab-02/reviews/workflow-remediation/execution.md": "bb2ad6b1f8800641c7c23bc684188b8422ab8e6a09063e40f14c45687a72e00e",
+    "docs/labs/evidence/lab-02/reviews/workflow-remediation/application-followup.md": "b92ee720cd6716ceff4cc8b12e53c34ee7c8a3b9bb45f150a2a77d48223ddd2b",
+    "docs/labs/evidence/lab-02/reviews/workflow-remediation/w8-verification/status-clarification.md": "b8b18db10e5924c0ab6bb9587daac9fe50bc4110a5fff219a3e788d296378f8e"
+  },
+  "missing_local_links": [],
+  "private_owner_edit_recorded": true,
+  "protected_runtime_hashes_match_verified_snapshot": true
+}

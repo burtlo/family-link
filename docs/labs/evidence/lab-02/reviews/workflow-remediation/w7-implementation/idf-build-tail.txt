@@ -1,0 +1,30 @@
+-- Components: bootloader bootloader_support efuse esp_app_format esp_bootloader_format esp_common esp_hw_support esp_rom esp_security esp_system esptool_py freertos hal log main micro-ecc newlib partition_table soc spi_flash xtensa
+-- Component paths: /Users/lynnfrank/esp/esp-idf/components/bootloader /Users/lynnfrank/esp/esp-idf/components/bootloader_support /Users/lynnfrank/esp/esp-idf/components/efuse /Users/lynnfrank/esp/esp-idf/components/esp_app_format /Users/lynnfrank/esp/esp-idf/components/esp_bootloader_format /Users/lynnfrank/esp/esp-idf/components/esp_common /Users/lynnfrank/esp/esp-idf/components/esp_hw_support /Users/lynnfrank/esp/esp-idf/components/esp_rom /Users/lynnfrank/esp/esp-idf/components/esp_security /Users/lynnfrank/esp/esp-idf/components/esp_system /Users/lynnfrank/esp/esp-idf/components/esptool_py /Users/lynnfrank/esp/esp-idf/components/freertos /Users/lynnfrank/esp/esp-idf/components/hal /Users/lynnfrank/esp/esp-idf/components/log /Users/lynnfrank/esp/esp-idf/components/bootloader/subproject/main /Users/lynnfrank/esp/esp-idf/components/bootloader/subproject/components/micro-ecc /Users/lynnfrank/esp/esp-idf/components/newlib /Users/lynnfrank/esp/esp-idf/components/partition_table /Users/lynnfrank/esp/esp-idf/components/soc /Users/lynnfrank/esp/esp-idf/components/spi_flash /Users/lynnfrank/esp/esp-idf/components/xtensa
+-- Configuring done (2.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox/bootloader
+[1/2] cd /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox/bootloader/esp-idf/esptool_py && /Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env/bin/python /Users/lynnfrank/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox/bootloader/bootloader.bin
+Bootloader binary size 0x5130 bytes. 0x2ed0 bytes (37%) free.
+[2/8] No install step for 'bootloader'
+[3/8] Completed 'bootloader'
+[4/8] Generating ld/sections.ld
+[5/8] Linking CXX executable lab02_bounded_inbox.elf
+[6/8] Generating binary image from built executable
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox/lab02_bounded_inbox.bin
+[7/8] cd /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox/esp-idf/esptool_py && /Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env/bin/python /Users/lynnfrank/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox/partition_table/partition-table.bin /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox/lab02_bounded_inbox.bin
+lab02_bounded_inbox.bin binary size 0xb5ca0 bytes. Smallest app partition is 0x177000 bytes. 0xc1360 bytes (52%) free.
+
+Project build complete. To flash, run:
+ idf.py flash
+or
+ idf.py -p PORT flash
+or
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size detect --flash_freq 80m 0x0 build/labs/lab-02-bounded-inbox/bootloader/bootloader.bin 0x8000 build/labs/lab-02-bounded-inbox/partition_table/partition-table.bin 0x10000 build/labs/lab-02-bounded-inbox/lab02_bounded_inbox.bin
+or from the "/Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox" directory
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash "@flash_args"
+Removing stale build/labs/lab-02-bounded-inbox/sdkconfig (missing 3 variant default(s), e.g. CONFIG_PARTITION_TABLE_CUSTOM)
+Built lab.lab02 variant=recycle -> /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox

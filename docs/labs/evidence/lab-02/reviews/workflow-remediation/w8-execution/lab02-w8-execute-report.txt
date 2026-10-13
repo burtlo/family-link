@@ -1,0 +1,25 @@
+LAB-02 W8 hardware execution handoff
+
+Repository HEAD at execution: 0b02b30086f1c8c8e985458912646b0d473b967b (dirty working tree as planned; W1-W7 source snapshot frozen).
+Canonical runner SHA-256: scripts/lab02_canonical_run.py 56723b97c1503da6afeb4806fb3c52644389c23eca401bbe35424c9105417a08
+Canonical host SHA-256: scripts/lab_host.py 356bf9806bd0ad23e9c12ac6c35d04f1f18f181331af683b9a73bc93396e233c
+Firmware tree SHA-256 (both manifests): d5b81d3ee8747c517304104d6d810e62b80eddddc38682b926b3651452708ccf
+
+Target: read-only deployment/USB selection immediately before each run selected exactly one registered target, lynn-kit at /dev/cu.usbmodem1101; USB serial value intentionally omitted. No KIT or PORT override. No source/private config edits, shim, tests, or app fixes.
+
+Scripted exact command: make lab.lab02.scripted RUN_ID=20261012-w8-scripted-01
+Exit: 2 (wrapper recorded make failure as exit 2)
+Mode/config: managed-http, fixture 64, nominal, 120s; full fresh unshimmed IDF build and flash succeeded. Manifest records fresh matching LAB02_READY after RTS reset and complete 120s capture; HARNESS_DONE was present but status=inbox_not_ready. UART shows lab02_wifi Wi-Fi connect timeout and lab02_http Wi-Fi failed; station association/IP appeared after the timeout. Treat as separate app/connectivity finding; no product conclusion or fix inferred.
+Workflow status FAIL / experiment verdict UNMEASURED / reason harness_failed.
+Artifacts: docs/labs/evidence/lab-02/runs/20261012-w8-scripted-01/{run-manifest.json,events.jsonl,metrics.json}; logs/device/labs/lab-02/20261012-w8-scripted-01/serial.txt
+Redacted command stdout: /tmp/lab02-w8-scripted-command.safe.log
+
+Manual exact command: make lab.lab02 RUN_ID=20261012-w8-manual-01
+Exit: 0
+Mode/config: managed-http, fixture 64, nominal, 120s; full fresh unshimmed IDF build and flash succeeded. Capture ACTIVE was sent to root immediately; owner traversed/swiped during active capture. Root reports owner observation: “I swiped; it stayed on loading/unavailable.” This is owner-reported target observation, not inferred from UART. Manifest records fresh matching LAB02_READY after RTS reset, capture complete, cleanup successful, no dropped events. Trace includes fetch_fail (message_id null, focus 0, generation 0) and no proven applied paging effect. Workflow status PASS / experiment verdict UNMEASURED / reason completed. Manual mode does not expect HARNESS_DONE.
+Artifacts: docs/labs/evidence/lab-02/runs/20261012-w8-manual-01/{run-manifest.json,events.jsonl,metrics.json}; logs/device/labs/lab-02/20261012-w8-manual-01/serial.txt
+Redacted command stdout: /tmp/lab02-w8-manual-command.safe.log
+
+Managed endpoint confirmed from workflow config: 192.168.8.177:8765. Both serial logs report station IP 192.168.8.160. Both runs have successful SERVER_START, SERVER_HEALTH, SERVER_SEED, reset, boot_ready and CLEANUP events. Post-run lsof listener check on configured fixture port 8765 found no listener. Hardware activity stopped after the manual run; no retry.
+
+Stdout was captured through an allowlist and URL/credential redaction before persistence; serial logs use runner Wi-Fi secret redaction. Artifact scan found no Wi-Fi SSID/password, endpoint token, client URL, or registered USB serial values in the two manifests/events/metrics/serial logs and safe stdout. No raw private output was included here.

@@ -53,17 +53,16 @@ are neither printed by device discovery nor embedded in the bootstrap image.
 
 ## Lab desk secrets (Phase B)
 
-Named **secrets profiles** and desk lab settings live in the same gitignored roster
-as kits (committed `example.yaml` shows shape only):
+Named **secrets profiles** live in the gitignored roster beside kits (committed
+`example.yaml` shows shape only):
 
 | Field | Location | Used by |
 |-------|----------|---------|
 | `wifi_ssid`, `wifi_password` | `secrets_profiles.<name>` | Resolved via each kit’s `secrets_profile` |
-| `lab.phaseb_server_url` | Top-level `lab:` block | Phase B paging server LAN URL (e.g. `http://192.168.1.42:8765`) |
 
 Every kit must set `secrets_profile` to a key under `secrets_profiles`.
 `make config.deployment` redacts Wi-Fi values. **Phase B firmware builds always
 require `KIT=<nickname>`** so the correct profile is compiled in; USB
 auto-detection is only for flash/capture port selection, not for sdkconfig
-secrets. `lab_host` merges the kit’s profile plus `lab.phaseb_server_url` into
-the Phase B build before `idf.py build`.
+secrets. LAB-02 client endpoint configuration belongs in the host INI, while
+shared workflow defaults belong in the tracked labs registry.

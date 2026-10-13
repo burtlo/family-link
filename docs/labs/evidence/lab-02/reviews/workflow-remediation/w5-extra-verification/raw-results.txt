@@ -1,0 +1,36 @@
+COMMAND: .venv/bin/python -m unittest scripts.tests.test_lab02_scenarios
+OUTPUT:
+..........
+----------------------------------------------------------------------
+Ran 10 tests in 0.014s
+
+OK
+
+COMMAND: .venv/bin/python /tmp/lab02-w5-reverify-check.py
+OUTPUT:
+ingest run=other fetch=True effects=0 verdict=INCOMPLETE effect=None
+ingest run=run fetch=False effects=0 verdict=INCOMPLETE effect=None
+ingest run=run fetch=True effects=1 verdict=INCOMPLETE effect={'kind': 'scenario_effect', 'event': 'scenario_effect', 'run_id': 'run', 'action_id': '15509e4480064d19a0af0ba15906dca2', 'scenario': 'S-rm-focus', 'snap_id': '7', 'apply_snap_id': '7', 'before_message_id': 'viewed', 'viewed_message_id': 'neighbor', 'removed_message_id': 'viewed', 'selected_message_id': 'neighbor', 'revision': '2', 'page_receipt_id': 'pg', 'op_id': '9', 'apply_t_us': 20}
+dispatch mutable caller data observed by server: 1
+NOTE: this saved ad hoc positive case omitted sufficient receipt/snap context and classified INCOMPLETE; integrated positive test is test_valid_apply_after_receipt_before_snap_end_is_recorded.
+
+COMMAND: .venv/bin/python /tmp/lab02-w5-reverify-http.py (loopback permission)
+OUTPUT:
+duplicate real HTTP: 2 2 True True
+concurrent real HTTP receipts: [('parallel-0', 4, True), ('parallel-1', 3, True)]
+
+COMMAND: .venv/bin/python -m unittest scripts.tests.test_lab02_scenarios scripts.tests.test_lab02_server scripts.tests.test_lab02_paging_server scripts.tests.test_lab02_model_native (loopback permission)
+OUTPUT:
+............................
+----------------------------------------------------------------------
+Ran 28 tests in 7.473s
+
+OK
+
+COMMAND: git diff --check -- scripts/lab02_scenarios.py scripts/tests/test_lab02_scenarios.py
+RESULT: passed (no output)
+
+COMMAND: shasum -a 256 scripts/lab02_scenarios.py scripts/tests/test_lab02_scenarios.py
+OUTPUT:
+1a5bcb09eaa9290fc2c416241abcd15cae0786c55bb5bbbf4741b1bf2563bca1  scripts/lab02_scenarios.py
+589934ef18ac88952e581b82d7120076a1481c0389858706b4e87d897209739c  scripts/tests/test_lab02_scenarios.py

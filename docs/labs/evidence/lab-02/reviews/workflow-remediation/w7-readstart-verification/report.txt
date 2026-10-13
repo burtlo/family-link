@@ -1,0 +1,26 @@
+W7 read-start freshness independent verification
+Date: 2026-10-12
+Outcome: FIXED for the focused W7 UART read-start freshness defect at host L2; no L3/device claim.
+
+Scope and sources
+- Requirement: docs/labs/lab-02-workflow-remediation-plan.md, operator workflow step 4: after flasher releases UART, acquire the sole reader and log first; apply controlled reset only after capture is armed; readiness must come from that capture and cannot be inferred from a possibly missed marker.
+- Execution history and the authorized read-start extension: docs/labs/evidence/lab-02/reviews/workflow-remediation/execution.md.
+- Current worktree contains the preserved W1-W7 edits. No implementation or maintained-document edits were made during this verification.
+
+Verified source snapshot
+56723b97c1503da6afeb4806fb3c52644389c23eca401bbe35424c9105417a08  scripts/lab02_canonical_run.py
+8ad34022322c8fdd0d91e7da53a9334b0589c47dca6ce00b59bf6ad5238dab3d  scripts/tests/test_lab02_canonical_run.py
+The runner's eligibility phase is sampled immediately before conn.read(4096); queue entries preserve that boolean. Thus a read already in flight across reset remains ineligible even if it returns an exact current-run identity marker afterward. Such bytes are still written through the reader redactor to serial.txt. The reader is the sole UART access thread; input buffer is cleared before it starts, log and thread are set up before RTS pulse, and the reader performs an initial read before signaling reader_armed. Reset OSError/Ctrl-C cleanup tests assert the UART closes. The 4096-byte serial line bound and known-secret redaction are unchanged and focused tests pass.
+
+Commands and results
+1. PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab02_canonical_run -v
+   PASS: 13 tests, 48.165s, with loopback listener permission. Included managed HTTP lifecycle, reset/log/read ordering, stale/pre-reset marker, the straddling read, the post-reset positive case, reset OSError, Ctrl-C, redaction, line cap, and partial evidence.
+2. Isolated regression against /tmp/lab02-w7-readstart-fix/prior-lab02_canonical_run.py (temporary copy with ROOT redirected to repository; repository untouched):
+   PYTHONPATH=<temp-copy>:scripts .venv/bin/python -m unittest scripts.tests.test_lab02_canonical_run.CanonicalRunTests.test_identity_matching_marker_from_straddling_read_cannot_satisfy_freshness -v
+   EXPECTED RED regression: old runner reports workflow_status=PASS, return 0; assertion expecting return 1 fails. The same test passes with repaired runner and asserts INCOMPLETE/fresh_boot_marker_timeout plus retained marker in serial.txt.
+3. Positive post-reset read case: result 0, workflow_status=PASS, experiment_verdict=UNMEASURED. The first straddling read returns empty; a subsequent read begun after reset returns exact marker.
+4. Bounded adjacent host suite: PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab02_evidence scripts.tests.test_lab02_scenarios scripts.tests.test_lab02_server scripts.tests.test_lab_host -v
+   48/49 pass. All evidence/scenario/server tests pass. One unrelated stale assertion fails: test_build_only_kit_selection_does_not_enumerate_hardware expected write_deployment_kit_sdkconfig without the new build_id='' keyword, while actual call includes it. No code was changed to address it. Suite output reports it removed build/labs/lab-02-bounded-inbox-phaseb during its existing cleanup test.
+
+Disposition and limits
+The previously reproduced false PASS is blocked by sampling eligibility before read start; the original straddling regression now fails against old code and passes against current code. Focused W7 capture-order gap is fixed at simulated-host L2. No physical kit, firmware execution, or L3 confirmation was performed. Workflow PASS in the positive test deliberately leaves experiment_verdict UNMEASURED; this is not carousel semantic evidence. No private configuration, firmware, maintained docs, commits, or repository edits were made by verifier.

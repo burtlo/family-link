@@ -1,0 +1,45 @@
+LAB-02 W5 independent re-verification (after focused repair)
+Date: 2026-10-12
+Repository: /Users/lynnfrank/src/family-link
+Base: 0b02b30086f1c8c8e985458912646b0d473b967b
+Scope: read-only audit of W5 against docs/labs/lab-02-workflow-remediation-plan.md, O-04, F001, W5, and scenario proof-gap/host-vs-experiment boundaries. No repository files changed by verifier. Current source hashes are in source-sha256.txt and match /tmp/lab02-w5-repair/after.sha256.
+
+Disposition: NOT FIXED for proof of S-push/S-rm-focus device effect and S-page-snap pairing. Managed transport, action receipts, serialization, idempotency and coordinator dispatch cleanup are materially implemented. Verification does not claim physical/device behavior; L3 remains W8.
+
+Commands/evidence:
+- Read full docs/AGENTS.md, docs/standards/client-code-review-agent.md, docs/standards/client-application-coding-standards.md, remediation plan and prior fixer/verifier/repair snapshots.
+- .venv/bin/python -m unittest scripts.tests.test_lab02_scenarios scripts.tests.test_lab02_server scripts.tests.test_lab02_paging_server: 23 passed.
+- .venv/bin/python -m unittest scripts.tests.test_lab02_model_native: 2 passed.
+- .venv/bin/python -m unittest discover -s scripts/tests: 116 passed.
+- git diff --check scoped to W5 paths: passed.
+- Real managed HTTP loopback: duplicate same (run_id, action_id) push returned identical revision=2, message ID, completion timestamp; two concurrent unique pushes returned successful sequential revisions 3 and 4.
+- Independent coordinator ingest experiments (raw output can be reproduced with /tmp/lab02-w5-reverify-check.py):
+  1. After valid removal receipt, page_fetch/page_apply with run_id=other synthesized an effect relabeled run=run and classified PASS.
+  2. After valid removal receipt, page_apply with no matching page_fetch synthesized an effect and classified PASS.
+  3. Matching run plus matching fetch/apply also classified PASS (positive control).
+  4. Dispatch action submitted with data {'x':1}, while worker was held at the action lock, then caller mutated data to {'x':2}; server received x=2. dispatch_action closes over mutable caller data rather than freezing input at submission.
+- Harness wiring inspection: CONFIG_LAB02_SCENARIO_DWELL_MS sleeps in harness task only after harness_wait_snap observed scroll_lock=false; snap_end is emitted by on_snap_done before that dwell. Coordinator accepts proof actions only while _active_snap exists and clears it on snap_end. Thus the declared 6.5s dwell is outside the action-eligible snap. No LVGL callback sleep was added. No carousel semantics change was found.
+
+Fixed in scope (L1/L2 host evidence):
+- Coordinator rejects receipts that return after snap_end and does not replay the late receipt into an effect.
+- Receipt validation binds to action/run and requires success/revision; classifier treats nominal no-mutation as UNMEASURED and missing/stale proof as INCOMPLETE in covered cases.
+- Server action HTTP execution is bounded, serialized, rejects duplicate host action IDs, and server-side repeated (run, action) is idempotent. Real owned-loopback evidence above.
+- Dispatcher close requests cancellation and boundedly joins its action worker; focused lifecycle test passes.
+- Firmware telemetry includes snap identity, viewed message/focus, page receipt/run/revision/completion timestamp, fetch op/snap and apply op/snap/revision/identity. Values are IDs and counters; no secrets were observed. Snap sequence uses atomic access. Scripted ESP-IDF compile success is recorded by fixer (L0 only), not independently rerun here.
+
+Not fixed:
+1. Actual ingested page_apply validation omits event run_id and has no requirement for a corresponding page_fetch. It can synthesize scenario_effect as shown above, then classify PASS. Require same-run telemetry and exact fetch/apply op_id + page_receipt_id pair before effect evidence.
+2. `dispatch_action` does not snapshot the `data` mapping before starting its worker. Caller mutation can alter operation input after dispatch, contrary to immutable submission input.
+3. The scenario dwell occurs after snap_end, when the coordinator has cleared active snap and rejects proof actions. This leaves no declared action window during the dwell; actual host/device S-push/S-rm-focus path cannot be demonstrated by that pause. The brief animated snap itself is only 220 ms; no device runtime evidence exists.
+4. Page correlation classifier uses a synthetic action receipt for S-page-snap and same-snap page-fetch/apply trace pair. Client reports page run/receipt/op/revision, but server page started/completed timestamps are not both carried in firmware trace (only completed), and no host/server request-to-device apply handshake establishes action/receipt timing. Current L1 fixtures can prove the classifier's model; not an actual managed action/page completion pairing.
+
+Original failure boundaries:
+- Late action receipt after snap_end: regression test passes (incomplete, no effect).
+- Unrelated/failed/mismatched action receipts and stale page receipt: classifier tests return INCOMPLETE; independently confirmed current guard rejects non-ok or missing run/action/revision.
+- False push before update: when no post-receipt apply is ingested, no effect is synthesized (incomplete); no false PASS observed on that path.
+- Traversal/moved snap identity: focused test returns INCOMPLETE.
+- Receipt idempotency and managed HTTP serialization: real loopback as above.
+- No-action nominal: UNMEASURED.
+- Page_apply with stale run or missing matching fetch: false PASS reproduced and blocks W5 closure.
+
+Evidence ladder: L0 firmware compilation is fixer-recorded only. L1 tests and L2 owned-loopback host/server action lifecycle passed. Effect-proof claims remain NOT FIXED; no L3 device evidence. No hardware, flash, manual server, or curl actions.

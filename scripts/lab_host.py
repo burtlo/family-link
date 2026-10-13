@@ -10,16 +10,19 @@ import subprocess
 import sys
 import time
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from deployment_config import load_active_deployment
-from device_targets import ports, select
-from device_targets import kit_for
+from deployment_config import Deployment, Kit, load_active_deployment
+from device_targets import Port, kit_for, ports, resolve_port as resolve_kit_port, select, serial_key, validate_bindings
 from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
+from lab02_workflow_config import load_lab02_workflow_config
+from lab02_canonical_run import run_canonical
+from lab02_experiment_sdkconfig import write_lab02_local_overlay
 from firmware import idf_environment, run
 from lab_registry import (
     LabSpec,
@@ -32,6 +35,60 @@ from lab_registry import (
 from project_config import ProjectConfig, ProjectConfigError
 
 _BANNER = "-" * 62
+
+
+@dataclass(frozen=True)
+class RunTarget:
+    """Registered kit and exact USB identity frozen for one host run."""
+
+    kit_id: str
+    device: str
+    serial: str
+    kit: Kit
+    deployment: Deployment
+
+
+def resolve_run_target(config: ProjectConfig, kit: str = "", port: str = "") -> RunTarget:
+    deployment = load_active_deployment(config)
+    validate_bindings(deployment)
+    available = ports()
+    if kit:
+        targets = select(deployment, available, kit, False)
+    elif port:
+        matches = [item for item in available if item.device == port]
+        if len(matches) != 1 or not matches[0].serial:
+            raise ProjectConfigError("PORT must identify one connected device with a readable USB serial")
+        key = serial_key(matches[0].serial)
+        kits = [item for item in deployment.kits if item.usb_serial and serial_key(item.usb_serial) == key]
+        if len(kits) != 1:
+            raise ProjectConfigError("PORT does not identify exactly one registered kit")
+        targets = select(deployment, available, kits[0].id, False)
+    else:
+        targets = select(deployment, available, "", False)
+    if len(targets) != 1:
+        raise ProjectConfigError("A run needs exactly one connected registered kit")
+    selected_kit, selected_port = targets[0]
+    if port and port != selected_port.device:
+        raise ProjectConfigError(
+            f"PORT does not match registered kit {selected_kit.id}'s connected USB binding"
+        )
+    return RunTarget(
+        selected_kit.id, selected_port.device, selected_port.serial, selected_kit, deployment
+    )
+
+
+def revalidate_run_target(config: ProjectConfig, target: RunTarget) -> str:
+    """Confirm the frozen device path still reports the registered serial."""
+    deployment = load_active_deployment(config)
+    validate_bindings(deployment)
+    matches = [item for item in deployment.kits if item.id == target.kit_id]
+    if len(matches) != 1:
+        raise ProjectConfigError("Frozen run kit is no longer uniquely registered")
+    kit = matches[0]
+    current = resolve_kit_port(kit, ports())
+    if current.device != target.device or serial_key(current.serial) != serial_key(target.serial):
+        raise ProjectConfigError("Frozen run target disconnected or changed before flash")
+    return current.device
 
 
 def _rel(path: Path) -> str:
@@ -180,7 +237,7 @@ def _sdkconfig_defaults_env_from_files(files: list[Path]) -> dict[str, str]:
 
 
 def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
-    return variant_name == "phaseb"
+    return variant_name in {"phaseb", "scripted-phaseb"}
 
 
 def _prepare_lab_build_directory(build_dir: Path) -> None:
@@ -219,6 +276,9 @@ def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Non
     shutil.rmtree(build_dir)
     for sidecar in deployment_defaults_sidecars(build_dir):
         sidecar.unlink(missing_ok=True)
+    for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
+                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256"):
+        sidecar.unlink(missing_ok=True)
     print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
 
 
@@ -229,25 +289,54 @@ def _defaults_files_for_lab_build(
     build_dir: Path,
     kit: str,
     port: str,
+    target: RunTarget | None = None,
+    frozen_workflow=None,
+    frozen_fixture_size: int | None = None,
+    frozen_scenario: str | None = None,
+    frozen_build_id: str = "",
 ) -> list[Path]:
     defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
     if not _variant_uses_deployment_kit_secrets(var.name):
+        if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
+            try:
+                import yaml
+                if frozen_fixture_size is None or frozen_scenario is None:
+                    registry = yaml.safe_load(config.path_value("labs.registry").read_text(encoding="utf-8"))
+                    workflow = registry["labs"]["lab02"]["workflow"]
+                    fixture_size = int(workflow["fixture_size_default"])
+                    scenario = str(workflow["scenario_default"])
+                else:
+                    fixture_size, scenario = frozen_fixture_size, frozen_scenario
+                overlay = write_lab02_local_overlay(
+                    build_dir,
+                    fixture_size=fixture_size,
+                    scenario=scenario,
+                    scripted=var.name == "scripted",
+                    build_id=frozen_build_id,
+                )
+                return defaults_files + [overlay]
+            except (OSError, KeyError, TypeError, ValueError):
+                raise ProjectConfigError("invalid LAB-02 local experiment defaults") from None
         return defaults_files
     if not kit.strip():
         raise ProjectConfigError(
             "Phase B build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
             "e.g. make lab.lab02.phaseb.build KIT=lynn"
         )
-    deployment = load_active_deployment(config)
-    resolved = kit_for(deployment, kit)
-    overlay = write_deployment_kit_sdkconfig(build_dir, resolved, deployment)
-    if overlay is None:
-        print(
-            f"Note: kit {resolved.id} (secrets_profile={resolved.secrets_profile}) "
-            "has no Wi-Fi in secrets_profiles or lab.phaseb_server_url; "
-            "Phase B credentials must come from menuconfig or sdkconfig.defaults."
+    deployment = target.deployment if target is not None else load_active_deployment(config)
+    resolved = target.kit if target is not None else kit_for(deployment, kit)
+    profile = deployment.secrets_profile_for_kit(resolved)
+    if not profile or not profile.wifi_ssid or not profile.wifi_password:
+        raise ProjectConfigError(
+            "Phase B build requires per-kit Wi-Fi credentials in the private deployment roster"
         )
-        return defaults_files
+    workflow = frozen_workflow or load_lab02_workflow_config(config)
+    overlay = write_deployment_kit_sdkconfig(
+        build_dir, resolved, deployment, workflow.client_url,
+        fixture_size=workflow.fixture_size_default, scenario=workflow.scenario_default,
+        scripted=var.name == "scripted-phaseb",
+        build_id=frozen_build_id,
+    )
     return defaults_files + [overlay]
 
 
@@ -311,15 +400,24 @@ def ensure_lab_built(
     *,
     kit: str = "",
     port: str = "",
+    target: RunTarget | None = None,
 ) -> Path:
     """Build when artifacts are missing or sdkconfig is stale vs variant defaults."""
     spec = get_lab(make_name)
     var = resolve_variant(spec, variant)
     build_dir = ROOT / var.build_dir
-    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
+    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
     stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
     if stale or not (build_dir / "flasher_args.json").is_file():
-        return build_lab(config, make_name, variant, kit=kit, port=port)
+        return build_lab(
+            config,
+            make_name,
+            variant,
+            kit=kit,
+            port=port,
+            target=target,
+            frozen_defaults_files=defaults_files,
+        )
     return build_dir
 
 
@@ -330,6 +428,12 @@ def build_lab(
     *,
     kit: str = "",
     port: str = "",
+    target: RunTarget | None = None,
+    frozen_defaults_files: list[Path] | None = None,
+    frozen_workflow=None,
+    frozen_fixture_size: int | None = None,
+    frozen_scenario: str | None = None,
+    frozen_build_id: str = "",
 ) -> Path:
     spec = get_lab(make_name)
     var = resolve_variant(spec, variant)
@@ -339,7 +443,13 @@ def build_lab(
     project = ROOT / spec.project_dir
     build_dir = ROOT / var.build_dir
     _prepare_lab_build_directory(build_dir)
-    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
+    defaults_files = (
+        frozen_defaults_files
+        if frozen_defaults_files is not None
+        else _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target,
+            frozen_workflow=frozen_workflow, frozen_fixture_size=frozen_fixture_size,
+            frozen_scenario=frozen_scenario, frozen_build_id=frozen_build_id)
+    )
     _refresh_stale_sdkconfig(build_dir, defaults_files)
     env.update(_sdkconfig_defaults_env_from_files(defaults_files))
     base = idf + [
@@ -426,15 +536,7 @@ def _print_capture_markers(serial_path: Path) -> None:
 
 
 def resolve_port(config: ProjectConfig, kit: str, port: str) -> str:
-    if port:
-        return port
-    deployment = load_active_deployment(config)
-    targets = select(deployment, ports(), kit, False)
-    if len(targets) != 1:
-        raise ProjectConfigError(
-            "lab flash/capture needs exactly one kit; use KIT=<nickname>, PORT=<port>, or make device.bind"
-        )
-    return targets[0][1].device
+    return resolve_run_target(config, kit, port).device
 
 
 def capture_lab(
@@ -449,6 +551,7 @@ def capture_lab(
     run_id: str,
     action: str = "capture",
     emit_operator_help: bool = True,
+    target: RunTarget | None = None,
 ) -> Path:
     spec = get_lab(make_name)
     var = resolve_variant(spec, variant)
@@ -473,10 +576,17 @@ def capture_lab(
             flash=flash,
         )
         print()
-    device_port = resolve_port(config, kit, port)
+    selected_target = target or resolve_run_target(config, kit, port)
+    if kit and kit_for(selected_target.deployment, kit).id != selected_target.kit_id:
+        raise ProjectConfigError("Frozen run target does not match requested KIT")
+    if port and port != selected_target.device:
+        raise ProjectConfigError("Frozen run target does not match requested PORT")
     if flash:
+        device_port = revalidate_run_target(config, selected_target)
         flash_lab_build(config, build_dir, device_port)
         time.sleep(1.0)
+    else:
+        device_port = selected_target.device
     log_dir = config.path_value("firmware.logs") / "labs" / spec.evidence_slug / rid
     serial_path = log_dir / "serial.txt"
     capture_serial(device_port, serial_path, seconds)
@@ -632,6 +742,7 @@ def main() -> int:
     run_p.add_argument("--flash", action="store_true", default=False)
     run_p.add_argument("--no-flash", action="store_true")
     run_p.add_argument("--no-build", action="store_true")
+    run_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
     run_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
 
     parse_p = sub.add_parser("parse", help="Parse serial capture to metrics.json (make lab.<name>.parse)")
@@ -664,7 +775,8 @@ def main() -> int:
         if args.action == "flash":
             var = resolve_variant(spec, variant)
             build_dir = ROOT / var.build_dir
-            port = resolve_port(config, args.kit, args.port)
+            target = resolve_run_target(config, args.kit, args.port)
+            port = revalidate_run_target(config, target)
             flash_lab_build(config, build_dir, port)
             print(f"Flashed lab.{spec.make_name} ({var.name}) on {port}")
             return 0
@@ -674,21 +786,59 @@ def main() -> int:
                 seconds = spec.capture_seconds_default
             var = resolve_variant(spec, variant)
             flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
+            if args.action == "run" and args.lab == "lab02" and args.backend == "managed-http" and var.name in {"recycle", "phaseb", "scripted-phaseb"}:
+                mode = "scripted" if var.name == "scripted-phaseb" else "manual"
+                def _build_canonical(cfg, name, selected_variant, **kwargs):
+                    return build_lab(cfg, name, selected_variant, **kwargs)
+                def _parse_canonical(serial_path, metrics_path):
+                    parse_serial_file(spec, serial_path, metrics_path)
+                return run_canonical(
+                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
+                    flash=flash, run_id=args.run_id, no_build=args.no_build,
+                    build_variant="scripted-phaseb" if mode == "scripted" else "phaseb",
+                    backend="managed-http",
+                    target_resolver=resolve_run_target, target_revalidator=revalidate_run_target,
+                    build=_build_canonical, flash_build=flash_lab_build, parse=_parse_canonical,
+                )
+            if args.action == "run" and args.lab == "lab02" and (args.backend == "local" or var.name == "eager"):
+                if var.name == "scripted-phaseb":
+                    variant = "scripted"
+                elif var.name == "phaseb":
+                    variant = None
+                var = resolve_variant(spec, variant)
+                mode = "scripted" if var.name == "scripted" else "manual"
+                def _build_local(cfg, name, selected_variant, **kwargs):
+                    return build_lab(cfg, name, selected_variant, **kwargs)
+                def _parse_local(serial_path, metrics_path):
+                    parse_serial_file(spec, serial_path, metrics_path)
+                return run_canonical(
+                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
+                    flash=flash, run_id=args.run_id, no_build=args.no_build, backend="local",
+                    build_variant=var.name, target_resolver=resolve_run_target,
+                    target_revalidator=revalidate_run_target, build=_build_local,
+                    flash_build=flash_lab_build, parse=_parse_local,
+                )
+            elif args.backend != "managed-http":
+                raise ProjectConfigError("BACKEND=local is supported only for LAB-02")
             stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
             rid = args.run_id or f"{stamp}-{var.name}-capture-{uuid.uuid4().hex[:6]}"
+            target = resolve_run_target(config, args.kit, args.port)
             if args.action == "run" and not args.no_build:
-                ensure_lab_built(config, args.lab, variant, kit=args.kit, port=args.port)
+                ensure_lab_built(
+                    config, args.lab, variant, kit=target.kit_id, port=target.device, target=target
+                )
             capture_lab(
                 config,
                 args.lab,
-                kit=args.kit,
-                port=args.port,
+                kit=target.kit_id,
+                port=target.device,
                 variant=variant,
                 seconds=seconds,
                 flash=flash,
                 run_id=rid,
                 action=args.action,
                 emit_operator_help=True,
+                target=target,
             )
             return 0
         raise ProjectConfigError(f"Unknown action {args.action}")

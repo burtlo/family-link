@@ -1,0 +1,8 @@
+{
+  "document": "family-link.lab-metrics/v1",
+  "event_counts": {
+    "boot_ready": 1,
+    "harness_abort": 1
+  },
+  "snap_events": 0
+}

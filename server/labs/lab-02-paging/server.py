@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
 import threading
 import time
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -18,10 +20,11 @@ DEFAULT_FIXTURE = ROOT / "client/labs/lab-02-bounded-inbox/fixtures/inbox_64.jso
 
 class InboxState:
     def __init__(self, items: list[dict[str, Any]]) -> None:
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.inbox_revision = 1
         self.items = list(items)
         self._delay_ms = 0
+        self._actions: dict[tuple[str, str], dict[str, Any]] = {}
 
     def reset(self, items: list[dict[str, Any]]) -> None:
         with self._lock:
@@ -61,6 +64,8 @@ class InboxState:
 
     def page(self, cursor: int, limit: int) -> dict[str, Any]:
         with self._lock:
+            receipt_id = uuid.uuid4().hex
+            started_ns = time.monotonic_ns()
             delay = self._delay_ms
             self._delay_ms = 0
             if delay > 0:
@@ -100,7 +105,48 @@ class InboxState:
                 "next_cursor": str(next_cursor) if has_more else None,
                 "has_more": has_more,
                 "page_offset": cursor,
+                "page_receipt_id": receipt_id,
+                "page_started_ns": started_ns,
+                "page_completed_ns": time.monotonic_ns(),
             }
+
+    def action(self, run_id: str, action_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        key = (run_id, action_id)
+        with self._lock:
+            cached = self._actions.get(key)
+            if cached is not None:
+                return dict(cached)
+            if len(self._actions) >= 256:
+                return {"ok": False, "error": "action_receipt_capacity",
+                        "run_id": run_id, "action_id": action_id}
+            name = str(body.get("name", ""))
+            result: dict[str, Any]
+            if name == "delay_ms":
+                self._delay_ms = min(12000, max(0, int(body.get("ms", 500))))
+                result = {"ok": True, "script": name}
+            elif name == "push_item":
+                item = body.get("item") or {}
+                self.push_item(str(item.get("sender_name", "Lab")), str(item.get("preview", "Pushed item")))
+                result = {"ok": True, "message_id": self.items[-1]["message_id"], "total": len(self.items)}
+            elif name == "remove_message":
+                message_id = str(body.get("viewed_message_id", ""))
+                index = next((i for i, item in enumerate(self.items) if item.get("message_id") == message_id), -1)
+                ok = self.remove_at(index)
+                result = {"ok": ok, "removed_message_id": message_id if ok else None,
+                          "total": len(self.items)}
+                if ok:
+                    selected = min(index, len(self.items) - 1)
+                    result["nearest_remaining_message_id"] = self.items[selected]["message_id"] if selected >= 0 else None
+            elif name == "reset":
+                self.reset(SEED_ITEMS)
+                result = {"ok": True, "total": len(self.items)}
+            else:
+                result = {"ok": False, "error": "unknown_script"}
+            result.update({"run_id": run_id, "action_id": action_id,
+                           "inbox_revision": self.inbox_revision,
+                           "action_completed_ns": time.monotonic_ns()})
+            self._actions[key] = dict(result)
+            return result
 
 
 def load_v1_fixture(path: Path) -> list[dict[str, Any]]:
@@ -113,6 +159,8 @@ def load_v1_fixture(path: Path) -> list[dict[str, Any]]:
 
 STATE: InboxState
 SEED_ITEMS: list[dict[str, Any]]
+OWNER_RUN_ID: str
+FIXTURE_SHA256: str
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -132,7 +180,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         if parsed.path == "/lab/health":
-            self._json_response(200, {"ok": True, "lab": "LAB-02", "schema": "fl.inbox-page/2"})
+            self._json_response(200, {"ok": True, "lab": "LAB-02", "schema": "fl.inbox-page/2", "run_id": OWNER_RUN_ID})
             return
         if parsed.path != "/v2/inbox":
             self._json_response(404, {"error": "not_found"})
@@ -140,43 +188,50 @@ class Handler(BaseHTTPRequestHandler):
         qs = parse_qs(parsed.query)
         cursor = int((qs.get("cursor") or ["0"])[0])
         limit = int((qs.get("limit") or ["16"])[0])
-        self._json_response(200, STATE.page(cursor, limit))
+        page = STATE.page(cursor, limit)
+        page["run_id"] = OWNER_RUN_ID
+        self._json_response(200, page)
 
     def do_POST(self) -> None:  # noqa: N802
+        if self.path == "/lab/seed":
+            length = int(self.headers.get("Content-Length", "0"))
+            body = json.loads(self.rfile.read(length) or b"{}")
+            if body.get("run_id") != OWNER_RUN_ID:
+                self._json_response(409, {"ok": False, "error": "owner_mismatch"})
+                return
+            STATE.reset(SEED_ITEMS)
+            self._json_response(200, {"ok": True, "run_id": OWNER_RUN_ID,
+                                      "fixture_sha256": FIXTURE_SHA256,
+                                      "count": len(SEED_ITEMS)})
+            return
         parsed = urlparse(self.path)
         if parsed.path != "/lab/script":
             self._json_response(404, {"error": "not_found"})
             return
         length = int(self.headers.get("Content-Length", "0"))
         body = json.loads(self.rfile.read(length) or b"{}")
-        name = str(body.get("name", ""))
-        if name == "delay_ms":
-            STATE.set_delay(int(body.get("ms", 500)))
-            self._json_response(200, {"ok": True, "script": name})
+        run_id = str(body.get("run_id", ""))
+        action_id = str(body.get("action_id", ""))
+        if run_id != OWNER_RUN_ID or not action_id or len(action_id) > 128:
+            self._json_response(409, {"ok": False, "error": "invalid_action_identity"})
             return
-        if name == "push_item":
-            STATE.push_item(str(body.get("sender_name", "Lab")), str(body.get("preview", "")))
-            self._json_response(200, {"ok": True, "total": len(STATE.items)})
-            return
-        if name == "remove_at":
-            ok = STATE.remove_at(int(body.get("index", -1)))
-            self._json_response(200 if ok else 400, {"ok": ok, "total": len(STATE.items)})
-            return
-        if name == "reset":
-            STATE.reset(SEED_ITEMS)
-            self._json_response(200, {"ok": True, "total": len(STATE.items)})
-            return
-        self._json_response(400, {"error": "unknown_script", "name": name})
+        result = STATE.action(run_id, action_id, body)
+        self._json_response(200 if result.get("ok") else 400, result)
 
 
 def main() -> int:
-    global STATE, SEED_ITEMS
+    global STATE, SEED_ITEMS, OWNER_RUN_ID, FIXTURE_SHA256
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--fixture", type=Path, default=DEFAULT_FIXTURE)
+    ap.add_argument("--owner-run-id", default="standalone")
     args = ap.parse_args()
-    SEED_ITEMS = load_v1_fixture(args.fixture.resolve())
+    fixture_path = args.fixture.resolve()
+    fixture_bytes = fixture_path.read_bytes()
+    FIXTURE_SHA256 = hashlib.sha256(fixture_bytes).hexdigest()
+    OWNER_RUN_ID = args.owner_run_id
+    SEED_ITEMS = load_v1_fixture(fixture_path)
     STATE = InboxState(SEED_ITEMS)
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"LAB02_PAGING_SERVER listening http://{args.host}:{args.port} items={len(SEED_ITEMS)}")

@@ -1,0 +1,17 @@
+LAB-02 W5 focused repair record
+Baseline revision: 0b02b30086f1c8c8e985458912646b0d473b967b; pre-edit working-tree hashes: before.sha256
+Source patch snapshot: after.diff (tracked delta includes pre-existing W1-W5 WIP; before.diff records the prior WIP delta). Final source hashes: after.sha256
+
+Commands/results:
+.venv/bin/python -m unittest scripts.tests.test_lab02_scenarios scripts.tests.test_lab02_server scripts.tests.test_lab02_paging_server
+23 passed (loopback tests required sandbox escalation)
+.venv/bin/python -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_scenarios
+9 passed
+.venv/bin/python -m unittest discover -s scripts/tests
+116 passed (loopback tests required sandbox escalation)
+.venv/bin/python scripts/lab_host.py build lab02 --variant scripted
+ESP-IDF build passed, build/labs/lab-02-bounded-inbox-scripted/lab02_bounded_inbox.bin; build only, no flash/device claim
+Targeted git diff --check over W5-touched paths
+passed
+
+Proof limits: host receipt/effect classification and scripted firmware compilation only. No device/L3 claim. A result remains INCOMPLETE when a matching receipt is absent/late, a page fetch/apply receipt pairing is absent/stale, the applied revision is old, or focus has advanced to another snap. Nominal no-mutation remains UNMEASURED. The standard full-repo diff --check reports pre-existing CRLF/trailing-whitespace across unrelated W1-W4 files; the scoped W5 check passes.

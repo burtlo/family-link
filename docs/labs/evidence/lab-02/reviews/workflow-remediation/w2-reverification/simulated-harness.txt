@@ -1,0 +1,30 @@
+Note: kit A (secrets_profile=profile-a) has no Wi-Fi in secrets_profiles or lab.phaseb_server_url; Phase B credentials must come from menuconfig or sdkconfig.defaults.
+Built lab.lab02 variant=phaseb -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpcmon6ewh/build/labs/lab-02-bounded-inbox-phaseb
+PASS: no-KIT single A selects/reuses A through actual run CLI; nickname + matching PORT works; KIT A + port B and 0/many auto targets and direct invalid flash stop before writes; public Phase B build by nickname does not enumerate USB
+--------------------------------------------------------------
+  LAB RUN COMPLETE: lab.lab02 (LAB-02)
+  run_id=alias-api
+  
+  Files:
+    serial.txt -> /tmp/lab02-w2-reverify/logs/labs/lab-02/alias-api/serial.txt
+    metrics.json -> /tmp/lab02-w2-reverify/logs/labs/lab-02/alias-api/metrics.json  (parsed during this run)
+  
+  Make:
+    make lab.lab02.parse RUN_ID=alias-api
+    Evidence doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios
+--------------------------------------------------------------
+
+--------------------------------------------------------------
+  LAB RUN COMPLETE: lab.lab02 (LAB-02)
+  run_id=alias-api
+  
+  Files:
+    serial.txt -> /tmp/lab02-w2-reverify/logs/labs/lab-02/alias-api/serial.txt
+    metrics.json -> /tmp/lab02-w2-reverify/logs/labs/lab-02/alias-api/metrics.json  (parsed during this run)
+  
+  Make:
+    make lab.lab02.parse RUN_ID=alias-api
+    Evidence doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios
+--------------------------------------------------------------
+
+PASS: actual capture_lab accepts KIT nickname with internally resolved and supplied frozen target; mismatched KIT fails before revalidation/flash/capture

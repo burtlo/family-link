@@ -87,6 +87,13 @@ Registry variant keys (`scripted`, `eager`, …) back those targets. Advanced: `
 | `variants` | Yes | Map with `default` key plus one entry per variant (see below) |
 | `trace_parser` | No | Repo-relative script to turn serial trace into metrics |
 | `run` | Yes | Capture defaults plus **operator** text (see below) |
+| `workflow` | No | Lab-specific host workflow defaults; LAB-02 Phase B defines server path, bind address/port, fixture/scenario, and stage deadlines |
+
+The LAB-02 firmware client URL is a host-only override in
+`config/host.defaults.ini` as `[labs.lab02] client_url`, or
+`LABS_LAB02_CLIENT_URL`. It is validated against the owned server's local LAN
+interface and the registry port. It does not belong in the private deployment
+roster or tracked labs registry.
 
 ### Variants
 

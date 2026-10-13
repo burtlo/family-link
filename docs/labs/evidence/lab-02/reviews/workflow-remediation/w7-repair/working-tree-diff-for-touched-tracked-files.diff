@@ -1,0 +1,805 @@
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/Kconfig.projbuild b/client/labs/lab-02-bounded-inbox/components/lab02/Kconfig.projbuild
+index 1bd55b8..183dd7d 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/Kconfig.projbuild
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/Kconfig.projbuild
+@@ -15,6 +15,28 @@ endmenu
+ 
+ menu "LAB-02 Bounded Inbox"
+ 
++    config LAB02_BUILD_ID
++        string "Frozen LAB-02 run identity"
++        default "unconfigured"
++
++    config LAB02_SCENARIO
++        string "Scripted experiment scenario"
++        default "nominal"
++        help
++            Named host-driven experiment. S-push and S-rm-focus enable a bounded
++            focus dwell after the second scripted step so a managed action can
++            be observed through the next background refresh. Nominal keeps the
++            existing traversal cadence.
++
++    config LAB02_SCENARIO_DWELL_MS
++        int "Mutation scenario focus dwell (ms)"
++        default 6500
++        range 1000 10000
++        depends on LAB_AUTO_HARNESS
++        help
++            Bounded harness-task dwell for S-push and S-rm-focus only. This does
++            not hold the LVGL lock or delay nominal traversal.
++
+     config LAB02_EAGER_BASELINE
+         bool "Eager 16-card baseline (comparison build)"
+         default n
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c b/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
+index 3b386e6..62cc9e0 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
+@@ -1,109 +1,148 @@
+-#include "lab02/carousel_controller.h"
+-#include "lab02/lab02_session.h"
+-#include "lab02/trace_emit.h"
+-#include "lab02_platform/board.h"
+-
+-#include "freertos/FreeRTOS.h"
+-#include "freertos/task.h"
+-
+-#include <stdio.h>
+-
+-#if CONFIG_LAB_AUTO_HARNESS
+-
+-extern lab02_carousel_t *lab02_carousel_instance(void);
+-
+-static void harness_show_step(int step_one_based, int total, const char *who)
+-{
+-    char line[56];
+-    snprintf(line, sizeof(line), "AUTO %d/%d  %s", step_one_based, total, who ? who : "—");
+-    lab02_board_status_set(line);
+-}
+-
+-/** Wait for HTTP boot (or fixture attach) so item_count is not read at shell-only zero. */
+-static bool harness_wait_inbox(lab02_carousel_t *c, int max_wait_ms)
+-{
+-    int waited = 0;
+-    while (waited < max_wait_ms) {
+-        if (c && lab02_board_lvgl_lock(200)) {
+-            lab02_carousel_pump(c);
+-            lab02_board_lvgl_unlock();
+-        }
+-        lab02_session_snapshot_t snap = lab02_session_snapshot();
+-        if (snap.load_stage == LAB02_LOAD_ERROR) {
+-            return false;
+-        }
+-        if (snap.load_stage == LAB02_LOAD_READY) {
+-            return true;
+-        }
+-        vTaskDelay(pdMS_TO_TICKS(250));
+-        waited += 250;
+-    }
+-    lab02_session_snapshot_t snap = lab02_session_snapshot();
+-    return snap.load_stage == LAB02_LOAD_READY;
+-}
+-
+-static void harness_step(lab02_carousel_t *c, int index, int step_one_based, int total)
+-{
+-    const char *who = "—";
+-    if (lab02_board_lvgl_lock(500)) {
+-        lab02_carousel_set_focus(c, index, false);
+-        const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, c->focus_index);
+-        if (item && item->sender_name[0]) {
+-            who = item->sender_name;
+-        }
+-        lab02_board_lvgl_unlock();
+-    }
+-    harness_show_step(step_one_based, total, who);
+-    printf("HARNESS_STEP focus=%d (%d/%d) %s\n", index, step_one_based, total, who);
+-}
+-
+-static void harness_task(void *arg)
+-{
+-    lab02_carousel_t *c = lab02_carousel_instance();
+-    (void)arg;
+-    printf("HARNESS_WAIT boot settle...\n");
+-    vTaskDelay(pdMS_TO_TICKS(800));
+-    if (!c) {
+-        printf("HARNESS_DONE status=no_carousel\n");
+-        vTaskDelete(NULL);
+-        return;
+-    }
+-    if (!harness_wait_inbox(c, 30000)) {
+-        printf("HARNESS_DONE status=inbox_not_ready\n");
+-        vTaskDelete(NULL);
+-        return;
+-    }
+-    if (lab02_board_lvgl_lock(500)) {
+-        lab02_carousel_pump(c);
+-        lab02_board_lvgl_unlock();
+-    }
+-    int n = c->item_count;
+-    int steps = n < 20 ? n : 20;
+-    printf("HARNESS_BEGIN steps=%d\n", steps);
+-    harness_show_step(0, steps, "starting");
+-    for (int i = 0; i < steps; i++) {
+-        harness_step(c, i % n, i + 1, steps);
+-        vTaskDelay(pdMS_TO_TICKS(700));
+-    }
+-    for (int i = steps - 1; i >= 0; i--) {
+-        harness_step(c, i % n, steps - i, steps);
+-        vTaskDelay(pdMS_TO_TICKS(500));
+-    }
+-    lab02_board_status_set("");
+-    lab02_trace_emit("harness_done", 0, c->focus_index, NULL, NULL);
+-    printf("HARNESS_DONE steps=%d\n", steps);
+-    vTaskDelete(NULL);
+-}
+-
+-void lab02_harness_start(void)
+-{
+-    xTaskCreate(harness_task, "lab02_harness", 4096, NULL, 5, NULL);
+-}
+-
+-#else
+-
+-void lab02_harness_start(void)
+-{
+-}
+-
+-#endif
++#include "lab02/carousel_controller.h"
++#include "lab02/lab02_session.h"
++#include "lab02/trace_emit.h"
++#include "lab02_platform/board.h"
++
++#include "freertos/FreeRTOS.h"
++#include "freertos/task.h"
++
++#include <stdio.h>
++#include <string.h>
++
++#if CONFIG_LAB_AUTO_HARNESS
++
++extern lab02_carousel_t *lab02_carousel_instance(void);
++
++static void harness_show_step(int step_one_based, int total, const char *who)
++{
++    char line[56];
++    snprintf(line, sizeof(line), "AUTO %d/%d  %s", step_one_based, total, who ? who : "—");
++    lab02_board_status_set(line);
++}
++
++/** Wait for HTTP boot (or fixture attach) so item_count is not read at shell-only zero. */
++static bool harness_wait_inbox(lab02_carousel_t *c, int max_wait_ms)
++{
++    int waited = 0;
++    while (waited < max_wait_ms) {
++        if (c && lab02_board_lvgl_lock(200)) {
++            lab02_carousel_pump(c);
++            lab02_board_lvgl_unlock();
++        }
++        lab02_session_snapshot_t snap = lab02_session_snapshot();
++        if (snap.load_stage == LAB02_LOAD_ERROR) {
++            return false;
++        }
++        if (snap.load_stage == LAB02_LOAD_READY) {
++            return true;
++        }
++        vTaskDelay(pdMS_TO_TICKS(250));
++        waited += 250;
++    }
++    lab02_session_snapshot_t snap = lab02_session_snapshot();
++    return snap.load_stage == LAB02_LOAD_READY;
++}
++
++static void harness_step(lab02_carousel_t *c, int index, int step_one_based, int total)
++{
++    const char *who = "—";
++    if (lab02_board_lvgl_lock(500)) {
++        lab02_carousel_set_focus(c, index, true);
++        const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, c->focus_index);
++        if (item && item->sender_name[0]) {
++            who = item->sender_name;
++        }
++        lab02_board_lvgl_unlock();
++    }
++    harness_show_step(step_one_based, total, who);
++    printf("HARNESS_STEP focus=%d (%d/%d) %s\n", index, step_one_based, total, who);
++}
++
++/** Keep scripted traversal on the real animation path, then dwell without holding LVGL. */
++static bool harness_wait_snap(lab02_carousel_t *c, int max_wait_ms)
++{
++    int waited = 0;
++    while (waited < max_wait_ms) {
++        bool locked = false;
++        if (lab02_board_lvgl_lock(100)) {
++            lab02_carousel_pump(c);
++            locked = c->snap.scroll_lock;
++            lab02_board_lvgl_unlock();
++        }
++        if (!locked) {
++            return true;
++        }
++        vTaskDelay(pdMS_TO_TICKS(20));
++        waited += 20;
++    }
++    return false;
++}
++
++static void harness_task(void *arg)
++{
++    lab02_carousel_t *c = lab02_carousel_instance();
++    (void)arg;
++    printf("HARNESS_WAIT boot settle...\n");
++    vTaskDelay(pdMS_TO_TICKS(800));
++    if (!c) {
++        printf("HARNESS_DONE build=%s status=no_carousel\n", CONFIG_LAB02_BUILD_ID);
++        vTaskDelete(NULL);
++        return;
++    }
++    if (!harness_wait_inbox(c, 30000)) {
++        printf("HARNESS_DONE build=%s status=inbox_not_ready\n", CONFIG_LAB02_BUILD_ID);
++        vTaskDelete(NULL);
++        return;
++    }
++    if (lab02_board_lvgl_lock(500)) {
++        lab02_carousel_pump(c);
++        lab02_board_lvgl_unlock();
++    }
++    int n = c->item_count;
++    int steps = n < 20 ? n : 20;
++    printf("HARNESS_BEGIN steps=%d\n", steps);
++    harness_show_step(0, steps, "starting");
++    for (int i = 0; i < steps; i++) {
++        harness_step(c, i % n, i + 1, steps);
++        if (!harness_wait_snap(c, 1500)) {
++            printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
++            vTaskDelete(NULL);
++            return;
++        }
++        if (i + 1 == 2 &&
++            (strcmp(CONFIG_LAB02_SCENARIO, "S-push") == 0 ||
++             strcmp(CONFIG_LAB02_SCENARIO, "S-rm-focus") == 0)) {
++            printf("HARNESS_SCENARIO_DWELL scenario=%s ms=%d\n",
++                   CONFIG_LAB02_SCENARIO, CONFIG_LAB02_SCENARIO_DWELL_MS);
++            vTaskDelay(pdMS_TO_TICKS(CONFIG_LAB02_SCENARIO_DWELL_MS));
++        }
++        vTaskDelay(pdMS_TO_TICKS(700));
++    }
++    for (int i = steps - 1; i >= 0; i--) {
++        harness_step(c, i % n, steps - i, steps);
++        if (!harness_wait_snap(c, 1500)) {
++            printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
++            vTaskDelete(NULL);
++            return;
++        }
++        vTaskDelay(pdMS_TO_TICKS(500));
++    }
++    lab02_board_status_set("");
++    lab02_trace_emit("harness_done", 0, c->focus_index, NULL, NULL);
++    printf("HARNESS_DONE build=%s steps=%d scenario=%s\n", CONFIG_LAB02_BUILD_ID, steps,
++           CONFIG_LAB02_SCENARIO);
++    vTaskDelete(NULL);
++}
++
++void lab02_harness_start(void)
++{
++    xTaskCreate(harness_task, "lab02_harness", 4096, NULL, 5, NULL);
++}
++
++#else
++
++void lab02_harness_start(void)
++{
++}
++
++#endif
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c b/client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c
+index fa13bd3..0d134f5 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c
+@@ -14,7 +14,17 @@
+ #include "freertos/FreeRTOS.h"
+ #include "freertos/task.h"
+ #include "nvs_flash.h"
+-#include "sdkconfig.h"
++#include "sdkconfig.h"
++
++#if CONFIG_LAB_AUTO_HARNESS
++#define LAB02_HARNESS_ID 1
++#else
++#define LAB02_HARNESS_ID 0
++#endif
++
++#ifndef CONFIG_LAB02_SCENARIO
++#define CONFIG_LAB02_SCENARIO "nominal"
++#endif
+ 
+ #include <stdio.h>
+ #include <string.h>
+@@ -87,11 +97,13 @@ void lab02_app_start(void)
+     }
+ 
+     const esp_app_desc_t *desc = esp_app_get_description();
+-    const char *build_id = desc && desc->version[0] ? desc->version : "dev";
++    const char *build_id = CONFIG_LAB02_BUILD_ID[0] ? CONFIG_LAB02_BUILD_ID :
++                           (desc && desc->version[0] ? desc->version : "dev");
+     const lab02_fixture_blob_t *blob = lab02_fixture_selected();
+     const char *fixture_rev = blob && blob->name ? blob->name : fixture_name();
+ 
+-    printf("LAB02_READY build=%s fixture=%s mode=%s\n", build_id, fixture_rev, mode_name());
++    printf("LAB02_READY build=%s fixture=%s mode=%s harness=%d scenario=%s\n", build_id,
++           fixture_rev, mode_name(), LAB02_HARNESS_ID, CONFIG_LAB02_SCENARIO);
+     ESP_LOGI(TAG, "LAB02_READY build=%s fixture=%s mode=%s", build_id, fixture_rev, mode_name());
+ 
+     if (!lab02_board_lvgl_lock(5000)) {
+diff --git a/scripts/lab_deployment_sdkconfig.py b/scripts/lab_deployment_sdkconfig.py
+index b72a9d4..9683d51 100644
+--- a/scripts/lab_deployment_sdkconfig.py
++++ b/scripts/lab_deployment_sdkconfig.py
+@@ -26,12 +26,19 @@ def deployment_defaults_sidecars(build_dir: Path) -> list[Path]:
+     return sorted(p for p in parent.iterdir() if p.name.startswith(prefix))
+ 
+ 
+-def deployment_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str]:
+-    lines: list[str] = []
+-    if deployment.lab.phaseb_server_url:
+-        lines.append(
+-            f"CONFIG_LAB02_SERVER_URL={sdkconfig_quoted_value(deployment.lab.phaseb_server_url)}"
+-        )
++def deployment_kit_sdkconfig_lines(
++    deployment: Deployment, kit: Kit, client_url: str, *, fixture_size: int = 64,
++    scenario: str = "nominal", scripted: bool = False, build_id: str = "",
++) -> list[str]:
++    if not client_url:
++        raise ValueError("validated LAB-02 client URL is required")
++    lines: list[str] = [
++        f"CONFIG_LAB02_SERVER_URL={sdkconfig_quoted_value(client_url)}",
++        f"CONFIG_LAB02_FIXTURE_{fixture_size}=y",
++        f"CONFIG_LAB02_SCENARIO={sdkconfig_quoted_value(scenario)}",
++        f"CONFIG_LAB02_BUILD_ID={sdkconfig_quoted_value(build_id)}",
++        f"CONFIG_LAB_AUTO_HARNESS={'y' if scripted else 'n'}",
++    ]
+     profile = deployment.secrets_profile_for_kit(kit)
+     if profile and profile.wifi_ssid:
+         lines.append(f"CONFIG_LAB02_WIFI_SSID={sdkconfig_quoted_value(profile.wifi_ssid)}")
+@@ -41,7 +48,10 @@ def deployment_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str
+     return lines
+ 
+ 
+-def deployment_kit_sdkconfig_digest(deployment: Deployment, kit: Kit) -> str:
++def deployment_kit_sdkconfig_digest(
++    deployment: Deployment, kit: Kit, client_url: str, *, fixture_size: int = 64,
++    scenario: str = "nominal", scripted: bool = False, build_id: str = "",
++) -> str:
+     profile = deployment.secrets_profile_for_kit(kit)
+     payload = "\n".join(
+         [
+@@ -49,7 +59,8 @@ def deployment_kit_sdkconfig_digest(deployment: Deployment, kit: Kit) -> str:
+             kit.secrets_profile,
+             profile.wifi_ssid if profile else "",
+             profile.wifi_password if profile else "",
+-            deployment.lab.phaseb_server_url,
++            client_url,
++            str(fixture_size), scenario, str(scripted), build_id,
+         ]
+     )
+     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+@@ -59,16 +70,19 @@ def write_deployment_kit_sdkconfig(
+     build_dir: Path,
+     kit: Kit,
+     deployment: Deployment,
+-) -> Path | None:
++    client_url: str,
++    *, fixture_size: int = 64, scenario: str = "nominal", scripted: bool = False,
++    build_id: str = "",
++) -> Path:
+     """Write kit deployment defaults beside build_dir; invalidate sdkconfig when content changes."""
+-    lines = deployment_kit_sdkconfig_lines(deployment, kit)
+-    if not lines:
+-        return None
++    lines = deployment_kit_sdkconfig_lines(deployment, kit, client_url, fixture_size=fixture_size,
++                                           scenario=scenario, scripted=scripted, build_id=build_id)
+     build_dir.parent.mkdir(parents=True, exist_ok=True)
+     path = deployment_kit_defaults_path(build_dir, kit)
+     meta = path.with_suffix(path.suffix + ".sha256")
+     content = "\n".join(lines) + "\n"
+-    digest = deployment_kit_sdkconfig_digest(deployment, kit)
++    digest = deployment_kit_sdkconfig_digest(deployment, kit, client_url, fixture_size=fixture_size,
++                                             scenario=scenario, scripted=scripted, build_id=build_id)
+     if meta.is_file() and meta.read_text(encoding="utf-8").strip() == digest and path.is_file():
+         return path
+     sdkconfig = build_dir / "sdkconfig"
+diff --git a/scripts/lab_host.py b/scripts/lab_host.py
+index 3c2f33f..6acc414 100644
+--- a/scripts/lab_host.py
++++ b/scripts/lab_host.py
+@@ -10,16 +10,19 @@ import subprocess
+ import sys
+ import time
+ import uuid
++from dataclasses import dataclass
+ from datetime import datetime, timezone
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(ROOT / "scripts"))
+ 
+-from deployment_config import load_active_deployment
+-from device_targets import ports, select
+-from device_targets import kit_for
+-from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
++from deployment_config import Deployment, Kit, load_active_deployment
++from device_targets import Port, kit_for, ports, resolve_port as resolve_kit_port, select, serial_key, validate_bindings
++from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
++from lab02_workflow_config import load_lab02_workflow_config
++from lab02_canonical_run import run_canonical
++from lab02_experiment_sdkconfig import write_lab02_local_overlay
+ from firmware import idf_environment, run
+ from lab_registry import (
+     LabSpec,
+@@ -34,6 +37,60 @@ from project_config import ProjectConfig, ProjectConfigError
+ _BANNER = "-" * 62
+ 
+ 
++@dataclass(frozen=True)
++class RunTarget:
++    """Registered kit and exact USB identity frozen for one host run."""
++
++    kit_id: str
++    device: str
++    serial: str
++    kit: Kit
++    deployment: Deployment
++
++
++def resolve_run_target(config: ProjectConfig, kit: str = "", port: str = "") -> RunTarget:
++    deployment = load_active_deployment(config)
++    validate_bindings(deployment)
++    available = ports()
++    if kit:
++        targets = select(deployment, available, kit, False)
++    elif port:
++        matches = [item for item in available if item.device == port]
++        if len(matches) != 1 or not matches[0].serial:
++            raise ProjectConfigError("PORT must identify one connected device with a readable USB serial")
++        key = serial_key(matches[0].serial)
++        kits = [item for item in deployment.kits if item.usb_serial and serial_key(item.usb_serial) == key]
++        if len(kits) != 1:
++            raise ProjectConfigError("PORT does not identify exactly one registered kit")
++        targets = select(deployment, available, kits[0].id, False)
++    else:
++        targets = select(deployment, available, "", False)
++    if len(targets) != 1:
++        raise ProjectConfigError("A run needs exactly one connected registered kit")
++    selected_kit, selected_port = targets[0]
++    if port and port != selected_port.device:
++        raise ProjectConfigError(
++            f"PORT does not match registered kit {selected_kit.id}'s connected USB binding"
++        )
++    return RunTarget(
++        selected_kit.id, selected_port.device, selected_port.serial, selected_kit, deployment
++    )
++
++
++def revalidate_run_target(config: ProjectConfig, target: RunTarget) -> str:
++    """Confirm the frozen device path still reports the registered serial."""
++    deployment = load_active_deployment(config)
++    validate_bindings(deployment)
++    matches = [item for item in deployment.kits if item.id == target.kit_id]
++    if len(matches) != 1:
++        raise ProjectConfigError("Frozen run kit is no longer uniquely registered")
++    kit = matches[0]
++    current = resolve_kit_port(kit, ports())
++    if current.device != target.device or serial_key(current.serial) != serial_key(target.serial):
++        raise ProjectConfigError("Frozen run target disconnected or changed before flash")
++    return current.device
++
++
+ def _rel(path: Path) -> str:
+     try:
+         return str(path.relative_to(ROOT))
+@@ -179,8 +236,8 @@ def _sdkconfig_defaults_env_from_files(files: list[Path]) -> dict[str, str]:
+     return {"SDKCONFIG_DEFAULTS": ";".join(str(path) for path in files)}
+ 
+ 
+-def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
+-    return variant_name == "phaseb"
++def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
++    return variant_name in {"phaseb", "scripted-phaseb"}
+ 
+ 
+ def _prepare_lab_build_directory(build_dir: Path) -> None:
+@@ -217,38 +274,70 @@ def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Non
+         except (ProjectConfigError, OSError, subprocess.SubprocessError):
+             pass
+     shutil.rmtree(build_dir)
+-    for sidecar in deployment_defaults_sidecars(build_dir):
+-        sidecar.unlink(missing_ok=True)
++    for sidecar in deployment_defaults_sidecars(build_dir):
++        sidecar.unlink(missing_ok=True)
++    for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
++                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256"):
++        sidecar.unlink(missing_ok=True)
+     print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
+ 
+ 
+-def _defaults_files_for_lab_build(
++def _defaults_files_for_lab_build(
+     config: ProjectConfig,
+     spec: LabSpec,
+     var,
+     build_dir: Path,
+     kit: str,
+     port: str,
+-) -> list[Path]:
+-    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
+-    if not _variant_uses_deployment_kit_secrets(var.name):
+-        return defaults_files
++    target: RunTarget | None = None,
++    frozen_workflow=None,
++    frozen_fixture_size: int | None = None,
++    frozen_scenario: str | None = None,
++    frozen_build_id: str = "",
++) -> list[Path]:
++    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
++    if not _variant_uses_deployment_kit_secrets(var.name):
++        if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
++            try:
++                import yaml
++                if frozen_fixture_size is None or frozen_scenario is None:
++                    registry = yaml.safe_load(config.path_value("labs.registry").read_text(encoding="utf-8"))
++                    workflow = registry["labs"]["lab02"]["workflow"]
++                    fixture_size = int(workflow["fixture_size_default"])
++                    scenario = str(workflow["scenario_default"])
++                else:
++                    fixture_size, scenario = frozen_fixture_size, frozen_scenario
++                overlay = write_lab02_local_overlay(
++                    build_dir,
++                    fixture_size=fixture_size,
++                    scenario=scenario,
++                    scripted=var.name == "scripted",
++                    build_id=frozen_build_id,
++                )
++                return defaults_files + [overlay]
++            except (OSError, KeyError, TypeError, ValueError):
++                raise ProjectConfigError("invalid LAB-02 local experiment defaults") from None
++        return defaults_files
+     if not kit.strip():
+         raise ProjectConfigError(
+             "Phase B build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
+             "e.g. make lab.lab02.phaseb.build KIT=lynn"
+         )
+-    deployment = load_active_deployment(config)
+-    resolved = kit_for(deployment, kit)
+-    overlay = write_deployment_kit_sdkconfig(build_dir, resolved, deployment)
+-    if overlay is None:
+-        print(
+-            f"Note: kit {resolved.id} (secrets_profile={resolved.secrets_profile}) "
+-            "has no Wi-Fi in secrets_profiles or lab.phaseb_server_url; "
+-            "Phase B credentials must come from menuconfig or sdkconfig.defaults."
+-        )
+-        return defaults_files
+-    return defaults_files + [overlay]
++    deployment = target.deployment if target is not None else load_active_deployment(config)
++    resolved = target.kit if target is not None else kit_for(deployment, kit)
++    profile = deployment.secrets_profile_for_kit(resolved)
++    if not profile or not profile.wifi_ssid or not profile.wifi_password:
++        raise ProjectConfigError(
++            "Phase B build requires per-kit Wi-Fi credentials in the private deployment roster"
++        )
++    workflow = frozen_workflow or load_lab02_workflow_config(config)
++    overlay = write_deployment_kit_sdkconfig(
++        build_dir, resolved, deployment, workflow.client_url,
++        fixture_size=workflow.fixture_size_default, scenario=workflow.scenario_default,
++        scripted=var.name == "scripted-phaseb",
++        build_id=frozen_build_id,
++    )
++    return defaults_files + [overlay]
+ 
+ 
+ def _sdkconfig_assignment_lines(path: Path) -> list[str]:
+@@ -304,33 +393,48 @@ def _refresh_stale_sdkconfig(build_dir: Path, defaults_files: list[Path]) -> boo
+     return True
+ 
+ 
+-def ensure_lab_built(
++def ensure_lab_built(
+     config: ProjectConfig,
+     make_name: str,
+     variant: str | None,
+     *,
+     kit: str = "",
+     port: str = "",
++    target: RunTarget | None = None,
+ ) -> Path:
+     """Build when artifacts are missing or sdkconfig is stale vs variant defaults."""
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+     build_dir = ROOT / var.build_dir
+-    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
+-    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
+-    if stale or not (build_dir / "flasher_args.json").is_file():
+-        return build_lab(config, make_name, variant, kit=kit, port=port)
++    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
++    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
++    if stale or not (build_dir / "flasher_args.json").is_file():
++        return build_lab(
++            config,
++            make_name,
++            variant,
++            kit=kit,
++            port=port,
++            target=target,
++            frozen_defaults_files=defaults_files,
++        )
+     return build_dir
+ 
+ 
+-def build_lab(
++def build_lab(
+     config: ProjectConfig,
+     make_name: str,
+     variant: str | None,
+     *,
+     kit: str = "",
+-    port: str = "",
+-) -> Path:
++    port: str = "",
++    target: RunTarget | None = None,
++    frozen_defaults_files: list[Path] | None = None,
++    frozen_workflow=None,
++    frozen_fixture_size: int | None = None,
++    frozen_scenario: str | None = None,
++    frozen_build_id: str = "",
++) -> Path:
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+     if config.text("idf.target", required=True) != spec.target:
+@@ -339,7 +443,13 @@ def build_lab(
+     project = ROOT / spec.project_dir
+     build_dir = ROOT / var.build_dir
+     _prepare_lab_build_directory(build_dir)
+-    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
++    defaults_files = (
++        frozen_defaults_files
++        if frozen_defaults_files is not None
++        else _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target,
++            frozen_workflow=frozen_workflow, frozen_fixture_size=frozen_fixture_size,
++            frozen_scenario=frozen_scenario, frozen_build_id=frozen_build_id)
++    )
+     _refresh_stale_sdkconfig(build_dir, defaults_files)
+     env.update(_sdkconfig_defaults_env_from_files(defaults_files))
+     base = idf + [
+@@ -426,15 +536,7 @@ def _print_capture_markers(serial_path: Path) -> None:
+ 
+ 
+ def resolve_port(config: ProjectConfig, kit: str, port: str) -> str:
+-    if port:
+-        return port
+-    deployment = load_active_deployment(config)
+-    targets = select(deployment, ports(), kit, False)
+-    if len(targets) != 1:
+-        raise ProjectConfigError(
+-            "lab flash/capture needs exactly one kit; use KIT=<nickname>, PORT=<port>, or make device.bind"
+-        )
+-    return targets[0][1].device
++    return resolve_run_target(config, kit, port).device
+ 
+ 
+ def capture_lab(
+@@ -449,6 +551,7 @@ def capture_lab(
+     run_id: str,
+     action: str = "capture",
+     emit_operator_help: bool = True,
++    target: RunTarget | None = None,
+ ) -> Path:
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+@@ -473,10 +576,17 @@ def capture_lab(
+             flash=flash,
+         )
+         print()
+-    device_port = resolve_port(config, kit, port)
++    selected_target = target or resolve_run_target(config, kit, port)
++    if kit and kit_for(selected_target.deployment, kit).id != selected_target.kit_id:
++        raise ProjectConfigError("Frozen run target does not match requested KIT")
++    if port and port != selected_target.device:
++        raise ProjectConfigError("Frozen run target does not match requested PORT")
+     if flash:
++        device_port = revalidate_run_target(config, selected_target)
+         flash_lab_build(config, build_dir, device_port)
+         time.sleep(1.0)
++    else:
++        device_port = selected_target.device
+     log_dir = config.path_value("firmware.logs") / "labs" / spec.evidence_slug / rid
+     serial_path = log_dir / "serial.txt"
+     capture_serial(device_port, serial_path, seconds)
+@@ -631,7 +741,8 @@ def main() -> int:
+     run_p.add_argument("--seconds", type=int, default=None)
+     run_p.add_argument("--flash", action="store_true", default=False)
+     run_p.add_argument("--no-flash", action="store_true")
+-    run_p.add_argument("--no-build", action="store_true")
++    run_p.add_argument("--no-build", action="store_true")
++    run_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
+     run_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
+ 
+     parse_p = sub.add_parser("parse", help="Parse serial capture to metrics.json (make lab.<name>.parse)")
+@@ -664,31 +775,70 @@ def main() -> int:
+         if args.action == "flash":
+             var = resolve_variant(spec, variant)
+             build_dir = ROOT / var.build_dir
+-            port = resolve_port(config, args.kit, args.port)
++            target = resolve_run_target(config, args.kit, args.port)
++            port = revalidate_run_target(config, target)
+             flash_lab_build(config, build_dir, port)
+             print(f"Flashed lab.{spec.make_name} ({var.name}) on {port}")
+             return 0
+-        if args.action in ("capture", "run"):
++        if args.action in ("capture", "run"):
+             seconds = args.seconds
+             if seconds is None:
+                 seconds = spec.capture_seconds_default
+-            var = resolve_variant(spec, variant)
+-            flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
+-            stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
++            var = resolve_variant(spec, variant)
++            flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
++            if args.action == "run" and args.lab == "lab02" and args.backend == "managed-http" and var.name in {"recycle", "phaseb", "scripted-phaseb"}:
++                mode = "scripted" if var.name == "scripted-phaseb" else "manual"
++                def _build_canonical(cfg, name, selected_variant, **kwargs):
++                    return build_lab(cfg, name, selected_variant, **kwargs)
++                def _parse_canonical(serial_path, metrics_path):
++                    parse_serial_file(spec, serial_path, metrics_path)
++                return run_canonical(
++                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
++                    flash=flash, run_id=args.run_id, no_build=args.no_build,
++                    build_variant="scripted-phaseb" if mode == "scripted" else "phaseb",
++                    backend="managed-http",
++                    target_resolver=resolve_run_target, target_revalidator=revalidate_run_target,
++                    build=_build_canonical, flash_build=flash_lab_build, parse=_parse_canonical,
++                )
++            if args.action == "run" and args.lab == "lab02" and (args.backend == "local" or var.name == "eager"):
++                if var.name == "scripted-phaseb":
++                    variant = "scripted"
++                elif var.name == "phaseb":
++                    variant = None
++                var = resolve_variant(spec, variant)
++                mode = "scripted" if var.name == "scripted" else "manual"
++                def _build_local(cfg, name, selected_variant, **kwargs):
++                    return build_lab(cfg, name, selected_variant, **kwargs)
++                def _parse_local(serial_path, metrics_path):
++                    parse_serial_file(spec, serial_path, metrics_path)
++                return run_canonical(
++                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
++                    flash=flash, run_id=args.run_id, no_build=args.no_build, backend="local",
++                    build_variant=var.name, target_resolver=resolve_run_target,
++                    target_revalidator=revalidate_run_target, build=_build_local,
++                    flash_build=flash_lab_build, parse=_parse_local,
++                )
++            elif args.backend != "managed-http":
++                raise ProjectConfigError("BACKEND=local is supported only for LAB-02")
++            stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+             rid = args.run_id or f"{stamp}-{var.name}-capture-{uuid.uuid4().hex[:6]}"
++            target = resolve_run_target(config, args.kit, args.port)
+             if args.action == "run" and not args.no_build:
+-                ensure_lab_built(config, args.lab, variant, kit=args.kit, port=args.port)
++                ensure_lab_built(
++                    config, args.lab, variant, kit=target.kit_id, port=target.device, target=target
++                )
+             capture_lab(
+                 config,
+                 args.lab,
+-                kit=args.kit,
+-                port=args.port,
++                kit=target.kit_id,
++                port=target.device,
+                 variant=variant,
+                 seconds=seconds,
+                 flash=flash,
+                 run_id=rid,
+                 action=args.action,
+                 emit_operator_help=True,
++                target=target,
+             )
+             return 0
+         raise ProjectConfigError(f"Unknown action {args.action}")

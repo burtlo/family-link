@@ -1,0 +1,16 @@
+LAB-02 W2 independent re-verification — 2026-10-12
+
+Finding: LAB02FLOW-F003, confirmed P1; original review and narrowed trigger clarification are in docs/labs/evidence/lab-02/reviews/2026-10-12-workflow.md. The no-KIT Phase B path failed before device detection; KIT=A with PORT=deviceB could pair A's build inputs with B's USB port. W2 requires a connected unique registered target, one frozen identity across build/capture, and rejecting mismatch before flash.
+
+Disposition: VERIFIED FIXED at L1/L2 simulated host evidence. No hardware was connected; no L3/device claim.
+
+Boundary: repo /Users/lynnfrank/src/family-link; HEAD 0b02b30086f1c8c8e985458912646b0d473b967b. WIP source includes W2 scripts/lab_host.py and scripts/tests/test_lab_host.py plus unrelated W1/docs changes; read-only verifier made no repository edits. Relevant sources read: docs/AGENTS.md, full docs/standards/client-code-review-agent.md, full docs/standards/client-application-coding-standards.md, deployment-configuration standard, LAB-02 plan and linked review.
+
+Evidence:
+- `.venv/bin/python -m unittest scripts.tests.test_lab_host -v`: PASS, 14 tests. Covers 0/1/many auto targets, explicit KIT and PORT binding, unknown/duplicate serials, build-only without USB, run entry point order, frozen-target disconnection/swapped path, alias acceptance with/without supplied target, mismatch before flash, and revalidation before flash. Output: focused-tests.txt.
+- `.venv/bin/python /tmp/lab02-w2-reverify/simulated-harness.py`: PASS against actual `main`, `resolve_run_target`, and `capture_lab` with simulated USB/build/flash/capture. No-KIT single connected target selected and same frozen target passed to build/capture; alias plus matching PORT worked; KIT=A + PORT=B and 0/many targets failed before build/capture; direct invalid flash made no flash call; public Phase B build by alias did not enumerate USB. Actual capture helper accepted KIT nickname both when resolving internally and when passed a frozen target; mismatched KIT failed before target revalidation, flash, or capture. Output and harness retained alongside this report.
+- `git -c core.whitespace=cr-at-eol diff --check -- scripts/lab_host.py scripts/tests/test_lab_host.py scripts/device_targets.py`: PASS.
+
+Repair follow-up verified: capture_lab now canonicalizes requested KIT using `kit_for(selected_target.deployment, kit)` before comparing to frozen kit_id. The separate mismatch guard remains effective. Initial independent verifier's alias regression is therefore resolved by the focused repair and is covered both by the tests and actual-helper simulation.
+
+Source SHA-256 values are in source-sha256.txt. Artifacts are in artifact-sha256.txt. No L3 evidence or product behavior claim is made. Other findings and W2-external work are out of scope.

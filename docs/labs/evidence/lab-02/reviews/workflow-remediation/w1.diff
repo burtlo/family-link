@@ -1,0 +1,25 @@
+diff --git a/client/labs/lab-02-bounded-inbox/tests/host_stubs/freertos/semphr.h b/client/labs/lab-02-bounded-inbox/tests/host_stubs/freertos/semphr.h
+index 7f536fe..df5dedf 100644
+--- a/client/labs/lab-02-bounded-inbox/tests/host_stubs/freertos/semphr.h
++++ b/client/labs/lab-02-bounded-inbox/tests/host_stubs/freertos/semphr.h
+@@ -5,5 +5,6 @@
+ typedef struct fake_sem *SemaphoreHandle_t;
+ SemaphoreHandle_t xSemaphoreCreateCounting(unsigned max_count, unsigned initial_count);
+ SemaphoreHandle_t xSemaphoreCreateBinary(void);
++SemaphoreHandle_t xSemaphoreCreateMutex(void);
+ BaseType_t xSemaphoreTake(SemaphoreHandle_t sem, uint32_t ticks);
+ BaseType_t xSemaphoreGive(SemaphoreHandle_t sem);
+diff --git a/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c b/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
+index ac8dd31..f359f3a 100644
+--- a/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
++++ b/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
+@@ -86,6 +86,9 @@ SemaphoreHandle_t xSemaphoreCreateCounting(unsigned max_count, unsigned initial_
+ SemaphoreHandle_t xSemaphoreCreateBinary(void)
+ { return xSemaphoreCreateCounting(1, 0); }
+ 
++SemaphoreHandle_t xSemaphoreCreateMutex(void)
++{ return xSemaphoreCreateCounting(1, 1); }
++
+ BaseType_t xSemaphoreTake(SemaphoreHandle_t sem, uint32_t ticks)
+ {
+     pthread_mutex_lock(&sem->mu);

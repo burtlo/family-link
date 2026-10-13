@@ -1,0 +1,16 @@
+{
+  "head": "0b02b30086f1c8c8e985458912646b0d473b967b",
+  "worktree_modifications_preserved": true,
+  "focused_unittests": "42 passed",
+  "labs_registry_validate": "pass",
+  "deployment_validate": "pass",
+  "url_rejections": "wildcard, localhost, credential-bearing, query-bearing, wrong port, wrong scheme all rejected without value disclosure",
+  "old_source_only": "not consumed; config derives from interface when no new-source override",
+  "direct_loader_structural_validation": "FAIL: accepts port 70000, fixture_size_default 2147483648, scenario_default made-up",
+  "host_ini_hash_matches_recovered_host_hash_evidence": true,
+  "private_after_hash_matches_fix_evidence": true,
+  "private_legacy_field_absent": true,
+  "private_preservation": "fixer proof assertions only; no pre-migration private source available for fresh byte comparison",
+  "levels": "L1/L2 host evidence only; no hardware/L3",
+  "no_source_edits": true
+}

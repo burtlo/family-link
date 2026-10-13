@@ -1,0 +1,8 @@
+{"action_id":"server_bind","monotonic_ns":46112309677458,"outcome":"success","reason":"","run_id":"20261012-w8-scripted-01","stage":"SERVER_START"}
+{"action_id":"server_start","monotonic_ns":46112312891625,"outcome":"success","reason":"","run_id":"20261012-w8-scripted-01","stage":"SERVER_START"}
+{"action_id":"server_health","monotonic_ns":46112420724250,"outcome":"success","reason":"","run_id":"20261012-w8-scripted-01","stage":"SERVER_HEALTH"}
+{"action_id":"server_seed","monotonic_ns":46112421644333,"outcome":"success","reason":"","run_id":"20261012-w8-scripted-01","stage":"SERVER_SEED"}
+{"kind":"reset","method":"serial_rts_pulse","utc":"2026-10-13T03:30:45.322048+00:00"}
+{"firmware_build_id":"875d2a5fad98290c61fd9323","fixture":"inbox_64","kind":"boot_ready","mode":"http","outcome":"success"}
+{"action_id":"server_cleanup","monotonic_ns":46318061402083,"outcome":"success","reason":"","run_id":"20261012-w8-scripted-01","stage":"CLEANUP"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"harness_failed","workflow_status":"FAIL"}

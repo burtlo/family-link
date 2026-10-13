@@ -1,0 +1,10 @@
+wildcard rejected/redacted
+localhost rejected/redacted
+credentials rejected/redacted
+query rejected/redacted
+wrong_port rejected/redacted
+wrong_scheme rejected/redacted
+old-only rejected
+port_overflow ACCEPTED 70000 64 nominal
+fixture_overflow ACCEPTED 8765 2147483648 nominal
+invalid_scenario ACCEPTED 8765 64 made-up

@@ -10,7 +10,7 @@ labs:
     evidence_slug: lab-02
     project_dir: client/labs/lab-02-bounded-inbox
     target: esp32s3
-    description: Bounded inbox and three-view card recycling (Phase A)
+    description: Bounded inbox; managed HTTP paging, manual or scripted workflow
     variants:
       default: recycle
       recycle:
@@ -30,15 +30,34 @@ labs:
         sdkconfig_defaults:
           - sdkconfig.defaults
           - sdkconfig.defaults.phaseb
+      scripted-phaseb:
+        build_dir: build/labs/lab-02-bounded-inbox-scripted-phaseb
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - ../kconfig/sdkconfig.defaults.scripted
+          - sdkconfig.defaults.phaseb
     trace_parser: client/labs/lab-02-bounded-inbox/tools/parse_lab_trace.py
     run:
       capture_seconds_default: 120
       flash_by_default: true
       instructions: |
-        Choose one run style (listed again at the end of make lab.lab02.help):
-        - Manual: make lab.lab02
-        - Auto-scroll: make lab.lab02.scripted
-        - Eager comparison: make lab.lab02.eager - 16-widget baseline (see lab README).
-        - Phase B HTTP paging: make lab.lab02.server; set secrets_profiles + lab.phaseb_server_url in local.yaml; make lab.lab02.phaseb.build KIT=<nickname>.
-        Name the scenario in RUN_ID (e.g. S-fix-16) when you publish evidence.
+        Canonical managed HTTP runs: make lab.lab02 (manual free traversal) or
+        make lab.lab02.scripted (automated harness, no operator touch). Both
+        start, health-check, seed, capture, and stop the owned fixture server.
+        BACKEND=local selects an explicit local-fixture comparison. The eager
+        comparison remains make lab.lab02.eager. Scenario and fixture defaults
+        are recorded in each run manifest.
       instructions_doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios
+    workflow:
+      server_path: server/labs/lab-02-paging/server.py
+      bind_host: auto
+      bind_port: 8765
+      fixture_size_default: 64
+      scenario_default: nominal
+      deadlines_seconds:
+        startup: 10
+        health: 10
+        seed: 10
+        readiness: 15
+        action: 5
+        cleanup: 5

@@ -1,6 +1,7 @@
 #include "lab02/lab02_session.h"
 #include "lab02/lab02_session_io.h"
 #include "lab02/page_provider_http.h"
+#include "lab02/snap_id.h"
 
 #include "lab02/trace_emit.h"
 
@@ -284,7 +285,15 @@ static bool apply_page(const lab02_sess_event_t *ev)
     reconcile_focus_id();
     s_presentation_dirty = true;
     s_metrics.apply_ok++;
-    lab02_trace_emit("page_apply", ev->op_id, s_focus_index, NULL, NULL);
+    char apply_extra[240];
+    snprintf(apply_extra, sizeof(apply_extra),
+             "op_id=%u revision=%u snap_id=%u fetch_snap_id=%u page_receipt_id=%s run_id=%s server_completed_ns=%llu",
+             (unsigned)ev->op_id, (unsigned)s_inbox_revision, (unsigned)lab02_snap_current_id(),
+             (unsigned)ev->page.snap_id,
+             ev->page.page_receipt_id[0] ? ev->page.page_receipt_id : "-",
+             ev->page.run_id[0] ? ev->page.run_id : "-",
+             (unsigned long long)ev->page.server_completed_ns);
+    lab02_trace_emit("page_apply", ev->op_id, s_focus_index, s_focus_message_id, apply_extra);
     if (ev->initial) {
         prefetch_for_focus(s_focus_index);
     } else if (page == 0) {

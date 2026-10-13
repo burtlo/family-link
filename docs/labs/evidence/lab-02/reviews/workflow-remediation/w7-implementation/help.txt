@@ -1,0 +1,24 @@
+=== lab.lab02 (LAB-02) ===
+Bounded inbox; managed HTTP paging, manual or scripted workflow
+
+Managed capture: 120s after a fresh boot marker; set SECONDS= to override.
+The host writes the serial log, metrics, and run manifest.
+
+Operator:
+  Canonical managed HTTP runs: make lab.lab02 (manual free traversal) or
+  make lab.lab02.scripted (automated harness, no operator touch). Both
+  start, health-check, seed, capture, and stop the owned fixture server.
+  BACKEND=local selects an explicit local-fixture comparison. The eager
+  comparison remains make lab.lab02.eager. Scenario and fixture defaults
+  are recorded in each run manifest.
+  Read: docs/labs/lab-02-implementation-outline.md#verification-scenarios
+
+Run modes:
+  Manual (you scroll on device)     make lab.lab02 [KIT=<nickname>]
+  Clean default variant build dir   make lab.lab02.clean
+  Automated managed run             make lab.lab02.scripted [KIT=<nickname>]
+  Clean scripted build dir          make lab.lab02.scripted.clean
+  Eager comparison build            make lab.lab02.eager [KIT=<nickname>]
+  Clean eager build dir             make lab.lab02.eager.clean
+  Backend default                   managed HTTP; BACKEND=local selects local fixture
+  Parse last capture (metrics.json) make lab.lab02.parse [RUN_ID=…]

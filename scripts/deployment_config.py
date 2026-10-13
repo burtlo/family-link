@@ -64,11 +64,6 @@ class Endpoint:
 
 
 @dataclass(frozen=True)
-class LabDeskSettings:
-    phaseb_server_url: str = ""
-
-
-@dataclass(frozen=True)
 class SecretsProfile:
     wifi_ssid: str = ""
     wifi_password: str = ""
@@ -91,7 +86,6 @@ class Deployment:
     endpoints: tuple[Endpoint, ...]
     kits: tuple[Kit, ...]
     aliases: dict[str, str]
-    lab: LabDeskSettings = LabDeskSettings()
     secrets_profiles: dict[str, SecretsProfile] = field(default_factory=dict)
 
     def secrets_profile_for_kit(self, kit: Kit) -> SecretsProfile | None:
@@ -338,14 +332,6 @@ def _parse_secrets_profiles(raw: Any) -> dict[str, SecretsProfile]:
     return out
 
 
-def _parse_lab(raw: Any) -> LabDeskSettings:
-    if raw is None:
-        return LabDeskSettings()
-    if not isinstance(raw, dict):
-        raise DeploymentConfigError("lab must be a mapping")
-    return LabDeskSettings(phaseb_server_url=_optional_str(raw, "phaseb_server_url"))
-
-
 def _parse_aliases(raw: Any, endpoint_ids: set[str]) -> dict[str, str]:
     if raw is None:
         return {}
@@ -398,7 +384,6 @@ def load_deployment(
     users = _parse_users(raw_doc.get("users"))
     kits = _parse_kits(raw_doc.get("kits"), endpoint_ids)
     aliases = _parse_aliases(raw_doc.get("aliases"), endpoint_ids)
-    lab = _parse_lab(raw_doc.get("lab"))
     secrets_profiles = _parse_secrets_profiles(raw_doc.get("secrets_profiles"))
 
     deployment = Deployment(
@@ -409,7 +394,6 @@ def load_deployment(
         endpoints=endpoints,
         kits=kits,
         aliases=aliases,
-        lab=lab,
         secrets_profiles=secrets_profiles,
     )
     validate_deployment(deployment)
@@ -516,9 +500,6 @@ def dump_snapshot(deployment: Deployment) -> dict[str, object]:
                 "wifi_password": "[redacted]" if profile.wifi_password else "",
             }
             for name, profile in sorted(deployment.secrets_profiles.items())
-        },
-        "lab": {
-            "phaseb_server_url": deployment.lab.phaseb_server_url or "",
         },
         "aliases": dict(sorted(deployment.aliases.items())),
     }

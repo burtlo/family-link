@@ -1,0 +1,19 @@
+--- /tmp/lab02-w7-readstart-fix/prior-lab02_canonical_run.py	2026-10-12 22:20:42
++++ /tmp/lab02-w7-readstart-fix/lab02_canonical_run.py	2026-10-12 22:20:42
+@@ -224,12 +224,11 @@
+         def serial_reader() -> None:
+             try:
+                 while not reader_stop.is_set():
+-                    # Mark entry for diagnostics; the handoff is completed only after
+-                    # this first read returns and any pre-reset bytes are drained.
+-                    chunk = conn.read(4096)
+-                    # Freeze phase metadata at read completion, before log I/O or queue
+-                    # delay can let the reset transition relabel an earlier chunk.
++                    # A chunk is eligible only when its read began after reset.
++                    # Reads can block across the reset edge, so tagging on return
++                    # would let bytes already in flight establish fresh readiness.
+                     reset_was_complete = reset_complete.is_set()
++                    chunk = conn.read(4096)
+                     if chunk:
+                         log_handle.write(redactor_for_reader.feed(chunk))
+                         log_handle.flush()

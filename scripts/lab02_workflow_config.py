@@ -1,0 +1,202 @@
+"""Validated LAB-02 host workflow settings and firmware client URL."""
+from __future__ import annotations
+
+import ipaddress
+import platform
+import re
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable
+from urllib.parse import urlsplit
+
+import yaml
+
+from lab_registry import LabRegistryError, validate_document_schema
+from project_config import ProjectConfig, ProjectConfigError
+
+ROOT = Path(__file__).resolve().parent.parent
+_IPV4_RE = re.compile(r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])")
+_FIXTURE_SIZES = {8, 16, 64, 256}
+_SCENARIOS = {
+    "nominal", "S-fix-8", "S-fix-16", "S-fix-64", "S-fix-256",
+    "S-trav-20", "S-rev", "S-delay", "S-push", "S-rm-focus", "S-page-snap",
+}
+
+
+class Lab02WorkflowConfigError(ProjectConfigError):
+    """Invalid LAB-02 host workflow configuration (details are redacted)."""
+
+
+@dataclass(frozen=True)
+class Lab02WorkflowConfig:
+    server_path: Path
+    bind_host: str
+    bind_port: int
+    fixture_size_default: int
+    scenario_default: str
+    deadlines_seconds: dict[str, int]
+    client_url: str
+
+
+def eligible_lan_ipv4(addresses: Iterable[str]) -> tuple[str, ...]:
+    """Return unique private unicast IPv4 addresses suitable for a local server."""
+    out: set[str] = set()
+    for raw in addresses:
+        try:
+            address = ipaddress.ip_address(raw)
+        except ValueError:
+            continue
+        if (
+            isinstance(address, ipaddress.IPv4Address)
+            and address.is_private
+            and not address.is_loopback
+            and not address.is_link_local
+            and not address.is_unspecified
+            and not address.is_multicast
+        ):
+            out.add(str(address))
+    return tuple(sorted(out))
+
+
+def _command_output(argv: list[str]) -> str:
+    try:
+        result = subprocess.run(
+            argv, capture_output=True, text=True, timeout=5, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return result.stdout if result.returncode == 0 else ""
+
+
+def enumerate_interface_ipv4() -> tuple[str, ...]:
+    """Enumerate assigned IPv4 addresses on macOS, Linux, or Windows."""
+    system = platform.system()
+    if system == "Linux":
+        output = _command_output(["ip", "-o", "-4", "addr", "show"])
+        if output:
+            found = []
+            for line in output.splitlines():
+                fields = line.split()
+                if "inet" in fields:
+                    index = fields.index("inet")
+                    if index + 1 < len(fields):
+                        found.append(fields[index + 1].split("/", 1)[0])
+            return eligible_lan_ipv4(found)
+        output = _command_output(["ifconfig", "-a"])
+    elif system == "Windows":
+        output = _command_output(["ipconfig", "/all"])
+    else:
+        output = _command_output(["ifconfig", "-a"])
+    found = _IPV4_RE.findall(output)
+    return eligible_lan_ipv4(found)
+
+
+def _positive_int(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise Lab02WorkflowConfigError("invalid LAB-02 host configuration")
+    return value
+
+
+def _parse_client_url(value: str, expected_port: int) -> tuple[str, str]:
+    """Validate an explicit client URL and return (canonical URL, IPv4 host)."""
+    try:
+        parsed = urlsplit(value)
+        if (
+            parsed.scheme != "http"
+            or "@" in parsed.netloc
+            or parsed.password is not None
+            or "?" in value
+            or "#" in value
+            or parsed.path not in ("", "/")
+            or not parsed.hostname
+        ):
+            raise ValueError
+        address = ipaddress.ip_address(parsed.hostname)
+        if not isinstance(address, ipaddress.IPv4Address):
+            raise ValueError
+        port = parsed.port or 80
+        if port != expected_port:
+            raise ValueError
+        canonical = f"http://{address}:{port}"
+        return canonical, str(address)
+    except (ValueError, UnicodeError):
+        raise Lab02WorkflowConfigError("invalid LAB-02 client URL configuration") from None
+
+
+def load_lab02_workflow_config(
+    project: ProjectConfig | None = None,
+    *,
+    interface_addresses: Iterable[str] | None = None,
+) -> Lab02WorkflowConfig:
+    """Load registry workflow defaults and the separate host client URL."""
+    cfg = project if project is not None else ProjectConfig()
+    try:
+        registry_path = cfg.path_value("labs.registry")
+        document = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+        if not isinstance(document, dict):
+            raise ValueError
+        validate_document_schema(document, project=cfg)
+        row = document["labs"]["lab02"]["workflow"]
+        server_path = Path(row["server_path"])
+        if server_path.is_absolute() or ".." in server_path.parts:
+            raise ValueError
+        server_path = (ROOT / server_path).resolve()
+        if not server_path.is_file():
+            raise ValueError
+        bind_port = _positive_int(row["bind_port"])
+        fixture_size = _positive_int(row["fixture_size_default"])
+        if fixture_size not in _FIXTURE_SIZES:
+            raise ValueError
+        scenario = row["scenario_default"]
+        if not isinstance(scenario, str) or scenario not in _SCENARIOS:
+            raise ValueError
+        deadlines = row["deadlines_seconds"]
+        required_deadlines = {"startup", "health", "seed", "readiness", "action", "cleanup"}
+        if set(deadlines) != required_deadlines:
+            raise ValueError
+        deadlines = {key: _positive_int(value) for key, value in deadlines.items()}
+        raw_bind = row["bind_host"]
+        addresses = eligible_lan_ipv4(
+            interface_addresses if interface_addresses is not None else enumerate_interface_ipv4()
+        )
+        if raw_bind == "auto":
+            explicit_url = cfg.text("labs.lab02.client_url", default="")
+            if explicit_url:
+                client_url, address = _parse_client_url(explicit_url, bind_port)
+                if address not in addresses:
+                    raise Lab02WorkflowConfigError("invalid LAB-02 client URL configuration")
+            else:
+                if len(addresses) != 1:
+                    raise Lab02WorkflowConfigError("ambiguous LAB-02 LAN interface configuration")
+                client_url = f"http://{addresses[0]}:{bind_port}"
+            # Listen on all interfaces; firmware still uses client_url (desk LAN IP).
+            bind_host = "0.0.0.0"
+        else:
+            try:
+                bind_ip = ipaddress.ip_address(raw_bind)
+            except (ValueError, TypeError):
+                raise Lab02WorkflowConfigError("invalid LAB-02 bind configuration") from None
+            if not isinstance(bind_ip, ipaddress.IPv4Address) or str(bind_ip) not in addresses:
+                raise Lab02WorkflowConfigError("invalid LAB-02 bind configuration")
+            bind_host = str(bind_ip)
+            explicit_url = cfg.text("labs.lab02.client_url", default="")
+            if explicit_url:
+                client_url, address = _parse_client_url(explicit_url, bind_port)
+                if address != bind_host:
+                    raise Lab02WorkflowConfigError("invalid LAB-02 client URL configuration")
+            else:
+                client_url = f"http://{bind_host}:{bind_port}"
+        return Lab02WorkflowConfig(
+            server_path=server_path,
+            bind_host=bind_host,
+            bind_port=bind_port,
+            fixture_size_default=fixture_size,
+            scenario_default=scenario.strip(),
+            deadlines_seconds=deadlines,
+            client_url=client_url,
+        )
+    except Lab02WorkflowConfigError:
+        raise
+    except (OSError, KeyError, TypeError, ValueError, yaml.YAMLError, ProjectConfigError, LabRegistryError):
+        raise Lab02WorkflowConfigError("invalid LAB-02 host workflow configuration") from None

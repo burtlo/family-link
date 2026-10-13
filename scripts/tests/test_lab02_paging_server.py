@@ -47,9 +47,16 @@ class Lab02PagingServerTests(unittest.TestCase):
         self.assertEqual(body["items"][0]["message_id"], "msg-0000")
 
     def test_remove_script(self):
+        health = json.loads(urllib.request.urlopen("http://127.0.0.1:18765/lab/health", timeout=5).read())
+        run_id = health["run_id"]
+        seed = urllib.request.Request("http://127.0.0.1:18765/lab/seed",
+                                      data=json.dumps({"run_id": run_id}).encode(),
+                                      headers={"Content-Type": "application/json"}, method="POST")
+        urllib.request.urlopen(seed, timeout=5).read()
         req = urllib.request.Request(
             "http://127.0.0.1:18765/lab/script",
-            data=json.dumps({"name": "remove_at", "index": 0}).encode("utf-8"),
+            data=json.dumps({"name": "remove_message", "viewed_message_id": "msg-0000",
+                             "run_id": run_id, "action_id": "remove-test"}).encode("utf-8"),
             headers={"Content-Type": "application/json"},
             method="POST",
         )
@@ -61,6 +68,23 @@ class Lab02PagingServerTests(unittest.TestCase):
             body = json.loads(resp.read().decode("utf-8"))
         self.assertEqual(body["total_count"], 63)
         self.assertEqual(body["items"][0]["message_id"], "msg-0001")
+
+    def test_page_receipt_and_idempotent_identity_targeted_actions(self):
+        with urllib.request.urlopen("http://127.0.0.1:18765/v2/inbox?cursor=0&limit=16", timeout=5) as resp:
+            page = json.loads(resp.read())
+        self.assertRegex(page["page_receipt_id"], r"^[0-9a-f]{32}$")
+        self.assertLessEqual(page["page_started_ns"], page["page_completed_ns"])
+        run_id = json.loads(urllib.request.urlopen("http://127.0.0.1:18765/lab/health", timeout=5).read())["run_id"]
+        action = {"name": "push_item", "run_id": run_id, "action_id": "push-once",
+                  "item": {"sender_name": "Lab", "preview": "pushed"}}
+        def post(body):
+            req = urllib.request.Request("http://127.0.0.1:18765/lab/script", data=json.dumps(body).encode(),
+                                          headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=5) as resp: return json.loads(resp.read())
+        first = post(action)
+        second = post(action)
+        self.assertEqual(first, second)
+        self.assertEqual(first["action_id"], "push-once")
 
 
 if __name__ == "__main__":

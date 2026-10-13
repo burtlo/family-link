@@ -1,0 +1,1 @@
+a482b303b15c504a79b68b2d310840060aef4b01806b0fa91baffde6d038e8d5  /tmp/lab02-w2-reverify/report.txt

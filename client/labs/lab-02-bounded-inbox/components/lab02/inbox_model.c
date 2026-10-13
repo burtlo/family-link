@@ -191,6 +191,18 @@ bool lab02_inbox_model_parse_v2_page(const char *json, size_t len, int page_offs
     out->total_count = (uint16_t)total->valueint;
     out->item_count = (uint16_t)n;
     out->page_offset = page_offset;
+    cJSON *receipt = cJSON_GetObjectItem(root, "page_receipt_id");
+    cJSON *run_id = cJSON_GetObjectItem(root, "run_id");
+    cJSON *completed = cJSON_GetObjectItem(root, "page_completed_ns");
+    if (receipt && cJSON_IsString(receipt) && strlen(receipt->valuestring) < sizeof(out->page_receipt_id)) {
+        snprintf(out->page_receipt_id, sizeof(out->page_receipt_id), "%s", receipt->valuestring);
+    }
+    if (run_id && cJSON_IsString(run_id) && strlen(run_id->valuestring) < sizeof(out->run_id)) {
+        snprintf(out->run_id, sizeof(out->run_id), "%s", run_id->valuestring);
+    }
+    if (completed && cJSON_IsNumber(completed) && completed->valuedouble >= 0) {
+        out->server_completed_ns = (uint64_t)completed->valuedouble;
+    }
     for (int i = 0; i < n; i++) {
         if (!parse_v2_item(cJSON_GetArrayItem(items, i), &out->items[i])) {
             cJSON_Delete(root);

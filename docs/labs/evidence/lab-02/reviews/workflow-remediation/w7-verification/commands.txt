@@ -1,0 +1,16 @@
+PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab02_canonical_run scripts.tests.test_lab02_server -v
+Result: 18 tests passed in 8.859s; loopback escalation; actual local server; simulated serial/build/flash.
+
+PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab_host -v
+Result: 16 tests passed in 0.146s.
+
+PYTHONPATH=scripts .venv/bin/python scripts/lab_registry.py validate
+Result: valid: config/labs.registry.yaml
+
+.venv/bin/python scripts/lab_host.py help lab02
+Result: managed HTTP default and manual/scripted commands; no manual server/curl.
+
+make -n lab.lab02 BACKEND=managed-http
+make -n lab.lab02.scripted KIT=sample
+make -n lab.lab02.eager KIT=sample
+Result: expected run dispatch; scripted-phaseb variant; eager comparison target.

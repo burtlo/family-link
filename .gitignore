@@ -2,6 +2,10 @@
 build/
 artifacts/
 logs/
+
+# Ephemeral make lab.<name> canonical runs (YYYYMMDD + 10 hex). Named evidence (e.g. w8-manual-01) stays committable.
+docs/labs/evidence/**/runs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]/
+
 client/device/sdkconfig
 client/device/sdkconfig.old
 client/device/managed_components/

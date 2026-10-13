@@ -101,7 +101,8 @@ Skipping straight to **LAB-02** is consistent with the plans; do not skip eviden
 | Run manifest | [schemas/run-manifest.v1.md](schemas/run-manifest.v1.md) |
 | Inbox UI | Stub **message** cards — snap geometry may follow roster panel spec; do not ship roster chrome as inbox |
 
-**Boot marker (define in lab README when implemented):** `LAB02_READY build=<id> fixture=<rev> mode=recycle|eager`.
+**Boot marker:** the workflow accepts only a fresh `LAB02_READY` marker observed
+after its capture-armed RTS reset. A missing marker makes device evidence incomplete.
 
 **Eager comparison:** separate build directory; set `comparison_run_id` in both manifests.
 
@@ -113,7 +114,7 @@ Lab firmware is **not** built by `make build` (that is product bootstrap in `cli
 |-------------|----------------|
 | `make lab.help` | List registered labs and variants (`lab_host.py list`) |
 | `make lab.<name>.help` | Operator instructions from registry `run.instructions` / `run.instructions_doc` |
-| `make lab.<name>` | **Default run:** prints operator briefing, then build if `flasher_args.json` is missing, flash (unless disabled), capture serial to `logs/device/labs/<evidence_slug>/<run-id>/` |
+| `make lab.<name>` | Canonical managed run for LAB-02: starts and seeds the owned HTTP fixture, builds, flashes, arms serial capture, resets, and records manifest/log evidence |
 | `make lab.<name>.build` | ESP-IDF build only for the selected variant |
 | `make lab.<name>.flash` | Flash an existing build to one kit |
 | `make lab.<name>.capture` | Serial capture only (no build) |
@@ -129,20 +130,25 @@ Lab firmware is **not** built by `make build` (that is product bootstrap in `cli
 | `FLASH` | `.capture`, `lab.<name>` | `1` / `yes` force flash; `0` / `no` skip flash. Default for `make lab.<name>`: registry `run.flash_by_default` |
 | `RUN_ID` | `.capture`, `lab.<name>` | Override auto-generated run folder name |
 
-**Examples (LAB-02 registered as `lab02`):**
+**Canonical LAB-02 commands:**
 
 ```text
 make lab.help
-make lab.lab02.build
 make lab.lab02 KIT=lynn
 make lab.lab02.scripted KIT=lynn
 make lab.lab02.eager KIT=lynn
-make lab.lab02.flash KIT=lynn
-make lab.lab02.capture KIT=lynn FLASH=0 SECONDS=60
-python scripts/lab_host.py run lab02 --kit lynn --no-flash --seconds 60
+make lab.lab02 BACKEND=local KIT=lynn
 ```
 
-After capture, parse traces if the registry lists `trace_parser` (LAB-02: `client/labs/lab-02-bounded-inbox/tools/parse_lab_trace.py`). Record the **exact make or script command** in the evidence report.
+Both canonical commands use managed HTTP by default. Manual mode allows free
+carousel traversal, including loading cards. Scripted mode requires no operator
+touch and must observe `HARNESS_DONE`. The host prints a `CAPTURE ACTIVE`
+briefing before traversal. The owned server is started, health-checked, seeded,
+and stopped by the run. No foreground server or curl step is part of the run.
+`BACKEND=local` is an explicit local-fixture comparison; `make lab.lab02.eager`
+remains the eager baseline comparison.
+
+Canonical runs parse traces and save the manifest and metrics with their capture. Record the **exact make command** in the evidence report; parser success alone is not a passing experiment result.
 
 Host registry standard: [labs configuration](../standards/labs-configuration.md). Product bootstrap flash rules still apply for kit binding (`make devices`, `make device.bind`).
 

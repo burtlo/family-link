@@ -33,6 +33,10 @@ typedef struct {
     uint16_t total_count;
     uint16_t item_count;
     int page_offset;
+    uint32_t snap_id;
+    uint64_t server_completed_ns;
+    char page_receipt_id[33];
+    char run_id[33];
     lab02_inbox_item_t items[LAB02_DEFAULT_PAGE_SIZE];
 } lab02_inbox_page_t;
 

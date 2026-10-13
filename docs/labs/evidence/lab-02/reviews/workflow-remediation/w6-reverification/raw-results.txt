@@ -1,0 +1,5 @@
+event bound 3 3 6
+first failure False False
+retry FAIL UNMEASURED 1 True
+arbitrary artifact refs None None None
+oversized terminal boundary [27, 20094] max 16384

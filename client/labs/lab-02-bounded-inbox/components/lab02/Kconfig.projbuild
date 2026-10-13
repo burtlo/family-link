@@ -15,6 +15,28 @@ endmenu
 
 menu "LAB-02 Bounded Inbox"
 
+    config LAB02_BUILD_ID
+        string "Frozen LAB-02 run identity"
+        default "unconfigured"
+
+    config LAB02_SCENARIO
+        string "Scripted experiment scenario"
+        default "nominal"
+        help
+            Named host-driven experiment. S-push and S-rm-focus enable a bounded
+            focus dwell after the second scripted step so a managed action can
+            be observed through the next background refresh. Nominal keeps the
+            existing traversal cadence.
+
+    config LAB02_SCENARIO_DWELL_MS
+        int "Mutation scenario focus dwell (ms)"
+        default 6500
+        range 1000 10000
+        depends on LAB_AUTO_HARNESS
+        help
+            Bounded harness-task dwell for S-push and S-rm-focus only. This does
+            not hold the LVGL lock or delay nominal traversal.
+
     config LAB02_EAGER_BASELINE
         bool "Eager 16-card baseline (comparison build)"
         default n

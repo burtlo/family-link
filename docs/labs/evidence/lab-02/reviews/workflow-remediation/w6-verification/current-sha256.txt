@@ -1,0 +1,3 @@
+d4dfa9769ea1524f84726b336d1b4cf9256dc91c420d0db62e8b0dfce5b45258  scripts/lab02_evidence.py
+54a822d61657673e063101f4ac1be57d29a07a63a3484708ae881e7131c9d724  scripts/tests/test_lab02_evidence.py
+cdf638e5977cee4bcdffb5de07b98868c49d02740ec2f6afaca21ae289429257  docs/labs/schemas/run-manifest.v1.md

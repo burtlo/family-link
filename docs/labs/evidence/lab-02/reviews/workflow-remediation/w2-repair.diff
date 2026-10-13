@@ -1,0 +1,96 @@
+--- a/scripts/lab_host.py
++++ b/scripts/lab_host.py
+@@ -524,7 +524,7 @@
+         )
+         print()
+     selected_target = target or resolve_run_target(config, kit, port)
+-    if kit and kit != selected_target.kit_id:
++    if kit and kit_for(selected_target.deployment, kit).id != selected_target.kit_id:
+         raise ProjectConfigError("Frozen run target does not match requested KIT")
+     if port and port != selected_target.device:
+         raise ProjectConfigError("Frozen run target does not match requested PORT")
+--- a/scripts/tests/test_lab_host.py
++++ b/scripts/tests/test_lab_host.py
+@@ -17,7 +17,7 @@
+     resolve_run_target,
+     RunTarget,
+ )
+-from deployment_config import Deployment, DeploymentMeta, Kit
++from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit
+ from device_targets import Port
+ from lab_registry import get_lab, resolve_variant
+ from project_config import ProjectConfig, ProjectConfigError
+@@ -97,8 +97,9 @@
+         self.kit_a = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
+         self.kit_b = Kit("B", "endpoint-b", "profile-b", "SERIAL-B")
+         self.deployment = Deployment(
+-            Path("local.yaml"), "local", DeploymentMeta("test", "test"), (), (),
+-            (self.kit_a, self.kit_b), {},
++            Path("local.yaml"), "local", DeploymentMeta("test", "test"), (),
++            (Endpoint("endpoint-a", "Endpoint A", "", ""), Endpoint("endpoint-b", "Endpoint B", "", "")),
++            (self.kit_a, self.kit_b), {"desk": "endpoint-a"},
+         )
+         self.config = ProjectConfig()
+ 
+@@ -213,6 +214,61 @@
+         revalidate.assert_called_once_with(self.config, target)
+         flash.assert_not_called()
+ 
++    def test_capture_accepts_alias_for_frozen_target_with_or_without_supplied_target(self):
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        for supplied_target in (None, target):
++            with self.subTest(supplied_target=supplied_target is not None), patch(
++                "lab_host.print_run_start"
++            ), patch("lab_host.print_operator_help"), patch(
++                "lab_host.resolve_run_target", return_value=target
++            ) as resolve, patch(
++                "lab_host.capture_serial",
++                side_effect=lambda _device, serial_path, _seconds: serial_path.parent.mkdir(
++                    parents=True, exist_ok=True
++                ),
++            ) as capture_serial, patch(
++                "lab_host.ProjectConfig.path_value", return_value=self.temp_path
++            ), patch("lab_host.parse_serial_file"):
++                capture_lab(
++                    self.config,
++                    "lab02",
++                    kit="desk",
++                    port="/dev/a",
++                    variant="phaseb",
++                    seconds=1,
++                    flash=False,
++                    run_id="test-run",
++                    emit_operator_help=False,
++                    target=supplied_target,
++                )
++            if supplied_target is None:
++                resolve.assert_called_once_with(self.config, "desk", "/dev/a")
++            else:
++                resolve.assert_not_called()
++            capture_serial.assert_called_once()
++            self.assertEqual((capture_serial.call_args.args[0], capture_serial.call_args.args[2]), ("/dev/a", 1))
+ 
++    def test_capture_alias_mismatch_fails_before_flash_write(self):
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        with patch("lab_host.print_run_start"), patch("lab_host.print_operator_help"), patch(
++            "lab_host.revalidate_run_target"
++        ) as revalidate, patch("lab_host.flash_lab_build") as flash:
++            with self.assertRaisesRegex(ProjectConfigError, "does not match requested KIT"):
++                capture_lab(
++                    self.config,
++                    "lab02",
++                    kit="B",
++                    port="/dev/a",
++                    variant="phaseb",
++                    seconds=1,
++                    flash=True,
++                    run_id="test-run",
++                    emit_operator_help=False,
++                    target=target,
++                )
++        revalidate.assert_not_called()
++        flash.assert_not_called()
++
++
+ if __name__ == "__main__":
+     unittest.main()

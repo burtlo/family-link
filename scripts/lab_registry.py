@@ -206,14 +206,18 @@ def operator_help_lines(
         lines.append(" ".join(details))
     capture_s = seconds if seconds is not None else spec.capture_seconds_default
     lines.append("")
-    lines.append(
-        f"Host serial capture: {capture_s}s after flash "
-        f"(set SECONDS= to override capture_seconds_default in labs.registry.yaml)."
-    )
-    lines.append(
-        "This terminal stays quiet during capture. Device lines (e.g. LAB02_READY, "
-        "HARNESS_DONE) are saved to logs/device/labs/.../serial.txt, then summarized."
-    )
+    if spec.make_name == "lab02":
+        lines.append(f"Managed capture: {capture_s}s after a fresh boot marker; set SECONDS= to override.")
+        lines.append("The host writes the serial log, metrics, and run manifest.")
+    else:
+        lines.append(
+            f"Host serial capture: {capture_s}s after flash "
+            f"(set SECONDS= to override capture_seconds_default in labs.registry.yaml)."
+        )
+        lines.append(
+            "This terminal stays quiet during capture. Device lines (e.g. LAB02_READY, "
+            "HARNESS_DONE) are saved to logs/device/labs/.../serial.txt, then summarized."
+        )
     lines.append("")
     lines.append("Operator:")
     if spec.run_instructions:
@@ -238,17 +242,13 @@ def run_mode_hint_lines(spec: LabSpec) -> list[str]:
     lines.append(f"  Manual (you scroll on device)     make lab.{name} [KIT=<nickname>]")
     lines.append(f"  Clean default variant build dir   make lab.{name}.clean")
     if "scripted" in spec.variants:
-        lines.append(f"  Auto-scroll (device runs script)  make lab.{name}.scripted [KIT=<nickname>]")
+        lines.append(f"  Automated managed run             make lab.{name}.scripted [KIT=<nickname>]")
         lines.append(f"  Clean scripted build dir          make lab.{name}.scripted.clean")
     if "eager" in spec.variants:
         lines.append(f"  Eager comparison build            make lab.{name}.eager [KIT=<nickname>]")
         lines.append(f"  Clean eager build dir             make lab.{name}.eager.clean")
     if "phaseb" in spec.variants:
-        lines.append(
-            f"  Phase B HTTP paging               make lab.{name}.server; "
-            f"make lab.{name}.phaseb.build KIT=<nickname> (required); make lab.{name}.phaseb KIT=…"
-        )
-        lines.append(f"  Clean Phase B build dir           make lab.{name}.phaseb.clean")
+        lines.append("  Backend default                   managed HTTP; BACKEND=local selects local fixture")
     if spec.trace_parser:
         lines.append(f"  Parse last capture (metrics.json) make lab.{name}.parse [RUN_ID=…]")
     return lines

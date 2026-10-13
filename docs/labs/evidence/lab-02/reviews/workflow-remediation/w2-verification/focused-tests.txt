@@ -1,0 +1,20 @@
+test_clean_lab_removes_build_dir (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_clean_lab_removes_build_dir) ... ok
+test_missing_assignments_detects_stale_sdkconfig (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_missing_assignments_detects_stale_sdkconfig) ... ok
+test_phaseb_build_requires_kit (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_phaseb_build_requires_kit) ... ok
+test_prepare_unconfigured_build_dir_is_empty (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_prepare_unconfigured_build_dir_is_empty) ... ok
+test_refresh_removes_stale_sdkconfig (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_refresh_removes_stale_sdkconfig) ... ok
+test_build_only_kit_selection_does_not_enumerate_hardware (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_build_only_kit_selection_does_not_enumerate_hardware) ... ok
+test_capture_revalidates_frozen_identity_before_flash_write (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_capture_revalidates_frozen_identity_before_flash_write) ... ok
+test_duplicate_serials_and_duplicate_roster_bindings_fail_closed (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_duplicate_serials_and_duplicate_roster_bindings_fail_closed) ... ok
+test_explicit_kit_requires_connected_registered_binding_and_matching_port (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_explicit_kit_requires_connected_registered_binding_and_matching_port) ... ok
+test_frozen_target_detects_disconnect_or_swapped_device_identity (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_frozen_target_detects_disconnect_or_swapped_device_identity) ... ok
+test_no_kit_requires_exactly_one_connected_registered_target (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_no_kit_requires_exactly_one_connected_registered_target) ... ok
+test_run_entrypoint_resolves_target_before_build_or_flash (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_run_entrypoint_resolves_target_before_build_or_flash) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.060s
+
+OK
+Cleaned lab.lab02 variant=phaseb -> removed build/labs/lab-02-bounded-inbox-phaseb
+Removing stale /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp9rj_va0y/build_dir/sdkconfig (missing 2 variant default(s), e.g. CONFIG_LAB02_FIXTURE_16)
+Note: kit A (secrets_profile=profile-a) has no Wi-Fi in secrets_profiles or lab.phaseb_server_url; Phase B credentials must come from menuconfig or sdkconfig.defaults.

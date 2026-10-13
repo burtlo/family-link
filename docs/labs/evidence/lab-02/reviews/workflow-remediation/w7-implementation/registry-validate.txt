@@ -1,0 +1,1 @@
+valid: /Users/lynnfrank/src/family-link/config/labs.registry.yaml

@@ -1,0 +1,141 @@
+--- /tmp/lab02-w7-readstart-fix/prior-test_lab02_canonical_run.py	2026-10-12 22:20:42
++++ /tmp/lab02-w7-readstart-fix/test_lab02_canonical_run.py	2026-10-12 22:20:42
+@@ -28,6 +28,12 @@
+     reset_output = None
+     fail_reset = False
+     interrupt_reset = False
++    straddle_read = False
++    straddle_chunk = b""
++    post_reset_chunk = b""
++    read_count = 0
++    straddle_started = None
++    reset_released = None
+ 
+     def __init__(self, port, baudrate, timeout):
+         self.port = port
+@@ -51,13 +57,19 @@
+             self.events.append(("log_exists", bool(self.capture_log_path and self.capture_log_path.is_file())))
+             self.events.append(("read_entered", "read_entered" in self.events))
+             self.events.append(("reader_owned", any(t.name.startswith("lab02-uart-") for t in threading.enumerate())))
++            if self.straddle_read and self.straddle_started:
++                if not self.straddle_started.wait(1):
++                    raise AssertionError("reader did not enter straddling read before reset")
+             if self.fail_reset:
+                 raise OSError("reset failed")
+             if self.interrupt_reset:
+                 raise KeyboardInterrupt
+         if not value and any(event == ("rts", True) for event in self.events):
+-            self.buffer.extend(self.marker if self.reset_output is None else self.reset_output)
++            if not self.straddle_read:
++                self.buffer.extend(self.marker if self.reset_output is None else self.reset_output)
+             self.buffer.extend(self.tail)
++            if self.reset_released:
++                self.reset_released.set()
+ 
+     def reset_input_buffer(self):
+         self.events.append(("clear", None))
+@@ -66,6 +78,19 @@
+ 
+     def read(self, size):
+         self.events.append(("read_entered",))
++        self.__class__.read_count += 1
++        read_count = self.__class__.read_count
++        if self.straddle_read and read_count == 2:
++            self.straddle_started.set()
++            self.reset_released.wait(1)
++            chunk = self.straddle_chunk
++            if chunk:
++                return chunk
++            return b""
++        if self.straddle_read and read_count >= 3 and self.post_reset_chunk:
++            chunk = self.post_reset_chunk
++            self.__class__.post_reset_chunk = b""
++            return chunk
+         if not self.buffer:
+             import time
+             time.sleep(0.01)
+@@ -90,7 +115,8 @@
+ 
+ class CanonicalRunTests(unittest.TestCase):
+     def _local_run(self, run_id, *, mode="manual", variant="recycle", seconds=1, tail=b"", marker_factory=None,
+-                   pre_reset=b"", reset_output=None, fail_reset=False, interrupt_reset=False):
++                   pre_reset=b"", reset_output=None, fail_reset=False, interrupt_reset=False,
++                   straddle_chunk=None, post_reset_chunk=None):
+         import shutil
+         fake_module = types.ModuleType("serial")
+         fake_module.Serial = FakeSerial
+@@ -100,6 +126,12 @@
+         FakeSerial.reset_output = reset_output
+         FakeSerial.fail_reset = fail_reset
+         FakeSerial.interrupt_reset = interrupt_reset
++        FakeSerial.straddle_read = straddle_chunk is not None or post_reset_chunk is not None
++        FakeSerial.straddle_chunk = straddle_chunk or b""
++        FakeSerial.post_reset_chunk = post_reset_chunk or b""
++        FakeSerial.read_count = 0
++        FakeSerial.straddle_started = threading.Event()
++        FakeSerial.reset_released = threading.Event()
+         selected = SimpleNamespace(kit_id="testkit", device="/dev/fake", kit=object(),
+             deployment=SimpleNamespace(secrets_profile_for_kit=lambda _kit: None))
+         build_dir = ROOT / ("build/labs/lab-02-bounded-inbox" if variant == "recycle" else
+@@ -112,6 +144,10 @@
+             FakeSerial.marker = marker_factory(kwargs["frozen_build_id"]) if marker_factory else (
+                 f"LAB02_READY build={kwargs['frozen_build_id']} fixture=inbox_64 mode=recycle "
+                 f"harness={'1' if mode == 'scripted' else '0'} scenario=nominal\n").encode()
++            if FakeSerial.straddle_chunk:
++                FakeSerial.straddle_chunk = FakeSerial.straddle_chunk.replace(b"placeholder", kwargs["frozen_build_id"].encode())
++            if FakeSerial.post_reset_chunk:
++                FakeSerial.post_reset_chunk = FakeSerial.post_reset_chunk.replace(b"placeholder", kwargs["frozen_build_id"].encode())
+             return build_dir
+         try:
+             with patch.dict(sys.modules, {"serial": fake_module}):
+@@ -126,6 +162,9 @@
+             FakeSerial.reset_output = None
+             FakeSerial.fail_reset = False
+             FakeSerial.interrupt_reset = False
++            FakeSerial.straddle_read = False
++            FakeSerial.straddle_chunk = b""
++            FakeSerial.post_reset_chunk = b""
+             for name in ("lab02_bounded_inbox.bin", "flasher_args.json", "sdkconfig"):
+                 (build_dir / name).unlink(missing_ok=True)
+ 
+@@ -262,9 +301,40 @@
+         self.assertEqual(result, 1)
+         self.assertEqual(data["terminal_reason"], "fresh_boot_marker_timeout")
+         self.assertIn(stale.decode().strip(), serial_path.read_text())
++        shutil.rmtree(manifest.parent, ignore_errors=True)
++        shutil.rmtree(serial_path.parent, ignore_errors=True)
++
++    def test_identity_matching_marker_from_straddling_read_cannot_satisfy_freshness(self):
++        import shutil
++        run_id = "w7-readstart-straddle-" + uuid.uuid4().hex[:8]
++        marker_factory = lambda identity: (f"LAB02_READY build={identity} fixture=inbox_64 mode=recycle "
++            "harness=0 scenario=nominal\n").encode()
++        result = self._local_run(run_id, marker_factory=marker_factory,
++                                 straddle_chunk=marker_factory("placeholder"))
++        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
++        data = json.loads(manifest.read_text())
++        serial_path = ROOT / "logs/device/labs/lab-02" / run_id / "serial.txt"
++        identity = data["firmware"]["build_id"]
++        self.assertEqual(result, 1)
++        self.assertEqual(data["workflow_status"], "INCOMPLETE")
++        self.assertEqual(data["terminal_reason"], "fresh_boot_marker_timeout")
++        self.assertIn(marker_factory(identity).decode().strip(), serial_path.read_text())
+         shutil.rmtree(manifest.parent, ignore_errors=True)
+         shutil.rmtree(serial_path.parent, ignore_errors=True)
+ 
++    def test_read_started_after_reset_can_establish_fresh_readiness(self):
++        import shutil
++        run_id = "w7-readstart-fresh-" + uuid.uuid4().hex[:8]
++        result = self._local_run(run_id, post_reset_chunk=(b"LAB02_READY build=placeholder fixture=inbox_64 "
++                                  b"mode=recycle harness=0 scenario=nominal\n"))
++        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
++        data = json.loads(manifest.read_text())
++        self.assertEqual(result, 0)
++        self.assertEqual(data["workflow_status"], "PASS")
++        self.assertEqual(data["experiment_verdict"], "UNMEASURED")
++        shutil.rmtree(manifest.parent, ignore_errors=True)
++        shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
++
+     def test_reset_exception_finalizes_and_closes_uart(self):
+         import shutil
+         run_id = "w7-resetfail-" + uuid.uuid4().hex[:8]

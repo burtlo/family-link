@@ -10,6 +10,12 @@
 
 static lab02_carousel_t *s_carousel;
 
+static const char *focused_message_id(lab02_carousel_t *c, int index)
+{
+    const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, index);
+    return item ? item->message_id : NULL;
+}
+
 static int32_t content_w(int item_count)
 {
     if (item_count <= 0) {
@@ -116,6 +122,10 @@ static void on_snap_done(void *user)
     lab02_session_intent_scroll_lock(false);
     sync_from_session(c, true);
     rebind_pool(c);
+    char extra[48];
+    snprintf(extra, sizeof(extra), "snap_id=%u", (unsigned)lab02_snap_current_id());
+    lab02_trace_emit("snap_end", 0, c->focus_index,
+                     focused_message_id(c, c->focus_index), extra);
 }
 
 static void scroll_event_cb(lv_event_t *e)
@@ -137,7 +147,8 @@ static void scroll_event_cb(lv_event_t *e)
             c->focus_index = idx;
             int32_t target = lab02_snap_target_x_for_index(idx, c->item_count);
             lab02_session_intent_scroll_lock(true);
-            lab02_snap_animate_to(c->scroll, &c->snap, target, on_snap_done, c);
+            lab02_snap_animate_to(c->scroll, &c->snap, target, idx,
+                                 focused_message_id(c, idx), on_snap_done, c);
         } else {
             lab02_session_intent_scroll_lock(false);
         }
@@ -215,7 +226,8 @@ void lab02_carousel_set_focus(lab02_carousel_t *c, int index, bool animate)
     int32_t target = lab02_snap_target_x_for_index(index, c->item_count);
     if (animate) {
         lab02_session_intent_scroll_lock(true);
-        lab02_snap_animate_to(c->scroll, &c->snap, target, on_snap_done, c);
+        lab02_snap_animate_to(c->scroll, &c->snap, target, index,
+                             focused_message_id(c, index), on_snap_done, c);
     } else {
         c->programmatic_scroll = true;
         lv_obj_scroll_to_x(c->scroll, target, LV_ANIM_OFF);

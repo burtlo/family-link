@@ -3,10 +3,12 @@
   "lab_id": "LAB-02",
   "lab_revision": "v1",
   "firmware_path": "client/labs/lab-02-bounded-inbox",
-  "server_path": "none",
+  "server_path": "server/labs/lab-02-paging",
   "fixture_schema": "inbox-summary/v1",
   "fixture_revision": "v1",
-  "protocol": "local-only",
+  "protocol": "fl.inbox-page/2 subset; managed HTTP default; BACKEND=local comparison",
   "trace_schema": "lab-trace/v1",
+  "run_manifest": "docs/labs/schemas/run-manifest.v1.md",
+  "workflow_runbook": "docs/labs/assistant-guide.md#lab-02-quick-reference",
   "reference_archive": "v1 POC carousel snap geometry (extracted; no runtime dependency)"
 }

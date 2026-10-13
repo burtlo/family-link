@@ -1,0 +1,5 @@
+--- scripts/tests/test_lab_host.py (pre-maintenance working file)
++++ scripts/tests/test_lab_host.py (after maintenance)
+@@
+-            fixture_size=64, scenario="nominal", scripted=False
++            fixture_size=64, scenario="nominal", scripted=False, build_id=""

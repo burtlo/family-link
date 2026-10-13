@@ -86,6 +86,9 @@ SemaphoreHandle_t xSemaphoreCreateCounting(unsigned max_count, unsigned initial_
 SemaphoreHandle_t xSemaphoreCreateBinary(void)
 { return xSemaphoreCreateCounting(1, 0); }
 
+SemaphoreHandle_t xSemaphoreCreateMutex(void)
+{ return xSemaphoreCreateCounting(1, 1); }
+
 BaseType_t xSemaphoreTake(SemaphoreHandle_t sem, uint32_t ticks)
 {
     pthread_mutex_lock(&sem->mu);
@@ -119,6 +122,11 @@ void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
                       const char *message_id, const char *extra)
 {
     (void)event; (void)generation; (void)focus_index; (void)message_id; (void)extra;
+}
+
+uint32_t lab02_snap_current_id(void)
+{
+    return 0;
 }
 
 void lab02_page_provider_http_start_io(void) {}

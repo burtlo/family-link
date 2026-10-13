@@ -1,0 +1,2 @@
+Temporary boundary harness compiled with -std=c11 -Wall -Wextra -Werror -pthread against tests/session_host_stubs.c and passed.
+Assertions: mutex creation succeeds with an available token; immediate take succeeds; second immediate take while held fails; a waiter blocks with portMAX_DELAY until give; waiter acquires and returns token; token can be taken again afterward.

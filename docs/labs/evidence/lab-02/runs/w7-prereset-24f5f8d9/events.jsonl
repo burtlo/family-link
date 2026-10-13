@@ -1,0 +1,2 @@
+{"kind":"reset","method":"serial_rts_pulse","utc":"2026-10-13T03:05:18.341594+00:00"}
+{"experiment_verdict":"INCOMPLETE","kind":"run_terminal","reason":"fresh_boot_marker_timeout","workflow_status":"INCOMPLETE"}

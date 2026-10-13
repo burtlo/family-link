@@ -61,8 +61,39 @@
           "type": "string",
           "minLength": 1
         },
+        "workflow": {
+          "$ref": "#/$defs/workflow_settings"
+        },
         "run": {
           "$ref": "#/$defs/run_defaults"
+        }
+      }
+    },
+    "workflow_settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["server_path", "bind_host", "bind_port", "fixture_size_default", "scenario_default", "deadlines_seconds"],
+      "properties": {
+        "server_path": { "type": "string", "minLength": 1 },
+        "bind_host": { "type": "string", "minLength": 1 },
+        "bind_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "fixture_size_default": { "type": "integer", "enum": [8, 16, 64, 256] },
+        "scenario_default": {
+          "type": "string",
+          "enum": ["nominal", "S-fix-8", "S-fix-16", "S-fix-64", "S-fix-256", "S-trav-20", "S-rev", "S-delay", "S-push", "S-rm-focus", "S-page-snap"]
+        },
+        "deadlines_seconds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["startup", "health", "seed", "readiness", "action", "cleanup"],
+          "properties": {
+            "startup": { "type": "integer", "minimum": 1 },
+            "health": { "type": "integer", "minimum": 1 },
+            "seed": { "type": "integer", "minimum": 1 },
+            "readiness": { "type": "integer", "minimum": 1 },
+            "action": { "type": "integer", "minimum": 1 },
+            "cleanup": { "type": "integer", "minimum": 1 }
+          }
         }
       }
     },

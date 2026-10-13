@@ -1,0 +1,52 @@
+LAB-02 W7 integrated host gate verification
+Date: 2026-10-12
+Verifier: fresh independent Luna /root/w7_integration_verify
+Outcome: ACCEPTED at integrated host L2; physical target workflow remains W8/L3.
+
+Boundary
+- HEAD: 0b02b30086f1c8c8e985458912646b0d473b967b
+- Working tree: preserved W1-W7 WIP; no source or maintained-doc edits made by this verifier.
+- W7 capture read-start fix source matches its focused verification artifacts: canonical runner 56723b97c1503da6afeb4806fb3c52644389c23eca401bbe35424c9105417a08; canonical tests 8ad34022322c8fdd0d91e7da53a9334b0589c47dca6ce00b59bf6ad5238dab3d.
+- Test-only expectation maintenance matches /tmp/lab02-w7-expectation/report.txt: sole exact change adds build_id="" to the mocked call expectation; current test file SHA-256 027fad180b157191ae745bdbc07d5e7e90e938b380255c0be4d2d0f731204b39. Production API accepts build_id default "" and current _defaults_files_for_lab_build forwards frozen_build_id. The test still patches lab_host.ports to raise AssertionError("build must not enumerate USB"), so the no-USB-enumeration guard is preserved. This changes no production behavior.
+
+Commands and results
+1. PYTHONPATH=scripts .venv/bin/python -m unittest discover -s scripts/tests -v
+   PASS — 146 tests in 57.010s; final status OK. Included canonical runner/reset/read-start, evidence writer, scenarios, managed server, native model, architecture, deployment, registry, project config, and host tests. Real loopback lifecycle/action tests ran successfully.
+2. PYTHONPATH=scripts .venv/bin/python scripts/lab_registry.py validate
+   PASS — valid config/labs.registry.yaml.
+3. PYTHONPATH=scripts .venv/bin/python scripts/deployment_config.py validate
+   PASS — valid local deployment (path omitted here to avoid exposing private config details).
+4. make lab.help
+   PASS — lists LAB-02 with managed HTTP paging and manual/scripted workflow; no separate manual server/curl steps.
+5. make -n lab.lab02
+   PASS — dry-run expands to scripts/lab_host.py run lab02, default variant.
+6. make -n lab.lab02.scripted
+   PASS — dry-run expands to scripts/lab_host.py run lab02 --variant scripted-phaseb.
+
+Observed test side effect
+- Existing LabHostSdkconfigTests clean test removed build/labs/lab-02-bounded-inbox-phaseb (the existing cleanup test explicitly calls clean_lab). It had already removed this build directory in the earlier adjacent verification noted in the execution record. No firmware build was run. No restoration attempted; W8 will require a fresh build.
+
+Current source hashes
+356bf9806bd0ad23e9c12ac6c35d04f1f18f181331af683b9a73bc93396e233c  scripts/lab_host.py
+5f53084ca66e63b265af65172092b20cb53c90fe71aebc46d2f3a5e730dcc14b  scripts/lab02_evidence.py
+1a5bcb09eaa9290fc2c416241abcd15cae0786c55bb5bbbf4741b1bf2563bca1  scripts/lab02_scenarios.py
+b47d8fc9084286a2f5805d99ac780129c92f594c3dbbdbe0eb5f8e134984223a  scripts/lab02_server.py
+b550e76838cc68b8273e6697612ea7e911bb54553627f9dfdf94c6de6925ebd8  scripts/lab02_workflow_config.py
+2e96235fb924880a9cdb260e750e175cfb524a070723411a8c56254a937e4086  scripts/lab_deployment_sdkconfig.py
+f6e92795e0c785c6cb26c3ddbedcc2eb3ed816f26d5556473b5756e5eb5f87d0  scripts/lab_registry.py
+027fad180b157191ae745bdbc07d5e7e90e938b380255c0be4d2d0f731204b39  scripts/tests/test_lab_host.py
+421713b5136562214d351e55500b5c6a1c59d25c626971c1f2493287ca0c8142  config/labs.registry.yaml
+57f62ae10dce4c9da2d584294dbd97bdd86c370c5fa4180996d832f0edf24887  config/labs/labs.registry.schema.v1.json
+47bf582289f00606bbbbf6f53f74b0792da80c3fc9718a49a07d480dc8f54289  config/deployment/deployment.schema.v1.json
+ca7b72a9e98ce09c769ee04afc0a7ff38d0b4021b456868d52ff2fb0397103fa  config/deployment/example.yaml
+feb1b42e2dbe6a10c1691e21df5cca633ae1f8207f58d644f26ba44bcbba54ae  config/host.defaults.ini
+3af148c7862e169cdbf0fecaeb25e3384313b963ebd99da2aee7ded049236abb  Makefile
+
+Disposition
+- Integrated host gate is accepted for W8 progression, subject to W8 hardware availability and fresh target build/capture.
+- F001 managed workflow components and W2/W3 host changes are integrated across 146 host tests and validators; no L3 result is claimed.
+- F003 wrong/ambiguous target selection was exercised by host tests; physical kit selection remains to be observed during W8.
+- F002 configuration separation validation passes, but no additional private config edits were made.
+- GAP-001 evidence writer and integrated manifest path pass host coverage; target run artifacts still require W8.
+- The test-only expected keyword reflects the current API call and retains the USB guard. It does not constitute firmware or workflow PASS by itself.
+- F001/F002/F003 host-level integration gates passed; firmware semantics remain unmeasured and outside this workflow unit.

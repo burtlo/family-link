@@ -1,0 +1,27 @@
+LAB-02 W1 independent verification
+Date: 2026-10-12
+Repository: /Users/lynnfrank/src/family-link
+HEAD: 0b02b30086f1c8c8e985458912646b0d473b967b
+Scope: permitted host semaphore stubs only; no source or maintained-document edits by verifier.
+
+Disposition: VERIFIED FIXED (L0/L1). The baseline compile defect is reproduced from a clean git archive of HEAD and the final focused gate passes. One focused mutex boundary also passes. No regressions observed in the scoped gate. No target/device claim is made.
+
+Changed paths in current worktree:
+- client/labs/lab-02-bounded-inbox/tests/host_stubs/freertos/semphr.h
+- client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
+Diff: declaration of xSemaphoreCreateMutex plus implementation delegating to counting semaphore (max=1, initial=1).
+
+Baseline verification:
+- Clean archive created from HEAD at /tmp/lab02-w1-verify/baseline.
+- Exact gate command run from archive with repository .venv interpreter; exit 1. Five tests ran, four passed, native session test errored at compile.
+- Direct production-session compile emitted undeclared xSemaphoreCreateMutex at lab02_session.c:402 plus incompatible int-to-pointer diagnostic; see baseline-compile.txt.
+
+Final verification:
+- Exact gate command: .venv/bin/python -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture -v
+- Exit 0, all 5 tests passed; see final-gate.txt. This covers production session compilation and execution as well as architecture checks.
+- Temporary mutex boundary harness passed: initial available token, no immediate second acquisition while held, blocking waiter wakes after give, returned token reusable; see mutex-boundary-result.txt.
+- Scoped diff check passed with CRLF handling: git -c core.whitespace=cr-at-eol diff --check -- <two changed paths>.
+
+Source hashes for final changed files: final-source-sha256.txt. Supplied snapshot artifact hashes: input-artifact-sha256.txt. HEAD and working tree status remained stable during verification; pre-existing docs WIP remained outside scope.
+
+Evidence level: L0 (host compile/static checks) and L1 (native model/session plus focused semaphore boundary). L2/L3 not required by W1 and not claimed.

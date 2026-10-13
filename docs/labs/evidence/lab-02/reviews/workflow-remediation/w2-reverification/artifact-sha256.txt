@@ -1,0 +1,4 @@
+e82677cf9416fbf60eb153634e9b5470faf099ad06de45620708ad0e266cd28f  /tmp/lab02-w2-reverify/focused-tests.txt
+7ad69d963a41637f22cc40f77df63165e025ac2433ecdef3be12f647edf2bd9b  /tmp/lab02-w2-reverify/simulated-harness.py
+74d40ffc6cd598a1b9bda0a586e3ab051ddae44e9bbeefa1d3ef7fe62a6c7a11  /tmp/lab02-w2-reverify/simulated-harness.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  /tmp/lab02-w2-reverify/diff-check.txt

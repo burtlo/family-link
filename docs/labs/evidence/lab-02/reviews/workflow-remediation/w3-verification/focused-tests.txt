@@ -1,0 +1,11 @@
+----------------------------------------------------------------------
+Ran 42 tests in 0.714s
+
+OK
+Removing stale /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpwbfajzhr/lab-build/sdkconfig (deployment kit secrets changed for k)
+Deployment Phase B sdkconfig for kit k -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpwbfajzhr/lab-build.deployment.k.defaults
+Removing stale /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpwbfajzhr/lab-build/sdkconfig (deployment kit secrets changed for k)
+Deployment Phase B sdkconfig for kit k -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpwbfajzhr/lab-build.deployment.k.defaults
+Deployment Phase B sdkconfig for kit k -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp93e6ngal/lab-build.deployment.k.defaults
+Removing stale /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp93e6ngal/lab-build/sdkconfig (deployment kit secrets changed for k)
+Deployment Phase B sdkconfig for kit k -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp93e6ngal/lab-build.deployment.k.defaults

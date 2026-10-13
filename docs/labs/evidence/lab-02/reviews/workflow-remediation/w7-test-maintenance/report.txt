@@ -1,0 +1,18 @@
+W7 stale host-test expectation maintenance
+
+Scope: scripts/tests/test_lab_host.py only. Production code unchanged by this maintenance.
+Reason: current _defaults_files_for_lab_build forwards frozen_build_id (default "") as build_id to write_deployment_kit_sdkconfig. Existing mock assertion omitted that optional keyword. The test continues to mock lab_host.ports with AssertionError("build must not enumerate USB"), preserving the no-hardware-enumeration invariant.
+
+Focused exact edit relative to pre-maintenance working file:
+-            fixture_size=64, scenario="nominal", scripted=False
++            fixture_size=64, scenario="nominal", scripted=False, build_id=""
+
+Validation:
+Command: PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab_host -v
+Result: PASS, 16 tests.
+
+Source SHA-256 after edit:
+scripts/tests/test_lab_host.py 027fad180b157191ae745bdbc07d5e7e90e938b380255c0be4d2d0f731204b39
+scripts/lab_host.py 356bf9806bd0ad23e9c12ac6c35d04f1f18f181331af683b9a73bc93396e233c
+
+Caveat: test_lab_host.py and lab_host.py already had extensive WIP relative to HEAD before this focused maintenance; those unrelated changes were preserved. No firmware/production behavior, private configuration, hardware, commits, or additional tests were changed as part of this task.

@@ -1,0 +1,121 @@
+test_clean_lab_removes_build_dir (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_clean_lab_removes_build_dir) ... ok
+test_ensure_build_uses_same_frozen_defaults (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_ensure_build_uses_same_frozen_defaults) ... ok
+test_missing_assignments_detects_stale_sdkconfig (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_missing_assignments_detects_stale_sdkconfig) ... ok
+test_phaseb_build_requires_kit (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_phaseb_build_requires_kit) ... ok
+test_phaseb_build_requires_private_wifi_before_url_resolution (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_phaseb_build_requires_private_wifi_before_url_resolution) ... ok
+test_prepare_unconfigured_build_dir_is_empty (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_prepare_unconfigured_build_dir_is_empty) ... ok
+test_refresh_removes_stale_sdkconfig (scripts.tests.test_lab_host.LabHostSdkconfigTests.test_refresh_removes_stale_sdkconfig) ... ok
+test_build_only_kit_selection_does_not_enumerate_hardware (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_build_only_kit_selection_does_not_enumerate_hardware) ... ok
+test_capture_accepts_alias_for_frozen_target_with_or_without_supplied_target (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_capture_accepts_alias_for_frozen_target_with_or_without_supplied_target) ... ok
+test_capture_alias_mismatch_fails_before_flash_write (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_capture_alias_mismatch_fails_before_flash_write) ... ok
+test_capture_revalidates_frozen_identity_before_flash_write (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_capture_revalidates_frozen_identity_before_flash_write) ... ok
+test_duplicate_serials_and_duplicate_roster_bindings_fail_closed (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_duplicate_serials_and_duplicate_roster_bindings_fail_closed) ... ok
+test_explicit_kit_requires_connected_registered_binding_and_matching_port (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_explicit_kit_requires_connected_registered_binding_and_matching_port) ... ok
+test_frozen_target_detects_disconnect_or_swapped_device_identity (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_frozen_target_detects_disconnect_or_swapped_device_identity) ... ok
+test_no_kit_requires_exactly_one_connected_registered_target (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_no_kit_requires_exactly_one_connected_registered_target) ... ok
+test_run_entrypoint_resolves_target_before_build_or_flash (scripts.tests.test_lab_host.LabHostTargetSelectionTests.test_run_entrypoint_resolves_target_before_build_or_flash) ... ok
+test_ambiguous_interfaces_fail (scripts.tests.test_lab02_workflow_config.Lab02WorkflowConfigTests.test_ambiguous_interfaces_fail) ... ok
+test_derives_url_from_one_eligible_interface (scripts.tests.test_lab02_workflow_config.Lab02WorkflowConfigTests.test_derives_url_from_one_eligible_interface) ... ok
+test_direct_loader_enforces_registry_schema_and_workflow_domain (scripts.tests.test_lab02_workflow_config.Lab02WorkflowConfigTests.test_direct_loader_enforces_registry_schema_and_workflow_domain) ... ok
+test_explicit_url_must_match_local_interface_and_bind_port (scripts.tests.test_lab02_workflow_config.Lab02WorkflowConfigTests.test_explicit_url_must_match_local_interface_and_bind_port) ... ok
+test_filters_ineligible_and_duplicate_interfaces (scripts.tests.test_lab02_workflow_config.Lab02WorkflowConfigTests.test_filters_ineligible_and_duplicate_interfaces) ... ok
+test_action_rejection_and_interrupt_each_have_one_terminal (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_action_rejection_and_interrupt_each_have_one_terminal) ... ok
+test_action_timeout_and_cancel_each_emit_one_terminal (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_action_timeout_and_cancel_each_emit_one_terminal) ... ok
+test_cleanup_failure_keeps_owned_handle_and_can_retry (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_cleanup_failure_keeps_owned_handle_and_can_retry) ... ok
+test_foreign_listener_is_never_stopped (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_foreign_listener_is_never_stopped) ... ok
+test_real_owned_child_health_seed_and_idempotent_cleanup (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_real_owned_child_health_seed_and_idempotent_cleanup) ... ok
+test_real_rejected_http_action_is_failure (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_real_rejected_http_action_is_failure) ... ok
+test_request_deadline_bounds_slow_drip_body (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_request_deadline_bounds_slow_drip_body) ... ok
+test_seed_interrupt_has_one_cancelled_terminal (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_seed_interrupt_has_one_cancelled_terminal) ... ok
+test_seed_rejects_non_ok_receipt (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_seed_rejects_non_ok_receipt) ... ok
+test_seed_timeout_cleans_owned_child_with_one_terminal_seed_event (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_seed_timeout_cleans_owned_child_with_one_terminal_seed_event) ... ok
+test_startup_deadline_cancels_late_spawn_and_reaps_child (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_startup_deadline_cancels_late_spawn_and_reaps_child) ... ok
+test_startup_exit_has_terminal_health_and_cleanup_events (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_startup_exit_has_terminal_health_and_cleanup_events) ... ok
+test_wrong_health_identity_times_out_and_owned_child_is_cleaned (scripts.tests.test_lab02_server.ManagedLab02ServerTests.test_wrong_health_identity_times_out_and_owned_child_is_cleaned) ... ok
+test_action_effect_requires_real_paired_apply_and_semantic_identity (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_action_effect_requires_real_paired_apply_and_semantic_identity) ... ok
+test_action_requires_capture_and_active_snap (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_action_requires_capture_and_active_snap) ... ok
+test_close_cancels_and_joins_dispatch_worker (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_close_cancels_and_joins_dispatch_worker) ... ok
+test_dispatch_freezes_nested_data_before_worker_runs (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_dispatch_freezes_nested_data_before_worker_runs) ... ok
+test_effect_without_matching_fetch_or_with_other_run_is_incomplete (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_effect_without_matching_fetch_or_with_other_run_is_incomplete) ... ok
+test_ingest_rejects_other_run_and_unmatched_apply (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_ingest_rejects_other_run_and_unmatched_apply) ... ok
+test_late_action_receipt_after_snap_end_does_not_replay_effect (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_late_action_receipt_after_snap_end_does_not_replay_effect) ... ok
+test_nominal_without_mutation_is_unmeasured (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_nominal_without_mutation_is_unmeasured) ... ok
+test_page_receipt_requires_run_action_and_fetch_apply_pair_inside_snap (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_page_receipt_requires_run_action_and_fetch_apply_pair_inside_snap) ... ok
+test_valid_apply_after_receipt_before_snap_end_is_recorded (scripts.tests.test_lab02_scenarios.ScenarioTraceTests.test_valid_apply_after_receipt_before_snap_end_is_recorded) ... ok
+test_artifact_paths_must_be_canonical_existing_files_inside_root (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_artifact_paths_must_be_canonical_existing_files_inside_root) ... ok
+test_atomic_manifest_failure_retries_same_terminal_facts (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_atomic_manifest_failure_retries_same_terminal_facts) ... ok
+test_complete_run_records_truthful_summary_and_is_idempotent (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_complete_run_records_truthful_summary_and_is_idempotent) ... ok
+test_context_updates_merge_observed_partial_facts_safely (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_context_updates_merge_observed_partial_facts_safely) ... ok
+test_event_quota_bounds_memory_and_jsonl_and_reserves_terminal (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_event_quota_bounds_memory_and_jsonl_and_reserves_terminal) ... ok
+test_interrupt_cleanup_failure_and_semantic_failure_are_distinct (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_interrupt_cleanup_failure_and_semantic_failure_are_distinct) ... ok
+test_oversized_terminal_reason_retry_keeps_one_bounded_frozen_event (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_oversized_terminal_reason_retry_keeps_one_bounded_frozen_event) ... ok
+test_preflight_and_build_failure_can_finalize_without_serial_or_metrics (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_preflight_and_build_failure_can_finalize_without_serial_or_metrics) ... ok
+test_safe_id_status_validation_and_threaded_event_sink (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_safe_id_status_validation_and_threaded_event_sink) ... ok
+test_terminal_reason_is_sanitized_and_encoded_row_bounded (scripts.tests.test_lab02_evidence.EvidenceRunTests.test_terminal_reason_is_sanitized_and_encoded_row_bounded) ... ok
+test_lines_use_secrets_profile (scripts.tests.test_lab_deployment_sdkconfig.LabDeploymentSdkconfigTests.test_lines_use_secrets_profile) ... ok
+test_phaseb_overlay_freezes_fixture_scenario_and_harness (scripts.tests.test_lab_deployment_sdkconfig.LabDeploymentSdkconfigTests.test_phaseb_overlay_freezes_fixture_scenario_and_harness) ... ok
+test_quoted_value_escapes (scripts.tests.test_lab_deployment_sdkconfig.LabDeploymentSdkconfigTests.test_quoted_value_escapes) ... ok
+test_write_invalidates_on_secret_change (scripts.tests.test_lab_deployment_sdkconfig.LabDeploymentSdkconfigTests.test_write_invalidates_on_secret_change) ... ok
+test_write_invalidates_when_client_url_changes (scripts.tests.test_lab_deployment_sdkconfig.LabDeploymentSdkconfigTests.test_write_invalidates_when_client_url_changes) ... ok
+test_overlay_change_invalidates_stale_sdkconfig (scripts.tests.test_lab02_experiment_sdkconfig.LocalOverlayTests.test_overlay_change_invalidates_stale_sdkconfig) ... ok
+test_overlay_freezes_local_fixture_scenario_and_harness_without_secrets (scripts.tests.test_lab02_experiment_sdkconfig.LocalOverlayTests.test_overlay_freezes_local_fixture_scenario_and_harness_without_secrets) ... ok
+test_catalog_documents_schema (scripts.tests.test_lab_registry.LabRegistryTests.test_catalog_documents_schema) ... ok
+test_cli_validate_and_dump (scripts.tests.test_lab_registry.LabRegistryTests.test_cli_validate_and_dump) ... ok
+test_loads_lab02 (scripts.tests.test_lab_registry.LabRegistryTests.test_loads_lab02) ... ok
+test_variants (scripts.tests.test_lab_registry.LabRegistryTests.test_variants) ... ok
+test_local_and_eager_runs_share_manifest_capture_and_reset_path (scripts.tests.test_lab02_canonical_run.CanonicalRunTests.test_local_and_eager_runs_share_manifest_capture_and_reset_path) ... ok
+test_managed_http_runs_server_build_flash_capture_reset_and_manifest (scripts.tests.test_lab02_canonical_run.CanonicalRunTests.test_managed_http_runs_server_build_flash_capture_reset_and_manifest) ... ok
+test_preflight_failure_writes_partial_manifest_once (scripts.tests.test_lab02_canonical_run.CanonicalRunTests.test_preflight_failure_writes_partial_manifest_once) ... ok
+test_serial_redactor_handles_split_secret_and_event_values (scripts.tests.test_lab02_canonical_run.CanonicalRunTests.test_serial_redactor_handles_split_secret_and_event_values) ... ok
+test_unsafe_configured_log_root_fails_before_target_or_flash (scripts.tests.test_lab02_canonical_run.CanonicalRunTests.test_unsafe_configured_log_root_fails_before_target_or_flash) ... ok
+
+----------------------------------------------------------------------
+Ran 70 tests in 9.207s
+
+OK
+Cleaned lab.lab02 variant=phaseb -> removed build/labs/lab-02-bounded-inbox-phaseb
+Removing stale /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpt987a9uy/build_dir/sdkconfig (missing 2 variant default(s), e.g. CONFIG_LAB02_FIXTURE_16)
+--------------------------------------------------------------
+  LAB RUN COMPLETE: lab.lab02 (LAB-02)
+  run_id=test-run
+  
+  Files:
+    serial.txt -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp4aoxuj59/labs/lab-02/test-run/serial.txt
+    metrics.json -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp4aoxuj59/labs/lab-02/test-run/metrics.json  (parsed during this run)
+  
+  Make:
+    make lab.lab02.parse RUN_ID=test-run
+    Evidence doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios
+--------------------------------------------------------------
+
+--------------------------------------------------------------
+  LAB RUN COMPLETE: lab.lab02 (LAB-02)
+  run_id=test-run
+  
+  Files:
+    serial.txt -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp4aoxuj59/labs/lab-02/test-run/serial.txt
+    metrics.json -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp4aoxuj59/labs/lab-02/test-run/metrics.json  (parsed during this run)
+  
+  Make:
+    make lab.lab02.parse RUN_ID=test-run
+    Evidence doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios
+--------------------------------------------------------------
+
+Removing stale /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpe6z7hgpq/lab-build/sdkconfig (deployment kit secrets changed for k)
+Deployment Phase B sdkconfig for kit k -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpe6z7hgpq/lab-build.deployment.k.defaults
+Removing stale /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpe6z7hgpq/lab-build/sdkconfig (deployment kit secrets changed for k)
+Deployment Phase B sdkconfig for kit k -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmpe6z7hgpq/lab-build.deployment.k.defaults
+Deployment Phase B sdkconfig for kit k -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmptomeuhu4/lab-build.deployment.k.defaults
+Removing stale /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmptomeuhu4/lab-build/sdkconfig (deployment kit secrets changed for k)
+Deployment Phase B sdkconfig for kit k -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmptomeuhu4/lab-build.deployment.k.defaults
+CAPTURE ACTIVE — command=make lab.lab02 BACKEND=local; backend=local; mode=manual; fixture=64; scenario=nominal; kit=testkit; remaining=1s
+Manual mode: traverse freely, including loading cards.
+LAB-02 workflow_status=PASS experiment_verdict=UNMEASURED run_id=w7-local-73805f41
+CAPTURE ACTIVE — command=make lab.lab02.eager; backend=local; mode=manual; fixture=64; scenario=nominal; kit=testkit; remaining=1s
+Manual mode: traverse freely, including loading cards.
+LAB-02 workflow_status=PASS experiment_verdict=UNMEASURED run_id=w7-eager-8e830c62
+CAPTURE ACTIVE — command=make lab.lab02; backend=managed-http; mode=manual; fixture=64; scenario=nominal; kit=testkit; remaining=1s
+Manual mode: traverse freely, including loading cards.
+LAB-02 workflow_status=PASS experiment_verdict=UNMEASURED run_id=w7-test-4556ee45
+LAB-02 workflow_status=FAIL experiment_verdict=INCOMPLETE run_id=w7-prefail-f31509c1
+LAB-02 workflow_status=FAIL experiment_verdict=INCOMPLETE run_id=w7-logroot-37535cb6

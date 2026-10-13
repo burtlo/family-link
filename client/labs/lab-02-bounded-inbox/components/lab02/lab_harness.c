@@ -7,6 +7,7 @@
 #include "freertos/task.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #if CONFIG_LAB_AUTO_HARNESS
 
@@ -46,7 +47,7 @@ static void harness_step(lab02_carousel_t *c, int index, int step_one_based, int
 {
     const char *who = "—";
     if (lab02_board_lvgl_lock(500)) {
-        lab02_carousel_set_focus(c, index, false);
+        lab02_carousel_set_focus(c, index, true);
         const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, c->focus_index);
         if (item && item->sender_name[0]) {
             who = item->sender_name;
@@ -57,6 +58,26 @@ static void harness_step(lab02_carousel_t *c, int index, int step_one_based, int
     printf("HARNESS_STEP focus=%d (%d/%d) %s\n", index, step_one_based, total, who);
 }
 
+/** Keep scripted traversal on the real animation path, then dwell without holding LVGL. */
+static bool harness_wait_snap(lab02_carousel_t *c, int max_wait_ms)
+{
+    int waited = 0;
+    while (waited < max_wait_ms) {
+        bool locked = false;
+        if (lab02_board_lvgl_lock(100)) {
+            lab02_carousel_pump(c);
+            locked = c->snap.scroll_lock;
+            lab02_board_lvgl_unlock();
+        }
+        if (!locked) {
+            return true;
+        }
+        vTaskDelay(pdMS_TO_TICKS(20));
+        waited += 20;
+    }
+    return false;
+}
+
 static void harness_task(void *arg)
 {
     lab02_carousel_t *c = lab02_carousel_instance();
@@ -64,12 +85,12 @@ static void harness_task(void *arg)
     printf("HARNESS_WAIT boot settle...\n");
     vTaskDelay(pdMS_TO_TICKS(800));
     if (!c) {
-        printf("HARNESS_DONE status=no_carousel\n");
+        printf("HARNESS_DONE build=%s status=no_carousel\n", CONFIG_LAB02_BUILD_ID);
         vTaskDelete(NULL);
         return;
     }
     if (!harness_wait_inbox(c, 30000)) {
-        printf("HARNESS_DONE status=inbox_not_ready\n");
+        printf("HARNESS_DONE build=%s status=inbox_not_ready\n", CONFIG_LAB02_BUILD_ID);
         vTaskDelete(NULL);
         return;
     }
@@ -83,15 +104,33 @@ static void harness_task(void *arg)
     harness_show_step(0, steps, "starting");
     for (int i = 0; i < steps; i++) {
         harness_step(c, i % n, i + 1, steps);
+        if (!harness_wait_snap(c, 1500)) {
+            printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
+            vTaskDelete(NULL);
+            return;
+        }
+        if (i + 1 == 2 &&
+            (strcmp(CONFIG_LAB02_SCENARIO, "S-push") == 0 ||
+             strcmp(CONFIG_LAB02_SCENARIO, "S-rm-focus") == 0)) {
+            printf("HARNESS_SCENARIO_DWELL scenario=%s ms=%d\n",
+                   CONFIG_LAB02_SCENARIO, CONFIG_LAB02_SCENARIO_DWELL_MS);
+            vTaskDelay(pdMS_TO_TICKS(CONFIG_LAB02_SCENARIO_DWELL_MS));
+        }
         vTaskDelay(pdMS_TO_TICKS(700));
     }
     for (int i = steps - 1; i >= 0; i--) {
         harness_step(c, i % n, steps - i, steps);
+        if (!harness_wait_snap(c, 1500)) {
+            printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
+            vTaskDelete(NULL);
+            return;
+        }
         vTaskDelay(pdMS_TO_TICKS(500));
     }
     lab02_board_status_set("");
     lab02_trace_emit("harness_done", 0, c->focus_index, NULL, NULL);
-    printf("HARNESS_DONE steps=%d\n", steps);
+    printf("HARNESS_DONE build=%s steps=%d scenario=%s\n", CONFIG_LAB02_BUILD_ID, steps,
+           CONFIG_LAB02_SCENARIO);
     vTaskDelete(NULL);
 }
 

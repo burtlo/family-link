@@ -1,0 +1,5 @@
+.venv/bin/python scripts/lab_registry.py validate
+valid: config/labs.registry.yaml
+
+.venv/bin/python scripts/deployment_config.py validate
+valid: config/deployment/local.yaml (local)

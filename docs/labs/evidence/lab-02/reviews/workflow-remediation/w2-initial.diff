@@ -1,0 +1,441 @@
+diff --git a/scripts/lab_host.py b/scripts/lab_host.py
+index 3c2f33f..031f777 100644
+--- a/scripts/lab_host.py
++++ b/scripts/lab_host.py
+@@ -10,15 +10,15 @@ import subprocess
+ import sys
+ import time
+ import uuid
++from dataclasses import dataclass
+ from datetime import datetime, timezone
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(ROOT / "scripts"))
+ 
+-from deployment_config import load_active_deployment
+-from device_targets import ports, select
+-from device_targets import kit_for
++from deployment_config import Deployment, Kit, load_active_deployment
++from device_targets import Port, kit_for, ports, resolve_port as resolve_kit_port, select, serial_key, validate_bindings
+ from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
+ from firmware import idf_environment, run
+ from lab_registry import (
+@@ -34,6 +34,60 @@ from project_config import ProjectConfig, ProjectConfigError
+ _BANNER = "-" * 62
+ 
+ 
++@dataclass(frozen=True)
++class RunTarget:
++    """Registered kit and exact USB identity frozen for one host run."""
++
++    kit_id: str
++    device: str
++    serial: str
++    kit: Kit
++    deployment: Deployment
++
++
++def resolve_run_target(config: ProjectConfig, kit: str = "", port: str = "") -> RunTarget:
++    deployment = load_active_deployment(config)
++    validate_bindings(deployment)
++    available = ports()
++    if kit:
++        targets = select(deployment, available, kit, False)
++    elif port:
++        matches = [item for item in available if item.device == port]
++        if len(matches) != 1 or not matches[0].serial:
++            raise ProjectConfigError("PORT must identify one connected device with a readable USB serial")
++        key = serial_key(matches[0].serial)
++        kits = [item for item in deployment.kits if item.usb_serial and serial_key(item.usb_serial) == key]
++        if len(kits) != 1:
++            raise ProjectConfigError("PORT does not identify exactly one registered kit")
++        targets = select(deployment, available, kits[0].id, False)
++    else:
++        targets = select(deployment, available, "", False)
++    if len(targets) != 1:
++        raise ProjectConfigError("A run needs exactly one connected registered kit")
++    selected_kit, selected_port = targets[0]
++    if port and port != selected_port.device:
++        raise ProjectConfigError(
++            f"PORT does not match registered kit {selected_kit.id}'s connected USB binding"
++        )
++    return RunTarget(
++        selected_kit.id, selected_port.device, selected_port.serial, selected_kit, deployment
++    )
++
++
++def revalidate_run_target(config: ProjectConfig, target: RunTarget) -> str:
++    """Confirm the frozen device path still reports the registered serial."""
++    deployment = load_active_deployment(config)
++    validate_bindings(deployment)
++    matches = [item for item in deployment.kits if item.id == target.kit_id]
++    if len(matches) != 1:
++        raise ProjectConfigError("Frozen run kit is no longer uniquely registered")
++    kit = matches[0]
++    current = resolve_kit_port(kit, ports())
++    if current.device != target.device or serial_key(current.serial) != serial_key(target.serial):
++        raise ProjectConfigError("Frozen run target disconnected or changed before flash")
++    return current.device
++
++
+ def _rel(path: Path) -> str:
+     try:
+         return str(path.relative_to(ROOT))
+@@ -229,6 +283,7 @@ def _defaults_files_for_lab_build(
+     build_dir: Path,
+     kit: str,
+     port: str,
++    target: RunTarget | None = None,
+ ) -> list[Path]:
+     defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
+     if not _variant_uses_deployment_kit_secrets(var.name):
+@@ -238,8 +293,8 @@ def _defaults_files_for_lab_build(
+             "Phase B build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
+             "e.g. make lab.lab02.phaseb.build KIT=lynn"
+         )
+-    deployment = load_active_deployment(config)
+-    resolved = kit_for(deployment, kit)
++    deployment = target.deployment if target is not None else load_active_deployment(config)
++    resolved = target.kit if target is not None else kit_for(deployment, kit)
+     overlay = write_deployment_kit_sdkconfig(build_dir, resolved, deployment)
+     if overlay is None:
+         print(
+@@ -311,15 +366,16 @@ def ensure_lab_built(
+     *,
+     kit: str = "",
+     port: str = "",
++    target: RunTarget | None = None,
+ ) -> Path:
+     """Build when artifacts are missing or sdkconfig is stale vs variant defaults."""
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+     build_dir = ROOT / var.build_dir
+-    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
++    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
+     stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
+     if stale or not (build_dir / "flasher_args.json").is_file():
+-        return build_lab(config, make_name, variant, kit=kit, port=port)
++        return build_lab(config, make_name, variant, kit=kit, port=port, target=target)
+     return build_dir
+ 
+ 
+@@ -330,6 +386,7 @@ def build_lab(
+     *,
+     kit: str = "",
+     port: str = "",
++    target: RunTarget | None = None,
+ ) -> Path:
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+@@ -339,7 +396,7 @@ def build_lab(
+     project = ROOT / spec.project_dir
+     build_dir = ROOT / var.build_dir
+     _prepare_lab_build_directory(build_dir)
+-    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
++    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
+     _refresh_stale_sdkconfig(build_dir, defaults_files)
+     env.update(_sdkconfig_defaults_env_from_files(defaults_files))
+     base = idf + [
+@@ -426,15 +483,7 @@ def _print_capture_markers(serial_path: Path) -> None:
+ 
+ 
+ def resolve_port(config: ProjectConfig, kit: str, port: str) -> str:
+-    if port:
+-        return port
+-    deployment = load_active_deployment(config)
+-    targets = select(deployment, ports(), kit, False)
+-    if len(targets) != 1:
+-        raise ProjectConfigError(
+-            "lab flash/capture needs exactly one kit; use KIT=<nickname>, PORT=<port>, or make device.bind"
+-        )
+-    return targets[0][1].device
++    return resolve_run_target(config, kit, port).device
+ 
+ 
+ def capture_lab(
+@@ -449,6 +498,7 @@ def capture_lab(
+     run_id: str,
+     action: str = "capture",
+     emit_operator_help: bool = True,
++    target: RunTarget | None = None,
+ ) -> Path:
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+@@ -473,10 +523,17 @@ def capture_lab(
+             flash=flash,
+         )
+         print()
+-    device_port = resolve_port(config, kit, port)
++    selected_target = target or resolve_run_target(config, kit, port)
++    if kit and kit != selected_target.kit_id:
++        raise ProjectConfigError("Frozen run target does not match requested KIT")
++    if port and port != selected_target.device:
++        raise ProjectConfigError("Frozen run target does not match requested PORT")
+     if flash:
++        device_port = revalidate_run_target(config, selected_target)
+         flash_lab_build(config, build_dir, device_port)
+         time.sleep(1.0)
++    else:
++        device_port = selected_target.device
+     log_dir = config.path_value("firmware.logs") / "labs" / spec.evidence_slug / rid
+     serial_path = log_dir / "serial.txt"
+     capture_serial(device_port, serial_path, seconds)
+@@ -664,7 +721,8 @@ def main() -> int:
+         if args.action == "flash":
+             var = resolve_variant(spec, variant)
+             build_dir = ROOT / var.build_dir
+-            port = resolve_port(config, args.kit, args.port)
++            target = resolve_run_target(config, args.kit, args.port)
++            port = revalidate_run_target(config, target)
+             flash_lab_build(config, build_dir, port)
+             print(f"Flashed lab.{spec.make_name} ({var.name}) on {port}")
+             return 0
+@@ -676,19 +734,23 @@ def main() -> int:
+             flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
+             stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+             rid = args.run_id or f"{stamp}-{var.name}-capture-{uuid.uuid4().hex[:6]}"
++            target = resolve_run_target(config, args.kit, args.port)
+             if args.action == "run" and not args.no_build:
+-                ensure_lab_built(config, args.lab, variant, kit=args.kit, port=args.port)
++                ensure_lab_built(
++                    config, args.lab, variant, kit=target.kit_id, port=target.device, target=target
++                )
+             capture_lab(
+                 config,
+                 args.lab,
+-                kit=args.kit,
+-                port=args.port,
++                kit=target.kit_id,
++                port=target.device,
+                 variant=variant,
+                 seconds=seconds,
+                 flash=flash,
+                 run_id=rid,
+                 action=args.action,
+                 emit_operator_help=True,
++                target=target,
+             )
+             return 0
+         raise ProjectConfigError(f"Unknown action {args.action}")
+diff --git a/scripts/tests/test_lab_host.py b/scripts/tests/test_lab_host.py
+index 0495b5d..cc1da34 100644
+--- a/scripts/tests/test_lab_host.py
++++ b/scripts/tests/test_lab_host.py
+@@ -11,18 +11,29 @@ from lab_host import (  # noqa: E402
+     _prepare_lab_build_directory,
+     _refresh_stale_sdkconfig,
+     _sdkconfig_missing_assignments,
++    capture_lab,
+     clean_lab,
++    revalidate_run_target,
++    resolve_run_target,
++    RunTarget,
+ )
++from deployment_config import Deployment, DeploymentMeta, Kit
++from device_targets import Port
+ from lab_registry import get_lab, resolve_variant
+ from project_config import ProjectConfig, ProjectConfigError
+ 
+ 
+ class LabHostSdkconfigTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.temp.cleanup)
++        self.temp_path = Path(self.temp.name)
++
+     def test_missing_assignments_detects_stale_sdkconfig(self):
+         with self.subTest("empty sdkconfig"):
+-            sdk = Path("sdkconfig")
++            sdk = self.temp_path / "sdkconfig"
+             sdk.write_text("# empty\n", encoding="utf-8")
+-            defaults = Path("defaults")
++            defaults = self.temp_path / "defaults"
+             defaults.write_text("CONFIG_LAB_AUTO_HARNESS=y\n", encoding="utf-8")
+             missing = _sdkconfig_missing_assignments(sdk, [defaults])
+             self.assertEqual(missing, ["CONFIG_LAB_AUTO_HARNESS=y"])
+@@ -33,7 +44,7 @@ class LabHostSdkconfigTests(unittest.TestCase):
+             self.assertEqual(missing, [])
+ 
+     def test_prepare_unconfigured_build_dir_is_empty(self):
+-        build = Path("build_prepare")
++        build = self.temp_path / "build_prepare"
+         build.mkdir(exist_ok=True)
+         (build / "CMakeFiles").mkdir()
+         _prepare_lab_build_directory(build)
+@@ -56,17 +67,17 @@ class LabHostSdkconfigTests(unittest.TestCase):
+         config = ProjectConfig()
+         spec = get_lab("lab02")
+         var = resolve_variant(spec, "phaseb")
+-        build_dir = Path("build_dir_phaseb")
++        build_dir = self.temp_path / "build_dir_phaseb"
+         build_dir.mkdir(exist_ok=True)
+         with self.assertRaisesRegex(ProjectConfigError, "Phase B build requires KIT"):
+             _defaults_files_for_lab_build(config, spec, var, build_dir, "", "")
+ 
+     def test_refresh_removes_stale_sdkconfig(self):
+-        build = Path("build_dir")
++        build = self.temp_path / "build_dir"
+         build.mkdir()
+         sdk = build / "sdkconfig"
+         sdk.write_text("CONFIG_IDF_TARGET_ESP32S3=y\n", encoding="utf-8")
+-        defaults = Path("lab.defaults")
++        defaults = self.temp_path / "lab.defaults"
+         defaults.write_text(
+             "CONFIG_LAB02_FIXTURE_16=y\nCONFIG_LAB_AUTO_HARNESS=y\n", encoding="utf-8"
+         )
+@@ -75,28 +86,132 @@ class LabHostSdkconfigTests(unittest.TestCase):
+         self.assertFalse(sdk.is_file())
+ 
+     def tearDown(self):
+-        for name in ("sdkconfig", "defaults", "lab.defaults"):
+-            p = Path(name)
+-            if p.is_file():
+-                p.unlink()
+-        build = Path("build_dir")
+-        if build.is_dir():
+-            for child in build.iterdir():
+-                child.unlink()
+-            build.rmdir()
+-        phaseb = Path("build_dir_phaseb")
+-        if phaseb.is_dir():
+-            for child in phaseb.iterdir():
+-                child.unlink()
+-            phaseb.rmdir()
+-        prepare = Path("build_prepare")
+-        if prepare.is_dir():
+-            import shutil
+-            shutil.rmtree(prepare)
+-        phaseb_build = Path("build/labs/lab-02-bounded-inbox-phaseb")
+-        if phaseb_build.is_dir():
+-            import shutil
+-            shutil.rmtree(phaseb_build)
++        pass
++
++
++class LabHostTargetSelectionTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.temp.cleanup)
++        self.temp_path = Path(self.temp.name)
++        self.kit_a = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
++        self.kit_b = Kit("B", "endpoint-b", "profile-b", "SERIAL-B")
++        self.deployment = Deployment(
++            Path("local.yaml"), "local", DeploymentMeta("test", "test"), (), (),
++            (self.kit_a, self.kit_b), {},
++        )
++        self.config = ProjectConfig()
++
++    def _resolve(self, available, kit="", port=""):
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
++            "lab_host.ports", return_value=available
++        ):
++            return resolve_run_target(self.config, kit, port)
++
++    def test_no_kit_requires_exactly_one_connected_registered_target(self):
++        with self.assertRaisesRegex(ProjectConfigError, "exactly one"):
++            self._resolve([])
++        target = self._resolve([Port("/dev/a", "serial-a")])
++        self.assertEqual((target.kit_id, target.device), ("A", "/dev/a"))
++        with self.assertRaisesRegex(ProjectConfigError, "exactly one"):
++            self._resolve([Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")])
++
++    def test_explicit_kit_requires_connected_registered_binding_and_matching_port(self):
++        target = self._resolve([Port("/dev/a", "serial-a")], kit="A")
++        self.assertEqual(target.serial, "serial-a")
++        with self.assertRaisesRegex(ProjectConfigError, "PORT does not match"):
++            self._resolve(
++                [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")],
++                kit="A",
++                port="/dev/b",
++            )
++        target = self._resolve(
++            [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")], kit="A"
++        )
++        self.assertEqual((target.kit_id, target.device), ("A", "/dev/a"))
++        with self.assertRaisesRegex(ProjectConfigError, "expected one connected USB match, found 0"):
++            self._resolve([Port("/dev/a", "")], kit="A")
++        with self.assertRaisesRegex(ProjectConfigError, "Unknown or ambiguous kit"):
++            self._resolve([Port("/dev/a", "serial-a")], kit="unknown")
++        target = self._resolve(
++            [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")], port="/dev/b"
++        )
++        self.assertEqual((target.kit_id, target.device), ("B", "/dev/b"))
++        with self.assertRaisesRegex(ProjectConfigError, "readable USB serial"):
++            self._resolve([Port("/dev/a", "")], port="/dev/a")
++
++    def test_duplicate_serials_and_duplicate_roster_bindings_fail_closed(self):
++        with self.assertRaisesRegex(ProjectConfigError, "expected one connected USB match, found 2"):
++            self._resolve([Port("/dev/a", "serial-a"), Port("/dev/clone", "SERIAL-A")], kit="A")
++        duplicate = Deployment(
++            self.deployment.path, self.deployment.source, self.deployment.meta, (), (),
++            (self.kit_a, Kit("C", "endpoint-c", "profile-c", "serial-a")), {},
++        )
++        with patch("lab_host.load_active_deployment", return_value=duplicate), patch(
++            "lab_host.ports", return_value=[Port("/dev/a", "serial-a")]
++        ), self.assertRaisesRegex(ProjectConfigError, "Duplicate USB serial"):
++            resolve_run_target(self.config, "A", "")
++
++    def test_frozen_target_detects_disconnect_or_swapped_device_identity(self):
++        target = self._resolve([Port("/dev/a", "serial-a")], kit="A")
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
++            "lab_host.ports", return_value=[]
++        ), self.assertRaisesRegex(ProjectConfigError, "found 0"):
++            revalidate_run_target(self.config, target)
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
++            "lab_host.ports", return_value=[Port("/dev/other", "serial-a")]
++        ), self.assertRaisesRegex(ProjectConfigError, "disconnected or changed"):
++            revalidate_run_target(self.config, target)
++
++    def test_build_only_kit_selection_does_not_enumerate_hardware(self):
++        from lab_host import _defaults_files_for_lab_build
++
++        spec = get_lab("lab02")
++        var = resolve_variant(spec, "phaseb")
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        with patch("lab_host.ports", side_effect=AssertionError("build must not enumerate USB")), patch(
++            "lab_host.write_deployment_kit_sdkconfig", return_value=None
++        ) as write_overlay:
++            files = _defaults_files_for_lab_build(
++                self.config, spec, var, self.temp_path, "A", "", target
++            )
++        write_overlay.assert_called_once_with(self.temp_path, self.kit_a, self.deployment)
++        self.assertIsInstance(files, list)
++
++    def test_run_entrypoint_resolves_target_before_build_or_flash(self):
++        from lab_host import main
++
++        events = []
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        config = self.config
++        with patch("lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]), patch(
++            "lab_host.ProjectConfig", return_value=config
++        ), patch("lab_host.resolve_run_target", side_effect=lambda *args: events.append("resolve") or target), patch(
++            "lab_host.ensure_lab_built", side_effect=lambda *args, **kwargs: events.append("build")
++        ), patch("lab_host.capture_lab", side_effect=lambda *args, **kwargs: events.append("flash/capture")):
++            self.assertEqual(main(), 0)
++        self.assertEqual(events, ["resolve", "build", "flash/capture"])
++
++    def test_capture_revalidates_frozen_identity_before_flash_write(self):
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        with patch("lab_host.print_run_start"), patch("lab_host.print_operator_help"), patch(
++            "lab_host.revalidate_run_target", side_effect=ProjectConfigError("disconnected")
++        ) as revalidate, patch("lab_host.flash_lab_build") as flash:
++            with self.assertRaisesRegex(ProjectConfigError, "disconnected"):
++                capture_lab(
++                    self.config,
++                    "lab02",
++                    kit="A",
++                    port="/dev/a",
++                    variant="phaseb",
++                    seconds=1,
++                    flash=True,
++                    run_id="test-run",
++                    emit_operator_help=False,
++                    target=target,
++                )
++        revalidate.assert_called_once_with(self.config, target)
++        flash.assert_not_called()
+ 
+ 
+ if __name__ == "__main__":

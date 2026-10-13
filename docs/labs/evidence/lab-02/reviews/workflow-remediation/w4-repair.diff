@@ -1,0 +1,437 @@
+--- scripts/lab02_server.py.initial-w4
++++ scripts/lab02_server.py.repaired
+@@ -2,14 +2,16 @@
+ from __future__ import annotations
+ 
+ import hashlib
++import errno
+ import json
++import select
+ import socket
+ import subprocess
+ import sys
+ import time
+ import threading
++import queue
+ import urllib.error
+-import urllib.request
+ import uuid
+ from dataclasses import dataclass
+ from pathlib import Path
+@@ -58,6 +60,11 @@
+         self._events = event_sink or (lambda event: None)
+         self._terminal_actions: set[str] = set()
+         self._action_lock = threading.Lock()
++        self._seen_lock = threading.Lock()
++        self._seen_actions: set[str] = set()
++        self._spawn_thread: threading.Thread | None = None
++        self._spawn_result: queue.Queue = queue.Queue(maxsize=1)
++        self._spawn_cancel = threading.Event()
+         self._process: subprocess.Popen | None = None
+         self.fixture: FixtureIdentity | None = None
+         self.base_url = f"http://{config.bind_host}:{config.bind_port}"
+@@ -76,15 +83,128 @@
+     def _deadline(self, key: str) -> float:
+         return time.monotonic() + self.config.deadlines_seconds[key]
+ 
+-    def _request(self, path: str, *, payload: dict | None = None, timeout: float = 1.0) -> dict:
++    def _request(self, path: str, *, payload: dict | None = None, timeout: float = 1.0,
++                 max_bytes: int = 65536) -> dict:
++        deadline = time.monotonic() + timeout
+         data = None if payload is None else json.dumps(payload).encode("utf-8")
+-        request = urllib.request.Request(
+-            self.base_url + path, data=data,
+-            headers={"Content-Type": "application/json"} if data is not None else {},
+-            method="POST" if data is not None else "GET")
+-        with urllib.request.urlopen(request, timeout=max(0.05, timeout)) as response:
+-            return json.loads(response.read().decode("utf-8"))
++        body = b"" if data is None else data
++        headers = [f"Host: {self.config.bind_host}:{self.config.bind_port}",
++                   "Connection: close", "Accept: application/json"]
++        if data is not None:
++            headers.extend(("Content-Type: application/json", f"Content-Length: {len(body)}"))
++        request = (f"{'POST' if data is not None else 'GET'} {path} HTTP/1.1\r\n"
++                   + "\r\n".join(headers) + "\r\n\r\n").encode("ascii") + body
++        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
++        sock.setblocking(False)
++        try:
++            err = sock.connect_ex((self.config.bind_host, self.config.bind_port))
++            if err not in (0, errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EALREADY, 10035):
++                raise OSError(err, "connect failed")
++            def wait(readable: bool) -> None:
++                remaining = deadline - time.monotonic()
++                if remaining <= 0:
++                    raise TimeoutError("request_deadline")
++                ready = select.select([sock] if readable else [], [] if readable else [sock], [], remaining)
++                if not ready[0] and not ready[1]:
++                    raise TimeoutError("request_deadline")
++            if err:
++                wait(False)
++                connect_error = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
++                if connect_error:
++                    raise OSError(connect_error, "connect failed")
++            view = memoryview(request)
++            sent = 0
++            while sent < len(view):
++                wait(False)
++                count = sock.send(view[sent:])
++                if count == 0:
++                    raise OSError("socket closed while sending")
++                sent += count
++            response = bytearray()
++            marker = -1
++            while marker < 0:
++                if len(response) > 8192:
++                    raise ServerLifecycleError("response_headers_too_large")
++                wait(True)
++                chunk = sock.recv(4096)
++                if not chunk:
++                    raise ServerLifecycleError("invalid_response")
++                response.extend(chunk)
++                marker = response.find(b"\r\n\r\n")
++            head = bytes(response[:marker]).decode("iso-8859-1")
++            fields = head.split("\r\n")
++            status = int(fields[0].split(" ", 2)[1])
++            response_headers = {}
++            for field in fields[1:]:
++                name, value = field.split(":", 1)
++                response_headers[name.lower().strip()] = value.strip()
++            raw_length = response_headers.get("content-length")
++            length = int(raw_length) if raw_length is not None else -1
++            if length > max_bytes:
++                raise ServerLifecycleError("response_too_large")
++            result = bytearray(response[marker + 4:])
++            while length < 0 or len(result) < length:
++                wait(True)
++                chunk = sock.recv(min(4096, max_bytes + 1 - len(result)) if length < 0
++                                  else min(4096, length - len(result)))
++                if not chunk:
++                    if length < 0:
++                        break
++                    raise ServerLifecycleError("invalid_response")
++                result.extend(chunk)
++                if len(result) > max_bytes:
++                    raise ServerLifecycleError("response_too_large")
++            if time.monotonic() > deadline:
++                raise TimeoutError("request_deadline")
++            # Preserve HTTP status in the returned mapping for truthful caller checks.
++            decoded = json.loads(result[:length].decode("utf-8"))
++            if not isinstance(decoded, dict):
++                raise ServerLifecycleError("invalid_response")
++            decoded.setdefault("_http_status", status)
++            return decoded
++        finally:
++            sock.close()
+ 
++    def _spawn_owned(self, argv: list[str], deadline: float) -> subprocess.Popen:
++        """Run process creation in a tracked worker; a late child is reaped by that worker."""
++        self._spawn_cancel.clear()
++        self._spawn_result = queue.Queue(maxsize=1)
++        def launch() -> None:
++            try:
++                child = subprocess.Popen(argv, cwd=str(ROOT), stdout=subprocess.DEVNULL,
++                                         stderr=subprocess.DEVNULL)
++                if self._spawn_cancel.is_set():
++                    child.terminate()
++                    try:
++                        child.wait(timeout=self.config.deadlines_seconds["cleanup"])
++                    except subprocess.TimeoutExpired:
++                        child.kill()
++                        child.wait(timeout=self.config.deadlines_seconds["cleanup"])
++                    self._spawn_result.put((None, "cancelled"))
++                else:
++                    self._spawn_result.put((child, None))
++            except BaseException as exc:
++                self._spawn_result.put((None, exc))
++        self._spawn_thread = threading.Thread(target=launch, name=f"lab02-spawn-{self.run_id}", daemon=True)
++        self._spawn_thread.start()
++        try:
++            child, error = self._spawn_result.get(timeout=max(0, deadline-time.monotonic()))
++        except queue.Empty:
++            self._spawn_cancel.set()
++            raise ServerLifecycleError("startup_timeout") from None
++        if error:
++            raise ServerLifecycleError("server_spawn_failed") from None
++        if child is None:
++            raise ServerLifecycleError("startup_timeout")
++        self._spawn_thread.join(timeout=max(0, deadline-time.monotonic()))
++        if self._spawn_thread.is_alive():
++            self._spawn_cancel.set()
++            # Keep ownership of the worker so close() can retry/join it.
++            self._process = child
++            raise ServerLifecycleError("startup_timeout")
++        self._spawn_thread = None
++        return child
++
+     def _listener_occupied(self) -> bool:
+         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+             probe.settimeout(0.25)
+@@ -103,8 +223,7 @@
+             argv = [sys.executable, str(self.config.server_path), "--host", self.config.bind_host,
+                     "--port", str(self.config.bind_port), "--fixture", str(self.fixture.path),
+                     "--owner-run-id", self.run_id]
+-            self._process = subprocess.Popen(argv, cwd=str(ROOT), stdout=subprocess.DEVNULL,
+-                                             stderr=subprocess.DEVNULL)
++            self._process = self._spawn_owned(argv, self._deadline("startup"))
+             self._terminal_event("server_start", "SERVER_START", "success")
+             self._wait_health()
+             self._seed()
+@@ -127,7 +246,7 @@
+                 raise ServerLifecycleError("child_exited")
+             try:
+                 body = self._request("/lab/health", timeout=min(0.5, max(0.05, deadline-time.monotonic())))
+-                if body.get("ok") and body.get("run_id") == self.run_id:
++                if body.get("_http_status") == 200 and body.get("ok") and body.get("run_id") == self.run_id:
+                     self._terminal_event("server_health", "SERVER_HEALTH", "success")
+                     return
+             except (OSError, urllib.error.URLError, ValueError, json.JSONDecodeError):
+@@ -142,21 +261,41 @@
+         try:
+             receipt = self._request("/lab/seed", payload={"run_id": self.run_id},
+                                     timeout=min(2.0, max(0.05, deadline-time.monotonic())))
+-            if (self._process is None or self._process.poll() is not None
++            if (receipt.get("_http_status") != 200 or receipt.get("ok") is not True
++                    or self._process is None or self._process.poll() is not None
+                     or receipt.get("run_id") != self.run_id
+                     or receipt.get("fixture_sha256") != self.fixture.sha256
+                     or receipt.get("count") != self.fixture.size):
+                 raise ServerLifecycleError("seed_receipt_mismatch")
+             self._terminal_event("server_seed", "SERVER_SEED", "success")
+-        except Exception as exc:
+-            reason = "seed_receipt_mismatch" if isinstance(exc, ServerLifecycleError) else "seed_failed"
+-            self._terminal_event("server_seed", "SERVER_SEED", "failure", reason)
++        except BaseException as exc:
++            reason = "seed_receipt_mismatch" if isinstance(exc, ServerLifecycleError) else (
++                "interrupted" if not isinstance(exc, Exception) else "seed_failed")
++            self._terminal_event("server_seed", "SERVER_SEED",
++                                 "cancelled" if not isinstance(exc, Exception) else "failure", reason)
++            if not isinstance(exc, Exception):
++                raise
+             if isinstance(exc, ServerLifecycleError):
+                 raise
+             raise ServerLifecycleError("seed_failed") from None
+ 
+     def close(self) -> None:
+-        process, self._process = self._process, None
++        process = self._process
++        worker = self._spawn_thread
++        if worker is not None:
++            self._spawn_cancel.set()
++            worker.join(timeout=self.config.deadlines_seconds["cleanup"])
++            if worker.is_alive():
++                self._terminal_event("server_cleanup", "CLEANUP", "failure", "spawn_cleanup_timeout")
++                raise ServerLifecycleError("cleanup_failed")
++            self._spawn_thread = None
++            if process is None:
++                try:
++                    late_child, _ = self._spawn_result.get_nowait()
++                    process = late_child
++                    self._process = process
++                except queue.Empty:
++                    pass
+         if process is None:
+             return
+         try:
+@@ -167,28 +306,56 @@
+                 except subprocess.TimeoutExpired:
+                     process.kill()
+                     process.wait(timeout=self.config.deadlines_seconds["cleanup"])
++            self._process = None
+             self._terminal_event("server_cleanup", "CLEANUP", "success")
+         except Exception:
+             self._terminal_event("server_cleanup", "CLEANUP", "failure", "cleanup_failed")
++            raise ServerLifecycleError("cleanup_failed") from None
+ 
+     def post_action(self, action_id: str, payload: dict, *, cancelled: threading.Event | None = None) -> dict:
+         """Perform one serialized script request with one bounded terminal event."""
+-        if cancelled is not None and cancelled.is_set():
+-            self._terminal_event(action_id, "SCENARIO", "cancelled", "cancelled")
+-            raise ServerLifecycleError("action_cancelled")
+-        with self._action_lock:
++        with self._seen_lock:
++            if action_id in self._seen_actions:
++                raise ServerLifecycleError("duplicate_action_id")
++            self._seen_actions.add(action_id)
++        frozen_payload = json.loads(json.dumps(payload))
++        deadline = self._deadline("action")
++        acquired = False
++        try:
++            while time.monotonic() < deadline:
++                if cancelled is not None and cancelled.is_set():
++                    raise InterruptedError
++                acquired = self._action_lock.acquire(timeout=min(0.05, deadline-time.monotonic()))
++                if acquired:
++                    break
++            if not acquired:
++                raise TimeoutError("action_lock_timeout")
++        except BaseException as exc:
++            self._terminal_event(action_id, "SCENARIO", "cancelled" if not isinstance(exc, Exception) or isinstance(exc, InterruptedError) else "failure",
++                                 "cancelled" if isinstance(exc, InterruptedError) else "interrupted" if not isinstance(exc, Exception) else "action_timeout")
++            if acquired:
++                self._action_lock.release()
++            if isinstance(exc, KeyboardInterrupt):
++                raise
++            raise ServerLifecycleError("action_cancelled" if isinstance(exc, InterruptedError) else "action_failed") from None
++        try:
+             if cancelled is not None and cancelled.is_set():
+-                self._terminal_event(action_id, "SCENARIO", "cancelled", "cancelled")
+-                raise ServerLifecycleError("action_cancelled")
+-            deadline = self._deadline("action")
+-            try:
+-                result = self._request("/lab/script", payload=payload,
+-                                       timeout=max(0.05, deadline-time.monotonic()))
+-                self._terminal_event(action_id, "SCENARIO", "success")
+-                return result
+-            except (OSError, urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError):
+-                self._terminal_event(action_id, "SCENARIO", "failure", "action_timeout_or_transport")
+-                raise ServerLifecycleError("action_failed") from None
++                raise InterruptedError
++            result = self._request("/lab/script", payload=frozen_payload,
++                                   timeout=max(0.001, deadline-time.monotonic()))
++            if result.get("_http_status") != 200 or result.get("ok") is not True:
++                raise ServerLifecycleError("action_rejected")
++            self._terminal_event(action_id, "SCENARIO", "success")
++            return result
++        except BaseException as exc:
++            interrupted = isinstance(exc, (KeyboardInterrupt, InterruptedError))
++            self._terminal_event(action_id, "SCENARIO", "cancelled" if interrupted else "failure",
++                                 "interrupted" if interrupted else "action_rejected" if isinstance(exc, ServerLifecycleError) else "action_timeout_or_transport")
++            if isinstance(exc, KeyboardInterrupt):
++                raise
++            raise ServerLifecycleError("action_cancelled" if interrupted else "action_failed") from None
++        finally:
++            self._action_lock.release()
+ 
+     def __enter__(self) -> "ManagedLab02Server":
+         self.start()
+--- scripts/tests/test_lab02_server.py.initial-w4
++++ scripts/tests/test_lab02_server.py.repaired
+@@ -2,6 +2,7 @@
+ import sys
+ import tempfile
+ import threading
++import time
+ import unittest
+ from pathlib import Path
+ from unittest.mock import patch
+@@ -124,6 +125,120 @@
+         self.assertEqual(sum(e["action_id"] == "act-timeout" for e in events), 1)
+         self.assertEqual(sum(e["action_id"] == "act-cancel" for e in events), 1)
+ 
++    def test_startup_deadline_cancels_late_spawn_and_reaps_child(self):
++        events = []
++        manager = ManagedLab02Server(config(free_port(), startup=1), event_sink=events.append)
++        manager.config.deadlines_seconds["startup"] = 0.03
++        class SlowChild:
++            def __init__(self): self.terminated = False
++            def terminate(self): self.terminated = True
++            def wait(self, timeout=None): return 0
++        child = SlowChild()
++        def slow_popen(*args, **kwargs):
++            time.sleep(0.08)
++            return child
++        with patch("lab02_server.subprocess.Popen", side_effect=slow_popen):
++            with self.assertRaisesRegex(ServerLifecycleError, "startup_timeout"):
++                manager.start()
++        self.assertTrue(child.terminated)
++        self.assertIsNone(manager._spawn_thread)
++        self.assertEqual(sum(e["action_id"] == "server_start" and e["outcome"] == "failure" for e in events), 1)
+ 
++    def test_seed_interrupt_has_one_cancelled_terminal(self):
++        events = []
++        manager = ManagedLab02Server(config(free_port()), event_sink=events.append)
++        manager.fixture = select_fixture(64)
++        with patch.object(manager, "_request", side_effect=KeyboardInterrupt):
++            with self.assertRaises(KeyboardInterrupt):
++                manager._seed()
++        seed = [e for e in events if e["action_id"] == "server_seed"]
++        self.assertEqual(len(seed), 1)
++        self.assertEqual(seed[0]["outcome"], "cancelled")
++
++    def test_seed_rejects_non_ok_receipt(self):
++        events = []
++        manager = ManagedLab02Server(config(free_port()), event_sink=events.append)
++        manager.fixture = select_fixture(64)
++        class AliveChild:
++            def poll(self): return None
++        manager._process = AliveChild()
++        with patch.object(manager, "_request", return_value={"ok": False, "run_id": manager.run_id,
++                                                                  "fixture_sha256": manager.fixture.sha256,
++                                                                  "count": manager.fixture.size}):
++            with self.assertRaisesRegex(ServerLifecycleError, "seed_receipt_mismatch"):
++                manager._seed()
++        seed = [e for e in events if e["action_id"] == "server_seed"]
++        self.assertEqual(len(seed), 1)
++        self.assertEqual(seed[0]["outcome"], "failure")
++
++    def test_action_rejection_and_interrupt_each_have_one_terminal(self):
++        events = []
++        manager = ManagedLab02Server(config(free_port()), event_sink=events.append)
++        with patch.object(manager, "_request", return_value={"ok": False, "error": "rejected"}):
++            with self.assertRaisesRegex(ServerLifecycleError, "action_failed"):
++                manager.post_action("act-reject", {"name": "remove_at", "index": 999})
++        with patch.object(manager, "_request", side_effect=KeyboardInterrupt):
++            with self.assertRaises(KeyboardInterrupt):
++                manager.post_action("act-interrupt", {"name": "push_item"})
++        for action_id, outcome in (("act-reject", "failure"), ("act-interrupt", "cancelled")):
++            matching = [e for e in events if e["action_id"] == action_id]
++            self.assertEqual(len(matching), 1)
++            self.assertEqual(matching[0]["outcome"], outcome)
++
++    def test_cleanup_failure_keeps_owned_handle_and_can_retry(self):
++        manager = ManagedLab02Server(config(free_port()))
++        class Child:
++            def __init__(self): self.calls = 0
++            def poll(self): return None
++            def terminate(self): pass
++            def kill(self): pass
++            def wait(self, timeout=None):
++                self.calls += 1
++                if self.calls == 1: raise OSError("wait failed")
++                return 0
++        child = Child()
++        manager._process = child
++        with self.assertRaisesRegex(ServerLifecycleError, "cleanup_failed"):
++            manager.close()
++        self.assertIs(manager._process, child)
++        manager.close()
++        self.assertIsNone(manager._process)
++
++    def test_real_rejected_http_action_is_failure(self):
++        manager = ManagedLab02Server(config(free_port()), run_id="run-rejected")
++        manager.start()
++        try:
++            with self.assertRaisesRegex(ServerLifecycleError, "action_failed"):
++                manager.post_action("reject-real", {"name": "remove_at", "index": 99999})
++        finally:
++            manager.close()
++
++    def test_request_deadline_bounds_slow_drip_body(self):
++        listener = socket.socket()
++        listener.bind(("127.0.0.1", 0))
++        listener.listen()
++        port = listener.getsockname()[1]
++        manager = ManagedLab02Server(config(port))
++        def drip():
++            conn, _ = listener.accept()
++            with conn:
++                conn.recv(4096)
++                conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Length: 4\r\nConnection: close\r\n\r\n")
++                for byte in b"true":
++                    time.sleep(0.07)
++                    try: conn.sendall(bytes((byte,)))
++                    except OSError: break
++            listener.close()
++        worker = threading.Thread(target=drip)
++        worker.start()
++        started = time.monotonic()
++        try:
++            with self.assertRaises(TimeoutError):
++                manager._request("/slow", timeout=0.15)
++            self.assertLess(time.monotonic() - started, 0.27)
++        finally:
++            worker.join(timeout=1)
++
++
+ if __name__ == "__main__":
+     unittest.main()

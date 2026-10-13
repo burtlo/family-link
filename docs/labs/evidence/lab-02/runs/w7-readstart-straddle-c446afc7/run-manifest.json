@@ -1,0 +1,75 @@
+{
+  "artifacts": {
+    "device_log": "logs/device/labs/lab-02/w7-readstart-straddle-c446afc7/serial.txt",
+    "events": "docs/labs/evidence/lab-02/runs/w7-readstart-straddle-c446afc7/events.jsonl",
+    "metrics": "docs/labs/evidence/lab-02/runs/w7-readstart-straddle-c446afc7/metrics.json",
+    "serial_log": null
+  },
+  "build": {
+    "status": "built"
+  },
+  "capture": {
+    "duration_seconds": 1,
+    "fresh_boot_marker": true,
+    "harness_done": false,
+    "reset": "RTS pulse after capture arm",
+    "status": "complete"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v1",
+  "ended_at_utc": "2026-10-13T03:17:58.920764Z",
+  "event_loss": {
+    "dropped_events": 0
+  },
+  "experiment_verdict": "UNMEASURED",
+  "firmware": {
+    "binary_sha256": "b58b0cb4ecdea3c65311b4ca8833fe47b6ae0a7500f87a8eb31e8379d3fe48f1",
+    "build_id": "2f7d2a8b7bc4b4b744dec004",
+    "build_stamp": "2f7d2a8b7bc4b4b744dec004",
+    "cmake_options": {
+      "CONFIG_LAB02_FIXTURE_64": "y",
+      "CONFIG_LAB_AUTO_HARNESS": "n"
+    },
+    "idf_version": null,
+    "project_path": "client/labs/lab-02-bounded-inbox",
+    "sdkconfig_sha256": "e2ade8f3d471339eef89372a65cc46423a167d051cf6f0c0abbcc4076df1a500",
+    "source_revision": null,
+    "source_sha256": "d5b81d3ee8747c517304104d6d810e62b80eddddc38682b926b3651452708ccf"
+  },
+  "fixture": {
+    "file": "fixtures/inbox_64.json",
+    "revision": "v1",
+    "schema": "inbox-summary/v1",
+    "sha256": "18cb88f064b98096eeb735434db5a8f88a048326d2080919aad564f55ca78e44"
+  },
+  "hardware": {
+    "board": "esp32s3-box-3",
+    "kit_nickname": "testkit"
+  },
+  "lab_id": "LAB-02",
+  "lab_revision": "v1",
+  "lab_version_string": null,
+  "operator": "human",
+  "run_id": "w7-readstart-straddle-c446afc7",
+  "scenarios": [
+    "nominal"
+  ],
+  "server": {
+    "path": "none",
+    "revision": null,
+    "source_sha256": null
+  },
+  "source": {
+    "dirty": true,
+    "files": {
+      "firmware_tree_sha256": "d5b81d3ee8747c517304104d6d810e62b80eddddc38682b926b3651452708ccf",
+      "server_sha256": "38e4a89bb502e8ba39e7fcadb4160d075919c95d3136527d83ff51a7cf689725"
+    },
+    "revision": "0b02b30086f1c8c8e985458912646b0d473b967b"
+  },
+  "started_at_utc": "2026-10-13T03:17:56.160781Z",
+  "terminal_reason": "completed",
+  "terminal_reason_truncated": false,
+  "verification_levels": {},
+  "workflow_status": "PASS"
+}

@@ -1,0 +1,4 @@
+ad9a36ac2a228e8660ed0517b417d5915e08179321e0a8866bd928f34117d915  /tmp/lab02-w7-fix/working-tree.diff
+9557f4e464614b241b69da1fc8821e2baf3fa489323b047b1f5b0d35daecddf7  /tmp/lab02-w7-fix/w7-source-sha256.txt
+bf4ce1bafee62b71c5e574131c8c43da4e8dc4f664f2ef1360d5f603ba7ca849  /tmp/lab02-w7-fix/focused-tests.txt
+008b6d07646dfe73dcad8a11dfdbbce369132af6ccf89efc1be68c00f864ea44  /tmp/lab02-w7-fix/idf-build.txt

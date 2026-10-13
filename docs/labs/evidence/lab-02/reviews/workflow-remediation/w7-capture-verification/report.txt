@@ -1,0 +1,13 @@
+Independent W7 capture-order verification (read-only)
+Date: 2026-10-12
+Source hashes:
+  scripts/lab02_canonical_run.py 8a1770520f1809306c3b35d6e253caf5cffcd3be2e08a7ad85183748a3ae0ae6
+  scripts/tests/test_lab02_canonical_run.py 6bfba10d055a569d524fdf12d0a246eabf0d903931bf456eacc91b0c2b72211c
+Commands/results:
+  PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab02_canonical_run -v
+  First sandbox run: 10 passed, managed HTTP test errored PermissionError binding ephemeral localhost port.
+  Repeated with require_escalated approval: all 11 passed, including loopback managed HTTP.
+  Independent adversarial runtime repro (custom runtime patch to existing FakeSerial; no source changes): second UART read begins before RTS pulse, blocks across pulse release, and returns a build-identity-matching LAB02_READY marker after reset_complete. Result: runner returns 0; manifest workflow_status=PASS, experiment_verdict=UNMEASURED, terminal_reason=completed. Fake event order: straddling_read_entered_before_reset, RTS true, RTS false, straddling_read_returned_after_reset.
+Finding: NOT FIXED. At scripts/lab02_canonical_run.py:228-232 reset_was_complete is sampled when conn.read returns. A read that began before controlled reset and completed after reset is therefore tagged eligible. Repro demonstrates an otherwise pre-reset marker can satisfy fresh readiness and produce PASS. The new test covers already-queued pre-reset data, but not an in-flight read straddling reset.
+Disposition: focused tests substantiate capture setup and existing failure paths, but this requirement fails an adversarial L2 runtime boundary. No hardware attached/tested; L3 remains unverified. Keep broader W7 L1/L2 host checks distinct from this specific failed capture-order criterion.
+No maintained/source files edited by verifier. No physical hardware used. Runtime generated artifacts from custom repro were removed.

@@ -1,0 +1,4 @@
+c545d096e5915d5198a8c9cc5411e1ed5c326241821fc23219a2c8563323090c  /tmp/lab02-w4-fix/w4.diff
+04e9c543280543324a5ca9ff5fab551ff4f7d12a5ab0d36b1eb1929a68ae0672  /tmp/lab02-w4-repair/lab02_server.patch
+ed9b04746b788cbb92be39164aa14f6348f81c33d1b13829e03a787f0e8ef69b  scripts/lab02_server.py
+93047cbe29e0c291dbb3e1d9e978dcb5f2891de3fd3a8e9b892adaaf6cb63b7b  scripts/tests/test_lab02_server.py

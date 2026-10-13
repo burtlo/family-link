@@ -1,0 +1,4 @@
+Note: kit A (secrets_profile=profile-a) has no Wi-Fi in secrets_profiles or lab.phaseb_server_url; Phase B credentials must come from menuconfig or sdkconfig.defaults.
+Built lab.lab02 variant=phaseb -> /var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/tmp4a7or2ry/build/labs/lab-02-bounded-inbox-phaseb
+PASS: no-KIT single A selects/reuses A through actual run CLI; nickname + matching PORT works; KIT A + port B and 0/many auto targets and direct invalid flash stop before writes; public Phase B build by nickname does not enumerate USB
+KNOWN HELPER API GAP: direct capture_lab(KIT=nickname) resolves then rejects alias by comparing it to kit ID; CLI normalizes to kit_id before this call.

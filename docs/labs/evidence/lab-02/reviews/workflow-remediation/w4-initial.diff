@@ -1,0 +1,402 @@
+--- /dev/null
++++ scripts/lab02_server.py
+@@ -0,0 +1,198 @@
++"""Owned LAB-02 fixture server lifecycle for host workflows."""
++from __future__ import annotations
++
++import hashlib
++import json
++import socket
++import subprocess
++import sys
++import time
++import threading
++import urllib.error
++import urllib.request
++import uuid
++from dataclasses import dataclass
++from pathlib import Path
++from typing import Callable
++
++from lab02_workflow_config import Lab02WorkflowConfig
++
++ROOT = Path(__file__).resolve().parent.parent
++FIXTURE_DIR = ROOT / "client/labs/lab-02-bounded-inbox/fixtures"
++FIXTURE_CATALOG = {size: FIXTURE_DIR / f"inbox_{size}.json" for size in (8, 16, 64, 256)}
++
++
++class ServerLifecycleError(RuntimeError):
++    """A managed server stage failed; details contain no URL or credentials."""
++
++
++@dataclass(frozen=True)
++class FixtureIdentity:
++    size: int
++    path: Path
++    sha256: str
++
++
++def select_fixture(size: int) -> FixtureIdentity:
++    path = FIXTURE_CATALOG.get(size)
++    if path is None or not path.is_file():
++        raise ServerLifecycleError("unsupported_fixture")
++    try:
++        raw = path.read_bytes()
++        parsed = json.loads(raw)
++        items = parsed["items"]
++        if not isinstance(items, list) or len(items) != size:
++            raise ValueError
++    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
++        raise ServerLifecycleError("invalid_fixture") from None
++    return FixtureIdentity(size=size, path=path, sha256=hashlib.sha256(raw).hexdigest())
++
++
++class ManagedLab02Server:
++    """Own one child process and never operate on a listener it did not start."""
++
++    def __init__(self, config: Lab02WorkflowConfig, *, run_id: str | None = None,
++                 event_sink: Callable[[dict], None] | None = None):
++        self.config = config
++        self.run_id = run_id or uuid.uuid4().hex
++        self._events = event_sink or (lambda event: None)
++        self._terminal_actions: set[str] = set()
++        self._action_lock = threading.Lock()
++        self._process: subprocess.Popen | None = None
++        self.fixture: FixtureIdentity | None = None
++        self.base_url = f"http://{config.bind_host}:{config.bind_port}"
++
++    def _event(self, action: str, stage: str, outcome: str, reason: str = "") -> None:
++        self._events({"run_id": self.run_id, "action_id": action, "stage": stage,
++                      "outcome": outcome, "reason": reason,
++                      "monotonic_ns": time.monotonic_ns()})
++
++    def _terminal_event(self, action: str, stage: str, outcome: str, reason: str = "") -> None:
++        if action in self._terminal_actions:
++            return
++        self._terminal_actions.add(action)
++        self._event(action, stage, outcome, reason)
++
++    def _deadline(self, key: str) -> float:
++        return time.monotonic() + self.config.deadlines_seconds[key]
++
++    def _request(self, path: str, *, payload: dict | None = None, timeout: float = 1.0) -> dict:
++        data = None if payload is None else json.dumps(payload).encode("utf-8")
++        request = urllib.request.Request(
++            self.base_url + path, data=data,
++            headers={"Content-Type": "application/json"} if data is not None else {},
++            method="POST" if data is not None else "GET")
++        with urllib.request.urlopen(request, timeout=max(0.05, timeout)) as response:
++            return json.loads(response.read().decode("utf-8"))
++
++    def _listener_occupied(self) -> bool:
++        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
++            probe.settimeout(0.25)
++            return probe.connect_ex((self.config.bind_host, self.config.bind_port)) == 0
++
++    def start(self, fixture_size: int | None = None) -> FixtureIdentity:
++        if self._process is not None:
++            raise ServerLifecycleError("already_started")
++        size = fixture_size or self.config.fixture_size_default
++        try:
++            self.fixture = select_fixture(size)
++            if self._listener_occupied():
++                self._terminal_event("server_bind", "SERVER_START", "failure", "port_occupied")
++                raise ServerLifecycleError("port_occupied")
++            self._event("server_bind", "SERVER_START", "success")
++            argv = [sys.executable, str(self.config.server_path), "--host", self.config.bind_host,
++                    "--port", str(self.config.bind_port), "--fixture", str(self.fixture.path),
++                    "--owner-run-id", self.run_id]
++            self._process = subprocess.Popen(argv, cwd=str(ROOT), stdout=subprocess.DEVNULL,
++                                             stderr=subprocess.DEVNULL)
++            self._terminal_event("server_start", "SERVER_START", "success")
++            self._wait_health()
++            self._seed()
++            return self.fixture
++        except BaseException as exc:
++            reason = exc.args[0] if isinstance(exc, ServerLifecycleError) and exc.args else "server_start_failed"
++            self._terminal_event("server_start", "SERVER_START", "failure", str(reason))
++            self.close()
++            if isinstance(exc, ServerLifecycleError):
++                raise
++            if not isinstance(exc, Exception):
++                raise
++            raise ServerLifecycleError("server_start_failed") from None
++
++    def _wait_health(self) -> None:
++        deadline = self._deadline("health")
++        while time.monotonic() < deadline:
++            if self._process is None or self._process.poll() is not None:
++                self._terminal_event("server_health", "SERVER_HEALTH", "failure", "child_exited")
++                raise ServerLifecycleError("child_exited")
++            try:
++                body = self._request("/lab/health", timeout=min(0.5, max(0.05, deadline-time.monotonic())))
++                if body.get("ok") and body.get("run_id") == self.run_id:
++                    self._terminal_event("server_health", "SERVER_HEALTH", "success")
++                    return
++            except (OSError, urllib.error.URLError, ValueError, json.JSONDecodeError):
++                pass
++            time.sleep(min(0.05, max(0, deadline - time.monotonic())))
++        self._terminal_event("server_health", "SERVER_HEALTH", "failure", "health_timeout")
++        raise ServerLifecycleError("health_timeout")
++
++    def _seed(self) -> None:
++        assert self.fixture is not None
++        deadline = self._deadline("seed")
++        try:
++            receipt = self._request("/lab/seed", payload={"run_id": self.run_id},
++                                    timeout=min(2.0, max(0.05, deadline-time.monotonic())))
++            if (self._process is None or self._process.poll() is not None
++                    or receipt.get("run_id") != self.run_id
++                    or receipt.get("fixture_sha256") != self.fixture.sha256
++                    or receipt.get("count") != self.fixture.size):
++                raise ServerLifecycleError("seed_receipt_mismatch")
++            self._terminal_event("server_seed", "SERVER_SEED", "success")
++        except Exception as exc:
++            reason = "seed_receipt_mismatch" if isinstance(exc, ServerLifecycleError) else "seed_failed"
++            self._terminal_event("server_seed", "SERVER_SEED", "failure", reason)
++            if isinstance(exc, ServerLifecycleError):
++                raise
++            raise ServerLifecycleError("seed_failed") from None
++
++    def close(self) -> None:
++        process, self._process = self._process, None
++        if process is None:
++            return
++        try:
++            if process.poll() is None:
++                process.terminate()
++                try:
++                    process.wait(timeout=self.config.deadlines_seconds["cleanup"])
++                except subprocess.TimeoutExpired:
++                    process.kill()
++                    process.wait(timeout=self.config.deadlines_seconds["cleanup"])
++            self._terminal_event("server_cleanup", "CLEANUP", "success")
++        except Exception:
++            self._terminal_event("server_cleanup", "CLEANUP", "failure", "cleanup_failed")
++
++    def post_action(self, action_id: str, payload: dict, *, cancelled: threading.Event | None = None) -> dict:
++        """Perform one serialized script request with one bounded terminal event."""
++        if cancelled is not None and cancelled.is_set():
++            self._terminal_event(action_id, "SCENARIO", "cancelled", "cancelled")
++            raise ServerLifecycleError("action_cancelled")
++        with self._action_lock:
++            if cancelled is not None and cancelled.is_set():
++                self._terminal_event(action_id, "SCENARIO", "cancelled", "cancelled")
++                raise ServerLifecycleError("action_cancelled")
++            deadline = self._deadline("action")
++            try:
++                result = self._request("/lab/script", payload=payload,
++                                       timeout=max(0.05, deadline-time.monotonic()))
++                self._terminal_event(action_id, "SCENARIO", "success")
++                return result
++            except (OSError, urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError):
++                self._terminal_event(action_id, "SCENARIO", "failure", "action_timeout_or_transport")
++                raise ServerLifecycleError("action_failed") from None
++
++    def __enter__(self) -> "ManagedLab02Server":
++        self.start()
++        return self
++
++    def __exit__(self, exc_type, exc, tb) -> None:
++        self.close()
+--- /dev/null
++++ scripts/tests/test_lab02_server.py
+@@ -0,0 +1,129 @@
++import socket
++import sys
++import tempfile
++import threading
++import unittest
++from pathlib import Path
++from unittest.mock import patch
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++from lab02_server import ManagedLab02Server, ServerLifecycleError, select_fixture
++from lab02_workflow_config import Lab02WorkflowConfig
++
++ROOT = Path(__file__).resolve().parents[2]
++SERVER = ROOT / "server/labs/lab-02-paging/server.py"
++
++
++def free_port():
++    with socket.socket() as sock:
++        sock.bind(("127.0.0.1", 0))
++        return sock.getsockname()[1]
++
++
++def config(port, server=SERVER, **deadlines):
++    bounds = {"startup": 2, "health": 2, "seed": 2, "readiness": 2,
++              "action": 1, "cleanup": 1}
++    bounds.update(deadlines)
++    return Lab02WorkflowConfig(Path(server), "127.0.0.1", port, 64, "nominal", bounds,
++                               f"http://127.0.0.1:{port}")
++
++
++class ManagedLab02ServerTests(unittest.TestCase):
++    def test_real_owned_child_health_seed_and_idempotent_cleanup(self):
++        events = []
++        manager = ManagedLab02Server(config(free_port()), run_id="run-test-1", event_sink=events.append)
++        fixture = manager.start()
++        child = manager._process
++        self.assertEqual(fixture.size, 64)
++        self.assertTrue(child and child.poll() is None)
++        self.assertEqual({e["action_id"] for e in events} & {"server_bind", "server_start", "server_health", "server_seed"},
++                         {"server_bind", "server_start", "server_health", "server_seed"})
++        seed = next(e for e in events if e["action_id"] == "server_seed")
++        self.assertEqual(seed["outcome"], "success")
++        manager.close()
++        manager.close()
++        self.assertIsNotNone(child.poll())
++        self.assertEqual(sum(e["action_id"] == "server_cleanup" for e in events), 1)
++        self.assertEqual(fixture.sha256, select_fixture(64).sha256)
++
++    def test_foreign_listener_is_never_stopped(self):
++        listener = socket.socket()
++        listener.bind(("127.0.0.1", 0))
++        listener.listen()
++        port = listener.getsockname()[1]
++        events = []
++        manager = ManagedLab02Server(config(port), event_sink=events.append)
++        try:
++            with self.assertRaisesRegex(ServerLifecycleError, "port_occupied"):
++                manager.start()
++            self.assertIsNone(manager._process)
++            self.assertGreaterEqual(listener.fileno(), 0)
++            self.assertTrue(any(e["action_id"] == "server_bind" and e["outcome"] == "failure" for e in events))
++        finally:
++            manager.close()
++            listener.close()
++
++    def test_wrong_health_identity_times_out_and_owned_child_is_cleaned(self):
++        with tempfile.TemporaryDirectory() as directory:
++            fake = Path(directory) / "wrong_health.py"
++            fake.write_text("""from http.server import BaseHTTPRequestHandler,HTTPServer
++import argparse,json
++ap=argparse.ArgumentParser();ap.add_argument('--host');ap.add_argument('--port',type=int);a,_=ap.parse_known_args()
++class H(BaseHTTPRequestHandler):
++ def do_GET(self):
++  b=json.dumps({'ok':True,'run_id':'foreign'}).encode();self.send_response(200);self.end_headers();self.wfile.write(b)
++HTTPServer((a.host,a.port),H).serve_forever()
++""", encoding="utf-8")
++            events = []
++            manager = ManagedLab02Server(config(free_port(), fake, health=1), event_sink=events.append)
++            with self.assertRaisesRegex(ServerLifecycleError, "health_timeout"):
++                manager.start()
++            self.assertIsNone(manager._process)
++            self.assertTrue(any(e["action_id"] == "server_health" and e["outcome"] == "failure" for e in events))
++
++    def test_startup_exit_has_terminal_health_and_cleanup_events(self):
++        with tempfile.TemporaryDirectory() as directory:
++            exits = Path(directory) / "exit.py"
++            exits.write_text("raise SystemExit(7)\n", encoding="utf-8")
++            events = []
++            manager = ManagedLab02Server(config(free_port(), exits), event_sink=events.append)
++            with self.assertRaises(ServerLifecycleError):
++                manager.start()
++            self.assertEqual(sum(e["action_id"] == "server_health" for e in events), 1)
++            self.assertEqual(sum(e["action_id"] == "server_cleanup" for e in events), 1)
++
++    def test_seed_timeout_cleans_owned_child_with_one_terminal_seed_event(self):
++        events = []
++        manager = ManagedLab02Server(config(free_port(), seed=1), event_sink=events.append)
++        original_request = manager._request
++
++        def fail_seed(path, **kwargs):
++            if path == "/lab/seed":
++                raise TimeoutError("simulated seed timeout")
++            return original_request(path, **kwargs)
++
++        with patch.object(manager, "_request", side_effect=fail_seed):
++            with self.assertRaisesRegex(ServerLifecycleError, "seed_failed"):
++                manager.start()
++        self.assertIsNone(manager._process)
++        seed_events = [e for e in events if e["action_id"] == "server_seed"]
++        self.assertEqual(len(seed_events), 1)
++        self.assertEqual(seed_events[0]["outcome"], "failure")
++        self.assertEqual(sum(e["action_id"] == "server_cleanup" for e in events), 1)
++
++    def test_action_timeout_and_cancel_each_emit_one_terminal(self):
++        events = []
++        manager = ManagedLab02Server(config(free_port()), event_sink=events.append)
++        with patch.object(manager, "_request", side_effect=TimeoutError):
++            with self.assertRaisesRegex(ServerLifecycleError, "action_failed"):
++                manager.post_action("act-timeout", {"name": "delay_ms"})
++        cancelled = threading.Event()
++        cancelled.set()
++        with self.assertRaisesRegex(ServerLifecycleError, "action_cancelled"):
++            manager.post_action("act-cancel", {}, cancelled=cancelled)
++        self.assertEqual(sum(e["action_id"] == "act-timeout" for e in events), 1)
++        self.assertEqual(sum(e["action_id"] == "act-cancel" for e in events), 1)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/server/labs/lab-02-paging/server.py b/server/labs/lab-02-paging/server.py
+index fc7e344..fb17059 100644
+--- a/server/labs/lab-02-paging/server.py
++++ b/server/labs/lab-02-paging/server.py
+@@ -5,6 +5,7 @@ from __future__ import annotations
+ 
+ import argparse
+ import json
++import hashlib
+ import threading
+ import time
+ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+@@ -113,6 +114,8 @@ def load_v1_fixture(path: Path) -> list[dict[str, Any]]:
+ 
+ STATE: InboxState
+ SEED_ITEMS: list[dict[str, Any]]
++OWNER_RUN_ID: str
++FIXTURE_SHA256: str
+ 
+ 
+ class Handler(BaseHTTPRequestHandler):
+@@ -132,7 +135,7 @@ class Handler(BaseHTTPRequestHandler):
+     def do_GET(self) -> None:  # noqa: N802
+         parsed = urlparse(self.path)
+         if parsed.path == "/lab/health":
+-            self._json_response(200, {"ok": True, "lab": "LAB-02", "schema": "fl.inbox-page/2"})
++            self._json_response(200, {"ok": True, "lab": "LAB-02", "schema": "fl.inbox-page/2", "run_id": OWNER_RUN_ID})
+             return
+         if parsed.path != "/v2/inbox":
+             self._json_response(404, {"error": "not_found"})
+@@ -143,6 +146,17 @@ class Handler(BaseHTTPRequestHandler):
+         self._json_response(200, STATE.page(cursor, limit))
+ 
+     def do_POST(self) -> None:  # noqa: N802
++        if self.path == "/lab/seed":
++            length = int(self.headers.get("Content-Length", "0"))
++            body = json.loads(self.rfile.read(length) or b"{}")
++            if body.get("run_id") != OWNER_RUN_ID:
++                self._json_response(409, {"ok": False, "error": "owner_mismatch"})
++                return
++            STATE.reset(SEED_ITEMS)
++            self._json_response(200, {"ok": True, "run_id": OWNER_RUN_ID,
++                                      "fixture_sha256": FIXTURE_SHA256,
++                                      "count": len(SEED_ITEMS)})
++            return
+         parsed = urlparse(self.path)
+         if parsed.path != "/lab/script":
+             self._json_response(404, {"error": "not_found"})
+@@ -170,13 +184,18 @@ class Handler(BaseHTTPRequestHandler):
+ 
+ 
+ def main() -> int:
+-    global STATE, SEED_ITEMS
++    global STATE, SEED_ITEMS, OWNER_RUN_ID, FIXTURE_SHA256
+     ap = argparse.ArgumentParser(description=__doc__)
+     ap.add_argument("--host", default="0.0.0.0")
+     ap.add_argument("--port", type=int, default=8765)
+     ap.add_argument("--fixture", type=Path, default=DEFAULT_FIXTURE)
++    ap.add_argument("--owner-run-id", default="standalone")
+     args = ap.parse_args()
+-    SEED_ITEMS = load_v1_fixture(args.fixture.resolve())
++    fixture_path = args.fixture.resolve()
++    fixture_bytes = fixture_path.read_bytes()
++    FIXTURE_SHA256 = hashlib.sha256(fixture_bytes).hexdigest()
++    OWNER_RUN_ID = args.owner_run_id
++    SEED_ITEMS = load_v1_fixture(fixture_path)
+     STATE = InboxState(SEED_ITEMS)
+     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
+     print(f"LAB02_PAGING_SERVER listening http://{args.host}:{args.port} items={len(SEED_ITEMS)}")

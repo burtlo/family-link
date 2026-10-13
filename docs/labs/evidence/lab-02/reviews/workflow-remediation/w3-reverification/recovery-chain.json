@@ -1,0 +1,14 @@
+{
+  "copied_value_length": 25,
+  "copied_value_sha256": "011e43c47e70bb6026d9e79e2715478f23cb1dbe5e41e1c995c8a18b29a6b2a5",
+  "copied_value_exact_in_initial_migration": true,
+  "reconstructed_initial_host_sha256": "feb1b42e2dbe6a10c1691e21df5cca633ae1f8207f58d644f26ba44bcbba54ae",
+  "reconstructed_host_matches_saved_initial_hash": true,
+  "generated_sidecar_and_sdkconfig_url_hashes_match": true,
+  "overlay_digest_matches_recovered_url_and_current_preserved_kit_profile": true,
+  "private_file_sha256_after_removal": "c3edfdcb494e99500dbbd2433fe7e02181afe981be25bae2e5fd03fe3b08c215",
+  "private_after_hash_still_matches": true,
+  "unrelated_private_bytes_preserved_by_initial_assertion": true,
+  "legacy_field_absent_after_migration": true,
+  "no_private_plaintext_recorded": true
+}

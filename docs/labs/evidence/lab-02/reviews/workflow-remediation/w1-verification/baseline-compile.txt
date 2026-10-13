@@ -1,0 +1,7 @@
+client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c:402:24: error: call to undeclared function 'xSemaphoreCreateMutex'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+  402 |         s_post_mutex = xSemaphoreCreateMutex();
+      |                        ^
+client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c:402:22: error: incompatible integer to pointer conversion assigning to 'SemaphoreHandle_t' (aka 'struct fake_sem *') from 'int' [-Wint-conversion]
+  402 |         s_post_mutex = xSemaphoreCreateMutex();
+      |                      ^ ~~~~~~~~~~~~~~~~~~~~~~~
+2 errors generated.

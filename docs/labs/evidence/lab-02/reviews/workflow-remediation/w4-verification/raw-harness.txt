@@ -1,0 +1,4 @@
+seed_interrupt_events [('server_bind', 'success'), ('server_start', 'success'), ('server_health', 'success'), ('server_cleanup', 'success')]
+action_bad_receipt_returned {'ok': False, 'error': 'unknown_script'}
+action_bad_receipt_terminal [('bad', 'success')]
+cleanup_failure_handle_retained False child_terminated True events [('server_cleanup', 'failure')]

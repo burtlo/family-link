@@ -1,0 +1,527 @@
+docs/labs/README.md:11: trailing whitespace.
++| LAB-02 workflow remediation | [Workflow contract and durable remediation plan](lab-02-workflow-remediation-plan.md) · [review record](evidence/lab-02/reviews/2026-10-12-workflow.md) |
+docs/labs/assistant-guide.md:150: trailing whitespace.
++
+scripts/lab_host.py:13: trailing whitespace.
++from dataclasses import dataclass
+scripts/lab_host.py:20: trailing whitespace.
++from deployment_config import Deployment, Kit, load_active_deployment
+scripts/lab_host.py:21: trailing whitespace.
++from device_targets import Port, kit_for, ports, resolve_port as resolve_kit_port, select, serial_key, validate_bindings
+scripts/lab_host.py:40: trailing whitespace.
++@dataclass(frozen=True)
+scripts/lab_host.py:41: trailing whitespace.
++class RunTarget:
+scripts/lab_host.py:42: trailing whitespace.
++    """Registered kit and exact USB identity frozen for one host run."""
+scripts/lab_host.py:43: trailing whitespace.
++
+scripts/lab_host.py:44: trailing whitespace.
++    kit_id: str
+scripts/lab_host.py:45: trailing whitespace.
++    device: str
+scripts/lab_host.py:46: trailing whitespace.
++    serial: str
+scripts/lab_host.py:47: trailing whitespace.
++    kit: Kit
+scripts/lab_host.py:48: trailing whitespace.
++    deployment: Deployment
+scripts/lab_host.py:49: trailing whitespace.
++
+scripts/lab_host.py:50: trailing whitespace.
++
+scripts/lab_host.py:51: trailing whitespace.
++def resolve_run_target(config: ProjectConfig, kit: str = "", port: str = "") -> RunTarget:
+scripts/lab_host.py:52: trailing whitespace.
++    deployment = load_active_deployment(config)
+scripts/lab_host.py:53: trailing whitespace.
++    validate_bindings(deployment)
+scripts/lab_host.py:54: trailing whitespace.
++    available = ports()
+scripts/lab_host.py:55: trailing whitespace.
++    if kit:
+scripts/lab_host.py:56: trailing whitespace.
++        targets = select(deployment, available, kit, False)
+scripts/lab_host.py:57: trailing whitespace.
++    elif port:
+scripts/lab_host.py:58: trailing whitespace.
++        matches = [item for item in available if item.device == port]
+scripts/lab_host.py:59: trailing whitespace.
++        if len(matches) != 1 or not matches[0].serial:
+scripts/lab_host.py:60: trailing whitespace.
++            raise ProjectConfigError("PORT must identify one connected device with a readable USB serial")
+scripts/lab_host.py:61: trailing whitespace.
++        key = serial_key(matches[0].serial)
+scripts/lab_host.py:62: trailing whitespace.
++        kits = [item for item in deployment.kits if item.usb_serial and serial_key(item.usb_serial) == key]
+scripts/lab_host.py:63: trailing whitespace.
++        if len(kits) != 1:
+scripts/lab_host.py:64: trailing whitespace.
++            raise ProjectConfigError("PORT does not identify exactly one registered kit")
+scripts/lab_host.py:65: trailing whitespace.
++        targets = select(deployment, available, kits[0].id, False)
+scripts/lab_host.py:66: trailing whitespace.
++    else:
+scripts/lab_host.py:67: trailing whitespace.
++        targets = select(deployment, available, "", False)
+scripts/lab_host.py:68: trailing whitespace.
++    if len(targets) != 1:
+scripts/lab_host.py:69: trailing whitespace.
++        raise ProjectConfigError("A run needs exactly one connected registered kit")
+scripts/lab_host.py:70: trailing whitespace.
++    selected_kit, selected_port = targets[0]
+scripts/lab_host.py:71: trailing whitespace.
++    if port and port != selected_port.device:
+scripts/lab_host.py:72: trailing whitespace.
++        raise ProjectConfigError(
+scripts/lab_host.py:73: trailing whitespace.
++            f"PORT does not match registered kit {selected_kit.id}'s connected USB binding"
+scripts/lab_host.py:74: trailing whitespace.
++        )
+scripts/lab_host.py:75: trailing whitespace.
++    return RunTarget(
+scripts/lab_host.py:76: trailing whitespace.
++        selected_kit.id, selected_port.device, selected_port.serial, selected_kit, deployment
+scripts/lab_host.py:77: trailing whitespace.
++    )
+scripts/lab_host.py:78: trailing whitespace.
++
+scripts/lab_host.py:79: trailing whitespace.
++
+scripts/lab_host.py:80: trailing whitespace.
++def revalidate_run_target(config: ProjectConfig, target: RunTarget) -> str:
+scripts/lab_host.py:81: trailing whitespace.
++    """Confirm the frozen device path still reports the registered serial."""
+scripts/lab_host.py:82: trailing whitespace.
++    deployment = load_active_deployment(config)
+scripts/lab_host.py:83: trailing whitespace.
++    validate_bindings(deployment)
+scripts/lab_host.py:84: trailing whitespace.
++    matches = [item for item in deployment.kits if item.id == target.kit_id]
+scripts/lab_host.py:85: trailing whitespace.
++    if len(matches) != 1:
+scripts/lab_host.py:86: trailing whitespace.
++        raise ProjectConfigError("Frozen run kit is no longer uniquely registered")
+scripts/lab_host.py:87: trailing whitespace.
++    kit = matches[0]
+scripts/lab_host.py:88: trailing whitespace.
++    current = resolve_kit_port(kit, ports())
+scripts/lab_host.py:89: trailing whitespace.
++    if current.device != target.device or serial_key(current.serial) != serial_key(target.serial):
+scripts/lab_host.py:90: trailing whitespace.
++        raise ProjectConfigError("Frozen run target disconnected or changed before flash")
+scripts/lab_host.py:91: trailing whitespace.
++    return current.device
+scripts/lab_host.py:92: trailing whitespace.
++
+scripts/lab_host.py:93: trailing whitespace.
++
+scripts/lab_host.py:292: trailing whitespace.
++    target: RunTarget | None = None,
+scripts/lab_host.py:392: trailing whitespace.
++    target: RunTarget | None = None,
+scripts/lab_host.py:398: trailing whitespace.
++    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
+scripts/lab_host.py:522: trailing whitespace.
++    return resolve_run_target(config, kit, port).device
+scripts/lab_host.py:537: trailing whitespace.
++    target: RunTarget | None = None,
+scripts/lab_host.py:562: trailing whitespace.
++    selected_target = target or resolve_run_target(config, kit, port)
+scripts/lab_host.py:563: trailing whitespace.
++    if kit and kit_for(selected_target.deployment, kit).id != selected_target.kit_id:
+scripts/lab_host.py:564: trailing whitespace.
++        raise ProjectConfigError("Frozen run target does not match requested KIT")
+scripts/lab_host.py:565: trailing whitespace.
++    if port and port != selected_target.device:
+scripts/lab_host.py:566: trailing whitespace.
++        raise ProjectConfigError("Frozen run target does not match requested PORT")
+scripts/lab_host.py:568: trailing whitespace.
++        device_port = revalidate_run_target(config, selected_target)
+scripts/lab_host.py:571: trailing whitespace.
++    else:
+scripts/lab_host.py:572: trailing whitespace.
++        device_port = selected_target.device
+scripts/lab_host.py:761: trailing whitespace.
++            target = resolve_run_target(config, args.kit, args.port)
+scripts/lab_host.py:762: trailing whitespace.
++            port = revalidate_run_target(config, target)
+scripts/lab_host.py:808: trailing whitespace.
++            target = resolve_run_target(config, args.kit, args.port)
+scripts/lab_host.py:810: trailing whitespace.
++                ensure_lab_built(
+scripts/lab_host.py:811: trailing whitespace.
++                    config, args.lab, variant, kit=target.kit_id, port=target.device, target=target
+scripts/lab_host.py:812: trailing whitespace.
++                )
+scripts/lab_host.py:816: trailing whitespace.
++                kit=target.kit_id,
+scripts/lab_host.py:817: trailing whitespace.
++                port=target.device,
+scripts/lab_host.py:824: trailing whitespace.
++                target=target,
+scripts/tests/test_lab_host.py:14: trailing whitespace.
++    capture_lab,
+scripts/tests/test_lab_host.py:16: trailing whitespace.
++    revalidate_run_target,
+scripts/tests/test_lab_host.py:17: trailing whitespace.
++    resolve_run_target,
+scripts/tests/test_lab_host.py:18: trailing whitespace.
++    RunTarget,
+scripts/tests/test_lab_host.py:21: trailing whitespace.
++from device_targets import Port
+scripts/tests/test_lab_host.py:27: trailing whitespace.
++    def setUp(self):
+scripts/tests/test_lab_host.py:28: trailing whitespace.
++        self.temp = tempfile.TemporaryDirectory()
+scripts/tests/test_lab_host.py:29: trailing whitespace.
++        self.addCleanup(self.temp.cleanup)
+scripts/tests/test_lab_host.py:30: trailing whitespace.
++        self.temp_path = Path(self.temp.name)
+scripts/tests/test_lab_host.py:31: trailing whitespace.
++
+scripts/tests/test_lab_host.py:34: trailing whitespace.
++            sdk = self.temp_path / "sdkconfig"
+scripts/tests/test_lab_host.py:36: trailing whitespace.
++            defaults = self.temp_path / "defaults"
+scripts/tests/test_lab_host.py:47: trailing whitespace.
++        build = self.temp_path / "build_prepare"
+scripts/tests/test_lab_host.py:70: trailing whitespace.
++        build_dir = self.temp_path / "build_dir_phaseb"
+scripts/tests/test_lab_host.py:108: trailing whitespace.
++        build = self.temp_path / "build_dir"
+scripts/tests/test_lab_host.py:112: trailing whitespace.
++        defaults = self.temp_path / "lab.defaults"
+scripts/tests/test_lab_host.py:121: trailing whitespace.
++        pass
+scripts/tests/test_lab_host.py:122: trailing whitespace.
++
+scripts/tests/test_lab_host.py:123: trailing whitespace.
++
+scripts/tests/test_lab_host.py:124: trailing whitespace.
++class LabHostTargetSelectionTests(unittest.TestCase):
+scripts/tests/test_lab_host.py:125: trailing whitespace.
++    def setUp(self):
+scripts/tests/test_lab_host.py:126: trailing whitespace.
++        self.temp = tempfile.TemporaryDirectory()
+scripts/tests/test_lab_host.py:127: trailing whitespace.
++        self.addCleanup(self.temp.cleanup)
+scripts/tests/test_lab_host.py:128: trailing whitespace.
++        self.temp_path = Path(self.temp.name)
+scripts/tests/test_lab_host.py:129: trailing whitespace.
++        self.kit_a = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
+scripts/tests/test_lab_host.py:130: trailing whitespace.
++        self.kit_b = Kit("B", "endpoint-b", "profile-b", "SERIAL-B")
+scripts/tests/test_lab_host.py:131: trailing whitespace.
++        self.deployment = Deployment(
+scripts/tests/test_lab_host.py:137: trailing whitespace.
++        self.config = ProjectConfig()
+scripts/tests/test_lab_host.py:138: trailing whitespace.
++
+scripts/tests/test_lab_host.py:139: trailing whitespace.
++    def _resolve(self, available, kit="", port=""):
+scripts/tests/test_lab_host.py:140: trailing whitespace.
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
+scripts/tests/test_lab_host.py:141: trailing whitespace.
++            "lab_host.ports", return_value=available
+scripts/tests/test_lab_host.py:142: trailing whitespace.
++        ):
+scripts/tests/test_lab_host.py:143: trailing whitespace.
++            return resolve_run_target(self.config, kit, port)
+scripts/tests/test_lab_host.py:144: trailing whitespace.
++
+scripts/tests/test_lab_host.py:145: trailing whitespace.
++    def test_no_kit_requires_exactly_one_connected_registered_target(self):
+scripts/tests/test_lab_host.py:146: trailing whitespace.
++        with self.assertRaisesRegex(ProjectConfigError, "exactly one"):
+scripts/tests/test_lab_host.py:147: trailing whitespace.
++            self._resolve([])
+scripts/tests/test_lab_host.py:148: trailing whitespace.
++        target = self._resolve([Port("/dev/a", "serial-a")])
+scripts/tests/test_lab_host.py:149: trailing whitespace.
++        self.assertEqual((target.kit_id, target.device), ("A", "/dev/a"))
+scripts/tests/test_lab_host.py:150: trailing whitespace.
++        with self.assertRaisesRegex(ProjectConfigError, "exactly one"):
+scripts/tests/test_lab_host.py:151: trailing whitespace.
++            self._resolve([Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")])
+scripts/tests/test_lab_host.py:152: trailing whitespace.
++
+scripts/tests/test_lab_host.py:153: trailing whitespace.
++    def test_explicit_kit_requires_connected_registered_binding_and_matching_port(self):
+scripts/tests/test_lab_host.py:154: trailing whitespace.
++        target = self._resolve([Port("/dev/a", "serial-a")], kit="A")
+scripts/tests/test_lab_host.py:155: trailing whitespace.
++        self.assertEqual(target.serial, "serial-a")
+scripts/tests/test_lab_host.py:156: trailing whitespace.
++        with self.assertRaisesRegex(ProjectConfigError, "PORT does not match"):
+scripts/tests/test_lab_host.py:157: trailing whitespace.
++            self._resolve(
+scripts/tests/test_lab_host.py:158: trailing whitespace.
++                [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")],
+scripts/tests/test_lab_host.py:159: trailing whitespace.
++                kit="A",
+scripts/tests/test_lab_host.py:160: trailing whitespace.
++                port="/dev/b",
+scripts/tests/test_lab_host.py:161: trailing whitespace.
++            )
+scripts/tests/test_lab_host.py:162: trailing whitespace.
++        target = self._resolve(
+scripts/tests/test_lab_host.py:163: trailing whitespace.
++            [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")], kit="A"
+scripts/tests/test_lab_host.py:164: trailing whitespace.
++        )
+scripts/tests/test_lab_host.py:165: trailing whitespace.
++        self.assertEqual((target.kit_id, target.device), ("A", "/dev/a"))
+scripts/tests/test_lab_host.py:166: trailing whitespace.
++        with self.assertRaisesRegex(ProjectConfigError, "expected one connected USB match, found 0"):
+scripts/tests/test_lab_host.py:167: trailing whitespace.
++            self._resolve([Port("/dev/a", "")], kit="A")
+scripts/tests/test_lab_host.py:168: trailing whitespace.
++        with self.assertRaisesRegex(ProjectConfigError, "Unknown or ambiguous kit"):
+scripts/tests/test_lab_host.py:169: trailing whitespace.
++            self._resolve([Port("/dev/a", "serial-a")], kit="unknown")
+scripts/tests/test_lab_host.py:170: trailing whitespace.
++        target = self._resolve(
+scripts/tests/test_lab_host.py:171: trailing whitespace.
++            [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")], port="/dev/b"
+scripts/tests/test_lab_host.py:172: trailing whitespace.
++        )
+scripts/tests/test_lab_host.py:173: trailing whitespace.
++        self.assertEqual((target.kit_id, target.device), ("B", "/dev/b"))
+scripts/tests/test_lab_host.py:174: trailing whitespace.
++        with self.assertRaisesRegex(ProjectConfigError, "readable USB serial"):
+scripts/tests/test_lab_host.py:175: trailing whitespace.
++            self._resolve([Port("/dev/a", "")], port="/dev/a")
+scripts/tests/test_lab_host.py:176: trailing whitespace.
++
+scripts/tests/test_lab_host.py:177: trailing whitespace.
++    def test_duplicate_serials_and_duplicate_roster_bindings_fail_closed(self):
+scripts/tests/test_lab_host.py:178: trailing whitespace.
++        with self.assertRaisesRegex(ProjectConfigError, "expected one connected USB match, found 2"):
+scripts/tests/test_lab_host.py:179: trailing whitespace.
++            self._resolve([Port("/dev/a", "serial-a"), Port("/dev/clone", "SERIAL-A")], kit="A")
+scripts/tests/test_lab_host.py:180: trailing whitespace.
++        duplicate = Deployment(
+scripts/tests/test_lab_host.py:181: trailing whitespace.
++            self.deployment.path, self.deployment.source, self.deployment.meta, (), (),
+scripts/tests/test_lab_host.py:182: trailing whitespace.
++            (self.kit_a, Kit("C", "endpoint-c", "profile-c", "serial-a")), {},
+scripts/tests/test_lab_host.py:183: trailing whitespace.
++        )
+scripts/tests/test_lab_host.py:184: trailing whitespace.
++        with patch("lab_host.load_active_deployment", return_value=duplicate), patch(
+scripts/tests/test_lab_host.py:185: trailing whitespace.
++            "lab_host.ports", return_value=[Port("/dev/a", "serial-a")]
+scripts/tests/test_lab_host.py:186: trailing whitespace.
++        ), self.assertRaisesRegex(ProjectConfigError, "Duplicate USB serial"):
+scripts/tests/test_lab_host.py:187: trailing whitespace.
++            resolve_run_target(self.config, "A", "")
+scripts/tests/test_lab_host.py:188: trailing whitespace.
++
+scripts/tests/test_lab_host.py:189: trailing whitespace.
++    def test_frozen_target_detects_disconnect_or_swapped_device_identity(self):
+scripts/tests/test_lab_host.py:190: trailing whitespace.
++        target = self._resolve([Port("/dev/a", "serial-a")], kit="A")
+scripts/tests/test_lab_host.py:191: trailing whitespace.
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
+scripts/tests/test_lab_host.py:192: trailing whitespace.
++            "lab_host.ports", return_value=[]
+scripts/tests/test_lab_host.py:193: trailing whitespace.
++        ), self.assertRaisesRegex(ProjectConfigError, "found 0"):
+scripts/tests/test_lab_host.py:194: trailing whitespace.
++            revalidate_run_target(self.config, target)
+scripts/tests/test_lab_host.py:195: trailing whitespace.
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
+scripts/tests/test_lab_host.py:196: trailing whitespace.
++            "lab_host.ports", return_value=[Port("/dev/other", "serial-a")]
+scripts/tests/test_lab_host.py:197: trailing whitespace.
++        ), self.assertRaisesRegex(ProjectConfigError, "disconnected or changed"):
+scripts/tests/test_lab_host.py:198: trailing whitespace.
++            revalidate_run_target(self.config, target)
+scripts/tests/test_lab_host.py:199: trailing whitespace.
++
+scripts/tests/test_lab_host.py:200: trailing whitespace.
++    def test_build_only_kit_selection_does_not_enumerate_hardware(self):
+scripts/tests/test_lab_host.py:201: trailing whitespace.
++        from lab_host import _defaults_files_for_lab_build
+scripts/tests/test_lab_host.py:202: trailing whitespace.
++
+scripts/tests/test_lab_host.py:203: trailing whitespace.
++        spec = get_lab("lab02")
+scripts/tests/test_lab_host.py:204: trailing whitespace.
++        var = resolve_variant(spec, "phaseb")
+scripts/tests/test_lab_host.py:213: trailing whitespace.
++            files = _defaults_files_for_lab_build(
+scripts/tests/test_lab_host.py:214: trailing whitespace.
++                self.config, spec, var, self.temp_path, "A", "", target
+scripts/tests/test_lab_host.py:215: trailing whitespace.
++            )
+scripts/tests/test_lab_host.py:220: trailing whitespace.
++        self.assertIsInstance(files, list)
+scripts/tests/test_lab_host.py:221: trailing whitespace.
++
+scripts/tests/test_lab_host.py:222: trailing whitespace.
++    def test_run_entrypoint_resolves_target_before_build_or_flash(self):
+scripts/tests/test_lab_host.py:223: trailing whitespace.
++        from lab_host import main
+scripts/tests/test_lab_host.py:224: trailing whitespace.
++
+scripts/tests/test_lab_host.py:225: trailing whitespace.
++        events = []
+scripts/tests/test_lab_host.py:226: trailing whitespace.
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+scripts/tests/test_lab_host.py:227: trailing whitespace.
++        config = self.config
+scripts/tests/test_lab_host.py:235: trailing whitespace.
++
+scripts/tests/test_lab_host.py:236: trailing whitespace.
++    def test_capture_revalidates_frozen_identity_before_flash_write(self):
+scripts/tests/test_lab_host.py:237: trailing whitespace.
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+scripts/tests/test_lab_host.py:238: trailing whitespace.
++        with patch("lab_host.print_run_start"), patch("lab_host.print_operator_help"), patch(
+scripts/tests/test_lab_host.py:239: trailing whitespace.
++            "lab_host.revalidate_run_target", side_effect=ProjectConfigError("disconnected")
+scripts/tests/test_lab_host.py:240: trailing whitespace.
++        ) as revalidate, patch("lab_host.flash_lab_build") as flash:
+scripts/tests/test_lab_host.py:241: trailing whitespace.
++            with self.assertRaisesRegex(ProjectConfigError, "disconnected"):
+scripts/tests/test_lab_host.py:242: trailing whitespace.
++                capture_lab(
+scripts/tests/test_lab_host.py:243: trailing whitespace.
++                    self.config,
+scripts/tests/test_lab_host.py:244: trailing whitespace.
++                    "lab02",
+scripts/tests/test_lab_host.py:245: trailing whitespace.
++                    kit="A",
+scripts/tests/test_lab_host.py:246: trailing whitespace.
++                    port="/dev/a",
+scripts/tests/test_lab_host.py:247: trailing whitespace.
++                    variant="phaseb",
+scripts/tests/test_lab_host.py:248: trailing whitespace.
++                    seconds=1,
+scripts/tests/test_lab_host.py:249: trailing whitespace.
++                    flash=True,
+scripts/tests/test_lab_host.py:250: trailing whitespace.
++                    run_id="test-run",
+scripts/tests/test_lab_host.py:251: trailing whitespace.
++                    emit_operator_help=False,
+scripts/tests/test_lab_host.py:252: trailing whitespace.
++                    target=target,
+scripts/tests/test_lab_host.py:253: trailing whitespace.
++                )
+scripts/tests/test_lab_host.py:254: trailing whitespace.
++        revalidate.assert_called_once_with(self.config, target)
+scripts/tests/test_lab_host.py:255: trailing whitespace.
++        flash.assert_not_called()
+scripts/tests/test_lab_host.py:256: trailing whitespace.
++
+scripts/tests/test_lab_host.py:257: trailing whitespace.
++    def test_capture_accepts_alias_for_frozen_target_with_or_without_supplied_target(self):
+scripts/tests/test_lab_host.py:258: trailing whitespace.
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+scripts/tests/test_lab_host.py:259: trailing whitespace.
++        for supplied_target in (None, target):
+scripts/tests/test_lab_host.py:260: trailing whitespace.
++            with self.subTest(supplied_target=supplied_target is not None), patch(
+scripts/tests/test_lab_host.py:261: trailing whitespace.
++                "lab_host.print_run_start"
+scripts/tests/test_lab_host.py:262: trailing whitespace.
++            ), patch("lab_host.print_operator_help"), patch(
+scripts/tests/test_lab_host.py:263: trailing whitespace.
++                "lab_host.resolve_run_target", return_value=target
+scripts/tests/test_lab_host.py:264: trailing whitespace.
++            ) as resolve, patch(
+scripts/tests/test_lab_host.py:265: trailing whitespace.
++                "lab_host.capture_serial",
+scripts/tests/test_lab_host.py:266: trailing whitespace.
++                side_effect=lambda _device, serial_path, _seconds: serial_path.parent.mkdir(
+scripts/tests/test_lab_host.py:267: trailing whitespace.
++                    parents=True, exist_ok=True
+scripts/tests/test_lab_host.py:268: trailing whitespace.
++                ),
+scripts/tests/test_lab_host.py:269: trailing whitespace.
++            ) as capture_serial, patch(
+scripts/tests/test_lab_host.py:270: trailing whitespace.
++                "lab_host.ProjectConfig.path_value", return_value=self.temp_path
+scripts/tests/test_lab_host.py:271: trailing whitespace.
++            ), patch("lab_host.parse_serial_file"):
+scripts/tests/test_lab_host.py:272: trailing whitespace.
++                capture_lab(
+scripts/tests/test_lab_host.py:273: trailing whitespace.
++                    self.config,
+scripts/tests/test_lab_host.py:274: trailing whitespace.
++                    "lab02",
+scripts/tests/test_lab_host.py:275: trailing whitespace.
++                    kit="desk",
+scripts/tests/test_lab_host.py:276: trailing whitespace.
++                    port="/dev/a",
+scripts/tests/test_lab_host.py:277: trailing whitespace.
++                    variant="phaseb",
+scripts/tests/test_lab_host.py:278: trailing whitespace.
++                    seconds=1,
+scripts/tests/test_lab_host.py:279: trailing whitespace.
++                    flash=False,
+scripts/tests/test_lab_host.py:280: trailing whitespace.
++                    run_id="test-run",
+scripts/tests/test_lab_host.py:281: trailing whitespace.
++                    emit_operator_help=False,
+scripts/tests/test_lab_host.py:282: trailing whitespace.
++                    target=supplied_target,
+scripts/tests/test_lab_host.py:283: trailing whitespace.
++                )
+scripts/tests/test_lab_host.py:284: trailing whitespace.
++            if supplied_target is None:
+scripts/tests/test_lab_host.py:285: trailing whitespace.
++                resolve.assert_called_once_with(self.config, "desk", "/dev/a")
+scripts/tests/test_lab_host.py:286: trailing whitespace.
++            else:
+scripts/tests/test_lab_host.py:287: trailing whitespace.
++                resolve.assert_not_called()
+scripts/tests/test_lab_host.py:288: trailing whitespace.
++            capture_serial.assert_called_once()
+scripts/tests/test_lab_host.py:289: trailing whitespace.
++            self.assertEqual((capture_serial.call_args.args[0], capture_serial.call_args.args[2]), ("/dev/a", 1))
+scripts/tests/test_lab_host.py:290: trailing whitespace.
++
+scripts/tests/test_lab_host.py:291: trailing whitespace.
++    def test_capture_alias_mismatch_fails_before_flash_write(self):
+scripts/tests/test_lab_host.py:292: trailing whitespace.
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+scripts/tests/test_lab_host.py:293: trailing whitespace.
++        with patch("lab_host.print_run_start"), patch("lab_host.print_operator_help"), patch(
+scripts/tests/test_lab_host.py:294: trailing whitespace.
++            "lab_host.revalidate_run_target"
+scripts/tests/test_lab_host.py:295: trailing whitespace.
++        ) as revalidate, patch("lab_host.flash_lab_build") as flash:
+scripts/tests/test_lab_host.py:296: trailing whitespace.
++            with self.assertRaisesRegex(ProjectConfigError, "does not match requested KIT"):
+scripts/tests/test_lab_host.py:297: trailing whitespace.
++                capture_lab(
+scripts/tests/test_lab_host.py:298: trailing whitespace.
++                    self.config,
+scripts/tests/test_lab_host.py:299: trailing whitespace.
++                    "lab02",
+scripts/tests/test_lab_host.py:300: trailing whitespace.
++                    kit="B",
+scripts/tests/test_lab_host.py:301: trailing whitespace.
++                    port="/dev/a",
+scripts/tests/test_lab_host.py:302: trailing whitespace.
++                    variant="phaseb",
+scripts/tests/test_lab_host.py:303: trailing whitespace.
++                    seconds=1,
+scripts/tests/test_lab_host.py:304: trailing whitespace.
++                    flash=True,
+scripts/tests/test_lab_host.py:305: trailing whitespace.
++                    run_id="test-run",
+scripts/tests/test_lab_host.py:306: trailing whitespace.
++                    emit_operator_help=False,
+scripts/tests/test_lab_host.py:307: trailing whitespace.
++                    target=target,
+scripts/tests/test_lab_host.py:308: trailing whitespace.
++                )
+scripts/tests/test_lab_host.py:309: trailing whitespace.
++        revalidate.assert_not_called()
+scripts/tests/test_lab_host.py:310: trailing whitespace.
++        flash.assert_not_called()
+diff_check_exit=2

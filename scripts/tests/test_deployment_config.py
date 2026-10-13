@@ -149,6 +149,15 @@ class DeploymentConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(DeploymentConfigError, "schema:"):
             validate_document_schema({"endpoints": [], "kits": []})
 
+    def test_schema_rejects_obsolete_lab_client_url(self) -> None:
+        with self.assertRaisesRegex(DeploymentConfigError, "schema:"):
+            validate_document_schema(
+                {
+                    "deployment": {"id": "desk", "name": "Desk"},
+                    "lab": {"phaseb_server_url": "old-setting"},
+                }
+            )
+
     def test_catalog_documents_semantic_rules(self) -> None:
         catalog = build_catalog()
         self.assertIn("semantic_rules", catalog)

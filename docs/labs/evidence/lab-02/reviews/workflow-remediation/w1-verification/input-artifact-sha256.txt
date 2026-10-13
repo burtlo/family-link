@@ -1,0 +1,3 @@
+45abffba6f2e2649779758ad6e0231acbb427488c1dcaa56e32b2c672701dd3a  /tmp/lab02-w1-20261012/source-sha256-baseline.txt
+2ec8da0dd7d4944a702a7fad776b8f9b4bec9173e6ef8aaf0182ccc79dccc78d  /tmp/lab02-w1-20261012/source-sha256-final.txt
+c661deb6e8a336378ae57259a5df99739e4853319b1453bb534d1ae33dab1316  /tmp/lab02-w1-20261012/diff.patch

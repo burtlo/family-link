@@ -1,0 +1,2 @@
+PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab02_canonical_run -v
+13 tests passed (47.499s), using require_escalated because the existing managed HTTP test binds localhost. Before escalation the suite's only failure was PermissionError on probe.bind; the managed test itself passed independently once escalated.

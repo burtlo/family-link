@@ -1,0 +1,2 @@
+Command: .venv/bin/python -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture -v
+Result: exit 0; 5 tests passed, including native compilation and execution of the production session test.

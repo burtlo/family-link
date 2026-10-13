@@ -1,0 +1,7 @@
+42e7ff2e38a5a3bdfa7d7c15fc84fb3dcda1c82b62f9cec5fdb928a65d835649  scripts/lab02_scenarios.py
+b47d8fc9084286a2f5805d99ac780129c92f594c3dbbdbe0eb5f8e134984223a  scripts/lab02_server.py
+38e4a89bb502e8ba39e7fcadb4160d075919c95d3136527d83ff51a7cf689725  server/labs/lab-02-paging/server.py
+93b84a7384b1bbbb8effa7d0d245cca1fec4c418d330fea60003fdbf60f2a0a6  client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c
+09cb26b315efdd450d5b25be6baef49332b492d30583990282716516e086198e  client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+b7c1f8f8b013dd572b16464c6a9934df42e2aa170798890effb3238ee7533082  client/labs/lab-02-bounded-inbox/components/lab02/snap.c
+f39bd633850df2a29ff7bd85b7e81fc03fa55c6d2bf28fec6986b30cd3280fe2  client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c

@@ -16,6 +16,16 @@
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 
+#if CONFIG_LAB_AUTO_HARNESS
+#define LAB02_HARNESS_ID 1
+#else
+#define LAB02_HARNESS_ID 0
+#endif
+
+#ifndef CONFIG_LAB02_SCENARIO
+#define CONFIG_LAB02_SCENARIO "nominal"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 
@@ -87,11 +97,13 @@ void lab02_app_start(void)
     }
 
     const esp_app_desc_t *desc = esp_app_get_description();
-    const char *build_id = desc && desc->version[0] ? desc->version : "dev";
+    const char *build_id = CONFIG_LAB02_BUILD_ID[0] ? CONFIG_LAB02_BUILD_ID :
+                           (desc && desc->version[0] ? desc->version : "dev");
     const lab02_fixture_blob_t *blob = lab02_fixture_selected();
     const char *fixture_rev = blob && blob->name ? blob->name : fixture_name();
 
-    printf("LAB02_READY build=%s fixture=%s mode=%s\n", build_id, fixture_rev, mode_name());
+    printf("LAB02_READY build=%s fixture=%s mode=%s harness=%d scenario=%s\n", build_id,
+           fixture_rev, mode_name(), LAB02_HARNESS_ID, CONFIG_LAB02_SCENARIO);
     ESP_LOGI(TAG, "LAB02_READY build=%s fixture=%s mode=%s", build_id, fixture_rev, mode_name());
 
     if (!lab02_board_lvgl_lock(5000)) {

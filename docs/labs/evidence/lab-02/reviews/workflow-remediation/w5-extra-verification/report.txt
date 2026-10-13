@@ -1,0 +1,23 @@
+LAB-02 W5 extra independent verification
+Date: 2026-10-12
+Repository: /Users/lynnfrank/src/family-link
+Base: main HEAD 0b02b30086f1c8c8e985458912646b0d473b967b
+Scope: read-only evidence follow-up for the owner-authorized extra W5 repair. No source or maintained documentation edits; no new tests or broadened audit.
+
+Disposition: FIXED for the two reproduced coordinator defects at focused L1/L2 host scope: (1) unrelated-run or unmatched page evidence no longer yields a synthesized scenario effect/PASS; (2) dispatch freezes submitted action data before the worker uses it. Existing integrated positive test demonstrates an action accepted during the snap and matching fetch/apply observed after snap_end can classify PASS. Managed loopback action idempotency and serialization also pass. This does not establish physical-device behavior, L3, or the broader canonical workflow/device verdict.
+
+Source SHA-256 (current source matches fixer snapshots):
+1a5bcb09eaa9290fc2c416241abcd15cae0786c55bb5bbbf4741b1bf2563bca1  scripts/lab02_scenarios.py
+589934ef18ac88952e581b82d7120076a1481c0389858706b4e87d897209739c  scripts/tests/test_lab02_scenarios.py
+
+Commands and recorded results:
+1. `.venv/bin/python -m unittest scripts.tests.test_lab02_scenarios` — passed, 10 tests.
+2. `.venv/bin/python /tmp/lab02-w5-reverify-check.py` — unrelated run: effects=0, INCOMPLETE; missing matching fetch: effects=0, INCOMPLETE; mutating caller data after dispatch still delivered original x=1. The harness's nominal positive ad hoc case returned INCOMPLETE because it did not provide the receipt/snap context required by the classifier; independent integrated test below is the valid positive check.
+3. `.venv/bin/python /tmp/lab02-w5-reverify-http.py` (loopback permission) — duplicate HTTP action returned same revision=2, same message ID and same completion timestamp; two concurrent unique actions both succeeded with sequential revisions 3 and 4 (completion order nondeterministic).
+4. `.venv/bin/python -m unittest scripts.tests.test_lab02_scenarios scripts.tests.test_lab02_server scripts.tests.test_lab02_paging_server scripts.tests.test_lab02_model_native` (loopback permission) — passed, 28 tests.
+5. `git diff --check -- scripts/lab02_scenarios.py scripts/tests/test_lab02_scenarios.py` — passed.
+6. `shasum -a 256 scripts/lab02_scenarios.py scripts/tests/test_lab02_scenarios.py` — hashes above; match `/tmp/lab02-w5-extra-fix/source-sha256.txt`.
+
+Positive integrated evidence: `test_valid_apply_after_receipt_before_snap_end_is_recorded` ingests an accepted action during an active snap, then matching page_fetch/page_apply after snap_end during observation; it verifies a scenario_effect and `classify_scenario(...) == PASS`. It passed in the 10-test and 28-test runs.
+
+Limits: host-side scripted evidence only (L1/L2); no hardware, flash, manual server, curl, firmware effect observation, or L3 claim. Existing W5 proof provenance limits remain as documented in the prior independent report; this follow-up resolves the two concrete regressions from the authorized retry.

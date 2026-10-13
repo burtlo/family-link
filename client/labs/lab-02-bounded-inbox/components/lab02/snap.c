@@ -6,11 +6,15 @@
 
 #include "esp_timer.h"
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdatomic.h>
 
 static int32_t s_anim_target;
 static lab02_snap_state_t *s_anim_st;
 static void (*s_anim_done)(void *);
 static void *s_anim_user;
+static atomic_uint_least32_t s_snap_id;
 
 static void scroll_x_exec(void *obj, int32_t v)
 {
@@ -27,7 +31,6 @@ static void snap_anim_done(lv_anim_t *a)
         s_anim_st->scroll_lock = false;
         s_anim_st->snap_target_x = s_anim_target;
     }
-    lab02_trace_emit("snap_end", 0, -1, NULL, NULL);
     lab02_instrumentation_get()->snap_count++;
     if (s_anim_done) {
         s_anim_done(s_anim_user);
@@ -38,6 +41,7 @@ static void snap_anim_done(lv_anim_t *a)
 }
 
 void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t target_x,
+                           int focus_index, const char *message_id,
                            void (*on_done)(void *), void *user_data)
 {
     if (!scroller || !st) {
@@ -54,12 +58,15 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
     }
     lv_anim_delete(scroller, scroll_x_exec);
     s_anim_target = target_x;
+    uint32_t snap_id = atomic_fetch_add(&s_snap_id, 1) + 1;
     s_anim_st = st;
     s_anim_done = on_done;
     s_anim_user = user_data;
     st->snap_target_x = target_x;
     st->scroll_lock = true;
-    lab02_trace_emit("snap_start", 0, -1, NULL, NULL);
+    char extra[48];
+    snprintf(extra, sizeof(extra), "snap_id=%u", (unsigned)snap_id);
+    lab02_trace_emit("snap_start", 0, focus_index, message_id, extra);
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, scroller);
@@ -69,4 +76,9 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
     lv_anim_set_exec_cb(&a, scroll_x_exec);
     lv_anim_set_completed_cb(&a, snap_anim_done);
     lv_anim_start(&a);
+}
+
+uint32_t lab02_snap_current_id(void)
+{
+    return atomic_load(&s_snap_id);
 }

@@ -1,0 +1,21 @@
+Focused host/server/action and trace tests (loopback allowed via escalation):
+.venv/bin/python -m unittest scripts.tests.test_lab02_server scripts.tests.test_lab02_paging_server scripts.tests.test_lab02_scenarios
+Result: 20 tests passed.
+
+Full host regression suite (loopback allowed via escalation):
+.venv/bin/python -m unittest discover -s scripts/tests
+Result: 113 tests passed (includes W1-W4 tests).
+
+Scripted firmware compile (build only):
+.venv/bin/python scripts/lab_host.py build lab02 --variant scripted
+Result: ESP-IDF build complete; generated build/labs/lab-02-bounded-inbox-scripted/lab02_bounded_inbox.bin. No flash or hardware operation.
+
+Whitespace check:
+git diff --check -- [W5 touched tracked paths]
+Result: exit 0.
+
+Evidence boundary: host/server behavior and firmware compilation only. No physical kit or semantic application effect claim.
+
+Final standalone scenario test rerun after adding off-reader dispatch:
+.venv/bin/python -m unittest scripts.tests.test_lab02_scenarios
+Result: 5 tests passed.

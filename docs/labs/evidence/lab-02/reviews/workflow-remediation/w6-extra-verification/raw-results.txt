@@ -1,0 +1,24 @@
+Focused W6 verification commands and outputs
+
+Command: PYTHONPATH=scripts .venv/bin/python scripts/tests/test_lab02_evidence.py -v
+Output: 10 focused writer tests passed.
+Coverage: artifact-root validation, original atomic retry, nominal completion/idempotency, partial-context merge/sanitization, event quota, interruption/cleanup/semantic status separation, oversized terminal retry, preflight/build failure summary, safe IDs/status validation/concurrent sink, and sanitized encoded row bounds for ASCII, escaped JSON characters, supplementary Unicode and redaction.
+
+Command: PYTHONPATH=scripts .venv/bin/python docs/labs/evidence/lab-02/reviews/workflow-remediation/w6-reverification/repro.py
+Output:
+event bound 3 3 6
+first failure False False
+retry FAIL UNMEASURED 1 True
+arbitrary artifact refs None None None
+oversized terminal boundary [27, 16384] max 16384
+
+Independent size stress (temporary run roots):
+ascii20k encoded_row_bytes 16384 reason_chars 16266 same_reason True truncated True
+escaped20k encoded_row_bytes 16383 reason_chars 8138 same_reason True truncated True
+unicode20k encoded_row_bytes 16377 reason_chars 2042 same_reason True truncated True
+retry manifest_write_attempts 2 identical_payload True terminal_events 1 status FAIL
+
+The retry stress injected one atomic manifest write failure, then attempted finalization with changed status/reason/end time. Both write payloads were byte-identical JSON encodings of the first pending terminal facts; the persisted manifest and sole terminal event retained FAIL and the same bounded reason.
+
+Command: git diff --check -- scripts/lab02_evidence.py scripts/tests/test_lab02_evidence.py docs/labs/schemas/run-manifest.v1.md
+Output: passed (no output).

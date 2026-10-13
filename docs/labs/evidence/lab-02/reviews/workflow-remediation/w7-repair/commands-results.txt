@@ -1,0 +1,5 @@
+Focused suite: PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab02_canonical_run scripts.tests.test_lab02_server scripts.tests.test_lab02_experiment_sdkconfig scripts.tests.test_lab_deployment_sdkconfig -v — PASS, 29 tests.
+Manual managed-HTTP ESP-IDF build: phaseb / frozen identity f5e9a623c4a38999c910cb18 — exit 0.
+Scripted managed-HTTP ESP-IDF build: scripted-phaseb / frozen identity 46236af77cd8460b8f3664f6 — exit 0.
+Build log output captured and secret-redacted before save; per-kit secret scan in build-secret-scan.txt.
+The first sandboxed build was blocked by psutil process enumeration (sysctl EPERM). A temporary /tmp pyshim uses the ESP-IDF helper documented os.getppid fallback on macOS; no installed dependency or repository config was edited.

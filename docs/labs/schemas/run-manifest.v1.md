@@ -1,6 +1,6 @@
 # Lab run manifest (`family-link.lab-run-manifest/v1`)
 
-Each device run stores one JSON file at:
+Each accepted host run stores one JSON file at:
 
 `docs/labs/evidence/<lab-slug>/runs/<run-id>/run-manifest.json`
 
@@ -8,6 +8,49 @@ Example lab slug: `lab-02`. **Run ID convention:** `YYYYMMDD-<phase>-<fixture>-<
 (e.g. `20261011-phase-a-64-recycle-01`).
 
 ## Required fields
+
+The manifest is a run summary, including when preflight, build, capture, or
+cleanup fails. Fields whose values were not observed are `null` (or an empty
+collection where appropriate) and must not be reconstructed from guesses.
+`workflow_status` is `PASS`, `FAIL`, or `INCOMPLETE`; `experiment_verdict` is
+`PASS`, `FAIL`, `UNMEASURED`, or `INCOMPLETE`. These are independent: a completed
+host workflow can have a semantic experiment failure. Parser success alone
+does not establish either PASS. A workflow PASS requires the caller to confirm
+all required workflow stages completed and cleanup succeeded.
+
+The writer also records `source` (revision, dirty state, and available file
+hashes), `build` and `capture` stage summaries, `artifacts.events`,
+`artifacts.device_log`, `terminal_reason`, and the two status fields. Unknown
+source/build identity remains null on preflight or build failure. Firmware
+`cmake_options` is a whitelist of behavior-relevant safe flags; never include
+raw deployment data, Wi-Fi settings, credential-bearing URLs, or raw
+`sdkconfig` contents. `hardware.kit_nickname` may identify the selected kit;
+USB serial bindings are excluded.
+
+The run directory is created exclusively from a validated single-segment run
+ID. It is never reused or overwritten. Worker events are sanitized and
+appended to `events.jsonl`. At most the configured regular-event quota (default
+2000) is retained; each encoded row is limited to 16 KiB. Overflow and
+oversized rows are dropped, one `events_truncated` row is reserved, and the
+manifest records the total `event_loss.dropped_events`. The terminal row has a
+separate reserved slot, so the JSONL bound is quota + two rows. Unknown object
+values are replaced with `[UNSUPPORTED]`; they are never serialized via repr.
+The sanitized terminal reason is shortened as needed so the JSON-encoded
+`run_terminal` row stays within 16 KiB; the event sets `reason_truncated: true`
+and the manifest sets `terminal_reason_truncated: true` when shortening occurs.
+Both records use the same bounded reason, ending in `[truncated]`.
+The final manifest is written atomically. If the atomic write fails, a retry
+uses the same frozen status, reason, timestamp, and terminal event. The result
+is cached only after the manifest write succeeds.
+
+Artifact references are emitted only for existing regular files within the
+canonical run roots: serial/device log at
+`logs/device/labs/lab-02/<run-id>/serial.txt`, and metrics at
+`docs/labs/evidence/lab-02/runs/<run-id>/metrics.json`. Absolute paths,
+traversal, unrelated files, symlink escapes, missing files, and non-files are
+recorded as `null`. Callers may update the writer with newly observed facts
+before finalization; that update is sanitized and merged into the partial
+context, which freezes at the first finalization attempt.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -18,21 +61,23 @@ Example lab slug: `lab-02`. **Run ID convention:** `YYYYMMDD-<phase>-<fixture>-<
 | `run_id` | string | Unique per run |
 | `started_at_utc` / `ended_at_utc` | ISO 8601 | Run bounds |
 | `verification_levels` | object | Map scenario ID → `L0`…`L3` |
-| `firmware.build_id` | string | Immutable build stamp |
-| `firmware.project_path` | string | Repo-relative ESP-IDF project |
-| `firmware.idf_version` | string | e.g. `v5.4.2` |
-| `firmware.cmake_options` | object | Kconfig/CMake flags that affect behavior |
-| `server.path` | string | Repo-relative server tree or `none` |
+| `firmware.build_id` | string | null | Immutable build stamp, null if unavailable |
+| `firmware.project_path` | string | null | Repo-relative ESP-IDF project |
+| `firmware.idf_version` | string | null | e.g. `v5.4.2` |
+| `firmware.source_sha256`, `binary_sha256`, `sdkconfig_sha256` | string | null | Available source/build provenance hashes |
+| `firmware.cmake_options` | object | Whitelisted Kconfig/CMake flags that affect behavior |
+| `server.path` | string | null | Repo-relative server tree or `none` |
 | `server.revision` | string \| null | Server package revision when used |
-| `fixture.schema` | string | e.g. `inbox-summary/v1` |
-| `fixture.revision` | string | Fixture content revision |
-| `fixture.sha256` | string | Hash of primary fixture file used |
-| `hardware.board` | string | e.g. `esp32s3-box-3` |
-| `artifacts.serial_log` | string | Repo-relative path under `logs/device/labs/` |
-| `artifacts.metrics` | string | Repo-relative `metrics.json` |
+| `fixture.schema`, `fixture.revision`, `fixture.sha256` | string | null | Selected fixture identity and hash |
+| `hardware.board` | string | null | e.g. `esp32s3-box-3` |
+| `artifacts.serial_log` | string | null | Repo-relative path under `logs/device/labs/` |
+| `artifacts.metrics` | string | null | Repo-relative `metrics.json`; absent if parsing did not produce it |
+| `event_loss.dropped_events` | integer | Number of event rows omitted by quota or row-size bound |
 | `scenarios` | string[] | Scenario IDs exercised |
 | `comparison_run_id` | string \| null | Paired run (e.g. eager vs recycle) |
-| `operator` | string | `human`, `harness`, or `agent` |
+| `operator` | string | null | `human`, `harness`, or `agent` |
+| `workflow_status` | string | `PASS`, `FAIL`, or `INCOMPLETE` |
+| `experiment_verdict` | string | `PASS`, `FAIL`, `UNMEASURED`, or `INCOMPLETE` |
 
 ## Example (Phase A)
 

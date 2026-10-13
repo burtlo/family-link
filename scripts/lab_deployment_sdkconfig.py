@@ -26,12 +26,19 @@ def deployment_defaults_sidecars(build_dir: Path) -> list[Path]:
     return sorted(p for p in parent.iterdir() if p.name.startswith(prefix))
 
 
-def deployment_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str]:
-    lines: list[str] = []
-    if deployment.lab.phaseb_server_url:
-        lines.append(
-            f"CONFIG_LAB02_SERVER_URL={sdkconfig_quoted_value(deployment.lab.phaseb_server_url)}"
-        )
+def deployment_kit_sdkconfig_lines(
+    deployment: Deployment, kit: Kit, client_url: str, *, fixture_size: int = 64,
+    scenario: str = "nominal", scripted: bool = False, build_id: str = "",
+) -> list[str]:
+    if not client_url:
+        raise ValueError("validated LAB-02 client URL is required")
+    lines: list[str] = [
+        f"CONFIG_LAB02_SERVER_URL={sdkconfig_quoted_value(client_url)}",
+        f"CONFIG_LAB02_FIXTURE_{fixture_size}=y",
+        f"CONFIG_LAB02_SCENARIO={sdkconfig_quoted_value(scenario)}",
+        f"CONFIG_LAB02_BUILD_ID={sdkconfig_quoted_value(build_id)}",
+        f"CONFIG_LAB_AUTO_HARNESS={'y' if scripted else 'n'}",
+    ]
     profile = deployment.secrets_profile_for_kit(kit)
     if profile and profile.wifi_ssid:
         lines.append(f"CONFIG_LAB02_WIFI_SSID={sdkconfig_quoted_value(profile.wifi_ssid)}")
@@ -41,7 +48,10 @@ def deployment_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str
     return lines
 
 
-def deployment_kit_sdkconfig_digest(deployment: Deployment, kit: Kit) -> str:
+def deployment_kit_sdkconfig_digest(
+    deployment: Deployment, kit: Kit, client_url: str, *, fixture_size: int = 64,
+    scenario: str = "nominal", scripted: bool = False, build_id: str = "",
+) -> str:
     profile = deployment.secrets_profile_for_kit(kit)
     payload = "\n".join(
         [
@@ -49,7 +59,8 @@ def deployment_kit_sdkconfig_digest(deployment: Deployment, kit: Kit) -> str:
             kit.secrets_profile,
             profile.wifi_ssid if profile else "",
             profile.wifi_password if profile else "",
-            deployment.lab.phaseb_server_url,
+            client_url,
+            str(fixture_size), scenario, str(scripted), build_id,
         ]
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -59,16 +70,19 @@ def write_deployment_kit_sdkconfig(
     build_dir: Path,
     kit: Kit,
     deployment: Deployment,
-) -> Path | None:
+    client_url: str,
+    *, fixture_size: int = 64, scenario: str = "nominal", scripted: bool = False,
+    build_id: str = "",
+) -> Path:
     """Write kit deployment defaults beside build_dir; invalidate sdkconfig when content changes."""
-    lines = deployment_kit_sdkconfig_lines(deployment, kit)
-    if not lines:
-        return None
+    lines = deployment_kit_sdkconfig_lines(deployment, kit, client_url, fixture_size=fixture_size,
+                                           scenario=scenario, scripted=scripted, build_id=build_id)
     build_dir.parent.mkdir(parents=True, exist_ok=True)
     path = deployment_kit_defaults_path(build_dir, kit)
     meta = path.with_suffix(path.suffix + ".sha256")
     content = "\n".join(lines) + "\n"
-    digest = deployment_kit_sdkconfig_digest(deployment, kit)
+    digest = deployment_kit_sdkconfig_digest(deployment, kit, client_url, fixture_size=fixture_size,
+                                             scenario=scenario, scripted=scripted, build_id=build_id)
     if meta.is_file() and meta.read_text(encoding="utf-8").strip() == digest and path.is_file():
         return path
     sdkconfig = build_dir / "sdkconfig"

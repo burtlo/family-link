@@ -1,0 +1,40 @@
+LAB-02 W2 independent verification — 2026-10-12
+
+Disposition: NOT FIXED (core CLI flow passes; supported capture_lab nickname boundary regresses).
+Evidence level: L2 simulated host-adapter runtime. No physical device was available; no L3 claim.
+
+Boundary/provenance
+- Repository: /Users/lynnfrank/src/family-link
+- HEAD: 0b02b30086f1c8c8e985458912646b0d473b967b
+- Reviewed WIP paths include unrelated W1 stubs and W0 docs/evidence. This verifier changed no repository files.
+- Initial W2 source hashes from /tmp/lab02-w2-fix/initial-source-sha256.txt:
+  scripts/lab_host.py e6663f79f5919e75f714f76308e2f0b6679a70095256b2095a0949d1c7b4621e
+  scripts/device_targets.py a2cde20af6a59f7de7fe25aa5084c0599d85cf606fcee9bb5572c819d0d9e0af
+  scripts/tests/test_lab_host.py a58dd84dffedc9cb2f40a6fd7cc89f9ae24c32ec779f46f969b0795d908585df
+- Verified final source hashes:
+  scripts/lab_host.py 1a72f6f6a1a079cad132b4f0cea4343d3283147b616626859aaaa34b7234cdd7
+  scripts/device_targets.py a2cde20af6a59f7de7fe25aa5084c0599d85cf606fcee9bb5572c819d0d9e0af
+  scripts/tests/test_lab_host.py 02a3e358f6cc7fce6cbb7c40837b7670ec6d834cc780e8d01f1c9375a6313bd1
+  fixer's exact diff /tmp/lab02-w2-fix/final.diff: e3e702019d4258615931cee5c5db590e8c54655ae32e7e38b71b6319b0fd0047
+  verifier harness /tmp/lab02-w2-verify.py: 573619af6fc6276b4a68ac4cd6b5cf7b58503bc453578310cb788432b40ce768
+  focused test output: /tmp/lab02-w2-verify/focused-tests.txt, SHA-256 6a39d283a753c00435b279665e1e116fba25506f550b8848a9efb0dd510a5e9b
+  CLI harness output: /tmp/lab02-w2-verify/cli-harness.txt, SHA-256 c6f9a8c6763cf93638296f48ba93816124f0239f4c2fe17aafd5e0e2ca86680e
+
+Commands and results
+- `.venv/bin/python -m unittest scripts.tests.test_lab_host -v` — PASS, 12 tests.
+- `.venv/bin/python /tmp/lab02-w2-verify.py` — PASS for actual `main()` + resolver with USB/build/flash edges simulated: no-KIT with one connected registered A selects A and passes the same RunTarget to build and capture; alias + matching PORT selects kit A; KIT=A + PORT=deviceB returns failure before build/capture; zero/multiple auto targets fail before build/capture; direct `flash` mismatch does not call flash; public Phase B build with KIT alias succeeds without USB enumeration. Harness also reproduces the helper regression below.
+- `git -c core.whitespace=cr-at-eol diff --check -- scripts/lab_host.py scripts/device_targets.py scripts/tests/test_lab_host.py` — PASS.
+- Repository caller search: `capture_lab` is invoked only by `main()` in scripts/lab_host.py (plus its focused test). The function is directly callable and accepts KIT nickname per its prior behavior/selection path; CLI normalization does not cover direct callers.
+
+Fixed core scenarios
+- Resolver binds one connected registered kit by normalized serial; explicit kit/port disagreement, unknown kit, duplicate roster serials, duplicate connected serial match, unreadable explicit port serial, disconnect, changed USB device path all reject.
+- Run resolves before build and passes one frozen target into build and capture. Capture/flash revalidates target before invoking flash.
+- Build-only path is independent of USB and resolves nickname in the real build implementation under simulated IDF invocation.
+
+Not fixed / regression
+- `capture_lab(config, ..., kit='desk', port='/dev/a', target=None)` calls `resolve_run_target`, which correctly resolves nickname `desk` to kit id `A`, then compares the original nickname string literally to `selected_target.kit_id` and raises `ProjectConfigError: Frozen run target does not match requested KIT`. This worked before the W2 change because the helper accepted nicknames through `select`/`kit_for`. It also fails when a caller supplies both alias and a resolved `target`.
+- Affected source: scripts/lab_host.py capture_lab alias consistency check (current lines approximately 521–526; exact reviewed diff in final.diff). Main CLI normalizes the alias to target.kit_id, so this does not invalidate the verified CLI trigger cases, but it regresses the helper API and deployment standard's nickname-to-kit behavior. Focused repair should canonicalize the requested KIT before comparison or compare resolved identity.
+
+Applicable authority read
+- Full docs/AGENTS.md, docs/standards/client-code-review-agent.md, docs/standards/client-application-coding-standards.md, docs/standards/deployment-configuration.md, LAB-02 plan and linked F003 finding/causal clarification.
+- F003 accepted triggers: omitted KIT previously failed before detection; KIT=A + PORT=deviceB previously allowed build kit A/device B mismatch. No claim that late selection by itself picked a different device.

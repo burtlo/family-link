@@ -55,7 +55,6 @@ endef
 .PHONY: lab.%.scripted lab.%.scripted.build lab.%.scripted.flash lab.%.scripted.capture lab.%.scripted.clean
 .PHONY: lab.%.phaseb lab.%.phaseb.build lab.%.phaseb.flash lab.%.phaseb.capture lab.%.phaseb.clean
 .PHONY: lab.%.eager lab.%.eager.build lab.%.eager.flash lab.%.eager.capture lab.%.eager.clean
-.PHONY: lab.lab02.server
 .PHONY: lab.%.parse
 
 .DEFAULT_GOAL := help
@@ -122,10 +121,7 @@ lab.%.scripted.capture:
 	$(call py_run,scripts/lab_host.py capture $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
 lab.%.scripted:
-	$(call py_run,scripts/lab_host.py run $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
-
-lab.lab02.server:
-	@$(GITBASH) -c "$(ROOT)/.venv/bin/python server/labs/lab-02-paging/server.py"
+	$(call py_run,scripts/lab_host.py run $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
 lab.%.phaseb.build:
 	$(call py_run,scripts/lab_host.py build $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
@@ -170,4 +166,4 @@ lab.%.capture:
 	$(call py_run,scripts/lab_host.py capture $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
 lab.%:
-	$(call py_run,scripts/lab_host.py run $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+	$(call py_run,scripts/lab_host.py run $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))

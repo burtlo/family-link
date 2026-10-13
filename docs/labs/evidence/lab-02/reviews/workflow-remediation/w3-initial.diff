@@ -1,0 +1,1076 @@
+diff --git a/client/labs/lab-02-bounded-inbox/sdkconfig.defaults.phaseb b/client/labs/lab-02-bounded-inbox/sdkconfig.defaults.phaseb
+index 93f0a0b..b1e0476 100644
+--- a/client/labs/lab-02-bounded-inbox/sdkconfig.defaults.phaseb
++++ b/client/labs/lab-02-bounded-inbox/sdkconfig.defaults.phaseb
+@@ -1,6 +1,5 @@
+-# Phase B: credentials from config/deployment/local.yaml when you build with
+-# KIT=<nickname> (kit secrets_profile → secrets_profiles.*.wifi_* and lab.phaseb_server_url).
+-# Or set CONFIG_LAB02_* in menuconfig / a local sdkconfig.defaults overlay.
++# Phase B host builds resolve per-kit Wi-Fi from the private deployment roster
++# and the client URL from [labs.lab02] in host.defaults.ini.
+ 
+ CONFIG_ESP_WIFI_ENABLED=y
+ CONFIG_ESP_WIFI_STA_DISCONNECTED_PM_ENABLE=n
+diff --git a/config/deployment/deployment.schema.v1.json b/config/deployment/deployment.schema.v1.json
+index 402922b..e79a4ae 100644
+--- a/config/deployment/deployment.schema.v1.json
++++ b/config/deployment/deployment.schema.v1.json
+@@ -55,14 +55,8 @@
+       }
+     },
+     "lab": {
+-      "type": "object",
+-      "additionalProperties": false,
+-      "properties": {
+-        "phaseb_server_url": {
+-          "type": "string",
+-          "description": "Desk LAN URL for LAB-02 Phase B paging server (e.g. http://192.168.1.42:8765)."
+-        }
+-      }
++      "type": "null",
++      "description": "Empty legacy container retained in existing local rosters; no settings are accepted here."
+     },
+     "secrets_profiles": {
+       "type": "object",
+diff --git a/config/deployment/example.yaml b/config/deployment/example.yaml
+index 73c210e..e2f81fd 100644
+--- a/config/deployment/example.yaml
++++ b/config/deployment/example.yaml
+@@ -33,9 +33,6 @@ secrets_profiles:
+     wifi_ssid: ""
+     wifi_password: ""
+ 
+-lab:
+-  phaseb_server_url: ""  # LAN URL for make lab.lab02.server, e.g. http://192.168.1.42:8765
+-
+ kits:
+   - id: kit-alpha
+     endpoint_id: endpoint-alpha
+diff --git a/config/host.defaults.ini b/config/host.defaults.ini
+index b74222f..4028cbf 100644
+--- a/config/host.defaults.ini
++++ b/config/host.defaults.ini
+@@ -154,3 +154,6 @@ commands = test, build
+ 
+ [flow.post_repair]
+ commands = test, build
++
++[labs.lab02]
++client_url = http://192.168.8.177:8765
+diff --git a/config/labs.registry.yaml b/config/labs.registry.yaml
+index ac20eee..bb3958f 100644
+--- a/config/labs.registry.yaml
++++ b/config/labs.registry.yaml
+@@ -25,11 +25,11 @@ labs:
+         sdkconfig_defaults:
+           - sdkconfig.defaults
+           - ../kconfig/sdkconfig.defaults.scripted
+-      phaseb:
+-        build_dir: build/labs/lab-02-bounded-inbox-phaseb
+-        sdkconfig_defaults:
+-          - sdkconfig.defaults
+-          - sdkconfig.defaults.phaseb
++      phaseb:
++        build_dir: build/labs/lab-02-bounded-inbox-phaseb
++        sdkconfig_defaults:
++          - sdkconfig.defaults
++          - sdkconfig.defaults.phaseb
+     trace_parser: client/labs/lab-02-bounded-inbox/tools/parse_lab_trace.py
+     run:
+       capture_seconds_default: 120
+@@ -39,6 +39,19 @@ labs:
+         - Manual: make lab.lab02
+         - Auto-scroll: make lab.lab02.scripted
+         - Eager comparison: make lab.lab02.eager - 16-widget baseline (see lab README).
+-        - Phase B HTTP paging: make lab.lab02.server; set secrets_profiles + lab.phaseb_server_url in local.yaml; make lab.lab02.phaseb.build KIT=<nickname>.
++        - Phase B HTTP paging: configure [labs.lab02] client_url in host.defaults.ini; set per-kit Wi-Fi in local.yaml; make lab.lab02.phaseb.build KIT=<nickname>.
+         Name the scenario in RUN_ID (e.g. S-fix-16) when you publish evidence.
+-      instructions_doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios
++      instructions_doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios
++    workflow:
++      server_path: server/labs/lab-02-paging/server.py
++      bind_host: auto
++      bind_port: 8765
++      fixture_size_default: 64
++      scenario_default: nominal
++      deadlines_seconds:
++        startup: 10
++        health: 10
++        seed: 10
++        readiness: 15
++        action: 5
++        cleanup: 5
+diff --git a/config/labs/labs.registry.schema.v1.json b/config/labs/labs.registry.schema.v1.json
+index d7ef8f8..8d3f70c 100644
+--- a/config/labs/labs.registry.schema.v1.json
++++ b/config/labs/labs.registry.schema.v1.json
+@@ -57,15 +57,43 @@
+         "variants": {
+           "$ref": "#/$defs/variants_map"
+         },
+-        "trace_parser": {
+-          "type": "string",
+-          "minLength": 1
+-        },
+-        "run": {
++        "trace_parser": {
++          "type": "string",
++          "minLength": 1
++        },
++        "workflow": {
++          "$ref": "#/$defs/workflow_settings"
++        },
++        "run": {
+           "$ref": "#/$defs/run_defaults"
+         }
+       }
+-    },
++    },
++    "workflow_settings": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": ["server_path", "bind_host", "bind_port", "fixture_size_default", "scenario_default", "deadlines_seconds"],
++      "properties": {
++        "server_path": { "type": "string", "minLength": 1 },
++        "bind_host": { "type": "string", "minLength": 1 },
++        "bind_port": { "type": "integer", "minimum": 1, "maximum": 65535 },
++        "fixture_size_default": { "type": "integer", "minimum": 1 },
++        "scenario_default": { "type": "string", "minLength": 1 },
++        "deadlines_seconds": {
++          "type": "object",
++          "additionalProperties": false,
++          "required": ["startup", "health", "seed", "readiness", "action", "cleanup"],
++          "properties": {
++            "startup": { "type": "integer", "minimum": 1 },
++            "health": { "type": "integer", "minimum": 1 },
++            "seed": { "type": "integer", "minimum": 1 },
++            "readiness": { "type": "integer", "minimum": 1 },
++            "action": { "type": "integer", "minimum": 1 },
++            "cleanup": { "type": "integer", "minimum": 1 }
++          }
++        }
++      }
++    },
+     "variants_map": {
+       "type": "object",
+       "minProperties": 2,
+diff --git a/docs/labs/lab-02-implementation-outline.md b/docs/labs/lab-02-implementation-outline.md
+index e73d25d..b2a88c5 100644
+--- a/docs/labs/lab-02-implementation-outline.md
++++ b/docs/labs/lab-02-implementation-outline.md
+@@ -131,7 +131,7 @@ Link eager comparison runs with `comparison_run_id` in the manifest.
+ 2. **Build (eager):** separate `-B build/labs/lab-02-bounded-inbox-eager` with `LAB02_EAGER_BASELINE` enabled
+ 3. **Boot marker (define in lab README):** e.g. `LAB02_READY build=<id> fixture=<rev> mode=recycle|eager`
+ 4. **Auto-scroll:** `make lab.lab02.scripted` / `CONFIG_LAB_AUTO_HARNESS` for L2 batches; log `HARNESS_DONE`
+-5. **Phase B:** start `server/labs/lab-02-paging`, set `LAB02_SERVER_URL`, rerun B scenarios
++5. **Phase B:** configure the client endpoint in `[labs.lab02] client_url` in `config/host.defaults.ini`, keep per-kit Wi-Fi in the private deployment roster, then run the Phase B build/scenarios
+ 6. **Parse:** `tools/parse_lab_trace.py` → `docs/labs/evidence/lab-02/runs/<run-id>/metrics.json`
+ 
+ Full runbook detail: [assistant guide § LAB-02](assistant-guide.md#lab-02-quick-reference).
+diff --git a/docs/standards/deployment-configuration.md b/docs/standards/deployment-configuration.md
+index 536d96f..af03bdb 100644
+--- a/docs/standards/deployment-configuration.md
++++ b/docs/standards/deployment-configuration.md
+@@ -53,17 +53,16 @@ are neither printed by device discovery nor embedded in the bootstrap image.
+ 
+ ## Lab desk secrets (Phase B)
+ 
+-Named **secrets profiles** and desk lab settings live in the same gitignored roster
+-as kits (committed `example.yaml` shows shape only):
++Named **secrets profiles** live in the gitignored roster beside kits (committed
++`example.yaml` shows shape only):
+ 
+ | Field | Location | Used by |
+ |-------|----------|---------|
+ | `wifi_ssid`, `wifi_password` | `secrets_profiles.<name>` | Resolved via each kit’s `secrets_profile` |
+-| `lab.phaseb_server_url` | Top-level `lab:` block | Phase B paging server LAN URL (e.g. `http://192.168.1.42:8765`) |
+ 
+ Every kit must set `secrets_profile` to a key under `secrets_profiles`.
+ `make config.deployment` redacts Wi-Fi values. **Phase B firmware builds always
+ require `KIT=<nickname>`** so the correct profile is compiled in; USB
+ auto-detection is only for flash/capture port selection, not for sdkconfig
+-secrets. `lab_host` merges the kit’s profile plus `lab.phaseb_server_url` into
+-the Phase B build before `idf.py build`.
++secrets. LAB-02 client endpoint configuration belongs in the host INI, while
++shared workflow defaults belong in the tracked labs registry.
+diff --git a/docs/standards/labs-configuration.md b/docs/standards/labs-configuration.md
+index 6c6305e..f52288d 100644
+--- a/docs/standards/labs-configuration.md
++++ b/docs/standards/labs-configuration.md
+@@ -86,7 +86,14 @@ Registry variant keys (`scripted`, `eager`, …) back those targets. Advanced: `
+ | `description` | No | One line for `make lab.help` |
+ | `variants` | Yes | Map with `default` key plus one entry per variant (see below) |
+ | `trace_parser` | No | Repo-relative script to turn serial trace into metrics |
+-| `run` | Yes | Capture defaults plus **operator** text (see below) |
++| `run` | Yes | Capture defaults plus **operator** text (see below) |
++| `workflow` | No | Lab-specific host workflow defaults; LAB-02 Phase B defines server path, bind address/port, fixture/scenario, and stage deadlines |
++
++The LAB-02 firmware client URL is a host-only override in
++`config/host.defaults.ini` as `[labs.lab02] client_url`, or
++`LABS_LAB02_CLIENT_URL`. It is validated against the owned server's local LAN
++interface and the registry port. It does not belong in the private deployment
++roster or tracked labs registry.
+ 
+ ### Variants
+ 
+diff --git a/docs/standards/project-configuration.md b/docs/standards/project-configuration.md
+index 8699ba8..f20a728 100644
+--- a/docs/standards/project-configuration.md
++++ b/docs/standards/project-configuration.md
+@@ -76,6 +76,11 @@ JSON Schema. Each registry entry defines a **make name** (`lab02` → `make lab.
+ ESP-IDF project path, build variants, and capture defaults. Product lab ids and
+ evidence workflow live under [`docs/labs/`](../labs/README.md).
+ 
++Per-desk LAB-02 client endpoint overrides use `[labs.lab02] client_url` or its
++`LABS_LAB02_CLIENT_URL` environment override. The host config snapshot reports
++only whether the endpoint is configured. Shared server and experiment defaults
++remain in the tracked labs registry.
++
+ Full field reference, validation, and boundaries:
+ [`labs-configuration.md`](labs-configuration.md). Implementation:
+ [`scripts/lab_host.py`](../../scripts/lab_host.py),
+diff --git a/scripts/deployment_config.py b/scripts/deployment_config.py
+index d30bcab..46e4c68 100644
+--- a/scripts/deployment_config.py
++++ b/scripts/deployment_config.py
+@@ -63,11 +63,6 @@ class Endpoint:
+     peer: str = ""
+ 
+ 
+-@dataclass(frozen=True)
+-class LabDeskSettings:
+-    phaseb_server_url: str = ""
+-
+-
+ @dataclass(frozen=True)
+ class SecretsProfile:
+     wifi_ssid: str = ""
+@@ -91,7 +86,6 @@ class Deployment:
+     endpoints: tuple[Endpoint, ...]
+     kits: tuple[Kit, ...]
+     aliases: dict[str, str]
+-    lab: LabDeskSettings = LabDeskSettings()
+     secrets_profiles: dict[str, SecretsProfile] = field(default_factory=dict)
+ 
+     def secrets_profile_for_kit(self, kit: Kit) -> SecretsProfile | None:
+@@ -338,14 +332,6 @@ def _parse_secrets_profiles(raw: Any) -> dict[str, SecretsProfile]:
+     return out
+ 
+ 
+-def _parse_lab(raw: Any) -> LabDeskSettings:
+-    if raw is None:
+-        return LabDeskSettings()
+-    if not isinstance(raw, dict):
+-        raise DeploymentConfigError("lab must be a mapping")
+-    return LabDeskSettings(phaseb_server_url=_optional_str(raw, "phaseb_server_url"))
+-
+-
+ def _parse_aliases(raw: Any, endpoint_ids: set[str]) -> dict[str, str]:
+     if raw is None:
+         return {}
+@@ -398,7 +384,6 @@ def load_deployment(
+     users = _parse_users(raw_doc.get("users"))
+     kits = _parse_kits(raw_doc.get("kits"), endpoint_ids)
+     aliases = _parse_aliases(raw_doc.get("aliases"), endpoint_ids)
+-    lab = _parse_lab(raw_doc.get("lab"))
+     secrets_profiles = _parse_secrets_profiles(raw_doc.get("secrets_profiles"))
+ 
+     deployment = Deployment(
+@@ -409,7 +394,6 @@ def load_deployment(
+         endpoints=endpoints,
+         kits=kits,
+         aliases=aliases,
+-        lab=lab,
+         secrets_profiles=secrets_profiles,
+     )
+     validate_deployment(deployment)
+@@ -517,9 +501,6 @@ def dump_snapshot(deployment: Deployment) -> dict[str, object]:
+             }
+             for name, profile in sorted(deployment.secrets_profiles.items())
+         },
+-        "lab": {
+-            "phaseb_server_url": deployment.lab.phaseb_server_url or "",
+-        },
+         "aliases": dict(sorted(deployment.aliases.items())),
+     }
+ 
+diff --git a/scripts/lab_deployment_sdkconfig.py b/scripts/lab_deployment_sdkconfig.py
+index b72a9d4..949679c 100644
+--- a/scripts/lab_deployment_sdkconfig.py
++++ b/scripts/lab_deployment_sdkconfig.py
+@@ -26,12 +26,14 @@ def deployment_defaults_sidecars(build_dir: Path) -> list[Path]:
+     return sorted(p for p in parent.iterdir() if p.name.startswith(prefix))
+ 
+ 
+-def deployment_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str]:
+-    lines: list[str] = []
+-    if deployment.lab.phaseb_server_url:
+-        lines.append(
+-            f"CONFIG_LAB02_SERVER_URL={sdkconfig_quoted_value(deployment.lab.phaseb_server_url)}"
+-        )
++def deployment_kit_sdkconfig_lines(
++    deployment: Deployment, kit: Kit, client_url: str
++) -> list[str]:
++    if not client_url:
++        raise ValueError("validated LAB-02 client URL is required")
++    lines: list[str] = [
++        f"CONFIG_LAB02_SERVER_URL={sdkconfig_quoted_value(client_url)}"
++    ]
+     profile = deployment.secrets_profile_for_kit(kit)
+     if profile and profile.wifi_ssid:
+         lines.append(f"CONFIG_LAB02_WIFI_SSID={sdkconfig_quoted_value(profile.wifi_ssid)}")
+@@ -41,7 +43,9 @@ def deployment_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str
+     return lines
+ 
+ 
+-def deployment_kit_sdkconfig_digest(deployment: Deployment, kit: Kit) -> str:
++def deployment_kit_sdkconfig_digest(
++    deployment: Deployment, kit: Kit, client_url: str
++) -> str:
+     profile = deployment.secrets_profile_for_kit(kit)
+     payload = "\n".join(
+         [
+@@ -49,7 +53,7 @@ def deployment_kit_sdkconfig_digest(deployment: Deployment, kit: Kit) -> str:
+             kit.secrets_profile,
+             profile.wifi_ssid if profile else "",
+             profile.wifi_password if profile else "",
+-            deployment.lab.phaseb_server_url,
++            client_url,
+         ]
+     )
+     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+@@ -59,16 +63,15 @@ def write_deployment_kit_sdkconfig(
+     build_dir: Path,
+     kit: Kit,
+     deployment: Deployment,
+-) -> Path | None:
++    client_url: str,
++) -> Path:
+     """Write kit deployment defaults beside build_dir; invalidate sdkconfig when content changes."""
+-    lines = deployment_kit_sdkconfig_lines(deployment, kit)
+-    if not lines:
+-        return None
++    lines = deployment_kit_sdkconfig_lines(deployment, kit, client_url)
+     build_dir.parent.mkdir(parents=True, exist_ok=True)
+     path = deployment_kit_defaults_path(build_dir, kit)
+     meta = path.with_suffix(path.suffix + ".sha256")
+     content = "\n".join(lines) + "\n"
+-    digest = deployment_kit_sdkconfig_digest(deployment, kit)
++    digest = deployment_kit_sdkconfig_digest(deployment, kit, client_url)
+     if meta.is_file() and meta.read_text(encoding="utf-8").strip() == digest and path.is_file():
+         return path
+     sdkconfig = build_dir / "sdkconfig"
+diff --git a/scripts/lab_host.py b/scripts/lab_host.py
+index 3c2f33f..a1a96d8 100644
+--- a/scripts/lab_host.py
++++ b/scripts/lab_host.py
+@@ -10,16 +10,17 @@ import subprocess
+ import sys
+ import time
+ import uuid
++from dataclasses import dataclass
+ from datetime import datetime, timezone
+ from pathlib import Path
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(ROOT / "scripts"))
+ 
+-from deployment_config import load_active_deployment
+-from device_targets import ports, select
+-from device_targets import kit_for
+-from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
++from deployment_config import Deployment, Kit, load_active_deployment
++from device_targets import Port, kit_for, ports, resolve_port as resolve_kit_port, select, serial_key, validate_bindings
++from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
++from lab02_workflow_config import load_lab02_workflow_config
+ from firmware import idf_environment, run
+ from lab_registry import (
+     LabSpec,
+@@ -34,6 +35,60 @@ from project_config import ProjectConfig, ProjectConfigError
+ _BANNER = "-" * 62
+ 
+ 
++@dataclass(frozen=True)
++class RunTarget:
++    """Registered kit and exact USB identity frozen for one host run."""
++
++    kit_id: str
++    device: str
++    serial: str
++    kit: Kit
++    deployment: Deployment
++
++
++def resolve_run_target(config: ProjectConfig, kit: str = "", port: str = "") -> RunTarget:
++    deployment = load_active_deployment(config)
++    validate_bindings(deployment)
++    available = ports()
++    if kit:
++        targets = select(deployment, available, kit, False)
++    elif port:
++        matches = [item for item in available if item.device == port]
++        if len(matches) != 1 or not matches[0].serial:
++            raise ProjectConfigError("PORT must identify one connected device with a readable USB serial")
++        key = serial_key(matches[0].serial)
++        kits = [item for item in deployment.kits if item.usb_serial and serial_key(item.usb_serial) == key]
++        if len(kits) != 1:
++            raise ProjectConfigError("PORT does not identify exactly one registered kit")
++        targets = select(deployment, available, kits[0].id, False)
++    else:
++        targets = select(deployment, available, "", False)
++    if len(targets) != 1:
++        raise ProjectConfigError("A run needs exactly one connected registered kit")
++    selected_kit, selected_port = targets[0]
++    if port and port != selected_port.device:
++        raise ProjectConfigError(
++            f"PORT does not match registered kit {selected_kit.id}'s connected USB binding"
++        )
++    return RunTarget(
++        selected_kit.id, selected_port.device, selected_port.serial, selected_kit, deployment
++    )
++
++
++def revalidate_run_target(config: ProjectConfig, target: RunTarget) -> str:
++    """Confirm the frozen device path still reports the registered serial."""
++    deployment = load_active_deployment(config)
++    validate_bindings(deployment)
++    matches = [item for item in deployment.kits if item.id == target.kit_id]
++    if len(matches) != 1:
++        raise ProjectConfigError("Frozen run kit is no longer uniquely registered")
++    kit = matches[0]
++    current = resolve_kit_port(kit, ports())
++    if current.device != target.device or serial_key(current.serial) != serial_key(target.serial):
++        raise ProjectConfigError("Frozen run target disconnected or changed before flash")
++    return current.device
++
++
+ def _rel(path: Path) -> str:
+     try:
+         return str(path.relative_to(ROOT))
+@@ -229,6 +284,7 @@ def _defaults_files_for_lab_build(
+     build_dir: Path,
+     kit: str,
+     port: str,
++    target: RunTarget | None = None,
+ ) -> list[Path]:
+     defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
+     if not _variant_uses_deployment_kit_secrets(var.name):
+@@ -238,17 +294,18 @@ def _defaults_files_for_lab_build(
+             "Phase B build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
+             "e.g. make lab.lab02.phaseb.build KIT=lynn"
+         )
+-    deployment = load_active_deployment(config)
+-    resolved = kit_for(deployment, kit)
+-    overlay = write_deployment_kit_sdkconfig(build_dir, resolved, deployment)
+-    if overlay is None:
+-        print(
+-            f"Note: kit {resolved.id} (secrets_profile={resolved.secrets_profile}) "
+-            "has no Wi-Fi in secrets_profiles or lab.phaseb_server_url; "
+-            "Phase B credentials must come from menuconfig or sdkconfig.defaults."
+-        )
+-        return defaults_files
+-    return defaults_files + [overlay]
++    deployment = target.deployment if target is not None else load_active_deployment(config)
++    resolved = target.kit if target is not None else kit_for(deployment, kit)
++    profile = deployment.secrets_profile_for_kit(resolved)
++    if not profile or not profile.wifi_ssid or not profile.wifi_password:
++        raise ProjectConfigError(
++            "Phase B build requires per-kit Wi-Fi credentials in the private deployment roster"
++        )
++    workflow = load_lab02_workflow_config(config)
++    overlay = write_deployment_kit_sdkconfig(
++        build_dir, resolved, deployment, workflow.client_url
++    )
++    return defaults_files + [overlay]
+ 
+ 
+ def _sdkconfig_assignment_lines(path: Path) -> list[str]:
+@@ -304,33 +361,44 @@ def _refresh_stale_sdkconfig(build_dir: Path, defaults_files: list[Path]) -> boo
+     return True
+ 
+ 
+-def ensure_lab_built(
++def ensure_lab_built(
+     config: ProjectConfig,
+     make_name: str,
+     variant: str | None,
+     *,
+     kit: str = "",
+     port: str = "",
++    target: RunTarget | None = None,
+ ) -> Path:
+     """Build when artifacts are missing or sdkconfig is stale vs variant defaults."""
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+     build_dir = ROOT / var.build_dir
+-    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
+-    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
+-    if stale or not (build_dir / "flasher_args.json").is_file():
+-        return build_lab(config, make_name, variant, kit=kit, port=port)
++    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
++    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
++    if stale or not (build_dir / "flasher_args.json").is_file():
++        return build_lab(
++            config,
++            make_name,
++            variant,
++            kit=kit,
++            port=port,
++            target=target,
++            frozen_defaults_files=defaults_files,
++        )
+     return build_dir
+ 
+ 
+-def build_lab(
++def build_lab(
+     config: ProjectConfig,
+     make_name: str,
+     variant: str | None,
+     *,
+     kit: str = "",
+-    port: str = "",
+-) -> Path:
++    port: str = "",
++    target: RunTarget | None = None,
++    frozen_defaults_files: list[Path] | None = None,
++) -> Path:
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+     if config.text("idf.target", required=True) != spec.target:
+@@ -339,7 +407,11 @@ def build_lab(
+     project = ROOT / spec.project_dir
+     build_dir = ROOT / var.build_dir
+     _prepare_lab_build_directory(build_dir)
+-    defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port)
++    defaults_files = (
++        frozen_defaults_files
++        if frozen_defaults_files is not None
++        else _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
++    )
+     _refresh_stale_sdkconfig(build_dir, defaults_files)
+     env.update(_sdkconfig_defaults_env_from_files(defaults_files))
+     base = idf + [
+@@ -426,15 +498,7 @@ def _print_capture_markers(serial_path: Path) -> None:
+ 
+ 
+ def resolve_port(config: ProjectConfig, kit: str, port: str) -> str:
+-    if port:
+-        return port
+-    deployment = load_active_deployment(config)
+-    targets = select(deployment, ports(), kit, False)
+-    if len(targets) != 1:
+-        raise ProjectConfigError(
+-            "lab flash/capture needs exactly one kit; use KIT=<nickname>, PORT=<port>, or make device.bind"
+-        )
+-    return targets[0][1].device
++    return resolve_run_target(config, kit, port).device
+ 
+ 
+ def capture_lab(
+@@ -449,6 +513,7 @@ def capture_lab(
+     run_id: str,
+     action: str = "capture",
+     emit_operator_help: bool = True,
++    target: RunTarget | None = None,
+ ) -> Path:
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+@@ -473,10 +538,17 @@ def capture_lab(
+             flash=flash,
+         )
+         print()
+-    device_port = resolve_port(config, kit, port)
++    selected_target = target or resolve_run_target(config, kit, port)
++    if kit and kit_for(selected_target.deployment, kit).id != selected_target.kit_id:
++        raise ProjectConfigError("Frozen run target does not match requested KIT")
++    if port and port != selected_target.device:
++        raise ProjectConfigError("Frozen run target does not match requested PORT")
+     if flash:
++        device_port = revalidate_run_target(config, selected_target)
+         flash_lab_build(config, build_dir, device_port)
+         time.sleep(1.0)
++    else:
++        device_port = selected_target.device
+     log_dir = config.path_value("firmware.logs") / "labs" / spec.evidence_slug / rid
+     serial_path = log_dir / "serial.txt"
+     capture_serial(device_port, serial_path, seconds)
+@@ -664,7 +736,8 @@ def main() -> int:
+         if args.action == "flash":
+             var = resolve_variant(spec, variant)
+             build_dir = ROOT / var.build_dir
+-            port = resolve_port(config, args.kit, args.port)
++            target = resolve_run_target(config, args.kit, args.port)
++            port = revalidate_run_target(config, target)
+             flash_lab_build(config, build_dir, port)
+             print(f"Flashed lab.{spec.make_name} ({var.name}) on {port}")
+             return 0
+@@ -676,19 +749,23 @@ def main() -> int:
+             flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
+             stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+             rid = args.run_id or f"{stamp}-{var.name}-capture-{uuid.uuid4().hex[:6]}"
++            target = resolve_run_target(config, args.kit, args.port)
+             if args.action == "run" and not args.no_build:
+-                ensure_lab_built(config, args.lab, variant, kit=args.kit, port=args.port)
++                ensure_lab_built(
++                    config, args.lab, variant, kit=target.kit_id, port=target.device, target=target
++                )
+             capture_lab(
+                 config,
+                 args.lab,
+-                kit=args.kit,
+-                port=args.port,
++                kit=target.kit_id,
++                port=target.device,
+                 variant=variant,
+                 seconds=seconds,
+                 flash=flash,
+                 run_id=rid,
+                 action=args.action,
+                 emit_operator_help=True,
++                target=target,
+             )
+             return 0
+         raise ProjectConfigError(f"Unknown action {args.action}")
+diff --git a/scripts/project_config.py b/scripts/project_config.py
+index bc4321f..992ef5c 100644
+--- a/scripts/project_config.py
++++ b/scripts/project_config.py
+@@ -431,7 +431,10 @@ class ProjectConfig:
+         resolved_settings: dict[str, object] = {}
+         provenance_settings: dict[str, str] = {}
+         for qualified_name in self.qualified_setting_names():
+-            resolved_settings[qualified_name] = self._resolved_setting_value(qualified_name)
++            value = self._resolved_setting_value(qualified_name)
++            if qualified_name == "labs.lab02.client_url":
++                value = "[configured]" if value else ""
++            resolved_settings[qualified_name] = value
+             provenance_settings[qualified_name] = self.setting_source(qualified_name)
+ 
+         commands = {
+diff --git a/scripts/tests/test_deployment_config.py b/scripts/tests/test_deployment_config.py
+index e8026b2..573fa6c 100644
+--- a/scripts/tests/test_deployment_config.py
++++ b/scripts/tests/test_deployment_config.py
+@@ -149,6 +149,15 @@ class DeploymentConfigTests(unittest.TestCase):
+         with self.assertRaisesRegex(DeploymentConfigError, "schema:"):
+             validate_document_schema({"endpoints": [], "kits": []})
+ 
++    def test_schema_rejects_obsolete_lab_client_url(self) -> None:
++        with self.assertRaisesRegex(DeploymentConfigError, "schema:"):
++            validate_document_schema(
++                {
++                    "deployment": {"id": "desk", "name": "Desk"},
++                    "lab": {"phaseb_server_url": "old-setting"},
++                }
++            )
++
+     def test_catalog_documents_semantic_rules(self) -> None:
+         catalog = build_catalog()
+         self.assertIn("semantic_rules", catalog)
+diff --git a/scripts/tests/test_lab_deployment_sdkconfig.py b/scripts/tests/test_lab_deployment_sdkconfig.py
+index 5767b48..aa20423 100644
+--- a/scripts/tests/test_lab_deployment_sdkconfig.py
++++ b/scripts/tests/test_lab_deployment_sdkconfig.py
+@@ -9,7 +9,6 @@ from deployment_config import (
+     Deployment,
+     DeploymentMeta,
+     Kit,
+-    LabDeskSettings,
+     SecretsProfile,
+ )
+ from lab_deployment_sdkconfig import (
+@@ -29,7 +28,6 @@ def _deployment(**kwargs) -> Deployment:
+         "endpoints": (),
+         "kits": (),
+         "aliases": {},
+-        "lab": LabDeskSettings(),
+         "secrets_profiles": {},
+     }
+     defaults.update(kwargs)
+@@ -47,9 +45,10 @@ class LabDeploymentSdkconfigTests(unittest.TestCase):
+             secrets_profiles={
+                 "sunset": SecretsProfile(wifi_ssid="Net", wifi_password='p"w'),
+             },
+-            lab=LabDeskSettings(phaseb_server_url="http://192.168.1.2:8765"),
+         )
+-        lines = deployment_kit_sdkconfig_lines(deployment, kit)
++        lines = deployment_kit_sdkconfig_lines(
++            deployment, kit, "http://192.168.1.2:8765"
++        )
+         self.assertIn('CONFIG_LAB02_SERVER_URL="http://192.168.1.2:8765"', lines)
+         self.assertIn('CONFIG_LAB02_WIFI_SSID="Net"', lines)
+         self.assertIn('CONFIG_LAB02_WIFI_PASSWORD="p\\"w"', lines)
+@@ -63,13 +62,31 @@ class LabDeploymentSdkconfigTests(unittest.TestCase):
+             build.mkdir()
+             sdk = build / "sdkconfig"
+             sdk.write_text("CONFIG_FOO=y\n", encoding="utf-8")
+-            write_deployment_kit_sdkconfig(build, kit, dep_a)
++            write_deployment_kit_sdkconfig(build, kit, dep_a, "http://192.168.1.2:8765")
+             self.assertTrue(deployment_kit_defaults_path(build, kit).is_file())
+             self.assertFalse(sdk.is_file())
+             sdk.write_text("CONFIG_FOO=y\n", encoding="utf-8")
+-            write_deployment_kit_sdkconfig(build, kit, dep_b)
++            write_deployment_kit_sdkconfig(build, kit, dep_b, "http://192.168.1.3:8765")
+             self.assertFalse(sdk.is_file())
+ 
++    def test_write_invalidates_when_client_url_changes(self):
++        kit = Kit("k", "e-a", secrets_profile="desk")
++        deployment = _deployment(
++            secrets_profiles={"desk": SecretsProfile(wifi_ssid="A", wifi_password="1")}
++        )
++        with tempfile.TemporaryDirectory() as raw:
++            build = Path(raw) / "lab-build"
++            build.mkdir()
++            write_deployment_kit_sdkconfig(
++                build, kit, deployment, "http://192.168.1.2:8765"
++            )
++            sdk = build / "sdkconfig"
++            sdk.write_text("CONFIG_FOO=y\n", encoding="utf-8")
++            write_deployment_kit_sdkconfig(
++                build, kit, deployment, "http://192.168.1.3:8765"
++            )
++            self.assertFalse(sdk.exists())
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+diff --git a/scripts/tests/test_lab_host.py b/scripts/tests/test_lab_host.py
+index 0495b5d..10a8328 100644
+--- a/scripts/tests/test_lab_host.py
++++ b/scripts/tests/test_lab_host.py
+@@ -11,18 +11,29 @@ from lab_host import (  # noqa: E402
+     _prepare_lab_build_directory,
+     _refresh_stale_sdkconfig,
+     _sdkconfig_missing_assignments,
++    capture_lab,
+     clean_lab,
++    revalidate_run_target,
++    resolve_run_target,
++    RunTarget,
+ )
++from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit, SecretsProfile
++from device_targets import Port
+ from lab_registry import get_lab, resolve_variant
+ from project_config import ProjectConfig, ProjectConfigError
+ 
+ 
+ class LabHostSdkconfigTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.temp.cleanup)
++        self.temp_path = Path(self.temp.name)
++
+     def test_missing_assignments_detects_stale_sdkconfig(self):
+         with self.subTest("empty sdkconfig"):
+-            sdk = Path("sdkconfig")
++            sdk = self.temp_path / "sdkconfig"
+             sdk.write_text("# empty\n", encoding="utf-8")
+-            defaults = Path("defaults")
++            defaults = self.temp_path / "defaults"
+             defaults.write_text("CONFIG_LAB_AUTO_HARNESS=y\n", encoding="utf-8")
+             missing = _sdkconfig_missing_assignments(sdk, [defaults])
+             self.assertEqual(missing, ["CONFIG_LAB_AUTO_HARNESS=y"])
+@@ -33,7 +44,7 @@ class LabHostSdkconfigTests(unittest.TestCase):
+             self.assertEqual(missing, [])
+ 
+     def test_prepare_unconfigured_build_dir_is_empty(self):
+-        build = Path("build_prepare")
++        build = self.temp_path / "build_prepare"
+         build.mkdir(exist_ok=True)
+         (build / "CMakeFiles").mkdir()
+         _prepare_lab_build_directory(build)
+@@ -52,21 +63,53 @@ class LabHostSdkconfigTests(unittest.TestCase):
+             clean_lab(config, "lab02", "phaseb")
+             self.assertFalse(build_dir.exists())
+ 
+-    def test_phaseb_build_requires_kit(self):
++    def test_phaseb_build_requires_kit(self):
+         config = ProjectConfig()
+         spec = get_lab("lab02")
+         var = resolve_variant(spec, "phaseb")
+-        build_dir = Path("build_dir_phaseb")
++        build_dir = self.temp_path / "build_dir_phaseb"
+         build_dir.mkdir(exist_ok=True)
+-        with self.assertRaisesRegex(ProjectConfigError, "Phase B build requires KIT"):
+-            _defaults_files_for_lab_build(config, spec, var, build_dir, "", "")
++        with self.assertRaisesRegex(ProjectConfigError, "Phase B build requires KIT"):
++            _defaults_files_for_lab_build(config, spec, var, build_dir, "", "")
++
++    def test_phaseb_build_requires_private_wifi_before_url_resolution(self):
++        config = ProjectConfig()
++        spec = get_lab("lab02")
++        var = resolve_variant(spec, "phaseb")
++        kit = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
++        deployment = Deployment(
++            Path("local.yaml"), "local", DeploymentMeta("desk", "Desk"), (),
++            (Endpoint("endpoint-a", "Endpoint A", "", ""),), (kit,), {},
++        )
++        target = RunTarget("A", "/dev/a", "SERIAL-A", kit, deployment)
++        with patch("lab_host.load_lab02_workflow_config", side_effect=AssertionError("URL resolved before Wi-Fi preflight")):
++            with self.assertRaisesRegex(ProjectConfigError, "per-kit Wi-Fi credentials"):
++                _defaults_files_for_lab_build(
++                    config, spec, var, self.temp_path, "A", "", target
++                )
++
++    def test_ensure_build_uses_same_frozen_defaults(self):
++        from lab_host import ensure_lab_built
++
++        config = ProjectConfig()
++        spec = get_lab("lab02")
++        variant = resolve_variant(spec, "phaseb")
++        frozen = [self.temp_path / "phaseb.defaults"]
++        with patch("lab_host.ROOT", self.temp_path), patch(
++            "lab_host._defaults_files_for_lab_build", return_value=frozen
++        ) as resolve_defaults, patch(
++            "lab_host._refresh_stale_sdkconfig", return_value=True
++        ), patch("lab_host.build_lab", return_value=self.temp_path) as build:
++            ensure_lab_built(config, "lab02", "phaseb", kit="A")
++        resolve_defaults.assert_called_once()
++        self.assertIs(build.call_args.kwargs["frozen_defaults_files"], frozen)
+ 
+     def test_refresh_removes_stale_sdkconfig(self):
+-        build = Path("build_dir")
++        build = self.temp_path / "build_dir"
+         build.mkdir()
+         sdk = build / "sdkconfig"
+         sdk.write_text("CONFIG_IDF_TARGET_ESP32S3=y\n", encoding="utf-8")
+-        defaults = Path("lab.defaults")
++        defaults = self.temp_path / "lab.defaults"
+         defaults.write_text(
+             "CONFIG_LAB02_FIXTURE_16=y\nCONFIG_LAB_AUTO_HARNESS=y\n", encoding="utf-8"
+         )
+@@ -75,28 +118,194 @@ class LabHostSdkconfigTests(unittest.TestCase):
+         self.assertFalse(sdk.is_file())
+ 
+     def tearDown(self):
+-        for name in ("sdkconfig", "defaults", "lab.defaults"):
+-            p = Path(name)
+-            if p.is_file():
+-                p.unlink()
+-        build = Path("build_dir")
+-        if build.is_dir():
+-            for child in build.iterdir():
+-                child.unlink()
+-            build.rmdir()
+-        phaseb = Path("build_dir_phaseb")
+-        if phaseb.is_dir():
+-            for child in phaseb.iterdir():
+-                child.unlink()
+-            phaseb.rmdir()
+-        prepare = Path("build_prepare")
+-        if prepare.is_dir():
+-            import shutil
+-            shutil.rmtree(prepare)
+-        phaseb_build = Path("build/labs/lab-02-bounded-inbox-phaseb")
+-        if phaseb_build.is_dir():
+-            import shutil
+-            shutil.rmtree(phaseb_build)
++        pass
++
++
++class LabHostTargetSelectionTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.temp.cleanup)
++        self.temp_path = Path(self.temp.name)
++        self.kit_a = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
++        self.kit_b = Kit("B", "endpoint-b", "profile-b", "SERIAL-B")
++        self.deployment = Deployment(
++            Path("local.yaml"), "local", DeploymentMeta("test", "test"), (),
++            (Endpoint("endpoint-a", "Endpoint A", "", ""), Endpoint("endpoint-b", "Endpoint B", "", "")),
++            (self.kit_a, self.kit_b), {"desk": "endpoint-a"},
++            {"profile-a": SecretsProfile("ssid-a", "password-a"), "profile-b": SecretsProfile("ssid-b", "password-b")},
++        )
++        self.config = ProjectConfig()
++
++    def _resolve(self, available, kit="", port=""):
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
++            "lab_host.ports", return_value=available
++        ):
++            return resolve_run_target(self.config, kit, port)
++
++    def test_no_kit_requires_exactly_one_connected_registered_target(self):
++        with self.assertRaisesRegex(ProjectConfigError, "exactly one"):
++            self._resolve([])
++        target = self._resolve([Port("/dev/a", "serial-a")])
++        self.assertEqual((target.kit_id, target.device), ("A", "/dev/a"))
++        with self.assertRaisesRegex(ProjectConfigError, "exactly one"):
++            self._resolve([Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")])
++
++    def test_explicit_kit_requires_connected_registered_binding_and_matching_port(self):
++        target = self._resolve([Port("/dev/a", "serial-a")], kit="A")
++        self.assertEqual(target.serial, "serial-a")
++        with self.assertRaisesRegex(ProjectConfigError, "PORT does not match"):
++            self._resolve(
++                [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")],
++                kit="A",
++                port="/dev/b",
++            )
++        target = self._resolve(
++            [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")], kit="A"
++        )
++        self.assertEqual((target.kit_id, target.device), ("A", "/dev/a"))
++        with self.assertRaisesRegex(ProjectConfigError, "expected one connected USB match, found 0"):
++            self._resolve([Port("/dev/a", "")], kit="A")
++        with self.assertRaisesRegex(ProjectConfigError, "Unknown or ambiguous kit"):
++            self._resolve([Port("/dev/a", "serial-a")], kit="unknown")
++        target = self._resolve(
++            [Port("/dev/a", "serial-a"), Port("/dev/b", "serial-b")], port="/dev/b"
++        )
++        self.assertEqual((target.kit_id, target.device), ("B", "/dev/b"))
++        with self.assertRaisesRegex(ProjectConfigError, "readable USB serial"):
++            self._resolve([Port("/dev/a", "")], port="/dev/a")
++
++    def test_duplicate_serials_and_duplicate_roster_bindings_fail_closed(self):
++        with self.assertRaisesRegex(ProjectConfigError, "expected one connected USB match, found 2"):
++            self._resolve([Port("/dev/a", "serial-a"), Port("/dev/clone", "SERIAL-A")], kit="A")
++        duplicate = Deployment(
++            self.deployment.path, self.deployment.source, self.deployment.meta, (), (),
++            (self.kit_a, Kit("C", "endpoint-c", "profile-c", "serial-a")), {},
++        )
++        with patch("lab_host.load_active_deployment", return_value=duplicate), patch(
++            "lab_host.ports", return_value=[Port("/dev/a", "serial-a")]
++        ), self.assertRaisesRegex(ProjectConfigError, "Duplicate USB serial"):
++            resolve_run_target(self.config, "A", "")
++
++    def test_frozen_target_detects_disconnect_or_swapped_device_identity(self):
++        target = self._resolve([Port("/dev/a", "serial-a")], kit="A")
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
++            "lab_host.ports", return_value=[]
++        ), self.assertRaisesRegex(ProjectConfigError, "found 0"):
++            revalidate_run_target(self.config, target)
++        with patch("lab_host.load_active_deployment", return_value=self.deployment), patch(
++            "lab_host.ports", return_value=[Port("/dev/other", "serial-a")]
++        ), self.assertRaisesRegex(ProjectConfigError, "disconnected or changed"):
++            revalidate_run_target(self.config, target)
++
++    def test_build_only_kit_selection_does_not_enumerate_hardware(self):
++        from lab_host import _defaults_files_for_lab_build
++
++        spec = get_lab("lab02")
++        var = resolve_variant(spec, "phaseb")
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        with patch("lab_host.ports", side_effect=AssertionError("build must not enumerate USB")), patch(
++            "lab_host.load_lab02_workflow_config",
++            return_value=type("Workflow", (), {"client_url": "http://10.0.0.2:8765"})(),
++        ), patch(
++            "lab_host.write_deployment_kit_sdkconfig", return_value=None
++        ) as write_overlay:
++            files = _defaults_files_for_lab_build(
++                self.config, spec, var, self.temp_path, "A", "", target
++            )
++        write_overlay.assert_called_once_with(
++            self.temp_path, self.kit_a, self.deployment, "http://10.0.0.2:8765"
++        )
++        self.assertIsInstance(files, list)
++
++    def test_run_entrypoint_resolves_target_before_build_or_flash(self):
++        from lab_host import main
++
++        events = []
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        config = self.config
++        with patch("lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]), patch(
++            "lab_host.ProjectConfig", return_value=config
++        ), patch("lab_host.resolve_run_target", side_effect=lambda *args: events.append("resolve") or target), patch(
++            "lab_host.ensure_lab_built", side_effect=lambda *args, **kwargs: events.append("build")
++        ), patch("lab_host.capture_lab", side_effect=lambda *args, **kwargs: events.append("flash/capture")):
++            self.assertEqual(main(), 0)
++        self.assertEqual(events, ["resolve", "build", "flash/capture"])
++
++    def test_capture_revalidates_frozen_identity_before_flash_write(self):
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        with patch("lab_host.print_run_start"), patch("lab_host.print_operator_help"), patch(
++            "lab_host.revalidate_run_target", side_effect=ProjectConfigError("disconnected")
++        ) as revalidate, patch("lab_host.flash_lab_build") as flash:
++            with self.assertRaisesRegex(ProjectConfigError, "disconnected"):
++                capture_lab(
++                    self.config,
++                    "lab02",
++                    kit="A",
++                    port="/dev/a",
++                    variant="phaseb",
++                    seconds=1,
++                    flash=True,
++                    run_id="test-run",
++                    emit_operator_help=False,
++                    target=target,
++                )
++        revalidate.assert_called_once_with(self.config, target)
++        flash.assert_not_called()
++
++    def test_capture_accepts_alias_for_frozen_target_with_or_without_supplied_target(self):
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        for supplied_target in (None, target):
++            with self.subTest(supplied_target=supplied_target is not None), patch(
++                "lab_host.print_run_start"
++            ), patch("lab_host.print_operator_help"), patch(
++                "lab_host.resolve_run_target", return_value=target
++            ) as resolve, patch(
++                "lab_host.capture_serial",
++                side_effect=lambda _device, serial_path, _seconds: serial_path.parent.mkdir(
++                    parents=True, exist_ok=True
++                ),
++            ) as capture_serial, patch(
++                "lab_host.ProjectConfig.path_value", return_value=self.temp_path
++            ), patch("lab_host.parse_serial_file"):
++                capture_lab(
++                    self.config,
++                    "lab02",
++                    kit="desk",
++                    port="/dev/a",
++                    variant="phaseb",
++                    seconds=1,
++                    flash=False,
++                    run_id="test-run",
++                    emit_operator_help=False,
++                    target=supplied_target,
++                )
++            if supplied_target is None:
++                resolve.assert_called_once_with(self.config, "desk", "/dev/a")
++            else:
++                resolve.assert_not_called()
++            capture_serial.assert_called_once()
++            self.assertEqual((capture_serial.call_args.args[0], capture_serial.call_args.args[2]), ("/dev/a", 1))
++
++    def test_capture_alias_mismatch_fails_before_flash_write(self):
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        with patch("lab_host.print_run_start"), patch("lab_host.print_operator_help"), patch(
++            "lab_host.revalidate_run_target"
++        ) as revalidate, patch("lab_host.flash_lab_build") as flash:
++            with self.assertRaisesRegex(ProjectConfigError, "does not match requested KIT"):
++                capture_lab(
++                    self.config,
++                    "lab02",
++                    kit="B",
++                    port="/dev/a",
++                    variant="phaseb",
++                    seconds=1,
++                    flash=True,
++                    run_id="test-run",
++                    emit_operator_help=False,
++                    target=target,
++                )
++        revalidate.assert_not_called()
++        flash.assert_not_called()
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/scripts/tests/test_project_config.py b/scripts/tests/test_project_config.py
+index 4a441c2..2517e1f 100644
+--- a/scripts/tests/test_project_config.py
++++ b/scripts/tests/test_project_config.py
+@@ -141,6 +141,12 @@ class ProjectConfigTests(unittest.TestCase):
+         self.assertIn("implementation", document["resolved"]["flows"])
+         self.assertNotIn("value", document["resolved"]["settings"]["idf.target"])
+ 
++    def test_lab_client_url_is_redacted_in_host_snapshot(self) -> None:
++        document = ProjectConfig(environ={}).dump_snapshot()
++        self.assertEqual(
++            "[configured]", document["resolved"]["settings"]["labs.lab02.client_url"]
++        )
++
+     def test_catalog_lists_command_and_flow_shapes(self) -> None:
+         catalog = ProjectConfig(environ={}).build_catalog()
+ 

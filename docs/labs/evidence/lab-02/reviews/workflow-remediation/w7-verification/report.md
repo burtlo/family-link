@@ -1,0 +1,27 @@
+# Independent W7 verification
+
+Base: `0b02b30086f1c8c8e985458912646b0d473b967b`; review of the shared working tree only. No implementation or maintained documentation edits. Source hashes are in `source-sha256.txt`. The implementation is still uncommitted; working tree has 55 changed/untracked paths at verification.
+
+## Outcomes
+
+- **LAB02FLOW-F001 — PARTIALLY FIXED.** Canonical `make lab.lab02` and `make lab.lab02.scripted` now route through a managed server lifecycle and scenario coordinator. Actual loopback server tests prove health, seed, request handling, foreign-listener preservation, and cleanup; canonical tests exercise managed HTTP and local/eager runners with mocked UART/build/flash callbacks. No manual foreground server/curl is in help. However, required capture-before-reset order is not implemented: the UART opens and input buffer clears at `scripts/lab02_canonical_run.py:190-193`, RTS reset occurs at `209-212`, while the serial log and read loop open at `222-236`. `capture_active=lambda: True` does not establish a reader. The existing canonical test asserts only that buffer clear precedes RTS. Therefore the W7 reset/capture boundary is **NOT FIXED**; no L3 hardware validation was performed.
+- **LAB02FLOW-F002 — NOT REVERIFIED IN W7.** Prior W1-W6 verification is supplied by the orchestrator. Current search found `phaseb_server_url` only in a test constructing an obsolete unknown setting; no hit in config examples/schema, loaders, active docs, or runtime code. I did not inspect or edit private `local.yaml`; exact O-09 copy/preservation provenance remains the earlier W3 limitation.
+- **LAB02FLOW-F003 — FIXED at L1/L2 host-model level.** `PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab_host -v` **16/16 passed** in its own invocation. Tests cover no KIT, KIT/PORT mismatch, unknown/duplicate binding, disconnect/swapped serial, target frozen before build/flash, and alias mismatch before write. No physical kit check; hardware is reserved for W8.
+- **W7 build identity — NOT FIXED.** The runner writes binary SHA but freezes `firmware.build_id`/`build_stamp` as null before flash (`scripts/lab02_canonical_run.py:180-185`). A fresh marker is accepted when fixture and broad `mode` match; its arbitrary `build=` value is then copied into the manifest (`248-260`). It is never compared with an identity derived from the built image. `http` also does not distinguish manual from scripted. Scripted mode checks only that some `HARNESS_DONE steps=<digits>` exists (`261-263`, `313-316`), with no expected step count or build identity. Missing completion correctly yields INCOMPLETE; the wrong scripted image can still report completion. Source-confirmed; attempted adverse runner reproduction was blocked before capture by missing synthetic `flasher_args.json`; no runtime pass is claimed for that attempt.
+- **W7 bounded serial line — NOT FIXED.** `pending_bytes` is appended to on every UART read and only cleared when a newline arrives (`scripts/lab02_canonical_run.py:223-242`). There is no maximum line length or truncation/failure path. A device or noisy UART that emits bytes without newline grows this buffer for the full user-selectable capture duration. This is a direct unbounded-memory path within an accepted run. The 10,000-line deque and 2,000 event quota do not bound `pending_bytes`.
+- **W7 config freeze — NOT FULLY VERIFIED / DRIFT PATH.** Canonical runner freezes workflow spec/fixture/scenario before server startup (`150-160`), but the injected build callback reaches `lab_host.build_lab` and `_defaults_files_for_lab_build`, which rereads registry and workflow config to produce the build overlay/client URL (`scripts/lab_host.py:289-330`). A settings edit during startup can therefore change the firmware endpoint after the server and run context were frozen. Fixture drift is caught by boot marker; URL drift is not necessarily caught and can leave workflow PASS with the device pointing elsewhere. No concurrent edit reproduction was attempted.
+
+## Commands and results
+
+- `PYTHONPATH=scripts .venv/bin/python -m unittest scripts.tests.test_lab02_canonical_run scripts.tests.test_lab02_server -v` with loopback escalation: **18/18 passed** (actual owned server on ephemeral 127.0.0.1; UART/build/flasher simulated).
+- Same focused command without `PYTHONPATH` or escalation: failed setup (canonical import path; loopback bind denied); corrected run above is authoritative.
+- `PYTHONPATH=scripts .venv/bin/python scripts/lab_registry.py validate`: **valid**.
+- `.venv/bin/python scripts/lab_host.py help lab02`: **two canonical modes shown; managed HTTP default; no manual server/curl instruction**.
+- `make -n lab.lab02 BACKEND=managed-http`, `make -n lab.lab02.scripted KIT=sample`, `make -n lab.lab02.eager KIT=sample`: **expected host-run dispatches**; scripted uses `scripted-phaseb`, eager remains comparison.
+- `client/labs/lab-02-bounded-inbox` actual firmware build and W8 hardware run: **not attempted**.
+
+## Evidence levels
+
+- Managed server/run orchestration and adverse server lifecycle: **L2 host runtime** using the actual runner/server and loopback transport, with mock UART/build/flash.
+- Target resolver and callback wiring: **L1/L2 host-model** tests.
+- Real firmware image identity, physical UART reset/readiness order, on-device scripted completion, and user traversal: **not achieved; L3 remains W8**.

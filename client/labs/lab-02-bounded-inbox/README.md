@@ -20,12 +20,13 @@ make lab.lab02.build
 make lab.lab02 KIT=lynn                    # manual: you scroll during capture
 make lab.lab02.scripted KIT=lynn           # auto-scroll on device
 make lab.lab02.eager KIT=lynn              # eager 16-widget comparison
-make lab.lab02.capture KIT=lynn FLASH=0 SECONDS=60
-make lab.lab02.server                       # Phase B paging fixture (host)
-make lab.lab02.phaseb.build KIT=lynn          # Phase B: KIT= required; Wi-Fi from secrets_profiles via kit
-make lab.lab02.phaseb.clean                   # drop Phase B build dir (after sdkconfig/deployment changes)
-make lab.lab02.phaseb KIT=lynn                # flash + capture (builds with same KIT when needed)
+make lab.lab02 BACKEND=local KIT=lynn       # explicit local-fixture comparison
 ```
+
+The two canonical commands default to managed HTTP paging. The host owns fixture
+server startup, health, seed, capture, and cleanup. Manual traversal permits
+loading cards; scripted mode requires no operator touch and a `HARNESS_DONE`
+marker. Each run announces capture activation before traversal begins.
 
 Fixture size: menuconfig **LAB-02 Bounded Inbox → Embedded inbox fixture size** (default 16), then rebuild.
 
@@ -73,13 +74,13 @@ See [evidence STATUS](../../../docs/labs/evidence/lab-02/STATUS.md) for the Phas
 | L1 host tests | `make test` (`scripts/tests/test_lab02_host.py`) |
 | `S-delay` slow bind | Kconfig `LAB02_SLOW_BIND_MS` |
 | Device capture | `make lab.lab02` / `scripts/lab_host.py` |
-| Phase B server | `server/labs/lab-02-paging/`, `make lab.lab02.server` |
+| Managed Phase B server | `server/labs/lab-02-paging/`, owned by canonical runs |
 
 ## Manifest
 
 See [`manifest.lab.json`](manifest.lab.json). Logical version example:
 
-`LAB-02/v1 = firmware <build-id> + server none + fixture inbox-summary/v1`
+`LAB-02/v1 = firmware <build-id> + server <run-owned revision> + fixture inbox-summary/v1`
 
 ## Related docs
 

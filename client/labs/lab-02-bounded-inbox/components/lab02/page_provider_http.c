@@ -2,6 +2,7 @@
 
 #include "lab02/lab02_session.h"
 #include "lab02/lab02_session_io.h"
+#include "lab02/snap_id.h"
 #include "lab02/trace_emit.h"
 #include "lab02_platform/wifi.h"
 
@@ -125,7 +126,6 @@ static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, siz
         return http_errno_timed_out(eno) ? LAB02_HTTP_FETCH_TIMEOUT : LAB02_HTTP_FETCH_FAIL;
     }
     if (written > 0) {
-        lab02_trace_emit("page_fetch", 0, page_offset, NULL, NULL);
         return LAB02_HTTP_FETCH_OK;
     }
     if (http_errno_timed_out(eno)) {
@@ -151,6 +151,15 @@ static void worker_task(void *arg)
             res = LAB02_HTTP_FETCH_FAIL;
         }
         if (res == LAB02_HTTP_FETCH_OK) {
+            s_result_page.snap_id = lab02_snap_current_id();
+            char extra[240];
+            snprintf(extra, sizeof(extra),
+                     "op_id=%u snap_id=%u revision=%u page_receipt_id=%s run_id=%s server_completed_ns=%llu",
+                     (unsigned)req.op_id, (unsigned)s_result_page.snap_id, (unsigned)s_result_page.revision,
+                     s_result_page.page_receipt_id[0] ? s_result_page.page_receipt_id : "-",
+                     s_result_page.run_id[0] ? s_result_page.run_id : "-",
+                     (unsigned long long)s_result_page.server_completed_ns);
+            lab02_trace_emit("page_fetch", req.op_id, offset, NULL, extra);
             lab02_session_http_fetch_finished(LAB02_FETCH_OK, req.session_id, req.op_id,
                                               req.page_index,
                                               &s_result_page, false);
