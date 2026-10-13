@@ -7,6 +7,21 @@ logs/
 # Ephemeral make lab.<name> canonical runs (YYYYMMDD + 10 hex). Named evidence (e.g. w8-manual-01) stays committable.
 docs/labs/evidence/**/runs/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]/
 
+# Review captures and generated build products; keep reports and selected evidence.
+docs/labs/evidence/**/reviews/**/raw/
+docs/labs/evidence/**/reviews/**/capture/
+docs/labs/evidence/**/reviews/**/build/
+docs/labs/evidence/**/reviews/**/CMakeFiles/
+docs/labs/evidence/**/reviews/**/CMakeCache.txt
+docs/labs/evidence/**/reviews/**/compile_commands.json
+docs/labs/evidence/**/reviews/**/*.ppm
+docs/labs/evidence/**/reviews/**/wip-*.txt
+docs/labs/evidence/**/reviews/**/*-wip.diff
+docs/labs/evidence/**/reviews/**/*.elf
+docs/labs/evidence/**/reviews/**/*.map
+docs/labs/evidence/**/reviews/**/*.o
+docs/labs/evidence/**/reviews/**/*.a
+
 client/device/sdkconfig
 client/device/sdkconfig.old
 client/device/managed_components/
