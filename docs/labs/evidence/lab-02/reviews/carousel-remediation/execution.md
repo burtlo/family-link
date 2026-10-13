@@ -482,3 +482,61 @@ C5 structured observability/schema and resource/timing gates is next. Canonical
 clientURL preflight gap must be diagnosed read-only before managedtarget runs;
 no private configuration or host policy changes are implied. C6 target visual
 confirmation of overlay/identity/retry and linked eager comparison still required.
+
+## C5 baseline and revised sequential subunits
+
+C4/F009 source phase committed03b5e42d15bf8c788bf80b9b55a3c103b832c32d
+(`fix(lab02): preserve viewed identity across page revisions`).
+Fresh [C5 baseline](c5-plan/report.md) maps existing/missing fields and proposes
+additive metrics.v1 contract with null/unobserved and loss→INCOMPLETE rules.
+F011 console-wait defect is confirmed as safe-transport prerequisite.
+C5a: author/review/commit trace-metrics contract; C5b: focused safe trace transport
+F011 with fresh verifier/commit; C5c: instrument/parser/resource gate with fresh
+verifier/commit. Keeping actual behavioral/deadline changes separate. Eager local
+measurement/traversal may require a focused follow-up, not disguised HTTP parity.
+
+Read-only preflight confirms configuredIPv4 is no longer assigned, interface
+inspection works, two eligibleassigned candidates each validate via existing
+per-run LABS_LAB02_CLIENT_URL override. Choose kit-reachableLAN for C6; no private
+file/hostpolicy edits needed. Whole-attemptdeadline remains contract/evidencegap,
+not newly confirmed numeric violation. Productbudgets remainOPEN.
+
+## Owner-requested pause at the C5 implementation boundary — 2026-10-13
+
+Owner asks: “When you get to the next segment, wrap up your work for now and
+log what you have completed.” C5 baseline review is finished; **pause before
+C5a contract authoring**. No schema, trace transport or instrumentation edit
+started. All subagents finished; no build, flash or background run remains.
+
+Completed since resume:
+- Accepted other-agent C3d as current baseline; retained click/target limitations.
+- Fresh startup/config assessment and historical draw-buffer note saved. Owner
+  confirms current carousel visible. Fifty lines was selected without testing
+  other heights; retain provisional value and revisit with resource/performance
+  measurements. V1 used100; earlier LAB startup RAM region was23,440 bytes larger.
+- F008 initial retry boundedness implemented and independently verifiedL1/L2.
+  Actual click/provider and held-boot-exit probes pass; included in owner's
+  foundation commit21a37df (`lab 02 remediation continues`).
+- F010 loading overlay removed and independently source/runtime verified,
+  committedc4c0116 (`fix(lab02): remove persistent loading inbox overlay`).
+- C4 provedF009 lost survivingID, fixed bounded identity resolution and approved
+  APP-O-06 fallback, independently verifiedL1/L2; committed03b5e42
+  (`fix(lab02): preserve viewed identity across page revisions`).23 native
+  gates, normal/slow prior+13 identity cases and added during-snap probe pass.
+- C5 read-only baseline/schema proposal complete. NewF011 presentation console
+  wait confirmed; **not fixed**. URL preflight diagnosis complete: configured
+  host address no longer assigned; existing per-run override validates current
+  assigned candidates. Kit-reachable interface still needs selection/verification.
+
+Resume from C5a reviewed metrics/trace contract, then C5b F011 safe transport,
+then C5c instrumentation/parser/resource gates. Each source phase requires fresh
+independent verification and a clear scoped commit. Eager16 local comparison
+needs truthful equivalent traversal/measurement hooks; do not claim HTTP parity.
+C6 canonical managed scenarios and linked comparison remain. Preserve user
+commits, working draw height50 and approved APP-O-01–06.
+
+No new physical flash/run in this resume. Required L3 visual/touch/timing/heap/
+stack/real-RTOS evidence remains unverified, including physical overlay absence,
+identity/retry and target trace transport. Numeric product gates remainOPEN.
+Whole-attempt deadline remains documented gap, no speculative change. Do not
+claim full carousel completion from successful host tests or firmware builds.

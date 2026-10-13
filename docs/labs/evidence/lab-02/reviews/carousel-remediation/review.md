@@ -251,3 +251,17 @@ header text; preserve existing retryable unavailable behavior. Verify startup
 source paths and normal/error header behavior; target confirmation remains
 required for physical overlay claim. Prioritize this small requested fix before
 F009 identity implementation.
+
+## LAB02CAR-F011 — P1 confirmed: presentation trace writes wait on console I/O
+
+[Full finding and dependency proof](c5-plan/report.md): current trace_emit
+performs three synchronous printf calls from bind/unbind/snap/session admission
+inside LVGL ownership. Effective USB console implementation takes shared
+recursive write lock and may spin on FIFO progress (50ms constant). This is
+a reachable presentation wait, not a measured50ms target occurrence. It violates
+standards1/2 and CAR-ARCH4. Required bounded immutable producer-safe admission,
+serialized nonpresentation drain, explicit telemetry-loss/incomplete semantics
+and declared RAM/stack costs. Characterize stalled/concurrent/saturated sink,
+borrowed-string lifetime/reset races, whole-row identity integrity; L1/L2 then
+L3 target console/input/resource confirmation. No fix attempted yet. Expanded
+C5 instrumentation depends on safe transport and a reviewed schema.
