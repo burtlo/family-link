@@ -1,0 +1,9 @@
+[
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c",
+  "client/labs/lab-02-bounded-inbox/README.md",
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c",
+  "docs/labs/lab-02-session-architecture.md",
+  "client/labs/lab-02-bounded-inbox/components/lab02/snap.c",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap.h"
+]

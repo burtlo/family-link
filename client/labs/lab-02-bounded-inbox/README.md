@@ -1,6 +1,6 @@
 # LAB-02 — Bounded inbox and card recycling (Phase A)
 
-ESP-IDF lab firmware for **three** reusable message card views, local or HTTP paging, horizontal snap, and bind generations.
+ESP-IDF lab firmware for **four** reusable message card views, local or HTTP paging, horizontal snap, and bind generations.
 
 ## Boot marker
 
@@ -67,7 +67,7 @@ See [evidence STATUS](../../../docs/labs/evidence/lab-02/STATUS.md) for the Phas
 |------|--------|
 | Local fixtures 8/16/64/256 embedded | Done |
 | Metadata page model (no N widgets for large fixtures) | Done |
-| Recycle carousel (3 views) + snap | Done — touch scroll on hardware |
+| Recycle carousel (4 views) + snap | Done — touch scroll on hardware |
 | Bind generation + stale drop counter | Done |
 | Eager 16-widget path | Done (Kconfig) |
 | `page_provider_http` | Phase B (`fl.inbox-page/2`, async apply off snap) |
@@ -84,5 +84,35 @@ See [`manifest.lab.json`](manifest.lab.json). Logical version example:
 
 ## Related docs
 
-- [Implementation outline](../../docs/labs/lab-02-implementation-outline.md)
-- [Assistant guide](../../docs/labs/assistant-guide.md)
+- [Implementation outline](../../../docs/labs/lab-02-implementation-outline.md)
+- [Assistant guide](../../../docs/labs/assistant-guide.md)
+
+C3a page-arrival contract: ordinary pages apply during drag/snap without moving
+the viewport; newer page-zero mutations terminalize their fetch and retain one
+bounded immutable snapshot until motion ends. Applied and pending revisions are
+separate. See [session architecture](../../../docs/labs/lab-02-session-architecture.md)
+and [owner decisions](../../../docs/labs/evidence/lab-02/reviews/carousel-remediation/execution.md).
+C3b continuously covers the viewport with four roots (20 card nodes including
+four children per root), independent of fixture size. Geometry remains 320/132/12;
+[APP-O-05](../../../docs/labs/evidence/lab-02/reviews/carousel-remediation/execution.md)
+authorizes four views. [Carousel requirements](../../../docs/labs/lab-02-carousel-remediation-plan.md)
+and [coding standard](../../../docs/standards/client-application-coding-standards.md)
+govern this path. Focus intents use one latest slot and a 20 ms engineering
+submission interval (50/s plus immediate gesture-end flush), not a product timing
+gate. Unadmitted focus fetches retry admission at most once per 20 ms, stop when
+admitted/materialized/failed/superseded, and never allocate another intent queue.
+Input updates four bounded roots, retaining overlapping identities and delayed
+bind timers. Snap target intent stays owned by the session during animation while
+visible roots follow actual scroll geometry. F003 snap supersession is verified at
+L1/L2; F006 owner tap-to-retry and initial inbox retry are implemented with L1/L2
+gates. Target memory/input/timing measurements and
+numeric product gates remain OPEN for C5/C6.
+
+C3c snap supersession uses one bounded presentation-owned operation envelope.
+Every acceptance, including no-motion, emits `snap_start` then exactly one
+`snap_end` with its frozen ID/session/revision/focus and normalized outcome/reason.
+Real reversal terminalizes the old snap as stale; animation-generated begin/end
+events are suppressed only during the synchronous tick. Pending mutation
+reconciliation captures replacement focus before unlock and computes the new
+target from the reconciled owner snapshot. C3c host pointer-driver/lifecycle
+checks are L2 self-checks; physical touch/timing/stack closure remains L3 pending.

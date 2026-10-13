@@ -1,0 +1,590 @@
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md
+@@ -77,3 +77,17 @@
+ materialized item pointer only until the next session pump; pending content is
+ copied into the existing bounded per-view storage. No full-window/item copy is
+ placed on the UI stack and no new widget is allocated during reconciliation.
++
++## C3c current snap acceptance
++
++Saved baseline remains under `/tmp/lab02-c3c-fix/baseline` during remediation.
++Current reversal assertions accept latest focus and exactly one start/terminal
++per frozen snap ID. They copy actual LVGL animations and call archived exec,
++completed and deleted callbacks after supersession. They exercise two animated
++replacements, no-motion fresh ID, immediate replacement, external animation
++deletion, active scene deletion and session reset. Reversal also uses an actual
++LVGL pointer input device with synthetic samples, read callback, hit testing and
++gesture recognition; it does not model board touch-driver timing or velocity.
++Pending mutation cases cover append, focused removal, insertion relocating m6,
++replacement removing m6 (next m7), and mutation/reversal preserving latest focus.
++Every advance continues the four-root coverage and binding identity checks.
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c
+@@ -21,12 +21,31 @@
+ static const char *scenario;
+ static const char *artifact_dir;
+ static unsigned snap_starts, snap_ends;
++static unsigned starts_by_id[128], ends_by_id[128];
++static lv_indev_data_t pointer_data;
++static void pointer_read(lv_indev_t *indev, lv_indev_data_t *data)
++{
++    (void)indev; *data = pointer_data;
++}
++static void pointer_step(lv_indev_t *indev, int x, lv_indev_state_t state)
++{
++    pointer_data.point.x = x; pointer_data.point.y = LAB02_CARD_Y + 60;
++    pointer_data.state = state;
++    lv_indev_read(indev);
++}
++
+ 
+ void lab02_trace_emit(const char *event, uint32_t generation, int focus,
+                       const char *message_id, const char *extra)
+ {
+     if (!strcmp(event, "snap_start")) snap_starts++;
+     if (!strcmp(event, "snap_end")) snap_ends++;
++    if (!strcmp(event, "snap_start") || !strcmp(event, "snap_end")) {
++        const char *field = strstr(extra, "snap_id="); unsigned id = 0;
++        assert(field && sscanf(field, "snap_id=%u", &id) == 1 && id < 128);
++        if (!strcmp(event, "snap_start")) assert(++starts_by_id[id] == 1);
++        else assert(++ends_by_id[id] == 1 && starts_by_id[id] == 1);
++    }
+     printf("C0_TRACE scenario=%s event=%s gen=%u focus=%d msg=%s %s\n",
+            scenario, event, generation, focus, message_id ? message_id : "-", extra ? extra : "");
+ }
+@@ -192,6 +211,21 @@
+         assert(lv_obj_get_child_count(carousel.pool.views[i].root) == 4);
+ }
+ 
++static void assert_archived_ignored(lv_anim_t *archived)
++{
++    int x = lv_obj_get_scroll_x(carousel.scroll);
++    int focus = lab02_session_snapshot().focus_index;
++    unsigned terminals = snap_ends;
++    uint32_t generations[LAB02_CARD_POOL_SIZE];
++    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++) generations[i] = carousel.pool.views[i].bind_generation;
++    archived->custom_exec_cb(archived, 999);
++    archived->completed_cb(archived);
++    archived->deleted_cb(archived);
++    assert(lv_obj_get_scroll_x(carousel.scroll) == x && snap_ends == terminals);
++    assert(lab02_session_snapshot().focus_index == focus);
++    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++) assert(carousel.pool.views[i].bind_generation == generations[i]);
++}
++
+ static void drag_to(int index)
+ {
+     lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_BEGIN, NULL);
+@@ -204,6 +238,7 @@
+ 
+ int main(int argc, char **argv)
+ {
++    setvbuf(stdout, NULL, _IONBF, 0);
+     assert(argc == 3);
+     scenario = argv[1]; artifact_dir = argv[2];
+     lv_init();
+@@ -327,18 +362,77 @@
+ #endif
+     } else if (!strcmp(scenario, "reversal")) {
+         lab02_carousel_set_focus(&carousel, 8, true);
++        lv_anim_t archived = *lv_anim_get(&carousel.snap, NULL);
++        uint32_t old_id = carousel.snap.operation_id;
+         advance(60); checkpoint("snap8");
+         drag_to(2);
+         lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_END, NULL);
+         checkpoint("reverse2");
+-        assert(lab02_session_snapshot().focus_index == 8);
+-        advance(300); checkpoint("old-target-terminal");
+-        assert(lab02_session_snapshot().focus_index == 8);
++        assert(lab02_session_snapshot().focus_index == 2);
++        assert_archived_ignored(&archived);
++        assert(ends_by_id[old_id] == 1);
++        advance(300); checkpoint("latest-target-terminal");
++        assert(lab02_session_snapshot().focus_index == 2);
+         lab02_carousel_set_focus(&carousel, 10, true);
+         advance(40);
+         lab02_carousel_set_focus(&carousel, 5, true);
++        advance(40);
++        lab02_carousel_set_focus(&carousel, 7, true);
+         advance(300); checkpoint("replacement-terminal");
+-        assert(snap_starts > snap_ends);
++        assert(lab02_session_snapshot().focus_index == 7);
++        old_id = carousel.snap.operation_id;
++        lab02_carousel_set_focus(&carousel, 7, true);
++        assert(carousel.snap.operation_id > old_id && snap_starts == snap_ends);
++        lab02_carousel_set_focus(&carousel, 12, true);
++        advance(30);
++        lab02_carousel_set_focus(&carousel, 3, false);
++        advance(300);
++        assert(lab02_session_snapshot().focus_index == 3 && snap_starts == snap_ends);
++
++        /* Actual LVGL pointer driver, hit testing and gesture recognizer. */
++        lv_indev_t *pointer = lv_indev_create();
++        lv_indev_set_type(pointer, LV_INDEV_TYPE_POINTER);
++        lv_indev_set_read_cb(pointer, pointer_read);
++        lab02_carousel_set_focus(&carousel, 8, true);
++        advance(50);
++        old_id = carousel.snap.operation_id;
++        pointer_step(pointer, 100, LV_INDEV_STATE_PRESSED);
++        pointer_step(pointer, 150, LV_INDEV_STATE_PRESSED);
++        pointer_step(pointer, 200, LV_INDEV_STATE_PRESSED);
++        assert(ends_by_id[old_id] == 1 && !carousel.snap.scroll_lock);
++        pointer_step(pointer, 200, LV_INDEV_STATE_RELEASED);
++        advance(600); checkpoint("pointer-reversal-terminal");
++        assert(lab02_session_snapshot().focus_index != 8);
++        assert(snap_starts == snap_ends);
++        lv_indev_delete(pointer);
++
++        lab02_carousel_set_focus(&carousel, 10, true);
++        archived = *lv_anim_get(&carousel.snap, NULL);
++        lv_anim_delete(&carousel.snap, NULL);
++        assert(!lab02_session_snapshot().scroll_locked && snap_starts == snap_ends);
++        archived.completed_cb(&archived);
++        /* Delete while active, then archived tick/completion after invalidation. */
++        lab02_carousel_set_focus(&carousel, 12, true);
++        archived = *lv_anim_get(&carousel.snap, NULL);
++        lv_obj_delete(carousel.screen);
++        assert(!carousel.scroll && !lab02_carousel_instance());
++        archived.custom_exec_cb(&archived, 999);
++        archived.completed_cb(&archived);
++        archived.deleted_cb(&archived);
++        lab02_carousel_pump(&carousel);
++        assert(snap_starts == snap_ends);
++        assert(lab02_carousel_init(&carousel));
++        sid = lab02_session_generation();
++        lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, sid);
++        lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, sid);
++        submit((lab02_fetch_req_t){.session_id = sid}, make_page(1, 0, 64, 0), true);
++        lab02_carousel_set_focus(&carousel, 11, true);
++        archived = *lv_anim_get(&carousel.snap, NULL);
++        lab02_session_reset();
++        advance(300);
++        archived.custom_exec_cb(&archived, 999);
++        archived.completed_cb(&archived);
++        assert(!carousel.snap.scroll_lock && snap_starts == snap_ends);
+     } else if (!strcmp(scenario, "held-page")) {
+         lab02_carousel_set_focus(&carousel, 20, false);
+         lab02_session_intent_scroll_lock(true);
+@@ -406,6 +500,44 @@
+         assert(lab02_session_snapshot().inbox_revision == 2);
+         const lab02_inbox_item_t *item = lab02_page_provider_item(&carousel.provider, lab02_session_snapshot().focus_index);
+         assert(item && !strcmp(item->message_id, removal ? "m9" : "m8"));
++        /* A second accepted mutation must reconcile replacement intent, not the
++         * old snap target. Insertion relocates m6; removal chooses next m7. */
++        assert(lab02_session_intent_refresh());
++        mutation_req = take_page(0);
++        lab02_carousel_set_focus(&carousel, 10, true);
++        advance(40);
++        lv_anim_t archived = *lv_anim_get(&carousel.snap, NULL);
++        mutation = make_page(3, 0, removal ? 62 : 66, removal ? 0 : -1);
++        if (removal) {
++            for (int i = 6; i < 16; i++) {
++                snprintf(mutation.items[i].message_id, sizeof(mutation.items[i].message_id), "m%d", i + 1);
++                snprintf(mutation.items[i].sender_name, sizeof(mutation.items[i].sender_name), "Sender %d", i + 1);
++            }
++        }
++        submit(mutation_req, mutation, false);
++        assert(lab02_session_snapshot().pending_inbox_revision == 3);
++        lab02_carousel_set_focus(&carousel, 6, true);
++        assert(lab02_session_snapshot().inbox_revision == 3);
++        assert(lab02_session_snapshot().focus_index == (removal ? 6 : 7));
++        item = lab02_page_provider_item(&carousel.provider, carousel.focus_index);
++        assert(item && !strcmp(item->message_id, removal ? "m7" : "m6"));
++        assert_archived_ignored(&archived);
++        advance(300); checkpoint("mutation-replacement-terminal");
++        assert(lv_obj_get_scroll_x(carousel.scroll) == lab02_snap_target_x_for_index(removal ? 6 : 7, carousel.item_count));
++        assert(snap_starts == snap_ends);
++
++        assert(lab02_session_intent_refresh());
++        mutation_req = take_page(0);
++        lab02_carousel_set_focus(&carousel, 10, true);
++        advance(40);
++        submit(mutation_req, make_page(4, 0, 64, 0), false);
++        assert(lab02_session_snapshot().pending_inbox_revision == 4);
++        drag_to(2);
++        lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_END, NULL);
++        advance(300); checkpoint("mutation-reversal-terminal");
++        assert(lab02_session_snapshot().inbox_revision == 4);
++        assert(lab02_session_snapshot().focus_index == 2 && snap_starts == snap_ends);
++
+     } else if (!strcmp(scenario, "queue-full")) {
+         lab02_fetch_req_t accepted = take_page(1);
+         for (int i = 0; i < 8; i++) lab02_session_intent_transport((i & 1) != 0);
+--- a/client/labs/lab-02-bounded-inbox/README.md
++++ b/client/labs/lab-02-bounded-inbox/README.md
+@@ -106,3 +106,12 @@
+ visible roots follow actual scroll geometry. F003 snap supersession and F006
+ failed-page retry remain separate. Target memory/input/timing measurements and
+ numeric product gates remain OPEN for C5/C6.
++
++C3c snap supersession uses one bounded presentation-owned operation envelope.
++Every acceptance, including no-motion, emits `snap_start` then exactly one
++`snap_end` with its frozen ID/session/revision/focus and normalized outcome/reason.
++Real reversal terminalizes the old snap as stale; animation-generated begin/end
++events are suppressed only during the synchronous tick. Pending mutation
++reconciliation captures replacement focus before unlock and computes the new
++target from the reconciled owner snapshot. C3c host pointer-driver/lifecycle
++checks are L2 self-checks; physical touch/timing/stack closure remains L3 pending.
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+@@ -115,19 +115,34 @@
+     update_status_label(c);
+ }
+ 
+-static void on_snap_done(void *user)
++static void on_snap_done(void *user, uint32_t id, lab02_snap_outcome_t outcome)
+ {
+     lab02_carousel_t *c = (lab02_carousel_t *)user;
+-    if (!c) {
+-        return;
+-    }
++    if (!c || !c->scroll || c->snap.operation_id != id || outcome == LAB02_SNAP_STALE) return;
+     lab02_session_intent_scroll_lock(false);
+     sync_from_session(c, true);
+     rebind_pool(c);
+-    char extra[48];
+-    snprintf(extra, sizeof(extra), "snap_id=%u", (unsigned)lab02_snap_current_id());
+-    lab02_trace_emit("snap_end", 0, c->focus_index,
+-                     focused_message_id(c, c->focus_index), extra);
++}
++
++/* Capture replacement focus before unlocking: unlock may apply a pending
++ * mutation and relocate that identity. Never calculate a target from old count. */
++static void supersede_snap(lab02_carousel_t *c, int index, const char *reason)
++{
++    if (!c->snap.scroll_lock) return;
++    lab02_snap_cancel(&c->snap, reason);
++    lab02_session_intent_focus(index);
++    lab02_session_intent_scroll_lock(false);
++    lab02_session_intent_scroll_lock(true);
++    sync_from_session(c, true);
++}
++
++static void scroll_deleted(lv_event_t *e)
++{
++    lab02_carousel_t *c = lv_event_get_user_data(e);
++    c->scroll = NULL; /* Invalidate before cancellation callbacks. */
++    lab02_snap_cancel(&c->snap, "scroller_deleted");
++    lab02_session_intent_scroll_lock(false);
++    if (s_carousel == c) s_carousel = NULL;
+ }
+ 
+ static void scroll_event_cb(lv_event_t *e)
+@@ -153,8 +168,10 @@
+         rebind_pool(c);
+         return;
+     }
+-    if (c->snap.scroll_lock) return;
++    if (c->snap.driving_scroll) return;
+     if (code == LV_EVENT_SCROLL_BEGIN) {
++        int idx = lab02_snap_index_from_scroll_x(lv_obj_get_scroll_x(c->scroll), c->item_count);
++        supersede_snap(c, idx, "reversed");
+         lab02_session_intent_scroll_lock(true);
+         return;
+     }
+@@ -207,6 +224,7 @@
+     lv_obj_set_style_bg_opa(c->scroll, LV_OPA_TRANSP, 0);
+     lv_obj_set_style_border_width(c->scroll, 0, 0);
+     lv_obj_set_style_pad_all(c->scroll, 0, 0);
++    lv_obj_add_event_cb(c->scroll, scroll_deleted, LV_EVENT_DELETE, c);
+     lv_obj_add_event_cb(c->scroll, scroll_event_cb, LV_EVENT_SCROLL, c);
+     lv_obj_add_event_cb(c->scroll, scroll_event_cb, LV_EVENT_SCROLL_BEGIN, c);
+     lv_obj_add_event_cb(c->scroll, scroll_event_cb, LV_EVENT_SCROLL_END, c);
+@@ -227,7 +245,7 @@
+ 
+ void lab02_carousel_set_focus(lab02_carousel_t *c, int index, bool animate)
+ {
+-    if (!c) {
++    if (!c || !c->scroll) {
+         return;
+     }
+     sync_from_session(c, false);
+@@ -241,8 +259,11 @@
+     if (index >= c->item_count) {
+         index = c->item_count - 1;
+     }
+-    lab02_session_intent_focus(index);
++    bool replacing = c->snap.scroll_lock;
++    supersede_snap(c, index, "superseded");
++    lab02_session_intent_focus(replacing ? c->focus_index : index);
+     sync_from_session(c, false);
++    index = c->focus_index;
+     c->focus_pending = false;
+     int32_t target = lab02_snap_target_x_for_index(index, c->item_count);
+     if (animate) {
+@@ -250,6 +271,9 @@
+         lab02_snap_animate_to(c->scroll, &c->snap, target, index,
+                              focused_message_id(c, index), on_snap_done, c);
+     } else {
++        lab02_session_intent_scroll_lock(false);
++        sync_from_session(c, false);
++        target = lab02_snap_target_x_for_index(c->focus_index, c->item_count);
+         c->programmatic_scroll = true;
+         lv_obj_scroll_to_x(c->scroll, target, LV_ANIM_OFF);
+         c->programmatic_scroll = false;
+@@ -260,7 +284,7 @@
+ 
+ void lab02_carousel_pump(lab02_carousel_t *c)
+ {
+-    if (!c) {
++    if (!c || !c->scroll) {
+         return;
+     }
+     if (c->focus_pending && !c->snap.scroll_lock && esp_timer_get_time() >= c->next_focus_us) {
+--- a/docs/labs/lab-02-session-architecture.md
++++ b/docs/labs/lab-02-session-architecture.md
+@@ -161,3 +161,36 @@
+ `focus_admission_pending` are observable. This does not implement F006 failed-page
+ retry or F003 snap cancellation. The interval is an engineering bound; numeric
+ product gates and target stack/memory/input timings remain OPEN in C5/C6.
++
++## C3c snap operation and reversal
++
++CAR-GESTURE-5, CAR-BIND-5 and standard section 4 govern the snap. One static
++presentation-owned envelope freezes ID, session generation, applied revision,
++focus/message ID, submitted time, target, callback and presentation handles.
++Status becomes terminal before callback or LVGL deletion. The LVGL animation
++copies the ID into its user data; archived ticks/completions compare that ID
++before reading current handles or moving the viewport. Worker current-ID access
++remains telemetry only. Each acceptance emits snap_start and exactly one snap_end,
++including no-motion; terminals retain the original immutable operation input.
++Outcomes/reasons are success/completed or no_motion, stale/reversed, superseded,
++scroller_deleted or session_changed, and cancelled/animation_deleted or
++animation_allocation_failed. A stale archived callback after terminal adds no
++second terminal. Model/bind traces establish reconciliation and final focus.
++
++A tick marks only its synchronous scroll_to-generated BEGIN/END as programmatic;
++SCROLL still recycles the actual viewport on every displacement. Real BEGIN
++supersedes active snap nonblockingly. Controller replacement captures owner focus
++before unlock can apply a pending mutation, relocks motion, and uses the reconciled
++focus/count for the new target. Four bounded roots and the single latest 20ms
++focus-intent slot are retained. An immediate focus replacement also cancels the
++old animation. Scroller DELETE invalidates the controller handle before terminal;
++reset rejects old-generation animation writes on the next tick. External LVGL
++animation deletion terminalizes cancellation and unlocks owner reconciliation.
++
++Resource limit: one static snap envelope plus one LVGL animation, no per-tick
++allocation by snap/controller, no per-callback item/page copy, and bounded small
++trace buffers (240 bytes maximum). LVGL animation allocation failure terminalizes
++the accepted ID. Numeric callback/animation budgets and representative target
++stack/input/memory measurements remain OPEN. Host tests use real LVGL pointer
++read/hit-test/gesture recognition with synthetic pointer samples; board touch,
++physical driver scheduling and target arbitration remain unverified.
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/snap.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/snap.c
+@@ -1,81 +1,138 @@
+ #include "lab02/snap.h"
+-
+ #include "lab02/instrumentation.h"
+-#include "lab02/snap_math.h"
+ #include "lab02/trace_emit.h"
+-
++#include "lab02/lab02_session.h"
++#include "lab02/lab02_session_io.h"
+ #include "esp_timer.h"
+-#include <stdlib.h>
+-#include <string.h>
+ #include <stdio.h>
+ #include <stdatomic.h>
++#include <stdint.h>
+ 
+-static int32_t s_anim_target;
+-static lab02_snap_state_t *s_anim_st;
+-static void (*s_anim_done)(void *);
+-static void *s_anim_user;
++/* One presentation-owner envelope; no per-tick allocation. LVGL copies the
++ * immutable ID into each animation. A recycled envelope is never authority. */
++static struct {
++    uint32_t id;
++    uint32_t session_id;
++    uint32_t revision;
++    int64_t submitted_us;
++    int32_t target;
++    int focus;
++    char message_id[24];
++    lv_obj_t *scroller;
++    lab02_snap_state_t *state;
++    lab02_snap_terminal_cb terminal;
++    void *user;
++    enum { SNAP_TERMINAL, SNAP_RUNNING } status;
++} s_operation;
+ static atomic_uint_least32_t s_snap_id;
+ 
+-static void scroll_x_exec(void *obj, int32_t v)
++bool lab02_snap_is_current(uint32_t id)
+ {
+-    lv_obj_scroll_to_x((lv_obj_t *)obj, v, LV_ANIM_OFF);
++    return s_operation.status == SNAP_RUNNING && s_operation.id == id;
++}
++
++static uint32_t animation_id(lv_anim_t *a)
++{
++    return (uint32_t)(uintptr_t)lv_anim_get_user_data(a);
++}
++
++static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason)
++{
++    if (!lab02_snap_is_current(id)) return;
++    s_operation.status = SNAP_TERMINAL; /* Exactly once, including reentrant deletion. */
++    s_operation.state->scroll_lock = false;
++    s_operation.state->driving_scroll = false;
++    char extra[240];
++    const char *name = outcome == LAB02_SNAP_SUCCESS ? "success" :
++                       outcome == LAB02_SNAP_STALE ? "stale" : "cancelled";
++    snprintf(extra, sizeof(extra),
++             "session=%u snap_id=%u outcome=%s reason=%s before=running after=terminal revision=%u elapsed_us=%lld target_x=%ld",
++             (unsigned)s_operation.session_id, (unsigned)id, name, reason,
++             (unsigned)s_operation.revision,
++             (long long)(esp_timer_get_time() - s_operation.submitted_us), (long)s_operation.target);
++    lab02_trace_emit("snap_end", 0, s_operation.focus, s_operation.message_id, extra);
++    if (outcome == LAB02_SNAP_SUCCESS) lab02_instrumentation_get()->snap_count++;
++    lab02_snap_terminal_cb cb = s_operation.terminal;
++    void *user = s_operation.user;
++    if (cb) cb(user, id, outcome);
++}
++
++static void scroll_x_exec(lv_anim_t *a, int32_t value)
++{
++    if (!lab02_snap_is_current(animation_id(a))) return;
++    if (s_operation.session_id != lab02_session_generation()) {
++        finish(animation_id(a), LAB02_SNAP_STALE, "session_changed");
++        return;
++    }
++    lab02_snap_state_t *st = s_operation.state;
++    st->driving_scroll = true;
++    lv_obj_scroll_to_x(s_operation.scroller, value, LV_ANIM_OFF);
++    st->driving_scroll = false;
+ }
+ 
+ static void snap_anim_done(lv_anim_t *a)
+ {
+-    lv_obj_t *scroller = (lv_obj_t *)lv_anim_get_user_data(a);
+-    if (scroller) {
+-        lv_obj_scroll_to_x(scroller, s_anim_target, LV_ANIM_OFF);
+-    }
+-    if (s_anim_st) {
+-        s_anim_st->scroll_lock = false;
+-        s_anim_st->snap_target_x = s_anim_target;
+-    }
+-    lab02_instrumentation_get()->snap_count++;
+-    if (s_anim_done) {
+-        s_anim_done(s_anim_user);
+-    }
+-    s_anim_done = NULL;
+-    s_anim_user = NULL;
+-    s_anim_st = NULL;
++    uint32_t id = animation_id(a);
++    if (!lab02_snap_is_current(id)) return;
++    scroll_x_exec(a, s_operation.target);
++    finish(id, LAB02_SNAP_SUCCESS, "completed");
++}
++
++static void snap_anim_deleted(lv_anim_t *a)
++{
++    finish(animation_id(a), LAB02_SNAP_CANCELLED, "animation_deleted");
++}
++
++void lab02_snap_cancel(lab02_snap_state_t *st, const char *reason)
++{
++    if (s_operation.status != SNAP_RUNNING || s_operation.state != st) return;
++    lab02_snap_state_t *state = s_operation.state;
++    finish(s_operation.id, LAB02_SNAP_STALE, reason);
++    lv_anim_delete(state, NULL);
+ }
+ 
+ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t target_x,
+                            int focus_index, const char *message_id,
+-                           void (*on_done)(void *), void *user_data)
++                           lab02_snap_terminal_cb on_done, void *user_data)
+ {
+-    if (!scroller || !st) {
++    if (!scroller || !st) return;
++    if (s_operation.status == SNAP_RUNNING) lab02_snap_cancel(s_operation.state, "superseded");
++    int32_t start = lv_obj_get_scroll_x(scroller);
++    uint32_t id = atomic_fetch_add(&s_snap_id, 1) + 1;
++    s_operation.id = id;
++    /* Session generation is frozen telemetry, never callback authority. */
++    s_operation.session_id = lab02_session_generation();
++    s_operation.revision = lab02_session_snapshot().inbox_revision;
++    s_operation.submitted_us = esp_timer_get_time();
++    s_operation.target = target_x;
++    s_operation.focus = focus_index;
++    snprintf(s_operation.message_id, sizeof(s_operation.message_id), "%s", message_id ? message_id : "-");
++    s_operation.scroller = scroller;
++    s_operation.state = st;
++    s_operation.terminal = on_done;
++    s_operation.user = user_data;
++    s_operation.status = SNAP_RUNNING;
++    st->operation_id = id;
++    st->snap_target_x = target_x;
++    st->scroll_lock = true;
++    char extra[160];
++    snprintf(extra, sizeof(extra), "session=%u snap_id=%u before=pending after=running revision=%u start_x=%ld target_x=%ld",
++             (unsigned)s_operation.session_id, (unsigned)id, (unsigned)s_operation.revision, (long)start, (long)target_x);
++    lab02_trace_emit("snap_start", 0, s_operation.focus, s_operation.message_id, extra);
++    if (start == target_x) {
++        finish(id, LAB02_SNAP_SUCCESS, "no_motion");
+         return;
+     }
+-    int32_t start = lv_obj_get_scroll_x(scroller);
+-    if (start == target_x) {
+-        st->scroll_lock = false;
+-        st->snap_target_x = target_x;
+-        if (on_done) {
+-            on_done(user_data);
+-        }
+-        return;
+-    }
+-    lv_anim_delete(scroller, scroll_x_exec);
+-    s_anim_target = target_x;
+-    uint32_t snap_id = atomic_fetch_add(&s_snap_id, 1) + 1;
+-    s_anim_st = st;
+-    s_anim_done = on_done;
+-    s_anim_user = user_data;
+-    st->snap_target_x = target_x;
+-    st->scroll_lock = true;
+-    char extra[48];
+-    snprintf(extra, sizeof(extra), "snap_id=%u", (unsigned)snap_id);
+-    lab02_trace_emit("snap_start", 0, focus_index, message_id, extra);
+     lv_anim_t a;
+     lv_anim_init(&a);
+-    lv_anim_set_var(&a, scroller);
+-    lv_anim_set_user_data(&a, scroller);
++    lv_anim_set_var(&a, st);
++    lv_anim_set_user_data(&a, (void *)(uintptr_t)id);
+     lv_anim_set_values(&a, start, target_x);
+     lv_anim_set_duration(&a, 220);
+-    lv_anim_set_exec_cb(&a, scroll_x_exec);
++    lv_anim_set_custom_exec_cb(&a, scroll_x_exec);
+     lv_anim_set_completed_cb(&a, snap_anim_done);
+-    lv_anim_start(&a);
++    lv_anim_set_deleted_cb(&a, snap_anim_deleted);
++    if (!lv_anim_start(&a)) finish(id, LAB02_SNAP_CANCELLED, "animation_allocation_failed");
+ }
+ 
+ uint32_t lab02_snap_current_id(void)
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap.h
+@@ -14,11 +14,22 @@
+     int item_count;
+     int32_t snap_target_x;
+     bool scroll_lock;
++    bool driving_scroll; /* Synchronous events from our animation tick only. */
++    uint32_t operation_id;
+ } lab02_snap_state_t;
++
++typedef enum {
++    LAB02_SNAP_SUCCESS, LAB02_SNAP_STALE, LAB02_SNAP_CANCELLED
++} lab02_snap_outcome_t;
++typedef void (*lab02_snap_terminal_cb)(void *, uint32_t, lab02_snap_outcome_t);
++
++/** Nonblocking; terminalizes before deleting LVGL's animation. */
++void lab02_snap_cancel(lab02_snap_state_t *st, const char *reason);
++bool lab02_snap_is_current(uint32_t id);
+ 
+ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t target_x,
+                            int focus_index, const char *message_id,
+-                           void (*on_done)(void *), void *user_data);
++                           lab02_snap_terminal_cb on_done, void *user_data);
+ #ifdef __cplusplus
+ }
+ #endif

@@ -1,0 +1,936 @@
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
+@@ -85,10 +85,10 @@
+     LAB02_FETCH_TIMEOUT,
+ } lab02_fetch_outcome_t;
+ 
+-/** HTTP worker: enqueue page fetch; returns false if queue full (counted). */
++/** Session owner: reserve terminal capacity and enqueue a frozen page request. */
+ bool lab02_session_http_enqueue_fetch(int page_index, uint32_t *op_id_out);
+ 
+-/** HTTP worker: report terminal fetch outcome (posts event to session). */
++/** HTTP worker: fill admitted terminal mailbox; duplicates cannot overwrite it. */
+ void lab02_session_http_fetch_finished(lab02_fetch_outcome_t outcome, uint32_t session_id,
+                                        uint32_t op_id,
+                                        int page_index, const lab02_inbox_page_t *page, bool initial);
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h
+@@ -10,13 +10,21 @@
+ extern "C" {
+ #endif
+ 
++/** Frozen at owner admission. Cancellation is owner delivery-ledger state. */
+ typedef struct {
+     int page_index;
+     uint32_t op_id;
+     uint32_t session_id;
++    uint32_t revision;
++    uint16_t page_size;
++    int page_offset;
++    uint32_t attempt;
+     int64_t submitted_us;
++    /** Response-read budget after headers; not a whole-attempt deadline. */
++    int64_t response_read_timeout_us;
+ } lab02_fetch_req_t;
+ 
++bool lab02_session_http_initial_request(lab02_fetch_req_t *out);
+ bool lab02_session_http_take_fetch_request(lab02_fetch_req_t *out);
+ void lab02_session_http_mark_stage(lab02_load_stage_t stage, uint32_t session_id);
+ uint32_t lab02_session_generation(void);
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+@@ -30,6 +30,7 @@
+     lab02_inbox_page_t page;
+     lab02_load_stage_t stage;
+     bool transport_reachable;
++    lab02_fetch_req_t request;
+ } lab02_sess_event_t;
+ 
+ static lab02_inbox_model_t s_model;
+@@ -55,52 +56,60 @@
+ 
+ static lab02_session_metrics_t s_metrics;
+ 
++/* Eight normal admissions and one dedicated boot admission. A reservation is
++ * retained through owner reconciliation, including motion deferral. Producers
++ * only write this delivery bookkeeping, never session/domain state. */
++#define TERMINAL_CAP (LAB02_FETCH_QUEUE_CAP + 1)
++typedef struct {
++    bool admitted;
++    bool posted;
++    uint64_t sequence;
++    lab02_sess_event_t event;
++} terminal_slot_t;
++static terminal_slot_t s_terminals[TERMINAL_CAP];
++static uint64_t s_terminal_sequence;
++static int s_reconciled_slot = -1;
+ static QueueHandle_t s_fetch_q;
+-static QueueHandle_t s_event_q;
+ static SemaphoreHandle_t s_fetch_slots;
+ static SemaphoreHandle_t s_post_mutex;
+-/** Queue slots are full-size; never allocate lab02_sess_event_t on small stacks (e.g. sys_evt). */
+-static lab02_sess_event_t s_post_buf;
+ static lab02_sess_event_t s_pump_ev;
++static uint32_t s_stage_session;
++static uint32_t s_pending_stages;
++static uint32_t s_transport_session;
++static bool s_transport_pending;
++static bool s_transport_latest;
+ 
+ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh);
+ 
+ static uint16_t effective_page_size(void)
+ {
+-    if (s_model.page_size > 0) {
+-        return s_model.page_size;
+-    }
+-    return LAB02_DEFAULT_PAGE_SIZE;
+-}
+-
+-static bool post_session_event_prepared(void)
+-{
+-    if (!s_event_q || !s_post_mutex) {
+-        return false;
+-    }
+-    if (xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) {
+-        return false;
+-    }
+-    memset(&s_post_buf, 0, sizeof(s_post_buf));
++    return s_model.page_size > 0 ? s_model.page_size : LAB02_DEFAULT_PAGE_SIZE;
++}
++
++static lab02_fetch_req_t request_envelope(int page_index, uint32_t op_id)
++{
++    int64_t now = esp_timer_get_time();
++    lab02_fetch_req_t req = {
++        .page_index = page_index, .op_id = op_id,
++        .session_id = s_session_generation, .revision = s_inbox_revision,
++        .page_size = effective_page_size(),
++        .page_offset = page_index * (int)effective_page_size(),
++        .attempt = 1, .submitted_us = now, .response_read_timeout_us = 12000000,
++    };
++    return req;
++}
++
++/* Presentation uses try-locks only; a busy producer leaves bounded work pending. */
++static bool finish_reconciled_slot(void)
++{
++    if (s_reconciled_slot < 0) return true;
++    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
++    int slot = s_reconciled_slot;
++    memset(&s_terminals[slot], 0, sizeof(s_terminals[slot]));
++    if (slot < LAB02_FETCH_QUEUE_CAP) xSemaphoreGive(s_fetch_slots);
++    s_reconciled_slot = -1;
++    xSemaphoreGive(s_post_mutex);
+     return true;
+-}
+-
+-static bool post_session_event_commit(void)
+-{
+-    bool ok = xQueueSend(s_event_q, &s_post_buf, 0) == pdTRUE;
+-    if (!ok) {
+-        s_metrics.fetch_event_dropped++;
+-        lab02_trace_emit("fetch_event_dropped", 0, 0, NULL, NULL);
+-    }
+-    xSemaphoreGive(s_post_mutex);
+-    return ok;
+-}
+-
+-static void release_fetch_slot(bool initial)
+-{
+-    if (!initial && s_fetch_slots) {
+-        xSemaphoreGive(s_fetch_slots);
+-    }
+ }
+ 
+ static bool stage_allowed(lab02_load_stage_t from, lab02_load_stage_t to)
+@@ -401,16 +410,24 @@
+     if (!s_fetch_q) {
+         s_fetch_q = xQueueCreate(LAB02_FETCH_QUEUE_CAP, sizeof(lab02_fetch_req_t));
+     }
+-    if (!s_event_q) {
+-        s_event_q = xQueueCreate(8, sizeof(lab02_sess_event_t));
+-    }
+     if (!s_fetch_slots) {
+         s_fetch_slots = xSemaphoreCreateCounting(LAB02_FETCH_QUEUE_CAP, LAB02_FETCH_QUEUE_CAP);
+     }
+-    if (!s_post_mutex) {
+-        s_post_mutex = xSemaphoreCreateMutex();
+-    }
+-    return s_fetch_q && s_event_q && s_fetch_slots && s_post_mutex;
++    if (!s_post_mutex) s_post_mutex = xSemaphoreCreateMutex();
++    if (!s_fetch_q || !s_fetch_slots || !s_post_mutex ||
++        xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
++    terminal_slot_t *boot = &s_terminals[LAB02_FETCH_QUEUE_CAP];
++    bool available = !boot->admitted;
++    if (available) {
++        memset(boot, 0, sizeof(*boot));
++        boot->admitted = true;
++        boot->event.request = request_envelope(0, 0);
++        boot->event.initial = true;
++        s_stage_session = s_session_generation;
++        s_pending_stages = 0;
++    }
++    xSemaphoreGive(s_post_mutex);
++    return available;
+ }
+ 
+ lab02_session_snapshot_t lab02_session_snapshot(void)
+@@ -497,13 +514,11 @@
+ 
+ void lab02_session_intent_transport(bool reachable)
+ {
+-    if (!post_session_event_prepared()) {
+-        return;
+-    }
+-    s_post_buf.kind = LAB02_SESS_EV_TRANSPORT;
+-    s_post_buf.transport_reachable = reachable;
+-    s_post_buf.session_id = s_session_generation;
+-    (void)post_session_event_commit();
++    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
++    s_transport_session = s_stage_session;
++    s_transport_latest = reachable;
++    s_transport_pending = true;
++    xSemaphoreGive(s_post_mutex);
+ }
+ 
+ bool lab02_session_intent_refresh(void)
+@@ -521,41 +536,78 @@
+ 
+ void lab02_session_pump(void)
+ {
+-    int completions = 0;
+-    while (s_event_q && xQueuePeek(s_event_q, &s_pump_ev, 0) == pdTRUE) {
+-        if (s_pump_ev.session_id != s_session_generation) {
+-            xQueueReceive(s_event_q, &s_pump_ev, 0);
+-            if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE && !s_pump_ev.initial) {
+-                int page = s_pump_ev.page_index;
+-                if (page >= 0 && page < LAB02_HTTP_MAX_PAGES &&
+-                    s_inflight_op[page] == s_pump_ev.op_id) {
+-                    s_inflight_op[page] = 0;
+-                }
+-            }
+-            continue;
+-        }
+-        if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE && s_pump_ev.outcome == LAB02_FETCH_OK &&
+-            s_scroll_locked) {
++    if (!s_post_mutex || !finish_reconciled_slot()) return;
++    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return;
++    uint32_t stages = s_stage_session == s_session_generation ? s_pending_stages : 0;
++    s_pending_stages = 0;
++    bool transport = s_transport_pending && s_transport_session == s_session_generation;
++    bool reachable = s_transport_latest;
++    s_transport_pending = false;
++    /* Owner cancellation terminalizes superseded admissions even when their
++     * producer has not returned. Late producers then see posted/released state. */
++    for (int i = 0; i < TERMINAL_CAP; i++) {
++        terminal_slot_t *entry = &s_terminals[i];
++        lab02_fetch_req_t *req = &entry->event.request;
++        if (entry->admitted && !entry->posted &&
++            (req->session_id != s_session_generation ||
++             (!entry->event.initial &&
++              (s_inflight_op[req->page_index] != req->op_id || req->revision != s_inbox_revision)))) {
++            entry->event.session_id = req->session_id;
++            entry->event.op_id = req->op_id;
++            entry->event.page_index = req->page_index;
++            entry->sequence = ++s_terminal_sequence;
++            entry->posted = true;
++        }
++    }
++    int slot = -1;
++    for (int i = 0; i < TERMINAL_CAP; i++) {
++        if (s_terminals[i].posted &&
++            (slot < 0 || s_terminals[i].sequence < s_terminals[slot].sequence)) slot = i;
++    }
++    if (slot >= 0) s_pump_ev = s_terminals[slot].event;
++    xSemaphoreGive(s_post_mutex);
++    /* Preserve ordered startup transitions even if both were posted before a
++     * pump. Repeated reports coalesce; invalid transitions remain observable. */
++    for (int stage = LAB02_LOAD_SHELL; stage <= LAB02_LOAD_ERROR; stage++) {
++        if (stages & (1U << stage)) transition_stage((lab02_load_stage_t)stage);
++    }
++    if (transport) apply_transport_reachable(reachable);
++    if (slot >= 0) {
++        bool stale = s_pump_ev.session_id != s_session_generation ||
++            (!s_pump_ev.initial &&
++             (s_inflight_op[s_pump_ev.page_index] != s_pump_ev.op_id ||
++              s_pump_ev.request.revision != s_inbox_revision));
++        if (!stale && s_pump_ev.outcome == LAB02_FETCH_OK && s_scroll_locked) {
+             if (s_deferred_op != s_pump_ev.op_id) {
+                 s_deferred_op = s_pump_ev.op_id;
+                 s_metrics.apply_deferred++;
+-                lab02_trace_emit("apply_deferred", s_pump_ev.op_id, s_pump_ev.page_index, NULL,
+-                                  NULL);
++                lab02_trace_emit("apply_deferred", s_pump_ev.op_id, s_pump_ev.page_index, NULL, NULL);
+             }
+-            break;
+-        }
+-        xQueueReceive(s_event_q, &s_pump_ev, 0);
+-        if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE) {
++            return;
++        }
++        if (stale) {
++            s_metrics.apply_stale++;
++            lab02_trace_emit("apply_stale", s_pump_ev.op_id, s_pump_ev.page_index, NULL, "session_revision_or_op_mismatch");
++            if (s_pump_ev.session_id == s_session_generation &&
++                s_inflight_op[s_pump_ev.page_index] == s_pump_ev.op_id)
++                s_inflight_op[s_pump_ev.page_index] = 0;
++        } else {
++            uint32_t prior_stale = s_metrics.apply_stale;
++            uint32_t prior_fail = s_metrics.fetch_fail;
+             handle_fetch_done(&s_pump_ev);
+-            completions++;
+-        } else if (s_pump_ev.kind == LAB02_SESS_EV_STAGE) {
+-            transition_stage(s_pump_ev.stage);
+-        } else if (s_pump_ev.kind == LAB02_SESS_EV_TRANSPORT) {
+-            apply_transport_reachable(s_pump_ev.transport_reachable);
+-        }
+-        if (completions >= 1) {
+-            break;
+-        }
++            stale = s_metrics.apply_stale != prior_stale;
++            if (s_metrics.fetch_fail != prior_fail) s_pump_ev.outcome = LAB02_FETCH_FAIL;
++        }
++        char extra[160];
++        snprintf(extra, sizeof(extra), "session=%u revision=%u attempt=%u outcome=%s elapsed_us=%lld",
++                 (unsigned)s_pump_ev.session_id, (unsigned)s_pump_ev.request.revision,
++                 (unsigned)s_pump_ev.request.attempt,
++                 stale ? "stale" : (s_pump_ev.outcome == LAB02_FETCH_OK ? "success" :
++                 (s_pump_ev.outcome == LAB02_FETCH_TIMEOUT ? "timed_out" : "failure")),
++                 (long long)(esp_timer_get_time() - s_pump_ev.request.submitted_us));
++        lab02_trace_emit("fetch_terminal", s_pump_ev.op_id, s_pump_ev.page_index, NULL, extra);
++        s_reconciled_slot = slot;
++        if (!finish_reconciled_slot()) return;
+     }
+     if (s_http_mode && s_load_stage == LAB02_LOAD_READY && !s_scroll_locked) {
+         int64_t now = esp_timer_get_time();
+@@ -621,22 +673,37 @@
+         lab02_trace_emit("fetch_queue_full", 0, page_index, NULL, NULL);
+         return false;
+     }
++    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) {
++        xSemaphoreGive(s_fetch_slots);
++        s_metrics.fetch_queue_overflow++;
++        lab02_trace_emit("fetch_admission_busy", 0, page_index, NULL, NULL);
++        return false;
++    }
++    int slot = 0;
++    while (slot < LAB02_FETCH_QUEUE_CAP && s_terminals[slot].admitted) slot++;
++    if (slot == LAB02_FETCH_QUEUE_CAP) {
++        xSemaphoreGive(s_post_mutex);
++        xSemaphoreGive(s_fetch_slots);
++        return false;
++    }
+     uint32_t op_id = s_next_op_id++;
+-    s_inflight_op[page_index] = op_id;
+-    s_failed_pages &= ~(1U << page_index);
+-    lab02_fetch_req_t req = {
+-        .page_index = page_index,
+-        .op_id = op_id,
+-        .session_id = s_session_generation,
+-        .submitted_us = esp_timer_get_time(),
+-    };
++    lab02_fetch_req_t req = request_envelope(page_index, op_id);
++    terminal_slot_t *reservation = &s_terminals[slot];
++    memset(reservation, 0, sizeof(*reservation));
++    reservation->admitted = true;
++    reservation->event.request = req;
+     if (xQueueSend(s_fetch_q, &req, 0) != pdTRUE) {
+-        s_inflight_op[page_index] = 0;
++        memset(reservation, 0, sizeof(*reservation));
++        xSemaphoreGive(s_post_mutex);
+         xSemaphoreGive(s_fetch_slots);
+         s_metrics.fetch_queue_overflow++;
+         lab02_trace_emit("fetch_queue_full", 0, page_index, NULL, NULL);
+         return false;
+     }
++    s_inflight_op[page_index] = op_id;
++    s_failed_pages &= ~(1U << page_index);
++    xSemaphoreGive(s_post_mutex);
++    lab02_trace_emit("fetch_admitted", op_id, page_index, NULL, NULL);
+     if (op_id_out) {
+         *op_id_out = op_id;
+     }
+@@ -647,31 +714,34 @@
+                                        uint32_t op_id,
+                                        int page_index, const lab02_inbox_page_t *page, bool initial)
+ {
+-    if (!post_session_event_prepared()) {
+-        if (!initial && page_index >= 0 && page_index < LAB02_HTTP_MAX_PAGES) {
+-            s_inflight_op[page_index] = 0;
+-        }
+-        release_fetch_slot(initial);
+-        return;
+-    }
+-    s_post_buf.kind = LAB02_SESS_EV_FETCH_DONE;
+-    s_post_buf.outcome = outcome;
+-    s_post_buf.session_id = session_id;
+-    s_post_buf.op_id = op_id;
+-    s_post_buf.page_index = page_index;
+-    s_post_buf.initial = initial;
+-    s_post_buf.has_page = page != NULL && outcome == LAB02_FETCH_OK;
+-    if (s_post_buf.has_page) {
+-        s_post_buf.page = *page;
+-    }
+-    if (!post_session_event_commit()) {
+-        if (!initial && page_index >= 0 && page_index < LAB02_HTTP_MAX_PAGES) {
+-            s_inflight_op[page_index] = 0;
+-        }
+-        release_fetch_slot(initial);
+-        return;
+-    }
+-    release_fetch_slot(initial);
++    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
++    terminal_slot_t *reservation = NULL;
++    for (int i = 0; i < TERMINAL_CAP; i++) {
++        terminal_slot_t *candidate = &s_terminals[i];
++        lab02_fetch_req_t *req = &candidate->event.request;
++        if (candidate->admitted && req->session_id == session_id && req->op_id == op_id &&
++            req->page_index == page_index && candidate->event.initial == initial) {
++            reservation = candidate;
++            break;
++        }
++    }
++    if (!reservation || reservation->posted) {
++        xSemaphoreGive(s_post_mutex);
++        lab02_trace_emit("fetch_delivery_rejected", op_id, page_index, NULL, "duplicate_or_unadmitted");
++        return;
++    }
++    lab02_sess_event_t *ev = &reservation->event;
++    ev->kind = LAB02_SESS_EV_FETCH_DONE;
++    ev->outcome = outcome;
++    ev->session_id = session_id;
++    ev->op_id = op_id;
++    ev->page_index = page_index;
++    ev->has_page = page != NULL && outcome == LAB02_FETCH_OK;
++    if (ev->has_page) ev->page = *page;
++    reservation->sequence = ++s_terminal_sequence;
++    reservation->posted = true;
++    xSemaphoreGive(s_post_mutex);
++    lab02_trace_emit("fetch_delivery_retained", op_id, page_index, NULL, NULL);
+ }
+ 
+ bool lab02_session_http_take_fetch_request(lab02_fetch_req_t *out)
+@@ -684,13 +754,10 @@
+ 
+ void lab02_session_http_mark_stage(lab02_load_stage_t stage, uint32_t session_id)
+ {
+-    if (!post_session_event_prepared()) {
+-        return;
+-    }
+-    s_post_buf.kind = LAB02_SESS_EV_STAGE;
+-    s_post_buf.stage = stage;
+-    s_post_buf.session_id = session_id;
+-    (void)post_session_event_commit();
++    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
++    if (session_id == s_stage_session && stage >= LAB02_LOAD_SHELL && stage <= LAB02_LOAD_ERROR)
++        s_pending_stages |= 1U << stage;
++    xSemaphoreGive(s_post_mutex);
+ }
+ 
+ uint32_t lab02_session_generation(void)
+@@ -702,3 +769,14 @@
+ {
+     return materialized_count(active_model());
+ }
++
++bool lab02_session_http_initial_request(lab02_fetch_req_t *out)
++{
++    if (!out || !s_post_mutex || xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
++    terminal_slot_t *boot = &s_terminals[LAB02_FETCH_QUEUE_CAP];
++    bool available = boot->admitted && !boot->posted &&
++        boot->event.request.session_id == s_session_generation;
++    if (available) *out = boot->event.request;
++    xSemaphoreGive(s_post_mutex);
++    return available;
++}
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c
+@@ -33,7 +33,7 @@
+ static lab02_inbox_page_t s_result_page;
+ static TaskHandle_t s_worker;
+ static TaskHandle_t s_boot_worker;
+-static uint32_t s_boot_session_id;
++static lab02_fetch_req_t s_boot_request;
+ static bool ensure_workers(void);
+ 
+ static void on_wifi_transport(bool reachable)
+@@ -41,17 +41,12 @@
+     lab02_session_intent_transport(reachable);
+ }
+ 
+-static int page_offset_for_index(int page)
+-{
+-    return page * (int)lab02_session_http_page_size();
+-}
+-
+ static bool http_errno_timed_out(int eno)
+ {
+     return eno == ETIMEDOUT || eno == EWOULDBLOCK;
+ }
+ 
+-static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, size_t buf_len,
++static lab02_http_fetch_result_t http_fetch_page(const lab02_fetch_req_t *req, char *buf, size_t buf_len,
+                                                size_t *out_len)
+ {
+     if (strlen(CONFIG_LAB02_SERVER_URL) == 0) {
+@@ -59,8 +54,8 @@
+     }
+     char url[192];
+     int url_len = snprintf(url, sizeof(url), "%s/v2/inbox?cursor=%d&limit=%d",
+-                           CONFIG_LAB02_SERVER_URL, page_offset,
+-                           (int)lab02_session_http_page_size());
++                           CONFIG_LAB02_SERVER_URL, req->page_offset,
++                           (int)req->page_size);
+     if (url_len < 0 || url_len >= (int)sizeof(url)) {
+         return LAB02_HTTP_FETCH_FAIL;
+     }
+@@ -98,7 +93,7 @@
+     size_t written = 0;
+     bool read_error = false;
+     bool deadline_expired = false;
+-    int64_t deadline_us = esp_timer_get_time() + 12000000;
++    int64_t deadline_us = esp_timer_get_time() + req->response_read_timeout_us;
+     while (written < buf_len - 1) {
+         if (esp_timer_get_time() >= deadline_us) {
+             deadline_expired = true;
+@@ -142,10 +137,10 @@
+         if (!lab02_session_http_take_fetch_request(&req)) {
+             continue;
+         }
+-        int offset = page_offset_for_index(req.page_index);
++        int offset = req.page_offset;
+         size_t len = 0;
+         lab02_http_fetch_result_t res =
+-            http_fetch_page(offset, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
++            http_fetch_page(&req, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
+         if (res == LAB02_HTTP_FETCH_OK &&
+             !lab02_inbox_model_parse_v2_page(s_fetch_scratch, len, offset, &s_result_page)) {
+             res = LAB02_HTTP_FETCH_FAIL;
+@@ -178,19 +173,20 @@
+ static void boot_task(void *arg)
+ {
+     (void)arg;
+-    uint32_t session_id = s_boot_session_id;
++    const lab02_fetch_req_t req = s_boot_request;
++    uint32_t session_id = req.session_id;
+     lab02_board_wifi_set_transport_notifier(on_wifi_transport);
+     lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, session_id);
+     if (!lab02_board_wifi_connect()) {
+         ESP_LOGE(TAG, "Wi-Fi failed");
+-        lab02_session_http_mark_stage(LAB02_LOAD_ERROR, session_id);
++        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, 0, 0, NULL, true);
+         vTaskDelete(NULL);
+         return;
+     }
+     lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, session_id);
+     size_t len = 0;
+     lab02_http_fetch_result_t boot_res =
+-        http_fetch_page(0, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
++        http_fetch_page(&req, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
+     if (boot_res == LAB02_HTTP_FETCH_TIMEOUT) {
+         ESP_LOGE(TAG, "initial page fetch timed out");
+         lab02_trace_emit("fetch_timeout", 0, 0, NULL, "boot");
+@@ -255,13 +251,13 @@
+     if (s_io_started || strlen(CONFIG_LAB02_SERVER_URL) == 0) {
+         return;
+     }
++    if (!lab02_session_http_initial_request(&s_boot_request)) return;
+     s_io_started = true;
+     s_http_ready_logged = false;
+-    s_boot_session_id = lab02_session_generation();
+     if (!s_boot_worker) {
+         if (xTaskCreate(boot_task, "lab02_http_boot", 10240, NULL, 4, &s_boot_worker) != pdPASS) {
+             s_io_started = false;
+-            lab02_session_http_mark_stage(LAB02_LOAD_ERROR, s_boot_session_id);
++            lab02_session_http_mark_stage(LAB02_LOAD_ERROR, s_boot_request.session_id);
+         }
+     }
+ }
+--- a/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
++++ b/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
+@@ -4,6 +4,7 @@
+ #include "esp_timer.h"
+ 
+ #include <pthread.h>
++#include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <time.h>
+@@ -121,7 +122,8 @@
+ void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
+                       const char *message_id, const char *extra)
+ {
+-    (void)event; (void)generation; (void)focus_index; (void)message_id; (void)extra;
++    printf("SESSION_TRACE event=%s op_id=%u page=%d message=%s %s\n",
++           event, (unsigned)generation, focus_index, message_id ? message_id : "-", extra ? extra : "");
+ }
+ 
+ uint32_t lab02_snap_current_id(void)
+--- a/client/labs/lab-02-bounded-inbox/tests/test_session_native.c
++++ b/client/labs/lab-02-bounded-inbox/tests/test_session_native.c
+@@ -120,7 +120,9 @@
+         lab02_session_snapshot_t before = lab02_session_snapshot();
+         lab02_session_pump();
+         lab02_session_snapshot_t after = lab02_session_snapshot();
+-        assert(before.transport_unreachable == after.transport_unreachable);
++        /* Freshness may change in the owner pump; transport must preserve the stage/focus. */
++        assert(before.load_stage == after.load_stage);
++        assert(before.focus_index == after.focus_index);
+         pause_ms(1);
+     }
+     pthread_join(thread, NULL);
+--- /dev/null
++++ b/client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c
+@@ -0,0 +1,138 @@
++#include "lab02/lab02_session.h"
++#include "lab02/lab02_session_io.h"
++#include <assert.h>
++#include <pthread.h>
++#include <stdio.h>
++#include <string.h>
++
++static lab02_page_provider_t provider;
++static lab02_inbox_page_t page;
++static void pump(int count) { for (int i = 0; i < count; i++) lab02_session_pump(); }
++static void transport_burst(void)
++{ for (int i = 0; i < 10000; i++) lab02_session_intent_transport((i & 1) == 0); }
++static void *transport_thread(void *arg) { (void)arg; transport_burst(); return NULL; }
++static void *late_failure(void *arg)
++{
++    lab02_fetch_req_t req = *(lab02_fetch_req_t *)arg;
++    lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, req.session_id, req.op_id, req.page_index, NULL, false);
++    return NULL;
++}
++static void deliver(lab02_fetch_req_t req, bool initial, int revision)
++{
++    memset(&page, 0, sizeof(page));
++    page.revision = revision; page.total_count = 256;
++    page.page_offset = req.page_offset; page.item_count = 1;
++    snprintf(page.items[0].message_id, sizeof(page.items[0].message_id), "m%d", req.page_offset);
++    lab02_session_http_fetch_finished(LAB02_FETCH_OK, req.session_id, req.op_id,
++                                     req.page_index, &page, initial);
++}
++static lab02_fetch_req_t start(bool finish)
++{
++    assert(lab02_session_begin_http(&provider));
++    lab02_fetch_req_t req;
++    assert(lab02_session_http_initial_request(&req));
++    assert(req.page_size == 16 && req.page_offset == 0 && req.attempt == 1);
++    assert(req.response_read_timeout_us == 12000000 && req.revision == 0);
++    lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, req.session_id);
++    lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, req.session_id);
++    if (finish) { deliver(req, true, 1); pump(1); assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY); }
++    return req;
++}
++static lab02_fetch_req_t take(int expected)
++{
++    lab02_fetch_req_t req;
++    assert(lab02_session_http_take_fetch_request(&req));
++    assert(req.page_index == expected);
++    assert(req.page_offset == expected * req.page_size);
++    return req;
++}
++int main(int argc, char **argv)
++{
++    assert(argc == 2);
++    printf("TERMINAL_SCENARIO %s\n", argv[1]);
++    if (!strcmp(argv[1], "initial-saturation")) {
++        lab02_fetch_req_t boot = start(false), req[8];
++        for (int i = 0; i < 8; i++) { assert(lab02_session_http_enqueue_fetch(i + 1, NULL)); req[i] = take(i + 1); }
++        transport_burst();
++        deliver(boot, true, 1); deliver(boot, true, 1);
++        for (int i = 0; i < 8; i++) lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, req[i].session_id, req[i].op_id, req[i].page_index, NULL, false);
++        assert(!lab02_session_http_enqueue_fetch(9, NULL));
++        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_SHELL);
++        pump(20);
++        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
++        assert(lab02_session_metrics().fetch_fail == 0);
++        assert(lab02_session_metrics().apply_stale == 8); /* revision-0 admissions superseded by boot revision */
++        assert(lab02_session_metrics().apply_ok == 1);
++        assert(lab02_session_metrics().fetch_event_dropped == 0);
++        assert(lab02_session_snapshot().transport_unreachable);
++    } else if (!strcmp(argv[1], "initial-timeout")) {
++        lab02_fetch_req_t boot = start(false); transport_burst();
++        lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, boot.session_id, boot.op_id, 0, NULL, true);
++        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, boot.session_id, boot.op_id, 0, NULL, true);
++        pump(1);
++        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_ERROR);
++        assert(lab02_session_metrics().fetch_timeout == 1);
++        assert(lab02_session_metrics().fetch_fail == 0);
++        assert(lab02_session_metrics().stage_rejected == 0);
++        lab02_session_http_mark_stage(LAB02_LOAD_READY, boot.session_id); pump(1);
++        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_ERROR);
++        assert(lab02_session_metrics().stage_rejected == 1);
++    } else if (!strcmp(argv[1], "normal-saturation")) {
++        start(true); lab02_fetch_req_t req[8]; req[0] = take(1);
++        for (int i = 1; i < 8; i++) { assert(lab02_session_http_enqueue_fetch(i + 1, NULL)); req[i] = take(i + 1); }
++        lab02_session_intent_scroll_lock(true);
++        deliver(req[0], false, 1);
++        for (int i = 1; i < 8; i++) {
++            lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, req[i].session_id, req[i].op_id, req[i].page_index, NULL, false);
++            lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, req[i].session_id, req[i].op_id, req[i].page_index, NULL, false);
++        }
++        pthread_t thread; assert(!pthread_create(&thread, NULL, transport_thread, NULL));
++        pump(10000); pthread_join(thread, NULL);
++        assert(!lab02_session_http_enqueue_fetch(9, NULL));
++        assert(!lab02_inbox_model_item(provider.model, 16));
++        assert(lab02_session_metrics().fetch_timeout == 0);
++        lab02_session_intent_scroll_lock(false); pump(20);
++        assert(lab02_inbox_model_item(provider.model, 16));
++        assert(lab02_session_metrics().fetch_timeout == 7);
++        assert(lab02_session_metrics().fetch_event_dropped == 0);
++        assert(lab02_session_http_enqueue_fetch(9, NULL));
++    } else if (!strcmp(argv[1], "newer-operation")) {
++        start(true); lab02_fetch_req_t old = take(1);
++        assert(lab02_session_intent_refresh()); lab02_fetch_req_t refresh = take(0);
++        deliver(refresh, false, 2); pump(1);
++        lab02_fetch_req_t current = take(1); assert(current.op_id != old.op_id && current.revision == 2);
++        pump(1); /* Owner stale terminal before the old producer returns. */
++        pthread_t old_thread, transport;
++        assert(!pthread_create(&old_thread, NULL, late_failure, &old));
++        assert(!pthread_create(&transport, NULL, transport_thread, NULL));
++        assert(!lab02_session_http_enqueue_fetch(1, NULL));
++        deliver(current, false, 2); deliver(current, false, 2); pump(10000);
++        pthread_join(old_thread, NULL); pthread_join(transport, NULL); pump(3);
++        assert(lab02_inbox_model_item(provider.model, 16));
++        assert(lab02_session_snapshot().inbox_revision == 2);
++        assert(lab02_session_metrics().fetch_fail == 0);
++        assert(lab02_session_metrics().apply_stale == 1);
++    } else if (!strcmp(argv[1], "response-old-revision")) {
++        start(true); lab02_fetch_req_t old = take(1);
++        deliver(old, false, 0); pump(1);
++        assert(!lab02_inbox_model_item(provider.model, 16));
++        assert(lab02_session_metrics().apply_stale == 1);
++        assert(lab02_session_http_enqueue_fetch(1, NULL));
++        lab02_fetch_req_t current = take(1);
++        assert(current.op_id != old.op_id);
++        deliver(current, false, 1); pump(1); deliver(current, false, 1); pump(1);
++        assert(lab02_inbox_model_item(provider.model, 16));
++        assert(lab02_session_metrics().apply_ok == 2);
++    } else if (!strcmp(argv[1], "stale-session")) {
++        start(true); lab02_fetch_req_t old = take(1);
++        lab02_fetch_req_t boot = start(false);
++        pump(1); /* terminal stale without waiting for old producer */
++        deliver(old, false, 1); deliver(boot, true, 1); pump(4);
++        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
++        assert(!lab02_inbox_model_item(provider.model, 16));
++        assert(lab02_session_metrics().apply_stale == 1);
++        assert(lab02_session_metrics().apply_ok == 1);
++    } else assert(!"unknown scenario");
++    puts("TERMINAL_RESULT PASS");
++    return 0;
++}
+--- a/client/labs/lab-02-bounded-inbox/tests/README.md
++++ b/client/labs/lab-02-bounded-inbox/tests/README.md
+@@ -1,19 +1,27 @@
+-# LAB-02 tests
+-
+-**L1 (host):** run from repository root:
+-
+-```text
+-make test
+-```
+-
++# LAB-02 tests
++
++**L1 (host):** run from repository root:
++
++```text
++make test
++```
++
+ This executes `scripts/tests/test_lab02_host.py` (fixture JSON validation and snap math parity)
+ and `scripts/tests/test_lab02_model_native.py`. When a host C compiler and ESP-IDF cJSON
+ source are available, the latter compiles the actual C page parser and session reducer.
+ It exercises malformed pages, replacement after removal, result ownership, snap
+ deferral, revision reconciliation, failure retry, and queue overflow.
+-
+-**L2/L3:** on-device scenarios — see [lab README](../README.md) and [evidence STATUS](../../../../docs/labs/evidence/lab-02/STATUS.md).
+-
++
++**L2/L3:** on-device scenarios — see [lab README](../README.md) and [evidence STATUS](../../../../docs/labs/evidence/lab-02/STATUS.md).
++
+ The older `test_inbox_model.c`, `test_page_merge.c`, and `test_snap_target.c`
+ files remain optional Unity/IDF sketches; the new `test_*_native.c` files are
+ run through the host suite when the toolchain is present.
++
++C1a actual-C terminal admission cases (`test_terminal_native.c`) cover full normal
++and initial capacity, duplicate completion, concurrent transport pressure,
++old-response revision, superseded operation and session. Raw `fetch_terminal`
++traces must have unique session/operation identities. Set
++`LAB02_TERMINAL_ARTIFACT_DIR` when running the native Python wrapper to retain them.
++These are L1 injected producer/owner concurrency checks using pthread adapters,
++not FreeRTOS or target confirmation.
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c
+@@ -240,15 +240,15 @@
+         lab02_fetch_req_t accepted = take_page(1);
+         for (int i = 0; i < 8; i++) lab02_session_intent_transport((i & 1) != 0);
+         lab02_inbox_page_t page = make_page(1, 16, 64, 0);
+-        /* No pumping between saturation and the actual terminal producer path. */
++        /* No pumping between transport burst and the actual terminal producer path. */
+         lab02_session_http_fetch_finished(LAB02_FETCH_OK, accepted.session_id,
+             accepted.op_id, accepted.page_index, &page, false);
+-        printf("C0_TRACE scenario=%s event=accepted_terminal_dropped op_id=%u dropped=%u\n",
++        printf("C0_TRACE scenario=%s event=accepted_terminal_retained op_id=%u dropped=%u\n",
+                scenario, accepted.op_id, lab02_session_metrics().fetch_event_dropped);
+-        assert(lab02_session_metrics().fetch_event_dropped == 1);
++        assert(lab02_session_metrics().fetch_event_dropped == 0);
+         for (int i = 0; i < 12; i++) lab02_carousel_pump(&carousel);
+-        checkpoint("terminal-lost");
+-        assert(!lab02_page_provider_item(&carousel.provider, 20));
++        checkpoint("terminal-retained");
++        assert(lab02_page_provider_item(&carousel.provider, 20));
+     } else if (!strcmp(scenario, "stale-after-revision")) {
+         lab02_fetch_req_t old = take_page(1);
+         lab02_carousel_set_focus(&carousel, 8, false);
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md
+@@ -36,7 +36,9 @@
+ unmaterialized focus 20 then page arrival; reversal before snap completion and
+ programmatic supersession; page arrival during snap; append push during snap;
+ focused removal during snap; old page result after revision/focus change; and
+-an accepted completion lost behind eight queued transport events.
++accepted completion retention under a transport burst. The saved C0 evidence
++retains the original lost-terminal reproduction; C1a changes this one scenario
++to an acceptance assertion while leaving the other defect expectations intact.
+ 
+ `C0_STATE` records current session/revision/focus ID, snap ID/locks, scroll
+ position and all three window slots with binding IDs, generations, coordinates,
+--- a/scripts/tests/test_lab02_model_native.py
++++ b/scripts/tests/test_lab02_model_native.py
+@@ -2,6 +2,7 @@
+ 
+ import configparser
+ import os
++import json
+ from pathlib import Path
+ import shutil
+ import subprocess
+@@ -38,6 +39,34 @@
+             )
+             subprocess.run([str(output)], check=True, capture_output=True, text=True)
+ 
++    def test_terminal_admission_and_reconciliation(self):
++        cc, cjson = self._compiler_inputs()
++        with tempfile.TemporaryDirectory() as tmp:
++            output = Path(tmp) / "lab02_terminal_test"
++            command = [cc, "-std=c11", "-D_POSIX_C_SOURCE=200809L", "-Wall", "-Wextra", "-Werror",
++                       "-pthread", "-I", str(LAB / "tests/host_stubs"),
++                       "-I", str(LAB / "components/lab02/include"), "-I", str(cjson),
++                       str(LAB / "tests/test_terminal_native.c"), str(LAB / "tests/session_host_stubs.c"),
++                       str(LAB / "components/lab02/lab02_session.c"), str(LAB / "components/lab02/inbox_model.c"),
++                       str(LAB / "components/lab02/inbox_page_metadata.c"), str(cjson / "cJSON.c"), "-o", str(output)]
++            artifact = os.environ.get("LAB02_TERMINAL_ARTIFACT_DIR")
++            if artifact:
++                Path(artifact).mkdir(parents=True, exist_ok=True)
++                (Path(artifact) / "compile-command.json").write_text(json.dumps(command, indent=2))
++            subprocess.run(command, check=True, capture_output=True, text=True)
++            for scenario, terminal_count in (("initial-saturation", 9), ("initial-timeout", 1), ("normal-saturation", 9),
++                                             ("newer-operation", 4), ("response-old-revision", 3), ("stale-session", 3)):
++                with self.subTest(scenario=scenario):
++                    result = subprocess.run([str(output), scenario], capture_output=True, text=True, timeout=5)
++                    if artifact:
++                        (Path(artifact) / (scenario + ".log")).write_text(result.stdout + result.stderr)
++                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
++                    terminals = [line for line in result.stdout.splitlines() if "event=fetch_terminal " in line]
++                    self.assertEqual(len(terminals), terminal_count, result.stdout)
++                    identities = [(line.split("op_id=")[1].split()[0],
++                                   line.split("session=")[1].split()[0]) for line in terminals]
++                    self.assertEqual(len(identities), len(set(identities)), result.stdout)
++
+     def test_session_result_ownership_and_snap_deferral(self):
+         cc, cjson = self._compiler_inputs()
+         with tempfile.TemporaryDirectory() as tmp:
+--- a/scripts/tests/test_lab02_carousel_native.py
++++ b/scripts/tests/test_lab02_carousel_native.py
+@@ -1,7 +1,7 @@
+ """C0 characterization against production C and the vendored LVGL renderer.
+ 
+ Run directly with --artifact-dir to retain native traces and PPM frames. These
+-baseline assertions intentionally preserve defects; they are not fix gates.
++baseline assertions preserve remaining defects; queue pressure is a C1a acceptance gate.
+ """
+ import argparse
+ import configparser
+--- a/docs/labs/lab-02-session-architecture.md
++++ b/docs/labs/lab-02-session-architecture.md
+@@ -13,7 +13,7 @@
+ | Focus ID/index, revision, load stage, page state | `lab02_session` | Single writer; queue operations are nonblocking from presentation |
+ | Wi-Fi join and HTTP | Boot and fetch workers | Wi-Fi join 15 s; HTTP call timeout 3 s and response-read deadline 12 s; response cap 16 KiB |
+ | JSON parse | HTTP worker | Parses at most one 16-item page into a bounded typed result |
+-| Page merge | Session | Copies at most 16 items; success during a drag or snap defers up to 1 s |
++| Page merge | Session | Copies at most 16 items; success during a drag or snap currently defers until unlock (F004 remains open) |
+ 
+ The boot worker posts connecting, fetching, and terminal events. The session
+ checks permitted stage transitions and applies the initial page. A successful
+@@ -21,18 +21,40 @@
+ 
+ ## Fetch operation envelope
+ 
+-Each queued request carries a session generation, monotonically increasing
+-operation ID, page index, and monotonic submission time. The worker returns one
+-success, failure, or timeout event. On success the worker copies the parsed page
+-into the session event queue and releases its fetch slot immediately; the worker
+-may start the next fetch while a snap defers **application** (not queueing). A
+-stale session or operation result is rejected. The fetch queue has eight slots;
+-rejection is counted and traced. Session events use a bounded queue; overflow
+-increments `fetch_event_dropped`. The session processes at most one completion
+-per UI pump and retries a missing focused page on a one second cadence. A failed
++Each queued request freezes session generation, monotonically increasing operation
++ID, page index/offset/size, inbox revision, attempt identity and monotonic submission
++time. Every retry has a new operation ID (attempt field is 1 for each admission).
++The immutable response-read timeout budget is 12 seconds; the existing HTTP call
++timeout remains 3 seconds. The read deadline starts after headers, preserving the
++existing policy: queue wait and initial Wi-Fi join do not consume that budget.
++A whole-attempt deadline covering queue wait and all HTTP phases remains an explicit
++C1/C5 gap; this unit does not claim that the read deadline bounds the whole attempt.
++
++Terminal delivery uses eight normal admission mailboxes plus one dedicated boot
++mailbox. A normal request reserves one mailbox and one fetch admission before it
++is queued. Its admission is released only after the session owner reconciles and
++emits exactly one `fetch_terminal`, including failure, timeout or stale. A success
++deferred by motion retains its reservation. Producers fill only the matching
++admitted session/operation/page record; duplicate and unadmitted completions emit
++`fetch_delivery_rejected` and cannot overwrite stored terminals or domain state.
++The owner terminalizes superseded session/revision/operation admissions as stale,
++even if the producer has not returned; a late producer is then rejected.
++
++Transport uses one coalesced freshness mailbox. Startup stages use a bounded bitset
++that preserves CONNECTING then FETCHING order before applying a boot terminal;
++invalid transitions remain checked and counted. These reports cannot consume fetch
++terminal capacity. Producers serialize bounded delivery copies with a mutex; the
++presentation/session pump and admission use zero-timeout try-locks and retry pending
++owner reconciliation on a later pump. Each pump reconciles at most one fetch
++terminal. The legacy `fetch_event_dropped` metric remains for compatibility and is
++zero for admitted terminal delivery. Full admission rejects new work observably
++rather than dropping accepted results. The fetch request queue remains eight slots.
++
++The session still retries a missing focused page on a one second cadence. A failed
+ focused page shows “page unavailable; retrying”. If background page-zero refresh
+ fails, existing items are labeled “cached”. STA disconnect sets transport
+-unavailable copy (“reconnecting…”) without erasing the load stage.
++unavailable copy (“reconnecting…”) without erasing the load stage. Retry UX and
++motion deferral are unchanged by C1a; F004/F006 remain separate work.
+ 
+ The initial fetch uses the same event path. Its failure transitions to an
+ unavailable stage; automatic boot retry and product copy remain **OPEN**.
+@@ -58,7 +80,7 @@
+ sleeping under the LVGL lock. No Level 2 scene replacement occurs after init.
+ 
+ Design limits: three live cards; at most 256 metadata entries, eight queued
+-fetches, one active HTTP fetch, a 16 KiB response buffer, and 16 items copied
++fetches, eight admitted normal terminals plus one boot terminal, one active HTTP fetch, a 16 KiB response buffer, and 16 items copied
+ per page apply. Target measurements for live node count, cJSON transient heap,
+ largest free block, frame p95/p99, and input-to-focus latency remain **OPEN**
+ until a representative BOX-3 run. A build or host test does not establish those
+@@ -73,3 +95,8 @@
+ for delayed HTTP, queue pressure, focused removal, push, repeated traversal,
+ and allocation/timing budgets. Record L0, L1, L2, and L3 separately in the lab
+ evidence report.
++
++C1a reliability authority: [carousel requirements CAR-ARCH-2/3 and CAR-PAGING-1](lab-02-carousel-remediation-plan.md), with scope/owner decisions in the
++[carousel execution record](evidence/lab-02/reviews/carousel-remediation/execution.md).
++Allocation/startup resource failures remain separate C1b/F007 work; no target
++concurrency or resource confirmation is inferred from host admission tests.

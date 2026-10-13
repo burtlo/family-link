@@ -1,0 +1,7 @@
+[
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c2-fix/final-normal",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c2-fix/final-slow --slow-bind-ms 100",
+  "python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture",
+  "make lab.lab02.scripted.build KIT=lynn",
+  "git diff --check -- <C2 production paths>"
+]

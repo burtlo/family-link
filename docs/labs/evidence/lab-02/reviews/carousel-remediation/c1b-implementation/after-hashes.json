@@ -1,0 +1,17 @@
+{
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h": "24c122978c8111f06d368ae77eba3ec4dd802af168fe70e74b9658ecc95dc456",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": "d1aefec3225ecae2eeca5e3687a4b66f4044e79f0e4389b09d6d8130cb0c168f",
+  "client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c": "c5c59ae26cb2e7db390c348f7ca7126f32456fbc8cce8a9d9615be35ef71d6a1",
+  "client/labs/lab-02-bounded-inbox/tests/README.md": "3049f2ec978ff88cca8a989ebcf41aed5fca2b78bc1e59cd23c9820e5e58b68b",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c": "732279d08c6f7bc1e17ee4d679c02534b28b3db3014ef3e1fada926cf0217d84",
+  "client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c": "b21031f936571beb613d06836cc56c607b787587b7b947139bb5e358161562b5",
+  "client/labs/lab-02-bounded-inbox/tests/test_session_native.c": "f3e9173fcd0cdb2a548bbf3bab438edeba3854943aeeaa0d57442af520dc000f",
+  "client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c": "3d67481d0510f7405b57ca32b4100de4104f4dc28c1853328a73a2c5ce382b8d",
+  "docs/labs/lab-02-session-architecture.md": "36cfb9d9c2be27896aad03d785287c624c3565a8aeb7965d1d5fbb7d9e830457",
+  "scripts/tests/test_lab02_model_native.py": "6e9446e1fd1b579536704a7a0394b5487350bcfa7bac88ac75ebfaf885b3baf3",
+  "client/labs/lab-02-bounded-inbox/tests/test_http_startup_native.c": "9d4db8efc76ceaa6fcb300c901f1cd44066ebe8821a0fa719b40d693474d6009",
+  "client/labs/lab-02-bounded-inbox/tests/http_host_stubs/esp_log.h": "72c73b9eb02c43ef1f9c2d3cfaf2ec78934139a813c2b5814940c25664f7e429",
+  "client/labs/lab-02-bounded-inbox/tests/http_host_stubs/esp_http_client.h": "c0b81aa757ad1b3a440dea856467c9c5c05d6e3520c353602b35da8410f77645",
+  "client/labs/lab-02-bounded-inbox/tests/http_host_stubs/sdkconfig.h": "7b74abd16c09995d5af5ef06174d774bc0fe1c61b739ec5a0125c91157aaabfd",
+  "client/labs/lab-02-bounded-inbox/tests/http_host_stubs/freertos/task.h": "3ee091df0b08643ea95365d6891b4e21d74c0dcc186c9193618e26dfefbc9910"
+}

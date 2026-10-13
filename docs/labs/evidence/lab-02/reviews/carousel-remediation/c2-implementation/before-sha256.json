@@ -1,0 +1,13 @@
+{
+  "client/labs/lab-02-bounded-inbox/components/lab02/card_view.c": "ea39e9d289696f1ca82ec54705f8a9dcb20242504241b631d132a63b3bba6f63",
+  "client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c": "0e98f8965d8a10933c0c8767180283cdd69a41f3a69977916c2a8927237f8d09",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_view.h": "d3cd25342aea2c5e10a422e062ef71c6341bd0a3b43216e98747b71e59f79fb4",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": "d1aefec3225ecae2eeca5e3687a4b66f4044e79f0e4389b09d6d8130cb0c168f",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h": "fad5ce736ab838936088473608ab6b61d40d044ac3405b710063d4dd27075cda",
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c": "ce98f810e5b22d5e97b559707610b9be1fed06a9f856249a5790972a41ce1754",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c": "732279d08c6f7bc1e17ee4d679c02534b28b3db3014ef3e1fada926cf0217d84",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/sdkconfig.h": "a7283e13a5998767e9fb663f2a383b59dee439d7c5f025841b27faa09533e22a",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt": "b50d82b66da468bb1649616e2769fb1209922c4c3cabeebe6b3f787082878731",
+  "scripts/tests/test_lab02_carousel_native.py": "fae9d4cad7437280ae461ca810c0cc784b07d045682efebcc3268def37096b3d",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md": "9f1db241bb31db881b19c45c34c5da9de67229dff9a194b5269441552d5e3406"
+}

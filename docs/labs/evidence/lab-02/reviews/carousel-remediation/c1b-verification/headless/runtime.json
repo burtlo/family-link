@@ -1,0 +1,6 @@
+{
+  "input_digest": "7b6e930979b3fade1f73c3caf2e3ec59732f445a00f16063fc964b386a817f43",
+  "cache": "/var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/family-link-lab02-c0-7b6e930979b3fade1f73",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n",
+  "evidence": "L2 headless LVGL; transport and RTOS adapters; no target evidence"
+}

@@ -4,6 +4,9 @@
 #include "esp_timer.h"
 
 #include <pthread.h>
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -18,6 +21,15 @@ struct fake_queue {
     unsigned char *items;
 };
 
+static QueueHandle_t s_host_fetch_queue;
+unsigned lab02_host_fetch_queue_depth(void)
+{
+    pthread_mutex_lock(&s_host_fetch_queue->mu);
+    unsigned depth = s_host_fetch_queue->count;
+    pthread_mutex_unlock(&s_host_fetch_queue->mu);
+    return depth;
+}
+
 QueueHandle_t xQueueCreate(unsigned length, size_t item_size)
 {
     struct fake_queue *q = calloc(1, sizeof(*q));
@@ -28,6 +40,7 @@ QueueHandle_t xQueueCreate(unsigned length, size_t item_size)
     q->item_size = item_size;
     pthread_mutex_init(&q->mu, NULL);
     pthread_cond_init(&q->changed, NULL);
+    s_host_fetch_queue = q;
     return q;
 }
 
@@ -86,8 +99,14 @@ SemaphoreHandle_t xSemaphoreCreateCounting(unsigned max_count, unsigned initial_
 SemaphoreHandle_t xSemaphoreCreateBinary(void)
 { return xSemaphoreCreateCounting(1, 0); }
 
+static SemaphoreHandle_t s_host_post_mutex;
 SemaphoreHandle_t xSemaphoreCreateMutex(void)
-{ return xSemaphoreCreateCounting(1, 1); }
+{ s_host_post_mutex = xSemaphoreCreateCounting(1, 1); return s_host_post_mutex; }
+void lab02_host_hold_admission(bool hold)
+{
+    if (hold) { if (xSemaphoreTake(s_host_post_mutex, 0) != pdTRUE) abort(); }
+    else xSemaphoreGive(s_host_post_mutex);
+}
 
 BaseType_t xSemaphoreTake(SemaphoreHandle_t sem, uint32_t ticks)
 {
@@ -111,8 +130,18 @@ BaseType_t xSemaphoreGive(SemaphoreHandle_t sem)
     return pdTRUE;
 }
 
+static atomic_llong s_frozen_host_time;
+void lab02_host_freeze_clock(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    atomic_store(&s_frozen_host_time, (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000);
+}
+
 int64_t esp_timer_get_time(void)
 {
+    int64_t frozen = atomic_load(&s_frozen_host_time);
+    if (frozen) return frozen;
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
@@ -121,7 +150,8 @@ int64_t esp_timer_get_time(void)
 void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
                       const char *message_id, const char *extra)
 {
-    (void)event; (void)generation; (void)focus_index; (void)message_id; (void)extra;
+    printf("SESSION_TRACE event=%s op_id=%u page=%d message=%s %s\n",
+           event, (unsigned)generation, focus_index, message_id ? message_id : "-", extra ? extra : "");
 }
 
 uint32_t lab02_snap_current_id(void)
@@ -129,9 +159,12 @@ uint32_t lab02_snap_current_id(void)
     return 0;
 }
 
+#ifndef LAB02_REAL_HTTP_PROVIDER
 void lab02_page_provider_http_start_io(void) {}
 void lab02_page_provider_http_notify_initial_ready(uint32_t inbox_revision, uint16_t total_count)
 {
     (void)inbox_revision;
     (void)total_count;
 }
+
+#endif

@@ -1,0 +1,234 @@
+{
+  "20261012-w8-manual-01": {
+    "source": "logs/device/labs/lab-02/20261012-w8-manual-01/serial.txt",
+    "sha256": "168abfbf4636912f242f89430a01e53adb71f532ec33625d0a8f3c5a59fdc240",
+    "first_boot": [
+      {
+        "line": 87,
+        "text": "I (1150) app_init: ELF file SHA256:  335597630..."
+      },
+      {
+        "line": 93,
+        "text": "I (1151) heap_init: At 3FCC6FB0 len 00022760 (137 KiB): RAM"
+      },
+      {
+        "line": 94,
+        "text": "I (1151) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM"
+      },
+      {
+        "line": 95,
+        "text": "I (1151) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM"
+      },
+      {
+        "line": 96,
+        "text": "I (1151) heap_init: At 600FE01C len 00001FCC (7 KiB): RTCRAM"
+      },
+      {
+        "line": 105,
+        "text": "I (1185) LVGL: Starting LVGL task"
+      },
+      {
+        "line": 119,
+        "text": "LAB02_READY build=e5eafdf039a49f5f2eed9098 fixture=inbox_64 mode=http harness=0 scenario=nominal"
+      },
+      {
+        "line": 120,
+        "text": "I (1355) lab02_main: LAB02_READY build=e5eafdf039a49f5f2eed9098 fixture=inbox_64 mode=http"
+      }
+    ]
+  },
+  "20261013-fb8c80cd3c": {
+    "source": "logs/device/labs/lab-02/20261013-fb8c80cd3c/serial.txt",
+    "sha256": "3162a950db8a47a08514f11f096b00ebc9fcbcb67b2cb9b4f8285eadd8f24798",
+    "first_boot": [
+      {
+        "line": 87,
+        "text": "I (1164) app_init: ELF file SHA256:  acd642803..."
+      },
+      {
+        "line": 93,
+        "text": "I (1165) heap_init: At 3FCCCB40 len 0001CBD0 (114 KiB): RAM"
+      },
+      {
+        "line": 94,
+        "text": "I (1165) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM"
+      },
+      {
+        "line": 95,
+        "text": "I (1165) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM"
+      },
+      {
+        "line": 96,
+        "text": "I (1165) heap_init: At 600FE01C len 00001FCC (7 KiB): RTCRAM"
+      },
+      {
+        "line": 105,
+        "text": "I (1199) LVGL: Starting LVGL task"
+      },
+      {
+        "line": 113,
+        "text": "E (1329) LVGL: lvgl_port_add_disp_priv(386): Not enough memory for LVGL buffer (buf1) allocation!"
+      },
+      {
+        "line": 123,
+        "text": "ELF file SHA256: acd642803"
+      }
+    ]
+  },
+  "20261013-1f6025a663": {
+    "source": "logs/device/labs/lab-02/20261013-1f6025a663/serial.txt",
+    "sha256": "f1de2fc5e6c080239873569bd87e512ab8f9bf219550d0013866d183b4ed3bbd",
+    "first_boot": [
+      {
+        "line": 87,
+        "text": "I (1151) app_init: ELF file SHA256:  47c246de8..."
+      },
+      {
+        "line": 93,
+        "text": "I (1152) heap_init: At 3FCCCB40 len 0001CBD0 (114 KiB): RAM"
+      },
+      {
+        "line": 94,
+        "text": "I (1152) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM"
+      },
+      {
+        "line": 95,
+        "text": "I (1152) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM"
+      },
+      {
+        "line": 96,
+        "text": "I (1153) heap_init: At 600FE01C len 00001FCC (7 KiB): RTCRAM"
+      },
+      {
+        "line": 105,
+        "text": "I (1186) LVGL: Starting LVGL task"
+      },
+      {
+        "line": 119,
+        "text": "LAB02_READY build=e74b015561e3de450dbc4ba2 fixture=inbox_64 mode=http harness=0 scenario=nominal"
+      },
+      {
+        "line": 120,
+        "text": "I (1356) lab02_main: LAB02_READY build=e74b015561e3de450dbc4ba2 fixture=inbox_64 mode=http"
+      }
+    ]
+  },
+  "lab-02-bounded-inbox-scripted": {
+    "source": "/tmp/lab02-buffer-history/lab-02-bounded-inbox-scripted/lab02_bounded_inbox.map",
+    "extracts": [
+      {
+        "line": 33235,
+        "text": ".dram0.data     0x3fc97c00     0x31f8"
+      },
+      {
+        "line": 33849,
+        "text": ".dram0.bss      0x3fc9adf8    0x29808"
+      },
+      {
+        "line": 34138,
+        "text": " .bss.s_pump_ev\n                0x3fca0210      0x9c0 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      },
+      {
+        "line": 34140,
+        "text": " .bss.s_post_buf\n                0x3fca0bd0      0x9c0 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      }
+    ]
+  },
+  "lab-02-bounded-inbox": {
+    "source": "/tmp/lab02-buffer-history/lab-02-bounded-inbox/lab02_bounded_inbox.map",
+    "extracts": [
+      {
+        "line": 33254,
+        "text": ".dram0.data     0x3fc97c00     0x31f8"
+      },
+      {
+        "line": 33868,
+        "text": ".dram0.bss      0x3fc9adf8    0x29808"
+      },
+      {
+        "line": 34157,
+        "text": " .bss.s_pump_ev\n                0x3fca0210      0x9c0 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      },
+      {
+        "line": 34159,
+        "text": " .bss.s_post_buf\n                0x3fca0bd0      0x9c0 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      }
+    ]
+  },
+  "lab-02-bounded-inbox-scripted-phaseb": {
+    "source": "/tmp/lab02-buffer-history/lab-02-bounded-inbox-scripted-phaseb/lab02_bounded_inbox.map",
+    "extracts": [
+      {
+        "line": 52603,
+        "text": ".dram0.data     0x3fc9de00     0x5378"
+      },
+      {
+        "line": 53478,
+        "text": ".dram0.bss      0x3fca3178    0x29998"
+      },
+      {
+        "line": 53773,
+        "text": " .bss.s_pump_ev\n                0x3fca3d20      0x9f0 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      },
+      {
+        "line": 53784,
+        "text": " .bss.s_terminals\n                0x3fca4728     0x5a00 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      },
+      {
+        "line": 53791,
+        "text": " .bss.s_pending_revision\n                0x3fcaa150      0x9f0 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      }
+    ]
+  },
+  "lab-02-bounded-inbox-phaseb": {
+    "source": "/tmp/lab02-buffer-history/lab-02-bounded-inbox-phaseb/lab02_bounded_inbox.map",
+    "extracts": [
+      {
+        "line": 52596,
+        "text": ".dram0.data     0x3fc9de00     0x5388"
+      },
+      {
+        "line": 53474,
+        "text": ".dram0.bss      0x3fca3188    0x299b8"
+      },
+      {
+        "line": 53769,
+        "text": " .bss.s_pump_ev\n                0x3fca3d30      0x9f0 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      },
+      {
+        "line": 53780,
+        "text": " .bss.s_terminals\n                0x3fca4738     0x5a00 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      },
+      {
+        "line": 53787,
+        "text": " .bss.s_pending_revision\n                0x3fcaa160      0x9f0 esp-idf/lab02/liblab02.a(lab02_session.c.obj)"
+      }
+    ]
+  },
+  "legacy_v1_config": {
+    "source": "v1 POC archive saved sdkconfig",
+    "sha256": "ae56d4df962215ef73112c8d9219aab2c4f1a9f5912fe819dfe5ef6e8275693c",
+    "extracts": [
+      {
+        "line": 1145,
+        "text": "CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384"
+      },
+      {
+        "line": 1147,
+        "text": "CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768"
+      },
+      {
+        "line": 2237,
+        "text": "CONFIG_BSP_LCD_DRAW_BUF_HEIGHT=100"
+      },
+      {
+        "line": 2238,
+        "text": "# CONFIG_BSP_LCD_DRAW_BUF_DOUBLE is not set"
+      },
+      {
+        "line": 2381,
+        "text": "CONFIG_LV_COLOR_DEPTH=16"
+      }
+    ]
+  }
+}

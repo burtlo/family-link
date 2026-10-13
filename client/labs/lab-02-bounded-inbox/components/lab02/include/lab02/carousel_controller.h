@@ -21,6 +21,9 @@ typedef struct {
     int focus_index;
     int item_count;
     bool programmatic_scroll;
+    bool focus_pending;
+    int pending_focus;
+    int64_t next_focus_us;
 } lab02_carousel_t;
 
 bool lab02_carousel_init(lab02_carousel_t *c);

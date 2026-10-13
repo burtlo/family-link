@@ -1,0 +1,30 @@
+test_http_worker_allocation_failure (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_http_worker_allocation_failure) ... 
+  test_http_worker_allocation_failure (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_http_worker_allocation_failure) (scenario='boot-fail') ... FAIL
+test_page_parse_and_replacement (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_page_parse_and_replacement) ... ok
+test_session_result_ownership_and_snap_deferral (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_session_result_ownership_and_snap_deferral) ... ok
+test_terminal_admission_and_reconciliation (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_terminal_admission_and_reconciliation) ... ok
+test_http_worker_has_no_presentation_dependency (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_http_worker_has_no_presentation_dependency) ... ok
+test_presentation_does_not_wait_on_io_or_sleep (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_presentation_does_not_wait_on_io_or_sleep) ... ok
+test_session_is_only_model_writer (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_session_is_only_model_writer) ... ok
+
+======================================================================
+FAIL: test_http_worker_allocation_failure (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_http_worker_allocation_failure) (scenario='boot-fail')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lynnfrank/src/family-link/scripts/tests/test_lab02_model_native.py", line 93, in test_http_worker_allocation_failure
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: -6 != 0 : TASK_CREATE name=lab02_http_boot ordinal=1 fail=1
+SESSION_TRACE event=worker_spawn_fail op_id=0 page=0 message=- boot
+SESSION_TRACE event=fetch_delivery_retained op_id=0 page=0 message=- 
+SESSION_TRACE event=fetch_fail op_id=0 page=0 message=- 
+SESSION_TRACE event=fetch_terminal op_id=0 page=0 message=- session=1 revision=0 attempt=1 outcome=failure elapsed_us=25
+SESSION_TRACE event=fetch_delivery_rejected op_id=0 page=0 message=- duplicate_or_unadmitted
+SESSION_TRACE event=fetch_admitted op_id=1 page=1 message=- 
+Assertion failed: (!lab02_session_http_enqueue_fetch(1, NULL)), function main, file test_http_startup_native.c, line 94.
+
+
+----------------------------------------------------------------------
+Ran 7 tests in 4.591s
+
+FAILED (failures=1)

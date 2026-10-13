@@ -1,0 +1,13 @@
+{
+  "HEAD": "7ecc594861c1e6fbc9ad647ac591bb44df3acde9",
+  "pre_existing_wip_byte_identical": true,
+  "protected_paths": [
+    "Makefile",
+    "client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c",
+    "client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c",
+    "scripts/lab_host.py",
+    "scripts/lab_registry.py",
+    "scripts/tests/test_lab_host.py"
+  ],
+  "before_diff_sha256": "2597231aa3aee041ee6d6da18013bd4498ce46257bc6f77b65ac845314fc0c58"
+}

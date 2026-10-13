@@ -1,0 +1,8 @@
+test_c0_characterization (scripts.tests.test_lab02_carousel_native.Lab02CarouselNativeTests.test_c0_characterization) ... ok
+test_page_parse_and_replacement (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_page_parse_and_replacement) ... ok
+test_session_result_ownership_and_snap_deferral (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_session_result_ownership_and_snap_deferral) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 6.121s
+
+OK

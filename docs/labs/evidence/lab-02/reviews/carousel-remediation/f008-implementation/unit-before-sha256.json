@@ -1,0 +1,19 @@
+{
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c": "e65f9aad794e3348cb0434e5d162b9b9a12be343f74569aa2c18c10381d1d448",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h": "b22397b6dc7f45df609a15af74bc1caba28d8da1f217a31fe987f1e649fd1a13",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h": "24c122978c8111f06d368ae77eba3ec4dd802af168fe70e74b9658ecc95dc456",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/page_provider_http.h": "e0102ad1f99ece9529cd10bcc2c72b52e56902f72024c14714abc9aa08f0352f",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": "c3815d0130a09228bbfccbb1e7cc1dba52feed5e33b7bd5c3b090e53cf13ffa7",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab_main.c": "c57e4e7455a48b632854383b7aad2f48ca09cd12ed54988158f46b0451640202",
+  "client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c": "4c55f3d8f10e7eabfbca1db007b216469f00294a9efcb0158f6074214607ac41",
+  "client/labs/lab-02-bounded-inbox/tests/README.md": "b00690f9f54dd423afbedf025d42eb1639e91aec27b47cb1e9065dcac428fc98",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt": "23d2d7d40f6281ab50270a0d0b3fa56706ba69166097453e4b178568eef0b99f",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c": "9976aa95770612695a523f17aa3d093f28f7374b4238ce08dea8516d44c597d0",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_initial_retry_runtime.c": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c": "24c9a8d69807f9daf46d6174e9d375654ec941eda3af948d1a8cf44ad4688d35",
+  "client/labs/lab-02-bounded-inbox/tests/test_http_startup_native.c": "457aae19b76c77f88f9c5af83e0adf4f90d410bd759489b705404f2f3842f087",
+  "client/labs/lab-02-bounded-inbox/tests/test_session_native.c": "871616ca76e73c3a24db645863c111ce6b3a9e4270717e7da2bb5caf68e244f7",
+  "docs/labs/lab-02-session-architecture.md": "19f96c40cea7e4d4a66274aa9b916aac0d68600fc01a7b89490cb72ddd8338aa",
+  "scripts/tests/test_lab02_carousel_native.py": "82583b0e6c4407a4fa533e0e3c1293cfcf9bbb1a3483871a621efcbc77269d5f",
+  "scripts/tests/test_lab02_model_native.py": "fe2b00e44e60f4d3c81489ddd37a09388d18a4a4bc9ce48993b431d3372ea7a8"
+}

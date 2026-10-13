@@ -1,0 +1,6 @@
+[
+  "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c1a-verify/terminals python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture -v",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c1a-verify/headless",
+  "/tmp/lab02-c1a-verify/busy-reset",
+  "source-hash and git diff/status preservation checks (Python hashlib/subprocess)"
+]

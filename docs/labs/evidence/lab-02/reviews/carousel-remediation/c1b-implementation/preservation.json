@@ -1,0 +1,11 @@
+{
+  "byte_identical_wip_patch_segments": [
+    "Makefile",
+    "client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c",
+    "client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c",
+    "scripts/lab_host.py",
+    "scripts/lab_registry.py",
+    "scripts/tests/test_lab_host.py"
+  ],
+  "comparison": "raw captured/current git diff bytes; CRLF preserved"
+}

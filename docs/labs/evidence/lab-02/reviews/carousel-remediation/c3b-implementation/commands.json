@@ -1,0 +1,26 @@
+{
+  "baseline": [
+    "python3",
+    "scripts/tests/test_lab02_carousel_native.py",
+    "--artifact-dir",
+    "/tmp/lab02-c3b-fix/baseline"
+  ],
+  "native": "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c3b-fix/native LAB02_HTTP_STARTUP_ARTIFACT_DIR=/tmp/lab02-c3b-fix/startup python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture",
+  "normal": [
+    "python3",
+    "scripts/tests/test_lab02_carousel_native.py",
+    "--artifact-dir",
+    "/tmp/lab02-c3b-fix/normal"
+  ],
+  "slow": [
+    "python3",
+    "scripts/tests/test_lab02_carousel_native.py",
+    "--artifact-dir",
+    "/tmp/lab02-c3b-fix/slow",
+    "--slow-bind-ms",
+    "120"
+  ],
+  "firmware": "make lab.lab02.scripted.build KIT=lynn (build-only escalated final after macOS sandbox sysctl failure)",
+  "failed_invocation": "python unavailable; corrected to python3",
+  "visual": "sips -s format png selected.ppm --out selected.png"
+}

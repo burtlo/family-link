@@ -1,0 +1,18 @@
+{
+  "non_unit_diffs_identical": true,
+  "files": {
+    "client/labs/lab-02-bounded-inbox/tests/README.md": true,
+    "scripts/lab_host.py": true,
+    "Makefile": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/card_view.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c": true,
+    "scripts/lab_registry.py": true,
+    "scripts/tests/test_lab_host.py": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_view.h": true,
+    "client/labs/lab-02-bounded-inbox/tests/test_session_native.c": true
+  }
+}

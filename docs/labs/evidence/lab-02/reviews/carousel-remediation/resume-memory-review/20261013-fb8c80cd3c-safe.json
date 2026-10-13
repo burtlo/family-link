@@ -1,0 +1,18 @@
+{
+  "run_id": "20261013-fb8c80cd3c",
+  "mode": null,
+  "backend": null,
+  "scenario": null,
+  "build": {
+    "status": "built"
+  },
+  "workflow": null,
+  "experiment": null,
+  "outcome": null,
+  "firmware": {
+    "source_sha256": "4a7f0c27482dad86913ecb6fdf245eda3f887bf93014d3ca375b79308c2086d3",
+    "binary_sha256": "26f38cda0823b7b9ffba88fba120eca8b13bc55a493005b3f5f98e664724106b",
+    "sdkconfig_sha256": "7f0896cc514e046443e5186bd4fa54e4a915dfacfca44f107d869b2add9e54fb",
+    "build_id": "a409651c99d91b3448005ccd"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "git",
+    "apply",
+    "--include=scripts/tests/test_lab02_carousel_native.py",
+    "--include=scripts/tests/test_lab02_model_native.py",
+    "--include=docs/labs/lab-02-session-architecture.md",
+    "/tmp/lab02-f008-fix/before-wip.diff"
+  ],
+  "exit": 0,
+  "source": "HEAD plus captured pre-unit full tracked WIP patch; index unchanged"
+}

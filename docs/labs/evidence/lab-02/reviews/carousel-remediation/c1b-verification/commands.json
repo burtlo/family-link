@@ -1,0 +1,7 @@
+[
+  "LAB02_HTTP_STARTUP_ARTIFACT_DIR=/tmp/lab02-c1b-verify/startup LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c1b-verify/terminal python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture -v",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c1b-verify/headless",
+  "boundary-compile-command.json then startup_boundary boot-fail/background-fail/success",
+  "pending-reset-compile-command.json then pending_reset boot-fail/background-fail/success",
+  "Raw-byte packet hash and git diff preservation check"
+]

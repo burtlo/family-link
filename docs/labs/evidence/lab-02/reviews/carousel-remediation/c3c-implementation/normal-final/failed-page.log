@@ -1,0 +1,56 @@
+C0_TRACE scenario=failed-page event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=failed-page session=1 op_id=0 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=failed-page event=fetch_delivery_retained gen=0 focus=0 msg=- 
+C0_TRACE scenario=failed-page event=page_apply gen=0 focus=0 msg=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=failed-page event=fetch_admitted gen=1 focus=1 msg=- 
+C0_TRACE scenario=failed-page event=fetch_terminal gen=0 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1638
+C0_TRACE scenario=failed-page event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=bind gen=3 focus=0 msg=m0 session=1 revision=1 state=bound
+C0_TRACE scenario=failed-page event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=bind gen=3 focus=1 msg=m1 session=1 revision=1 state=bound
+C0_TRACE scenario=failed-page event=card_state gen=3 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=bind gen=3 focus=2 msg=m2 session=1 revision=1 state=bound
+C0_TRACE scenario=failed-page event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=failed-page event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=failed-page event=unbind gen=4 focus=2 msg=m2 
+C0_TRACE scenario=failed-page event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_TRACE scenario=failed-page event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=failed-page event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_STATE scenario=failed-page point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-494,x2:-363,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=failed-page event=unbind gen=5 focus=3 msg=m3 
+C0_TRACE scenario=failed-page event=unbind gen=5 focus=4 msg=m4 
+C0_TRACE scenario=failed-page event=unbind gen=5 focus=5 msg=m5 
+C0_TRACE scenario=failed-page event=card_state gen=5 focus=14 msg=m14 session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=bind gen=5 focus=14 msg=m14 session=1 revision=1 state=bound
+C0_TRACE scenario=failed-page event=card_state gen=5 focus=15 msg=m15 session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=bind gen=5 focus=15 msg=m15 session=1 revision=1 state=bound
+C0_TRACE scenario=failed-page event=card_state gen=5 focus=16 msg=- session=1 revision=1 state=loading
+C0_REQUEST scenario=failed-page session=1 op_id=1 page=1 submitted_us=217381104187
+C0_TRACE scenario=failed-page event=fetch_delivery_retained gen=1 focus=1 msg=- 
+C0_TRACE scenario=failed-page event=fetch_timeout gen=1 focus=1 msg=- 
+C0_TRACE scenario=failed-page event=fetch_terminal gen=1 focus=1 msg=- session=1 revision=1 attempt=1 outcome=timed_out elapsed_us=5730
+C0_TRACE scenario=failed-page event=card_state gen=6 focus=16 msg=- session=1 revision=1 state=error
+C0_STATE scenario=failed-page point=neighbor-error session=1 revision=1 focus=15 focus_id=m15 snap_id=0 snap_locked=0 session_locked=0 scroll_x=2078 window={slot:0,index:14,id:m14,gen:5,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 14},{slot:1,index:15,id:m15,gen:5,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 15},{slot:2,index:16,id:-,gen:6,hidden:0,x1:238,x2:369,state:3,revision:1,session:1,sender:Message unavailable},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-2078,x2:-1947,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=failed-page event=fetch_admitted gen=2 focus=1 msg=- 
+C0_TRACE scenario=failed-page event=fetch_admitted gen=3 focus=2 msg=- 
+C0_TRACE scenario=failed-page event=unbind gen=7 focus=14 msg=m14 
+C0_TRACE scenario=failed-page event=card_state gen=7 focus=16 msg=- session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=card_state gen=7 focus=17 msg=- session=1 revision=1 state=loading
+C0_REQUEST scenario=failed-page session=1 op_id=2 page=1 submitted_us=217381114931
+C0_TRACE scenario=failed-page event=fetch_delivery_retained gen=2 focus=1 msg=- 
+C0_TRACE scenario=failed-page event=fetch_fail gen=2 focus=1 msg=- 
+C0_TRACE scenario=failed-page event=fetch_terminal gen=2 focus=1 msg=- session=1 revision=1 attempt=1 outcome=failure elapsed_us=101
+C0_TRACE scenario=failed-page event=card_state gen=8 focus=16 msg=- session=1 revision=1 state=error
+C0_TRACE scenario=failed-page event=card_state gen=8 focus=17 msg=- session=1 revision=1 state=error
+C0_STATE scenario=failed-page point=focused-error session=1 revision=1 focus=16 focus_id=- snap_id=0 snap_locked=0 session_locked=0 scroll_x=2222 window={slot:0,index:17,id:-,gen:8,hidden:0,x1:238,x2:369,state:3,revision:1,session:1,sender:Message unavailable},{slot:1,index:15,id:m15,gen:5,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 15},{slot:2,index:16,id:-,gen:8,hidden:0,x1:94,x2:225,state:3,revision:1,session:1,sender:Message unavailable},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-2222,x2:-2091,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=failed-page event=fetch_admitted gen=4 focus=1 msg=- 
+C0_TRACE scenario=failed-page event=fetch_admitted gen=5 focus=3 msg=- 
+C0_TRACE scenario=failed-page event=unbind gen=9 focus=15 msg=m15 
+C0_TRACE scenario=failed-page event=card_state gen=9 focus=39 msg=- session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=card_state gen=9 focus=40 msg=- session=1 revision=1 state=loading
+C0_TRACE scenario=failed-page event=card_state gen=9 focus=41 msg=- session=1 revision=1 state=loading
+C0_REQUEST scenario=failed-page session=1 op_id=3 page=2 submitted_us=217381114937
+C0_RESULT scenario=failed-page characterization=PASS acceptance=F001-C2

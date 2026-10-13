@@ -1,0 +1,73 @@
+/tmp/lab02-c2-verify/boundary.c:83:36: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+   83 |                v->bind_generation, lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN),
+      |                                    ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/tmp/lab02-c2-verify/boundary.c:213:16: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  213 |         assert(lv_obj_has_flag(v->unread_dot, LV_OBJ_FLAG_HIDDEN));
+      |                ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/tmp/lab02-c2-verify/boundary.c:214:17: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  214 |         assert(!lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN));
+      |                 ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/tmp/lab02-c2-verify/boundary.c:225:16: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  225 |         assert(lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN));
+      |                ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/tmp/lab02-c2-verify/boundary.c:239:17: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  239 |         assert(!lv_obj_has_flag(carousel.pool.views[1].root, LV_OBJ_FLAG_HIDDEN));
+      |                 ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/tmp/lab02-c2-verify/boundary.c:244:16: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  244 |         assert(lv_obj_has_flag(carousel.pool.views[1].unread_dot, LV_OBJ_FLAG_HIDDEN));
+      |                ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/tmp/lab02-c2-verify/boundary.c:265:17: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  265 |         assert(!lv_obj_has_flag(carousel.pool.views[1].root, LV_OBJ_FLAG_HIDDEN));
+      |                 ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/tmp/lab02-c2-verify/boundary.c:282:20: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  282 |             assert(lv_obj_has_flag(carousel.pool.views[2].root, LV_OBJ_FLAG_HIDDEN));
+      |                    ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+8 warnings generated.

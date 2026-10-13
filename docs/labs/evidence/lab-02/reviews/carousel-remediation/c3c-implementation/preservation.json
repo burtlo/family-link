@@ -1,0 +1,38 @@
+{
+  "unchanged_baseline_files": 1012,
+  "unit_files": [
+    "client/labs/lab-02-bounded-inbox/components/lab02/snap.c",
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap.h",
+    "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c",
+    "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c",
+    "client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md",
+    "client/labs/lab-02-bounded-inbox/README.md",
+    "docs/labs/lab-02-session-architecture.md"
+  ],
+  "non_unit_bytes_preserved": true,
+  "append_only_existing_docs": true,
+  "non_unit_tracked_diff_identical": {
+    "Makefile": true,
+    "client/labs/lab-02-bounded-inbox/tests/test_session_native.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/layout.h": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_pool.h": true,
+    "scripts/lab_registry.py": true,
+    "scripts/tests/test_lab_host.py": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap_math.h": true,
+    "scripts/tests/test_lab02_model_native.py": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/card_view.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_view.h": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c": true,
+    "client/labs/lab-02-bounded-inbox/tests/README.md": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h": true,
+    "client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/carousel_controller.h": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/snap_math.c": true,
+    "scripts/lab_host.py": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h": true,
+    "client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c": true
+  }
+}

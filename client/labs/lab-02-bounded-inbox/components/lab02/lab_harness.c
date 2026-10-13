@@ -99,11 +99,12 @@ static void harness_task(void *arg)
         lab02_board_lvgl_unlock();
     }
     int n = c->item_count;
-    int steps = n < 20 ? n : 20;
-    printf("HARNESS_BEGIN steps=%d\n", steps);
-    harness_show_step(0, steps, "starting");
-    for (int i = 0; i < steps; i++) {
-        harness_step(c, i % n, i + 1, steps);
+    int legs = n < 20 ? n : 20;
+    int total_steps = legs * 2;
+    printf("HARNESS_BEGIN legs=%d total_steps=%d\n", legs, total_steps);
+    harness_show_step(0, legs, "starting");
+    for (int i = 0; i < legs; i++) {
+        harness_step(c, i % n, i + 1, legs);
         if (!harness_wait_snap(c, 1500)) {
             printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
             vTaskDelete(NULL);
@@ -118,8 +119,8 @@ static void harness_task(void *arg)
         }
         vTaskDelay(pdMS_TO_TICKS(700));
     }
-    for (int i = steps - 1; i >= 0; i--) {
-        harness_step(c, i % n, steps - i, steps);
+    for (int i = legs - 1; i >= 0; i--) {
+        harness_step(c, i % n, legs - i, legs);
         if (!harness_wait_snap(c, 1500)) {
             printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
             vTaskDelete(NULL);
@@ -129,7 +130,7 @@ static void harness_task(void *arg)
     }
     lab02_board_status_set("");
     lab02_trace_emit("harness_done", 0, c->focus_index, NULL, NULL);
-    printf("HARNESS_DONE build=%s steps=%d scenario=%s\n", CONFIG_LAB02_BUILD_ID, steps,
+    printf("HARNESS_DONE build=%s steps=%d scenario=%s\n", CONFIG_LAB02_BUILD_ID, total_steps,
            CONFIG_LAB02_SCENARIO);
     vTaskDelete(NULL);
 }

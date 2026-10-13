@@ -1,0 +1,26 @@
+{
+  "build": [
+    "cc",
+    "-std=c11",
+    "-D_POSIX_C_SOURCE=200809L",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-pthread",
+    "-I",
+    "client/labs/lab-02-bounded-inbox/tests/host_stubs",
+    "-I",
+    "client/labs/lab-02-bounded-inbox/components/lab02/include",
+    "-I",
+    "/Users/lynnfrank/esp/esp-idf/components/json/cJSON",
+    "/tmp/lab02-resume-memory-review/retry-contention.c",
+    "client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c",
+    "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c",
+    "client/labs/lab-02-bounded-inbox/components/lab02/inbox_model.c",
+    "client/labs/lab-02-bounded-inbox/components/lab02/inbox_page_metadata.c",
+    "/Users/lynnfrank/esp/esp-idf/components/json/cJSON/cJSON.c",
+    "-o",
+    "/tmp/lab02-resume-memory-review/retry-contention"
+  ],
+  "build_exit": 0
+}

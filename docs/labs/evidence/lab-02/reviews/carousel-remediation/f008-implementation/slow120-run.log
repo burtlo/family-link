@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/Users/lynnfrank/src/family-link/scripts/tests/test_lab02_carousel_native.py", line 99, in <module>
+    print(run_characterization(args.artifact_dir, args.slow_bind_ms))
+          ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/lynnfrank/src/family-link/scripts/tests/test_lab02_carousel_native.py", line 63, in run_characterization
+    output = execute([str(cache / "lab02_c0"), scenario, str(artifact_dir)], scenario + ".log", 10)
+  File "/Users/lynnfrank/src/family-link/scripts/tests/test_lab02_carousel_native.py", line 56, in execute
+    raise AssertionError(f"C0 command exited {result.returncode}; see {artifact_dir / log}")
+AssertionError: C0 command exited -6; see /private/tmp/lab02-f008-fix/slow120/failed-page.log

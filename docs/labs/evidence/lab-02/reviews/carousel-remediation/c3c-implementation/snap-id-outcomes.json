@@ -1,0 +1,366 @@
+{
+  "normal-final": {
+    "pool-bounds": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "2": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "3": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "4": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      }
+    },
+    "push-during-snap": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "2": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "3": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "4": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "reversed"
+      },
+      "5": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      }
+    },
+    "reversal": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "reversed"
+      },
+      "2": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      },
+      "3": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "4": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "5": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "6": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      },
+      "7": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "8": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "reversed"
+      },
+      "9": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "10": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "cancelled",
+        "reason": "animation_deleted"
+      },
+      "11": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "scroller_deleted"
+      },
+      "12": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "session_changed"
+      }
+    },
+    "remove-during-snap": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "2": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "3": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "4": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "reversed"
+      },
+      "5": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      }
+    },
+    "page-during-snap": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      }
+    },
+    "fast-boundary": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      }
+    }
+  },
+  "slow": {
+    "pool-bounds": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "2": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "3": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "4": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      }
+    },
+    "push-during-snap": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "2": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "3": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "4": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "reversed"
+      },
+      "5": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      }
+    },
+    "reversal": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "reversed"
+      },
+      "2": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      },
+      "3": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "4": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "5": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "6": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      },
+      "7": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "8": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "reversed"
+      },
+      "9": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "10": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "cancelled",
+        "reason": "animation_deleted"
+      },
+      "11": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "scroller_deleted"
+      },
+      "12": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "session_changed"
+      }
+    },
+    "remove-during-snap": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "2": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "superseded"
+      },
+      "3": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      },
+      "4": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "stale",
+        "reason": "reversed"
+      },
+      "5": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      }
+    },
+    "page-during-snap": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "completed"
+      }
+    },
+    "fast-boundary": {
+      "1": {
+        "starts": 1,
+        "terminals": 1,
+        "outcome": "success",
+        "reason": "no_motion"
+      }
+    }
+  }
+}

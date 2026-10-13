@@ -1,0 +1,59 @@
+[ 95%] Built target lvgl
+[ 95%] Building C object CMakeFiles/lab02_c0.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c.o
+[ 95%] Building C object CMakeFiles/lab02_initial_retry.dir/test_initial_retry_runtime.c.o
+[ 95%] Building C object CMakeFiles/lab02_initial_retry.dir/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c.o
+In file included from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_initial_retry_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:116:36: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  116 |                v->bind_generation, lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN),
+      |                                    ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+[ 95%] Linking C executable lab02_c0
+In file included from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_initial_retry_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:209:21: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  209 |             assert(!lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN));
+      |                     ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+In file included from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_initial_retry_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:288:17: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  288 |         assert(!lv_obj_has_flag(view_at(carousel.focus_index)->root, LV_OBJ_FLAG_HIDDEN));
+      |                 ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+In file included from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_initial_retry_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:293:16: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  293 |         assert(lv_obj_has_flag(view_at(carousel.focus_index)->unread_dot, LV_OBJ_FLAG_HIDDEN));
+      |                ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+In file included from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_initial_retry_runtime.c:3:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:314:17: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  314 |         assert(!lv_obj_has_flag(view_at(carousel.focus_index)->root, LV_OBJ_FLAG_HIDDEN));
+      |                 ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+5 warnings generated.
+[ 96%] Linking C executable lab02_initial_retry
+[100%] Built target lab02_c0
+[100%] Built target lab02_initial_retry

@@ -1,0 +1,30 @@
+SESSION_TRACE event=io_start_terminal op_id=0 page=0 message=- session=1 kind=http_startup outcome=success reason=worker_available
+SESSION_TRACE event=fetch_delivery_retained op_id=0 page=0 message=- 
+SESSION_TRACE event=page_apply op_id=0 page=0 message=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_admitted op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_terminal op_id=0 page=0 message=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1587
+SESSION_TRACE event=fetch_admitted op_id=2 page=2 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=2 page=2 message=- 
+SESSION_TRACE event=apply_deferred op_id=1 page=1 message=- 
+SESSION_TRACE event=page_apply op_id=1 page=0 message=m0 op_id=1 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_terminal op_id=1 page=1 message=- session=1 revision=1 attempt=1 outcome=success elapsed_us=4893790
+SESSION_TRACE event=page_apply op_id=2 page=0 message=m0 op_id=2 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_terminal op_id=2 page=2 message=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1807857
+SESSION_TRACE event=fetch_admitted op_id=3 page=0 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=3 page=0 message=- 
+SESSION_TRACE event=page_apply op_id=3 page=0 message=m16 op_id=3 revision=2 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_admitted op_id=4 page=1 message=- 
+SESSION_TRACE event=fetch_terminal op_id=3 page=0 message=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1330
+SESSION_TRACE event=fetch_delivery_retained op_id=4 page=1 message=- 
+SESSION_TRACE event=fetch_fail op_id=4 page=1 message=- 
+SESSION_TRACE event=fetch_terminal op_id=4 page=1 message=- session=1 revision=2 attempt=1 outcome=failure elapsed_us=3056
+SESSION_TRACE event=fetch_admitted op_id=5 page=1 message=- 
+SESSION_TRACE event=fetch_admitted op_id=6 page=3 message=- 
+SESSION_TRACE event=fetch_admitted op_id=7 page=4 message=- 
+SESSION_TRACE event=fetch_admitted op_id=8 page=5 message=- 
+SESSION_TRACE event=fetch_admitted op_id=9 page=6 message=- 
+SESSION_TRACE event=fetch_admitted op_id=10 page=7 message=- 
+SESSION_TRACE event=fetch_admitted op_id=11 page=8 message=- 
+SESSION_TRACE event=fetch_admitted op_id=12 page=9 message=- 
+SESSION_TRACE event=fetch_queue_full op_id=0 page=10 message=- 

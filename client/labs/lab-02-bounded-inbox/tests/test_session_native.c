@@ -18,6 +18,8 @@ static void pause_ms(long ms)
     nanosleep(&delay, NULL);
 }
 
+static lab02_fetch_req_t boot_req;
+
 static void *send_initial(void *arg)
 {
     (void)arg;
@@ -27,8 +29,8 @@ static void *send_initial(void *arg)
     page.item_count = 1;
     page.page_offset = 0;
     strcpy(page.items[0].message_id, "m0");
-    lab02_session_http_fetch_finished(LAB02_FETCH_OK, lab02_session_generation(), 0, 0,
-                                      &page, true);
+    lab02_session_http_fetch_finished(LAB02_FETCH_OK, boot_req.session_id, boot_req.op_id,
+                                      boot_req.page_index, &page, true);
     return NULL;
 }
 
@@ -86,13 +88,21 @@ static void *toggle_transport(void *arg)
     return NULL;
 }
 
+extern void lab02_host_freeze_clock(void);
+
 int main(void)
 {
+    /* Exercise worker races with real waits while keeping unrelated five-second
+     * refresh policy independent of host scheduler/nanosleep overshoot. */
+    lab02_host_freeze_clock();
     lab02_page_provider_t provider;
     assert(lab02_session_begin_http(&provider));
+    lab02_session_http_worker_started(true, lab02_session_generation());
+    lab02_session_pump();
     uint32_t session_id = lab02_session_generation();
     lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, session_id);
     lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, session_id);
+    assert(lab02_session_http_initial_request(&boot_req));
     pthread_t thread;
     assert(pthread_create(&thread, NULL, send_initial, NULL) == 0);
     for (int i = 0; i < 1000 && lab02_session_snapshot().load_stage != LAB02_LOAD_READY; i++) {
@@ -120,7 +130,9 @@ int main(void)
         lab02_session_snapshot_t before = lab02_session_snapshot();
         lab02_session_pump();
         lab02_session_snapshot_t after = lab02_session_snapshot();
-        assert(before.transport_unreachable == after.transport_unreachable);
+        /* Freshness may change in the owner pump; transport must preserve the stage/focus. */
+        assert(before.load_stage == after.load_stage);
+        assert(before.focus_index == after.focus_index);
         pause_ms(1);
     }
     pthread_join(thread, NULL);
@@ -137,11 +149,12 @@ int main(void)
 
     lab02_session_intent_scroll_lock(true);
     assert(pthread_create(&thread, NULL, send_two_pages, NULL) == 0);
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 1200; i++) {
         lab02_session_pump();
         pause_ms(1);
     }
-    assert(lab02_inbox_model_item(provider.model, 16) == NULL);
+    assert(lab02_inbox_model_item(provider.model, 16) != NULL);
+    assert(lab02_inbox_model_item(provider.model, 32) != NULL);
     pthread_join(thread, NULL);
     lab02_session_intent_scroll_lock(false);
     for (int i = 0; i < 1000; i++) {
@@ -154,7 +167,7 @@ int main(void)
     assert(atomic_load(&done) == 1);
     assert(strcmp(lab02_inbox_model_item(provider.model, 16)->message_id, "m16") == 0);
     assert(strcmp(lab02_inbox_model_item(provider.model, 32)->message_id, "m32") == 0);
-    assert(lab02_session_metrics().apply_deferred == 1);
+    assert(lab02_session_metrics().apply_deferred == 0);
 
     lab02_session_intent_focus(16);
     assert(lab02_session_intent_refresh());

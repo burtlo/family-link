@@ -1,0 +1,70 @@
+[
+  {
+    "path": "build/labs/lab-02-bounded-inbox/config/sdkconfig.h",
+    "mtime": 1791857648.9908433,
+    "config": {
+      "BSP_LCD_DRAW_BUF_HEIGHT": "100",
+      "BSP_LCD_DRAW_BUF_DOUBLE": "undefined",
+      "LV_COLOR_DEPTH": "16",
+      "LV_DRAW_BUF_ALIGN": "4",
+      "SPIRAM": "1",
+      "SPIRAM_USE_MALLOC": "1"
+    },
+    "sdkconfig_exists": false
+  },
+  {
+    "path": "build/labs/lab-02-bounded-inbox-phaseb/config/sdkconfig.h",
+    "mtime": 1791927197.3990195,
+    "config": {
+      "BSP_LCD_DRAW_BUF_HEIGHT": "50",
+      "BSP_LCD_DRAW_BUF_DOUBLE": "undefined",
+      "LV_COLOR_DEPTH": "16",
+      "LV_DRAW_BUF_ALIGN": "4",
+      "SPIRAM": "1",
+      "SPIRAM_USE_MALLOC": "1"
+    },
+    "sdkconfig_exists": true,
+    "sdkconfig": {
+      "BSP_LCD_DRAW_BUF_HEIGHT": "50",
+      "BSP_LCD_DRAW_BUF_DOUBLE": "unset",
+      "LV_COLOR_DEPTH": "16",
+      "LV_DRAW_BUF_ALIGN": "4",
+      "SPIRAM": "y",
+      "SPIRAM_USE_MALLOC": "y"
+    }
+  },
+  {
+    "path": "build/labs/lab-02-bounded-inbox-scripted/config/sdkconfig.h",
+    "mtime": 1791854717.599189,
+    "config": {
+      "BSP_LCD_DRAW_BUF_HEIGHT": "100",
+      "BSP_LCD_DRAW_BUF_DOUBLE": "undefined",
+      "LV_COLOR_DEPTH": "16",
+      "LV_DRAW_BUF_ALIGN": "4",
+      "SPIRAM": "1",
+      "SPIRAM_USE_MALLOC": "1"
+    },
+    "sdkconfig_exists": false
+  },
+  {
+    "path": "build/labs/lab-02-bounded-inbox-scripted-phaseb/config/sdkconfig.h",
+    "mtime": 1791892898.7304468,
+    "config": {
+      "BSP_LCD_DRAW_BUF_HEIGHT": "100",
+      "BSP_LCD_DRAW_BUF_DOUBLE": "undefined",
+      "LV_COLOR_DEPTH": "16",
+      "LV_DRAW_BUF_ALIGN": "4",
+      "SPIRAM": "1",
+      "SPIRAM_USE_MALLOC": "1"
+    },
+    "sdkconfig_exists": true,
+    "sdkconfig": {
+      "BSP_LCD_DRAW_BUF_HEIGHT": "100",
+      "BSP_LCD_DRAW_BUF_DOUBLE": "unset",
+      "LV_COLOR_DEPTH": "16",
+      "LV_DRAW_BUF_ALIGN": "4",
+      "SPIRAM": "y",
+      "SPIRAM_USE_MALLOC": "y"
+    }
+  }
+]

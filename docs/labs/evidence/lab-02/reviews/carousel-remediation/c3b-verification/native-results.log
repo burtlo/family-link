@@ -1,0 +1,12 @@
+test_http_worker_allocation_failure (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_http_worker_allocation_failure) ... ok
+test_page_parse_and_replacement (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_page_parse_and_replacement) ... ok
+test_session_result_ownership_and_snap_deferral (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_session_result_ownership_and_snap_deferral) ... ok
+test_terminal_admission_and_reconciliation (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_terminal_admission_and_reconciliation) ... ok
+test_http_worker_has_no_presentation_dependency (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_http_worker_has_no_presentation_dependency) ... ok
+test_presentation_does_not_wait_on_io_or_sleep (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_presentation_does_not_wait_on_io_or_sleep) ... ok
+test_session_is_only_model_writer (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_session_is_only_model_writer) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 5.602s
+
+OK

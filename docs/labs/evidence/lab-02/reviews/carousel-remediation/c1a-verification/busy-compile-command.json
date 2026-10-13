@@ -1,0 +1,22 @@
+[
+  "/usr/bin/cc",
+  "-std=c11",
+  "-D_POSIX_C_SOURCE=200809L",
+  "-Wall",
+  "-Wextra",
+  "-Werror",
+  "-pthread",
+  "-I",
+  "/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/host_stubs",
+  "-I",
+  "/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/include",
+  "-I",
+  "/Users/lynnfrank/esp/esp-idf/components/json/cJSON",
+  "/tmp/lab02-c1a-verify/busy-reset.c",
+  "/tmp/lab02-c1a-verify/busy-stubs.c",
+  "/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/inbox_model.c",
+  "/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/inbox_page_metadata.c",
+  "/Users/lynnfrank/esp/esp-idf/components/json/cJSON/cJSON.c",
+  "-o",
+  "/tmp/lab02-c1a-verify/busy-reset"
+]

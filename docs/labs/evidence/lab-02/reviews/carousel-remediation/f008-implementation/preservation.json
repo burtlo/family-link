@@ -1,0 +1,8 @@
+{
+  "index_unchanged": true,
+  "unrelated_tracked_wip_diff_unchanged": true,
+  "baseline_lab_file_count": 88,
+  "unchanged_baseline_lab_files": 75,
+  "new_unit_file": "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_initial_retry_runtime.c",
+  "draw_height": 50
+}

@@ -1,0 +1,14 @@
+{
+  "client/labs/lab-02-bounded-inbox/README.md": "fcfb6b51fa3a2a62c5ff77f6a777926d5f389fb8f3500c017b67c84519b5a102",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h": "7986793f372ce8f0849b21002af7170d81243cae424482852f521b3d3a2a6356",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": "6e4a4db9bdcbf897f03af854e03c163a63e0d0c12585b840b7a8a0fd0bc072a5",
+  "client/labs/lab-02-bounded-inbox/tests/README.md": "b00690f9f54dd423afbedf025d42eb1639e91aec27b47cb1e9065dcac428fc98",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c": "397240af3c694088773931fbf6beeacae6f997b3b8a7efb715427df0c09d82ea",
+  "client/labs/lab-02-bounded-inbox/tests/test_session_native.c": "35dabd74bf243a6b8d9220844f75263c68d2360e5d02988a0eb90613a610645c",
+  "client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c": "70d717f5767c3d979413ac6c08ce4ac1af1d00187ba7cd4da290c0043cd8fed4",
+  "docs/labs/evidence/lab-02/reviews/carousel-remediation/execution.md": "835fb198ba3f68917e5c3d6763219ab72e6eb7e2a1b6c8ec807d92612b6ba1d2",
+  "docs/labs/evidence/lab-02/reviews/carousel-remediation/review.md": "66fb3c52e2ba76ad0d53cf979cc43e4739d1854ea564dc659deb18fa1352b0cd",
+  "docs/labs/lab-02-session-architecture.md": "3644fe539c0a2bdd72af61da4b72cddd7aae93bd7d7790144b386a124dec5b1d",
+  "scripts/tests/test_lab02_carousel_native.py": "e9ace97da0d17364f364b6155e9d9b69227bec0ce0efd44930d5c82986569f30",
+  "scripts/tests/test_lab02_model_native.py": "62ad67cc77888627d14fdc77710aeb7eaf34455d4c66000ebdab88a51597a1e1"
+}

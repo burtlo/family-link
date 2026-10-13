@@ -13,6 +13,7 @@
 #include "freertos/task.h"
 #include "sdkconfig.h"
 
+#include <stdatomic.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,8 +33,8 @@ static bool s_http_ready_logged;
 static char s_fetch_scratch[HTTP_BUF_SIZE];
 static lab02_inbox_page_t s_result_page;
 static TaskHandle_t s_worker;
-static TaskHandle_t s_boot_worker;
-static uint32_t s_boot_session_id;
+static atomic_bool s_boot_running;
+static lab02_fetch_req_t s_boot_request;
 static bool ensure_workers(void);
 
 static void on_wifi_transport(bool reachable)
@@ -41,17 +42,12 @@ static void on_wifi_transport(bool reachable)
     lab02_session_intent_transport(reachable);
 }
 
-static int page_offset_for_index(int page)
-{
-    return page * (int)lab02_session_http_page_size();
-}
-
 static bool http_errno_timed_out(int eno)
 {
     return eno == ETIMEDOUT || eno == EWOULDBLOCK;
 }
 
-static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, size_t buf_len,
+static lab02_http_fetch_result_t http_fetch_page(const lab02_fetch_req_t *req, char *buf, size_t buf_len,
                                                size_t *out_len)
 {
     if (strlen(CONFIG_LAB02_SERVER_URL) == 0) {
@@ -59,8 +55,8 @@ static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, siz
     }
     char url[192];
     int url_len = snprintf(url, sizeof(url), "%s/v2/inbox?cursor=%d&limit=%d",
-                           CONFIG_LAB02_SERVER_URL, page_offset,
-                           (int)lab02_session_http_page_size());
+                           CONFIG_LAB02_SERVER_URL, req->page_offset,
+                           (int)req->page_size);
     if (url_len < 0 || url_len >= (int)sizeof(url)) {
         return LAB02_HTTP_FETCH_FAIL;
     }
@@ -98,7 +94,7 @@ static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, siz
     size_t written = 0;
     bool read_error = false;
     bool deadline_expired = false;
-    int64_t deadline_us = esp_timer_get_time() + 12000000;
+    int64_t deadline_us = esp_timer_get_time() + req->response_read_timeout_us;
     while (written < buf_len - 1) {
         if (esp_timer_get_time() >= deadline_us) {
             deadline_expired = true;
@@ -142,10 +138,10 @@ static void worker_task(void *arg)
         if (!lab02_session_http_take_fetch_request(&req)) {
             continue;
         }
-        int offset = page_offset_for_index(req.page_index);
+        int offset = req.page_offset;
         size_t len = 0;
         lab02_http_fetch_result_t res =
-            http_fetch_page(offset, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
+            http_fetch_page(&req, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
         if (res == LAB02_HTTP_FETCH_OK &&
             !lab02_inbox_model_parse_v2_page(s_fetch_scratch, len, offset, &s_result_page)) {
             res = LAB02_HTTP_FETCH_FAIL;
@@ -178,49 +174,67 @@ static void worker_task(void *arg)
 static void boot_task(void *arg)
 {
     (void)arg;
-    uint32_t session_id = s_boot_session_id;
+    const lab02_fetch_req_t req = s_boot_request;
+    uint32_t session_id = req.session_id;
     lab02_board_wifi_set_transport_notifier(on_wifi_transport);
     lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, session_id);
     if (!lab02_board_wifi_connect()) {
         ESP_LOGE(TAG, "Wi-Fi failed");
-        lab02_session_http_mark_stage(LAB02_LOAD_ERROR, session_id);
+        lab02_session_http_worker_started(false, session_id);
+        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, req.op_id, req.page_index, NULL,
+                                          true);
+        atomic_store(&s_boot_running, false);
         vTaskDelete(NULL);
         return;
     }
     lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, session_id);
     size_t len = 0;
     lab02_http_fetch_result_t boot_res =
-        http_fetch_page(0, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
+        http_fetch_page(&req, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
     if (boot_res == LAB02_HTTP_FETCH_TIMEOUT) {
         ESP_LOGE(TAG, "initial page fetch timed out");
         lab02_trace_emit("fetch_timeout", 0, 0, NULL, "boot");
-        lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, session_id, 0, 0, NULL, true);
+        lab02_session_http_worker_started(false, session_id);
+        lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, session_id, req.op_id, req.page_index,
+                                          NULL, true);
+        atomic_store(&s_boot_running, false);
         vTaskDelete(NULL);
         return;
     }
     if (boot_res != LAB02_HTTP_FETCH_OK) {
         ESP_LOGE(TAG, "initial page fetch failed");
-        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, 0, 0, NULL, true);
+        lab02_session_http_worker_started(false, session_id);
+        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, req.op_id, req.page_index, NULL,
+                                          true);
+        atomic_store(&s_boot_running, false);
         vTaskDelete(NULL);
         return;
     }
     if (!lab02_inbox_model_parse_v2_page(s_fetch_scratch, len, 0, &s_result_page)) {
-        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, 0, 0, NULL, true);
+        lab02_session_http_worker_started(false, session_id);
+        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, req.op_id, req.page_index, NULL,
+                                          true);
+        atomic_store(&s_boot_running, false);
         vTaskDelete(NULL);
         return;
     }
-    lab02_session_http_fetch_finished(LAB02_FETCH_OK, session_id, 0, 0, &s_result_page, true);
+    /* Task allocation stays on the I/O owner, outside the LVGL pump. Preserve
+     * the valid boot page even if paging capacity cannot be created. */
+    bool available = ensure_workers();
+    lab02_session_http_worker_started(available, session_id);
+    if (!available) {
+        ESP_LOGW(TAG, "background fetch worker unavailable; page 0 retained");
+        lab02_trace_emit("worker_spawn_fail", 0, 0, NULL, "background");
+    }
+    lab02_session_http_fetch_finished(LAB02_FETCH_OK, session_id, req.op_id, req.page_index,
+                                      &s_result_page, true);
+    atomic_store(&s_boot_running, false);
     vTaskDelete(NULL);
 }
 
 void lab02_page_provider_http_notify_initial_ready(uint32_t inbox_revision, uint16_t total_count)
 {
     if (s_http_ready_logged) {
-        return;
-    }
-    if (!ensure_workers()) {
-        ESP_LOGW(TAG, "background fetch worker unavailable; page 0 only");
-        lab02_trace_emit("worker_spawn_fail", 0, 0, NULL, NULL);
         return;
     }
     s_http_ready_logged = true;
@@ -250,24 +264,42 @@ bool lab02_page_provider_http_init(lab02_page_provider_t *pp)
     return true;
 }
 
-void lab02_page_provider_http_start_io(void)
+static void start_boot(const lab02_fetch_req_t *request)
 {
-    if (s_io_started || strlen(CONFIG_LAB02_SERVER_URL) == 0) {
-        return;
-    }
+    s_boot_request = *request;
     s_io_started = true;
     s_http_ready_logged = false;
-    s_boot_session_id = lab02_session_generation();
-    if (!s_boot_worker) {
-        if (xTaskCreate(boot_task, "lab02_http_boot", 10240, NULL, 4, &s_boot_worker) != pdPASS) {
-            s_io_started = false;
-            lab02_session_http_mark_stage(LAB02_LOAD_ERROR, s_boot_session_id);
-        }
+    char extra[80];
+    snprintf(extra, sizeof(extra), "session=%u kind=http_startup", (unsigned)request->session_id);
+    lab02_trace_emit("io_start_admitted", 0, 0, NULL, extra);
+    atomic_store(&s_boot_running, true);
+    if (xTaskCreate(boot_task, "lab02_http_boot", 10240, NULL, 4, NULL) != pdPASS) {
+        lab02_session_http_worker_started(false, request->session_id);
+        lab02_trace_emit("worker_spawn_fail", 0, 0, NULL, "boot");
+        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, request->session_id,
+                                          request->op_id, request->page_index, NULL, true);
+        atomic_store(&s_boot_running, false);
     }
+}
+
+void lab02_page_provider_http_start_io(void)
+{
+    if (s_io_started || atomic_load(&s_boot_running) || strlen(CONFIG_LAB02_SERVER_URL) == 0) return;
+    lab02_fetch_req_t request;
+    if (lab02_session_http_initial_request(&request)) start_boot(&request);
 }
 
 bool lab02_page_provider_http_active(void)
 {
     lab02_session_snapshot_t snap = lab02_session_snapshot();
     return snap.http_active;
+}
+
+void lab02_page_provider_http_service_initial_retry(void)
+{
+    /* An old boot may have posted its terminal but not exited yet. Do not
+     * overwrite its frozen input/scratch or consume the deferred restart. */
+    if (atomic_load(&s_boot_running) || strlen(CONFIG_LAB02_SERVER_URL) == 0) return;
+    lab02_fetch_req_t request;
+    if (lab02_session_http_take_initial_restart(&request)) start_boot(&request);
 }

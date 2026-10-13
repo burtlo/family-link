@@ -1,0 +1,52 @@
+C0_TRACE scenario=stale-after-revision event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=stale-after-revision session=1 op_id=0 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=stale-after-revision event=fetch_delivery_retained gen=0 focus=0 msg=- 
+C0_TRACE scenario=stale-after-revision event=page_apply gen=0 focus=0 msg=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=stale-after-revision event=fetch_admitted gen=1 focus=1 msg=- 
+C0_TRACE scenario=stale-after-revision event=fetch_terminal gen=0 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1542
+C0_TRACE scenario=stale-after-revision event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=card_state gen=3 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=bind_stale gen=3 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=stale-after-revision event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=stale-after-revision event=bind_stale gen=3 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=stale-after-revision event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=stale-after-revision event=bind_stale gen=3 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=stale-after-revision event=unbind gen=4 focus=2 msg=m2 
+C0_TRACE scenario=stale-after-revision event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_TRACE scenario=stale-after-revision event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=stale-after-revision event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_STATE scenario=stale-after-revision point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-494,x2:-363,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_REQUEST scenario=stale-after-revision session=1 op_id=1 page=1 submitted_us=216498215730
+C0_TRACE scenario=stale-after-revision event=unbind gen=5 focus=3 msg=m3 
+C0_TRACE scenario=stale-after-revision event=unbind gen=5 focus=4 msg=m4 
+C0_TRACE scenario=stale-after-revision event=unbind gen=5 focus=5 msg=m5 
+C0_TRACE scenario=stale-after-revision event=card_state gen=5 focus=7 msg=m7 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=card_state gen=5 focus=8 msg=m8 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=card_state gen=5 focus=9 msg=m9 session=1 revision=1 state=loading
+C0_TRACE scenario=stale-after-revision event=fetch_admitted gen=2 focus=0 msg=- 
+C0_REQUEST scenario=stale-after-revision session=1 op_id=2 page=0 submitted_us=216498221193
+C0_DELIVERY scenario=stale-after-revision session=1 op_id=2 page=0 response_revision=2 initial=0 snap_id=0
+C0_TRACE scenario=stale-after-revision event=fetch_delivery_retained gen=2 focus=0 msg=- 
+C0_TRACE scenario=stale-after-revision event=page_apply gen=2 focus=8 msg=m8 op_id=2 revision=2 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=stale-after-revision event=fetch_admitted gen=3 focus=1 msg=- 
+C0_TRACE scenario=stale-after-revision event=fetch_terminal gen=2 focus=0 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1276
+C0_TRACE scenario=stale-after-revision event=bind_stale gen=5 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=stale-after-revision event=unbind gen=6 focus=7 msg=m7 
+C0_TRACE scenario=stale-after-revision event=card_state gen=6 focus=7 msg=m7 session=1 revision=2 state=loading
+C0_TRACE scenario=stale-after-revision event=bind_stale gen=5 focus=8 msg=m8 reason=superseded
+C0_TRACE scenario=stale-after-revision event=unbind gen=6 focus=8 msg=m8 
+C0_TRACE scenario=stale-after-revision event=card_state gen=6 focus=8 msg=m8 session=1 revision=2 state=loading
+C0_TRACE scenario=stale-after-revision event=bind_stale gen=5 focus=9 msg=m9 reason=superseded
+C0_TRACE scenario=stale-after-revision event=unbind gen=6 focus=9 msg=m9 
+C0_TRACE scenario=stale-after-revision event=card_state gen=6 focus=9 msg=m9 session=1 revision=2 state=loading
+C0_STATE scenario=stale-after-revision point=revision2 session=1 revision=2 focus=8 focus_id=m8 snap_id=0 snap_locked=0 session_locked=0 scroll_x=1070 window={slot:0,index:7,id:m7,gen:6,hidden:0,x1:-50,x2:81,state:1,revision:2,session:1,sender:Loading message…},{slot:1,index:8,id:m8,gen:6,hidden:0,x1:94,x2:225,state:1,revision:2,session:1,sender:Loading message…},{slot:2,index:9,id:m9,gen:6,hidden:0,x1:238,x2:369,state:1,revision:2,session:1,sender:Loading message…},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-1070,x2:-939,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=2
+C0_DELIVERY scenario=stale-after-revision session=1 op_id=1 page=1 response_revision=1 initial=0 snap_id=0
+C0_TRACE scenario=stale-after-revision event=apply_stale gen=1 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=stale-after-revision event=fetch_terminal gen=1 focus=1 msg=- session=1 revision=1 attempt=1 outcome=stale elapsed_us=11522
+C0_TRACE scenario=stale-after-revision event=fetch_delivery_rejected gen=1 focus=1 msg=- duplicate_or_unadmitted
+C0_STATE scenario=stale-after-revision point=old-result session=1 revision=2 focus=8 focus_id=m8 snap_id=0 snap_locked=0 session_locked=0 scroll_x=1070 window={slot:0,index:7,id:m7,gen:6,hidden:0,x1:-50,x2:81,state:1,revision:2,session:1,sender:Loading message…},{slot:1,index:8,id:m8,gen:6,hidden:0,x1:94,x2:225,state:1,revision:2,session:1,sender:Loading message…},{slot:2,index:9,id:m9,gen:6,hidden:0,x1:238,x2:369,state:1,revision:2,session:1,sender:Loading message…},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-1070,x2:-939,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=1 applied=2
+C0_RESULT scenario=stale-after-revision characterization=PASS acceptance=F001-C2

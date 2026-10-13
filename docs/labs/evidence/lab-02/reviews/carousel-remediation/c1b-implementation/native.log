@@ -1,0 +1,8 @@
+test_page_parse_and_replacement (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_page_parse_and_replacement) ... ok
+test_session_result_ownership_and_snap_deferral (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_session_result_ownership_and_snap_deferral) ... ok
+test_terminal_admission_and_reconciliation (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_terminal_admission_and_reconciliation) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 4.317s
+
+OK

@@ -1,0 +1,47 @@
+# LAB02CAR-F008 independent verification
+
+Verdict: **L1/L2 mechanism verified; overall unverified pending required L3.** No waiver. No observed regression or additional confirmed defect in this focused assignment. This does not close F006 or C5/C6 and does not invent historical source identity for C3d.
+
+## Boundary, authority, provenance
+
+Read-only fresh verifier of initial ERROR status retry in current accepted HEAD 7ecc594861c1e6fbc9ad647ac591bb44df3acde9 plus staged/unstaged WIP. Original complete finding: docs/labs/evidence/lab-02/reviews/carousel-remediation/resume-memory-review/report.md, RETRY-BOUND assigned stable LAB02CAR-F008. Read canonical client-code-review workflow, docs/AGENTS.md, full client coding standard, docs index, target README, architecture, original finding, exact incremental unit.patch and nearby callback/session/provider/lifecycle paths. Applied coding standard §§1/2/3/4/5/8/11/12 and approved lab owner APP-O-01–05 from execution.md. Draft product-wide policy is not approval. Numeric performance/resource gates remain OPEN.
+
+Frozen implementation packet /tmp/lab02-f008-fix and repository f008-implementation packet retain exact incremental before/after bytes; every 17 selected after SHA256 matches current bytes at verification start. Independent source-before.json hashes all current components/tests, docs, and scripts/tests (excluding pycache). HEAD, entire index, status, full tracked HEAD diff and hashed source/maintained docs are byte-identical before/after: preservation.json. No source/maintained document/index edits or hardware operations by verifier. Temporary boundary harness confined to /tmp/lab02-f008-verify. Extensive unrelated accepted WIP is preserved.
+
+## Original trigger and result
+
+Original P2 trigger: initial HTTP failure reaches ERROR; actual LVGL status click calls session retry while producer holds shared delivery/admission mutex. Pre-unit retry used portMAX_DELAY, blocking presentation on worker release. Requirement: standard §1 forbids presentation blocking/unpredictable waits and §2 requires bounded callback completion independent of worker latency; APP-O-04 mandates owner tap retry without automatic retry and supplies no boundedness waiver.
+
+Recompiled/reran original focused contention probe against frozen pre-unit actual session and pre-unit pthread stubs. characterization-command.json and characterization-build.log identify compilation; characterization.log proves retry does not return during injected100ms mutex hold and returns only after release. This is reproduction of a lock-wait mechanism, not a target100ms freeze claim.
+
+Current actual status callback calls retained-intent API, zero-wait session pump and status property update; provider calls/task allocation have been removed. One presentation-owned pending bit coalesces taps. Pump tries admission only with timeout0; busy lock or admitted prior boot reservation retains intent. Admission creates a fresh immutable boot request/attempt2 and one restart command, once. Broker tries delivery mutex with0 and copies request by value; busy leaves command pending. Successful consumption checks atomic session generation. Task allocation and synchronous creation-failure posting occur in lifecycle session task after actual lab02_board_lvgl_unlock, never in status callback. Failure posting may wait on worker delivery lock in that lifecycle context; presentation remains free to run. No new queues/tasks/page-sized stack buffers introduced.
+
+Atomic boot-running flag set before creation and cleared after completion publication and final scratch/request use prevents broker from overwriting an old boot's request or scratch. The cleared flag precedes vTaskDelete, but old boot has no subsequent shared request/scratch use. Existing background worker handle is retained. Reset clears unadmitted intent; reset/superseded command checks and existing terminal ledger reject old completions. Stage and model remain session-owner writes. Reviewed bounded terminal scans/pump (one acceptance, four roots), nearby callers and actual lab_main service placement independently.
+
+## Executed commands and gates
+
+All raw commands retained in commands.json; runtime builds/subprocesses in normal/commands.json and slow120/commands.json; characterization command in characterization-command.json; independent instrumented compile/link/run in boundary-commands.json and build_boundary.py.
+
+- python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture scripts.tests.test_lab02_host -v: 23 PASS, no skips, integrated.log.
+- python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-f008-verify/normal: 11 existing +6 F008 PASS; actual vendored LVGL renderer, source manifest/runtime identity/build logs, screenshots and pixel observations retained.
+- python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-f008-verify/slow120 --slow-bind-ms120 (argv uses separated flag/value): 12 existing +6 F008 PASS; same raw evidence.
+- Original pre-unit contention compilation and executable: PASS expected blocked-then-release characterization.
+- python3 /tmp/lab02-f008-verify/build_boundary.py: PASS focused independent held-boot-exit and busy-command boundary; boundary.log.
+
+Actual LVGL double-click/pump/broker return while delivery lock remains held; no task creation or retry count increment until release. Host elapsed2–6µs is injected-lock adapter evidence, not a representative target timing budget. Release yields exactly one retry increment, attempt2/new op identity, ERROR→SHELL and subsequent READY. Six F008 scenarios cover boot allocation failure, background allocation failure retaining page0 with ERROR/inbox unavailable, reset before admission, reset after command admission, stale old completion, retained background worker, and absence of automatic retry while repeated pumping/brokering. Provider is production C; xTaskCreate/HTTP are explicit adapters. Allocation adapter asserts presentation-context flag clear. Physical BSP lock ownership is established by source call placement, not simulated BSP scheduling.
+
+Independent boundary goes beyond fixer: /tmp-only provider copy adds a hook immediately before boot-running clear after terminal post. Adapter fails Wi-Fi, hook runs actual owner pump to ERROR, two actual LVGL status clicks and admission to SHELL while old boot still marked running. Ten broker invocations create no task and preserve request identity/attempt. Old boot returns; a held delivery mutex then prevents broker consumption with no task creation. Release allows exactly one new boot creation; repeated broker call does not duplicate; successful boot creates one background worker and reaches READY with retry count1. Hook_enabled disables the hook for successful second boot. Temporary modified provider contains only hook declarations/calls around running-flag release; production code unchanged. This deterministically exercises old-terminal/late-exit ordering, not real parallel FreeRTOS task scheduling.
+
+## Harness changes assessed
+
+Session native race test retains actual pthread producers, transport contention, terminal checks and real nanosleep waits including held motion >1s. Only policy clock frozen at entry avoids preexisting host sleep overshoot crossing unrelated unchanged5s idle refresh and changing the expected explicit-refresh queue. Original frozen native failure traces corroborate that cause. Guard timeout changed5→10s accommodates requested waits (~3.2s) and scheduler overshoot; does not relax a product budget or remove an assertion. This test no longer establishes wall-time refresh policy, which is outside its race-ownership claim.
+
+Failed-page delayed-bind runtime case adds advance(CONFIG_LAB02_SLOW_BIND_MS+20) before asserting BOUND; preserves original failure, explicit tap and content assertion, matching adjacent timer-based delayed-binding tests. It corrects immediate-BOUND expectation under configured delay, with no product source/timer change. Not weakened product tests.
+
+## Assessed build evidence and limits
+
+Assessed frozen firmware-final.log: final ESP32-S3 HTTP phaseb source build passes, Project build complete, existing LVGL deprecation warnings. Selected current files exactly match frozen source hashes; final build followed last source edits. Effective sdkconfig and generated header still CONFIG_BSP_LCD_DRAW_BUF_HEIGHT50. No concern requiring redundant firmware compile; L0 accepted existing raw final evidence only.
+
+L1 native/model/architecture mechanics and L2 actual LVGL callback/provider adapter scenarios independently pass. Native session tests run real host threads/pthread primitive contention; F008 provider adapter stores boot function then invokes it synchronously, with explicit added interleaving hook. Neither establishes RTOS scheduling, heap/resource pressure, real HTTP transport or representative latency. Required L3 physical target touch/error retry, input/render timing under worker contention, FreeRTOS terminal-to-exit scheduling, stack/high-water/largest allocation/resource failure remains missing. Missing hardware evidence is an evidence-collection requirement, not a failed repair or an implied waiver.
+
+Per-ID: LAB02CAR-F008 **unverified overall / verified L1/L2 mechanism**, original blocked callback eliminated in inspected source and exercised scripted host path; target-sensitive closure outstanding. Root owns adjudication, saved maintained outcomes and C4 sequencing. No repairs performed.

@@ -1,0 +1,11 @@
+{
+  "normal": "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3b-verify/normal",
+  "slow": "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3b-verify/slow --slow-bind-ms 120",
+  "native": "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c3b-verify/native LAB02_HTTP_STARTUP_ARTIFACT_DIR=/tmp/lab02-c3b-verify/startup python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture -v",
+  "baseline": "/var/folders/xf/_d105jq16fv66k3pp8_gvm100000gn/T/family-link-lab02-c0-fcc9603952a80ba75924/lab02_c0 fast-boundary /tmp/lab02-c3b-verify/baseline",
+  "adversarial": [
+    "cmake -S /tmp/lab02-c3b-verify/adversarial -B /tmp/lab02-c3b-verify/adversarial-build -DCJSON_DIR=/Users/lynnfrank/esp/esp-idf/components/json/cJSON -DLAB02_SLOW_BIND_MS=120",
+    "cmake --build /tmp/lab02-c3b-verify/adversarial-build -j 8",
+    "/tmp/lab02-c3b-verify/adversarial-build/lab02_c0 pixel-boundary /tmp/lab02-c3b-verify/adversarial"
+  ]
+}

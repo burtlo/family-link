@@ -1,0 +1,119 @@
+C0_TRACE scenario=reversal event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=reversal session=1 op_id=0 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=reversal event=fetch_delivery_retained gen=0 focus=0 msg=- 
+C0_TRACE scenario=reversal event=page_apply gen=0 focus=0 msg=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=reversal event=fetch_admitted gen=1 focus=1 msg=- 
+C0_TRACE scenario=reversal event=fetch_terminal gen=0 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1820
+C0_TRACE scenario=reversal event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=3 focus=0 msg=m0 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=3 focus=1 msg=m1 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=3 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=3 focus=2 msg=m2 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=reversal event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=reversal event=unbind gen=4 focus=2 msg=m2 
+C0_TRACE scenario=reversal event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_STATE scenario=reversal point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-494,x2:-363,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=8 msg=m8 session=1 snap_id=1 before=pending after=running revision=1 start_x=494 target_x=1070
+C0_TRACE scenario=reversal event=unbind gen=6 focus=3 msg=m3 
+C0_TRACE scenario=reversal event=card_state gen=6 focus=6 msg=m6 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=6 focus=6 msg=m6 session=1 revision=1 state=bound
+C0_STATE scenario=reversal point=snap8 session=1 revision=1 focus=8 focus_id=m8 snap_id=1 snap_locked=1 session_locked=1 scroll_x=650 window={slot:0,index:6,id:m6,gen:6,hidden:0,x1:226,x2:357,state:2,revision:1,session:1,sender:Sender 6},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:-62,x2:69,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:82,x2:213,state:2,revision:1,session:1,sender:Sender 5},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-650,x2:-519,state:0,revision:0,session:0,sender:—} starts=1 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=8 msg=m8 session=1 snap_id=1 outcome=stale reason=reversed before=running after=terminal revision=1 elapsed_us=5262 target_x=1070
+C0_TRACE scenario=reversal event=unbind gen=7 focus=6 msg=m6 
+C0_TRACE scenario=reversal event=unbind gen=7 focus=4 msg=m4 
+C0_TRACE scenario=reversal event=unbind gen=7 focus=5 msg=m5 
+C0_TRACE scenario=reversal event=card_state gen=7 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=7 focus=1 msg=m1 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=7 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=7 focus=2 msg=m2 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=7 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=7 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=2 msg=m2 session=1 snap_id=2 before=pending after=running revision=1 start_x=206 target_x=206
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=2 msg=m2 session=1 snap_id=2 outcome=success reason=no_motion before=running after=terminal revision=1 elapsed_us=2 target_x=206
+C0_STATE scenario=reversal point=reverse2 session=1 revision=1 focus=2 focus_id=m2 snap_id=2 snap_locked=0 session_locked=0 scroll_x=206 window={slot:0,index:1,id:m1,gen:7,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 1},{slot:1,index:2,id:m2,gen:7,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 2},{slot:2,index:3,id:m3,gen:7,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 3},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-206,x2:-75,state:0,revision:0,session:0,sender:—} starts=2 ends=2 deferred=0 stale=0 applied=1
+C0_STATE scenario=reversal point=latest-target-terminal session=1 revision=1 focus=2 focus_id=m2 snap_id=2 snap_locked=0 session_locked=0 scroll_x=206 window={slot:0,index:1,id:m1,gen:7,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 1},{slot:1,index:2,id:m2,gen:7,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 2},{slot:2,index:3,id:m3,gen:7,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 3},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-206,x2:-75,state:0,revision:0,session:0,sender:—} starts=2 ends=2 deferred=0 stale=0 applied=1
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=10 msg=m10 session=1 snap_id=3 before=pending after=running revision=1 start_x=206 target_x=1358
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=10 msg=m10 session=1 snap_id=3 outcome=stale reason=superseded before=running after=terminal revision=1 elapsed_us=164 target_x=1358
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=5 msg=m5 session=1 snap_id=4 before=pending after=running revision=1 start_x=257 target_x=638
+C0_TRACE scenario=reversal event=card_state gen=11 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=11 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=5 msg=m5 session=1 snap_id=4 outcome=stale reason=superseded before=running after=terminal revision=1 elapsed_us=368 target_x=638
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=7 msg=m7 session=1 snap_id=5 before=pending after=running revision=1 start_x=274 target_x=926
+C0_TRACE scenario=reversal event=unbind gen=12 focus=1 msg=m1 
+C0_TRACE scenario=reversal event=card_state gen=13 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=13 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=unbind gen=14 focus=2 msg=m2 
+C0_TRACE scenario=reversal event=unbind gen=15 focus=3 msg=m3 
+C0_TRACE scenario=reversal event=card_state gen=15 focus=6 msg=m6 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=15 focus=6 msg=m6 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=unbind gen=16 focus=4 msg=m4 
+C0_TRACE scenario=reversal event=card_state gen=16 focus=7 msg=m7 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=16 focus=7 msg=m7 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=unbind gen=17 focus=5 msg=m5 
+C0_TRACE scenario=reversal event=card_state gen=17 focus=8 msg=m8 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=17 focus=8 msg=m8 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=7 msg=m7 session=1 snap_id=5 outcome=success reason=completed before=running after=terminal revision=1 elapsed_us=6867 target_x=926
+C0_STATE scenario=reversal point=replacement-terminal session=1 revision=1 focus=7 focus_id=m7 snap_id=5 snap_locked=0 session_locked=0 scroll_x=926 window={slot:0,index:8,id:m8,gen:17,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 8},{slot:1,index:6,id:m6,gen:15,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 6},{slot:2,index:7,id:m7,gen:16,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 7},{slot:3,index:-1,id:-,gen:16,hidden:1,x1:-338,x2:-207,state:0,revision:1,session:1,sender:} starts=5 ends=5 deferred=0 stale=0 applied=1
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=7 msg=m7 session=1 snap_id=6 before=pending after=running revision=1 start_x=926 target_x=926
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=7 msg=m7 session=1 snap_id=6 outcome=success reason=no_motion before=running after=terminal revision=1 elapsed_us=7 target_x=926
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=12 msg=m12 session=1 snap_id=7 before=pending after=running revision=1 start_x=926 target_x=1646
+C0_TRACE scenario=reversal event=unbind gen=21 focus=6 msg=m6 
+C0_TRACE scenario=reversal event=card_state gen=21 focus=9 msg=m9 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=21 focus=9 msg=m9 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=12 msg=m12 session=1 snap_id=7 outcome=stale reason=superseded before=running after=terminal revision=1 elapsed_us=392 target_x=1646
+C0_TRACE scenario=reversal event=unbind gen=22 focus=8 msg=m8 
+C0_TRACE scenario=reversal event=unbind gen=22 focus=9 msg=m9 
+C0_TRACE scenario=reversal event=unbind gen=22 focus=7 msg=m7 
+C0_TRACE scenario=reversal event=card_state gen=22 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=22 focus=2 msg=m2 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=22 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=22 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=22 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=22 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=8 msg=m8 session=1 snap_id=8 before=pending after=running revision=1 start_x=350 target_x=1070
+C0_TRACE scenario=reversal event=unbind gen=24 focus=2 msg=m2 
+C0_TRACE scenario=reversal event=card_state gen=24 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=24 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=8 msg=m8 session=1 snap_id=8 outcome=stale reason=reversed before=running after=terminal revision=1 elapsed_us=395 target_x=1070
+C0_TRACE scenario=reversal event=card_state gen=26 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=26 focus=2 msg=m2 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=unbind gen=27 focus=5 msg=m5 
+C0_TRACE scenario=reversal event=unbind gen=28 focus=4 msg=m4 
+C0_TRACE scenario=reversal event=card_state gen=28 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=28 focus=1 msg=m1 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=unbind gen=30 focus=3 msg=m3 
+C0_TRACE scenario=reversal event=card_state gen=30 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=30 focus=0 msg=m0 session=1 revision=1 state=bound
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=0 msg=m0 session=1 snap_id=9 before=pending after=running revision=1 start_x=-15 target_x=0
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=0 msg=m0 session=1 snap_id=9 outcome=success reason=completed before=running after=terminal revision=1 elapsed_us=864 target_x=0
+C0_STATE scenario=reversal point=pointer-reversal-terminal session=1 revision=1 focus=0 focus_id=m0 snap_id=9 snap_locked=0 session_locked=0 scroll_x=0 window={slot:0,index:1,id:m1,gen:28,hidden:0,x1:156,x2:287,state:2,revision:1,session:1,sender:Sender 1},{slot:1,index:0,id:m0,gen:30,hidden:0,x1:12,x2:143,state:2,revision:1,session:1,sender:Sender 0},{slot:2,index:-1,id:-,gen:28,hidden:1,x1:588,x2:719,state:0,revision:1,session:1,sender:},{slot:3,index:2,id:m2,gen:26,hidden:0,x1:300,x2:431,state:2,revision:1,session:1,sender:Sender 2} starts=9 ends=9 deferred=0 stale=0 applied=1
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=10 msg=m10 session=1 snap_id=10 before=pending after=running revision=1 start_x=0 target_x=1358
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=10 msg=m10 session=1 snap_id=10 outcome=cancelled reason=animation_deleted before=running after=terminal revision=1 elapsed_us=14 target_x=1358
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=12 msg=m12 session=1 snap_id=11 before=pending after=running revision=1 start_x=0 target_x=1646
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=12 msg=m12 session=1 snap_id=11 outcome=stale reason=scroller_deleted before=running after=terminal revision=1 elapsed_us=8 target_x=1646
+C0_TRACE scenario=reversal event=io_start_terminal gen=0 focus=0 msg=- session=2 kind=http_startup outcome=success reason=worker_available
+C0_TRACE scenario=reversal event=apply_stale gen=1 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=reversal event=fetch_terminal gen=1 focus=1 msg=- session=1 revision=1 attempt=1 outcome=stale elapsed_us=50384
+C0_DELIVERY scenario=reversal session=2 op_id=0 page=0 response_revision=1 initial=1 snap_id=11
+C0_TRACE scenario=reversal event=fetch_delivery_retained gen=0 focus=0 msg=- 
+C0_TRACE scenario=reversal event=page_apply gen=0 focus=0 msg=m0 op_id=0 revision=1 snap_id=11 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=reversal event=fetch_admitted gen=2 focus=1 msg=- 
+C0_TRACE scenario=reversal event=fetch_terminal gen=0 focus=0 msg=- session=2 revision=0 attempt=1 outcome=success elapsed_us=1823
+C0_TRACE scenario=reversal event=card_state gen=40 focus=0 msg=m0 session=2 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=40 focus=0 msg=m0 session=2 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=40 focus=1 msg=m1 session=2 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=40 focus=1 msg=m1 session=2 revision=1 state=bound
+C0_TRACE scenario=reversal event=card_state gen=40 focus=2 msg=m2 session=2 revision=1 state=loading
+C0_TRACE scenario=reversal event=bind gen=40 focus=2 msg=m2 session=2 revision=1 state=bound
+C0_TRACE scenario=reversal event=snap_start gen=0 focus=11 msg=m11 session=2 snap_id=12 before=pending after=running revision=1 start_x=0 target_x=1502
+C0_TRACE scenario=reversal event=snap_end gen=0 focus=11 msg=m11 session=2 snap_id=12 outcome=stale reason=session_changed before=running after=terminal revision=1 elapsed_us=493 target_x=1502
+C0_TRACE scenario=reversal event=apply_stale gen=2 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=reversal event=fetch_terminal gen=2 focus=1 msg=- session=2 revision=1 attempt=1 outcome=stale elapsed_us=578
+C0_RESULT scenario=reversal characterization=PASS acceptance=F001-C2

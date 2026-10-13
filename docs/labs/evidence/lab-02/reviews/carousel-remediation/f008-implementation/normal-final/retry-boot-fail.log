@@ -1,0 +1,19 @@
+C0_TRACE scenario=retry-boot-fail event=io_start_admitted gen=0 focus=0 msg=- session=1 kind=http_startup
+TASK_CREATE name=lab02_http_boot ordinal=1 fail=1
+C0_TRACE scenario=retry-boot-fail event=worker_spawn_fail gen=0 focus=0 msg=- boot
+C0_TRACE scenario=retry-boot-fail event=fetch_delivery_retained gen=1 focus=0 msg=- 
+C0_TRACE scenario=retry-boot-fail event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=failure reason=worker_unavailable
+C0_TRACE scenario=retry-boot-fail event=fetch_fail gen=1 focus=0 msg=- 
+C0_TRACE scenario=retry-boot-fail event=fetch_terminal gen=1 focus=0 msg=- session=1 revision=0 attempt=1 outcome=failure elapsed_us=434
+F008_CLICK elapsed_us=4 lock_held=1 task_calls=1
+C0_TRACE scenario=retry-boot-fail event=owner_retry_initial gen=2 focus=0 msg=- attempt=2 op_id=2
+C0_TRACE scenario=retry-boot-fail event=io_start_admitted gen=0 focus=0 msg=- session=1 kind=http_startup
+TASK_CREATE name=lab02_http_boot ordinal=2 fail=1
+C0_TRACE scenario=retry-boot-fail event=worker_spawn_fail gen=0 focus=0 msg=- boot
+C0_TRACE scenario=retry-boot-fail event=fetch_delivery_retained gen=2 focus=0 msg=- 
+C0_TRACE scenario=retry-boot-fail event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=failure reason=worker_unavailable
+C0_TRACE scenario=retry-boot-fail event=fetch_fail gen=2 focus=0 msg=- 
+C0_TRACE scenario=retry-boot-fail event=fetch_terminal gen=2 focus=0 msg=- session=1 revision=0 attempt=2 outcome=failure elapsed_us=7
+C0_TRACE scenario=retry-boot-fail event=fetch_delivery_rejected gen=1 focus=0 msg=- duplicate_or_unadmitted
+C0_STATE scenario=retry-boot-fail point=retry-terminal session=1 revision=0 focus=0 focus_id=- snap_id=0 snap_locked=0 session_locked=0 scroll_x=0 window={slot:0,index:-1,id:-,gen:0,hidden:1,x1:0,x2:131,state:0,revision:0,session:0,sender:—},{slot:1,index:-1,id:-,gen:0,hidden:1,x1:0,x2:131,state:0,revision:0,session:0,sender:—},{slot:2,index:-1,id:-,gen:0,hidden:1,x1:0,x2:131,state:0,revision:0,session:0,sender:—},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:0,x2:131,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=0
+F008_RUNTIME scenario=retry-boot-fail PASS

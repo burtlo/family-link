@@ -1,0 +1,11 @@
+[
+  "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c3a-verify/terminal LAB02_HTTP_STARTUP_ARTIFACT_DIR=/tmp/lab02-c3a-verify/startup python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture -v",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3a-verify/lvgl",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3a-verify/lvgl-slow --slow-bind-ms 120",
+  "boundary-compile.json \u2192 boundary budget-lower-pending / latest-focus-stable-id",
+  "baseline-compile-command.json \u2192 baseline-terminal normal-saturation",
+  "baseline-held-compile.json \u2192 baseline-held",
+  "baseline-runtime-provenance.json cache/lab02_c0 page-during-snap baseline-lvgl",
+  "sips converts held-page PPMs; view_image inspected loading-held and bound-held",
+  "git diff --check -- focused C3a source/tests"
+]

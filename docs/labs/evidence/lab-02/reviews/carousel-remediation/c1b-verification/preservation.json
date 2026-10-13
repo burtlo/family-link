@@ -1,0 +1,25 @@
+{
+  "all_frozen_non_generated_packet_paths_match": 85,
+  "tracked_raw_diff_unchanged": true,
+  "source_edits": false,
+  "maintained_doc_edits": false,
+  "normal_generated_artifacts_excluded": [
+    "scripts/tests/__pycache__/test_lab02_canonical_run.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab_deployment_sdkconfig.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_experiment_sdkconfig.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_architecture.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_project_config.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_workflow_config.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_firmware.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_evidence.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_model_native.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_server.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_scenarios.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_carousel_native.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab_registry.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab_host.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_deployment_config.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_host.cpython-314.pyc",
+    "scripts/tests/__pycache__/test_lab02_paging_server.cpython-314.pyc"
+  ]
+}

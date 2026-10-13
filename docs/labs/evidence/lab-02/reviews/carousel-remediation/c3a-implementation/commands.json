@@ -1,0 +1,9 @@
+[
+  "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c3a-fix/baseline-terminal python3 -m unittest scripts.tests.test_lab02_model_native",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3a-fix/baseline-lvgl",
+  "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c3a-fix/terminal LAB02_HTTP_STARTUP_ARTIFACT_DIR=/tmp/lab02-c3a-fix/startup python3 -m unittest scripts.tests.test_lab02_model_native",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3a-fix/lvgl",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3a-fix/lvgl-slow --slow-bind-ms 120",
+  "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c3a-fix/terminal python3 -m unittest scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_terminal_admission_and_reconciliation",
+  "make lab.lab02.scripted.build KIT=lynn"
+]

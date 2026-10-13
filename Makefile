@@ -109,16 +109,16 @@ lab.%.parse:
 	$(call py_run,scripts/lab_host.py parse $* $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
 lab.%.scripted.build:
-	$(call py_run,scripts/lab_host.py build $* --variant scripted)
+	$(call py_run,scripts/lab_host.py build $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
 
 lab.%.scripted.clean:
-	$(call py_run,scripts/lab_host.py clean $* --variant scripted)
+	$(call py_run,scripts/lab_host.py clean $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb))
 
 lab.%.scripted.flash:
-	$(call py_run,scripts/lab_host.py flash $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+	$(call py_run,scripts/lab_host.py flash $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
 
 lab.%.scripted.capture:
-	$(call py_run,scripts/lab_host.py capture $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+	$(call py_run,scripts/lab_host.py capture $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
 lab.%.scripted:
 	$(call py_run,scripts/lab_host.py run $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
@@ -133,10 +133,10 @@ lab.%.phaseb.flash:
 	$(call py_run,scripts/lab_host.py flash $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
 
 lab.%.phaseb.capture:
-	$(call py_run,scripts/lab_host.py capture $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+	$(call py_run,scripts/lab_host.py capture $* --variant phaseb $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
 lab.%.phaseb:
-	$(call py_run,scripts/lab_host.py run $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+	$(call py_run,scripts/lab_host.py run $* --variant phaseb $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
 lab.%.eager.build:
 	$(call py_run,scripts/lab_host.py build $* --variant eager)
@@ -163,7 +163,7 @@ lab.%.flash:
 	$(call py_run,scripts/lab_host.py flash $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
 
 lab.%.capture:
-	$(call py_run,scripts/lab_host.py capture $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+	$(call py_run,scripts/lab_host.py capture $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
 lab.%:
 	$(call py_run,scripts/lab_host.py run $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))

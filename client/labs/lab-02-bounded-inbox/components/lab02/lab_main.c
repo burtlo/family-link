@@ -64,6 +64,7 @@ static void session_pump_task(void *arg)
             lab02_carousel_pump(c);
         }
         lab02_board_lvgl_unlock();
+        lab02_page_provider_http_service_initial_retry();
     }
 }
 #endif

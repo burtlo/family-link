@@ -1,0 +1,13 @@
+SESSION_TRACE event=io_start_admitted op_id=0 page=0 message=- session=1 kind=http_startup
+TASK_CREATE name=lab02_http_boot ordinal=1 fail=0
+TASK_CREATE name=lab02_http ordinal=2 fail=0
+SESSION_TRACE event=fetch_delivery_retained op_id=0 page=0 message=- 
+SESSION_TRACE event=io_start_terminal op_id=0 page=0 message=- session=1 kind=http_startup outcome=success reason=worker_available
+LAB02_HTTP_READY revision=1 items=64
+SESSION_TRACE event=page_apply op_id=0 page=0 message=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_admitted op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_terminal op_id=0 page=0 message=- session=1 revision=0 attempt=1 outcome=success elapsed_us=50
+SESSION_TRACE event=fetch_delivery_retained op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_fail op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_terminal op_id=1 page=1 message=- session=1 revision=1 attempt=1 outcome=failure elapsed_us=10
+HTTP_STARTUP_RESULT scenario=success PASS

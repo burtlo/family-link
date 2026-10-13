@@ -1,0 +1,610 @@
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c
+@@ -2,12 +2,60 @@
+ #include "lab02/layout.h"
+ #include "lab02/instrumentation.h"
+ #include "lab02/trace_emit.h"
++#include "lab02/lab02_session_io.h"
+ 
+ #include "sdkconfig.h"
+ 
+ #include <stdio.h>
+ #include <string.h>
+ 
++/* The existing default font lacks U+2026. A small static fallback preserves
++ * approved copy without missing-glyph boxes or another widget. */
++static bool ellipsis_dsc(const lv_font_t *font, lv_font_glyph_dsc_t *out,
++                         uint32_t letter, uint32_t next)
++{
++    (void)font; (void)next;
++    if (letter != 0x2026) return false;
++    out->adv_w = 10; out->box_w = 9; out->box_h = 2;
++    out->ofs_x = 0; out->ofs_y = 0; out->stride = 9;
++    out->format = LV_FONT_GLYPH_FORMAT_A8;
++    return true;
++}
++static const void *ellipsis_bitmap(lv_font_glyph_dsc_t *glyph, lv_draw_buf_t *buffer)
++{
++    (void)glyph; (void)buffer;
++    static const uint8_t dots[] = {255,255,0,0,255,255,0,255,255,
++                                  255,255,0,0,255,255,0,255,255};
++    return dots;
++}
++static const lv_font_t ellipsis_font = {.get_glyph_dsc = ellipsis_dsc,
++    .get_glyph_bitmap = ellipsis_bitmap, .line_height = 16, .base_line = 3,
++    .static_bitmap = 1};
++static lv_font_t card_font;
++
++static void cancel_pending(lab02_card_view_t *view, const char *reason)
++{
++    if (view->pending_bind) {
++        view->state = LAB02_CARD_STALE;
++        lab02_instrumentation_get()->stale_bind_drops++;
++        lab02_trace_emit("bind_stale", view->pending_generation, view->bound_index,
++                         view->pending_item.message_id, reason);
++    }
++    view->pending_bind = false;
++    memset(&view->pending_item, 0, sizeof(view->pending_item));
++#if CONFIG_LAB02_SLOW_BIND_MS > 0
++    if (view->bind_timer) lv_timer_pause(view->bind_timer);
++#endif
++}
++
++static void clear_content(lab02_card_view_t *view)
++{
++    lv_label_set_text(view->sender_lab, "");
++    lv_label_set_text(view->preview_lab, "");
++    lv_label_set_text(view->dur_lab, "");
++    lv_obj_add_flag(view->unread_dot, LV_OBJ_FLAG_HIDDEN);
++}
++
+ static int32_t card_x_for_index(int index)
+ {
+     return LAB02_CARD_GAP + index * (LAB02_CARD_W + LAB02_CARD_GAP);
+@@ -15,6 +63,8 @@
+ 
+ static void apply_bind_labels(lab02_card_view_t *view, const lab02_inbox_item_t *item)
+ {
++    view->state = LAB02_CARD_BOUND;
++    lv_label_set_long_mode(view->sender_lab, LV_LABEL_LONG_DOT);
+     lv_label_set_text(view->sender_lab, item->sender_name);
+     lv_label_set_text(view->preview_lab, item->preview);
+     char dur[16];
+@@ -27,7 +77,10 @@
+     }
+     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+     lab02_instrumentation_get()->bind_count++;
+-    lab02_trace_emit("bind", view->bind_generation, view->bound_index, item->message_id, NULL);
++    char context[80];
++    snprintf(context, sizeof(context), "session=%u revision=%u state=bound",
++             (unsigned)view->session_generation, (unsigned)view->inbox_revision);
++    lab02_trace_emit("bind", view->bind_generation, view->bound_index, item->message_id, context);
+ }
+ 
+ #if CONFIG_LAB02_SLOW_BIND_MS > 0
+@@ -38,11 +91,19 @@
+     if (!view || !view->pending_bind) {
+         return;
+     }
++    if (view->bind_generation != view->pending_generation ||
++        view->session_generation != view->pending_session ||
++        view->inbox_revision != view->pending_revision ||
++        lab02_session_generation() != view->pending_session ||
++        lab02_session_snapshot().inbox_revision != view->pending_revision ||
++        strcmp(view->bound_message_id, view->pending_item.message_id) != 0) {
++        cancel_pending(view, "reason=snapshot_changed");
++        clear_content(view);
++        view->state = LAB02_CARD_STALE;
++        lv_label_set_text(view->sender_lab, "Loading message…");
++        return;
++    }
+     view->pending_bind = false;
+-    if (strcmp(view->bound_message_id, view->pending_item.message_id) != 0) {
+-        lab02_instrumentation_get()->stale_bind_drops++;
+-        return;
+-    }
+     apply_bind_labels(view, &view->pending_item);
+ }
+ #endif
+@@ -50,12 +111,17 @@
+ void lab02_card_view_create(lab02_card_view_t *view, lv_obj_t *parent)
+ {
+     memset(view, 0, sizeof(*view));
++    view->bound_index = -1;
++    card_font = *LV_FONT_DEFAULT;
++    card_font.fallback = &ellipsis_font;
+     view->root = lv_obj_create(parent);
+     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_SCROLLABLE);
+     lv_obj_set_size(view->root, LAB02_CARD_W, LAB02_CARD_H);
+     lab02_card_view_style_root(view->root, false);
+ 
+     view->sender_lab = lv_label_create(view->root);
++    lv_obj_set_style_text_font(view->sender_lab, &card_font, 0);
++    lv_obj_set_width(view->sender_lab, LAB02_CARD_W - 16);
+     lv_obj_set_style_text_color(view->sender_lab, lv_color_hex(LAB02_UI_TEXT), 0);
+     lv_label_set_text(view->sender_lab, "—");
+ 
+@@ -93,52 +159,69 @@
+     lv_obj_set_pos(view->root, card_x_for_index(index), 0);
+ }
+ 
++void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
++                              const lab02_slot_snapshot_t *slot)
++{
++    if (!view || !slot) return;
++    /* All property changes occur in one LVGL owner callback; no render can
++     * interleave old content with the new immutable identity. */
++    lab02_card_view_unbind(view, generation);
++    view->bind_generation = generation;
++    view->session_generation = slot->session_generation;
++    view->inbox_revision = slot->inbox_revision;
++    if (slot->state == LAB02_SLOT_OUT_OF_RANGE) return;
++    view->bound_index = slot->index;
++    lv_label_set_long_mode(view->sender_lab, LV_LABEL_LONG_WRAP);
++    view->state = slot->state == LAB02_SLOT_ERROR ? LAB02_CARD_ERROR : LAB02_CARD_LOADING;
++    lv_label_set_text(view->sender_lab, view->state == LAB02_CARD_ERROR ?
++                      "Message unavailable" : "Loading message…");
++    lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
++    char context[80];
++    snprintf(context, sizeof(context), "session=%u revision=%u state=%s",
++             (unsigned)slot->session_generation, (unsigned)slot->inbox_revision,
++             view->state == LAB02_CARD_ERROR ? "error" : "loading");
++    lab02_trace_emit("card_state", generation, slot->index,
++                     slot->item ? slot->item->message_id : NULL, context);
++    if (slot->state != LAB02_SLOT_BOUND || !slot->item) return;
++    snprintf(view->bound_message_id, sizeof(view->bound_message_id), "%s", slot->item->message_id);
++#if CONFIG_LAB02_SLOW_BIND_MS > 0
++    if (view->bind_timer) {
++        view->pending_item = *slot->item;
++        view->pending_generation = generation;
++        view->pending_session = slot->session_generation;
++        view->pending_revision = slot->inbox_revision;
++        view->pending_bind = true;
++        lv_timer_reset(view->bind_timer);
++        lv_timer_resume(view->bind_timer);
++    } else apply_bind_labels(view, slot->item);
++#else
++    apply_bind_labels(view, slot->item);
++#endif
++}
++
+ void lab02_card_view_bind(lab02_card_view_t *view, int index, uint32_t generation,
+                           const lab02_inbox_item_t *item)
+ {
+-    if (!view) {
+-        return;
+-    }
+-    if (!item) {
+-        lab02_card_view_unbind(view, generation);
+-        return;
+-    }
+-    view->bound_index = index;
+-    view->bind_generation = generation;
+-    snprintf(view->bound_message_id, sizeof(view->bound_message_id), "%s", item->message_id);
+-#if CONFIG_LAB02_SLOW_BIND_MS > 0
+-    if (view->bind_timer) {
+-        view->pending_item = *item;
+-        view->pending_bind = true;
+-        lv_obj_add_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+-        lv_timer_reset(view->bind_timer);
+-        lv_timer_resume(view->bind_timer);
+-    } else {
+-        apply_bind_labels(view, item);
+-    }
+-#else
+-    apply_bind_labels(view, item);
+-#endif
+-    lab02_card_view_style_root(view->root, false);
++    lab02_session_snapshot_t session = lab02_session_snapshot();
++    lab02_slot_snapshot_t slot = {.index = index, .item = item,
++        .session_generation = lab02_session_generation(), .inbox_revision = session.inbox_revision,
++        .state = item ? LAB02_SLOT_BOUND : LAB02_SLOT_LOADING};
++    lab02_card_view_present(view, generation, &slot);
+ }
+ 
+ void lab02_card_view_unbind(lab02_card_view_t *view, uint32_t generation)
+ {
+-    if (!view) {
+-        return;
+-    }
++    if (!view) return;
++    cancel_pending(view, "reason=superseded");
+     if (view->bound_message_id[0]) {
+         lab02_trace_emit("unbind", generation, view->bound_index, view->bound_message_id, NULL);
+         lab02_instrumentation_get()->unbind_count++;
+     }
++    clear_content(view);
+     view->bound_index = -1;
++    view->bind_generation = generation;
+     view->bound_message_id[0] = 0;
+-    view->pending_bind = false;
+-#if CONFIG_LAB02_SLOW_BIND_MS > 0
+-    if (view->bind_timer) {
+-        lv_timer_pause(view->bind_timer);
+-    }
+-#endif
++    view->state = LAB02_CARD_UNBOUND;
+     lv_obj_add_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+ }
+ 
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c
+@@ -25,7 +25,6 @@
+         return;
+     }
+     for (int s = 0; s < LAB02_CARD_POOL_SIZE; s++) {
+-        int idx = pool->focus_index + slot_offset(s);
+         if (pool->views[s].bound_index >= 0) {
+             lab02_card_view_set_pos_for_index(&pool->views[s], pool->views[s].bound_index);
+         }
+@@ -48,12 +47,9 @@
+             lab02_card_view_unbind(view, generation);
+             continue;
+         }
+-        const lab02_inbox_item_t *item = lab02_page_provider_item(pp, idx);
+-        lab02_card_view_bind(view, idx, generation, item);
++        lab02_slot_snapshot_t slot = lab02_session_slot_snapshot(pp, idx);
++        lab02_card_view_present(view, generation, &slot);
+         lab02_card_view_set_pos_for_index(view, idx);
+-        if (!view->pending_bind) {
+-            lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+-        }
+         lab02_card_view_style_root(view->root, idx == focus);
+     }
+ }
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_view.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_view.h
+@@ -3,10 +3,19 @@
+ #include "lvgl.h"
+ 
+ #include "lab02/inbox_model.h"
++#include "lab02/lab02_session.h"
+ 
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
++
++typedef enum {
++    LAB02_CARD_UNBOUND,
++    LAB02_CARD_LOADING,
++    LAB02_CARD_BOUND,
++    LAB02_CARD_ERROR,
++    LAB02_CARD_STALE,
++} lab02_card_state_t;
+ 
+ typedef struct {
+     lv_obj_t *root;
+@@ -20,6 +29,13 @@
+     lv_timer_t *bind_timer;
+     lab02_inbox_item_t pending_item;
+     bool pending_bind;
++    lab02_card_state_t state;
++    uint32_t session_generation;
++    uint32_t inbox_revision;
++    uint32_t pending_generation;
++    uint32_t pending_session;
++    uint32_t pending_revision;
++
+ } lab02_card_view_t;
+ 
+ void lab02_card_view_style_root(lv_obj_t *card, bool focused);
+@@ -28,6 +44,9 @@
+ void lab02_card_view_create(lab02_card_view_t *view, lv_obj_t *parent);
+ void lab02_card_view_bind(lab02_card_view_t *view, int index, uint32_t generation,
+                           const lab02_inbox_item_t *item);
++/** Clear old content and apply one session-owned slot atomically on the UI owner. */
++void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
++                              const lab02_slot_snapshot_t *slot);
+ void lab02_card_view_unbind(lab02_card_view_t *view, uint32_t generation);
+ void lab02_card_view_set_pos_for_index(lab02_card_view_t *view, int index);
+ bool lab02_card_view_is_stale(const lab02_card_view_t *view, uint32_t generation);
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+@@ -460,6 +460,21 @@
+     return snap;
+ }
+ 
++lab02_slot_snapshot_t lab02_session_slot_snapshot(const lab02_page_provider_t *provider, int index)
++{
++    lab02_slot_snapshot_t slot = {.index = index,
++        .session_generation = s_session_generation, .inbox_revision = s_inbox_revision,
++        .state = LAB02_SLOT_OUT_OF_RANGE};
++    if (!provider || !provider->model || index < 0 || index >= provider->model->count) return slot;
++    slot.item = lab02_inbox_model_item(provider->model, index);
++    int page = page_for_focus(index, effective_page_size());
++    if (slot.item) slot.state = LAB02_SLOT_BOUND;
++    else if (s_http_mode && page < LAB02_HTTP_MAX_PAGES &&
++             (s_failed_pages & (1U << page))) slot.state = LAB02_SLOT_ERROR;
++    else slot.state = LAB02_SLOT_LOADING;
++    return slot;
++}
++
+ uint16_t lab02_session_http_page_size(void)
+ {
+     return effective_page_size();
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
+@@ -56,6 +56,24 @@
+ /** HTTP path: empty shell; worker fills model via session events. */
+ bool lab02_session_begin_http(lab02_page_provider_t *pp);
+ 
++typedef enum {
++    LAB02_SLOT_OUT_OF_RANGE,
++    LAB02_SLOT_LOADING,
++    LAB02_SLOT_BOUND,
++    LAB02_SLOT_ERROR,
++} lab02_slot_state_t;
++
++typedef struct {
++    int index;
++    uint32_t session_generation;
++    uint32_t inbox_revision;
++    lab02_slot_state_t state;
++    const lab02_inbox_item_t *item; /* Owner-thread snapshot; consume before next pump. */
++} lab02_slot_snapshot_t;
++
++/** Coherent owner-thread page/content state; presentation never infers failure. */
++lab02_slot_snapshot_t lab02_session_slot_snapshot(const lab02_page_provider_t *provider, int index);
++
+ lab02_session_snapshot_t lab02_session_snapshot(void);
+ lab02_session_metrics_t lab02_session_metrics(void);
+ const lab02_page_provider_t *lab02_session_provider(void);
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+@@ -82,13 +82,13 @@
+         return;
+     }
+     if (snap.focused_page_failed) {
+-        snprintf(buf, sizeof(buf), "LAB-02  page unavailable; retrying");
++        snprintf(buf, sizeof(buf), "LAB-02  page unavailable");
+         lv_label_set_text(c->count_lab, buf);
+         return;
+     }
+     const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, c->focus_index);
+     if (!item) {
+-        snprintf(buf, sizeof(buf), "LAB-02  %d/%d  loading page…", c->focus_index + 1,
++        snprintf(buf, sizeof(buf), "LAB-02  %d/%d  loading page...", c->focus_index + 1,
+                  c->item_count);
+         lv_label_set_text(c->count_lab, buf);
+         return;
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c
+@@ -1,5 +1,5 @@
+-/* Characterize production C paths using actual LVGL. Assertions intentionally
+- * describe observed baseline defects; this is not a remediation acceptance gate. */
++/* Production C + actual LVGL: F001/C2 acceptance; remaining defects keep their
++ * baseline characterization until their separately authorized units. */
+ #define lab02_trace_emit c0_discard_trace
+ #define lab02_snap_current_id c0_discard_snap_id
+ #include "../session_host_stubs.c"
+@@ -13,6 +13,7 @@
+ #include <assert.h>
+ #include <stdio.h>
+ #include <stdatomic.h>
++#include "sdkconfig.h"
+ 
+ static lab02_carousel_t carousel;
+ static unsigned char framebuffer[320 * 240 * 3];
+@@ -77,10 +78,10 @@
+         lab02_card_view_t *v = &carousel.pool.views[i];
+         lv_area_t bounds;
+         lv_obj_get_coords(v->root, &bounds);
+-        printf("%s{slot:%d,index:%d,id:%s,gen:%u,hidden:%d,x1:%d,x2:%d,sender:%s}",
++        printf("%s{slot:%d,index:%d,id:%s,gen:%u,hidden:%d,x1:%d,x2:%d,state:%d,revision:%u,session:%u,sender:%s}",
+                i ? "," : "", i, v->bound_index, v->bound_message_id[0] ? v->bound_message_id : "-",
+                v->bind_generation, lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN),
+-               (int)bounds.x1, (int)bounds.x2, lv_label_get_text(v->sender_lab));
++               (int)bounds.x1, (int)bounds.x2, v->state, v->inbox_revision, v->session_generation, lv_label_get_text(v->sender_lab));
+     }
+     printf(" starts=%u ends=%u deferred=%u stale=%u applied=%u\n", snap_starts, snap_ends,
+            lab02_session_metrics().apply_deferred, lab02_session_metrics().apply_stale,
+@@ -104,6 +105,8 @@
+     if (count - offset < 16) p.item_count = (uint16_t)(count - offset);
+     for (int i = 0; i < p.item_count; i++) {
+         int id = offset + i + shift;
++        p.items[i].unread = true;
++        p.items[i].duration_ms = 12345;
+         snprintf(p.items[i].message_id, sizeof(p.items[i].message_id), "m%d", id);
+         snprintf(p.items[i].sender_name, sizeof(p.items[i].sender_name), "Sender %d", id);
+         snprintf(p.items[i].preview, sizeof(p.items[i].preview), "Fixture %d", id);
+@@ -181,6 +184,7 @@
+     lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, sid);
+     submit((lab02_fetch_req_t){.session_id = sid}, make_page(1, 0, 64, 0), true);
+     lab02_carousel_set_focus(&carousel, 4, false);
++    advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
+     checkpoint("ready");
+ 
+     if (!strcmp(scenario, "fast-boundary")) {
+@@ -192,11 +196,78 @@
+     } else if (!strcmp(scenario, "delayed-focus")) {
+         lab02_carousel_set_focus(&carousel, 20, false);
+         checkpoint("missing");
+-        assert(carousel.pool.views[1].bound_index == -1);
++        assert(carousel.pool.views[1].bound_index == 20);
+         assert(!lv_obj_has_flag(carousel.pool.views[1].root, LV_OBJ_FLAG_HIDDEN));
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].sender_lab), "Sender 4"));
++        assert(carousel.pool.views[1].state == LAB02_CARD_LOADING);
++        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].sender_lab), "Loading message…"));
++        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].preview_lab), ""));
++        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].dur_lab), ""));
++        assert(lv_obj_has_flag(carousel.pool.views[1].unread_dot, LV_OBJ_FLAG_HIDDEN));
+         submit(take_page(1), make_page(1, 16, 64, 0), false);
+         checkpoint("terminal");
++    } else if (!strcmp(scenario, "failed-page")) {
++        lab02_carousel_set_focus(&carousel, 15, false);
++        lab02_fetch_req_t req = take_page(1);
++        lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, req.session_id,
++            req.op_id, req.page_index, NULL, false);
++        lab02_carousel_pump(&carousel);
++        advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
++        checkpoint("neighbor-error");
++        assert(carousel.pool.views[1].state == LAB02_CARD_BOUND);
++        assert(carousel.pool.views[2].state == LAB02_CARD_ERROR);
++        assert(!strcmp(lv_label_get_text(carousel.pool.views[2].sender_lab), "Message unavailable"));
++        lab02_carousel_set_focus(&carousel, 16, false);
++        req = take_page(1); /* Existing focus admission policy is unchanged. */
++        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, req.session_id,
++            req.op_id, req.page_index, NULL, false);
++        lab02_carousel_pump(&carousel);
++        checkpoint("focused-error");
++        assert(carousel.pool.views[1].state == LAB02_CARD_ERROR);
++        assert(!lv_obj_has_flag(carousel.pool.views[1].root, LV_OBJ_FLAG_HIDDEN));
++        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].preview_lab), ""));
++        lab02_carousel_set_focus(&carousel, 40, false);
++        assert(carousel.pool.views[1].state == LAB02_CARD_LOADING);
++        (void)take_page(2); /* Traversal still submits the newly focused page. */
++    } else if (!strcmp(scenario, "pool-bounds")) {
++        lv_obj_t *screen = carousel.screen, *scroll = carousel.scroll;
++        unsigned nodes = lv_obj_get_child_count(scroll);
++        for (int n = 8; n <= 256; n = n == 8 ? 16 : n * 4) {
++            assert(lab02_session_intent_refresh());
++            submit(take_page(0), make_page((unsigned)n, 0, n, 0), false);
++            lab02_carousel_set_focus(&carousel, n - 1, false);
++            assert(lv_obj_get_child_count(scroll) == nodes);
++            assert(carousel.screen == screen && carousel.scroll == scroll);
++            for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++)
++                assert(lv_obj_get_child_count(carousel.pool.views[i].root) == 4);
++            assert(carousel.pool.views[2].state == LAB02_CARD_UNBOUND);
++            assert(lv_obj_has_flag(carousel.pool.views[2].root, LV_OBJ_FLAG_HIDDEN));
++            checkpoint("bounded");
++        }
++    } else if (!strcmp(scenario, "slow-bind")) {
++#if CONFIG_LAB02_SLOW_BIND_MS > 0
++        unsigned stale = lab02_instrumentation_get()->stale_bind_drops;
++        lab02_carousel_set_focus(&carousel, 6, false);
++        uint32_t old_generation = carousel.pool.views[1].bind_generation;
++        checkpoint("pending6");
++        assert(carousel.pool.views[1].state == LAB02_CARD_LOADING);
++        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].preview_lab), ""));
++        advance(20);
++        lab02_carousel_set_focus(&carousel, 7, false);
++        assert(carousel.pool.views[1].bind_generation != old_generation);
++        assert(lab02_instrumentation_get()->stale_bind_drops >= stale + 3);
++        checkpoint("superseded7");
++        advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
++        checkpoint("bound7");
++        assert(carousel.pool.views[1].state == LAB02_CARD_BOUND);
++        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].sender_lab), "Sender 7"));
++        lab02_carousel_set_focus(&carousel, 8, false);
++        lab02_session_reset(); /* Timer cannot apply across a new session. */
++        advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
++        assert(carousel.pool.views[1].state == LAB02_CARD_STALE);
++        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].preview_lab), ""));
++#else
++        assert(!"slow-bind scenario requires production slow-bind compile branch");
++#endif
+     } else if (!strcmp(scenario, "reversal")) {
+         lab02_carousel_set_focus(&carousel, 8, true);
+         advance(60); checkpoint("snap8");
+@@ -267,6 +338,6 @@
+         assert(lab02_session_metrics().apply_stale == 1);
+         assert(!lab02_page_provider_item(&carousel.provider, 20));
+     } else { assert(!"unknown scenario"); }
+-    printf("C0_RESULT scenario=%s characterization=PASS fixes=none\n", scenario);
++    printf("C0_RESULT scenario=%s characterization=PASS acceptance=F001-C2\n", scenario);
+     return 0;
+ }
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/sdkconfig.h
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/sdkconfig.h
+@@ -1,3 +1,4 @@
+ #pragma once
+-/* Host characterization: immediate card binds; production configuration untouched. */
++#ifndef CONFIG_LAB02_SLOW_BIND_MS
+ #define CONFIG_LAB02_SLOW_BIND_MS 0
++#endif
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/CMakeLists.txt
+@@ -13,6 +13,9 @@
+   "${CORE}/snap_math.c" "${CORE}/lab02_session.c" "${CORE}/inbox_model.c"
+   "${CORE}/inbox_page_metadata.c" "${CORE}/instrumentation.c"
+   "${CJSON_DIR}/cJSON.c")
++if(DEFINED LAB02_SLOW_BIND_MS)
++  target_compile_definitions(lab02_c0 PRIVATE CONFIG_LAB02_SLOW_BIND_MS=${LAB02_SLOW_BIND_MS})
++endif()
+ target_compile_features(lab02_c0 PRIVATE c_std_11)
+ target_compile_definitions(lab02_c0 PRIVATE _POSIX_C_SOURCE=200809L)
+ target_compile_options(lab02_c0 PRIVATE -Wall -Wextra)
+--- a/scripts/tests/test_lab02_carousel_native.py
++++ b/scripts/tests/test_lab02_carousel_native.py
+@@ -17,7 +17,7 @@
+ ROOT = Path(__file__).resolve().parents[2]
+ LAB = ROOT / "client/labs/lab-02-bounded-inbox"
+ SCENARIOS = ("fast-boundary", "delayed-focus", "reversal", "page-during-snap",
+-             "push-during-snap", "remove-during-snap", "stale-after-revision", "queue-full")
++             "push-during-snap", "remove-during-snap", "stale-after-revision", "queue-full", "failed-page", "pool-bounds")
+ 
+ 
+ def inputs():
+@@ -30,7 +30,7 @@
+     return cjson, lvgl
+ 
+ 
+-def run_characterization(artifact_dir):
++def run_characterization(artifact_dir, slow_bind_ms=0):
+     cjson, lvgl = inputs()
+     artifact_dir = Path(artifact_dir).resolve()
+     artifact_dir.mkdir(parents=True, exist_ok=True)
+@@ -40,7 +40,7 @@
+     source_files.update((cjson / "cJSON.c", cjson / "cJSON.h", Path(__file__).resolve()))
+     manifest = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(source_files)}
+     compiler = subprocess.run(["cc", "--version"], check=True, capture_output=True, text=True).stdout
+-    identity = hashlib.sha256((json.dumps(manifest, sort_keys=True) + compiler).encode()).hexdigest()
++    identity = hashlib.sha256((json.dumps(manifest, sort_keys=True) + compiler + str(slow_bind_ms)).encode()).hexdigest()
+     cache = Path(tempfile.gettempdir()) / ("family-link-lab02-c0-" + identity[:20])
+     (artifact_dir / "source-sha256.json").write_text(json.dumps(manifest, indent=2) + "\n")
+     (artifact_dir / "runtime.json").write_text(json.dumps({"input_digest": identity, "cache": str(cache),
+@@ -57,11 +57,11 @@
+         return result.stdout
+ 
+     execute(["cmake", "-S", str(LAB / "tests/c0_runtime"), "-B", str(cache),
+-             "-DCJSON_DIR=" + str(cjson)], "configure-final.log", 60)
++             "-DCJSON_DIR=" + str(cjson), "-DLAB02_SLOW_BIND_MS=" + str(slow_bind_ms)], "configure-final.log", 60)
+     execute(["cmake", "--build", str(cache), "-j", "8"], "build-final.log", 180)
+-    for scenario in SCENARIOS:
++    for scenario in (SCENARIOS + (("slow-bind",) if slow_bind_ms else ())):
+         output = execute([str(cache / "lab02_c0"), scenario, str(artifact_dir)], scenario + ".log", 10)
+-        if f"C0_RESULT scenario={scenario} characterization=PASS fixes=none" not in output:
++        if f"C0_RESULT scenario={scenario} characterization=PASS acceptance=F001-C2" not in output:
+             raise AssertionError(f"missing native result for {scenario}")
+     # Inspect actual renderer output pixels, not a Python behavior model.
+     pixels = (artifact_dir / "fast-boundary-drag20.ppm").read_bytes().split(b"\n", 3)[3]
+@@ -88,5 +88,6 @@
+ if __name__ == "__main__":
+     parser = argparse.ArgumentParser()
+     parser.add_argument("--artifact-dir", required=True)
++    parser.add_argument("--slow-bind-ms", type=int, default=0)
+     args = parser.parse_args()
+-    print(run_characterization(args.artifact_dir))
++    print(run_characterization(args.artifact_dir, args.slow_bind_ms))
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md
+@@ -51,3 +51,29 @@
+ hashes and compiler identity; saved command, source-hash and runtime manifests
+ make the executable state reproducible. Missing dependencies yield an explicit
+ unittest skip, not a passing runtime claim.
++
++## C2 current acceptance gates
++
++The original C0 artifacts remain in the review evidence. Current delayed-focus
++assertions now gate F001: every in-range slot retains its surface, index and
++explicit loading/error state, with sender/preview/duration/unread cleared before
++reuse. Failed-page tests retain a valid neighboring card and allow traversal to
++a newly fetched page; existing focus-driven retry admission remains unchanged.
++No tap retry control or retry-policy claim is added by C2. Pool-bounds checks
++8/16/64/256 counts, three roots with four children each and unchanged scene/scroll
++handles. The original fast traversal/reversal/page-during-snap expectations remain
++characterizations of deferred units.
++
++Run the actual production delayed-bind compile branch with:
++
++```sh
++python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c2-slow --slow-bind-ms 100
++```
++
++This also verifies visible pending surfaces, frozen binding generations, one
++supersession terminal per pending bind, and stale reset rejection. Rendered PPM
++frames contain exact approved loading/error copy using the existing font plus a
++static ellipsis fallback. The compact owner-thread slot snapshot borrows the
++materialized item pointer only until the next session pump; pending content is
++copied into the existing bounded per-view storage. No full-window/item copy is
++placed on the UI stack and no new widget is allocated during reconciliation.

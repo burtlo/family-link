@@ -1,0 +1,761 @@
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c b/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
+index 62cc9e0..de1f279 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
+@@ -99,11 +99,12 @@ static void harness_task(void *arg)
+         lab02_board_lvgl_unlock();
+     }
+     int n = c->item_count;
+-    int steps = n < 20 ? n : 20;
+-    printf("HARNESS_BEGIN steps=%d\n", steps);
+-    harness_show_step(0, steps, "starting");
+-    for (int i = 0; i < steps; i++) {
+-        harness_step(c, i % n, i + 1, steps);
++    int legs = n < 20 ? n : 20;
++    int total_steps = legs * 2;
++    printf("HARNESS_BEGIN legs=%d total_steps=%d\n", legs, total_steps);
++    harness_show_step(0, legs, "starting");
++    for (int i = 0; i < legs; i++) {
++        harness_step(c, i % n, i + 1, legs);
+         if (!harness_wait_snap(c, 1500)) {
+             printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
+             vTaskDelete(NULL);
+@@ -118,8 +119,8 @@ static void harness_task(void *arg)
+         }
+         vTaskDelay(pdMS_TO_TICKS(700));
+     }
+-    for (int i = steps - 1; i >= 0; i--) {
+-        harness_step(c, i % n, steps - i, steps);
++    for (int i = legs - 1; i >= 0; i--) {
++        harness_step(c, i % n, legs - i, legs);
+         if (!harness_wait_snap(c, 1500)) {
+             printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
+             vTaskDelete(NULL);
+@@ -129,7 +130,7 @@ static void harness_task(void *arg)
+     }
+     lab02_board_status_set("");
+     lab02_trace_emit("harness_done", 0, c->focus_index, NULL, NULL);
+-    printf("HARNESS_DONE build=%s steps=%d scenario=%s\n", CONFIG_LAB02_BUILD_ID, steps,
++    printf("HARNESS_DONE build=%s steps=%d scenario=%s\n", CONFIG_LAB02_BUILD_ID, total_steps,
+            CONFIG_LAB02_SCENARIO);
+     vTaskDelete(NULL);
+ }
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c b/client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c
+index 396cc68..870d8f5 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c
+@@ -79,7 +79,7 @@ bool lab02_board_wifi_connect(void)
+     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wcfg));
+     ESP_ERROR_CHECK(esp_wifi_start());
+     EventBits_t bits = xEventGroupWaitBits(s_wifi_events, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE,
+-                                           pdMS_TO_TICKS(15000));
++                                           pdMS_TO_TICKS(30000));
+     if ((bits & WIFI_CONNECTED_BIT) == 0) {
+         ESP_LOGE(TAG, "Wi-Fi connect timeout");
+         return false;
+diff --git a/scripts/lab_host.py b/scripts/lab_host.py
+index 6acc414..eafb765 100644
+--- a/scripts/lab_host.py
++++ b/scripts/lab_host.py
+@@ -19,10 +19,10 @@ sys.path.insert(0, str(ROOT / "scripts"))
+ 
+ from deployment_config import Deployment, Kit, load_active_deployment
+ from device_targets import Port, kit_for, ports, resolve_port as resolve_kit_port, select, serial_key, validate_bindings
+-from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
+-from lab02_workflow_config import load_lab02_workflow_config
+-from lab02_canonical_run import run_canonical
+-from lab02_experiment_sdkconfig import write_lab02_local_overlay
++from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
++from lab02_workflow_config import load_lab02_workflow_config
++from lab02_canonical_run import run_canonical
++from lab02_experiment_sdkconfig import write_lab02_local_overlay
+ from firmware import idf_environment, run
+ from lab_registry import (
+     LabSpec,
+@@ -236,8 +236,64 @@ def _sdkconfig_defaults_env_from_files(files: list[Path]) -> dict[str, str]:
+     return {"SDKCONFIG_DEFAULTS": ";".join(str(path) for path in files)}
+ 
+ 
+-def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
+-    return variant_name in {"phaseb", "scripted-phaseb"}
++def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
++    return variant_name in {"phaseb", "scripted-phaseb"}
++
++
++def lab02_scripted_variant_name(backend: str) -> str:
++    """Managed HTTP scripted runs use scripted-phaseb; BACKEND=local uses embedded scripted."""
++    return "scripted" if backend == "local" else "scripted-phaseb"
++
++
++def lab02_managed_canonical_plan(
++    variant_name: str, backend: str
++) -> tuple[str, str] | None:
++    """Return (mode, build_variant) when a lab02 run/capture should use the canonical coordinator."""
++    if backend != "managed-http":
++        return None
++    if variant_name == "scripted-phaseb":
++        return ("scripted", "scripted-phaseb")
++    if variant_name in {"recycle", "phaseb"}:
++        return ("manual", "phaseb")
++    return None
++
++
++def _run_lab02_canonical(
++    config: ProjectConfig,
++    *,
++    mode: str,
++    build_variant: str,
++    kit: str,
++    port: str,
++    seconds: int,
++    flash: bool,
++    run_id: str,
++    no_build: bool,
++    spec: LabSpec,
++) -> int:
++    def _build_canonical(cfg, name, selected_variant, **kwargs):
++        return build_lab(cfg, name, selected_variant, **kwargs)
++
++    def _parse_canonical(serial_path, metrics_path):
++        parse_serial_file(spec, serial_path, metrics_path)
++
++    return run_canonical(
++        config,
++        mode=mode,
++        kit=kit,
++        port=port,
++        seconds=seconds,
++        flash=flash,
++        run_id=run_id,
++        no_build=no_build,
++        build_variant=build_variant,
++        backend="managed-http",
++        target_resolver=resolve_run_target,
++        target_revalidator=revalidate_run_target,
++        build=_build_canonical,
++        flash_build=flash_lab_build,
++        parse=_parse_canonical,
++    )
+ 
+ 
+ def _prepare_lab_build_directory(build_dir: Path) -> None:
+@@ -268,76 +324,76 @@ def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Non
+             f"-DSDKCONFIG={build_dir / 'sdkconfig'}",
+         ]
+         timeout = config.integer("command.lab.build.timeout_seconds", default=1200, minimum=1)
+-        try:
+-            run(base + ["fullclean"], env=env, timeout=timeout)
+-            print(f"Cleaned lab.{spec.make_name} variant={var.name} (idf fullclean) -> {_rel(build_dir)}")
+-        except (ProjectConfigError, OSError, subprocess.SubprocessError):
+-            pass
+-    shutil.rmtree(build_dir)
+-    for sidecar in deployment_defaults_sidecars(build_dir):
+-        sidecar.unlink(missing_ok=True)
+-    for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
+-                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256"):
+-        sidecar.unlink(missing_ok=True)
++        try:
++            run(base + ["fullclean"], env=env, timeout=timeout)
++            print(f"Cleaned lab.{spec.make_name} variant={var.name} (idf fullclean) -> {_rel(build_dir)}")
++        except (ProjectConfigError, OSError, subprocess.SubprocessError):
++            pass
++    shutil.rmtree(build_dir)
++    for sidecar in deployment_defaults_sidecars(build_dir):
++        sidecar.unlink(missing_ok=True)
++    for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
++                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256"):
++        sidecar.unlink(missing_ok=True)
+     print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
+ 
+ 
+-def _defaults_files_for_lab_build(
++def _defaults_files_for_lab_build(
+     config: ProjectConfig,
+     spec: LabSpec,
+     var,
+     build_dir: Path,
+     kit: str,
+     port: str,
+-    target: RunTarget | None = None,
+-    frozen_workflow=None,
+-    frozen_fixture_size: int | None = None,
+-    frozen_scenario: str | None = None,
+-    frozen_build_id: str = "",
+-) -> list[Path]:
+-    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
+-    if not _variant_uses_deployment_kit_secrets(var.name):
+-        if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
+-            try:
+-                import yaml
+-                if frozen_fixture_size is None or frozen_scenario is None:
+-                    registry = yaml.safe_load(config.path_value("labs.registry").read_text(encoding="utf-8"))
+-                    workflow = registry["labs"]["lab02"]["workflow"]
+-                    fixture_size = int(workflow["fixture_size_default"])
+-                    scenario = str(workflow["scenario_default"])
+-                else:
+-                    fixture_size, scenario = frozen_fixture_size, frozen_scenario
+-                overlay = write_lab02_local_overlay(
+-                    build_dir,
+-                    fixture_size=fixture_size,
+-                    scenario=scenario,
+-                    scripted=var.name == "scripted",
+-                    build_id=frozen_build_id,
+-                )
+-                return defaults_files + [overlay]
+-            except (OSError, KeyError, TypeError, ValueError):
+-                raise ProjectConfigError("invalid LAB-02 local experiment defaults") from None
+-        return defaults_files
++    target: RunTarget | None = None,
++    frozen_workflow=None,
++    frozen_fixture_size: int | None = None,
++    frozen_scenario: str | None = None,
++    frozen_build_id: str = "",
++) -> list[Path]:
++    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
++    if not _variant_uses_deployment_kit_secrets(var.name):
++        if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
++            try:
++                import yaml
++                if frozen_fixture_size is None or frozen_scenario is None:
++                    registry = yaml.safe_load(config.path_value("labs.registry").read_text(encoding="utf-8"))
++                    workflow = registry["labs"]["lab02"]["workflow"]
++                    fixture_size = int(workflow["fixture_size_default"])
++                    scenario = str(workflow["scenario_default"])
++                else:
++                    fixture_size, scenario = frozen_fixture_size, frozen_scenario
++                overlay = write_lab02_local_overlay(
++                    build_dir,
++                    fixture_size=fixture_size,
++                    scenario=scenario,
++                    scripted=var.name == "scripted",
++                    build_id=frozen_build_id,
++                )
++                return defaults_files + [overlay]
++            except (OSError, KeyError, TypeError, ValueError):
++                raise ProjectConfigError("invalid LAB-02 local experiment defaults") from None
++        return defaults_files
+     if not kit.strip():
+         raise ProjectConfigError(
+             "Phase B build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
+             "e.g. make lab.lab02.phaseb.build KIT=lynn"
+         )
+-    deployment = target.deployment if target is not None else load_active_deployment(config)
+-    resolved = target.kit if target is not None else kit_for(deployment, kit)
+-    profile = deployment.secrets_profile_for_kit(resolved)
+-    if not profile or not profile.wifi_ssid or not profile.wifi_password:
+-        raise ProjectConfigError(
+-            "Phase B build requires per-kit Wi-Fi credentials in the private deployment roster"
+-        )
+-    workflow = frozen_workflow or load_lab02_workflow_config(config)
+-    overlay = write_deployment_kit_sdkconfig(
+-        build_dir, resolved, deployment, workflow.client_url,
+-        fixture_size=workflow.fixture_size_default, scenario=workflow.scenario_default,
+-        scripted=var.name == "scripted-phaseb",
+-        build_id=frozen_build_id,
+-    )
+-    return defaults_files + [overlay]
++    deployment = target.deployment if target is not None else load_active_deployment(config)
++    resolved = target.kit if target is not None else kit_for(deployment, kit)
++    profile = deployment.secrets_profile_for_kit(resolved)
++    if not profile or not profile.wifi_ssid or not profile.wifi_password:
++        raise ProjectConfigError(
++            "Phase B build requires per-kit Wi-Fi credentials in the private deployment roster"
++        )
++    workflow = frozen_workflow or load_lab02_workflow_config(config)
++    overlay = write_deployment_kit_sdkconfig(
++        build_dir, resolved, deployment, workflow.client_url,
++        fixture_size=workflow.fixture_size_default, scenario=workflow.scenario_default,
++        scripted=var.name == "scripted-phaseb",
++        build_id=frozen_build_id,
++    )
++    return defaults_files + [overlay]
+ 
+ 
+ def _sdkconfig_assignment_lines(path: Path) -> list[str]:
+@@ -393,7 +449,7 @@ def _refresh_stale_sdkconfig(build_dir: Path, defaults_files: list[Path]) -> boo
+     return True
+ 
+ 
+-def ensure_lab_built(
++def ensure_lab_built(
+     config: ProjectConfig,
+     make_name: str,
+     variant: str | None,
+@@ -407,34 +463,34 @@ def ensure_lab_built(
+     var = resolve_variant(spec, variant)
+     build_dir = ROOT / var.build_dir
+     defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
+-    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
+-    if stale or not (build_dir / "flasher_args.json").is_file():
+-        return build_lab(
+-            config,
+-            make_name,
+-            variant,
+-            kit=kit,
+-            port=port,
+-            target=target,
+-            frozen_defaults_files=defaults_files,
+-        )
++    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
++    if stale or not (build_dir / "flasher_args.json").is_file():
++        return build_lab(
++            config,
++            make_name,
++            variant,
++            kit=kit,
++            port=port,
++            target=target,
++            frozen_defaults_files=defaults_files,
++        )
+     return build_dir
+ 
+ 
+-def build_lab(
++def build_lab(
+     config: ProjectConfig,
+     make_name: str,
+     variant: str | None,
+     *,
+     kit: str = "",
+-    port: str = "",
+-    target: RunTarget | None = None,
+-    frozen_defaults_files: list[Path] | None = None,
+-    frozen_workflow=None,
+-    frozen_fixture_size: int | None = None,
+-    frozen_scenario: str | None = None,
+-    frozen_build_id: str = "",
+-) -> Path:
++    port: str = "",
++    target: RunTarget | None = None,
++    frozen_defaults_files: list[Path] | None = None,
++    frozen_workflow=None,
++    frozen_fixture_size: int | None = None,
++    frozen_scenario: str | None = None,
++    frozen_build_id: str = "",
++) -> Path:
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+     if config.text("idf.target", required=True) != spec.target:
+@@ -443,13 +499,13 @@ def build_lab(
+     project = ROOT / spec.project_dir
+     build_dir = ROOT / var.build_dir
+     _prepare_lab_build_directory(build_dir)
+-    defaults_files = (
+-        frozen_defaults_files
+-        if frozen_defaults_files is not None
+-        else _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target,
+-            frozen_workflow=frozen_workflow, frozen_fixture_size=frozen_fixture_size,
+-            frozen_scenario=frozen_scenario, frozen_build_id=frozen_build_id)
+-    )
++    defaults_files = (
++        frozen_defaults_files
++        if frozen_defaults_files is not None
++        else _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target,
++            frozen_workflow=frozen_workflow, frozen_fixture_size=frozen_fixture_size,
++            frozen_scenario=frozen_scenario, frozen_build_id=frozen_build_id)
++    )
+     _refresh_stale_sdkconfig(build_dir, defaults_files)
+     env.update(_sdkconfig_defaults_env_from_files(defaults_files))
+     base = idf + [
+@@ -732,6 +788,7 @@ def main() -> int:
+     cap_p.add_argument("--flash", action="store_true", default=False)
+     cap_p.add_argument("--no-flash", action="store_true")
+     cap_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
++    cap_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
+ 
+     run_p = sub.add_parser("run")
+     run_p.add_argument("lab")
+@@ -741,8 +798,8 @@ def main() -> int:
+     run_p.add_argument("--seconds", type=int, default=None)
+     run_p.add_argument("--flash", action="store_true", default=False)
+     run_p.add_argument("--no-flash", action="store_true")
+-    run_p.add_argument("--no-build", action="store_true")
+-    run_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
++    run_p.add_argument("--no-build", action="store_true")
++    run_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
+     run_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
+ 
+     parse_p = sub.add_parser("parse", help="Parse serial capture to metrics.json (make lab.<name>.parse)")
+@@ -780,47 +837,50 @@ def main() -> int:
+             flash_lab_build(config, build_dir, port)
+             print(f"Flashed lab.{spec.make_name} ({var.name}) on {port}")
+             return 0
+-        if args.action in ("capture", "run"):
++        if args.action in ("capture", "run"):
+             seconds = args.seconds
+             if seconds is None:
+                 seconds = spec.capture_seconds_default
+-            var = resolve_variant(spec, variant)
+-            flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
+-            if args.action == "run" and args.lab == "lab02" and args.backend == "managed-http" and var.name in {"recycle", "phaseb", "scripted-phaseb"}:
+-                mode = "scripted" if var.name == "scripted-phaseb" else "manual"
+-                def _build_canonical(cfg, name, selected_variant, **kwargs):
+-                    return build_lab(cfg, name, selected_variant, **kwargs)
+-                def _parse_canonical(serial_path, metrics_path):
+-                    parse_serial_file(spec, serial_path, metrics_path)
+-                return run_canonical(
+-                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
+-                    flash=flash, run_id=args.run_id, no_build=args.no_build,
+-                    build_variant="scripted-phaseb" if mode == "scripted" else "phaseb",
+-                    backend="managed-http",
+-                    target_resolver=resolve_run_target, target_revalidator=revalidate_run_target,
+-                    build=_build_canonical, flash_build=flash_lab_build, parse=_parse_canonical,
+-                )
+-            if args.action == "run" and args.lab == "lab02" and (args.backend == "local" or var.name == "eager"):
+-                if var.name == "scripted-phaseb":
+-                    variant = "scripted"
+-                elif var.name == "phaseb":
+-                    variant = None
+-                var = resolve_variant(spec, variant)
+-                mode = "scripted" if var.name == "scripted" else "manual"
+-                def _build_local(cfg, name, selected_variant, **kwargs):
+-                    return build_lab(cfg, name, selected_variant, **kwargs)
+-                def _parse_local(serial_path, metrics_path):
+-                    parse_serial_file(spec, serial_path, metrics_path)
+-                return run_canonical(
+-                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
+-                    flash=flash, run_id=args.run_id, no_build=args.no_build, backend="local",
+-                    build_variant=var.name, target_resolver=resolve_run_target,
+-                    target_revalidator=revalidate_run_target, build=_build_local,
+-                    flash_build=flash_lab_build, parse=_parse_local,
+-                )
+-            elif args.backend != "managed-http":
+-                raise ProjectConfigError("BACKEND=local is supported only for LAB-02")
+-            stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
++            var = resolve_variant(spec, variant)
++            flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
++            backend = getattr(args, "backend", "managed-http")
++            if args.lab == "lab02":
++                managed = lab02_managed_canonical_plan(var.name, backend)
++                if managed is not None:
++                    mode, build_variant = managed
++                    return _run_lab02_canonical(
++                        config,
++                        mode=mode,
++                        build_variant=build_variant,
++                        kit=args.kit,
++                        port=args.port,
++                        seconds=seconds,
++                        flash=flash,
++                        run_id=args.run_id,
++                        no_build=getattr(args, "no_build", False),
++                        spec=spec,
++                    )
++            if args.action == "run" and args.lab == "lab02" and (args.backend == "local" or var.name == "eager"):
++                if var.name == "scripted-phaseb":
++                    variant = "scripted"
++                elif var.name == "phaseb":
++                    variant = None
++                var = resolve_variant(spec, variant)
++                mode = "scripted" if var.name == "scripted" else "manual"
++                def _build_local(cfg, name, selected_variant, **kwargs):
++                    return build_lab(cfg, name, selected_variant, **kwargs)
++                def _parse_local(serial_path, metrics_path):
++                    parse_serial_file(spec, serial_path, metrics_path)
++                return run_canonical(
++                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
++                    flash=flash, run_id=args.run_id, no_build=args.no_build, backend="local",
++                    build_variant=var.name, target_resolver=resolve_run_target,
++                    target_revalidator=revalidate_run_target, build=_build_local,
++                    flash_build=flash_lab_build, parse=_parse_local,
++                )
++            elif args.backend != "managed-http":
++                raise ProjectConfigError("BACKEND=local is supported only for LAB-02")
++            stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+             rid = args.run_id or f"{stamp}-{var.name}-capture-{uuid.uuid4().hex[:6]}"
+             target = resolve_run_target(config, args.kit, args.port)
+             if args.action == "run" and not args.no_build:
+diff --git a/scripts/lab_registry.py b/scripts/lab_registry.py
+index 95de4b8..a2c6db1 100644
+--- a/scripts/lab_registry.py
++++ b/scripts/lab_registry.py
+@@ -206,18 +206,18 @@ def operator_help_lines(
+         lines.append(" ".join(details))
+     capture_s = seconds if seconds is not None else spec.capture_seconds_default
+     lines.append("")
+-    if spec.make_name == "lab02":
+-        lines.append(f"Managed capture: {capture_s}s after a fresh boot marker; set SECONDS= to override.")
+-        lines.append("The host writes the serial log, metrics, and run manifest.")
+-    else:
+-        lines.append(
+-            f"Host serial capture: {capture_s}s after flash "
+-            f"(set SECONDS= to override capture_seconds_default in labs.registry.yaml)."
+-        )
+-        lines.append(
+-            "This terminal stays quiet during capture. Device lines (e.g. LAB02_READY, "
+-            "HARNESS_DONE) are saved to logs/device/labs/.../serial.txt, then summarized."
+-        )
++    if spec.make_name == "lab02":
++        lines.append(f"Managed capture: {capture_s}s after a fresh boot marker; set SECONDS= to override.")
++        lines.append("The host writes the serial log, metrics, and run manifest.")
++    else:
++        lines.append(
++            f"Host serial capture: {capture_s}s after flash "
++            f"(set SECONDS= to override capture_seconds_default in labs.registry.yaml)."
++        )
++        lines.append(
++            "This terminal stays quiet during capture. Device lines (e.g. LAB02_READY, "
++            "HARNESS_DONE) are saved to logs/device/labs/.../serial.txt, then summarized."
++        )
+     lines.append("")
+     lines.append("Operator:")
+     if spec.run_instructions:
+@@ -242,13 +242,23 @@ def run_mode_hint_lines(spec: LabSpec) -> list[str]:
+     lines.append(f"  Manual (you scroll on device)     make lab.{name} [KIT=<nickname>]")
+     lines.append(f"  Clean default variant build dir   make lab.{name}.clean")
+     if "scripted" in spec.variants:
+-        lines.append(f"  Automated managed run             make lab.{name}.scripted [KIT=<nickname>]")
++        lines.append(f"  Automated managed run             make lab.{name}.scripted [KIT=<nickname>]")
++        lines.append(
++            f"  Scripted HTTP build (needs KIT)   make lab.{name}.scripted.build KIT=<nickname>"
++        )
+         lines.append(f"  Clean scripted build dir          make lab.{name}.scripted.clean")
++    if "phaseb" in spec.variants:
++        lines.append(
++            f"  Phase B HTTP build (needs KIT)    make lab.{name}.phaseb.build KIT=<nickname>"
++        )
+     if "eager" in spec.variants:
+         lines.append(f"  Eager comparison build            make lab.{name}.eager [KIT=<nickname>]")
+         lines.append(f"  Clean eager build dir             make lab.{name}.eager.clean")
+-    if "phaseb" in spec.variants:
+-        lines.append("  Backend default                   managed HTTP; BACKEND=local selects local fixture")
++    if spec.make_name == "lab02":
++        lines.append(
++            "  Default make lab.<name>.build       recycle (embedded); canonical runs build phaseb"
++        )
++        lines.append("  Backend default                   managed HTTP; BACKEND=local selects local fixture")
+     if spec.trace_parser:
+         lines.append(f"  Parse last capture (metrics.json) make lab.{name}.parse [RUN_ID=…]")
+     return lines
+diff --git a/scripts/tests/test_lab_host.py b/scripts/tests/test_lab_host.py
+index a590f62..23abc9e 100644
+--- a/scripts/tests/test_lab_host.py
++++ b/scripts/tests/test_lab_host.py
+@@ -1,8 +1,8 @@
+-import sys
+-import tempfile
+-import unittest
+-from pathlib import Path
+-from unittest.mock import patch
++import sys
++import tempfile
++import unittest
++from pathlib import Path
++from unittest.mock import patch
+ 
+ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ 
+@@ -13,16 +13,34 @@ from lab_host import (  # noqa: E402
+     _sdkconfig_missing_assignments,
+     capture_lab,
+     clean_lab,
++    lab02_managed_canonical_plan,
++    lab02_scripted_variant_name,
+     revalidate_run_target,
+     resolve_run_target,
+     RunTarget,
+ )
+-from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit, SecretsProfile
++from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit, SecretsProfile
+ from device_targets import Port
+ from lab_registry import get_lab, resolve_variant
+ from project_config import ProjectConfig, ProjectConfigError
+ 
+ 
++class Lab02MakeVariantTests(unittest.TestCase):
++    def test_scripted_variant_name_follows_backend(self):
++        self.assertEqual(lab02_scripted_variant_name("managed-http"), "scripted-phaseb")
++        self.assertEqual(lab02_scripted_variant_name("local"), "scripted")
++
++    def test_managed_canonical_plan_maps_default_and_scripted(self):
++        self.assertEqual(lab02_managed_canonical_plan("recycle", "managed-http"), ("manual", "phaseb"))
++        self.assertEqual(lab02_managed_canonical_plan("phaseb", "managed-http"), ("manual", "phaseb"))
++        self.assertEqual(
++            lab02_managed_canonical_plan("scripted-phaseb", "managed-http"),
++            ("scripted", "scripted-phaseb"),
++        )
++        self.assertIsNone(lab02_managed_canonical_plan("scripted", "managed-http"))
++        self.assertIsNone(lab02_managed_canonical_plan("phaseb", "local"))
++
++
+ class LabHostSdkconfigTests(unittest.TestCase):
+     def setUp(self):
+         self.temp = tempfile.TemporaryDirectory()
+@@ -51,58 +69,58 @@ class LabHostSdkconfigTests(unittest.TestCase):
+         self.assertTrue(build.is_dir())
+         self.assertEqual([], list(build.iterdir()))
+ 
+-    def test_clean_lab_removes_build_dir(self):
+-        config = ProjectConfig()
+-        spec = get_lab("lab02")
+-        var = resolve_variant(spec, "phaseb")
+-        with tempfile.TemporaryDirectory() as temp, patch("lab_host.ROOT", Path(temp)):
+-            build_dir = Path(temp) / var.build_dir
+-            build_dir.parent.mkdir(parents=True, exist_ok=True)
+-            build_dir.mkdir(exist_ok=True)
+-            (build_dir / "marker").write_text("x", encoding="utf-8")
+-            clean_lab(config, "lab02", "phaseb")
+-            self.assertFalse(build_dir.exists())
+-
+-    def test_phaseb_build_requires_kit(self):
++    def test_clean_lab_removes_build_dir(self):
++        config = ProjectConfig()
++        spec = get_lab("lab02")
++        var = resolve_variant(spec, "phaseb")
++        with tempfile.TemporaryDirectory() as temp, patch("lab_host.ROOT", Path(temp)):
++            build_dir = Path(temp) / var.build_dir
++            build_dir.parent.mkdir(parents=True, exist_ok=True)
++            build_dir.mkdir(exist_ok=True)
++            (build_dir / "marker").write_text("x", encoding="utf-8")
++            clean_lab(config, "lab02", "phaseb")
++            self.assertFalse(build_dir.exists())
++
++    def test_phaseb_build_requires_kit(self):
+         config = ProjectConfig()
+         spec = get_lab("lab02")
+         var = resolve_variant(spec, "phaseb")
+         build_dir = self.temp_path / "build_dir_phaseb"
+         build_dir.mkdir(exist_ok=True)
+-        with self.assertRaisesRegex(ProjectConfigError, "Phase B build requires KIT"):
+-            _defaults_files_for_lab_build(config, spec, var, build_dir, "", "")
+-
+-    def test_phaseb_build_requires_private_wifi_before_url_resolution(self):
+-        config = ProjectConfig()
+-        spec = get_lab("lab02")
+-        var = resolve_variant(spec, "phaseb")
+-        kit = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
+-        deployment = Deployment(
+-            Path("local.yaml"), "local", DeploymentMeta("desk", "Desk"), (),
+-            (Endpoint("endpoint-a", "Endpoint A", "", ""),), (kit,), {},
+-        )
+-        target = RunTarget("A", "/dev/a", "SERIAL-A", kit, deployment)
+-        with patch("lab_host.load_lab02_workflow_config", side_effect=AssertionError("URL resolved before Wi-Fi preflight")):
+-            with self.assertRaisesRegex(ProjectConfigError, "per-kit Wi-Fi credentials"):
+-                _defaults_files_for_lab_build(
+-                    config, spec, var, self.temp_path, "A", "", target
+-                )
+-
+-    def test_ensure_build_uses_same_frozen_defaults(self):
+-        from lab_host import ensure_lab_built
+-
+-        config = ProjectConfig()
+-        spec = get_lab("lab02")
+-        variant = resolve_variant(spec, "phaseb")
+-        frozen = [self.temp_path / "phaseb.defaults"]
+-        with patch("lab_host.ROOT", self.temp_path), patch(
+-            "lab_host._defaults_files_for_lab_build", return_value=frozen
+-        ) as resolve_defaults, patch(
+-            "lab_host._refresh_stale_sdkconfig", return_value=True
+-        ), patch("lab_host.build_lab", return_value=self.temp_path) as build:
+-            ensure_lab_built(config, "lab02", "phaseb", kit="A")
+-        resolve_defaults.assert_called_once()
+-        self.assertIs(build.call_args.kwargs["frozen_defaults_files"], frozen)
++        with self.assertRaisesRegex(ProjectConfigError, "Phase B build requires KIT"):
++            _defaults_files_for_lab_build(config, spec, var, build_dir, "", "")
++
++    def test_phaseb_build_requires_private_wifi_before_url_resolution(self):
++        config = ProjectConfig()
++        spec = get_lab("lab02")
++        var = resolve_variant(spec, "phaseb")
++        kit = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
++        deployment = Deployment(
++            Path("local.yaml"), "local", DeploymentMeta("desk", "Desk"), (),
++            (Endpoint("endpoint-a", "Endpoint A", "", ""),), (kit,), {},
++        )
++        target = RunTarget("A", "/dev/a", "SERIAL-A", kit, deployment)
++        with patch("lab_host.load_lab02_workflow_config", side_effect=AssertionError("URL resolved before Wi-Fi preflight")):
++            with self.assertRaisesRegex(ProjectConfigError, "per-kit Wi-Fi credentials"):
++                _defaults_files_for_lab_build(
++                    config, spec, var, self.temp_path, "A", "", target
++                )
++
++    def test_ensure_build_uses_same_frozen_defaults(self):
++        from lab_host import ensure_lab_built
++
++        config = ProjectConfig()
++        spec = get_lab("lab02")
++        variant = resolve_variant(spec, "phaseb")
++        frozen = [self.temp_path / "phaseb.defaults"]
++        with patch("lab_host.ROOT", self.temp_path), patch(
++            "lab_host._defaults_files_for_lab_build", return_value=frozen
++        ) as resolve_defaults, patch(
++            "lab_host._refresh_stale_sdkconfig", return_value=True
++        ), patch("lab_host.build_lab", return_value=self.temp_path) as build:
++            ensure_lab_built(config, "lab02", "phaseb", kit="A")
++        resolve_defaults.assert_called_once()
++        self.assertIs(build.call_args.kwargs["frozen_defaults_files"], frozen)
+ 
+     def test_refresh_removes_stale_sdkconfig(self):
+         build = self.temp_path / "build_dir"
+@@ -129,11 +147,11 @@ class LabHostTargetSelectionTests(unittest.TestCase):
+         self.kit_a = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
+         self.kit_b = Kit("B", "endpoint-b", "profile-b", "SERIAL-B")
+         self.deployment = Deployment(
+-            Path("local.yaml"), "local", DeploymentMeta("test", "test"), (),
+-            (Endpoint("endpoint-a", "Endpoint A", "", ""), Endpoint("endpoint-b", "Endpoint B", "", "")),
+-            (self.kit_a, self.kit_b), {"desk": "endpoint-a"},
+-            {"profile-a": SecretsProfile("ssid-a", "password-a"), "profile-b": SecretsProfile("ssid-b", "password-b")},
+-        )
++            Path("local.yaml"), "local", DeploymentMeta("test", "test"), (),
++            (Endpoint("endpoint-a", "Endpoint A", "", ""), Endpoint("endpoint-b", "Endpoint B", "", "")),
++            (self.kit_a, self.kit_b), {"desk": "endpoint-a"},
++            {"profile-a": SecretsProfile("ssid-a", "password-a"), "profile-b": SecretsProfile("ssid-b", "password-b")},
++        )
+         self.config = ProjectConfig()
+ 
+     def _resolve(self, available, kit="", port=""):
+@@ -202,21 +220,21 @@ class LabHostTargetSelectionTests(unittest.TestCase):
+ 
+         spec = get_lab("lab02")
+         var = resolve_variant(spec, "phaseb")
+-        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+-        with patch("lab_host.ports", side_effect=AssertionError("build must not enumerate USB")), patch(
+-            "lab_host.load_lab02_workflow_config",
+-            return_value=type("Workflow", (), {"client_url": "http://10.0.0.2:8765", "fixture_size_default": 64,
+-                                                "scenario_default": "nominal"})(),
+-        ), patch(
+-            "lab_host.write_deployment_kit_sdkconfig", return_value=None
+-        ) as write_overlay:
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        with patch("lab_host.ports", side_effect=AssertionError("build must not enumerate USB")), patch(
++            "lab_host.load_lab02_workflow_config",
++            return_value=type("Workflow", (), {"client_url": "http://10.0.0.2:8765", "fixture_size_default": 64,
++                                                "scenario_default": "nominal"})(),
++        ), patch(
++            "lab_host.write_deployment_kit_sdkconfig", return_value=None
++        ) as write_overlay:
+             files = _defaults_files_for_lab_build(
+                 self.config, spec, var, self.temp_path, "A", "", target
+             )
+-        write_overlay.assert_called_once_with(
+-            self.temp_path, self.kit_a, self.deployment, "http://10.0.0.2:8765",
+-            fixture_size=64, scenario="nominal", scripted=False, build_id=""
+-        )
++        write_overlay.assert_called_once_with(
++            self.temp_path, self.kit_a, self.deployment, "http://10.0.0.2:8765",
++            fixture_size=64, scenario="nominal", scripted=False, build_id=""
++        )
+         self.assertIsInstance(files, list)
+ 
+     def test_run_entrypoint_resolves_target_before_build_or_flash(self):
+@@ -225,13 +243,13 @@ class LabHostTargetSelectionTests(unittest.TestCase):
+         events = []
+         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+         config = self.config
+-        with patch("lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]), patch(
+-            "lab_host.ProjectConfig", return_value=config
+-        ), patch("lab_host.run_canonical", side_effect=lambda *args, **kwargs: events.append("canonical") or 0) as run:
+-            self.assertEqual(main(), 0)
+-        self.assertEqual(events, ["canonical"])
+-        self.assertEqual(run.call_args.kwargs["mode"], "manual")
+-        self.assertEqual(run.call_args.kwargs["build_variant"], "phaseb")
++        with patch("lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]), patch(
++            "lab_host.ProjectConfig", return_value=config
++        ), patch("lab_host.run_canonical", side_effect=lambda *args, **kwargs: events.append("canonical") or 0) as run:
++            self.assertEqual(main(), 0)
++        self.assertEqual(events, ["canonical"])
++        self.assertEqual(run.call_args.kwargs["mode"], "manual")
++        self.assertEqual(run.call_args.kwargs["build_variant"], "phaseb")
+ 
+     def test_capture_revalidates_frozen_identity_before_flash_write(self):
+         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)

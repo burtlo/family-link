@@ -1,0 +1,17 @@
+{
+  "repository": "/Users/lynnfrank/src/family-link",
+  "verifier": "independent subagent (read-only)",
+  "authority": [
+    "docs/labs/evidence/lab-02/reviews/carousel-remediation/execution.md (C3d)",
+    "docs/labs/evidence/lab-02/reviews/carousel-remediation/review.md (LAB02CAR-F006)",
+    "docs/labs/lab-02-carousel-remediation-plan.md",
+    "docs/labs/evidence/lab-02/reviews/carousel-remediation/c3d-verification/report.md (comparison baseline)"
+  ],
+  "commands": [
+    {
+      "cwd": "/Users/lynnfrank/src/family-link",
+      "cmd": "python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture scripts.tests.test_lab02_carousel_native scripts.tests.test_lab02_host -v",
+      "exit_code": 0
+    }
+  ]
+}

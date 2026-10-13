@@ -1,0 +1,8 @@
+Read-only cat/rg/nl inspection of governing docs and actual C sources; exact source hashes in source-sha256.json.
+python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_host scripts.tests.test_lab02_architecture scripts.tests.test_lab02_paging_server -v
+Result: 20 tests passed, paging server setUp error; combined process exit 1.
+python3 server/labs/lab-02-paging/server.py --port 18765
+Result: exit 1 PermissionError on socket bind; server-start.txt. No server remained.
+No firmware build, flash, hardware, source/doc edits or new implementation tests.
+python3 -m unittest scripts.tests.test_lab02_paging_server -v (allowed loopback execution)
+Result: 3 passed, exit0; paging-checks-allowed.txt.

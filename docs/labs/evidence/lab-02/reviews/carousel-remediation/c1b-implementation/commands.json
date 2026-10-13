@@ -1,0 +1,7 @@
+[
+  "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c1b-fix/terminal python3 -m unittest scripts.tests.test_lab02_model_native -v",
+  "LAB02_HTTP_STARTUP_ARTIFACT_DIR=/tmp/lab02-c1b-fix/startup LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c1b-fix/terminal python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture -v",
+  "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c1b-fix/headless-final",
+  "make lab.lab02.scripted.build KIT=lynn (sandbox attempt then allowed retry)",
+  "git diff --check -- <C1b scoped files>"
+]

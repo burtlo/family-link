@@ -1,0 +1,26 @@
+ M Makefile
+ M client/labs/lab-02-bounded-inbox/README.md
+ M client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c
+ M client/labs/lab-02-bounded-inbox/components/lab02/card_view.c
+ M client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+ M client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_view.h
+ M client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
+ M client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h
+ M client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+ M client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
+ M client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c
+ M client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c
+ M client/labs/lab-02-bounded-inbox/tests/README.md
+ M client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
+ M client/labs/lab-02-bounded-inbox/tests/test_session_native.c
+ M docs/labs/lab-02-session-architecture.md
+ M scripts/lab_host.py
+ M scripts/lab_registry.py
+ M scripts/tests/test_lab02_model_native.py
+ M scripts/tests/test_lab_host.py
+?? client/labs/lab-02-bounded-inbox/tests/c0_runtime/
+?? client/labs/lab-02-bounded-inbox/tests/http_host_stubs/
+?? client/labs/lab-02-bounded-inbox/tests/test_http_startup_native.c
+?? client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c
+?? docs/labs/evidence/lab-02/reviews/carousel-remediation/
+?? scripts/tests/test_lab02_carousel_native.py

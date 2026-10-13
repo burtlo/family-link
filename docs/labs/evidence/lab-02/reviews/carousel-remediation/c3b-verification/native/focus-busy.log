@@ -1,0 +1,16 @@
+TERMINAL_SCENARIO focus-busy
+SESSION_TRACE event=io_start_terminal op_id=0 page=0 message=- session=1 kind=http_startup outcome=success reason=worker_available
+SESSION_TRACE event=fetch_delivery_retained op_id=0 page=0 message=- 
+SESSION_TRACE event=page_apply op_id=0 page=0 message=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_admitted op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_terminal op_id=0 page=0 message=- session=1 revision=0 attempt=1 outcome=success elapsed_us=15
+SESSION_TRACE event=fetch_admission_busy op_id=0 page=9 message=- 
+SESSION_TRACE event=focus_admission_pending op_id=0 page=9 message=- 
+SESSION_TRACE event=fetch_admission_busy op_id=0 page=8 message=- 
+SESSION_TRACE event=fetch_admission_busy op_id=0 page=10 message=- 
+SESSION_TRACE event=fetch_admission_busy op_id=0 page=11 message=- 
+SESSION_TRACE event=focus_admission_pending op_id=0 page=11 message=- 
+SESSION_TRACE event=fetch_admission_busy op_id=0 page=10 message=- 
+SESSION_TRACE event=fetch_admission_busy op_id=0 page=12 message=- 
+SESSION_TRACE event=fetch_admitted op_id=2 page=11 message=- 
+TERMINAL_RESULT PASS

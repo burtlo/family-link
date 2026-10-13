@@ -1,0 +1,109 @@
+C0_TRACE scenario=pool-bounds event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=pool-bounds session=1 op_id=0 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=0 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=0 focus=0 msg=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=1 focus=1 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=0 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1783
+C0_TRACE scenario=pool-bounds event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=3 focus=0 msg=m0 session=1 revision=1 state=bound
+C0_TRACE scenario=pool-bounds event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=3 focus=1 msg=m1 session=1 revision=1 state=bound
+C0_TRACE scenario=pool-bounds event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=pool-bounds event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=pool-bounds event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_STATE scenario=pool-bounds point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=2 focus=0 msg=- 
+C0_REQUEST scenario=pool-bounds session=1 op_id=2 page=0 submitted_us=201696001456
+C0_DELIVERY scenario=pool-bounds session=1 op_id=2 page=0 response_revision=8 initial=0 snap_id=0
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=2 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=2 focus=4 msg=m4 op_id=2 revision=8 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=2 focus=0 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1534
+C0_TRACE scenario=pool-bounds event=unbind gen=5 focus=3 msg=m3 
+C0_TRACE scenario=pool-bounds event=card_state gen=5 focus=3 msg=m3 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=5 focus=3 msg=m3 session=1 revision=8 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=5 focus=4 msg=m4 
+C0_TRACE scenario=pool-bounds event=card_state gen=5 focus=4 msg=m4 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=5 focus=4 msg=m4 session=1 revision=8 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=5 focus=5 msg=m5 
+C0_TRACE scenario=pool-bounds event=card_state gen=5 focus=5 msg=m5 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=5 focus=5 msg=m5 session=1 revision=8 state=bound
+C0_TRACE scenario=pool-bounds event=apply_stale gen=1 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=1 focus=1 msg=- session=1 revision=1 attempt=1 outcome=stale elapsed_us=7224
+C0_TRACE scenario=pool-bounds event=unbind gen=6 focus=3 msg=m3 
+C0_TRACE scenario=pool-bounds event=card_state gen=6 focus=6 msg=m6 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=6 focus=6 msg=m6 session=1 revision=8 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=6 focus=4 msg=m4 
+C0_TRACE scenario=pool-bounds event=card_state gen=6 focus=7 msg=m7 session=1 revision=8 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=6 focus=7 msg=m7 session=1 revision=8 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=6 focus=5 msg=m5 
+C0_STATE scenario=pool-bounds point=bounded session=1 revision=8 focus=7 focus_id=m7 snap_id=0 snap_locked=0 session_locked=0 scroll_x=844 window={slot:0,index:6,id:m6,gen:6,hidden:0,x1:32,x2:163,state:2,revision:8,session:1,sender:Sender 6},{slot:1,index:7,id:m7,gen:6,hidden:0,x1:176,x2:307,state:2,revision:8,session:1,sender:Sender 7},{slot:2,index:-1,id:-,gen:6,hidden:1,x1:-112,x2:19,state:0,revision:8,session:1,sender:} starts=0 ends=0 deferred=0 stale=1 applied=2
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=3 focus=0 msg=- 
+C0_REQUEST scenario=pool-bounds session=1 op_id=3 page=0 submitted_us=201696008465
+C0_DELIVERY scenario=pool-bounds session=1 op_id=3 page=0 response_revision=16 initial=0 snap_id=0
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=3 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=3 focus=7 msg=m7 op_id=3 revision=16 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=3 focus=0 msg=- session=1 revision=8 attempt=1 outcome=success elapsed_us=1537
+C0_TRACE scenario=pool-bounds event=unbind gen=7 focus=6 msg=m6 
+C0_TRACE scenario=pool-bounds event=card_state gen=7 focus=6 msg=m6 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=7 focus=6 msg=m6 session=1 revision=16 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=7 focus=7 msg=m7 
+C0_TRACE scenario=pool-bounds event=card_state gen=7 focus=7 msg=m7 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=7 focus=7 msg=m7 session=1 revision=16 state=bound
+C0_TRACE scenario=pool-bounds event=card_state gen=7 focus=8 msg=m8 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=7 focus=8 msg=m8 session=1 revision=16 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=8 focus=6 msg=m6 
+C0_TRACE scenario=pool-bounds event=card_state gen=8 focus=14 msg=m14 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=8 focus=14 msg=m14 session=1 revision=16 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=8 focus=7 msg=m7 
+C0_TRACE scenario=pool-bounds event=card_state gen=8 focus=15 msg=m15 session=1 revision=16 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=8 focus=15 msg=m15 session=1 revision=16 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=8 focus=8 msg=m8 
+C0_STATE scenario=pool-bounds point=bounded session=1 revision=16 focus=15 focus_id=m15 snap_id=0 snap_locked=0 session_locked=0 scroll_x=1996 window={slot:0,index:14,id:m14,gen:8,hidden:0,x1:32,x2:163,state:2,revision:16,session:1,sender:Sender 14},{slot:1,index:15,id:m15,gen:8,hidden:0,x1:176,x2:307,state:2,revision:16,session:1,sender:Sender 15},{slot:2,index:-1,id:-,gen:8,hidden:1,x1:-832,x2:-701,state:0,revision:16,session:1,sender:} starts=0 ends=0 deferred=0 stale=1 applied=3
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=4 focus=0 msg=- 
+C0_REQUEST scenario=pool-bounds session=1 op_id=4 page=0 submitted_us=201696015411
+C0_DELIVERY scenario=pool-bounds session=1 op_id=4 page=0 response_revision=64 initial=0 snap_id=0
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=4 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=4 focus=15 msg=m15 op_id=4 revision=64 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=5 focus=1 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=4 focus=0 msg=- session=1 revision=16 attempt=1 outcome=success elapsed_us=1537
+C0_TRACE scenario=pool-bounds event=unbind gen=9 focus=14 msg=m14 
+C0_TRACE scenario=pool-bounds event=card_state gen=9 focus=14 msg=m14 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=9 focus=14 msg=m14 session=1 revision=64 state=bound
+C0_TRACE scenario=pool-bounds event=unbind gen=9 focus=15 msg=m15 
+C0_TRACE scenario=pool-bounds event=card_state gen=9 focus=15 msg=m15 session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=bind gen=9 focus=15 msg=m15 session=1 revision=64 state=bound
+C0_TRACE scenario=pool-bounds event=card_state gen=9 focus=16 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=6 focus=2 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=7 focus=3 msg=- 
+C0_TRACE scenario=pool-bounds event=unbind gen=10 focus=14 msg=m14 
+C0_TRACE scenario=pool-bounds event=card_state gen=10 focus=62 msg=- session=1 revision=64 state=loading
+C0_TRACE scenario=pool-bounds event=unbind gen=10 focus=15 msg=m15 
+C0_TRACE scenario=pool-bounds event=card_state gen=10 focus=63 msg=- session=1 revision=64 state=loading
+C0_STATE scenario=pool-bounds point=bounded session=1 revision=64 focus=63 focus_id=- snap_id=0 snap_locked=0 session_locked=0 scroll_x=8908 window={slot:0,index:62,id:-,gen:10,hidden:0,x1:32,x2:163,state:1,revision:64,session:1,sender:Loading message…},{slot:1,index:63,id:-,gen:10,hidden:0,x1:176,x2:307,state:1,revision:64,session:1,sender:Loading message…},{slot:2,index:-1,id:-,gen:10,hidden:1,x1:-6592,x2:-6461,state:0,revision:64,session:1,sender:} starts=0 ends=0 deferred=0 stale=1 applied=4
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=8 focus=0 msg=- 
+C0_REQUEST scenario=pool-bounds session=1 op_id=8 page=0 submitted_us=201696022243
+C0_DELIVERY scenario=pool-bounds session=1 op_id=8 page=0 response_revision=256 initial=0 snap_id=0
+C0_TRACE scenario=pool-bounds event=fetch_delivery_retained gen=8 focus=0 msg=- 
+C0_TRACE scenario=pool-bounds event=page_apply gen=8 focus=63 msg= op_id=8 revision=256 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=9 focus=2 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=10 focus=3 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=11 focus=4 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=8 focus=0 msg=- session=1 revision=64 attempt=1 outcome=success elapsed_us=1534
+C0_TRACE scenario=pool-bounds event=card_state gen=11 focus=62 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=11 focus=63 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=11 focus=64 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=apply_stale gen=6 focus=2 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=6 focus=2 msg=- session=1 revision=64 attempt=1 outcome=stale elapsed_us=6814
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=12 focus=14 msg=- 
+C0_TRACE scenario=pool-bounds event=fetch_admitted gen=13 focus=15 msg=- 
+C0_TRACE scenario=pool-bounds event=apply_stale gen=5 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pool-bounds event=fetch_terminal gen=5 focus=1 msg=- session=1 revision=64 attempt=1 outcome=stale elapsed_us=6920
+C0_TRACE scenario=pool-bounds event=card_state gen=12 focus=254 msg=- session=1 revision=256 state=loading
+C0_TRACE scenario=pool-bounds event=card_state gen=12 focus=255 msg=- session=1 revision=256 state=loading
+C0_STATE scenario=pool-bounds point=bounded session=1 revision=256 focus=255 focus_id=- snap_id=0 snap_locked=0 session_locked=0 scroll_x=36556 window={slot:0,index:254,id:-,gen:12,hidden:0,x1:32,x2:163,state:1,revision:256,session:1,sender:Loading message…},{slot:1,index:255,id:-,gen:12,hidden:0,x1:176,x2:307,state:1,revision:256,session:1,sender:Loading message…},{slot:2,index:-1,id:-,gen:12,hidden:1,x1:-27328,x2:-27197,state:0,revision:256,session:1,sender:} starts=0 ends=0 deferred=0 stale=3 applied=5
+C0_RESULT scenario=pool-bounds characterization=PASS acceptance=F001-C2

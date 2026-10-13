@@ -1,0 +1,40 @@
+TERMINAL_SCENARIO initial-saturation
+SESSION_TRACE event=io_start_terminal op_id=0 page=0 message=- session=1 kind=http_startup outcome=success reason=worker_available
+SESSION_TRACE event=fetch_admitted op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_admitted op_id=2 page=2 message=- 
+SESSION_TRACE event=fetch_admitted op_id=3 page=3 message=- 
+SESSION_TRACE event=fetch_admitted op_id=4 page=4 message=- 
+SESSION_TRACE event=fetch_admitted op_id=5 page=5 message=- 
+SESSION_TRACE event=fetch_admitted op_id=6 page=6 message=- 
+SESSION_TRACE event=fetch_admitted op_id=7 page=7 message=- 
+SESSION_TRACE event=fetch_admitted op_id=8 page=8 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=0 page=0 message=- 
+SESSION_TRACE event=fetch_delivery_rejected op_id=0 page=0 message=- duplicate_or_unadmitted
+SESSION_TRACE event=fetch_delivery_retained op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=2 page=2 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=3 page=3 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=4 page=4 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=5 page=5 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=6 page=6 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=7 page=7 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=8 page=8 message=- 
+SESSION_TRACE event=fetch_queue_full op_id=0 page=9 message=- 
+SESSION_TRACE event=page_apply op_id=0 page=0 message=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_terminal op_id=0 page=0 message=- session=1 revision=0 attempt=1 outcome=success elapsed_us=423
+SESSION_TRACE event=apply_stale op_id=1 page=1 message=- session_revision_or_op_mismatch
+SESSION_TRACE event=fetch_terminal op_id=1 page=1 message=- session=1 revision=0 attempt=1 outcome=stale elapsed_us=421
+SESSION_TRACE event=apply_stale op_id=2 page=2 message=- session_revision_or_op_mismatch
+SESSION_TRACE event=fetch_terminal op_id=2 page=2 message=- session=1 revision=0 attempt=1 outcome=stale elapsed_us=422
+SESSION_TRACE event=apply_stale op_id=3 page=3 message=- session_revision_or_op_mismatch
+SESSION_TRACE event=fetch_terminal op_id=3 page=3 message=- session=1 revision=0 attempt=1 outcome=stale elapsed_us=423
+SESSION_TRACE event=apply_stale op_id=4 page=4 message=- session_revision_or_op_mismatch
+SESSION_TRACE event=fetch_terminal op_id=4 page=4 message=- session=1 revision=0 attempt=1 outcome=stale elapsed_us=424
+SESSION_TRACE event=apply_stale op_id=5 page=5 message=- session_revision_or_op_mismatch
+SESSION_TRACE event=fetch_terminal op_id=5 page=5 message=- session=1 revision=0 attempt=1 outcome=stale elapsed_us=425
+SESSION_TRACE event=apply_stale op_id=6 page=6 message=- session_revision_or_op_mismatch
+SESSION_TRACE event=fetch_terminal op_id=6 page=6 message=- session=1 revision=0 attempt=1 outcome=stale elapsed_us=426
+SESSION_TRACE event=apply_stale op_id=7 page=7 message=- session_revision_or_op_mismatch
+SESSION_TRACE event=fetch_terminal op_id=7 page=7 message=- session=1 revision=0 attempt=1 outcome=stale elapsed_us=427
+SESSION_TRACE event=apply_stale op_id=8 page=8 message=- session_revision_or_op_mismatch
+SESSION_TRACE event=fetch_terminal op_id=8 page=8 message=- session=1 revision=0 attempt=1 outcome=stale elapsed_us=427
+TERMINAL_RESULT PASS

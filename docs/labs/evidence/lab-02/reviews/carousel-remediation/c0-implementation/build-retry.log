@@ -1,0 +1,23 @@
+[ 98%] Built target lvgl
+[ 98%] Building C object CMakeFiles/lab02_c0.dir/test_carousel_baseline.c.o
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:74:36: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+   74 |                v->bind_generation, lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN),
+      |                                    ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c:179:17: warning: 'lv_obj_has_flag' is deprecated: Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj). [-Wdeprecated-declarations]
+  179 |         assert(!lv_obj_has_flag(carousel.pool.views[1].root, LV_OBJ_FLAG_HIDDEN));
+      |                 ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:544:1: note: 'lv_obj_has_flag' has been explicitly marked deprecated here
+  544 | LV_DEPRECATED("Use the dedicated lv_obj_is_<flag>() functions instead, e.g. lv_obj_is_hidden(obj).")
+      | ^
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/../lv_types.h:486:43: note: expanded from macro 'LV_DEPRECATED'
+  486 | #define LV_DEPRECATED(msg) __attribute__((deprecated(msg)))
+      |                                           ^
+2 warnings generated.
+[ 98%] Linking C executable lab02_c0
+[100%] Built target lab02_c0

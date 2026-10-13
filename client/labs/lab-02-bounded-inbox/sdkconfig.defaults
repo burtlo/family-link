@@ -21,5 +21,8 @@ CONFIG_LV_FONT_MONTSERRAT_16=y
 CONFIG_LV_FONT_MONTSERRAT_20=y
 CONFIG_LV_FONT_MONTSERRAT_24=y
 
+# Partial LCD buffer must fit DMA-capable internal RAM; Wi-Fi-linked builds have less headroom than recycle-only.
+CONFIG_BSP_LCD_DRAW_BUF_HEIGHT=50
+
 # Lab02 options (see components/lab02/Kconfig.projbuild)
 CONFIG_LAB02_FIXTURE_16=y

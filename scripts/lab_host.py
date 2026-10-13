@@ -240,6 +240,62 @@ def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
     return variant_name in {"phaseb", "scripted-phaseb"}
 
 
+def lab02_scripted_variant_name(backend: str) -> str:
+    """Managed HTTP scripted runs use scripted-phaseb; BACKEND=local uses embedded scripted."""
+    return "scripted" if backend == "local" else "scripted-phaseb"
+
+
+def lab02_managed_canonical_plan(
+    variant_name: str, backend: str
+) -> tuple[str, str] | None:
+    """Return (mode, build_variant) when a lab02 run/capture should use the canonical coordinator."""
+    if backend != "managed-http":
+        return None
+    if variant_name == "scripted-phaseb":
+        return ("scripted", "scripted-phaseb")
+    if variant_name in {"recycle", "phaseb"}:
+        return ("manual", "phaseb")
+    return None
+
+
+def _run_lab02_canonical(
+    config: ProjectConfig,
+    *,
+    mode: str,
+    build_variant: str,
+    kit: str,
+    port: str,
+    seconds: int,
+    flash: bool,
+    run_id: str,
+    no_build: bool,
+    spec: LabSpec,
+) -> int:
+    def _build_canonical(cfg, name, selected_variant, **kwargs):
+        return build_lab(cfg, name, selected_variant, **kwargs)
+
+    def _parse_canonical(serial_path, metrics_path):
+        parse_serial_file(spec, serial_path, metrics_path)
+
+    return run_canonical(
+        config,
+        mode=mode,
+        kit=kit,
+        port=port,
+        seconds=seconds,
+        flash=flash,
+        run_id=run_id,
+        no_build=no_build,
+        build_variant=build_variant,
+        backend="managed-http",
+        target_resolver=resolve_run_target,
+        target_revalidator=revalidate_run_target,
+        build=_build_canonical,
+        flash_build=flash_lab_build,
+        parse=_parse_canonical,
+    )
+
+
 def _prepare_lab_build_directory(build_dir: Path) -> None:
     """ESP-IDF set-target refuses fullclean on a non-CMake directory; start empty or configured."""
     if (build_dir / "CMakeCache.txt").is_file():
@@ -732,6 +788,7 @@ def main() -> int:
     cap_p.add_argument("--flash", action="store_true", default=False)
     cap_p.add_argument("--no-flash", action="store_true")
     cap_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
+    cap_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
 
     run_p = sub.add_parser("run")
     run_p.add_argument("lab")
@@ -786,20 +843,23 @@ def main() -> int:
                 seconds = spec.capture_seconds_default
             var = resolve_variant(spec, variant)
             flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
-            if args.action == "run" and args.lab == "lab02" and args.backend == "managed-http" and var.name in {"recycle", "phaseb", "scripted-phaseb"}:
-                mode = "scripted" if var.name == "scripted-phaseb" else "manual"
-                def _build_canonical(cfg, name, selected_variant, **kwargs):
-                    return build_lab(cfg, name, selected_variant, **kwargs)
-                def _parse_canonical(serial_path, metrics_path):
-                    parse_serial_file(spec, serial_path, metrics_path)
-                return run_canonical(
-                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
-                    flash=flash, run_id=args.run_id, no_build=args.no_build,
-                    build_variant="scripted-phaseb" if mode == "scripted" else "phaseb",
-                    backend="managed-http",
-                    target_resolver=resolve_run_target, target_revalidator=revalidate_run_target,
-                    build=_build_canonical, flash_build=flash_lab_build, parse=_parse_canonical,
-                )
+            backend = getattr(args, "backend", "managed-http")
+            if args.lab == "lab02":
+                managed = lab02_managed_canonical_plan(var.name, backend)
+                if managed is not None:
+                    mode, build_variant = managed
+                    return _run_lab02_canonical(
+                        config,
+                        mode=mode,
+                        build_variant=build_variant,
+                        kit=args.kit,
+                        port=args.port,
+                        seconds=seconds,
+                        flash=flash,
+                        run_id=args.run_id,
+                        no_build=getattr(args, "no_build", False),
+                        spec=spec,
+                    )
             if args.action == "run" and args.lab == "lab02" and (args.backend == "local" or var.name == "eager"):
                 if var.name == "scripted-phaseb":
                     variant = "scripted"

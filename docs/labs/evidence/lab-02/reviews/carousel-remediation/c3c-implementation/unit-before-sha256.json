@@ -1,0 +1,9 @@
+{
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md": "4f6c40fffab313f5f6c29e8e218ce422bfdb1c1f68b1ec7fa75a156a5205acf5",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c": "5c95905e032a63619c7eac3cba0c8a2549c74abc19aecef5fc8f381c259541c4",
+  "client/labs/lab-02-bounded-inbox/README.md": "9d666446eff517365563f18f8e9c5146ab44d8bc7352665a9a744ba1b117df8c",
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c": "4fa7971d3c7ff20703d6049c3fae2204fd0552e5dec6a3597eea159665e46cb6",
+  "docs/labs/lab-02-session-architecture.md": "f00615dd1e56d6346c36b1a5628e19b8a055889205b2b12d6fb30830a7ff0425",
+  "client/labs/lab-02-bounded-inbox/components/lab02/snap.c": "b7c1f8f8b013dd572b16464c6a9934df42e2aa170798890effb3238ee7533082",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap.h": "e0b54a1b490de8af52c54cc9ac0d7afde6d456ae13734332932686da93305217"
+}

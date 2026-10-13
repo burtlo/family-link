@@ -1,0 +1,1504 @@
+C0_TRACE scenario=pixel-boundary event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=pixel-boundary session=1 op_id=0 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=pixel-boundary event=fetch_delivery_retained gen=0 focus=0 msg=- 
+C0_TRACE scenario=pixel-boundary event=page_apply gen=0 focus=0 msg=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=1 focus=1 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=0 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1897
+C0_TRACE scenario=pixel-boundary event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=3 focus=2 msg=m2 session=1 revision=1 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=3 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=3 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=3 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=4 focus=2 msg=m2 
+C0_TRACE scenario=pixel-boundary event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=pixel-boundary event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_STATE scenario=pixel-boundary point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5},{slot:3,index:-1,id:-,gen:0,hidden:1,x1:-494,x2:-363,state:0,revision:0,session:0,sender:—} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=2 focus=0 msg=- 
+C0_REQUEST scenario=pixel-boundary session=1 op_id=2 page=0 submitted_us=216589758237
+C0_DELIVERY scenario=pixel-boundary session=1 op_id=2 page=0 response_revision=2 initial=0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=fetch_delivery_retained gen=2 focus=0 msg=- 
+C0_TRACE scenario=pixel-boundary event=page_apply gen=2 focus=0 msg=m0 op_id=2 revision=2 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=2 focus=0 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=1313
+C0_TRACE scenario=pixel-boundary event=unbind gen=5 focus=3 msg=m3 
+C0_TRACE scenario=pixel-boundary event=unbind gen=5 focus=4 msg=m4 
+C0_TRACE scenario=pixel-boundary event=unbind gen=5 focus=5 msg=m5 
+C0_TRACE scenario=pixel-boundary event=card_state gen=5 focus=0 msg=m0 session=1 revision=2 state=loading
+C0_TRACE scenario=pixel-boundary event=apply_stale gen=1 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=1 focus=1 msg=- session=1 revision=1 attempt=1 outcome=stale elapsed_us=13386
+C0_TRACE scenario=pixel-boundary event=snap_end gen=0 focus=0 msg=m0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=bind gen=5 focus=0 msg=m0 session=1 revision=2 state=bound
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=3 focus=0 msg=- 
+C0_REQUEST scenario=pixel-boundary session=1 op_id=3 page=0 submitted_us=216589760636
+C0_DELIVERY scenario=pixel-boundary session=1 op_id=3 page=0 response_revision=3 initial=0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=fetch_delivery_retained gen=3 focus=0 msg=- 
+C0_TRACE scenario=pixel-boundary event=page_apply gen=3 focus=0 msg=m0 op_id=3 revision=3 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=3 focus=0 msg=- session=1 revision=2 attempt=1 outcome=success elapsed_us=1327
+C0_TRACE scenario=pixel-boundary event=unbind gen=9 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=9 focus=0 msg=m0 session=1 revision=3 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=9 focus=1 msg=m1 session=1 revision=3 state=loading
+C0_TRACE scenario=pixel-boundary event=snap_end gen=0 focus=0 msg=m0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=bind gen=9 focus=1 msg=m1 session=1 revision=3 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=9 focus=0 msg=m0 session=1 revision=3 state=bound
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=4 focus=0 msg=- 
+C0_REQUEST scenario=pixel-boundary session=1 op_id=4 page=0 submitted_us=216589763582
+C0_DELIVERY scenario=pixel-boundary session=1 op_id=4 page=0 response_revision=4 initial=0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=fetch_delivery_retained gen=4 focus=0 msg=- 
+C0_TRACE scenario=pixel-boundary event=page_apply gen=4 focus=0 msg=m0 op_id=4 revision=4 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=4 focus=0 msg=- session=1 revision=3 attempt=1 outcome=success elapsed_us=1288
+C0_TRACE scenario=pixel-boundary event=unbind gen=13 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=13 focus=0 msg=m0 session=1 revision=4 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=13 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=card_state gen=13 focus=1 msg=m1 session=1 revision=4 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=13 focus=2 msg=m2 session=1 revision=4 state=loading
+C0_TRACE scenario=pixel-boundary event=snap_end gen=0 focus=0 msg=m0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=bind gen=13 focus=2 msg=m2 session=1 revision=4 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=13 focus=1 msg=m1 session=1 revision=4 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=13 focus=0 msg=m0 session=1 revision=4 state=bound
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=5 focus=0 msg=- 
+C0_REQUEST scenario=pixel-boundary session=1 op_id=5 page=0 submitted_us=216589803565
+C0_DELIVERY scenario=pixel-boundary session=1 op_id=5 page=0 response_revision=5 initial=0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=fetch_delivery_retained gen=5 focus=0 msg=- 
+C0_TRACE scenario=pixel-boundary event=page_apply gen=5 focus=0 msg=m0 op_id=5 revision=5 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=5 focus=0 msg=- session=1 revision=4 attempt=1 outcome=success elapsed_us=1217
+C0_TRACE scenario=pixel-boundary event=unbind gen=513 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=513 focus=0 msg=m0 session=1 revision=5 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=513 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=card_state gen=513 focus=1 msg=m1 session=1 revision=5 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=513 focus=2 msg=m2 
+C0_TRACE scenario=pixel-boundary event=card_state gen=513 focus=2 msg=m2 session=1 revision=5 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=763 focus=3 msg=m3 session=1 revision=5 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=513 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=801 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=1300 focus=0 msg=m0 session=1 revision=5 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=763 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=1338 focus=3 msg=m3 
+C0_TRACE scenario=pixel-boundary event=snap_end gen=0 focus=0 msg=m0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=bind gen=513 focus=2 msg=m2 session=1 revision=5 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=513 focus=1 msg=m1 session=1 revision=5 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=1300 focus=0 msg=m0 session=1 revision=5 state=bound
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=6 focus=0 msg=- 
+C0_REQUEST scenario=pixel-boundary session=1 op_id=6 page=0 submitted_us=216589858431
+C0_DELIVERY scenario=pixel-boundary session=1 op_id=6 page=0 response_revision=6 initial=0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=fetch_delivery_retained gen=6 focus=0 msg=- 
+C0_TRACE scenario=pixel-boundary event=page_apply gen=6 focus=0 msg=m0 op_id=6 revision=6 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=6 focus=0 msg=- session=1 revision=5 attempt=1 outcome=success elapsed_us=1293
+C0_TRACE scenario=pixel-boundary event=unbind gen=1589 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=1589 focus=0 msg=m0 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=1589 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=card_state gen=1589 focus=1 msg=m1 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=1589 focus=2 msg=m2 
+C0_TRACE scenario=pixel-boundary event=card_state gen=1589 focus=2 msg=m2 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=1839 focus=3 msg=m3 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=1589 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=1877 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=2127 focus=4 msg=m4 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=1589 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=2165 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=card_state gen=2415 focus=5 msg=m5 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=1589 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=2453 focus=2 msg=m2 
+C0_TRACE scenario=pixel-boundary event=card_state gen=2703 focus=6 msg=m6 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=1839 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=2741 focus=3 msg=m3 
+C0_TRACE scenario=pixel-boundary event=card_state gen=2991 focus=7 msg=m7 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=2127 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=3029 focus=4 msg=m4 
+C0_TRACE scenario=pixel-boundary event=card_state gen=3528 focus=4 msg=m4 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=2991 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=3566 focus=7 msg=m7 
+C0_TRACE scenario=pixel-boundary event=card_state gen=3816 focus=3 msg=m3 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=2703 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=3854 focus=6 msg=m6 
+C0_TRACE scenario=pixel-boundary event=card_state gen=4104 focus=2 msg=m2 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=2415 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=4142 focus=5 msg=m5 
+C0_TRACE scenario=pixel-boundary event=card_state gen=4392 focus=1 msg=m1 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=3528 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=4430 focus=4 msg=m4 
+C0_TRACE scenario=pixel-boundary event=card_state gen=4680 focus=0 msg=m0 session=1 revision=6 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=3816 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=4718 focus=3 msg=m3 
+C0_TRACE scenario=pixel-boundary event=snap_end gen=0 focus=0 msg=m0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=bind gen=4104 focus=2 msg=m2 session=1 revision=6 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=4392 focus=1 msg=m1 session=1 revision=6 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=4680 focus=0 msg=m0 session=1 revision=6 state=bound
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=7 focus=0 msg=- 
+C0_REQUEST scenario=pixel-boundary session=1 op_id=7 page=0 submitted_us=216590013886
+C0_DELIVERY scenario=pixel-boundary session=1 op_id=7 page=0 response_revision=7 initial=0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=fetch_delivery_retained gen=7 focus=0 msg=- 
+C0_TRACE scenario=pixel-boundary event=page_apply gen=7 focus=0 msg=m0 op_id=7 revision=7 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=8 focus=1 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=7 focus=0 msg=- session=1 revision=6 attempt=1 outcome=success elapsed_us=1287
+C0_TRACE scenario=pixel-boundary event=unbind gen=4969 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=4969 focus=0 msg=m0 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=4969 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=card_state gen=4969 focus=1 msg=m1 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=4969 focus=2 msg=m2 
+C0_TRACE scenario=pixel-boundary event=card_state gen=4969 focus=2 msg=m2 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=5219 focus=3 msg=m3 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=4969 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=5257 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=5507 focus=4 msg=m4 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=4969 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=5545 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=card_state gen=5795 focus=5 msg=m5 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=4969 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=5833 focus=2 msg=m2 
+C0_TRACE scenario=pixel-boundary event=card_state gen=6083 focus=6 msg=m6 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=5219 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=6121 focus=3 msg=m3 
+C0_TRACE scenario=pixel-boundary event=card_state gen=6371 focus=7 msg=m7 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=5507 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=6409 focus=4 msg=m4 
+C0_TRACE scenario=pixel-boundary event=card_state gen=6659 focus=8 msg=m8 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=5795 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=6697 focus=5 msg=m5 
+C0_TRACE scenario=pixel-boundary event=card_state gen=6947 focus=9 msg=m9 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=6083 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=6985 focus=6 msg=m6 
+C0_TRACE scenario=pixel-boundary event=card_state gen=7235 focus=10 msg=m10 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=6371 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=7273 focus=7 msg=m7 
+C0_TRACE scenario=pixel-boundary event=card_state gen=7523 focus=11 msg=m11 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=6659 focus=8 msg=m8 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=7561 focus=8 msg=m8 
+C0_TRACE scenario=pixel-boundary event=card_state gen=7811 focus=12 msg=m12 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=6947 focus=9 msg=m9 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=7849 focus=9 msg=m9 
+C0_TRACE scenario=pixel-boundary event=card_state gen=8099 focus=13 msg=m13 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=7235 focus=10 msg=m10 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=8137 focus=10 msg=m10 
+C0_TRACE scenario=pixel-boundary event=card_state gen=8387 focus=14 msg=m14 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=7523 focus=11 msg=m11 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=8425 focus=11 msg=m11 
+C0_TRACE scenario=pixel-boundary event=card_state gen=8675 focus=15 msg=m15 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=7811 focus=12 msg=m12 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=8713 focus=12 msg=m12 
+C0_TRACE scenario=pixel-boundary event=card_state gen=8963 focus=16 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=8099 focus=13 msg=m13 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=9001 focus=13 msg=m13 
+C0_TRACE scenario=pixel-boundary event=card_state gen=9251 focus=17 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=8387 focus=14 msg=m14 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=9289 focus=14 msg=m14 
+C0_TRACE scenario=pixel-boundary event=card_state gen=9539 focus=18 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=9 focus=2 msg=- 
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=8675 focus=15 msg=m15 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=9577 focus=15 msg=m15 
+C0_TRACE scenario=pixel-boundary event=card_state gen=9827 focus=19 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=10115 focus=20 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=10403 focus=21 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=10691 focus=22 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=10979 focus=23 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=11267 focus=24 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=11555 focus=25 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=11843 focus=26 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=12131 focus=27 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=12419 focus=28 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=12707 focus=29 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=12995 focus=30 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=13283 focus=31 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=13571 focus=32 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=13859 focus=33 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=14147 focus=34 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=10 focus=3 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=14435 focus=35 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=14723 focus=36 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=15011 focus=37 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=15299 focus=38 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=15587 focus=39 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=15875 focus=40 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=16163 focus=41 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=16451 focus=42 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=16739 focus=43 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=17027 focus=44 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=17315 focus=45 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=17603 focus=46 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=17891 focus=47 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=18179 focus=48 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=18467 focus=49 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=18755 focus=50 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=19043 focus=51 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=19331 focus=52 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=19619 focus=53 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=19907 focus=54 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=20195 focus=55 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=20483 focus=56 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=20771 focus=57 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=21059 focus=58 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=21347 focus=59 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=21635 focus=60 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=21923 focus=61 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=22211 focus=62 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=22499 focus=63 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=23036 focus=60 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=23324 focus=59 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=23612 focus=58 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=23900 focus=57 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=24188 focus=56 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=24476 focus=55 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=24764 focus=54 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=25052 focus=53 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=25340 focus=52 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=25628 focus=51 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=25916 focus=50 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=26204 focus=49 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=26492 focus=48 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=26780 focus=47 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=27068 focus=46 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=27356 focus=45 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=27644 focus=44 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=27932 focus=43 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=28220 focus=42 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=28508 focus=41 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=28796 focus=40 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=29084 focus=39 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=29372 focus=38 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=29660 focus=37 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=29948 focus=36 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=30236 focus=35 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=30524 focus=34 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=30812 focus=33 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=31100 focus=32 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=31388 focus=31 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=31676 focus=30 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=31964 focus=29 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=32252 focus=28 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=32540 focus=27 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=32828 focus=26 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=33116 focus=25 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=33404 focus=24 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=33692 focus=23 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=33980 focus=22 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=34268 focus=21 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=34556 focus=20 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=34844 focus=19 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=35132 focus=18 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=35420 focus=17 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=35708 focus=16 msg=- session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=35996 focus=15 msg=m15 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=36284 focus=14 msg=m14 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=36572 focus=13 msg=m13 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=36860 focus=12 msg=m12 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=35996 focus=15 msg=m15 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=36898 focus=15 msg=m15 
+C0_TRACE scenario=pixel-boundary event=card_state gen=37148 focus=11 msg=m11 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=36284 focus=14 msg=m14 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=37186 focus=14 msg=m14 
+C0_TRACE scenario=pixel-boundary event=card_state gen=37436 focus=10 msg=m10 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=36572 focus=13 msg=m13 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=37474 focus=13 msg=m13 
+C0_TRACE scenario=pixel-boundary event=card_state gen=37724 focus=9 msg=m9 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=36860 focus=12 msg=m12 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=37762 focus=12 msg=m12 
+C0_TRACE scenario=pixel-boundary event=card_state gen=38012 focus=8 msg=m8 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=37148 focus=11 msg=m11 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=38050 focus=11 msg=m11 
+C0_TRACE scenario=pixel-boundary event=card_state gen=38300 focus=7 msg=m7 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=37436 focus=10 msg=m10 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=38338 focus=10 msg=m10 
+C0_TRACE scenario=pixel-boundary event=card_state gen=38588 focus=6 msg=m6 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=37724 focus=9 msg=m9 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=38626 focus=9 msg=m9 
+C0_TRACE scenario=pixel-boundary event=card_state gen=38876 focus=5 msg=m5 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=38012 focus=8 msg=m8 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=38914 focus=8 msg=m8 
+C0_TRACE scenario=pixel-boundary event=card_state gen=39164 focus=4 msg=m4 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=38300 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=39202 focus=7 msg=m7 
+C0_TRACE scenario=pixel-boundary event=card_state gen=39452 focus=3 msg=m3 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=38588 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=39490 focus=6 msg=m6 
+C0_TRACE scenario=pixel-boundary event=card_state gen=39740 focus=2 msg=m2 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=38876 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=39778 focus=5 msg=m5 
+C0_TRACE scenario=pixel-boundary event=card_state gen=40028 focus=1 msg=m1 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=39164 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=40066 focus=4 msg=m4 
+C0_TRACE scenario=pixel-boundary event=card_state gen=40316 focus=0 msg=m0 session=1 revision=7 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=39452 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=40354 focus=3 msg=m3 
+C0_TRACE scenario=pixel-boundary event=snap_end gen=0 focus=0 msg=m0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=bind gen=39740 focus=2 msg=m2 session=1 revision=7 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=40028 focus=1 msg=m1 session=1 revision=7 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=40316 focus=0 msg=m0 session=1 revision=7 state=bound
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=11 focus=0 msg=- 
+C0_REQUEST scenario=pixel-boundary session=1 op_id=11 page=0 submitted_us=216591804121
+C0_DELIVERY scenario=pixel-boundary session=1 op_id=11 page=0 response_revision=8 initial=0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=fetch_delivery_retained gen=11 focus=0 msg=- 
+C0_TRACE scenario=pixel-boundary event=page_apply gen=11 focus=0 msg=m0 op_id=11 revision=8 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=12 focus=1 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=11 focus=0 msg=- session=1 revision=7 attempt=1 outcome=success elapsed_us=1301
+C0_TRACE scenario=pixel-boundary event=unbind gen=40605 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=card_state gen=40605 focus=0 msg=m0 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=40605 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=card_state gen=40605 focus=1 msg=m1 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=unbind gen=40605 focus=2 msg=m2 
+C0_TRACE scenario=pixel-boundary event=card_state gen=40605 focus=2 msg=m2 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=apply_stale gen=9 focus=2 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=9 focus=2 msg=- session=1 revision=7 attempt=1 outcome=stale elapsed_us=1461976
+C0_TRACE scenario=pixel-boundary event=card_state gen=40855 focus=3 msg=m3 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=40605 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=40893 focus=0 msg=m0 
+C0_TRACE scenario=pixel-boundary event=apply_stale gen=8 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=8 focus=1 msg=- session=1 revision=7 attempt=1 outcome=stale elapsed_us=1813376
+C0_TRACE scenario=pixel-boundary event=card_state gen=41143 focus=4 msg=m4 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=40605 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=41181 focus=1 msg=m1 
+C0_TRACE scenario=pixel-boundary event=card_state gen=41431 focus=5 msg=m5 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=40605 focus=2 msg=m2 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=41469 focus=2 msg=m2 
+C0_TRACE scenario=pixel-boundary event=apply_stale gen=10 focus=3 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=pixel-boundary event=fetch_terminal gen=10 focus=3 msg=- session=1 revision=7 attempt=1 outcome=stale elapsed_us=1281782
+C0_TRACE scenario=pixel-boundary event=card_state gen=41719 focus=6 msg=m6 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=40855 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=41757 focus=3 msg=m3 
+C0_TRACE scenario=pixel-boundary event=card_state gen=42007 focus=7 msg=m7 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=41143 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=42045 focus=4 msg=m4 
+C0_TRACE scenario=pixel-boundary event=card_state gen=42295 focus=8 msg=m8 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=41431 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=42333 focus=5 msg=m5 
+C0_TRACE scenario=pixel-boundary event=card_state gen=42583 focus=9 msg=m9 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=41719 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=42621 focus=6 msg=m6 
+C0_TRACE scenario=pixel-boundary event=card_state gen=42871 focus=10 msg=m10 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=42007 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=42909 focus=7 msg=m7 
+C0_TRACE scenario=pixel-boundary event=card_state gen=43159 focus=11 msg=m11 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=42295 focus=8 msg=m8 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=43197 focus=8 msg=m8 
+C0_TRACE scenario=pixel-boundary event=card_state gen=43447 focus=12 msg=m12 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=42583 focus=9 msg=m9 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=43485 focus=9 msg=m9 
+C0_TRACE scenario=pixel-boundary event=card_state gen=43735 focus=13 msg=m13 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=42871 focus=10 msg=m10 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=43773 focus=10 msg=m10 
+C0_TRACE scenario=pixel-boundary event=card_state gen=44023 focus=14 msg=m14 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=43159 focus=11 msg=m11 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=44061 focus=11 msg=m11 
+C0_TRACE scenario=pixel-boundary event=card_state gen=44311 focus=15 msg=m15 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=43447 focus=12 msg=m12 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=44349 focus=12 msg=m12 
+C0_TRACE scenario=pixel-boundary event=card_state gen=44599 focus=16 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=43735 focus=13 msg=m13 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=44637 focus=13 msg=m13 
+C0_TRACE scenario=pixel-boundary event=card_state gen=44887 focus=17 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=44023 focus=14 msg=m14 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=44925 focus=14 msg=m14 
+C0_TRACE scenario=pixel-boundary event=card_state gen=45175 focus=18 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=44311 focus=15 msg=m15 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=45213 focus=15 msg=m15 
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=13 focus=2 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=45463 focus=19 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=45751 focus=20 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=46039 focus=21 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=46327 focus=22 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=46615 focus=23 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=46903 focus=24 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=47191 focus=25 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=47479 focus=26 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=47767 focus=27 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=48055 focus=28 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=48343 focus=29 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=48631 focus=30 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=48919 focus=31 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=49207 focus=32 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=49495 focus=33 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=49783 focus=34 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=14 focus=3 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=50071 focus=35 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=50359 focus=36 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=50647 focus=37 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=50935 focus=38 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=51223 focus=39 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=51511 focus=40 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=51799 focus=41 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=52087 focus=42 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=52375 focus=43 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=52663 focus=44 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=52951 focus=45 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=53239 focus=46 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=53527 focus=47 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=53815 focus=48 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=54103 focus=49 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=54391 focus=50 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=15 focus=4 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=54679 focus=51 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=54967 focus=52 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=55255 focus=53 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=55543 focus=54 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=55831 focus=55 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=56119 focus=56 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=56407 focus=57 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=56695 focus=58 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=56983 focus=59 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=57271 focus=60 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=57559 focus=61 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=57847 focus=62 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=58135 focus=63 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=58423 focus=64 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=58711 focus=65 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=16 focus=5 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=58999 focus=66 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=59287 focus=67 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=59575 focus=68 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=59863 focus=69 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=60151 focus=70 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=60439 focus=71 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=60727 focus=72 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=61015 focus=73 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=61303 focus=74 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=61591 focus=75 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=61879 focus=76 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=62167 focus=77 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=62455 focus=78 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=62743 focus=79 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=63031 focus=80 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=63319 focus=81 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=17 focus=6 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=63607 focus=82 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=63895 focus=83 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=64183 focus=84 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=64471 focus=85 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=64759 focus=86 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=65047 focus=87 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=65335 focus=88 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=65623 focus=89 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=65911 focus=90 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=66199 focus=91 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=66487 focus=92 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=66775 focus=93 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=67063 focus=94 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=67351 focus=95 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=67639 focus=96 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=67927 focus=97 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=68215 focus=98 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=18 focus=7 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=68503 focus=99 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=68791 focus=100 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=69079 focus=101 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=69367 focus=102 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=69655 focus=103 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=69943 focus=104 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=70231 focus=105 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=70519 focus=106 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=70807 focus=107 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=71095 focus=108 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=71383 focus=109 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=71671 focus=110 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=71959 focus=111 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=72247 focus=112 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=72535 focus=113 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=72823 focus=114 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_admitted gen=19 focus=8 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=73111 focus=115 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=73399 focus=116 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=73687 focus=117 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=73975 focus=118 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=74263 focus=119 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=74551 focus=120 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=74839 focus=121 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=75127 focus=122 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=75415 focus=123 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=75703 focus=124 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=75991 focus=125 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=76279 focus=126 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=76567 focus=127 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=76855 focus=128 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=77143 focus=129 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=77431 focus=130 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=77719 focus=131 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=78007 focus=132 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=78295 focus=133 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=78583 focus=134 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=78871 focus=135 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=79159 focus=136 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=79447 focus=137 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=79735 focus=138 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=80023 focus=139 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=80311 focus=140 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=80599 focus=141 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=80887 focus=142 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=81175 focus=143 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=81463 focus=144 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=81751 focus=145 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=82039 focus=146 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=82327 focus=147 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=82615 focus=148 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=82903 focus=149 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=83191 focus=150 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=83479 focus=151 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=83767 focus=152 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=84055 focus=153 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=84343 focus=154 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=84631 focus=155 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=84919 focus=156 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=85207 focus=157 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=85495 focus=158 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=85783 focus=159 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=86071 focus=160 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=86359 focus=161 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=86647 focus=162 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=86935 focus=163 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=87223 focus=164 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=87511 focus=165 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=87799 focus=166 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=88087 focus=167 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=88375 focus=168 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=88663 focus=169 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=88951 focus=170 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=89239 focus=171 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=89527 focus=172 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=89815 focus=173 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=90103 focus=174 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=90391 focus=175 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=90679 focus=176 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=90967 focus=177 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=91255 focus=178 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=91543 focus=179 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=91831 focus=180 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=92119 focus=181 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=92407 focus=182 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=92695 focus=183 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=92983 focus=184 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=93271 focus=185 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=93559 focus=186 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=93847 focus=187 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=94135 focus=188 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=94423 focus=189 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=94711 focus=190 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=94999 focus=191 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=95287 focus=192 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=95575 focus=193 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=95863 focus=194 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=96151 focus=195 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=96439 focus=196 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=96727 focus=197 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=97015 focus=198 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=97303 focus=199 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=97591 focus=200 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=97879 focus=201 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=98167 focus=202 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=98455 focus=203 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=98743 focus=204 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=99031 focus=205 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=99319 focus=206 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=99607 focus=207 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=99895 focus=208 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=100183 focus=209 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=100471 focus=210 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=100759 focus=211 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=101047 focus=212 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=101335 focus=213 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=101623 focus=214 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=101911 focus=215 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=102199 focus=216 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=102487 focus=217 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=102775 focus=218 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=103063 focus=219 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=103351 focus=220 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=103639 focus=221 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=103927 focus=222 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=104215 focus=223 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=104503 focus=224 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=104791 focus=225 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=105079 focus=226 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=105367 focus=227 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=105655 focus=228 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=105943 focus=229 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=106231 focus=230 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=106519 focus=231 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=106807 focus=232 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=107095 focus=233 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=107383 focus=234 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=107671 focus=235 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=107959 focus=236 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=108247 focus=237 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=108535 focus=238 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=108823 focus=239 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=109111 focus=240 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=109399 focus=241 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=109687 focus=242 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=109975 focus=243 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=110263 focus=244 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=110551 focus=245 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=110839 focus=246 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=111127 focus=247 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=111415 focus=248 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=111703 focus=249 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=111991 focus=250 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=112279 focus=251 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=112567 focus=252 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=112855 focus=253 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=113143 focus=254 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=113431 focus=255 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=113968 focus=252 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=114256 focus=251 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=114544 focus=250 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=114832 focus=249 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=115120 focus=248 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=115408 focus=247 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=115696 focus=246 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=115984 focus=245 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=116272 focus=244 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=116560 focus=243 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=116848 focus=242 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=117136 focus=241 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=117424 focus=240 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=117712 focus=239 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=118000 focus=238 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=118288 focus=237 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=118576 focus=236 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=118864 focus=235 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=119152 focus=234 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=119440 focus=233 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=119728 focus=232 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=120016 focus=231 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=120304 focus=230 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=120592 focus=229 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=120880 focus=228 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=121168 focus=227 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=121456 focus=226 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=121744 focus=225 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=122032 focus=224 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=15 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=122320 focus=223 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=122608 focus=222 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=122896 focus=221 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=123184 focus=220 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=123472 focus=219 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=123760 focus=218 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=124048 focus=217 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=124336 focus=216 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=124624 focus=215 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=124912 focus=214 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=125200 focus=213 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=125488 focus=212 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=125776 focus=211 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=126064 focus=210 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=126352 focus=209 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=126640 focus=208 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=126928 focus=207 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=14 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=127216 focus=206 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=127504 focus=205 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=127792 focus=204 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=128080 focus=203 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=128368 focus=202 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=128656 focus=201 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=128944 focus=200 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=129232 focus=199 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=129520 focus=198 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=129808 focus=197 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=130096 focus=196 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=130384 focus=195 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=130672 focus=194 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=130960 focus=193 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=131248 focus=192 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=131536 focus=191 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=13 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=131824 focus=190 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=132112 focus=189 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=132400 focus=188 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=132688 focus=187 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=132976 focus=186 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=133264 focus=185 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=133552 focus=184 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=133840 focus=183 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=134128 focus=182 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=134416 focus=181 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=134704 focus=180 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=134992 focus=179 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=135280 focus=178 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=135568 focus=177 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=135856 focus=176 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=136144 focus=175 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=12 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=136432 focus=174 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=136720 focus=173 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=137008 focus=172 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=137296 focus=171 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=137584 focus=170 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=137872 focus=169 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=138160 focus=168 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=138448 focus=167 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=138736 focus=166 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=139024 focus=165 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=139312 focus=164 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=139600 focus=163 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=139888 focus=162 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=140176 focus=161 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=140464 focus=160 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=11 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=140752 focus=159 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=141040 focus=158 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=141328 focus=157 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=141616 focus=156 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=141904 focus=155 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=142192 focus=154 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=142480 focus=153 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=142768 focus=152 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=143056 focus=151 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=143344 focus=150 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=143632 focus=149 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=143920 focus=148 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=144208 focus=147 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=144496 focus=146 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=144784 focus=145 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=145072 focus=144 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=focus_admission_pending gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=10 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=145360 focus=143 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=145648 focus=142 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=145936 focus=141 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=146224 focus=140 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=146512 focus=139 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=146800 focus=138 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=147088 focus=137 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=147376 focus=136 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=147664 focus=135 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=147952 focus=134 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=148240 focus=133 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=148528 focus=132 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=148816 focus=131 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=149104 focus=130 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=149392 focus=129 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=149680 focus=128 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=fetch_queue_full gen=0 focus=9 msg=- 
+C0_TRACE scenario=pixel-boundary event=card_state gen=149968 focus=127 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=150256 focus=126 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=150544 focus=125 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=150832 focus=124 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=151120 focus=123 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=151408 focus=122 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=151696 focus=121 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=151984 focus=120 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=152272 focus=119 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=152560 focus=118 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=152848 focus=117 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=153136 focus=116 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=153424 focus=115 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=153712 focus=114 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=154000 focus=113 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=154288 focus=112 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=154576 focus=111 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=154864 focus=110 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=155152 focus=109 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=155440 focus=108 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=155728 focus=107 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=156016 focus=106 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=156304 focus=105 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=156592 focus=104 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=156880 focus=103 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=157168 focus=102 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=157456 focus=101 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=157744 focus=100 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=158032 focus=99 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=158320 focus=98 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=158608 focus=97 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=158896 focus=96 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=159184 focus=95 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=159472 focus=94 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=159760 focus=93 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=160048 focus=92 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=160336 focus=91 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=160624 focus=90 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=160912 focus=89 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=161200 focus=88 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=161488 focus=87 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=161776 focus=86 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=162064 focus=85 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=162352 focus=84 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=162640 focus=83 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=162928 focus=82 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=163216 focus=81 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=163504 focus=80 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=163792 focus=79 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=164080 focus=78 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=164368 focus=77 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=164656 focus=76 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=164944 focus=75 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=165232 focus=74 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=165520 focus=73 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=165808 focus=72 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=166096 focus=71 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=166384 focus=70 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=166672 focus=69 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=166960 focus=68 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=167248 focus=67 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=167536 focus=66 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=167824 focus=65 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=168112 focus=64 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=168400 focus=63 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=168688 focus=62 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=168976 focus=61 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=169264 focus=60 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=169552 focus=59 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=169840 focus=58 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=170128 focus=57 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=170416 focus=56 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=170704 focus=55 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=170992 focus=54 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=171280 focus=53 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=171568 focus=52 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=171856 focus=51 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=172144 focus=50 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=172432 focus=49 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=172720 focus=48 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=173008 focus=47 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=173296 focus=46 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=173584 focus=45 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=173872 focus=44 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=174160 focus=43 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=174448 focus=42 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=174736 focus=41 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=175024 focus=40 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=175312 focus=39 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=175600 focus=38 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=175888 focus=37 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=176176 focus=36 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=176464 focus=35 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=176752 focus=34 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=177040 focus=33 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=177328 focus=32 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=177616 focus=31 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=177904 focus=30 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=178192 focus=29 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=178480 focus=28 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=178768 focus=27 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=179056 focus=26 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=179344 focus=25 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=179632 focus=24 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=179920 focus=23 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=180208 focus=22 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=180496 focus=21 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=180784 focus=20 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=181072 focus=19 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=181360 focus=18 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=181648 focus=17 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=181936 focus=16 msg=- session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=182224 focus=15 msg=m15 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=182512 focus=14 msg=m14 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=182800 focus=13 msg=m13 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=card_state gen=183088 focus=12 msg=m12 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=182224 focus=15 msg=m15 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=183126 focus=15 msg=m15 
+C0_TRACE scenario=pixel-boundary event=card_state gen=183376 focus=11 msg=m11 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=182512 focus=14 msg=m14 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=183414 focus=14 msg=m14 
+C0_TRACE scenario=pixel-boundary event=card_state gen=183664 focus=10 msg=m10 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=182800 focus=13 msg=m13 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=183702 focus=13 msg=m13 
+C0_TRACE scenario=pixel-boundary event=card_state gen=183952 focus=9 msg=m9 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=183088 focus=12 msg=m12 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=183990 focus=12 msg=m12 
+C0_TRACE scenario=pixel-boundary event=card_state gen=184240 focus=8 msg=m8 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=183376 focus=11 msg=m11 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=184278 focus=11 msg=m11 
+C0_TRACE scenario=pixel-boundary event=card_state gen=184528 focus=7 msg=m7 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=183664 focus=10 msg=m10 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=184566 focus=10 msg=m10 
+C0_TRACE scenario=pixel-boundary event=card_state gen=184816 focus=6 msg=m6 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=183952 focus=9 msg=m9 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=184854 focus=9 msg=m9 
+C0_TRACE scenario=pixel-boundary event=card_state gen=185104 focus=5 msg=m5 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=184240 focus=8 msg=m8 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=185142 focus=8 msg=m8 
+C0_TRACE scenario=pixel-boundary event=card_state gen=185392 focus=4 msg=m4 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=184528 focus=7 msg=m7 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=185430 focus=7 msg=m7 
+C0_TRACE scenario=pixel-boundary event=card_state gen=185680 focus=3 msg=m3 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=184816 focus=6 msg=m6 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=185718 focus=6 msg=m6 
+C0_TRACE scenario=pixel-boundary event=card_state gen=185968 focus=2 msg=m2 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=185104 focus=5 msg=m5 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=186006 focus=5 msg=m5 
+C0_TRACE scenario=pixel-boundary event=card_state gen=186256 focus=1 msg=m1 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=185392 focus=4 msg=m4 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=186294 focus=4 msg=m4 
+C0_TRACE scenario=pixel-boundary event=card_state gen=186544 focus=0 msg=m0 session=1 revision=8 state=loading
+C0_TRACE scenario=pixel-boundary event=bind_stale gen=185680 focus=3 msg=m3 reason=superseded
+C0_TRACE scenario=pixel-boundary event=unbind gen=186582 focus=3 msg=m3 
+C0_TRACE scenario=pixel-boundary event=snap_end gen=0 focus=0 msg=m0 snap_id=0
+C0_TRACE scenario=pixel-boundary event=bind gen=185968 focus=2 msg=m2 session=1 revision=8 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=186256 focus=1 msg=m1 session=1 revision=8 state=bound
+C0_TRACE scenario=pixel-boundary event=bind gen=186544 focus=0 msg=m0 session=1 revision=8 state=bound
+INDEPENDENT_PIXEL_BOUNDARY positions=93414 preserved_survivors=291756 PASS
+C0_STATE scenario=pixel-boundary point=pixel-boundary session=1 revision=8 focus=0 focus_id=m0 snap_id=0 snap_locked=0 session_locked=0 scroll_x=0 window={slot:0,index:0,id:m0,gen:186544,hidden:0,x1:12,x2:143,state:2,revision:8,session:1,sender:Sender 0},{slot:1,index:1,id:m1,gen:186256,hidden:0,x1:156,x2:287,state:2,revision:8,session:1,sender:Sender 1},{slot:2,index:2,id:m2,gen:185968,hidden:0,x1:300,x2:431,state:2,revision:8,session:1,sender:Sender 2},{slot:3,index:-1,id:-,gen:186582,hidden:1,x1:444,x2:575,state:0,revision:8,session:1,sender:} starts=0 ends=7 deferred=0 stale=4 applied=8
+C0_RESULT scenario=pixel-boundary characterization=PASS acceptance=F001-C2

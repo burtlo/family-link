@@ -14,7 +14,7 @@ typedef struct {
 } lab02_card_pool_t;
 
 void lab02_card_pool_init(lab02_card_pool_t *pool, lv_obj_t *scroll_parent);
-void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t *pp, int focus,
+void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t *pp, int focus, int32_t scroll_x,
                             uint32_t generation);
 void lab02_card_pool_layout_positions(lab02_card_pool_t *pool);
 

@@ -1,0 +1,26 @@
+{
+  "baseline": [
+    "python3",
+    "scripts/tests/test_lab02_carousel_native.py",
+    "--artifact-dir",
+    "/tmp/lab02-c3c-fix/baseline"
+  ],
+  "native": "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c3c-fix/native LAB02_HTTP_STARTUP_ARTIFACT_DIR=/tmp/lab02-c3c-fix/startup python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture",
+  "normal": [
+    "python3",
+    "scripts/tests/test_lab02_carousel_native.py",
+    "--artifact-dir",
+    "/tmp/lab02-c3c-fix/normal-final"
+  ],
+  "slow": [
+    "python3",
+    "scripts/tests/test_lab02_carousel_native.py",
+    "--artifact-dir",
+    "/tmp/lab02-c3c-fix/slow",
+    "--slow-bind-ms",
+    "120"
+  ],
+  "firmware": "make lab.lab02.scripted.build KIT=lynn (build only; sandbox sysctl failure, authorized escalated build and final incremental build both PASS)",
+  "visual": "sips selected actual-render PPM to PNG; view_image inspection",
+  "scope": "No flash, server/host/privateconfig edits or commits; root independently verifies next"
+}

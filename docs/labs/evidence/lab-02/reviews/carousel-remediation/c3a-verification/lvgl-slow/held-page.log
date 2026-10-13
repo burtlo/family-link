@@ -1,0 +1,40 @@
+C0_TRACE scenario=held-page event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=held-page session=1 op_id=0 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=held-page event=fetch_delivery_retained gen=0 focus=0 msg=- 
+C0_TRACE scenario=held-page event=page_apply gen=0 focus=0 msg=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=held-page event=fetch_admitted gen=1 focus=1 msg=- 
+C0_TRACE scenario=held-page event=fetch_terminal gen=0 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1772
+C0_TRACE scenario=held-page event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=bind_stale gen=3 focus=0 msg=m0 reason=superseded
+C0_TRACE scenario=held-page event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=held-page event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=bind_stale gen=3 focus=1 msg=m1 reason=superseded
+C0_TRACE scenario=held-page event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=held-page event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_TRACE scenario=held-page event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=held-page event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_STATE scenario=held-page point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=held-page event=fetch_admitted gen=2 focus=2 msg=- 
+C0_TRACE scenario=held-page event=unbind gen=5 focus=3 msg=m3 
+C0_TRACE scenario=held-page event=card_state gen=5 focus=19 msg=- session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=unbind gen=5 focus=4 msg=m4 
+C0_TRACE scenario=held-page event=card_state gen=5 focus=20 msg=- session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=unbind gen=5 focus=5 msg=m5 
+C0_TRACE scenario=held-page event=card_state gen=5 focus=21 msg=- session=1 revision=1 state=loading
+C0_STATE scenario=held-page point=loading-held session=1 revision=1 focus=20 focus_id=- snap_id=0 snap_locked=0 session_locked=1 scroll_x=2798 window={slot:0,index:19,id:-,gen:5,hidden:0,x1:-50,x2:81,state:1,revision:1,session:1,sender:Loading message…},{slot:1,index:20,id:-,gen:5,hidden:0,x1:94,x2:225,state:1,revision:1,session:1,sender:Loading message…},{slot:2,index:21,id:-,gen:5,hidden:0,x1:238,x2:369,state:1,revision:1,session:1,sender:Loading message…} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_REQUEST scenario=held-page session=1 op_id=1 page=1 submitted_us=215318416734
+C0_DELIVERY scenario=held-page session=1 op_id=1 page=1 response_revision=1 initial=0 snap_id=0
+C0_TRACE scenario=held-page event=fetch_delivery_retained gen=1 focus=1 msg=- 
+C0_TRACE scenario=held-page event=page_apply gen=1 focus=20 msg=m20 op_id=1 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=held-page event=fetch_terminal gen=1 focus=1 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=11690
+C0_TRACE scenario=held-page event=card_state gen=6 focus=19 msg=m19 session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=card_state gen=6 focus=20 msg=m20 session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=card_state gen=6 focus=21 msg=m21 session=1 revision=1 state=loading
+C0_TRACE scenario=held-page event=bind gen=6 focus=21 msg=m21 session=1 revision=1 state=bound
+C0_TRACE scenario=held-page event=bind gen=6 focus=20 msg=m20 session=1 revision=1 state=bound
+C0_TRACE scenario=held-page event=bind gen=6 focus=19 msg=m19 session=1 revision=1 state=bound
+C0_STATE scenario=held-page point=bound-held session=1 revision=1 focus=20 focus_id=m20 snap_id=0 snap_locked=0 session_locked=1 scroll_x=2798 window={slot:0,index:19,id:m19,gen:6,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 19},{slot:1,index:20,id:m20,gen:6,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 20},{slot:2,index:21,id:m21,gen:6,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 21} starts=0 ends=0 deferred=0 stale=0 applied=2
+C0_RESULT scenario=held-page characterization=PASS acceptance=F001-C2

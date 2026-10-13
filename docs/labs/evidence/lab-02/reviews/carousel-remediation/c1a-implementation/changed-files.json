@@ -1,0 +1,15 @@
+[
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c",
+  "client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c",
+  "client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c",
+  "client/labs/lab-02-bounded-inbox/tests/test_session_native.c",
+  "client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c",
+  "client/labs/lab-02-bounded-inbox/tests/README.md",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/README.md",
+  "scripts/tests/test_lab02_model_native.py",
+  "scripts/tests/test_lab02_carousel_native.py",
+  "docs/labs/lab-02-session-architecture.md"
+]

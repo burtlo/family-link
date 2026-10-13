@@ -1,0 +1,35 @@
+test_page_parse_and_replacement (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_page_parse_and_replacement) ... ok
+test_session_result_ownership_and_snap_deferral (scripts.tests.test_lab02_model_native.Lab02NativeModelTests.test_session_result_ownership_and_snap_deferral) ... ok
+test_fixture_counts (scripts.tests.test_lab02_host.Lab02FixtureTests.test_fixture_counts) ... ok
+test_page_size_default_16 (scripts.tests.test_lab02_host.Lab02FixtureTests.test_page_size_default_16) ... ok
+test_partial_slot_without_message_id (scripts.tests.test_lab02_host.Lab02FixtureTests.test_partial_slot_without_message_id)
+Materialized count ignores empty message_id slots within total_count. ... ok
+test_harness_abort_without_success_done (scripts.tests.test_lab02_host.Lab02ParseLabTraceTests.test_harness_abort_without_success_done) ... ok
+test_harness_done_not_double_counted (scripts.tests.test_lab02_host.Lab02ParseLabTraceTests.test_harness_done_not_double_counted) ... ok
+test_harness_done_printf_fallback (scripts.tests.test_lab02_host.Lab02ParseLabTraceTests.test_harness_done_printf_fallback) ... ok
+test_dedupe_inflight_and_loaded (scripts.tests.test_lab02_host.Lab02SessionQueueTests.test_dedupe_inflight_and_loaded) ... ok
+test_queue_capacity_overflow (scripts.tests.test_lab02_host.Lab02SessionQueueTests.test_queue_capacity_overflow) ... ok
+test_scroll_lock_defers_merge_until_unlock (scripts.tests.test_lab02_host.Lab02SessionQueueTests.test_scroll_lock_defers_merge_until_unlock) ... ok
+test_stale_op_mismatch_increments_apply_stale (scripts.tests.test_lab02_host.Lab02SessionQueueTests.test_stale_op_mismatch_increments_apply_stale) ... ok
+test_timeout_terminal_clears_inflight (scripts.tests.test_lab02_host.Lab02SessionQueueTests.test_timeout_terminal_clears_inflight) ... ok
+test_first_and_last_clamped (scripts.tests.test_lab02_host.Lab02SnapMathTests.test_first_and_last_clamped) ... ok
+test_large_inbox_metadata_count (scripts.tests.test_lab02_host.Lab02SnapMathTests.test_large_inbox_metadata_count) ... ok
+test_last_index_uses_max_scroll_clamp (scripts.tests.test_lab02_host.Lab02SnapMathTests.test_last_index_uses_max_scroll_clamp) ... ok
+test_round_trip_mid_index (scripts.tests.test_lab02_host.Lab02SnapMathTests.test_round_trip_mid_index) ... ok
+test_http_worker_has_no_presentation_dependency (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_http_worker_has_no_presentation_dependency) ... ok
+test_presentation_does_not_wait_on_io_or_sleep (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_presentation_does_not_wait_on_io_or_sleep) ... ok
+test_session_is_only_model_writer (scripts.tests.test_lab02_architecture.Lab02ArchitectureTests.test_session_is_only_model_writer) ... ok
+setUpClass (scripts.tests.test_lab02_paging_server.Lab02PagingServerTests) ... ERROR
+
+======================================================================
+ERROR: setUpClass (scripts.tests.test_lab02_paging_server.Lab02PagingServerTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/lynnfrank/src/family-link/scripts/tests/test_lab02_paging_server.py", line 32, in setUpClass
+    raise RuntimeError("paging server did not start")
+RuntimeError: paging server did not start
+
+----------------------------------------------------------------------
+Ran 20 tests in 8.693s
+
+FAILED (errors=1)

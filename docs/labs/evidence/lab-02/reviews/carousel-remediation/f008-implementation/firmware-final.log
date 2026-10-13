@@ -1,0 +1,130 @@
+Executing action: all (aliases: build)
+Running ninja in directory /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox-phaseb
+Executing "ninja all"...
+[1/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/page_provider.c.obj
+[2/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/page_provider_http.c.obj
+[3/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/card_view_layout.c.obj
+[4/18] Performing build step for 'bootloader'
+[1/1] cd /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox-phaseb/bootloader/esp-idf/esptool_py && /Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env/bin/python /Users/lynnfrank/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox-phaseb/bootloader/bootloader.bin
+Bootloader binary size 0x5130 bytes. 0x2ed0 bytes (37%) free.
+[5/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/snap.c.obj
+[6/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/lab_harness.c.obj
+[7/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/card_pool.c.obj
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c: In function 'lab02_card_pool_init':
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c:14:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+   14 |         lv_obj_add_flag(pool->views[i].root, LV_OBJ_FLAG_HIDDEN);
+      |         ^~~~~~~~~~~~~~~
+In file included from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:21,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/lvgl.h:1,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_view.h:3,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_pool.h:3,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c:1:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+[8/18] No install step for 'bootloader'
+[9/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/card_view.c.obj
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c: In function 'clear_content':
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:57:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+   57 |     lv_obj_add_flag(view->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~
+In file included from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:21,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/lvgl.h:1,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_view.h:3,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:1:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c: In function 'apply_bind_labels':
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:84:9: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+   84 |         lv_obj_remove_flag(view->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |         ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:86:9: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+   86 |         lv_obj_add_flag(view->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |         ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:88:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+   88 |     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c: In function 'lab02_card_view_create':
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:128:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  128 |     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:130:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  130 |     lv_obj_add_flag(view->root, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:154:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  154 |     lv_obj_add_flag(view->unread_dot, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c: In function 'lab02_card_view_present':
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:190:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  190 |     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c: In function 'lab02_card_view_unbind':
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/card_view.c:237:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  237 |     lv_obj_add_flag(view->root, LV_OBJ_FLAG_HIDDEN);
+      |     ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+[10/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/carousel_controller.c.obj
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c: In function 'lab02_carousel_init':
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:238:5: warning: 'lv_obj_add_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, true). [-Wdeprecated-declarations]
+  238 |     lv_obj_add_flag(c->count_lab, LV_OBJ_FLAG_CLICKABLE);
+      |     ^~~~~~~~~~~~~~~
+In file included from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/lvgl.h:21,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/lvgl.h:1,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/carousel_controller.h:3,
+                 from /Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:1:
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:239:6: note: declared here
+  239 | void lv_obj_add_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c:259:5: warning: 'lv_obj_remove_flag' is deprecated: Use the dedicated lv_obj_set_<flag>() setters instead, e.g. lv_obj_set_hidden(obj, false). [-Wdeprecated-declarations]
+  259 |     lv_obj_remove_flag(c->content_spacer, LV_OBJ_FLAG_SCROLLABLE);
+      |     ^~~~~~~~~~~~~~~~~~
+/Users/lynnfrank/src/family-link/client/labs/lab-02-bounded-inbox/managed_components/lvgl__lvgl/include/lvgl/core/lv_obj.h:248:6: note: declared here
+  248 | void lv_obj_remove_flag(lv_obj_t * obj, lv_obj_flag_t f);
+      |      ^~~~~~~~~~~~~~~~~~
+[11/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/lab02_session.c.obj
+[12/18] Completed 'bootloader'
+[13/18] Building C object esp-idf/lab02/CMakeFiles/__idf_lab02.dir/lab_main.c.obj
+[14/18] Linking C static library esp-idf/lab02/liblab02.a
+[15/18] Generating ld/sections.ld
+[16/18] Linking CXX executable lab02_bounded_inbox.elf
+[17/18] Generating binary image from built executable
+esptool.py v4.12.0
+Creating esp32s3 image...
+Merged 2 ELF sections
+Successfully created esp32s3 image.
+Generated /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox-phaseb/lab02_bounded_inbox.bin
+[18/18] cd /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox-phaseb/esp-idf/esptool_py && /Users/lynnfrank/.espressif/python_env/idf5.4_py3.14_env/bin/python /Users/lynnfrank/esp/esp-idf/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox-phaseb/partition_table/partition-table.bin /Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox-phaseb/lab02_bounded_inbox.bin
+lab02_bounded_inbox.bin binary size 0x153fc0 bytes. Smallest app partition is 0x177000 bytes. 0x23040 bytes (9%) free.
+
+Project build complete. To flash, run:
+ idf.py flash
+or
+ idf.py -p PORT flash
+or
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size detect --flash_freq 80m 0x0 build/labs/lab-02-bounded-inbox-phaseb/bootloader/bootloader.bin 0x8000 build/labs/lab-02-bounded-inbox-phaseb/partition_table/partition-table.bin 0x10000 build/labs/lab-02-bounded-inbox-phaseb/lab02_bounded_inbox.bin
+or from the "/Users/lynnfrank/src/family-link/build/labs/lab-02-bounded-inbox-phaseb" directory
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash "@flash_args"

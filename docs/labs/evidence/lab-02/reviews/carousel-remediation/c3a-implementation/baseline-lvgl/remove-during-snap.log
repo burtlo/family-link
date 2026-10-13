@@ -1,0 +1,44 @@
+C0_TRACE scenario=remove-during-snap event=io_start_terminal gen=0 focus=0 msg=- session=1 kind=http_startup outcome=success reason=worker_available
+C0_DELIVERY scenario=remove-during-snap session=1 op_id=0 page=0 response_revision=1 initial=1 snap_id=0
+C0_TRACE scenario=remove-during-snap event=fetch_delivery_retained gen=0 focus=0 msg=- 
+C0_TRACE scenario=remove-during-snap event=page_apply gen=0 focus=0 msg=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=remove-during-snap event=fetch_admitted gen=1 focus=1 msg=- 
+C0_TRACE scenario=remove-during-snap event=fetch_terminal gen=0 focus=0 msg=- session=1 revision=0 attempt=1 outcome=success elapsed_us=1762
+C0_TRACE scenario=remove-during-snap event=card_state gen=3 focus=0 msg=m0 session=1 revision=1 state=loading
+C0_TRACE scenario=remove-during-snap event=bind gen=3 focus=0 msg=m0 session=1 revision=1 state=bound
+C0_TRACE scenario=remove-during-snap event=card_state gen=3 focus=1 msg=m1 session=1 revision=1 state=loading
+C0_TRACE scenario=remove-during-snap event=bind gen=3 focus=1 msg=m1 session=1 revision=1 state=bound
+C0_TRACE scenario=remove-during-snap event=card_state gen=4 focus=3 msg=m3 session=1 revision=1 state=loading
+C0_TRACE scenario=remove-during-snap event=bind gen=4 focus=3 msg=m3 session=1 revision=1 state=bound
+C0_TRACE scenario=remove-during-snap event=unbind gen=4 focus=0 msg=m0 
+C0_TRACE scenario=remove-during-snap event=card_state gen=4 focus=4 msg=m4 session=1 revision=1 state=loading
+C0_TRACE scenario=remove-during-snap event=bind gen=4 focus=4 msg=m4 session=1 revision=1 state=bound
+C0_TRACE scenario=remove-during-snap event=unbind gen=4 focus=1 msg=m1 
+C0_TRACE scenario=remove-during-snap event=card_state gen=4 focus=5 msg=m5 session=1 revision=1 state=loading
+C0_TRACE scenario=remove-during-snap event=bind gen=4 focus=5 msg=m5 session=1 revision=1 state=bound
+C0_STATE scenario=remove-during-snap point=ready session=1 revision=1 focus=4 focus_id=m4 snap_id=0 snap_locked=0 session_locked=0 scroll_x=494 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-50,x2:81,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:94,x2:225,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:238,x2:369,state:2,revision:1,session:1,sender:Sender 5} starts=0 ends=0 deferred=0 stale=0 applied=1
+C0_TRACE scenario=remove-during-snap event=fetch_admitted gen=2 focus=0 msg=- 
+C0_REQUEST scenario=remove-during-snap session=1 op_id=2 page=0 submitted_us=201477787675
+C0_TRACE scenario=remove-during-snap event=snap_start gen=0 focus=8 msg=m8 snap_id=1
+C0_TRACE scenario=remove-during-snap event=refresh_intent_rejected_during_snap
+C0_DELIVERY scenario=remove-during-snap session=1 op_id=2 page=0 response_revision=2 initial=0 snap_id=1
+C0_TRACE scenario=remove-during-snap event=fetch_delivery_retained gen=2 focus=0 msg=- 
+C0_TRACE scenario=remove-during-snap event=apply_deferred gen=2 focus=0 msg=- 
+C0_STATE scenario=remove-during-snap point=arrival session=1 revision=1 focus=8 focus_id=m8 snap_id=1 snap_locked=1 session_locked=1 scroll_x=650 window={slot:0,index:3,id:m3,gen:4,hidden:0,x1:-206,x2:-75,state:2,revision:1,session:1,sender:Sender 3},{slot:1,index:4,id:m4,gen:4,hidden:0,x1:-62,x2:69,state:2,revision:1,session:1,sender:Sender 4},{slot:2,index:5,id:m5,gen:4,hidden:0,x1:82,x2:213,state:2,revision:1,session:1,sender:Sender 5} starts=1 ends=0 deferred=1 stale=0 applied=1
+C0_TRACE scenario=remove-during-snap event=page_apply gen=2 focus=8 msg=m8 op_id=2 revision=2 snap_id=1 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+C0_TRACE scenario=remove-during-snap event=fetch_admitted gen=3 focus=1 msg=- 
+C0_TRACE scenario=remove-during-snap event=fetch_terminal gen=2 focus=0 msg=- session=1 revision=1 attempt=1 outcome=success elapsed_us=6669
+C0_TRACE scenario=remove-during-snap event=apply_stale gen=1 focus=1 msg=- session_revision_or_op_mismatch
+C0_TRACE scenario=remove-during-snap event=fetch_terminal gen=1 focus=1 msg=- session=1 revision=1 attempt=1 outcome=stale elapsed_us=11895
+C0_TRACE scenario=remove-during-snap event=unbind gen=5 focus=3 msg=m3 
+C0_TRACE scenario=remove-during-snap event=card_state gen=5 focus=7 msg=m7 session=1 revision=2 state=loading
+C0_TRACE scenario=remove-during-snap event=bind gen=5 focus=7 msg=m7 session=1 revision=2 state=bound
+C0_TRACE scenario=remove-during-snap event=unbind gen=5 focus=4 msg=m4 
+C0_TRACE scenario=remove-during-snap event=card_state gen=5 focus=8 msg=m9 session=1 revision=2 state=loading
+C0_TRACE scenario=remove-during-snap event=bind gen=5 focus=8 msg=m9 session=1 revision=2 state=bound
+C0_TRACE scenario=remove-during-snap event=unbind gen=5 focus=5 msg=m5 
+C0_TRACE scenario=remove-during-snap event=card_state gen=5 focus=9 msg=m10 session=1 revision=2 state=loading
+C0_TRACE scenario=remove-during-snap event=bind gen=5 focus=9 msg=m10 session=1 revision=2 state=bound
+C0_TRACE scenario=remove-during-snap event=snap_end gen=0 focus=8 msg=m9 snap_id=1
+C0_STATE scenario=remove-during-snap point=terminal session=1 revision=2 focus=8 focus_id=m9 snap_id=1 snap_locked=0 session_locked=0 scroll_x=1070 window={slot:0,index:7,id:m7,gen:5,hidden:0,x1:-50,x2:81,state:2,revision:2,session:1,sender:Sender 7},{slot:1,index:8,id:m9,gen:5,hidden:0,x1:94,x2:225,state:2,revision:2,session:1,sender:Sender 9},{slot:2,index:9,id:m10,gen:5,hidden:0,x1:238,x2:369,state:2,revision:2,session:1,sender:Sender 10} starts=1 ends=1 deferred=1 stale=1 applied=2
+C0_RESULT scenario=remove-during-snap characterization=PASS acceptance=F001-C2

@@ -1,0 +1,17 @@
+{
+  "client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c": "de8785b20fd413f8f8d59e4c3a0d8dca366d4051ec6bae19c9f06fd25bd9757c",
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c": "c085abbe1496349a7bf3c90b44965290e3930078fb0aae99178a212fd5d8058e",
+  "client/labs/lab-02-bounded-inbox/components/lab02/snap_math.c": "a87ab4a1f8310da13d731b04ae23002d82e5e5c22a9729043e5b58aff57f84ff",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": "6e4a4db9bdcbf897f03af854e03c163a63e0d0c12585b840b7a8a0fd0bc072a5",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_pool.h": "aa89419a955fce3d508c79184d55039d2e8ea019ac842fc0810ed7f06752ddb6",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/carousel_controller.h": "581f51f421a6a2faa53501a67c9718c5500b1be3324dd0eb29544676bc3f2afc",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/layout.h": "4fab506f6dbe0c01c5d3f451d3f39664dc9f5d2d20e54a571fad7b044d36c284",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap_math.h": "6dfe9cbc75eb1d4ea03a452fa4686ec94709a6a5697fccfca37027ef46da26e9",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c": "397240af3c694088773931fbf6beeacae6f997b3b8a7efb715427df0c09d82ea",
+  "client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c": "b21031f936571beb613d06836cc56c607b787587b7b947139bb5e358161562b5",
+  "client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c": "70d717f5767c3d979413ac6c08ce4ac1af1d00187ba7cd4da290c0043cd8fed4",
+  "scripts/tests/test_lab02_carousel_native.py": "e9ace97da0d17364f364b6155e9d9b69227bec0ce0efd44930d5c82986569f30",
+  "scripts/tests/test_lab02_model_native.py": "62ad67cc77888627d14fdc77710aeb7eaf34455d4c66000ebdab88a51597a1e1",
+  "client/labs/lab-02-bounded-inbox/README.md": "fcfb6b51fa3a2a62c5ff77f6a777926d5f389fb8f3500c017b67c84519b5a102",
+  "docs/labs/lab-02-session-architecture.md": "3644fe539c0a2bdd72af61da4b72cddd7aae93bd7d7790144b386a124dec5b1d"
+}

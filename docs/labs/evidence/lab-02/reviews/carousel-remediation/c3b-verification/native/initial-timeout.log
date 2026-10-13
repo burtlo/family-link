@@ -1,0 +1,8 @@
+TERMINAL_SCENARIO initial-timeout
+SESSION_TRACE event=io_start_terminal op_id=0 page=0 message=- session=1 kind=http_startup outcome=success reason=worker_available
+SESSION_TRACE event=fetch_delivery_retained op_id=0 page=0 message=- 
+SESSION_TRACE event=fetch_delivery_rejected op_id=0 page=0 message=- duplicate_or_unadmitted
+SESSION_TRACE event=fetch_timeout op_id=0 page=0 message=- 
+SESSION_TRACE event=fetch_terminal op_id=0 page=0 message=- session=1 revision=0 attempt=1 outcome=timed_out elapsed_us=475
+SESSION_TRACE event=stage_rejected op_id=0 page=3 message=- 
+TERMINAL_RESULT PASS

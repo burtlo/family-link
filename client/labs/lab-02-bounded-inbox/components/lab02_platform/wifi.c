@@ -79,7 +79,7 @@ bool lab02_board_wifi_connect(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wcfg));
     ESP_ERROR_CHECK(esp_wifi_start());
     EventBits_t bits = xEventGroupWaitBits(s_wifi_events, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE,
-                                           pdMS_TO_TICKS(15000));
+                                           pdMS_TO_TICKS(30000));
     if ((bits & WIFI_CONNECTED_BIT) == 0) {
         ESP_LOGE(TAG, "Wi-Fi connect timeout");
         return false;

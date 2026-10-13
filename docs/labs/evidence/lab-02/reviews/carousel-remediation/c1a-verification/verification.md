@@ -1,0 +1,31 @@
+# C1a independent verification — LAB02CAR-F005
+
+## Disposition
+
+**Fixed for the scoped F005 terminal-capacity and owner-reconciliation mechanism at L1/L2. Target concurrency/resource closure remains unverified at L3; no waiver granted.** No demonstrated regression and no additional code repair requested. This is not complete C1 or complete carousel remediation.
+
+Fresh read-only verifier `/root/c1a_terminal_verify`, distinct from fixer. Main HEAD `7ecc594861c1e6fbc9ad647ac591bb44df3acde9` plus exact recorded WIP/C0/C1a. All13 C1a hashes match supplied after-sha256.json. Start/end source hashes identical; complete tracked working-tree diff and status byte-identical. No source/maintained-document changes, hardware, agents, or full firmware rebuild. Temporary test harness/stub artifacts are confined to this report directory.
+
+## Governing sources
+
+Read skill, full canonical workflow, docs/AGENTS.md, full coding standard, documentation index, target README, original review, execution/owner decisions, carousel plan relevant CAR-ARCH/CAR-PAGING sections, current session architecture and v2 implementation-practices guide. Standards §§2–4 require bounded presentation submission, single writer, guaranteed exactly-one accepted terminal. CAR-ARCH-2/3 and CAR-PAGING-1 govern the reviewed owner/envelope paths. Carousel plan remains draft alone; execution records explicit owner authorization and lab decisions. Numeric budgets and full product retry policy remain OPEN. Architecture note describes the current mechanism, not target measurement.
+
+## Independent call-path assessment
+
+Presentation/controller owner → enqueue_fetch → reserve counting admission and matching terminal mailbox before zero-timeout queue send → frozen request to HTTP worker → fetch_finished producer fills matching delivery slot under producer mutex → session_pump try-lock/copy → owner stale-check/domain application/stage transition → fetch_terminal trace → owner-only reservation release.
+
+Normal capacity8 and dedicated boot capacity1 are retained until reconciliation, including motion deferral. The request queue stays8; one coalesced transport mailbox and ordered startup stage bits cannot occupy terminal storage. Producers no longer write s_inflight_op, failure flags, model or load stage. Reservation matching includes session/op/page/initial. Duplicate/unadmitted delivery cannot replace the first result. Owner supersession terminalizes still-unposted reservations; posted results are also stale-checked before application. Late old results cannot clear a newer operation. All owner mutex operations and queue admission are try/zero-timeout; producer copies are bounded and may wait. Operation input freezes session/op/revision/offset/size/attempt/submission/read-budget; HTTP uses the frozen values.
+
+## Commands and independent evidence
+
+- focused.log: 6 unittest gates PASS, no skips. Production C parser/session and native pthread adapters compiled with warnings as errors; 6 terminal scenarios report29 uniquely identified owner terminals (terminal-counts.json). Initial saturation, normal saturation during motion, duplicate boot/normal results, timeout, old response revision, newer operation and stale session each passed.
+- headless/: all8 production session/controller/card/pool/snap + vendored LVGL scenarios PASS. Original queue-full pressure now emits accepted_terminal_retained dropped=0, applies page1 and emits one owner terminal. Original C0 raw queue-full evidence still records accepted_terminal_dropped dropped=1 and no page1 application; it was not overwritten. Unrelated existing defect expectations remain intact.
+- busy-reset.c/busy-stubs.c/busy-compile-command.json/busy-reset.log: additional deterministic boundary beyond fixer scenarios. Actual production session.c is included byte-for-byte. Temporary RTOS/trace adapter holds the mutex before pump while producer is pending: pump returns with no failure mutation. It then holds the mutex immediately after owner fetch_terminal: release remains pending across10 pumps, failure count stays1, releasing and pumping frees the reservation without another terminal. Resetting pending boot emits exactly1 stale outcome, late boot delivery is rejected, new boot gets a distinct session. CONNECTING plus boot failure reaches ERROR (owner mapping only, no WiFi worker execution).
+- Assessed saved http-build-final.log independently: actual scripted ESP-IDF HTTP firmware build completed, compiling the production consumer; L0 supplied build evidence matches frozen source manifest. No new source-compilation discrepancy justified another full firmware build.
+- end-sha256.json and preservation.json: source and WIP unchanged.
+
+## Evidence levels and limits
+
+L0: independent native compilation plus assessed saved full scripted HTTP firmware build. L1: actual C injected admission/producer/concurrency/reducer tests and deterministic busy-release/reset test. L2: saved independent headless LVGL queue-pressure path reproduces the original runtime trigger and fixes its loss; transport/RTOS remain host adapters. L3: absent; real FreeRTOS scheduling, representative target concurrency, mailbox/copy memory and stack high-water, callback latency and allocation behavior require target confirmation. The finding originally requested L3 concurrency closure, so do not present this scoped host acceptance as full target closure or as a waiver.
+
+F004 motion head-of-line deferral persists intentionally; normal-saturation verifies retained delivery rather than solving deferral. F006 retry UX remains open. F007 xTaskCreate boot/background failure remains unhandled: dedicated boot or queued normal admission can remain outstanding when no consumer exists; this is the recorded independent next unit, not a newly demonstrated C1a regression. Whole-attempt queue/WiFi/all-HTTP deadline remains a C1/C5 gap; the immutable12s budget bounds response-read phase only, with existing3s HTTP calls. Native initial failure verifies owner mapping, not actual WiFi boot-worker runtime. Reinit/startup worker lifecycle is not an exposed current app flow and receives no device closure claim. No new blocking path, stale handle or unbounded storage introduced by this change was demonstrated.

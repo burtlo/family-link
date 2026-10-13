@@ -1,0 +1,1560 @@
+diff --git a/Makefile b/Makefile
+index d6a735d..7d2639a 100644
+--- a/Makefile
++++ b/Makefile
+@@ -109,16 +109,16 @@ lab.%.parse:
+ 	$(call py_run,scripts/lab_host.py parse $* $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+ 
+ lab.%.scripted.build:
+-	$(call py_run,scripts/lab_host.py build $* --variant scripted)
++	$(call py_run,scripts/lab_host.py build $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+ 
+ lab.%.scripted.clean:
+-	$(call py_run,scripts/lab_host.py clean $* --variant scripted)
++	$(call py_run,scripts/lab_host.py clean $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb))
+ 
+ lab.%.scripted.flash:
+-	$(call py_run,scripts/lab_host.py flash $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
++	$(call py_run,scripts/lab_host.py flash $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+ 
+ lab.%.scripted.capture:
+-	$(call py_run,scripts/lab_host.py capture $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
++	$(call py_run,scripts/lab_host.py capture $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+ 
+ lab.%.scripted:
+ 	$(call py_run,scripts/lab_host.py run $* --variant $(if $(filter local,$(BACKEND)),scripted,scripted-phaseb) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+@@ -133,10 +133,10 @@ lab.%.phaseb.flash:
+ 	$(call py_run,scripts/lab_host.py flash $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+ 
+ lab.%.phaseb.capture:
+-	$(call py_run,scripts/lab_host.py capture $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
++	$(call py_run,scripts/lab_host.py capture $* --variant phaseb $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+ 
+ lab.%.phaseb:
+-	$(call py_run,scripts/lab_host.py run $* --variant phaseb $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
++	$(call py_run,scripts/lab_host.py run $* --variant phaseb $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+ 
+ lab.%.eager.build:
+ 	$(call py_run,scripts/lab_host.py build $* --variant eager)
+@@ -163,7 +163,7 @@ lab.%.flash:
+ 	$(call py_run,scripts/lab_host.py flash $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+ 
+ lab.%.capture:
+-	$(call py_run,scripts/lab_host.py capture $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
++	$(call py_run,scripts/lab_host.py capture $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+ 
+ lab.%:
+ 	$(call py_run,scripts/lab_host.py run $* $(if $(VARIANT),--variant "$(VARIANT)",) $(if $(BACKEND),--backend "$(BACKEND)",) $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(SECONDS),--seconds "$(SECONDS)",) $(if $(filter 0 false no,$(FLASH)),--no-flash,) $(if $(filter 1 true yes,$(FLASH)),--flash,) $(if $(RUN_ID),--run-id "$(RUN_ID)",))
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
+index c05060a..86626a3 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session.h
+@@ -85,10 +85,10 @@ typedef enum {
+     LAB02_FETCH_TIMEOUT,
+ } lab02_fetch_outcome_t;
+ 
+-/** HTTP worker: enqueue page fetch; returns false if queue full (counted). */
++/** Session owner: reserve terminal capacity and enqueue a frozen page request. */
+ bool lab02_session_http_enqueue_fetch(int page_index, uint32_t *op_id_out);
+ 
+-/** HTTP worker: report terminal fetch outcome (posts event to session). */
++/** HTTP worker: fill admitted terminal mailbox; duplicates cannot overwrite it. */
+ void lab02_session_http_fetch_finished(lab02_fetch_outcome_t outcome, uint32_t session_id,
+                                        uint32_t op_id,
+                                        int page_index, const lab02_inbox_page_t *page, bool initial);
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h
+index 32c76f6..95d3c25 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/lab02_session_io.h
+@@ -10,13 +10,21 @@
+ extern "C" {
+ #endif
+ 
++/** Frozen at owner admission. Cancellation is owner delivery-ledger state. */
+ typedef struct {
+     int page_index;
+     uint32_t op_id;
+     uint32_t session_id;
++    uint32_t revision;
++    uint16_t page_size;
++    int page_offset;
++    uint32_t attempt;
+     int64_t submitted_us;
++    /** Response-read budget after headers; not a whole-attempt deadline. */
++    int64_t response_read_timeout_us;
+ } lab02_fetch_req_t;
+ 
++bool lab02_session_http_initial_request(lab02_fetch_req_t *out);
+ bool lab02_session_http_take_fetch_request(lab02_fetch_req_t *out);
+ void lab02_session_http_mark_stage(lab02_load_stage_t stage, uint32_t session_id);
+ uint32_t lab02_session_generation(void);
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c b/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+index d5369d0..9dba2f6 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+@@ -30,6 +30,7 @@ typedef struct {
+     lab02_inbox_page_t page;
+     lab02_load_stage_t stage;
+     bool transport_reachable;
++    lab02_fetch_req_t request;
+ } lab02_sess_event_t;
+ 
+ static lab02_inbox_model_t s_model;
+@@ -55,52 +56,60 @@ static uint32_t s_deferred_op;
+ 
+ static lab02_session_metrics_t s_metrics;
+ 
++/* Eight normal admissions and one dedicated boot admission. A reservation is
++ * retained through owner reconciliation, including motion deferral. Producers
++ * only write this delivery bookkeeping, never session/domain state. */
++#define TERMINAL_CAP (LAB02_FETCH_QUEUE_CAP + 1)
++typedef struct {
++    bool admitted;
++    bool posted;
++    uint64_t sequence;
++    lab02_sess_event_t event;
++} terminal_slot_t;
++static terminal_slot_t s_terminals[TERMINAL_CAP];
++static uint64_t s_terminal_sequence;
++static int s_reconciled_slot = -1;
+ static QueueHandle_t s_fetch_q;
+-static QueueHandle_t s_event_q;
+ static SemaphoreHandle_t s_fetch_slots;
+ static SemaphoreHandle_t s_post_mutex;
+-/** Queue slots are full-size; never allocate lab02_sess_event_t on small stacks (e.g. sys_evt). */
+-static lab02_sess_event_t s_post_buf;
+ static lab02_sess_event_t s_pump_ev;
++static uint32_t s_stage_session;
++static uint32_t s_pending_stages;
++static uint32_t s_transport_session;
++static bool s_transport_pending;
++static bool s_transport_latest;
+ 
+ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh);
+ 
+ static uint16_t effective_page_size(void)
+ {
+-    if (s_model.page_size > 0) {
+-        return s_model.page_size;
+-    }
+-    return LAB02_DEFAULT_PAGE_SIZE;
++    return s_model.page_size > 0 ? s_model.page_size : LAB02_DEFAULT_PAGE_SIZE;
+ }
+ 
+-static bool post_session_event_prepared(void)
++static lab02_fetch_req_t request_envelope(int page_index, uint32_t op_id)
+ {
+-    if (!s_event_q || !s_post_mutex) {
+-        return false;
+-    }
+-    if (xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) {
+-        return false;
+-    }
+-    memset(&s_post_buf, 0, sizeof(s_post_buf));
+-    return true;
++    int64_t now = esp_timer_get_time();
++    lab02_fetch_req_t req = {
++        .page_index = page_index, .op_id = op_id,
++        .session_id = s_session_generation, .revision = s_inbox_revision,
++        .page_size = effective_page_size(),
++        .page_offset = page_index * (int)effective_page_size(),
++        .attempt = 1, .submitted_us = now, .response_read_timeout_us = 12000000,
++    };
++    return req;
+ }
+ 
+-static bool post_session_event_commit(void)
++/* Presentation uses try-locks only; a busy producer leaves bounded work pending. */
++static bool finish_reconciled_slot(void)
+ {
+-    bool ok = xQueueSend(s_event_q, &s_post_buf, 0) == pdTRUE;
+-    if (!ok) {
+-        s_metrics.fetch_event_dropped++;
+-        lab02_trace_emit("fetch_event_dropped", 0, 0, NULL, NULL);
+-    }
++    if (s_reconciled_slot < 0) return true;
++    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
++    int slot = s_reconciled_slot;
++    memset(&s_terminals[slot], 0, sizeof(s_terminals[slot]));
++    if (slot < LAB02_FETCH_QUEUE_CAP) xSemaphoreGive(s_fetch_slots);
++    s_reconciled_slot = -1;
+     xSemaphoreGive(s_post_mutex);
+-    return ok;
+-}
+-
+-static void release_fetch_slot(bool initial)
+-{
+-    if (!initial && s_fetch_slots) {
+-        xSemaphoreGive(s_fetch_slots);
+-    }
++    return true;
+ }
+ 
+ static bool stage_allowed(lab02_load_stage_t from, lab02_load_stage_t to)
+@@ -401,16 +410,24 @@ bool lab02_session_begin_http(lab02_page_provider_t *pp)
+     if (!s_fetch_q) {
+         s_fetch_q = xQueueCreate(LAB02_FETCH_QUEUE_CAP, sizeof(lab02_fetch_req_t));
+     }
+-    if (!s_event_q) {
+-        s_event_q = xQueueCreate(8, sizeof(lab02_sess_event_t));
+-    }
+     if (!s_fetch_slots) {
+         s_fetch_slots = xSemaphoreCreateCounting(LAB02_FETCH_QUEUE_CAP, LAB02_FETCH_QUEUE_CAP);
+     }
+-    if (!s_post_mutex) {
+-        s_post_mutex = xSemaphoreCreateMutex();
++    if (!s_post_mutex) s_post_mutex = xSemaphoreCreateMutex();
++    if (!s_fetch_q || !s_fetch_slots || !s_post_mutex ||
++        xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
++    terminal_slot_t *boot = &s_terminals[LAB02_FETCH_QUEUE_CAP];
++    bool available = !boot->admitted;
++    if (available) {
++        memset(boot, 0, sizeof(*boot));
++        boot->admitted = true;
++        boot->event.request = request_envelope(0, 0);
++        boot->event.initial = true;
++        s_stage_session = s_session_generation;
++        s_pending_stages = 0;
+     }
+-    return s_fetch_q && s_event_q && s_fetch_slots && s_post_mutex;
++    xSemaphoreGive(s_post_mutex);
++    return available;
+ }
+ 
+ lab02_session_snapshot_t lab02_session_snapshot(void)
+@@ -497,13 +514,11 @@ static void apply_transport_reachable(bool reachable)
+ 
+ void lab02_session_intent_transport(bool reachable)
+ {
+-    if (!post_session_event_prepared()) {
+-        return;
+-    }
+-    s_post_buf.kind = LAB02_SESS_EV_TRANSPORT;
+-    s_post_buf.transport_reachable = reachable;
+-    s_post_buf.session_id = s_session_generation;
+-    (void)post_session_event_commit();
++    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
++    s_transport_session = s_stage_session;
++    s_transport_latest = reachable;
++    s_transport_pending = true;
++    xSemaphoreGive(s_post_mutex);
+ }
+ 
+ bool lab02_session_intent_refresh(void)
+@@ -521,41 +536,78 @@ bool lab02_session_intent_refresh(void)
+ 
+ void lab02_session_pump(void)
+ {
+-    int completions = 0;
+-    while (s_event_q && xQueuePeek(s_event_q, &s_pump_ev, 0) == pdTRUE) {
+-        if (s_pump_ev.session_id != s_session_generation) {
+-            xQueueReceive(s_event_q, &s_pump_ev, 0);
+-            if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE && !s_pump_ev.initial) {
+-                int page = s_pump_ev.page_index;
+-                if (page >= 0 && page < LAB02_HTTP_MAX_PAGES &&
+-                    s_inflight_op[page] == s_pump_ev.op_id) {
+-                    s_inflight_op[page] = 0;
+-                }
+-            }
+-            continue;
++    if (!s_post_mutex || !finish_reconciled_slot()) return;
++    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return;
++    uint32_t stages = s_stage_session == s_session_generation ? s_pending_stages : 0;
++    s_pending_stages = 0;
++    bool transport = s_transport_pending && s_transport_session == s_session_generation;
++    bool reachable = s_transport_latest;
++    s_transport_pending = false;
++    /* Owner cancellation terminalizes superseded admissions even when their
++     * producer has not returned. Late producers then see posted/released state. */
++    for (int i = 0; i < TERMINAL_CAP; i++) {
++        terminal_slot_t *entry = &s_terminals[i];
++        lab02_fetch_req_t *req = &entry->event.request;
++        if (entry->admitted && !entry->posted &&
++            (req->session_id != s_session_generation ||
++             (!entry->event.initial &&
++              (s_inflight_op[req->page_index] != req->op_id || req->revision != s_inbox_revision)))) {
++            entry->event.session_id = req->session_id;
++            entry->event.op_id = req->op_id;
++            entry->event.page_index = req->page_index;
++            entry->sequence = ++s_terminal_sequence;
++            entry->posted = true;
+         }
+-        if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE && s_pump_ev.outcome == LAB02_FETCH_OK &&
+-            s_scroll_locked) {
++    }
++    int slot = -1;
++    for (int i = 0; i < TERMINAL_CAP; i++) {
++        if (s_terminals[i].posted &&
++            (slot < 0 || s_terminals[i].sequence < s_terminals[slot].sequence)) slot = i;
++    }
++    if (slot >= 0) s_pump_ev = s_terminals[slot].event;
++    xSemaphoreGive(s_post_mutex);
++    /* Preserve ordered startup transitions even if both were posted before a
++     * pump. Repeated reports coalesce; invalid transitions remain observable. */
++    for (int stage = LAB02_LOAD_SHELL; stage <= LAB02_LOAD_ERROR; stage++) {
++        if (stages & (1U << stage)) transition_stage((lab02_load_stage_t)stage);
++    }
++    if (transport) apply_transport_reachable(reachable);
++    if (slot >= 0) {
++        bool stale = s_pump_ev.session_id != s_session_generation ||
++            (!s_pump_ev.initial &&
++             (s_inflight_op[s_pump_ev.page_index] != s_pump_ev.op_id ||
++              s_pump_ev.request.revision != s_inbox_revision));
++        if (!stale && s_pump_ev.outcome == LAB02_FETCH_OK && s_scroll_locked) {
+             if (s_deferred_op != s_pump_ev.op_id) {
+                 s_deferred_op = s_pump_ev.op_id;
+                 s_metrics.apply_deferred++;
+-                lab02_trace_emit("apply_deferred", s_pump_ev.op_id, s_pump_ev.page_index, NULL,
+-                                  NULL);
++                lab02_trace_emit("apply_deferred", s_pump_ev.op_id, s_pump_ev.page_index, NULL, NULL);
+             }
+-            break;
++            return;
+         }
+-        xQueueReceive(s_event_q, &s_pump_ev, 0);
+-        if (s_pump_ev.kind == LAB02_SESS_EV_FETCH_DONE) {
++        if (stale) {
++            s_metrics.apply_stale++;
++            lab02_trace_emit("apply_stale", s_pump_ev.op_id, s_pump_ev.page_index, NULL, "session_revision_or_op_mismatch");
++            if (s_pump_ev.session_id == s_session_generation &&
++                s_inflight_op[s_pump_ev.page_index] == s_pump_ev.op_id)
++                s_inflight_op[s_pump_ev.page_index] = 0;
++        } else {
++            uint32_t prior_stale = s_metrics.apply_stale;
++            uint32_t prior_fail = s_metrics.fetch_fail;
+             handle_fetch_done(&s_pump_ev);
+-            completions++;
+-        } else if (s_pump_ev.kind == LAB02_SESS_EV_STAGE) {
+-            transition_stage(s_pump_ev.stage);
+-        } else if (s_pump_ev.kind == LAB02_SESS_EV_TRANSPORT) {
+-            apply_transport_reachable(s_pump_ev.transport_reachable);
+-        }
+-        if (completions >= 1) {
+-            break;
++            stale = s_metrics.apply_stale != prior_stale;
++            if (s_metrics.fetch_fail != prior_fail) s_pump_ev.outcome = LAB02_FETCH_FAIL;
+         }
++        char extra[160];
++        snprintf(extra, sizeof(extra), "session=%u revision=%u attempt=%u outcome=%s elapsed_us=%lld",
++                 (unsigned)s_pump_ev.session_id, (unsigned)s_pump_ev.request.revision,
++                 (unsigned)s_pump_ev.request.attempt,
++                 stale ? "stale" : (s_pump_ev.outcome == LAB02_FETCH_OK ? "success" :
++                 (s_pump_ev.outcome == LAB02_FETCH_TIMEOUT ? "timed_out" : "failure")),
++                 (long long)(esp_timer_get_time() - s_pump_ev.request.submitted_us));
++        lab02_trace_emit("fetch_terminal", s_pump_ev.op_id, s_pump_ev.page_index, NULL, extra);
++        s_reconciled_slot = slot;
++        if (!finish_reconciled_slot()) return;
+     }
+     if (s_http_mode && s_load_stage == LAB02_LOAD_READY && !s_scroll_locked) {
+         int64_t now = esp_timer_get_time();
+@@ -621,22 +673,37 @@ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh)
+         lab02_trace_emit("fetch_queue_full", 0, page_index, NULL, NULL);
+         return false;
+     }
++    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) {
++        xSemaphoreGive(s_fetch_slots);
++        s_metrics.fetch_queue_overflow++;
++        lab02_trace_emit("fetch_admission_busy", 0, page_index, NULL, NULL);
++        return false;
++    }
++    int slot = 0;
++    while (slot < LAB02_FETCH_QUEUE_CAP && s_terminals[slot].admitted) slot++;
++    if (slot == LAB02_FETCH_QUEUE_CAP) {
++        xSemaphoreGive(s_post_mutex);
++        xSemaphoreGive(s_fetch_slots);
++        return false;
++    }
+     uint32_t op_id = s_next_op_id++;
+-    s_inflight_op[page_index] = op_id;
+-    s_failed_pages &= ~(1U << page_index);
+-    lab02_fetch_req_t req = {
+-        .page_index = page_index,
+-        .op_id = op_id,
+-        .session_id = s_session_generation,
+-        .submitted_us = esp_timer_get_time(),
+-    };
++    lab02_fetch_req_t req = request_envelope(page_index, op_id);
++    terminal_slot_t *reservation = &s_terminals[slot];
++    memset(reservation, 0, sizeof(*reservation));
++    reservation->admitted = true;
++    reservation->event.request = req;
+     if (xQueueSend(s_fetch_q, &req, 0) != pdTRUE) {
+-        s_inflight_op[page_index] = 0;
++        memset(reservation, 0, sizeof(*reservation));
++        xSemaphoreGive(s_post_mutex);
+         xSemaphoreGive(s_fetch_slots);
+         s_metrics.fetch_queue_overflow++;
+         lab02_trace_emit("fetch_queue_full", 0, page_index, NULL, NULL);
+         return false;
+     }
++    s_inflight_op[page_index] = op_id;
++    s_failed_pages &= ~(1U << page_index);
++    xSemaphoreGive(s_post_mutex);
++    lab02_trace_emit("fetch_admitted", op_id, page_index, NULL, NULL);
+     if (op_id_out) {
+         *op_id_out = op_id;
+     }
+@@ -647,31 +714,34 @@ void lab02_session_http_fetch_finished(lab02_fetch_outcome_t outcome, uint32_t s
+                                        uint32_t op_id,
+                                        int page_index, const lab02_inbox_page_t *page, bool initial)
+ {
+-    if (!post_session_event_prepared()) {
+-        if (!initial && page_index >= 0 && page_index < LAB02_HTTP_MAX_PAGES) {
+-            s_inflight_op[page_index] = 0;
++    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
++    terminal_slot_t *reservation = NULL;
++    for (int i = 0; i < TERMINAL_CAP; i++) {
++        terminal_slot_t *candidate = &s_terminals[i];
++        lab02_fetch_req_t *req = &candidate->event.request;
++        if (candidate->admitted && req->session_id == session_id && req->op_id == op_id &&
++            req->page_index == page_index && candidate->event.initial == initial) {
++            reservation = candidate;
++            break;
+         }
+-        release_fetch_slot(initial);
+-        return;
+     }
+-    s_post_buf.kind = LAB02_SESS_EV_FETCH_DONE;
+-    s_post_buf.outcome = outcome;
+-    s_post_buf.session_id = session_id;
+-    s_post_buf.op_id = op_id;
+-    s_post_buf.page_index = page_index;
+-    s_post_buf.initial = initial;
+-    s_post_buf.has_page = page != NULL && outcome == LAB02_FETCH_OK;
+-    if (s_post_buf.has_page) {
+-        s_post_buf.page = *page;
+-    }
+-    if (!post_session_event_commit()) {
+-        if (!initial && page_index >= 0 && page_index < LAB02_HTTP_MAX_PAGES) {
+-            s_inflight_op[page_index] = 0;
+-        }
+-        release_fetch_slot(initial);
++    if (!reservation || reservation->posted) {
++        xSemaphoreGive(s_post_mutex);
++        lab02_trace_emit("fetch_delivery_rejected", op_id, page_index, NULL, "duplicate_or_unadmitted");
+         return;
+     }
+-    release_fetch_slot(initial);
++    lab02_sess_event_t *ev = &reservation->event;
++    ev->kind = LAB02_SESS_EV_FETCH_DONE;
++    ev->outcome = outcome;
++    ev->session_id = session_id;
++    ev->op_id = op_id;
++    ev->page_index = page_index;
++    ev->has_page = page != NULL && outcome == LAB02_FETCH_OK;
++    if (ev->has_page) ev->page = *page;
++    reservation->sequence = ++s_terminal_sequence;
++    reservation->posted = true;
++    xSemaphoreGive(s_post_mutex);
++    lab02_trace_emit("fetch_delivery_retained", op_id, page_index, NULL, NULL);
+ }
+ 
+ bool lab02_session_http_take_fetch_request(lab02_fetch_req_t *out)
+@@ -684,13 +754,10 @@ bool lab02_session_http_take_fetch_request(lab02_fetch_req_t *out)
+ 
+ void lab02_session_http_mark_stage(lab02_load_stage_t stage, uint32_t session_id)
+ {
+-    if (!post_session_event_prepared()) {
+-        return;
+-    }
+-    s_post_buf.kind = LAB02_SESS_EV_STAGE;
+-    s_post_buf.stage = stage;
+-    s_post_buf.session_id = session_id;
+-    (void)post_session_event_commit();
++    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
++    if (session_id == s_stage_session && stage >= LAB02_LOAD_SHELL && stage <= LAB02_LOAD_ERROR)
++        s_pending_stages |= 1U << stage;
++    xSemaphoreGive(s_post_mutex);
+ }
+ 
+ uint32_t lab02_session_generation(void)
+@@ -702,3 +769,14 @@ uint16_t lab02_session_materialized_count(void)
+ {
+     return materialized_count(active_model());
+ }
++
++bool lab02_session_http_initial_request(lab02_fetch_req_t *out)
++{
++    if (!out || !s_post_mutex || xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
++    terminal_slot_t *boot = &s_terminals[LAB02_FETCH_QUEUE_CAP];
++    bool available = boot->admitted && !boot->posted &&
++        boot->event.request.session_id == s_session_generation;
++    if (available) *out = boot->event.request;
++    xSemaphoreGive(s_post_mutex);
++    return available;
++}
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c b/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
+index 62cc9e0..de1f279 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
+@@ -99,11 +99,12 @@ static void harness_task(void *arg)
+         lab02_board_lvgl_unlock();
+     }
+     int n = c->item_count;
+-    int steps = n < 20 ? n : 20;
+-    printf("HARNESS_BEGIN steps=%d\n", steps);
+-    harness_show_step(0, steps, "starting");
+-    for (int i = 0; i < steps; i++) {
+-        harness_step(c, i % n, i + 1, steps);
++    int legs = n < 20 ? n : 20;
++    int total_steps = legs * 2;
++    printf("HARNESS_BEGIN legs=%d total_steps=%d\n", legs, total_steps);
++    harness_show_step(0, legs, "starting");
++    for (int i = 0; i < legs; i++) {
++        harness_step(c, i % n, i + 1, legs);
+         if (!harness_wait_snap(c, 1500)) {
+             printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
+             vTaskDelete(NULL);
+@@ -118,8 +119,8 @@ static void harness_task(void *arg)
+         }
+         vTaskDelay(pdMS_TO_TICKS(700));
+     }
+-    for (int i = steps - 1; i >= 0; i--) {
+-        harness_step(c, i % n, steps - i, steps);
++    for (int i = legs - 1; i >= 0; i--) {
++        harness_step(c, i % n, legs - i, legs);
+         if (!harness_wait_snap(c, 1500)) {
+             printf("HARNESS_DONE build=%s status=snap_timeout\n", CONFIG_LAB02_BUILD_ID);
+             vTaskDelete(NULL);
+@@ -129,7 +130,7 @@ static void harness_task(void *arg)
+     }
+     lab02_board_status_set("");
+     lab02_trace_emit("harness_done", 0, c->focus_index, NULL, NULL);
+-    printf("HARNESS_DONE build=%s steps=%d scenario=%s\n", CONFIG_LAB02_BUILD_ID, steps,
++    printf("HARNESS_DONE build=%s steps=%d scenario=%s\n", CONFIG_LAB02_BUILD_ID, total_steps,
+            CONFIG_LAB02_SCENARIO);
+     vTaskDelete(NULL);
+ }
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c b/client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c
+index 61200fd..2b1b1b6 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/page_provider_http.c
+@@ -33,7 +33,7 @@ static char s_fetch_scratch[HTTP_BUF_SIZE];
+ static lab02_inbox_page_t s_result_page;
+ static TaskHandle_t s_worker;
+ static TaskHandle_t s_boot_worker;
+-static uint32_t s_boot_session_id;
++static lab02_fetch_req_t s_boot_request;
+ static bool ensure_workers(void);
+ 
+ static void on_wifi_transport(bool reachable)
+@@ -41,17 +41,12 @@ static void on_wifi_transport(bool reachable)
+     lab02_session_intent_transport(reachable);
+ }
+ 
+-static int page_offset_for_index(int page)
+-{
+-    return page * (int)lab02_session_http_page_size();
+-}
+-
+ static bool http_errno_timed_out(int eno)
+ {
+     return eno == ETIMEDOUT || eno == EWOULDBLOCK;
+ }
+ 
+-static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, size_t buf_len,
++static lab02_http_fetch_result_t http_fetch_page(const lab02_fetch_req_t *req, char *buf, size_t buf_len,
+                                                size_t *out_len)
+ {
+     if (strlen(CONFIG_LAB02_SERVER_URL) == 0) {
+@@ -59,8 +54,8 @@ static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, siz
+     }
+     char url[192];
+     int url_len = snprintf(url, sizeof(url), "%s/v2/inbox?cursor=%d&limit=%d",
+-                           CONFIG_LAB02_SERVER_URL, page_offset,
+-                           (int)lab02_session_http_page_size());
++                           CONFIG_LAB02_SERVER_URL, req->page_offset,
++                           (int)req->page_size);
+     if (url_len < 0 || url_len >= (int)sizeof(url)) {
+         return LAB02_HTTP_FETCH_FAIL;
+     }
+@@ -98,7 +93,7 @@ static lab02_http_fetch_result_t http_fetch_page(int page_offset, char *buf, siz
+     size_t written = 0;
+     bool read_error = false;
+     bool deadline_expired = false;
+-    int64_t deadline_us = esp_timer_get_time() + 12000000;
++    int64_t deadline_us = esp_timer_get_time() + req->response_read_timeout_us;
+     while (written < buf_len - 1) {
+         if (esp_timer_get_time() >= deadline_us) {
+             deadline_expired = true;
+@@ -142,10 +137,10 @@ static void worker_task(void *arg)
+         if (!lab02_session_http_take_fetch_request(&req)) {
+             continue;
+         }
+-        int offset = page_offset_for_index(req.page_index);
++        int offset = req.page_offset;
+         size_t len = 0;
+         lab02_http_fetch_result_t res =
+-            http_fetch_page(offset, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
++            http_fetch_page(&req, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
+         if (res == LAB02_HTTP_FETCH_OK &&
+             !lab02_inbox_model_parse_v2_page(s_fetch_scratch, len, offset, &s_result_page)) {
+             res = LAB02_HTTP_FETCH_FAIL;
+@@ -178,19 +173,20 @@ static void worker_task(void *arg)
+ static void boot_task(void *arg)
+ {
+     (void)arg;
+-    uint32_t session_id = s_boot_session_id;
++    const lab02_fetch_req_t req = s_boot_request;
++    uint32_t session_id = req.session_id;
+     lab02_board_wifi_set_transport_notifier(on_wifi_transport);
+     lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, session_id);
+     if (!lab02_board_wifi_connect()) {
+         ESP_LOGE(TAG, "Wi-Fi failed");
+-        lab02_session_http_mark_stage(LAB02_LOAD_ERROR, session_id);
++        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, session_id, 0, 0, NULL, true);
+         vTaskDelete(NULL);
+         return;
+     }
+     lab02_session_http_mark_stage(LAB02_LOAD_FETCHING, session_id);
+     size_t len = 0;
+     lab02_http_fetch_result_t boot_res =
+-        http_fetch_page(0, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
++        http_fetch_page(&req, s_fetch_scratch, sizeof(s_fetch_scratch), &len);
+     if (boot_res == LAB02_HTTP_FETCH_TIMEOUT) {
+         ESP_LOGE(TAG, "initial page fetch timed out");
+         lab02_trace_emit("fetch_timeout", 0, 0, NULL, "boot");
+@@ -255,13 +251,13 @@ void lab02_page_provider_http_start_io(void)
+     if (s_io_started || strlen(CONFIG_LAB02_SERVER_URL) == 0) {
+         return;
+     }
++    if (!lab02_session_http_initial_request(&s_boot_request)) return;
+     s_io_started = true;
+     s_http_ready_logged = false;
+-    s_boot_session_id = lab02_session_generation();
+     if (!s_boot_worker) {
+         if (xTaskCreate(boot_task, "lab02_http_boot", 10240, NULL, 4, &s_boot_worker) != pdPASS) {
+             s_io_started = false;
+-            lab02_session_http_mark_stage(LAB02_LOAD_ERROR, s_boot_session_id);
++            lab02_session_http_mark_stage(LAB02_LOAD_ERROR, s_boot_request.session_id);
+         }
+     }
+ }
+diff --git a/client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c b/client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c
+index 396cc68..870d8f5 100644
+--- a/client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c
+@@ -79,7 +79,7 @@ bool lab02_board_wifi_connect(void)
+     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wcfg));
+     ESP_ERROR_CHECK(esp_wifi_start());
+     EventBits_t bits = xEventGroupWaitBits(s_wifi_events, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE,
+-                                           pdMS_TO_TICKS(15000));
++                                           pdMS_TO_TICKS(30000));
+     if ((bits & WIFI_CONNECTED_BIT) == 0) {
+         ESP_LOGE(TAG, "Wi-Fi connect timeout");
+         return false;
+diff --git a/client/labs/lab-02-bounded-inbox/tests/README.md b/client/labs/lab-02-bounded-inbox/tests/README.md
+index d0b980d..f17e78f 100644
+--- a/client/labs/lab-02-bounded-inbox/tests/README.md
++++ b/client/labs/lab-02-bounded-inbox/tests/README.md
+@@ -1,19 +1,27 @@
+-# LAB-02 tests
+-
+-**L1 (host):** run from repository root:
+-
+-```text
+-make test
+-```
+-
++# LAB-02 tests
++
++**L1 (host):** run from repository root:
++
++```text
++make test
++```
++
+ This executes `scripts/tests/test_lab02_host.py` (fixture JSON validation and snap math parity)
+ and `scripts/tests/test_lab02_model_native.py`. When a host C compiler and ESP-IDF cJSON
+ source are available, the latter compiles the actual C page parser and session reducer.
+ It exercises malformed pages, replacement after removal, result ownership, snap
+ deferral, revision reconciliation, failure retry, and queue overflow.
+-
+-**L2/L3:** on-device scenarios — see [lab README](../README.md) and [evidence STATUS](../../../../docs/labs/evidence/lab-02/STATUS.md).
+-
++
++**L2/L3:** on-device scenarios — see [lab README](../README.md) and [evidence STATUS](../../../../docs/labs/evidence/lab-02/STATUS.md).
++
+ The older `test_inbox_model.c`, `test_page_merge.c`, and `test_snap_target.c`
+ files remain optional Unity/IDF sketches; the new `test_*_native.c` files are
+ run through the host suite when the toolchain is present.
++
++C1a actual-C terminal admission cases (`test_terminal_native.c`) cover full normal
++and initial capacity, duplicate completion, concurrent transport pressure,
++old-response revision, superseded operation and session. Raw `fetch_terminal`
++traces must have unique session/operation identities. Set
++`LAB02_TERMINAL_ARTIFACT_DIR` when running the native Python wrapper to retain them.
++These are L1 injected producer/owner concurrency checks using pthread adapters,
++not FreeRTOS or target confirmation.
+diff --git a/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c b/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
+index 8430ea6..5e874be 100644
+--- a/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
++++ b/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
+@@ -4,6 +4,7 @@
+ #include "esp_timer.h"
+ 
+ #include <pthread.h>
++#include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <time.h>
+@@ -121,7 +122,8 @@ int64_t esp_timer_get_time(void)
+ void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
+                       const char *message_id, const char *extra)
+ {
+-    (void)event; (void)generation; (void)focus_index; (void)message_id; (void)extra;
++    printf("SESSION_TRACE event=%s op_id=%u page=%d message=%s %s\n",
++           event, (unsigned)generation, focus_index, message_id ? message_id : "-", extra ? extra : "");
+ }
+ 
+ uint32_t lab02_snap_current_id(void)
+diff --git a/client/labs/lab-02-bounded-inbox/tests/test_session_native.c b/client/labs/lab-02-bounded-inbox/tests/test_session_native.c
+index 2bb2ca1..dee65a7 100644
+--- a/client/labs/lab-02-bounded-inbox/tests/test_session_native.c
++++ b/client/labs/lab-02-bounded-inbox/tests/test_session_native.c
+@@ -120,7 +120,9 @@ int main(void)
+         lab02_session_snapshot_t before = lab02_session_snapshot();
+         lab02_session_pump();
+         lab02_session_snapshot_t after = lab02_session_snapshot();
+-        assert(before.transport_unreachable == after.transport_unreachable);
++        /* Freshness may change in the owner pump; transport must preserve the stage/focus. */
++        assert(before.load_stage == after.load_stage);
++        assert(before.focus_index == after.focus_index);
+         pause_ms(1);
+     }
+     pthread_join(thread, NULL);
+diff --git a/docs/labs/lab-02-session-architecture.md b/docs/labs/lab-02-session-architecture.md
+index af3a2f3..a5db341 100644
+--- a/docs/labs/lab-02-session-architecture.md
++++ b/docs/labs/lab-02-session-architecture.md
+@@ -13,7 +13,7 @@ behavior.
+ | Focus ID/index, revision, load stage, page state | `lab02_session` | Single writer; queue operations are nonblocking from presentation |
+ | Wi-Fi join and HTTP | Boot and fetch workers | Wi-Fi join 15 s; HTTP call timeout 3 s and response-read deadline 12 s; response cap 16 KiB |
+ | JSON parse | HTTP worker | Parses at most one 16-item page into a bounded typed result |
+-| Page merge | Session | Copies at most 16 items; success during a drag or snap defers up to 1 s |
++| Page merge | Session | Copies at most 16 items; success during a drag or snap currently defers until unlock (F004 remains open) |
+ 
+ The boot worker posts connecting, fetching, and terminal events. The session
+ checks permitted stage transitions and applies the initial page. A successful
+@@ -21,18 +21,40 @@ boot starts the fetch worker after the result is acknowledged.
+ 
+ ## Fetch operation envelope
+ 
+-Each queued request carries a session generation, monotonically increasing
+-operation ID, page index, and monotonic submission time. The worker returns one
+-success, failure, or timeout event. On success the worker copies the parsed page
+-into the session event queue and releases its fetch slot immediately; the worker
+-may start the next fetch while a snap defers **application** (not queueing). A
+-stale session or operation result is rejected. The fetch queue has eight slots;
+-rejection is counted and traced. Session events use a bounded queue; overflow
+-increments `fetch_event_dropped`. The session processes at most one completion
+-per UI pump and retries a missing focused page on a one second cadence. A failed
++Each queued request freezes session generation, monotonically increasing operation
++ID, page index/offset/size, inbox revision, attempt identity and monotonic submission
++time. Every retry has a new operation ID (attempt field is 1 for each admission).
++The immutable response-read timeout budget is 12 seconds; the existing HTTP call
++timeout remains 3 seconds. The read deadline starts after headers, preserving the
++existing policy: queue wait and initial Wi-Fi join do not consume that budget.
++A whole-attempt deadline covering queue wait and all HTTP phases remains an explicit
++C1/C5 gap; this unit does not claim that the read deadline bounds the whole attempt.
++
++Terminal delivery uses eight normal admission mailboxes plus one dedicated boot
++mailbox. A normal request reserves one mailbox and one fetch admission before it
++is queued. Its admission is released only after the session owner reconciles and
++emits exactly one `fetch_terminal`, including failure, timeout or stale. A success
++deferred by motion retains its reservation. Producers fill only the matching
++admitted session/operation/page record; duplicate and unadmitted completions emit
++`fetch_delivery_rejected` and cannot overwrite stored terminals or domain state.
++The owner terminalizes superseded session/revision/operation admissions as stale,
++even if the producer has not returned; a late producer is then rejected.
++
++Transport uses one coalesced freshness mailbox. Startup stages use a bounded bitset
++that preserves CONNECTING then FETCHING order before applying a boot terminal;
++invalid transitions remain checked and counted. These reports cannot consume fetch
++terminal capacity. Producers serialize bounded delivery copies with a mutex; the
++presentation/session pump and admission use zero-timeout try-locks and retry pending
++owner reconciliation on a later pump. Each pump reconciles at most one fetch
++terminal. The legacy `fetch_event_dropped` metric remains for compatibility and is
++zero for admitted terminal delivery. Full admission rejects new work observably
++rather than dropping accepted results. The fetch request queue remains eight slots.
++
++The session still retries a missing focused page on a one second cadence. A failed
+ focused page shows “page unavailable; retrying”. If background page-zero refresh
+ fails, existing items are labeled “cached”. STA disconnect sets transport
+-unavailable copy (“reconnecting…”) without erasing the load stage.
++unavailable copy (“reconnecting…”) without erasing the load stage. Retry UX and
++motion deferral are unchanged by C1a; F004/F006 remain separate work.
+ 
+ The initial fetch uses the same event path. Its failure transitions to an
+ unavailable stage; automatic boot retry and product copy remain **OPEN**.
+@@ -58,7 +80,7 @@ The `S-delay` injection uses a timer and drops stale delayed bindings without
+ sleeping under the LVGL lock. No Level 2 scene replacement occurs after init.
+ 
+ Design limits: three live cards; at most 256 metadata entries, eight queued
+-fetches, one active HTTP fetch, a 16 KiB response buffer, and 16 items copied
++fetches, eight admitted normal terminals plus one boot terminal, one active HTTP fetch, a 16 KiB response buffer, and 16 items copied
+ per page apply. Target measurements for live node count, cJSON transient heap,
+ largest free block, frame p95/p99, and input-to-focus latency remain **OPEN**
+ until a representative BOX-3 run. A build or host test does not establish those
+@@ -73,3 +95,8 @@ model tests remain supplemental. Phase B still requires scripted device evidence
+ for delayed HTTP, queue pressure, focused removal, push, repeated traversal,
+ and allocation/timing budgets. Record L0, L1, L2, and L3 separately in the lab
+ evidence report.
++
++C1a reliability authority: [carousel requirements CAR-ARCH-2/3 and CAR-PAGING-1](lab-02-carousel-remediation-plan.md), with scope/owner decisions in the
++[carousel execution record](evidence/lab-02/reviews/carousel-remediation/execution.md).
++Allocation/startup resource failures remain separate C1b/F007 work; no target
++concurrency or resource confirmation is inferred from host admission tests.
+diff --git a/scripts/lab_host.py b/scripts/lab_host.py
+index 6acc414..eafb765 100644
+--- a/scripts/lab_host.py
++++ b/scripts/lab_host.py
+@@ -19,10 +19,10 @@ sys.path.insert(0, str(ROOT / "scripts"))
+ 
+ from deployment_config import Deployment, Kit, load_active_deployment
+ from device_targets import Port, kit_for, ports, resolve_port as resolve_kit_port, select, serial_key, validate_bindings
+-from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
+-from lab02_workflow_config import load_lab02_workflow_config
+-from lab02_canonical_run import run_canonical
+-from lab02_experiment_sdkconfig import write_lab02_local_overlay
++from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
++from lab02_workflow_config import load_lab02_workflow_config
++from lab02_canonical_run import run_canonical
++from lab02_experiment_sdkconfig import write_lab02_local_overlay
+ from firmware import idf_environment, run
+ from lab_registry import (
+     LabSpec,
+@@ -236,8 +236,64 @@ def _sdkconfig_defaults_env_from_files(files: list[Path]) -> dict[str, str]:
+     return {"SDKCONFIG_DEFAULTS": ";".join(str(path) for path in files)}
+ 
+ 
+-def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
+-    return variant_name in {"phaseb", "scripted-phaseb"}
++def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
++    return variant_name in {"phaseb", "scripted-phaseb"}
++
++
++def lab02_scripted_variant_name(backend: str) -> str:
++    """Managed HTTP scripted runs use scripted-phaseb; BACKEND=local uses embedded scripted."""
++    return "scripted" if backend == "local" else "scripted-phaseb"
++
++
++def lab02_managed_canonical_plan(
++    variant_name: str, backend: str
++) -> tuple[str, str] | None:
++    """Return (mode, build_variant) when a lab02 run/capture should use the canonical coordinator."""
++    if backend != "managed-http":
++        return None
++    if variant_name == "scripted-phaseb":
++        return ("scripted", "scripted-phaseb")
++    if variant_name in {"recycle", "phaseb"}:
++        return ("manual", "phaseb")
++    return None
++
++
++def _run_lab02_canonical(
++    config: ProjectConfig,
++    *,
++    mode: str,
++    build_variant: str,
++    kit: str,
++    port: str,
++    seconds: int,
++    flash: bool,
++    run_id: str,
++    no_build: bool,
++    spec: LabSpec,
++) -> int:
++    def _build_canonical(cfg, name, selected_variant, **kwargs):
++        return build_lab(cfg, name, selected_variant, **kwargs)
++
++    def _parse_canonical(serial_path, metrics_path):
++        parse_serial_file(spec, serial_path, metrics_path)
++
++    return run_canonical(
++        config,
++        mode=mode,
++        kit=kit,
++        port=port,
++        seconds=seconds,
++        flash=flash,
++        run_id=run_id,
++        no_build=no_build,
++        build_variant=build_variant,
++        backend="managed-http",
++        target_resolver=resolve_run_target,
++        target_revalidator=revalidate_run_target,
++        build=_build_canonical,
++        flash_build=flash_lab_build,
++        parse=_parse_canonical,
++    )
+ 
+ 
+ def _prepare_lab_build_directory(build_dir: Path) -> None:
+@@ -268,76 +324,76 @@ def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Non
+             f"-DSDKCONFIG={build_dir / 'sdkconfig'}",
+         ]
+         timeout = config.integer("command.lab.build.timeout_seconds", default=1200, minimum=1)
+-        try:
+-            run(base + ["fullclean"], env=env, timeout=timeout)
+-            print(f"Cleaned lab.{spec.make_name} variant={var.name} (idf fullclean) -> {_rel(build_dir)}")
+-        except (ProjectConfigError, OSError, subprocess.SubprocessError):
+-            pass
+-    shutil.rmtree(build_dir)
+-    for sidecar in deployment_defaults_sidecars(build_dir):
+-        sidecar.unlink(missing_ok=True)
+-    for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
+-                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256"):
+-        sidecar.unlink(missing_ok=True)
++        try:
++            run(base + ["fullclean"], env=env, timeout=timeout)
++            print(f"Cleaned lab.{spec.make_name} variant={var.name} (idf fullclean) -> {_rel(build_dir)}")
++        except (ProjectConfigError, OSError, subprocess.SubprocessError):
++            pass
++    shutil.rmtree(build_dir)
++    for sidecar in deployment_defaults_sidecars(build_dir):
++        sidecar.unlink(missing_ok=True)
++    for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
++                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256"):
++        sidecar.unlink(missing_ok=True)
+     print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
+ 
+ 
+-def _defaults_files_for_lab_build(
++def _defaults_files_for_lab_build(
+     config: ProjectConfig,
+     spec: LabSpec,
+     var,
+     build_dir: Path,
+     kit: str,
+     port: str,
+-    target: RunTarget | None = None,
+-    frozen_workflow=None,
+-    frozen_fixture_size: int | None = None,
+-    frozen_scenario: str | None = None,
+-    frozen_build_id: str = "",
+-) -> list[Path]:
+-    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
+-    if not _variant_uses_deployment_kit_secrets(var.name):
+-        if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
+-            try:
+-                import yaml
+-                if frozen_fixture_size is None or frozen_scenario is None:
+-                    registry = yaml.safe_load(config.path_value("labs.registry").read_text(encoding="utf-8"))
+-                    workflow = registry["labs"]["lab02"]["workflow"]
+-                    fixture_size = int(workflow["fixture_size_default"])
+-                    scenario = str(workflow["scenario_default"])
+-                else:
+-                    fixture_size, scenario = frozen_fixture_size, frozen_scenario
+-                overlay = write_lab02_local_overlay(
+-                    build_dir,
+-                    fixture_size=fixture_size,
+-                    scenario=scenario,
+-                    scripted=var.name == "scripted",
+-                    build_id=frozen_build_id,
+-                )
+-                return defaults_files + [overlay]
+-            except (OSError, KeyError, TypeError, ValueError):
+-                raise ProjectConfigError("invalid LAB-02 local experiment defaults") from None
+-        return defaults_files
++    target: RunTarget | None = None,
++    frozen_workflow=None,
++    frozen_fixture_size: int | None = None,
++    frozen_scenario: str | None = None,
++    frozen_build_id: str = "",
++) -> list[Path]:
++    defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
++    if not _variant_uses_deployment_kit_secrets(var.name):
++        if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
++            try:
++                import yaml
++                if frozen_fixture_size is None or frozen_scenario is None:
++                    registry = yaml.safe_load(config.path_value("labs.registry").read_text(encoding="utf-8"))
++                    workflow = registry["labs"]["lab02"]["workflow"]
++                    fixture_size = int(workflow["fixture_size_default"])
++                    scenario = str(workflow["scenario_default"])
++                else:
++                    fixture_size, scenario = frozen_fixture_size, frozen_scenario
++                overlay = write_lab02_local_overlay(
++                    build_dir,
++                    fixture_size=fixture_size,
++                    scenario=scenario,
++                    scripted=var.name == "scripted",
++                    build_id=frozen_build_id,
++                )
++                return defaults_files + [overlay]
++            except (OSError, KeyError, TypeError, ValueError):
++                raise ProjectConfigError("invalid LAB-02 local experiment defaults") from None
++        return defaults_files
+     if not kit.strip():
+         raise ProjectConfigError(
+             "Phase B build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
+             "e.g. make lab.lab02.phaseb.build KIT=lynn"
+         )
+-    deployment = target.deployment if target is not None else load_active_deployment(config)
+-    resolved = target.kit if target is not None else kit_for(deployment, kit)
+-    profile = deployment.secrets_profile_for_kit(resolved)
+-    if not profile or not profile.wifi_ssid or not profile.wifi_password:
+-        raise ProjectConfigError(
+-            "Phase B build requires per-kit Wi-Fi credentials in the private deployment roster"
+-        )
+-    workflow = frozen_workflow or load_lab02_workflow_config(config)
+-    overlay = write_deployment_kit_sdkconfig(
+-        build_dir, resolved, deployment, workflow.client_url,
+-        fixture_size=workflow.fixture_size_default, scenario=workflow.scenario_default,
+-        scripted=var.name == "scripted-phaseb",
+-        build_id=frozen_build_id,
+-    )
+-    return defaults_files + [overlay]
++    deployment = target.deployment if target is not None else load_active_deployment(config)
++    resolved = target.kit if target is not None else kit_for(deployment, kit)
++    profile = deployment.secrets_profile_for_kit(resolved)
++    if not profile or not profile.wifi_ssid or not profile.wifi_password:
++        raise ProjectConfigError(
++            "Phase B build requires per-kit Wi-Fi credentials in the private deployment roster"
++        )
++    workflow = frozen_workflow or load_lab02_workflow_config(config)
++    overlay = write_deployment_kit_sdkconfig(
++        build_dir, resolved, deployment, workflow.client_url,
++        fixture_size=workflow.fixture_size_default, scenario=workflow.scenario_default,
++        scripted=var.name == "scripted-phaseb",
++        build_id=frozen_build_id,
++    )
++    return defaults_files + [overlay]
+ 
+ 
+ def _sdkconfig_assignment_lines(path: Path) -> list[str]:
+@@ -393,7 +449,7 @@ def _refresh_stale_sdkconfig(build_dir: Path, defaults_files: list[Path]) -> boo
+     return True
+ 
+ 
+-def ensure_lab_built(
++def ensure_lab_built(
+     config: ProjectConfig,
+     make_name: str,
+     variant: str | None,
+@@ -407,34 +463,34 @@ def ensure_lab_built(
+     var = resolve_variant(spec, variant)
+     build_dir = ROOT / var.build_dir
+     defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
+-    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
+-    if stale or not (build_dir / "flasher_args.json").is_file():
+-        return build_lab(
+-            config,
+-            make_name,
+-            variant,
+-            kit=kit,
+-            port=port,
+-            target=target,
+-            frozen_defaults_files=defaults_files,
+-        )
++    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
++    if stale or not (build_dir / "flasher_args.json").is_file():
++        return build_lab(
++            config,
++            make_name,
++            variant,
++            kit=kit,
++            port=port,
++            target=target,
++            frozen_defaults_files=defaults_files,
++        )
+     return build_dir
+ 
+ 
+-def build_lab(
++def build_lab(
+     config: ProjectConfig,
+     make_name: str,
+     variant: str | None,
+     *,
+     kit: str = "",
+-    port: str = "",
+-    target: RunTarget | None = None,
+-    frozen_defaults_files: list[Path] | None = None,
+-    frozen_workflow=None,
+-    frozen_fixture_size: int | None = None,
+-    frozen_scenario: str | None = None,
+-    frozen_build_id: str = "",
+-) -> Path:
++    port: str = "",
++    target: RunTarget | None = None,
++    frozen_defaults_files: list[Path] | None = None,
++    frozen_workflow=None,
++    frozen_fixture_size: int | None = None,
++    frozen_scenario: str | None = None,
++    frozen_build_id: str = "",
++) -> Path:
+     spec = get_lab(make_name)
+     var = resolve_variant(spec, variant)
+     if config.text("idf.target", required=True) != spec.target:
+@@ -443,13 +499,13 @@ def build_lab(
+     project = ROOT / spec.project_dir
+     build_dir = ROOT / var.build_dir
+     _prepare_lab_build_directory(build_dir)
+-    defaults_files = (
+-        frozen_defaults_files
+-        if frozen_defaults_files is not None
+-        else _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target,
+-            frozen_workflow=frozen_workflow, frozen_fixture_size=frozen_fixture_size,
+-            frozen_scenario=frozen_scenario, frozen_build_id=frozen_build_id)
+-    )
++    defaults_files = (
++        frozen_defaults_files
++        if frozen_defaults_files is not None
++        else _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target,
++            frozen_workflow=frozen_workflow, frozen_fixture_size=frozen_fixture_size,
++            frozen_scenario=frozen_scenario, frozen_build_id=frozen_build_id)
++    )
+     _refresh_stale_sdkconfig(build_dir, defaults_files)
+     env.update(_sdkconfig_defaults_env_from_files(defaults_files))
+     base = idf + [
+@@ -732,6 +788,7 @@ def main() -> int:
+     cap_p.add_argument("--flash", action="store_true", default=False)
+     cap_p.add_argument("--no-flash", action="store_true")
+     cap_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
++    cap_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
+ 
+     run_p = sub.add_parser("run")
+     run_p.add_argument("lab")
+@@ -741,8 +798,8 @@ def main() -> int:
+     run_p.add_argument("--seconds", type=int, default=None)
+     run_p.add_argument("--flash", action="store_true", default=False)
+     run_p.add_argument("--no-flash", action="store_true")
+-    run_p.add_argument("--no-build", action="store_true")
+-    run_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
++    run_p.add_argument("--no-build", action="store_true")
++    run_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
+     run_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
+ 
+     parse_p = sub.add_parser("parse", help="Parse serial capture to metrics.json (make lab.<name>.parse)")
+@@ -780,47 +837,50 @@ def main() -> int:
+             flash_lab_build(config, build_dir, port)
+             print(f"Flashed lab.{spec.make_name} ({var.name}) on {port}")
+             return 0
+-        if args.action in ("capture", "run"):
++        if args.action in ("capture", "run"):
+             seconds = args.seconds
+             if seconds is None:
+                 seconds = spec.capture_seconds_default
+-            var = resolve_variant(spec, variant)
+-            flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
+-            if args.action == "run" and args.lab == "lab02" and args.backend == "managed-http" and var.name in {"recycle", "phaseb", "scripted-phaseb"}:
+-                mode = "scripted" if var.name == "scripted-phaseb" else "manual"
+-                def _build_canonical(cfg, name, selected_variant, **kwargs):
+-                    return build_lab(cfg, name, selected_variant, **kwargs)
+-                def _parse_canonical(serial_path, metrics_path):
+-                    parse_serial_file(spec, serial_path, metrics_path)
+-                return run_canonical(
+-                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
+-                    flash=flash, run_id=args.run_id, no_build=args.no_build,
+-                    build_variant="scripted-phaseb" if mode == "scripted" else "phaseb",
+-                    backend="managed-http",
+-                    target_resolver=resolve_run_target, target_revalidator=revalidate_run_target,
+-                    build=_build_canonical, flash_build=flash_lab_build, parse=_parse_canonical,
+-                )
+-            if args.action == "run" and args.lab == "lab02" and (args.backend == "local" or var.name == "eager"):
+-                if var.name == "scripted-phaseb":
+-                    variant = "scripted"
+-                elif var.name == "phaseb":
+-                    variant = None
+-                var = resolve_variant(spec, variant)
+-                mode = "scripted" if var.name == "scripted" else "manual"
+-                def _build_local(cfg, name, selected_variant, **kwargs):
+-                    return build_lab(cfg, name, selected_variant, **kwargs)
+-                def _parse_local(serial_path, metrics_path):
+-                    parse_serial_file(spec, serial_path, metrics_path)
+-                return run_canonical(
+-                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
+-                    flash=flash, run_id=args.run_id, no_build=args.no_build, backend="local",
+-                    build_variant=var.name, target_resolver=resolve_run_target,
+-                    target_revalidator=revalidate_run_target, build=_build_local,
+-                    flash_build=flash_lab_build, parse=_parse_local,
+-                )
+-            elif args.backend != "managed-http":
+-                raise ProjectConfigError("BACKEND=local is supported only for LAB-02")
+-            stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
++            var = resolve_variant(spec, variant)
++            flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
++            backend = getattr(args, "backend", "managed-http")
++            if args.lab == "lab02":
++                managed = lab02_managed_canonical_plan(var.name, backend)
++                if managed is not None:
++                    mode, build_variant = managed
++                    return _run_lab02_canonical(
++                        config,
++                        mode=mode,
++                        build_variant=build_variant,
++                        kit=args.kit,
++                        port=args.port,
++                        seconds=seconds,
++                        flash=flash,
++                        run_id=args.run_id,
++                        no_build=getattr(args, "no_build", False),
++                        spec=spec,
++                    )
++            if args.action == "run" and args.lab == "lab02" and (args.backend == "local" or var.name == "eager"):
++                if var.name == "scripted-phaseb":
++                    variant = "scripted"
++                elif var.name == "phaseb":
++                    variant = None
++                var = resolve_variant(spec, variant)
++                mode = "scripted" if var.name == "scripted" else "manual"
++                def _build_local(cfg, name, selected_variant, **kwargs):
++                    return build_lab(cfg, name, selected_variant, **kwargs)
++                def _parse_local(serial_path, metrics_path):
++                    parse_serial_file(spec, serial_path, metrics_path)
++                return run_canonical(
++                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
++                    flash=flash, run_id=args.run_id, no_build=args.no_build, backend="local",
++                    build_variant=var.name, target_resolver=resolve_run_target,
++                    target_revalidator=revalidate_run_target, build=_build_local,
++                    flash_build=flash_lab_build, parse=_parse_local,
++                )
++            elif args.backend != "managed-http":
++                raise ProjectConfigError("BACKEND=local is supported only for LAB-02")
++            stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
+             rid = args.run_id or f"{stamp}-{var.name}-capture-{uuid.uuid4().hex[:6]}"
+             target = resolve_run_target(config, args.kit, args.port)
+             if args.action == "run" and not args.no_build:
+diff --git a/scripts/lab_registry.py b/scripts/lab_registry.py
+index 95de4b8..a2c6db1 100644
+--- a/scripts/lab_registry.py
++++ b/scripts/lab_registry.py
+@@ -206,18 +206,18 @@ def operator_help_lines(
+         lines.append(" ".join(details))
+     capture_s = seconds if seconds is not None else spec.capture_seconds_default
+     lines.append("")
+-    if spec.make_name == "lab02":
+-        lines.append(f"Managed capture: {capture_s}s after a fresh boot marker; set SECONDS= to override.")
+-        lines.append("The host writes the serial log, metrics, and run manifest.")
+-    else:
+-        lines.append(
+-            f"Host serial capture: {capture_s}s after flash "
+-            f"(set SECONDS= to override capture_seconds_default in labs.registry.yaml)."
+-        )
+-        lines.append(
+-            "This terminal stays quiet during capture. Device lines (e.g. LAB02_READY, "
+-            "HARNESS_DONE) are saved to logs/device/labs/.../serial.txt, then summarized."
+-        )
++    if spec.make_name == "lab02":
++        lines.append(f"Managed capture: {capture_s}s after a fresh boot marker; set SECONDS= to override.")
++        lines.append("The host writes the serial log, metrics, and run manifest.")
++    else:
++        lines.append(
++            f"Host serial capture: {capture_s}s after flash "
++            f"(set SECONDS= to override capture_seconds_default in labs.registry.yaml)."
++        )
++        lines.append(
++            "This terminal stays quiet during capture. Device lines (e.g. LAB02_READY, "
++            "HARNESS_DONE) are saved to logs/device/labs/.../serial.txt, then summarized."
++        )
+     lines.append("")
+     lines.append("Operator:")
+     if spec.run_instructions:
+@@ -242,13 +242,23 @@ def run_mode_hint_lines(spec: LabSpec) -> list[str]:
+     lines.append(f"  Manual (you scroll on device)     make lab.{name} [KIT=<nickname>]")
+     lines.append(f"  Clean default variant build dir   make lab.{name}.clean")
+     if "scripted" in spec.variants:
+-        lines.append(f"  Automated managed run             make lab.{name}.scripted [KIT=<nickname>]")
++        lines.append(f"  Automated managed run             make lab.{name}.scripted [KIT=<nickname>]")
++        lines.append(
++            f"  Scripted HTTP build (needs KIT)   make lab.{name}.scripted.build KIT=<nickname>"
++        )
+         lines.append(f"  Clean scripted build dir          make lab.{name}.scripted.clean")
++    if "phaseb" in spec.variants:
++        lines.append(
++            f"  Phase B HTTP build (needs KIT)    make lab.{name}.phaseb.build KIT=<nickname>"
++        )
+     if "eager" in spec.variants:
+         lines.append(f"  Eager comparison build            make lab.{name}.eager [KIT=<nickname>]")
+         lines.append(f"  Clean eager build dir             make lab.{name}.eager.clean")
+-    if "phaseb" in spec.variants:
+-        lines.append("  Backend default                   managed HTTP; BACKEND=local selects local fixture")
++    if spec.make_name == "lab02":
++        lines.append(
++            "  Default make lab.<name>.build       recycle (embedded); canonical runs build phaseb"
++        )
++        lines.append("  Backend default                   managed HTTP; BACKEND=local selects local fixture")
+     if spec.trace_parser:
+         lines.append(f"  Parse last capture (metrics.json) make lab.{name}.parse [RUN_ID=…]")
+     return lines
+diff --git a/scripts/tests/test_lab02_model_native.py b/scripts/tests/test_lab02_model_native.py
+index d4fe278..086ddbd 100644
+--- a/scripts/tests/test_lab02_model_native.py
++++ b/scripts/tests/test_lab02_model_native.py
+@@ -2,6 +2,7 @@
+ 
+ import configparser
+ import os
++import json
+ from pathlib import Path
+ import shutil
+ import subprocess
+@@ -38,6 +39,34 @@ class Lab02NativeModelTests(unittest.TestCase):
+             )
+             subprocess.run([str(output)], check=True, capture_output=True, text=True)
+ 
++    def test_terminal_admission_and_reconciliation(self):
++        cc, cjson = self._compiler_inputs()
++        with tempfile.TemporaryDirectory() as tmp:
++            output = Path(tmp) / "lab02_terminal_test"
++            command = [cc, "-std=c11", "-D_POSIX_C_SOURCE=200809L", "-Wall", "-Wextra", "-Werror",
++                       "-pthread", "-I", str(LAB / "tests/host_stubs"),
++                       "-I", str(LAB / "components/lab02/include"), "-I", str(cjson),
++                       str(LAB / "tests/test_terminal_native.c"), str(LAB / "tests/session_host_stubs.c"),
++                       str(LAB / "components/lab02/lab02_session.c"), str(LAB / "components/lab02/inbox_model.c"),
++                       str(LAB / "components/lab02/inbox_page_metadata.c"), str(cjson / "cJSON.c"), "-o", str(output)]
++            artifact = os.environ.get("LAB02_TERMINAL_ARTIFACT_DIR")
++            if artifact:
++                Path(artifact).mkdir(parents=True, exist_ok=True)
++                (Path(artifact) / "compile-command.json").write_text(json.dumps(command, indent=2))
++            subprocess.run(command, check=True, capture_output=True, text=True)
++            for scenario, terminal_count in (("initial-saturation", 9), ("initial-timeout", 1), ("normal-saturation", 9),
++                                             ("newer-operation", 4), ("response-old-revision", 3), ("stale-session", 3)):
++                with self.subTest(scenario=scenario):
++                    result = subprocess.run([str(output), scenario], capture_output=True, text=True, timeout=5)
++                    if artifact:
++                        (Path(artifact) / (scenario + ".log")).write_text(result.stdout + result.stderr)
++                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
++                    terminals = [line for line in result.stdout.splitlines() if "event=fetch_terminal " in line]
++                    self.assertEqual(len(terminals), terminal_count, result.stdout)
++                    identities = [(line.split("op_id=")[1].split()[0],
++                                   line.split("session=")[1].split()[0]) for line in terminals]
++                    self.assertEqual(len(identities), len(set(identities)), result.stdout)
++
+     def test_session_result_ownership_and_snap_deferral(self):
+         cc, cjson = self._compiler_inputs()
+         with tempfile.TemporaryDirectory() as tmp:
+diff --git a/scripts/tests/test_lab_host.py b/scripts/tests/test_lab_host.py
+index a590f62..23abc9e 100644
+--- a/scripts/tests/test_lab_host.py
++++ b/scripts/tests/test_lab_host.py
+@@ -1,8 +1,8 @@
+-import sys
+-import tempfile
+-import unittest
+-from pathlib import Path
+-from unittest.mock import patch
++import sys
++import tempfile
++import unittest
++from pathlib import Path
++from unittest.mock import patch
+ 
+ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ 
+@@ -13,16 +13,34 @@ from lab_host import (  # noqa: E402
+     _sdkconfig_missing_assignments,
+     capture_lab,
+     clean_lab,
++    lab02_managed_canonical_plan,
++    lab02_scripted_variant_name,
+     revalidate_run_target,
+     resolve_run_target,
+     RunTarget,
+ )
+-from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit, SecretsProfile
++from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit, SecretsProfile
+ from device_targets import Port
+ from lab_registry import get_lab, resolve_variant
+ from project_config import ProjectConfig, ProjectConfigError
+ 
+ 
++class Lab02MakeVariantTests(unittest.TestCase):
++    def test_scripted_variant_name_follows_backend(self):
++        self.assertEqual(lab02_scripted_variant_name("managed-http"), "scripted-phaseb")
++        self.assertEqual(lab02_scripted_variant_name("local"), "scripted")
++
++    def test_managed_canonical_plan_maps_default_and_scripted(self):
++        self.assertEqual(lab02_managed_canonical_plan("recycle", "managed-http"), ("manual", "phaseb"))
++        self.assertEqual(lab02_managed_canonical_plan("phaseb", "managed-http"), ("manual", "phaseb"))
++        self.assertEqual(
++            lab02_managed_canonical_plan("scripted-phaseb", "managed-http"),
++            ("scripted", "scripted-phaseb"),
++        )
++        self.assertIsNone(lab02_managed_canonical_plan("scripted", "managed-http"))
++        self.assertIsNone(lab02_managed_canonical_plan("phaseb", "local"))
++
++
+ class LabHostSdkconfigTests(unittest.TestCase):
+     def setUp(self):
+         self.temp = tempfile.TemporaryDirectory()
+@@ -51,58 +69,58 @@ class LabHostSdkconfigTests(unittest.TestCase):
+         self.assertTrue(build.is_dir())
+         self.assertEqual([], list(build.iterdir()))
+ 
+-    def test_clean_lab_removes_build_dir(self):
+-        config = ProjectConfig()
+-        spec = get_lab("lab02")
+-        var = resolve_variant(spec, "phaseb")
+-        with tempfile.TemporaryDirectory() as temp, patch("lab_host.ROOT", Path(temp)):
+-            build_dir = Path(temp) / var.build_dir
+-            build_dir.parent.mkdir(parents=True, exist_ok=True)
+-            build_dir.mkdir(exist_ok=True)
+-            (build_dir / "marker").write_text("x", encoding="utf-8")
+-            clean_lab(config, "lab02", "phaseb")
+-            self.assertFalse(build_dir.exists())
+-
+-    def test_phaseb_build_requires_kit(self):
++    def test_clean_lab_removes_build_dir(self):
++        config = ProjectConfig()
++        spec = get_lab("lab02")
++        var = resolve_variant(spec, "phaseb")
++        with tempfile.TemporaryDirectory() as temp, patch("lab_host.ROOT", Path(temp)):
++            build_dir = Path(temp) / var.build_dir
++            build_dir.parent.mkdir(parents=True, exist_ok=True)
++            build_dir.mkdir(exist_ok=True)
++            (build_dir / "marker").write_text("x", encoding="utf-8")
++            clean_lab(config, "lab02", "phaseb")
++            self.assertFalse(build_dir.exists())
++
++    def test_phaseb_build_requires_kit(self):
+         config = ProjectConfig()
+         spec = get_lab("lab02")
+         var = resolve_variant(spec, "phaseb")
+         build_dir = self.temp_path / "build_dir_phaseb"
+         build_dir.mkdir(exist_ok=True)
+-        with self.assertRaisesRegex(ProjectConfigError, "Phase B build requires KIT"):
+-            _defaults_files_for_lab_build(config, spec, var, build_dir, "", "")
+-
+-    def test_phaseb_build_requires_private_wifi_before_url_resolution(self):
+-        config = ProjectConfig()
+-        spec = get_lab("lab02")
+-        var = resolve_variant(spec, "phaseb")
+-        kit = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
+-        deployment = Deployment(
+-            Path("local.yaml"), "local", DeploymentMeta("desk", "Desk"), (),
+-            (Endpoint("endpoint-a", "Endpoint A", "", ""),), (kit,), {},
+-        )
+-        target = RunTarget("A", "/dev/a", "SERIAL-A", kit, deployment)
+-        with patch("lab_host.load_lab02_workflow_config", side_effect=AssertionError("URL resolved before Wi-Fi preflight")):
+-            with self.assertRaisesRegex(ProjectConfigError, "per-kit Wi-Fi credentials"):
+-                _defaults_files_for_lab_build(
+-                    config, spec, var, self.temp_path, "A", "", target
+-                )
+-
+-    def test_ensure_build_uses_same_frozen_defaults(self):
+-        from lab_host import ensure_lab_built
+-
+-        config = ProjectConfig()
+-        spec = get_lab("lab02")
+-        variant = resolve_variant(spec, "phaseb")
+-        frozen = [self.temp_path / "phaseb.defaults"]
+-        with patch("lab_host.ROOT", self.temp_path), patch(
+-            "lab_host._defaults_files_for_lab_build", return_value=frozen
+-        ) as resolve_defaults, patch(
+-            "lab_host._refresh_stale_sdkconfig", return_value=True
+-        ), patch("lab_host.build_lab", return_value=self.temp_path) as build:
+-            ensure_lab_built(config, "lab02", "phaseb", kit="A")
+-        resolve_defaults.assert_called_once()
+-        self.assertIs(build.call_args.kwargs["frozen_defaults_files"], frozen)
++        with self.assertRaisesRegex(ProjectConfigError, "Phase B build requires KIT"):
++            _defaults_files_for_lab_build(config, spec, var, build_dir, "", "")
++
++    def test_phaseb_build_requires_private_wifi_before_url_resolution(self):
++        config = ProjectConfig()
++        spec = get_lab("lab02")
++        var = resolve_variant(spec, "phaseb")
++        kit = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
++        deployment = Deployment(
++            Path("local.yaml"), "local", DeploymentMeta("desk", "Desk"), (),
++            (Endpoint("endpoint-a", "Endpoint A", "", ""),), (kit,), {},
++        )
++        target = RunTarget("A", "/dev/a", "SERIAL-A", kit, deployment)
++        with patch("lab_host.load_lab02_workflow_config", side_effect=AssertionError("URL resolved before Wi-Fi preflight")):
++            with self.assertRaisesRegex(ProjectConfigError, "per-kit Wi-Fi credentials"):
++                _defaults_files_for_lab_build(
++                    config, spec, var, self.temp_path, "A", "", target
++                )
++
++    def test_ensure_build_uses_same_frozen_defaults(self):
++        from lab_host import ensure_lab_built
++
++        config = ProjectConfig()
++        spec = get_lab("lab02")
++        variant = resolve_variant(spec, "phaseb")
++        frozen = [self.temp_path / "phaseb.defaults"]
++        with patch("lab_host.ROOT", self.temp_path), patch(
++            "lab_host._defaults_files_for_lab_build", return_value=frozen
++        ) as resolve_defaults, patch(
++            "lab_host._refresh_stale_sdkconfig", return_value=True
++        ), patch("lab_host.build_lab", return_value=self.temp_path) as build:
++            ensure_lab_built(config, "lab02", "phaseb", kit="A")
++        resolve_defaults.assert_called_once()
++        self.assertIs(build.call_args.kwargs["frozen_defaults_files"], frozen)
+ 
+     def test_refresh_removes_stale_sdkconfig(self):
+         build = self.temp_path / "build_dir"
+@@ -129,11 +147,11 @@ class LabHostTargetSelectionTests(unittest.TestCase):
+         self.kit_a = Kit("A", "endpoint-a", "profile-a", "SERIAL-A")
+         self.kit_b = Kit("B", "endpoint-b", "profile-b", "SERIAL-B")
+         self.deployment = Deployment(
+-            Path("local.yaml"), "local", DeploymentMeta("test", "test"), (),
+-            (Endpoint("endpoint-a", "Endpoint A", "", ""), Endpoint("endpoint-b", "Endpoint B", "", "")),
+-            (self.kit_a, self.kit_b), {"desk": "endpoint-a"},
+-            {"profile-a": SecretsProfile("ssid-a", "password-a"), "profile-b": SecretsProfile("ssid-b", "password-b")},
+-        )
++            Path("local.yaml"), "local", DeploymentMeta("test", "test"), (),
++            (Endpoint("endpoint-a", "Endpoint A", "", ""), Endpoint("endpoint-b", "Endpoint B", "", "")),
++            (self.kit_a, self.kit_b), {"desk": "endpoint-a"},
++            {"profile-a": SecretsProfile("ssid-a", "password-a"), "profile-b": SecretsProfile("ssid-b", "password-b")},
++        )
+         self.config = ProjectConfig()
+ 
+     def _resolve(self, available, kit="", port=""):
+@@ -202,21 +220,21 @@ class LabHostTargetSelectionTests(unittest.TestCase):
+ 
+         spec = get_lab("lab02")
+         var = resolve_variant(spec, "phaseb")
+-        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+-        with patch("lab_host.ports", side_effect=AssertionError("build must not enumerate USB")), patch(
+-            "lab_host.load_lab02_workflow_config",
+-            return_value=type("Workflow", (), {"client_url": "http://10.0.0.2:8765", "fixture_size_default": 64,
+-                                                "scenario_default": "nominal"})(),
+-        ), patch(
+-            "lab_host.write_deployment_kit_sdkconfig", return_value=None
+-        ) as write_overlay:
++        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
++        with patch("lab_host.ports", side_effect=AssertionError("build must not enumerate USB")), patch(
++            "lab_host.load_lab02_workflow_config",
++            return_value=type("Workflow", (), {"client_url": "http://10.0.0.2:8765", "fixture_size_default": 64,
++                                                "scenario_default": "nominal"})(),
++        ), patch(
++            "lab_host.write_deployment_kit_sdkconfig", return_value=None
++        ) as write_overlay:
+             files = _defaults_files_for_lab_build(
+                 self.config, spec, var, self.temp_path, "A", "", target
+             )
+-        write_overlay.assert_called_once_with(
+-            self.temp_path, self.kit_a, self.deployment, "http://10.0.0.2:8765",
+-            fixture_size=64, scenario="nominal", scripted=False, build_id=""
+-        )
++        write_overlay.assert_called_once_with(
++            self.temp_path, self.kit_a, self.deployment, "http://10.0.0.2:8765",
++            fixture_size=64, scenario="nominal", scripted=False, build_id=""
++        )
+         self.assertIsInstance(files, list)
+ 
+     def test_run_entrypoint_resolves_target_before_build_or_flash(self):
+@@ -225,13 +243,13 @@ class LabHostTargetSelectionTests(unittest.TestCase):
+         events = []
+         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+         config = self.config
+-        with patch("lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]), patch(
+-            "lab_host.ProjectConfig", return_value=config
+-        ), patch("lab_host.run_canonical", side_effect=lambda *args, **kwargs: events.append("canonical") or 0) as run:
+-            self.assertEqual(main(), 0)
+-        self.assertEqual(events, ["canonical"])
+-        self.assertEqual(run.call_args.kwargs["mode"], "manual")
+-        self.assertEqual(run.call_args.kwargs["build_variant"], "phaseb")
++        with patch("lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]), patch(
++            "lab_host.ProjectConfig", return_value=config
++        ), patch("lab_host.run_canonical", side_effect=lambda *args, **kwargs: events.append("canonical") or 0) as run:
++            self.assertEqual(main(), 0)
++        self.assertEqual(events, ["canonical"])
++        self.assertEqual(run.call_args.kwargs["mode"], "manual")
++        self.assertEqual(run.call_args.kwargs["build_variant"], "phaseb")
+ 
+     def test_capture_revalidates_frozen_identity_before_flash_write(self):
+         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)

@@ -1,0 +1,8 @@
+Evidence collection only:
+1. Copy build/labs/lab-02* lab02_bounded_inbox.map/.elf and selected sdkconfigs to this directory; record SHA-256 and original mtime.
+2. Extract first 125 serial-log lines using a heap/LVGL/ELF/READY allowlist; record complete serial-file hashes without dumping content URLs or manifests.
+3. Parse frozen maps for dram0.data/bss and s_terminals/s_pending_revision/s_post_buf/s_pump_ev section entries.
+4. Read historical C1a-before, C1b-before, and C3a-after session snapshots.
+5. Extract v1 POC archive configuration and dependency-lock facts, with archive attribution only (no archive path references in deliverables).
+6. Read client coding standards §8 and historical C2/C3 verification evidence gaps.
+No build/test/flash command was run. Full saved map/ELF artifacts may include private configuration and must not be publicly dumped; use allowlisted excerpts only.

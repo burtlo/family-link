@@ -1,0 +1,4 @@
+{
+  "preliminary_comparison": "false positive from read_text CRLF normalization",
+  "actual_result": "raw before/current patch segments byte-identical for all excluded WIP"
+}

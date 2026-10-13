@@ -1,0 +1,27 @@
+{
+  "viewport_width": 320,
+  "card_width": 132,
+  "gap": 12,
+  "stride": 144,
+  "scroll_x": 566,
+  "visible_cards": [
+    {
+      "index": 3,
+      "visible_pixels": 10
+    },
+    {
+      "index": 4,
+      "visible_pixels": 132
+    },
+    {
+      "index": 5,
+      "visible_pixels": 132
+    },
+    {
+      "index": 6,
+      "visible_pixels": 10
+    }
+  ],
+  "required_surfaces": 4,
+  "evidence": "geometry calculation from current constants; target/runtime sufficiency remains to verify"
+}

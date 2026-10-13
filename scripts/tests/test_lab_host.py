@@ -13,6 +13,8 @@ from lab_host import (  # noqa: E402
     _sdkconfig_missing_assignments,
     capture_lab,
     clean_lab,
+    lab02_managed_canonical_plan,
+    lab02_scripted_variant_name,
     revalidate_run_target,
     resolve_run_target,
     RunTarget,
@@ -21,6 +23,22 @@ from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit, Secrets
 from device_targets import Port
 from lab_registry import get_lab, resolve_variant
 from project_config import ProjectConfig, ProjectConfigError
+
+
+class Lab02MakeVariantTests(unittest.TestCase):
+    def test_scripted_variant_name_follows_backend(self):
+        self.assertEqual(lab02_scripted_variant_name("managed-http"), "scripted-phaseb")
+        self.assertEqual(lab02_scripted_variant_name("local"), "scripted")
+
+    def test_managed_canonical_plan_maps_default_and_scripted(self):
+        self.assertEqual(lab02_managed_canonical_plan("recycle", "managed-http"), ("manual", "phaseb"))
+        self.assertEqual(lab02_managed_canonical_plan("phaseb", "managed-http"), ("manual", "phaseb"))
+        self.assertEqual(
+            lab02_managed_canonical_plan("scripted-phaseb", "managed-http"),
+            ("scripted", "scripted-phaseb"),
+        )
+        self.assertIsNone(lab02_managed_canonical_plan("scripted", "managed-http"))
+        self.assertIsNone(lab02_managed_canonical_plan("phaseb", "local"))
 
 
 class LabHostSdkconfigTests(unittest.TestCase):

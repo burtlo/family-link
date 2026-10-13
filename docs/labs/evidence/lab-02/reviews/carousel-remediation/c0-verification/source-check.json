@@ -1,0 +1,11 @@
+{
+  "reviewed_files_unchanged": true,
+  "changed_during_verification": [],
+  "tracked_diff_unchanged": true,
+  "tracked_diff_matches_preserved_wip": true,
+  "native_manifest_matches_handoff": true,
+  "manifest_delta": [],
+  "five_file_hashes_match": true,
+  "file_hash_mismatches": [],
+  "HEAD": "7ecc594861c1e6fbc9ad647ac591bb44df3acde9"
+}

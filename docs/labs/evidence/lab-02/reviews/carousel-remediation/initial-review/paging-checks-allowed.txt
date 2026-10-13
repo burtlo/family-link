@@ -1,0 +1,8 @@
+test_inbox_page_v2_shape (scripts.tests.test_lab02_paging_server.Lab02PagingServerTests.test_inbox_page_v2_shape) ... ok
+test_page_receipt_and_idempotent_identity_targeted_actions (scripts.tests.test_lab02_paging_server.Lab02PagingServerTests.test_page_receipt_and_idempotent_identity_targeted_actions) ... ok
+test_remove_script (scripts.tests.test_lab02_paging_server.Lab02PagingServerTests.test_remove_script) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.130s
+
+OK

@@ -1,0 +1,736 @@
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c
+@@ -1,6 +1,7 @@
+ #include "lab02/card_pool.h"
+ 
+ #include "lab02/instrumentation.h"
++#include "lab02/snap_math.h"
+ 
+ #include <string.h>
+ 
+@@ -12,11 +13,6 @@
+         lab02_card_view_create(&pool->views[i], scroll_parent);
+         lv_obj_add_flag(pool->views[i].root, LV_OBJ_FLAG_HIDDEN);
+     }
+-}
+-
+-static int slot_offset(int slot)
+-{
+-    return slot - 1;
+ }
+ 
+ void lab02_card_pool_layout_positions(lab02_card_pool_t *pool)
+@@ -31,7 +27,7 @@
+     }
+ }
+ 
+-void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t *pp, int focus,
++void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t *pp, int focus, int32_t scroll_x,
+                             uint32_t generation)
+ {
+     if (!pool || !pp || !pp->model) {
+@@ -40,15 +36,36 @@
+     int count = (int)pp->model->count;
+     pool->focus_index = focus;
+     pool->bind_generation = generation;
++    int first = lab02_window_first_index(scroll_x, count);
++    int last = lab02_window_last_index(scroll_x, count);
++    /* Retain surviving bindings (including delayed timers) in their root.
++     * Only vacated roots recycle, so overlap is property-only work. */
+     for (int s = 0; s < LAB02_CARD_POOL_SIZE; s++) {
+-        int idx = focus + slot_offset(s);
+         lab02_card_view_t *view = &pool->views[s];
+-        if (idx < 0 || idx >= count) {
+-            lab02_card_view_unbind(view, generation);
+-            continue;
++        if (view->bound_index < first || view->bound_index > last ||
++            view->bound_index >= count) {
++            if (view->bound_index >= 0) lab02_card_view_unbind(view, generation);
+         }
++    }
++    for (int idx = first; idx <= last && idx < first + LAB02_CARD_POOL_SIZE; idx++) {
++        lab02_card_view_t *view = NULL;
++        for (int s = 0; s < LAB02_CARD_POOL_SIZE; s++)
++            if (pool->views[s].bound_index == idx) view = &pool->views[s];
++        if (!view) {
++            for (int s = 0; s < LAB02_CARD_POOL_SIZE; s++)
++                if (pool->views[s].bound_index < 0) { view = &pool->views[s]; break; }
++        }
++        if (!view) continue;
+         lab02_slot_snapshot_t slot = lab02_session_slot_snapshot(pp, idx);
+-        lab02_card_view_present(view, generation, &slot);
++        bool same = view->bound_index == idx &&
++            view->session_generation == slot.session_generation &&
++            view->inbox_revision == slot.inbox_revision &&
++            ((slot.state == LAB02_SLOT_BOUND && slot.item &&
++              strcmp(view->bound_message_id, slot.item->message_id) == 0 &&
++              (view->state == LAB02_CARD_BOUND || view->pending_bind)) ||
++             (slot.state == LAB02_SLOT_LOADING && view->state == LAB02_CARD_LOADING && !view->pending_bind) ||
++             (slot.state == LAB02_SLOT_ERROR && view->state == LAB02_CARD_ERROR));
++        if (!same) lab02_card_view_present(view, generation, &slot);
+         lab02_card_view_set_pos_for_index(view, idx);
+         lab02_card_view_style_root(view->root, idx == focus);
+     }
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c
+@@ -4,6 +4,8 @@
+ #include "lab02/lab02_session.h"
+ #include "lab02/lab02_session_io.h"
+ #include "lab02/trace_emit.h"
++
++#include "esp_timer.h"
+ 
+ #include <stdio.h>
+ #include <string.h>
+@@ -109,7 +111,7 @@
+ static void rebind_pool(lab02_carousel_t *c)
+ {
+     uint32_t gen = lab02_instrumentation_next_generation();
+-    lab02_card_pool_rebind(&c->pool, &c->provider, c->focus_index, gen);
++    lab02_card_pool_rebind(&c->pool, &c->provider, c->focus_index, lv_obj_get_scroll_x(c->scroll), gen);
+     update_status_label(c);
+ }
+ 
+@@ -131,20 +133,38 @@
+ static void scroll_event_cb(lv_event_t *e)
+ {
+     lab02_carousel_t *c = (lab02_carousel_t *)lv_event_get_user_data(e);
+-    if (!c || c->snap.scroll_lock || c->programmatic_scroll) {
++    if (!c || c->programmatic_scroll) {
+         return;
+     }
+     lv_event_code_t code = lv_event_get_code(e);
++    if (code == LV_EVENT_SCROLL) {
++        /* Render the actual viewport even while a custom snap owns the target.
++         * One latest intent, at most 50 admissions/s; terminal flush is immediate. */
++        if (!c->snap.scroll_lock) {
++            c->pending_focus = lab02_snap_index_from_scroll_x(lv_obj_get_scroll_x(c->scroll), c->item_count);
++            c->focus_pending = true;
++            if (esp_timer_get_time() >= c->next_focus_us) {
++                lab02_session_intent_focus(c->pending_focus);
++                sync_from_session(c, false);
++                c->focus_pending = false;
++                c->next_focus_us = esp_timer_get_time() + 20000;
++            }
++        }
++        rebind_pool(c);
++        return;
++    }
++    if (c->snap.scroll_lock) return;
+     if (code == LV_EVENT_SCROLL_BEGIN) {
+         lab02_session_intent_scroll_lock(true);
+         return;
+     }
+     if (code == LV_EVENT_SCROLL_END) {
+         int idx = lab02_snap_index_from_scroll_x(lv_obj_get_scroll_x(c->scroll), c->item_count);
+-        if (idx != c->focus_index && c->item_count > 0) {
++        c->focus_pending = false;
++        if (c->item_count > 0) {
+             lab02_session_intent_focus(idx);
+             sync_from_session(c, false);
+-            c->focus_index = idx;
++
+             int32_t target = lab02_snap_target_x_for_index(idx, c->item_count);
+             lab02_session_intent_scroll_lock(true);
+             lab02_snap_animate_to(c->scroll, &c->snap, target, idx,
+@@ -187,6 +207,7 @@
+     lv_obj_set_style_bg_opa(c->scroll, LV_OPA_TRANSP, 0);
+     lv_obj_set_style_border_width(c->scroll, 0, 0);
+     lv_obj_set_style_pad_all(c->scroll, 0, 0);
++    lv_obj_add_event_cb(c->scroll, scroll_event_cb, LV_EVENT_SCROLL, c);
+     lv_obj_add_event_cb(c->scroll, scroll_event_cb, LV_EVENT_SCROLL_BEGIN, c);
+     lv_obj_add_event_cb(c->scroll, scroll_event_cb, LV_EVENT_SCROLL_END, c);
+ 
+@@ -222,7 +243,7 @@
+     }
+     lab02_session_intent_focus(index);
+     sync_from_session(c, false);
+-    c->focus_index = index;
++    c->focus_pending = false;
+     int32_t target = lab02_snap_target_x_for_index(index, c->item_count);
+     if (animate) {
+         lab02_session_intent_scroll_lock(true);
+@@ -242,6 +263,11 @@
+     if (!c) {
+         return;
+     }
++    if (c->focus_pending && !c->snap.scroll_lock && esp_timer_get_time() >= c->next_focus_us) {
++        lab02_session_intent_focus(c->pending_focus);
++        c->focus_pending = false;
++        c->next_focus_us = esp_timer_get_time() + 20000;
++    }
+     if (sync_from_session(c, true)) {
+         rebind_pool(c);
+     }
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/snap_math.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/snap_math.c
+@@ -53,3 +53,22 @@
+     }
+     return idx;
+ }
++
++int lab02_window_first_index(int32_t scroll_x, int item_count)
++{
++    if (item_count <= 0) return 0;
++    /* Half-open intersections: a card ending exactly at the left edge is out. */
++    int32_t rel = scroll_x - LAB02_CARD_GAP - LAB02_CARD_W;
++    int first = rel < 0 ? 0 : (int)(rel / stride()) + 1;
++    if (first >= item_count) first = item_count - 1;
++    return first;
++}
++
++int lab02_window_last_index(int32_t scroll_x, int item_count)
++{
++    if (item_count <= 0) return -1;
++    int32_t rel = scroll_x + LAB02_LCD_W - 1 - LAB02_CARD_GAP;
++    int last = rel < 0 ? -1 : (int)(rel / stride());
++    if (last >= item_count) last = item_count - 1;
++    return last;
++}
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c
+@@ -53,6 +53,8 @@
+ static bool s_refresh_failed;
+ static bool s_transport_unreachable;
+ static int64_t s_next_recovery_us;
++static int s_pending_focus_page = -1;
++static int64_t s_focus_admission_us;
+ /* One immutable owner-held mutation page; never a borrowed mailbox pointer.
+  * Accepted fetches release their reservation before visual reconciliation. */
+ static lab02_sess_event_t s_pending_revision;
+@@ -195,10 +197,17 @@
+     }
+     int page = page_for_focus(focus, effective_page_size());
+     uint32_t op = 0;
+-    if (page > 0) {
+-        (void)enqueue_fetch(page - 1, &op, false);
+-    }
+-    (void)lab02_session_http_enqueue_fetch(page, &op);
++    /* Focus admission precedes speculative neighbors. Retain only the latest
++     * not-yet-admitted intent; a failed admitted operation is a separate policy. */
++    s_pending_focus_page = -1;
++    if (!lab02_session_http_enqueue_fetch(page, &op) &&
++        !(s_loaded_pages & (1U << page)) && !s_inflight_op[page] &&
++        !(s_failed_pages & (1U << page))) {
++        s_pending_focus_page = page;
++        s_focus_admission_us = esp_timer_get_time() + 20000;
++        lab02_trace_emit("focus_admission_pending", 0, page, NULL, NULL);
++    }
++    if (page > 0) (void)enqueue_fetch(page - 1, &op, false);
+     (void)lab02_session_http_enqueue_fetch(page + 1, &op);
+ }
+ 
+@@ -391,6 +400,8 @@
+     s_refresh_failed = false;
+     s_transport_unreachable = false;
+     s_next_recovery_us = 0;
++    s_pending_focus_page = -1;
++    s_focus_admission_us = 0;
+     if (s_has_pending_revision) {
+         lab02_trace_emit("model_pending_stale", s_pending_revision.op_id, 0, NULL, "reason=session_superseded");
+     }
+@@ -683,6 +694,17 @@
+         }
+         s_has_pending_revision = false;
+     }
++    if (s_pending_focus_page >= 0 && s_load_stage == LAB02_LOAD_READY &&
++        esp_timer_get_time() >= s_focus_admission_us) {
++        int page = s_pending_focus_page;
++        uint32_t op = 0;
++        if (page != page_for_focus(s_focus_index, effective_page_size()) ||
++            (s_loaded_pages & (1U << page)) || s_inflight_op[page] ||
++            (s_failed_pages & (1U << page)) || enqueue_fetch(page, &op, false)) {
++            s_pending_focus_page = -1;
++        }
++        s_focus_admission_us = esp_timer_get_time() + 20000;
++    }
+     if (s_http_mode && s_load_stage == LAB02_LOAD_READY && !s_scroll_locked) {
+         int64_t now = esp_timer_get_time();
+         if (!lab02_inbox_model_item(&s_model, s_focus_index) &&
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_pool.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_pool.h
+@@ -14,7 +14,7 @@
+ } lab02_card_pool_t;
+ 
+ void lab02_card_pool_init(lab02_card_pool_t *pool, lv_obj_t *scroll_parent);
+-void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t *pp, int focus,
++void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t *pp, int focus, int32_t scroll_x,
+                             uint32_t generation);
+ void lab02_card_pool_layout_positions(lab02_card_pool_t *pool);
+ 
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/carousel_controller.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/carousel_controller.h
+@@ -21,6 +21,9 @@
+     int focus_index;
+     int item_count;
+     bool programmatic_scroll;
++    bool focus_pending;
++    int pending_focus;
++    int64_t next_focus_us;
+ } lab02_carousel_t;
+ 
+ bool lab02_carousel_init(lab02_carousel_t *c);
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/layout.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/layout.h
+@@ -11,7 +11,7 @@
+ #define LAB02_CARD_GAP 12
+ #define LAB02_CARD_Y (LAB02_RIBBON_H + LAB02_HEADER_H)
+ #define LAB02_CARD_RADIUS 8
+-#define LAB02_CARD_POOL_SIZE 3
++#define LAB02_CARD_POOL_SIZE 4
+ #define LAB02_INBOX_MAX_ITEMS 256
+ #define LAB02_DEFAULT_PAGE_SIZE 16
+ 
+--- a/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap_math.h
++++ b/client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap_math.h
+@@ -11,6 +11,11 @@
+ /** Center-focused horizontal snap target (pixels), clamped to scroll range. */
+ int32_t lab02_snap_target_x_for_index(int index, int item_count);
+ 
++/** First in-range card intersecting [scroll_x, scroll_x + viewport width). */
++int lab02_window_first_index(int32_t scroll_x, int item_count);
++/** Last intersecting in-range card (same half-open viewport). */
++int lab02_window_last_index(int32_t scroll_x, int item_count);
++
+ /** Nearest item index from current scroll offset. */
+ int lab02_snap_index_from_scroll_x(int32_t scroll_x, int item_count);
+ 
+--- a/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c
++++ b/client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c
+@@ -55,17 +55,23 @@
+     lv_display_flush_ready(display);
+ }
+ 
++static void assert_window(void);
++
+ static void advance(unsigned ms)
+ {
+     for (unsigned i = 0; i < ms; i += 10) {
+         lv_tick_inc(10);
+         lv_timer_handler();
+         lab02_carousel_pump(&carousel);
+-    }
+-}
++        assert_window();
++    }
++}
++
++static void assert_window(void);
+ 
+ static void checkpoint(const char *name)
+ {
++    assert_window();
+     lv_obj_update_layout(carousel.screen);
+     lv_refr_now(NULL);
+     lab02_session_snapshot_t s = lab02_session_snapshot();
+@@ -159,6 +165,33 @@
+     return req;
+ }
+ 
++static lab02_card_view_t *view_at(int index)
++{
++    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++)
++        if (carousel.pool.views[i].bound_index == index) return &carousel.pool.views[i];
++    assert(!"visible binding missing"); return NULL;
++}
++
++static void assert_window(void)
++{
++    int x = lv_obj_get_scroll_x(carousel.scroll);
++    for (int i = 0; i < carousel.item_count; i++) {
++        int left = LAB02_CARD_GAP + i * (LAB02_CARD_W + LAB02_CARD_GAP);
++        if (left < x + LAB02_LCD_W && left + LAB02_CARD_W > x) {
++            lab02_card_view_t *v = view_at(i);
++            assert(!lv_obj_has_flag(v->root, LV_OBJ_FLAG_HIDDEN));
++            assert(v->state != LAB02_CARD_UNBOUND);
++            if (v->state == LAB02_CARD_BOUND) {
++                const lab02_inbox_item_t *item = lab02_page_provider_item(&carousel.provider, i);
++                assert(item && !strcmp(v->bound_message_id, item->message_id));
++            }
++        }
++    }
++    assert(lv_obj_get_child_count(carousel.scroll) == 5);
++    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++)
++        assert(lv_obj_get_child_count(carousel.pool.views[i].root) == 4);
++}
++
+ static void drag_to(int index)
+ {
+     lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_BEGIN, NULL);
+@@ -188,21 +221,31 @@
+     checkpoint("ready");
+ 
+     if (!strcmp(scenario, "fast-boundary")) {
++        drag_to(10); assert_window(); /* Entirely local materialized content. */
++        drag_to(40); assert_window(); /* Delayed multi-page jump. */
++        drag_to(2); assert_window(); /* Reversal while finger remains down. */
+         drag_to(20);
+         checkpoint("drag20");
+-        assert(lab02_session_snapshot().focus_index == 4);
++        /* Intermediate focus may be coalesced; end must commit latest intent. */
+         lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_END, NULL);
++        assert(lab02_session_snapshot().focus_index == 20);
+         advance(300); checkpoint("terminal");
++        lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_BEGIN, NULL);
++        lv_obj_scroll_by_raw(carousel.scroll, lv_obj_get_scroll_x(carousel.scroll) - 566, 0);
++        lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL, NULL);
++        assert_window();
++        assert(view_at(3) && view_at(4) && view_at(5) && view_at(6));
++        checkpoint("four-partial");
+     } else if (!strcmp(scenario, "delayed-focus")) {
+         lab02_carousel_set_focus(&carousel, 20, false);
+         checkpoint("missing");
+-        assert(carousel.pool.views[1].bound_index == 20);
+-        assert(!lv_obj_has_flag(carousel.pool.views[1].root, LV_OBJ_FLAG_HIDDEN));
+-        assert(carousel.pool.views[1].state == LAB02_CARD_LOADING);
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].sender_lab), "Loading message…"));
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].preview_lab), ""));
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].dur_lab), ""));
+-        assert(lv_obj_has_flag(carousel.pool.views[1].unread_dot, LV_OBJ_FLAG_HIDDEN));
++        assert(view_at(carousel.focus_index)->bound_index == 20);
++        assert(!lv_obj_has_flag(view_at(carousel.focus_index)->root, LV_OBJ_FLAG_HIDDEN));
++        assert(view_at(carousel.focus_index)->state == LAB02_CARD_LOADING);
++        assert(!strcmp(lv_label_get_text(view_at(carousel.focus_index)->sender_lab), "Loading message…"));
++        assert(!strcmp(lv_label_get_text(view_at(carousel.focus_index)->preview_lab), ""));
++        assert(!strcmp(lv_label_get_text(view_at(carousel.focus_index)->dur_lab), ""));
++        assert(lv_obj_has_flag(view_at(carousel.focus_index)->unread_dot, LV_OBJ_FLAG_HIDDEN));
+         submit(take_page(1), make_page(1, 16, 64, 0), false);
+         checkpoint("terminal");
+     } else if (!strcmp(scenario, "failed-page")) {
+@@ -213,20 +256,20 @@
+         lab02_carousel_pump(&carousel);
+         advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
+         checkpoint("neighbor-error");
+-        assert(carousel.pool.views[1].state == LAB02_CARD_BOUND);
+-        assert(carousel.pool.views[2].state == LAB02_CARD_ERROR);
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[2].sender_lab), "Message unavailable"));
++        assert(view_at(carousel.focus_index)->state == LAB02_CARD_BOUND);
++        assert(view_at(16)->state == LAB02_CARD_ERROR);
++        assert(!strcmp(lv_label_get_text(view_at(16)->sender_lab), "Message unavailable"));
+         lab02_carousel_set_focus(&carousel, 16, false);
+         req = take_page(1); /* Existing focus admission policy is unchanged. */
+         lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, req.session_id,
+             req.op_id, req.page_index, NULL, false);
+         lab02_carousel_pump(&carousel);
+         checkpoint("focused-error");
+-        assert(carousel.pool.views[1].state == LAB02_CARD_ERROR);
+-        assert(!lv_obj_has_flag(carousel.pool.views[1].root, LV_OBJ_FLAG_HIDDEN));
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].preview_lab), ""));
++        assert(view_at(carousel.focus_index)->state == LAB02_CARD_ERROR);
++        assert(!lv_obj_has_flag(view_at(carousel.focus_index)->root, LV_OBJ_FLAG_HIDDEN));
++        assert(!strcmp(lv_label_get_text(view_at(carousel.focus_index)->preview_lab), ""));
+         lab02_carousel_set_focus(&carousel, 40, false);
+-        assert(carousel.pool.views[1].state == LAB02_CARD_LOADING);
++        assert(view_at(carousel.focus_index)->state == LAB02_CARD_LOADING);
+         (void)take_page(2); /* Traversal still submits the newly focused page. */
+     } else if (!strcmp(scenario, "pool-bounds")) {
+         lv_obj_t *screen = carousel.screen, *scroll = carousel.scroll;
+@@ -239,32 +282,46 @@
+             assert(carousel.screen == screen && carousel.scroll == scroll);
+             for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++)
+                 assert(lv_obj_get_child_count(carousel.pool.views[i].root) == 4);
+-            assert(carousel.pool.views[2].state == LAB02_CARD_UNBOUND);
+-            assert(lv_obj_has_flag(carousel.pool.views[2].root, LV_OBJ_FLAG_HIDDEN));
++            assert_window();
++            const int stride = LAB02_CARD_W + LAB02_CARD_GAP;
++            const int offsets[] = {0, stride / 4, stride / 2, stride - 1};
++            for (int idx = 0; idx < n; idx++) for (unsigned j = 0; j < 4; j++) {
++                int x = idx * stride + offsets[j];
++                int max = LAB02_CARD_GAP + n * stride - LAB02_LCD_W;
++                if (x > max) x = max;
++                lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_BEGIN, NULL);
++                lv_obj_scroll_by_raw(carousel.scroll, lv_obj_get_scroll_x(carousel.scroll) - x, 0);
++                lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL, NULL);
++                assert_window();
++            }
++            lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_END, NULL);
++            assert(lab02_session_snapshot().focus_index == n - 2);
++            advance(300);
+             checkpoint("bounded");
+         }
+     } else if (!strcmp(scenario, "slow-bind")) {
+ #if CONFIG_LAB02_SLOW_BIND_MS > 0
+         unsigned stale = lab02_instrumentation_get()->stale_bind_drops;
+-        lab02_carousel_set_focus(&carousel, 6, false);
+-        uint32_t old_generation = carousel.pool.views[1].bind_generation;
++        lab02_carousel_set_focus(&carousel, 10, false);
++        uint32_t old_generation = view_at(carousel.focus_index)->bind_generation;
+         checkpoint("pending6");
+-        assert(carousel.pool.views[1].state == LAB02_CARD_LOADING);
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].preview_lab), ""));
++        assert(view_at(carousel.focus_index)->state == LAB02_CARD_LOADING);
++        assert(!strcmp(lv_label_get_text(view_at(carousel.focus_index)->preview_lab), ""));
+         advance(20);
+-        lab02_carousel_set_focus(&carousel, 7, false);
+-        assert(carousel.pool.views[1].bind_generation != old_generation);
+-        assert(lab02_instrumentation_get()->stale_bind_drops >= stale + 3);
++        lab02_carousel_set_focus(&carousel, 11, false);
++        assert(view_at(10)->bind_generation == old_generation);
++        assert(lab02_instrumentation_get()->stale_bind_drops >= stale);
+         checkpoint("superseded7");
+         advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
+         checkpoint("bound7");
+-        assert(carousel.pool.views[1].state == LAB02_CARD_BOUND);
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].sender_lab), "Sender 7"));
++        assert(view_at(carousel.focus_index)->state == LAB02_CARD_BOUND);
++        assert(!strcmp(lv_label_get_text(view_at(carousel.focus_index)->sender_lab), "Sender 11"));
+         lab02_carousel_set_focus(&carousel, 8, false);
++        lab02_card_view_t *old_view = view_at(8);
+         lab02_session_reset(); /* Timer cannot apply across a new session. */
+         advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
+-        assert(carousel.pool.views[1].state == LAB02_CARD_STALE);
+-        assert(!strcmp(lv_label_get_text(carousel.pool.views[1].preview_lab), ""));
++        assert(old_view->state == LAB02_CARD_STALE);
++        assert(!strcmp(lv_label_get_text(old_view->preview_lab), ""));
+ #else
+         assert(!"slow-bind scenario requires production slow-bind compile branch");
+ #endif
+@@ -287,16 +344,16 @@
+         lab02_session_intent_scroll_lock(true);
+         checkpoint("loading-held");
+         int32_t held_x = lv_obj_get_scroll_x(carousel.scroll);
+-        lv_obj_t *root = carousel.pool.views[1].root;
+-        assert(carousel.pool.views[1].state == LAB02_CARD_LOADING);
++        lv_obj_t *root = view_at(20)->root;
++        assert(view_at(20)->state == LAB02_CARD_LOADING);
+         submit(take_page(1), make_page(1, 16, 64, 0), false);
+         advance(1200);
+         checkpoint("bound-held");
+         assert(lab02_session_snapshot().scroll_locked);
+         assert(lv_obj_get_scroll_x(carousel.scroll) == held_x);
+-        assert(carousel.pool.views[1].root == root);
+-        assert(carousel.pool.views[1].state == LAB02_CARD_BOUND);
+-        assert(!strcmp(carousel.pool.views[1].bound_message_id, "m20"));
++        assert(view_at(20)->root == root);
++        assert(view_at(carousel.focus_index)->state == LAB02_CARD_BOUND);
++        assert(!strcmp(view_at(20)->bound_message_id, "m20"));
+         lab02_session_intent_scroll_lock(false);
+     } else if (!strcmp(scenario, "page-during-snap")) {
+         lab02_carousel_set_focus(&carousel, 20, true);
+@@ -312,9 +369,12 @@
+         for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++) {
+             assert(carousel.pool.views[i].root == roots[i]);
+ #if CONFIG_LAB02_SLOW_BIND_MS == 0
+-            assert(carousel.pool.views[i].state == LAB02_CARD_BOUND);
++            if (carousel.pool.views[i].bound_index >= 0)
++                assert(carousel.pool.views[i].state == LAB02_CARD_BOUND);
+ #else
+-            assert(carousel.pool.views[i].state == LAB02_CARD_LOADING);
++            if (carousel.pool.views[i].bound_index >= 0)
++                assert(carousel.pool.views[i].state == LAB02_CARD_LOADING ||
++                       carousel.pool.views[i].state == LAB02_CARD_BOUND);
+ #endif
+         }
+         checkpoint("arrival");
+--- a/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
++++ b/client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c
+@@ -4,6 +4,7 @@
+ #include "esp_timer.h"
+ 
+ #include <pthread.h>
++#include <stdbool.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -19,7 +20,6 @@
+     unsigned char *items;
+ };
+ 
+-#ifdef LAB02_REAL_HTTP_PROVIDER
+ static QueueHandle_t s_host_fetch_queue;
+ unsigned lab02_host_fetch_queue_depth(void)
+ {
+@@ -28,7 +28,6 @@
+     pthread_mutex_unlock(&s_host_fetch_queue->mu);
+     return depth;
+ }
+-#endif
+ 
+ QueueHandle_t xQueueCreate(unsigned length, size_t item_size)
+ {
+@@ -40,9 +39,7 @@
+     q->item_size = item_size;
+     pthread_mutex_init(&q->mu, NULL);
+     pthread_cond_init(&q->changed, NULL);
+-#ifdef LAB02_REAL_HTTP_PROVIDER
+     s_host_fetch_queue = q;
+-#endif
+     return q;
+ }
+ 
+@@ -101,8 +98,14 @@
+ SemaphoreHandle_t xSemaphoreCreateBinary(void)
+ { return xSemaphoreCreateCounting(1, 0); }
+ 
++static SemaphoreHandle_t s_host_post_mutex;
+ SemaphoreHandle_t xSemaphoreCreateMutex(void)
+-{ return xSemaphoreCreateCounting(1, 1); }
++{ s_host_post_mutex = xSemaphoreCreateCounting(1, 1); return s_host_post_mutex; }
++void lab02_host_hold_admission(bool hold)
++{
++    if (hold) { if (xSemaphoreTake(s_host_post_mutex, 0) != pdTRUE) abort(); }
++    else xSemaphoreGive(s_host_post_mutex);
++}
+ 
+ BaseType_t xSemaphoreTake(SemaphoreHandle_t sem, uint32_t ticks)
+ {
+--- a/client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c
++++ b/client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c
+@@ -4,6 +4,9 @@
+ #include <pthread.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <time.h>
++extern void lab02_host_hold_admission(bool hold);
++extern unsigned lab02_host_fetch_queue_depth(void);
+ 
+ static lab02_page_provider_t provider;
+ static lab02_inbox_page_t page;
+@@ -67,6 +70,26 @@
+         assert(lab02_session_metrics().apply_ok == 1);
+         assert(lab02_session_metrics().fetch_event_dropped == 0);
+         assert(lab02_session_snapshot().transport_unreachable);
++    } else if (!strcmp(argv[1], "focus-full") || !strcmp(argv[1], "focus-busy")) {
++        start(true); lab02_fetch_req_t admitted[8]; admitted[0] = take(1);
++        bool full = !strcmp(argv[1], "focus-full");
++        if (full) {
++            for (int i = 1; i < 8; i++) {
++                assert(lab02_session_http_enqueue_fetch(i + 1, NULL)); admitted[i] = take(i + 1);
++            }
++        } else lab02_host_hold_admission(true);
++        lab02_session_intent_scroll_lock(true);
++        lab02_session_intent_focus(144);
++        lab02_session_intent_focus(176); /* Only page 11 may be retained. */
++        assert(lab02_session_snapshot().focus_index == 176);
++        if (full) { deliver(admitted[0], false, 1); pump(1); }
++        else lab02_host_hold_admission(false);
++        struct timespec delay = {.tv_nsec = 25000000}; nanosleep(&delay, NULL);
++        pump(1); lab02_fetch_req_t latest = take(11);
++        assert(latest.page_index == 11 && latest.revision == 1);
++        pump(10); assert(lab02_host_fetch_queue_depth() == 0);
++        assert(lab02_session_snapshot().focus_index == 176);
++        assert(lab02_session_snapshot().scroll_locked);
+     } else if (!strcmp(argv[1], "initial-timeout")) {
+         lab02_fetch_req_t boot = start(false); transport_burst();
+         lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, boot.session_id, boot.op_id, 0, NULL, true);
+--- a/scripts/tests/test_lab02_carousel_native.py
++++ b/scripts/tests/test_lab02_carousel_native.py
+@@ -67,11 +67,11 @@
+     pixels = (artifact_dir / "fast-boundary-drag20.ppm").read_bytes().split(b"\n", 3)[3]
+     card_rgb = bytes.fromhex("1c2228")
+     card_pixels = sum(pixels[i:i + 3] == card_rgb for i in range(0, len(pixels), 3))
+-    if card_pixels != 0:
+-        raise AssertionError("baseline fast traversal unexpectedly retained a visible card surface")
++    if card_pixels == 0:
++        raise AssertionError("continuous traversal lost all visible card surfaces")
+     (artifact_dir / "pixel-observations.json").write_text(json.dumps({
+         "fast-boundary-drag20": {"card_background_pixels": card_pixels,
+-                                 "observed": "no card surface in rendered viewport"}}, indent=2) + "\n")
++                                 "observed": "continuous card surfaces in rendered viewport"}}, indent=2) + "\n")
+     return artifact_dir
+ 
+ 
+--- a/scripts/tests/test_lab02_model_native.py
++++ b/scripts/tests/test_lab02_model_native.py
+@@ -54,7 +54,7 @@
+                 Path(artifact).mkdir(parents=True, exist_ok=True)
+                 (Path(artifact) / "compile-command.json").write_text(json.dumps(command, indent=2))
+             subprocess.run(command, check=True, capture_output=True, text=True)
+-            for scenario, terminal_count in (("initial-saturation", 9), ("initial-timeout", 1), ("normal-saturation", 9),
++            for scenario, terminal_count in (("focus-full", 2), ("focus-busy", 1), ("initial-saturation", 9), ("initial-timeout", 1), ("normal-saturation", 9),
+                                              ("pending-mutation", 6), ("pending-session-reset", 4), ("newer-operation", 4), ("response-old-revision", 3), ("stale-session", 3)):
+                 with self.subTest(scenario=scenario):
+                     result = subprocess.run([str(output), scenario], capture_output=True, text=True, timeout=5)
+--- a/client/labs/lab-02-bounded-inbox/README.md
++++ b/client/labs/lab-02-bounded-inbox/README.md
+@@ -1,6 +1,6 @@
+ # LAB-02 — Bounded inbox and card recycling (Phase A)
+ 
+-ESP-IDF lab firmware for **three** reusable message card views, local or HTTP paging, horizontal snap, and bind generations.
++ESP-IDF lab firmware for **four** reusable message card views, local or HTTP paging, horizontal snap, and bind generations.
+ 
+ ## Boot marker
+ 
+@@ -67,7 +67,7 @@
+ |------|--------|
+ | Local fixtures 8/16/64/256 embedded | Done |
+ | Metadata page model (no N widgets for large fixtures) | Done |
+-| Recycle carousel (3 views) + snap | Done — touch scroll on hardware |
++| Recycle carousel (4 views) + snap | Done — touch scroll on hardware |
+ | Bind generation + stale drop counter | Done |
+ | Eager 16-widget path | Done (Kconfig) |
+ | `page_provider_http` | Phase B (`fl.inbox-page/2`, async apply off snap) |
+@@ -84,12 +84,25 @@
+ 
+ ## Related docs
+ 
+-- [Implementation outline](../../docs/labs/lab-02-implementation-outline.md)
+-- [Assistant guide](../../docs/labs/assistant-guide.md)
++- [Implementation outline](../../../docs/labs/lab-02-implementation-outline.md)
++- [Assistant guide](../../../docs/labs/assistant-guide.md)
+ 
+ C3a page-arrival contract: ordinary pages apply during drag/snap without moving
+ the viewport; newer page-zero mutations terminalize their fetch and retain one
+ bounded immutable snapshot until motion ends. Applied and pending revisions are
+ separate. See [session architecture](../../../docs/labs/lab-02-session-architecture.md)
+ and [owner decisions](../../../docs/labs/evidence/lab-02/reviews/carousel-remediation/execution.md).
+-Three-view geometry and F002/F003/F006 remain outside this unit.
++C3b continuously covers the viewport with four roots (20 card nodes including
++four children per root), independent of fixture size. Geometry remains 320/132/12;
++[APP-O-05](../../../docs/labs/evidence/lab-02/reviews/carousel-remediation/execution.md)
++authorizes four views. [Carousel requirements](../../../docs/labs/lab-02-carousel-remediation-plan.md)
++and [coding standard](../../../docs/standards/client-application-coding-standards.md)
++govern this path. Focus intents use one latest slot and a 20 ms engineering
++submission interval (50/s plus immediate gesture-end flush), not a product timing
++gate. Unadmitted focus fetches retry admission at most once per 20 ms, stop when
++admitted/materialized/failed/superseded, and never allocate another intent queue.
++Input updates four bounded roots, retaining overlapping identities and delayed
++bind timers. Snap target intent stays owned by the session during animation while
++visible roots follow actual scroll geometry. F003 snap supersession and F006
++failed-page retry remain separate. Target memory/input/timing measurements and
++numeric product gates remain OPEN for C5/C6.
+--- a/docs/labs/lab-02-session-architecture.md
++++ b/docs/labs/lab-02-session-architecture.md
+@@ -9,7 +9,7 @@
+ 
+ | Path | Owner | Waits / bound |
+ |---|---|---|
+-| Scroll, snap, three card views, status label | LVGL presentation | No network or sleep; one session completion and at most three changed cards per pump |
++| Scroll, snap, four card views, status label | LVGL presentation | No network or sleep; one session completion and at most four changed cards per pump |
+ | Focus ID/index, revision, load stage, page state | `lab02_session` | Single writer; queue operations are nonblocking from presentation |
+ | Wi-Fi join and HTTP | Boot and fetch workers | Wi-Fi join 15 s; HTTP call timeout 3 s and response-read deadline 12 s; response cap 16 KiB |
+ | JSON parse | HTTP worker | Parses at most one 16-item page into a bounded typed result |
+@@ -81,7 +81,7 @@
+ The `S-delay` injection uses a timer and drops stale delayed bindings without
+ sleeping under the LVGL lock. No Level 2 scene replacement occurs after init.
+ 
+-Design limits: three live cards; at most 256 metadata entries, eight queued
++Design limits: four live cards; at most 256 metadata entries, eight queued
+ fetches, eight admitted normal terminals plus one boot terminal, one active HTTP fetch, a 16 KiB response buffer, and 16 items copied
+ per page apply. Target measurements for live node count, cJSON transient heap,
+ largest free block, frame p95/p99, and input-to-focus latency remain **OPEN**
+@@ -140,3 +140,24 @@
+ viewed ID where present and the existing next/previous-if-last removal policy.
+ The three-view geometry is unchanged in C3a; APP-O-05's four-view implementation
+ belongs to C3b. Initial failure APP-O-04 and retry changes belong to F006.
++
++## C3b continuous bounded viewport
++
++APP-O-05 keeps 320px viewport, 132px cards and 12px gaps with four roots /
++20 card nodes. `layout.h` supplies geometry to snap and window math. The first
++card is selected by half-open viewport intersection, not a focus offset; four
++roots cover the narrow outer intersections near half-stride. SCROLL performs
++bounded presentation recycling during gesture and custom animation. Roots that
++retain index/session/revision/ID/state keep their binding and pending timer;
++focus styling is Level 0, vacated root content replacement is bounded Level 1.
++No scene/scroll tree is rebuilt and no automatic item copy is added to the UI stack.
++
++The session remains domain-focus writer. The presentation holds one latest focus
++intent with a 20ms submission interval, flushed on SCROLL_END; animation preserves
++the session's target focus while presenting the actual viewport. Focus fetch
++admission precedes speculative neighbors. One latest not-yet-admitted page retries
++nonblocking admission at most once per 20ms while motion continues; admission,
++materialization, failure or focus supersession stops it. Queue-full/busy and
++`focus_admission_pending` are observable. This does not implement F006 failed-page
++retry or F003 snap cancellation. The interval is an engineering bound; numeric
++product gates and target stack/memory/input timings remain OPEN in C5/C6.

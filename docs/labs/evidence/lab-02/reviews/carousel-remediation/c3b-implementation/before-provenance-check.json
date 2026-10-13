@@ -1,0 +1,14 @@
+{
+  "client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c": true,
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c": true,
+  "client/labs/lab-02-bounded-inbox/components/lab02/snap_math.c": true,
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": true,
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_pool.h": true,
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/carousel_controller.h": true,
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/layout.h": true,
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap_math.h": true,
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c": true,
+  "client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c": true,
+  "client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c": true,
+  "scripts/tests/test_lab02_carousel_native.py": true
+}

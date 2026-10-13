@@ -1,0 +1,139 @@
+{
+  "normal": {
+    "pool-bounds.log": {
+      "ids": 4,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "completed"
+      ]
+    },
+    "push-during-snap.log": {
+      "ids": 5,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "completed",
+        "no_motion",
+        "reversed",
+        "superseded"
+      ]
+    },
+    "reversal.log": {
+      "ids": 12,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "animation_deleted",
+        "completed",
+        "no_motion",
+        "reversed",
+        "scroller_deleted",
+        "session_changed",
+        "superseded"
+      ]
+    },
+    "remove-during-snap.log": {
+      "ids": 5,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "completed",
+        "no_motion",
+        "reversed",
+        "superseded"
+      ]
+    },
+    "page-during-snap.log": {
+      "ids": 1,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "completed"
+      ]
+    },
+    "fast-boundary.log": {
+      "ids": 1,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "no_motion"
+      ]
+    }
+  },
+  "slow": {
+    "pool-bounds.log": {
+      "ids": 4,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "completed"
+      ]
+    },
+    "push-during-snap.log": {
+      "ids": 5,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "completed",
+        "no_motion",
+        "reversed",
+        "superseded"
+      ]
+    },
+    "reversal.log": {
+      "ids": 12,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "animation_deleted",
+        "completed",
+        "no_motion",
+        "reversed",
+        "scroller_deleted",
+        "session_changed",
+        "superseded"
+      ]
+    },
+    "remove-during-snap.log": {
+      "ids": 5,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "completed",
+        "no_motion",
+        "reversed",
+        "superseded"
+      ]
+    },
+    "page-during-snap.log": {
+      "ids": 1,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "completed"
+      ]
+    },
+    "fast-boundary.log": {
+      "ids": 1,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "no_motion"
+      ]
+    }
+  },
+  "adversarial": {
+    "run.log": {
+      "ids": 4,
+      "exactly_once": true,
+      "immutable_fields": true,
+      "reasons": [
+        "animation_deleted",
+        "completed",
+        "scroller_deleted",
+        "superseded"
+      ]
+    }
+  }
+}

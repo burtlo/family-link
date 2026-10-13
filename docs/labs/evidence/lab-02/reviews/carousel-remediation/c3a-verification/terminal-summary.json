@@ -1,0 +1,42 @@
+{
+  "response-old-revision.log": {
+    "terminals": 3,
+    "unique": true
+  },
+  "normal-saturation.log": {
+    "terminals": 9,
+    "unique": true
+  },
+  "pending-session-reset.log": {
+    "terminals": 4,
+    "unique": true
+  },
+  "newer-operation.log": {
+    "terminals": 4,
+    "unique": true
+  },
+  "initial-saturation.log": {
+    "terminals": 9,
+    "unique": true
+  },
+  "pending-mutation.log": {
+    "terminals": 6,
+    "unique": true
+  },
+  "initial-timeout.log": {
+    "terminals": 1,
+    "unique": true
+  },
+  "stale-session.log": {
+    "terminals": 3,
+    "unique": true
+  },
+  "budget-lower-pending.log": {
+    "terminals": 11,
+    "unique": true
+  },
+  "latest-focus-stable-id.log": {
+    "terminals": 2,
+    "unique": true
+  }
+}

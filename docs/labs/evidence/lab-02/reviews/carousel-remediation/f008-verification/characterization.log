@@ -1,0 +1,7 @@
+SESSION_TRACE event=fetch_delivery_retained op_id=1 page=0 message=- 
+SESSION_TRACE event=io_start_terminal op_id=0 page=0 message=- session=1 kind=http_startup outcome=failure reason=worker_unavailable
+SESSION_TRACE event=fetch_fail op_id=1 page=0 message=- 
+SESSION_TRACE event=fetch_terminal op_id=1 page=0 message=- session=1 revision=0 attempt=1 outcome=failure elapsed_us=80
+RETRY_CONTENTION blocked while shared admission lock held for 100ms
+SESSION_TRACE event=owner_retry_initial op_id=2 page=0 message=- attempt=2 op_id=2
+RETRY_CONTENTION returned only after release PASS

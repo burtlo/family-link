@@ -1,0 +1,29 @@
+[
+  [
+    "python3",
+    "-m",
+    "unittest",
+    "scripts.tests.test_lab02_model_native",
+    "scripts.tests.test_lab02_architecture",
+    "scripts.tests.test_lab02_host",
+    "-v"
+  ],
+  [
+    "python3",
+    "scripts/tests/test_lab02_carousel_native.py",
+    "--artifact-dir",
+    "/tmp/lab02-f008-verify/normal"
+  ],
+  [
+    "python3",
+    "scripts/tests/test_lab02_carousel_native.py",
+    "--artifact-dir",
+    "/tmp/lab02-f008-verify/slow120",
+    "--slow-bind-ms",
+    "120"
+  ],
+  [
+    "python3",
+    "/tmp/lab02-f008-verify/build_boundary.py"
+  ]
+]

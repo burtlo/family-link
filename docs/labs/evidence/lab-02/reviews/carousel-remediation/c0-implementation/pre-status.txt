@@ -1,0 +1,7 @@
+ M Makefile
+ M client/labs/lab-02-bounded-inbox/components/lab02/lab_harness.c
+ M client/labs/lab-02-bounded-inbox/components/lab02_platform/wifi.c
+ M scripts/lab_host.py
+ M scripts/lab_registry.py
+ M scripts/tests/test_lab_host.py
+?? docs/labs/evidence/lab-02/reviews/carousel-remediation/

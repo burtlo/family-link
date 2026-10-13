@@ -1,0 +1,30 @@
+TERMINAL_SCENARIO pending-mutation
+SESSION_TRACE event=io_start_terminal op_id=0 page=0 message=- session=1 kind=http_startup outcome=success reason=worker_available
+SESSION_TRACE event=fetch_delivery_retained op_id=0 page=0 message=- 
+SESSION_TRACE event=page_apply op_id=0 page=0 message=m0 op_id=0 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_admitted op_id=1 page=1 message=- 
+SESSION_TRACE event=fetch_terminal op_id=0 page=0 message=- session=1 revision=0 attempt=1 outcome=success elapsed_us=13
+SESSION_TRACE event=fetch_admitted op_id=2 page=0 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=2 page=0 message=- 
+SESSION_TRACE event=model_pending op_id=2 page=0 message=- revision=2 applied_revision=1 reason=motion_reconciliation_pending
+SESSION_TRACE event=fetch_terminal op_id=2 page=0 message=- session=1 revision=1 attempt=1 outcome=success elapsed_us=4
+SESSION_TRACE event=fetch_delivery_retained op_id=1 page=1 message=- 
+SESSION_TRACE event=page_apply op_id=1 page=1 message= op_id=1 revision=1 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_terminal op_id=1 page=1 message=- session=1 revision=1 attempt=1 outcome=success elapsed_us=11
+SESSION_TRACE event=fetch_admitted op_id=3 page=2 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=3 page=2 message=- 
+SESSION_TRACE event=fetch_fail op_id=3 page=2 message=- 
+SESSION_TRACE event=fetch_terminal op_id=3 page=2 message=- session=1 revision=1 attempt=1 outcome=failure elapsed_us=2
+SESSION_TRACE event=fetch_admitted op_id=4 page=3 message=- 
+SESSION_TRACE event=fetch_delivery_retained op_id=4 page=3 message=- 
+SESSION_TRACE event=apply_stale op_id=4 page=3 message=- new_revision_needs_page0
+SESSION_TRACE event=fetch_admitted op_id=5 page=0 message=- 
+SESSION_TRACE event=fetch_terminal op_id=4 page=3 message=- session=1 revision=1 attempt=1 outcome=stale elapsed_us=3
+SESSION_TRACE event=fetch_delivery_retained op_id=5 page=0 message=- 
+SESSION_TRACE event=model_pending_stale op_id=2 page=0 message=- reason=newer_revision_superseded
+SESSION_TRACE event=model_pending op_id=5 page=0 message=- revision=3 applied_revision=1 reason=motion_reconciliation_pending
+SESSION_TRACE event=fetch_terminal op_id=5 page=0 message=- session=1 revision=1 attempt=1 outcome=success elapsed_us=4
+SESSION_TRACE event=page_apply op_id=5 page=0 message=m0 op_id=5 revision=3 snap_id=0 fetch_snap_id=0 page_receipt_id=- run_id=- server_completed_ns=0
+SESSION_TRACE event=fetch_admitted op_id=6 page=1 message=- 
+SESSION_TRACE event=fetch_delivery_rejected op_id=1 page=1 message=- duplicate_or_unadmitted
+TERMINAL_RESULT PASS

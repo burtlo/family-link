@@ -1,0 +1,13 @@
+{
+  "native": "LAB02_TERMINAL_ARTIFACT_DIR=/tmp/lab02-c3c-verify/native LAB02_HTTP_STARTUP_ARTIFACT_DIR=/tmp/lab02-c3c-verify/startup python3 -m unittest scripts.tests.test_lab02_model_native scripts.tests.test_lab02_architecture",
+  "normal": "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3c-verify/normal",
+  "slow": "python3 scripts/tests/test_lab02_carousel_native.py --artifact-dir /tmp/lab02-c3c-verify/slow --slow-bind-ms 120",
+  "baseline_configure": "cmake -S /tmp/lab02-c3c-verify/baseline -B /tmp/lab02-c3c-verify/baseline/build -DCJSON_DIR=/Users/lynnfrank/esp/esp-idf/components/json/cJSON",
+  "baseline_build": "cmake --build /tmp/lab02-c3c-verify/baseline/build -j 8",
+  "baseline_run": "/tmp/lab02-c3c-verify/baseline/build/lab02_c0 reversal /tmp/lab02-c3c-verify/baseline",
+  "adversarial_configure": "cmake -S /tmp/lab02-c3c-verify/adversarial -B /tmp/lab02-c3c-verify/adversarial/build -DCJSON_DIR=/Users/lynnfrank/esp/esp-idf/components/json/cJSON",
+  "adversarial_build": "cmake --build /tmp/lab02-c3c-verify/adversarial/build -j 8",
+  "adversarial_run": "/tmp/lab02-c3c-verify/adversarial/build/lab02_c0 verify-boundary /tmp/lab02-c3c-verify/adversarial",
+  "firmware": "Assessed existing final actual scripted HTTP firmware build; not repeated",
+  "images": "sips PPM\u2192PNG; view_image pointer-reversal.png and remove-last.png"
+}

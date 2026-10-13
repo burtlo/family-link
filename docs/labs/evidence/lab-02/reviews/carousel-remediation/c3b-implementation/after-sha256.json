@@ -1,0 +1,17 @@
+{
+  "client/labs/lab-02-bounded-inbox/components/lab02/card_pool.c": "8d077878f4770a7638a7b1d7ea1cf37c77cf4b7ac8895ba815bfd347c1c2280e",
+  "client/labs/lab-02-bounded-inbox/components/lab02/carousel_controller.c": "4fa7971d3c7ff20703d6049c3fae2204fd0552e5dec6a3597eea159665e46cb6",
+  "client/labs/lab-02-bounded-inbox/components/lab02/snap_math.c": "cfbf0d0259743024f7f7c6058e955be55612d838183cfa7641996da4dbc97f3d",
+  "client/labs/lab-02-bounded-inbox/components/lab02/lab02_session.c": "1121a3dcd386182c8ef2324f5d792810384d411406441650063b5c5de0034b4d",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/card_pool.h": "217a83086cb199d50fa69de6c3fa55d685aaf6733de73532e18725ad7028142d",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/carousel_controller.h": "d9a492a01f5f9cf10710a7ebd5284667b6cfbff8d881786d1b1f856eba1366e6",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/layout.h": "9a1d173f119a0bf8b651bf13305c18b3d3ca0671ea3c43f80f5037baf9b44fb3",
+  "client/labs/lab-02-bounded-inbox/components/lab02/include/lab02/snap_math.h": "787193cbf91186f985111c966584dc3c55c7dfc6fb869f698b943416c25f9e75",
+  "client/labs/lab-02-bounded-inbox/tests/c0_runtime/test_carousel_baseline.c": "5c95905e032a63619c7eac3cba0c8a2549c74abc19aecef5fc8f381c259541c4",
+  "client/labs/lab-02-bounded-inbox/tests/session_host_stubs.c": "24c9a8d69807f9daf46d6174e9d375654ec941eda3af948d1a8cf44ad4688d35",
+  "client/labs/lab-02-bounded-inbox/tests/test_terminal_native.c": "ed95b0dd59dab4164125b15a2e3dc1bf0e22f5fc63da5a74d60ef2efed185523",
+  "scripts/tests/test_lab02_carousel_native.py": "82583b0e6c4407a4fa533e0e3c1293cfcf9bbb1a3483871a621efcbc77269d5f",
+  "scripts/tests/test_lab02_model_native.py": "2f6c8ea3cd6914b41a503759972c51ca18693aff7fa21c4deb1557ef66812a9e",
+  "client/labs/lab-02-bounded-inbox/README.md": "9d666446eff517365563f18f8e9c5146ab44d8bc7352665a9a744ba1b117df8c",
+  "docs/labs/lab-02-session-architecture.md": "f00615dd1e56d6346c36b1a5628e19b8a055889205b2b12d6fb30830a7ff0425"
+}
