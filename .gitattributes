@@ -1,0 +1,10 @@
+# Store text files with consistent LF line endings across Windows and macOS.
+* text=auto eol=lf
+
+# Windows command scripts conventionally use CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets must not be line-ending normalized.
+*.png binary
+*.wav binary
