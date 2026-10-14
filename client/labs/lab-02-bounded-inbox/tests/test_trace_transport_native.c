@@ -70,6 +70,10 @@ int main(void)
     trace_host_set_task_create_failure(false);
     unsigned creates = trace_host_task_create_count();
     require_true(lab02_trace_start(), "successful task creation");
+    require_true(trace_host_last_task_stack_words() == LAB02_TRACE_TASK_STACK_WORDS,
+                 "trace task stack depth wired");
+    require_true(LAB02_TRACE_TASK_STACK_WORDS >= 4096u,
+                 "trace task stack budget");
     require_true(lab02_trace_start(), "repeated start");
     require_true(trace_host_task_create_count() == creates + 1u,
                  "repeated start created one task");

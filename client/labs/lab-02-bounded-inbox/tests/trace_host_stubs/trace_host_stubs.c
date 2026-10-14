@@ -11,6 +11,7 @@
 
 static bool s_task_create_failure;
 static unsigned s_task_create_count;
+static unsigned s_last_task_stack_words;
 
 static void *run_task(void *arg)
 {
@@ -88,7 +89,7 @@ TaskHandle_t xTaskCreateStatic(TaskFunction_t task, const char *name, uint32_t s
                                StaticTask_t *task_buffer)
 {
     (void)name;
-    (void)stack_words;
+    s_last_task_stack_words = stack_words;
     (void)priority;
     (void)stack;
     s_task_create_count++;
@@ -113,6 +114,11 @@ void trace_host_set_task_create_failure(bool fail)
 unsigned trace_host_task_create_count(void)
 {
     return s_task_create_count;
+}
+
+unsigned trace_host_last_task_stack_words(void)
+{
+    return s_last_task_stack_words;
 }
 
 void vTaskDelete(TaskHandle_t task)

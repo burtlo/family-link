@@ -16,7 +16,9 @@ extern "C" {
 #define LAB02_TRACE_RECEIPT_CAP 33u
 #define LAB02_TRACE_RUN_ID_CAP 33u
 #define LAB02_TRACE_LINE_CAP 1024u
-#define LAB02_TRACE_TASK_STACK_WORDS 2048u
+/* ESP-IDF passes this to xTaskCreateStatic in StackType_t units; Xtensa
+ * StackType_t is byte-sized, so this reserves 4096 bytes on the target. */
+#define LAB02_TRACE_TASK_STACK_WORDS 4096u
 
 enum {
     LAB02_TRACE_FIELD_SESSION_ID = 1u << 0,
