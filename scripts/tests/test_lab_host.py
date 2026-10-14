@@ -251,6 +251,79 @@ class LabHostTargetSelectionTests(unittest.TestCase):
         self.assertEqual(run.call_args.kwargs["mode"], "manual")
         self.assertEqual(run.call_args.kwargs["build_variant"], "phaseb")
 
+    def test_lab02_capture_uses_generic_serial_path_not_canonical_runner(self):
+        from lab_host import main
+
+        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+        with patch(
+            "lab_host.sys.argv",
+            ["lab_host.py", "capture", "lab02", "--no-flash", "--run-id", "capture-test"],
+        ), patch("lab_host.ProjectConfig", return_value=self.config), patch(
+            "lab_host.resolve_run_target", return_value=target
+        ), patch("lab_host.capture_lab", return_value=self.temp_path / "serial.txt") as capture, patch(
+            "lab_host.run_canonical"
+        ) as canonical, patch("lab_host.ensure_lab_built") as build, patch(
+            "lab_host.load_lab02_workflow_config"
+        ) as workflow:
+            self.assertEqual(main(), 0)
+
+        canonical.assert_not_called()
+        build.assert_not_called()
+        workflow.assert_not_called()
+        capture.assert_called_once_with(
+            self.config,
+            "lab02",
+            kit="A",
+            port="/dev/a",
+            variant=None,
+            seconds=120,
+            flash=False,
+            run_id="capture-test",
+            action="capture",
+            emit_operator_help=True,
+            target=target,
+        )
+
+    def test_lab02_scripted_and_eager_runs_stay_on_canonical_runner(self):
+        from lab_host import main
+
+        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+        for variant in ("scripted-phaseb", "eager"):
+            with self.subTest(variant=variant), patch(
+                "lab_host.sys.argv",
+                ["lab_host.py", "run", "lab02", "--variant", variant, "--no-flash"],
+            ), patch("lab_host.ProjectConfig", return_value=self.config), patch(
+                "lab_host.run_canonical", return_value=0
+            ) as canonical, patch("lab_host.capture_lab") as capture:
+                self.assertEqual(main(), 0)
+
+            canonical.assert_called_once()
+            self.assertEqual(canonical.call_args.kwargs["build_variant"], variant)
+            capture.assert_not_called()
+
+    def test_phaseb_flash_refreshes_dynamic_deployment_defaults(self):
+        from lab_host import main
+
+        target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
+        with patch(
+            "lab_host.sys.argv",
+            ["lab_host.py", "flash", "lab02", "--variant", "phaseb", "--kit", "A"],
+        ), patch("lab_host.ProjectConfig", return_value=self.config), patch(
+            "lab_host.resolve_run_target", return_value=target
+        ), patch("lab_host.ensure_lab_built", return_value=self.temp_path) as ensure, patch(
+            "lab_host.revalidate_run_target", return_value="/dev/a"
+        ), patch("lab_host.flash_lab_build") as flash:
+            self.assertEqual(main(), 0)
+        ensure.assert_called_once_with(
+            self.config,
+            "lab02",
+            "phaseb",
+            kit="A",
+            port="/dev/a",
+            target=target,
+        )
+        flash.assert_called_once_with(self.config, self.temp_path, "/dev/a")
+
     def test_capture_revalidates_frozen_identity_before_flash_write(self):
         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
         with patch("lab_host.print_run_start"), patch("lab_host.print_operator_help"), patch(

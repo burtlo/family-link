@@ -844,7 +844,7 @@ def main() -> int:
             var = resolve_variant(spec, variant)
             flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
             backend = getattr(args, "backend", "managed-http")
-            if args.lab == "lab02":
+            if args.action == "run" and args.lab == "lab02":
                 managed = lab02_managed_canonical_plan(var.name, backend)
                 if managed is not None:
                     mode, build_variant = managed

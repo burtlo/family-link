@@ -5,7 +5,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from lab_registry import SNAPSHOT_DOCUMENT, build_catalog, get_lab, load_registry, resolve_variant
+from lab_registry import (
+    SNAPSHOT_DOCUMENT,
+    build_catalog,
+    get_lab,
+    load_registry,
+    operator_help_lines,
+    resolve_variant,
+)
 from project_config import ROOT
 
 SCRIPTS = Path(__file__).resolve().parents[1]
@@ -28,6 +35,12 @@ class LabRegistryTests(unittest.TestCase):
         self.assertEqual(recycle.build_dir, Path("build/labs/lab-02-bounded-inbox"))
         eager = resolve_variant(spec, None)
         self.assertEqual(eager.name, spec.default_variant)
+
+    def test_lab02_capture_help_describes_generic_serial_capture(self):
+        text = "\n".join(operator_help_lines(get_lab("lab02"), action="capture"))
+        self.assertIn("Generic host serial capture", text)
+        self.assertIn("No build, managed server, reset", text)
+        self.assertNotIn("Managed capture", text)
 
     def test_cli_validate_and_dump(self):
         validate = subprocess.run(

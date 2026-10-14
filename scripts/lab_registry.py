@@ -206,7 +206,16 @@ def operator_help_lines(
         lines.append(" ".join(details))
     capture_s = seconds if seconds is not None else spec.capture_seconds_default
     lines.append("")
-    if spec.make_name == "lab02":
+    if spec.make_name == "lab02" and action == "capture":
+        lines.append(
+            f"Generic host serial capture: {capture_s}s from the current device state; "
+            "set SECONDS= to override."
+        )
+        lines.append(
+            "No build, managed server, reset, or canonical fresh-boot/image-identity "
+            "claim is made."
+        )
+    elif spec.make_name == "lab02":
         lines.append(f"Managed capture: {capture_s}s after a fresh boot marker; set SECONDS= to override.")
         lines.append("The host writes the serial log, metrics, and run manifest.")
     else:
@@ -220,7 +229,9 @@ def operator_help_lines(
         )
     lines.append("")
     lines.append("Operator:")
-    if spec.run_instructions:
+    if spec.make_name == "lab02" and action == "capture":
+        lines.append("  Use this target to observe the firmware already running on the device.")
+    elif spec.run_instructions:
         for paragraph in spec.run_instructions.strip().splitlines():
             text = paragraph.strip()
             if text:
