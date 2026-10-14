@@ -540,3 +540,21 @@ stack/real-RTOS evidence remains unverified, including physical overlay absence,
 identity/retry and target trace transport. Numeric product gates remainOPEN.
 Whole-attempt deadline remains documented gap, no speculative change. Do not
 claim full carousel completion from successful host tests or firmware builds.
+
+## Current continuation provenance — C5a-2
+
+This appended block records the continuation after the paused historical
+execution snapshot above; the preceding execution record is retained without
+rewriting. The current committed source is `44cd461e36f3de260a1ac3fb3f0858b8c794ca10`
+(`main`, abbreviated `44cd461`). C5a-2 supersedes the following historical
+provenance, which remains useful only for traceability: C5a-1 reviewed at
+`589f261` (`589f261e3cf26cf5d7d06c7bdac9d31ce6f5c22b`), the historical C5
+baseline `03b5e42` (`03b5e42d15bf8c788bf80b9b55a3c103b832c32d`), and the
+paused execution snapshot `7ecc594`
+(`7ecc594861c1e6fbc9ad647ac591bb44df3acde9`).
+
+This continuation is documentation-only and is limited to the C5a contract,
+field manifest, and this execution record. It makes no firmware, host-script,
+test, configuration, C5b, or C5c implementation change and does not commit
+the work. All numeric, product, and L3 gates remain **OPEN**; no evidence
+level, workflow verdict, or product decision is closed by this continuation.
