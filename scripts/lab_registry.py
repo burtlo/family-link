@@ -247,27 +247,38 @@ def print_operator_help(spec: LabSpec, **kwargs: object) -> None:
 
 
 def run_mode_hint_lines(spec: LabSpec) -> list[str]:
-    """Public make targets (variant names stay out of the operator workflow)."""
+    """Public lab actions (variant names stay out of the operator workflow)."""
     name = spec.make_name
-    lines = ["Core actions:"]
+    lines = ["Actions:"]
     lines.extend([
-        f"  Manual run                       make lab.{name} [KIT=<nickname>]",
-        f"  Build                            make lab.{name}.build [KIT=<nickname>]",
-        f"  Flash                            make lab.{name}.flash [KIT=<nickname>]",
-        f"  Capture                          make lab.{name}.capture [SECONDS=120]",
-        f"  Clean                            make lab.{name}.clean",
+        "  <default>          Manual run",
+        "  build              Build",
+        "  flash              Flash the last built image",
+        "  capture            Capture current device state",
+        "  clean              Remove the default build",
     ])
     if "scripted" in spec.variants:
         lines.extend([
-            f"  Scripted run                     make lab.{name}.scripted [KIT=<nickname>]",
-            f"  Scripted build                   make lab.{name}.scripted.build [KIT=<nickname>]",
-            f"  Scripted flash                   make lab.{name}.scripted.flash [KIT=<nickname>]",
-            f"  Scripted capture                 make lab.{name}.scripted.capture [SECONDS=120]",
-            f"  Scripted clean                   make lab.{name}.scripted.clean",
+            "  scripted           Scripted run",
+            "  scripted.build     Build scripted image",
+            "  scripted.flash     Flash scripted image",
+            "  scripted.capture   Capture scripted results",
+            "  scripted.clean     Remove scripted build",
         ])
     if spec.make_name == "lab02":
-        lines.append("  Server                           make lab.lab02.server")
-        lines.append("  Backend default                  managed HTTP; BACKEND=local selects local fixture")
+        lines.append("  server             Start the lab server in the foreground")
+    lines.extend([
+        "  help               Show lab-specific instructions",
+        f"  Command form: make lab.{name}[.<action>]",
+        "",
+        "Options:",
+        "  KIT=<kit>          Deployment kit nickname",
+        "  PORT=<port>        Explicit serial port",
+        "  SECONDS=<seconds>  Capture duration",
+        "  FLASH=0|1          Skip or force flashing",
+        "  RUN_ID=<run-id>    Evidence run identifier",
+        "  BACKEND=<backend>  managed-http (default) or local comparison",
+    ])
     return lines
 
 

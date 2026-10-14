@@ -725,9 +725,6 @@ def cmd_list(args: argparse.Namespace) -> int:
         print(f"  lab.{name:<8} {spec.lab_id:<8} variants: {variants}")
         if spec.description:
             print(f"             {spec.description}")
-    print()
-    print("Operator help: make lab.<name>.help")
-    print("KIT=lynn SECONDS=120 FLASH=0 RUN_ID=… apply to any run target below.")
     return 0
 
 
