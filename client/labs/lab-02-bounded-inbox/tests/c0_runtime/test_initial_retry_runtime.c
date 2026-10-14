@@ -46,6 +46,7 @@ int main(int argc, char **argv)
     lab02_host_hold_admission(true);
     int64_t start = esp_timer_get_time();
     clicked(); clicked(); owner_step(); broker();
+    assert(strcmp(lv_label_get_text(carousel.count_lab), "inbox retrying...") == 0);
     printf("F008_CLICK elapsed_us=%lld lock_held=1 task_calls=%u\n",
            (long long)(esp_timer_get_time() - start), task_calls);
     assert(task_calls == before); /* Returned while the producer mutex remains held. */
@@ -56,6 +57,7 @@ int main(int argc, char **argv)
         for (int i = 0; i < 6; i++) owner_step();
         broker(); assert(task_calls == before);
         assert(lab02_session_metrics().fetch_retry == 0);
+        assert(strcmp(lv_label_get_text(carousel.count_lab), "LAB-02  empty") == 0);
         puts("F008_RUNTIME scenario=retry-reset-pending PASS"); return 0;
     }
     for (int i = 0; i < 3; i++) owner_step();
@@ -70,6 +72,7 @@ int main(int argc, char **argv)
         for (int i = 0; i < 6; i++) owner_step();
         lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, retry.session_id, retry.op_id, 0, NULL, true);
         owner_step(); assert(lab02_session_snapshot().load_stage == LAB02_LOAD_SHELL);
+        assert(strcmp(lv_label_get_text(carousel.count_lab), "LAB-02  empty") == 0);
         puts("F008_RUNTIME scenario=retry-reset-admitted PASS"); return 0;
     }
 
@@ -84,14 +87,15 @@ int main(int argc, char **argv)
     owner_step();
     if (fail_task) {
         assert(lab02_session_snapshot().load_stage == LAB02_LOAD_ERROR);
-        assert(strstr(lv_label_get_text(carousel.count_lab), "inbox unavailable"));
-        assert(strstr(lv_label_get_text(carousel.count_lab), "tap to retry"));
+        assert(strcmp(lv_label_get_text(carousel.count_lab),
+                      "inbox unavailable - tap to retry") == 0);
         if (!strcmp(scenario, "retry-background-fail")) assert(lab02_inbox_model_item(carousel.provider.model, 0));
         unsigned count = task_calls;
         for (int i = 0; i < 120; i++) { owner_step(); broker(); }
         assert(task_calls == count); /* failure does not create automatic retry */
     } else {
         assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
+        assert(strcmp(lv_label_get_text(carousel.count_lab), "inbox retrying...") != 0);
         assert(lab02_inbox_model_item(carousel.provider.model, 0));
         assert(lab02_host_fetch_queue_depth() == 1);
     }

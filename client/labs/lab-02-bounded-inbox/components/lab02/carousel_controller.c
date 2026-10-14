@@ -11,6 +11,11 @@
 #include <string.h>
 
 static lab02_carousel_t *s_carousel;
+static struct {
+    bool active;
+    uint32_t session;
+    lab02_load_stage_t observed_stage;
+} s_retry_feedback;
 
 static void update_status_label(lab02_carousel_t *c);
 
@@ -37,10 +42,22 @@ static bool sync_from_session(lab02_carousel_t *c, bool refresh_layout)
         c->provider = *sp;
     }
     lab02_session_snapshot_t snap = lab02_session_snapshot();
+    bool stage_changed = s_retry_feedback.observed_stage != snap.load_stage;
+    bool feedback_changed = false;
+    if (s_retry_feedback.active) {
+        if (lab02_session_generation() != s_retry_feedback.session ||
+            snap.load_stage == LAB02_LOAD_READY ||
+            (snap.load_stage == LAB02_LOAD_ERROR &&
+             s_retry_feedback.observed_stage != LAB02_LOAD_ERROR)) {
+            s_retry_feedback.active = false;
+            feedback_changed = true;
+        }
+    }
+    s_retry_feedback.observed_stage = snap.load_stage;
     bool count_changed = c->item_count != (int)snap.total_count;
     bool focus_changed = c->focus_index != snap.focus_index;
     bool dirty = lab02_session_take_presentation_dirty();
-    bool changed = count_changed || focus_changed || dirty;
+    bool changed = count_changed || focus_changed || stage_changed || feedback_changed || dirty;
     c->focus_index = snap.focus_index;
     c->item_count = (int)snap.total_count;
     if (refresh_layout && count_changed && c->content_spacer) {
@@ -65,6 +82,14 @@ static void update_status_label(lab02_carousel_t *c)
     }
     char buf[96];
     lab02_session_snapshot_t snap = lab02_session_snapshot();
+    if (snap.load_stage == LAB02_LOAD_READY) {
+        s_retry_feedback.active = false;
+    }
+    if (s_retry_feedback.active) {
+        snprintf(buf, sizeof(buf), "inbox retrying...");
+        lv_label_set_text(c->count_lab, buf);
+        return;
+    }
     if (snap.http_active && snap.load_stage != LAB02_LOAD_READY &&
         snap.load_stage != LAB02_LOAD_ERROR) {
         snprintf(buf, sizeof(buf), "LAB-02");
@@ -130,6 +155,8 @@ static void on_status_clicked(lv_event_t *e)
     if (!lab02_session_intent_retry_initial_load()) {
         return;
     }
+    s_retry_feedback.active = true;
+    s_retry_feedback.session = lab02_session_generation();
     lab02_session_pump();
     update_status_label(c);
 }
@@ -224,6 +251,7 @@ bool lab02_carousel_init(lab02_carousel_t *c)
         return false;
     }
     memset(c, 0, sizeof(*c));
+    memset(&s_retry_feedback, 0, sizeof(s_retry_feedback));
     if (!lab02_page_provider_init(&c->provider)) {
         return false;
     }
