@@ -433,7 +433,11 @@ class ProjectConfig:
         for qualified_name in self.qualified_setting_names():
             value = self._resolved_setting_value(qualified_name)
             if qualified_name == "labs.lab02.client_url":
-                value = "[configured]" if value else ""
+                value = (
+                    "[auto]"
+                    if value.strip().lower() == "auto"
+                    else ("[configured]" if value else "")
+                )
             resolved_settings[qualified_name] = value
             provenance_settings[qualified_name] = self.setting_source(qualified_name)
 

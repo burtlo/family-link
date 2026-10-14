@@ -4,6 +4,7 @@ from __future__ import annotations
 import ipaddress
 import platform
 import re
+import socket
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,7 +17,9 @@ from lab_registry import LabRegistryError, validate_document_schema
 from project_config import ProjectConfig, ProjectConfigError
 
 ROOT = Path(__file__).resolve().parent.parent
-_IPV4_RE = re.compile(r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])")
+_WINDOWS_INTERFACE_IPV4_RE = re.compile(
+    r"^\s*(?:IPv4 Address|IPv4-Adresse)[^:]*:\s*([0-9.]+)", re.IGNORECASE
+)
 _FIXTURE_SIZES = {8, 16, 64, 256}
 _SCENARIOS = {
     "nominal", "S-fix-8", "S-fix-16", "S-fix-64", "S-fix-256",
@@ -88,8 +91,66 @@ def enumerate_interface_ipv4() -> tuple[str, ...]:
         output = _command_output(["ipconfig", "/all"])
     else:
         output = _command_output(["ifconfig", "-a"])
-    found = _IPV4_RE.findall(output)
+    if system == "Windows":
+        found = _WINDOWS_INTERFACE_IPV4_RE.findall(output)
+    else:
+        # macOS and the ifconfig fallback on Linux print assigned IPv4 values
+        # on lines beginning with `inet`; ignore netmask/broadcast fields.
+        found = []
+        for line in output.splitlines():
+            fields = line.split()
+            if len(fields) >= 2 and fields[0] == "inet":
+                found.append(fields[1].split("/", 1)[0])
     return eligible_lan_ipv4(found)
+
+
+def default_route_ipv4() -> str | None:
+    """Return the IPv4 address the host would use on its default route.
+
+    A UDP connect selects a source address without sending a packet. This is
+    more useful than choosing the first interface when a workstation also has
+    a VPN, virtual machine, or other private network interface.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.connect(("192.0.2.1", 9))
+        address = sock.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        sock.close()
+    eligible = eligible_lan_ipv4([address])
+    return eligible[0] if eligible else None
+
+
+def choose_workstation_ipv4(
+    addresses: Iterable[str], *, route_address: str | None = None,
+    discover_route: bool = True,
+) -> str:
+    """Choose the LAN address that a desk kit should use to reach this host."""
+    candidates = eligible_lan_ipv4(addresses)
+    route = (
+        route_address
+        if route_address is not None
+        else (default_route_ipv4() if discover_route else None)
+    )
+    if route in candidates:
+        return route
+    if len(candidates) == 1:
+        return candidates[0]
+    if not candidates:
+        raise Lab02WorkflowConfigError(
+            "could not find an eligible LAN IPv4 address for LAB-02; "
+            "connect this workstation to the desk Wi-Fi/Ethernet or set "
+            "LABS_LAB02_CLIENT_URL=http://<workstation-ip>:8765"
+        )
+    detected = ", ".join(candidates)
+    raise Lab02WorkflowConfigError(
+        "could not choose a workstation LAN IPv4 address for LAB-02 "
+        "(ambiguous private interfaces); "
+        f"detected {detected}. Set "
+        "LABS_LAB02_CLIENT_URL=http://<workstation-ip>:8765 to choose one"
+    )
 
 
 def _positive_int(value: object) -> int:
@@ -121,7 +182,10 @@ def _parse_client_url(value: str, expected_port: int) -> tuple[str, str]:
         canonical = f"http://{address}:{port}"
         return canonical, str(address)
     except (ValueError, UnicodeError):
-        raise Lab02WorkflowConfigError("invalid LAB-02 client URL configuration") from None
+        raise Lab02WorkflowConfigError(
+            "LABS_LAB02_CLIENT_URL must be http://<workstation-ip>:8765 "
+            "with an IPv4 address and no path, query, or credentials"
+        ) from None
 
 
 def load_lab02_workflow_config(
@@ -161,15 +225,24 @@ def load_lab02_workflow_config(
             interface_addresses if interface_addresses is not None else enumerate_interface_ipv4()
         )
         if raw_bind == "auto":
-            explicit_url = cfg.text("labs.lab02.client_url", default="")
-            if explicit_url:
+            configured_url = cfg.text("labs.lab02.client_url", default="").strip()
+            if configured_url and configured_url.lower() != "auto":
+                explicit_url = configured_url
                 client_url, address = _parse_client_url(explicit_url, bind_port)
                 if address not in addresses:
-                    raise Lab02WorkflowConfigError("invalid LAB-02 client URL configuration")
+                    raise Lab02WorkflowConfigError(
+                        f"LABS_LAB02_CLIENT_URL points to {address}, but that address "
+                        "is not assigned to this workstation; use auto discovery or "
+                        "set an address from the current LAN interfaces"
+                    )
             else:
-                if len(addresses) != 1:
-                    raise Lab02WorkflowConfigError("ambiguous LAB-02 LAN interface configuration")
-                client_url = f"http://{addresses[0]}:{bind_port}"
+                # Tests and callers that provide a snapshot of interfaces must
+                # remain deterministic; live route discovery is for production
+                # enumeration only.
+                address = choose_workstation_ipv4(
+                    addresses, discover_route=interface_addresses is None
+                )
+                client_url = f"http://{address}:{bind_port}"
             # Listen on all interfaces; firmware still uses client_url (desk LAN IP).
             bind_host = "0.0.0.0"
         else:

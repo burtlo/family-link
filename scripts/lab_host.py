@@ -833,6 +833,18 @@ def main() -> int:
             var = resolve_variant(spec, variant)
             build_dir = ROOT / var.build_dir
             target = resolve_run_target(config, args.kit, args.port)
+            if _variant_uses_deployment_kit_secrets(var.name):
+                # Refresh the generated Phase B defaults before a direct flash;
+                # a DHCP lease change must not leave the BOX pointing at the
+                # workstation's previous LAN address.
+                build_dir = ensure_lab_built(
+                    config,
+                    args.lab,
+                    variant,
+                    kit=target.kit_id,
+                    port=target.device,
+                    target=target,
+                )
             port = revalidate_run_target(config, target)
             flash_lab_build(config, build_dir, port)
             print(f"Flashed lab.{spec.make_name} ({var.name}) on {port}")

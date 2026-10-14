@@ -89,11 +89,20 @@ Registry variant keys (`scripted`, `eager`, …) back those targets. Advanced: `
 | `run` | Yes | Capture defaults plus **operator** text (see below) |
 | `workflow` | No | Lab-specific host workflow defaults; LAB-02 Phase B defines server path, bind address/port, fixture/scenario, and stage deadlines |
 
-The LAB-02 firmware client URL is a host-only override in
-`config/host.defaults.ini` as `[labs.lab02] client_url`, or
-`LABS_LAB02_CLIENT_URL`. It is validated against the owned server's local LAN
-interface and the registry port. It does not belong in the private deployment
-roster or tracked labs registry.
+The LAB-02 firmware client URL is normally discovered at run time from the
+workstation's current LAN interfaces. The committed
+`config/host.defaults.ini` value is `client_url = auto`; the resolver prefers
+the address selected by the host's default route and falls back to the only
+eligible private IPv4 interface. The server still binds to `0.0.0.0`; the
+resolved URL is written into the kit's generated `sdkconfig` defaults so the
+BOX can reach the host.
+
+For a workstation with several private networks, use the explicit
+`LABS_LAB02_CLIENT_URL=http://<workstation-ip>:8765` override. The URL is
+validated against the current local interfaces and registry port. This setting
+does not belong in the private deployment roster or tracked labs registry.
+Managed HTTP Phase B flash targets refresh this generated value before writing
+the image, so a changed DHCP lease cannot leave the BOX using the previous IP.
 
 ### Variants
 

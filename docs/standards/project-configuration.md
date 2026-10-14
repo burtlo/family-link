@@ -76,10 +76,11 @@ JSON Schema. Each registry entry defines a **make name** (`lab02` → `make lab.
 ESP-IDF project path, build variants, and capture defaults. Product lab ids and
 evidence workflow live under [`docs/labs/`](../labs/README.md).
 
-Per-desk LAB-02 client endpoint overrides use `[labs.lab02] client_url` or its
-`LABS_LAB02_CLIENT_URL` environment override. The host config snapshot reports
-only whether the endpoint is configured. Shared server and experiment defaults
-remain in the tracked labs registry.
+LAB-02 normally discovers the workstation client endpoint at run time from
+`[labs.lab02] client_url = auto`; `LABS_LAB02_CLIENT_URL` is an explicit
+override for multi-network workstations. The host config snapshot reports
+`[auto]` or only whether an explicit endpoint is configured. Shared server and
+experiment defaults remain in the tracked labs registry.
 
 Full field reference, validation, and boundaries:
 [`labs-configuration.md`](labs-configuration.md). Implementation:

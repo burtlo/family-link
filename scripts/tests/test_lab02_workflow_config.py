@@ -1,6 +1,7 @@
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import yaml
 from pathlib import Path
 
@@ -8,7 +9,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lab02_workflow_config import (
     Lab02WorkflowConfigError,
+    choose_workstation_ipv4,
     eligible_lan_ipv4,
+    enumerate_interface_ipv4,
     load_lab02_workflow_config,
 )
 from project_config import ProjectConfig
@@ -57,11 +60,53 @@ class Lab02WorkflowConfigTests(unittest.TestCase):
             ("10.1.2.3",),
         )
 
+    def test_interface_parsing_ignores_mac_broadcast_and_windows_gateway(self):
+        mac_ifconfig = """
+        en0: flags=8863
+            inet 192.168.8.236 netmask 0xffffff00 broadcast 192.168.8.255
+        """
+        with patch("lab02_workflow_config.platform.system", return_value="Darwin"), patch(
+            "lab02_workflow_config._command_output", return_value=mac_ifconfig
+        ):
+            self.assertEqual(enumerate_interface_ipv4(), ("192.168.8.236",))
+
+        windows_ipconfig = """
+        IPv4 Address. . . . . . . . . . . : 192.168.8.199 (Preferred)
+        Default Gateway . . . . . . . . . : 192.168.8.1
+        DNS Servers . . . . . . . . . . . : 192.168.8.1
+        """
+        with patch("lab02_workflow_config.platform.system", return_value="Windows"), patch(
+            "lab02_workflow_config._command_output", return_value=windows_ipconfig
+        ):
+            self.assertEqual(enumerate_interface_ipv4(), ("192.168.8.199",))
+
     def test_ambiguous_interfaces_fail(self):
         with self.assertRaisesRegex(Lab02WorkflowConfigError, "ambiguous"):
             load_lab02_workflow_config(
                 ProjectConfig(environ={"LABS_LAB02_CLIENT_URL": ""}),
                 interface_addresses=["10.0.0.2", "10.0.0.3"],
+            )
+
+    def test_default_route_wins_when_multiple_private_interfaces_exist(self):
+        self.assertEqual(
+            choose_workstation_ipv4(
+                ["10.0.0.2", "192.168.8.236"], route_address="192.168.8.236"
+            ),
+            "192.168.8.236",
+        )
+
+    def test_auto_is_not_treated_as_a_literal_url(self):
+        config = load_lab02_workflow_config(
+            ProjectConfig(environ={"LABS_LAB02_CLIENT_URL": "auto"}),
+            interface_addresses=["192.168.8.236"],
+        )
+        self.assertEqual(config.client_url, "http://192.168.8.236:8765")
+
+    def test_no_lan_interface_has_actionable_error(self):
+        with self.assertRaisesRegex(Lab02WorkflowConfigError, "connect this workstation"):
+            load_lab02_workflow_config(
+                ProjectConfig(environ={"LABS_LAB02_CLIENT_URL": ""}),
+                interface_addresses=["127.0.0.1", "169.254.2.1"],
             )
 
     def test_explicit_url_must_match_local_interface_and_bind_port(self):

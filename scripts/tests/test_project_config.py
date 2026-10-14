@@ -144,7 +144,7 @@ class ProjectConfigTests(unittest.TestCase):
     def test_lab_client_url_is_redacted_in_host_snapshot(self) -> None:
         document = ProjectConfig(environ={}).dump_snapshot()
         self.assertEqual(
-            "[configured]", document["resolved"]["settings"]["labs.lab02.client_url"]
+            "[auto]", document["resolved"]["settings"]["labs.lab02.client_url"]
         )
 
     def test_catalog_lists_command_and_flow_shapes(self) -> None:

@@ -131,7 +131,7 @@ Link eager comparison runs with `comparison_run_id` in the manifest.
 2. **Build (eager):** separate `-B build/labs/lab-02-bounded-inbox-eager` with `LAB02_EAGER_BASELINE` enabled
 3. **Boot marker (define in lab README):** e.g. `LAB02_READY build=<id> fixture=<rev> mode=recycle|eager`
 4. **Auto-scroll:** `make lab.lab02.scripted` / `CONFIG_LAB_AUTO_HARNESS` for L2 batches; log `HARNESS_DONE`
-5. **Phase B:** the canonical `make lab.lab02` and `make lab.lab02.scripted` workflows use managed HTTP by default. Configure `[labs.lab02] client_url` in `config/host.defaults.ini`; keep per-kit Wi-Fi in the private deployment roster. The host owns server health, seed, scenario actions, capture, and cleanup. Use `BACKEND=local` only for an explicit local comparison.
+5. **Phase B:** the canonical `make lab.lab02` and `make lab.lab02.scripted` workflows use managed HTTP by default. The host discovers the current workstation LAN address from `[labs.lab02] client_url = auto` and writes it into the generated kit defaults; use `LABS_LAB02_CLIENT_URL=http://<workstation-ip>:8765` only when auto-discovery is ambiguous. Keep per-kit Wi-Fi in the private deployment roster. The host owns server health, seed, scenario actions, capture, and cleanup. Use `BACKEND=local` only for an explicit local comparison.
 6. **Parse:** `tools/parse_lab_trace.py` → `docs/labs/evidence/lab-02/runs/<run-id>/metrics.json`
 
 Full runbook detail: [assistant guide § LAB-02](assistant-guide.md#lab-02-quick-reference).
