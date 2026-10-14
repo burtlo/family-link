@@ -136,7 +136,7 @@ Lab firmware is **not** built by `make build` (that is product bootstrap in `cli
 make lab.help
 make lab.lab02 KIT=lynn
 make lab.lab02.scripted KIT=lynn
-make lab.lab02.eager KIT=lynn
+make lab.lab02 BACKEND=local VARIANT=eager KIT=lynn
 make lab.lab02 BACKEND=local KIT=lynn
 ```
 
@@ -145,8 +145,8 @@ carousel traversal, including loading cards. Scripted mode requires no operator
 touch and must observe `HARNESS_DONE`. The host prints a `CAPTURE ACTIVE`
 briefing before traversal. The owned server is started, health-checked, seeded,
 and stopped by the run. No foreground server or curl step is part of the run.
-`BACKEND=local` is an explicit local-fixture comparison; `make lab.lab02.eager`
-remains the eager baseline comparison.
+`BACKEND=local` is an explicit local-fixture comparison; add `VARIANT=eager`
+only when the eager baseline comparison is required.
 
 Canonical runs parse traces and save the manifest and metrics with their capture. Record the **exact make command** in the evidence report; parser success alone is not a passing experiment result.
 

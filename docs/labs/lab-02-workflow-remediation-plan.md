@@ -39,7 +39,7 @@ This document plans the LAB-02 Phase B host workflow before source fixes. It pre
 | E-04 | Derive/validate one reachable LAN client URL or use an explicit existing host config/environment override. Never use wildcard bind or guessed localhost; ambiguous interfaces fail. |
 | E-05 | Proposed bounded host deadlines, reset/readiness procedure, nominal fixture/scenario, telemetry fields, and execution sequence are safety/verification choices, not product thresholds. |
 | E-06 | Current physical-kit availability and the exact point of hardware scheduling are operational facts/planning choices. The requested workflow-first/application-deferred boundary is O-07. |
-| E-07 | Keep `make lab.lab02.eager` as the existing comparison target; optional new comparison parameter names are implementation choices, not another canonical run command. |
+| E-07 | Keep the eager image as an internal comparison target via `make lab.lab02 BACKEND=local VARIANT=eager`; it is not another canonical run command. |
 
 Routine field names and exact destination for the copied URL can be selected during W3 and reviewed; destination remains a separate lab/host configuration arrangement, never the committed registry for private credentials. Owner decisions are O-01–09.
 
@@ -103,7 +103,7 @@ All listed deadlines are proposed host safety bounds, not owner-approved perform
 | `S-push` | Correlate managed push receipt with before/after viewed ID; expect preservation per O-04. If firmware fails, workflow may still PASS while experiment verdict FAIL. |
 | `S-rm-focus` | Remove viewed item during snap, pair receipt and snap, observe nearest remaining identity. Lack of app effect is experiment failure/open app finding, not a reason to call host transport broken. |
 | `S-page-snap` | Pair page completion receipt with snap identity/timestamps. Current telemetry is insufficient. |
-| Local fixture comparison / eager | Explicit comparison mode; preserve existing `make lab.lab02.eager` experiment target. No additional canonical end-to-end command. |
+| Local fixture comparison / eager | Explicit comparison mode; use `make lab.lab02 BACKEND=local VARIANT=eager` only when comparison evidence requires it. No additional canonical end-to-end command. |
 
 ### Config ownership
 

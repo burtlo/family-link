@@ -40,6 +40,12 @@ class Lab02MakeVariantTests(unittest.TestCase):
         self.assertIsNone(lab02_managed_canonical_plan("scripted", "managed-http"))
         self.assertIsNone(lab02_managed_canonical_plan("phaseb", "local"))
 
+    def test_local_backend_maps_managed_default_to_local_fixture(self):
+        self.assertEqual(resolve_variant(get_lab("lab02"), None).name, "phaseb")
+        # The local comparison is selected by BACKEND=local in lab_host; its
+        # implementation variant is the embedded bounded-inbox image.
+        self.assertEqual(resolve_variant(get_lab("lab02"), "recycle").name, "recycle")
+
 
 class LabHostSdkconfigTests(unittest.TestCase):
     def setUp(self):
@@ -87,7 +93,7 @@ class LabHostSdkconfigTests(unittest.TestCase):
         var = resolve_variant(spec, "phaseb")
         build_dir = self.temp_path / "build_dir_phaseb"
         build_dir.mkdir(exist_ok=True)
-        with self.assertRaisesRegex(ProjectConfigError, "Phase B build requires KIT"):
+        with self.assertRaisesRegex(ProjectConfigError, "Managed HTTP build requires KIT"):
             _defaults_files_for_lab_build(config, spec, var, build_dir, "", "")
 
     def test_phaseb_build_requires_private_wifi_before_url_resolution(self):

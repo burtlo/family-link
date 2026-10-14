@@ -40,14 +40,26 @@ echo "\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\
 echo
 echo "  DEVICE LABS (ESP-IDF experiments under client/labs/)"
 echo "    Registry: config/labs.registry.yaml"
-echo "    make lab.help              List registered labs."
-echo "    make lab.lab02.help        What to do on hardware (read this first)."
-echo "    make lab.lab02             Manual run — you scroll the inbox during capture."
-echo "    make lab.lab02.scripted    Auto-scroll — device runs the script (HARNESS_DONE)."
-echo "    make lab.lab02.eager       Eager 16-card comparison image."
-echo "    make lab.lab02.server      Run the paging server on port 8765 (Ctrl-C to stop)."
-echo "    make lab.lab02.parse       Parse capture to metrics.json (latest or RUN_ID=)."
-echo "    make lab.lab02.build       Build manual (recycle) image only."
+echo "    make lab.help              List registered labs with descriptions."
+echo "    make lab.<name>.help       Show operator instructions and core actions."
+echo
+echo "    Registered labs:"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+bash "$ROOT/scripts/make/python.sh" run scripts/lab_host.py list
+echo
+echo "    Core actions (available where supported):"
+echo "      make lab.<name>                 Manual run"
+echo "      make lab.<name>.scripted         Scripted run"
+echo "      make lab.<name>.build            Build"
+echo "      make lab.<name>.flash            Flash last built image"
+echo "      make lab.<name>.capture          Capture current device state"
+echo "      make lab.<name>.clean            Remove the default build"
+echo "      make lab.<name>.scripted.build   Build scripted image"
+echo "      make lab.<name>.scripted.flash   Flash scripted image"
+echo "      make lab.<name>.scripted.capture Capture scripted results"
+echo "      make lab.<name>.scripted.clean   Remove scripted build"
+echo "      make lab.<name>.server           Start a lab server in foreground"
+echo "      make lab.<name>.help             Show lab-specific instructions"
 echo "    Options: KIT=lynn PORT=COM7 SECONDS=120 FLASH=0 RUN_ID=..."
 echo
 echo

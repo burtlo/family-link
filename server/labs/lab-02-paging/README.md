@@ -38,7 +38,7 @@ Scripts change server state only. The device **polls page 0 about every 5s** (no
 
 1. menuconfig **LAB-02 → Phase B paging server URL** (e.g. `http://192.168.1.42:8765`).
 2. Set **Wi-Fi SSID** and **password** on the same menu.
-3. Build Phase B variant: `make lab.lab02.phaseb.build` (or `VARIANT=phaseb`).
-4. Start this server on the host, then `make lab.lab02.phaseb KIT=<nickname>`.
+3. Build the managed HTTP image: `make lab.lab02.build KIT=<nickname>`.
+4. Start this server on the host, then run `make lab.lab02 KIT=<nickname>`.
 
 Scenarios: `S-page-snap`, `S-rm-focus`, `S-push` — see [lab-02 implementation outline](../../../docs/labs/lab-02-implementation-outline.md).

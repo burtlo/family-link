@@ -33,8 +33,13 @@ class LabRegistryTests(unittest.TestCase):
         spec = get_lab("lab02")
         recycle = resolve_variant(spec, "recycle")
         self.assertEqual(recycle.build_dir, Path("build/labs/lab-02-bounded-inbox"))
-        eager = resolve_variant(spec, None)
-        self.assertEqual(eager.name, spec.default_variant)
+        default = resolve_variant(spec, None)
+        self.assertEqual(default.name, "phaseb")
+
+    def test_operator_help_hides_internal_variant_names(self):
+        text = "\n".join(operator_help_lines(get_lab("lab02")))
+        self.assertNotIn("phaseb", text.lower())
+        self.assertNotIn("eager", text.lower())
 
     def test_lab02_capture_help_describes_generic_serial_capture(self):
         text = "\n".join(operator_help_lines(get_lab("lab02"), action="capture"))

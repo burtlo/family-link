@@ -247,31 +247,27 @@ def print_operator_help(spec: LabSpec, **kwargs: object) -> None:
 
 
 def run_mode_hint_lines(spec: LabSpec) -> list[str]:
-    """Behavior-named make targets (preferred over VARIANT=)."""
+    """Public make targets (variant names stay out of the operator workflow)."""
     name = spec.make_name
-    lines = ["Run modes:"]
-    lines.append(f"  Manual (you scroll on device)     make lab.{name} [KIT=<nickname>]")
-    lines.append(f"  Clean default variant build dir   make lab.{name}.clean")
+    lines = ["Core actions:"]
+    lines.extend([
+        f"  Manual run                       make lab.{name} [KIT=<nickname>]",
+        f"  Build                            make lab.{name}.build [KIT=<nickname>]",
+        f"  Flash                            make lab.{name}.flash [KIT=<nickname>]",
+        f"  Capture                          make lab.{name}.capture [SECONDS=120]",
+        f"  Clean                            make lab.{name}.clean",
+    ])
     if "scripted" in spec.variants:
-        lines.append(f"  Automated managed run             make lab.{name}.scripted [KIT=<nickname>]")
-        lines.append(
-            f"  Scripted HTTP build (needs KIT)   make lab.{name}.scripted.build KIT=<nickname>"
-        )
-        lines.append(f"  Clean scripted build dir          make lab.{name}.scripted.clean")
-    if "phaseb" in spec.variants:
-        lines.append(
-            f"  Phase B HTTP build (needs KIT)    make lab.{name}.phaseb.build KIT=<nickname>"
-        )
-    if "eager" in spec.variants:
-        lines.append(f"  Eager comparison build            make lab.{name}.eager [KIT=<nickname>]")
-        lines.append(f"  Clean eager build dir             make lab.{name}.eager.clean")
+        lines.extend([
+            f"  Scripted run                     make lab.{name}.scripted [KIT=<nickname>]",
+            f"  Scripted build                   make lab.{name}.scripted.build [KIT=<nickname>]",
+            f"  Scripted flash                   make lab.{name}.scripted.flash [KIT=<nickname>]",
+            f"  Scripted capture                 make lab.{name}.scripted.capture [SECONDS=120]",
+            f"  Scripted clean                   make lab.{name}.scripted.clean",
+        ])
     if spec.make_name == "lab02":
-        lines.append(
-            "  Default make lab.<name>.build       recycle (embedded); canonical runs build phaseb"
-        )
-        lines.append("  Backend default                   managed HTTP; BACKEND=local selects local fixture")
-    if spec.trace_parser:
-        lines.append(f"  Parse last capture (metrics.json) make lab.{name}.parse [RUN_ID=…]")
+        lines.append("  Server                           make lab.lab02.server")
+        lines.append("  Backend default                  managed HTTP; BACKEND=local selects local fixture")
     return lines
 
 

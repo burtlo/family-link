@@ -15,7 +15,7 @@ Last updated: 2026-10-11 (Phase A implementation landed; hardware evidence pendi
 | Eager vs recycle comparison | **Open** | Two flashes; link `comparison_run_id` in manifests |
 | `REPORT-LAB-02-v1.md` | **Open** | After L3 runs |
 | Phase B server | Ready (host tests) | `make lab.lab02.server` |
-| Phase B firmware (`page_provider_http`) | Ready (build) | `make lab.lab02.phaseb` after menuconfig URL + Wi-Fi |
+| Managed HTTP firmware (`page_provider_http`) | Ready (build) | `make lab.lab02.build KIT=lynn` |
 
 ## Capture workflow
 
@@ -23,7 +23,7 @@ From repo root (kit bound in deployment YAML, or pass `--port`):
 
 ```powershell
 make lab.lab02 KIT=lynn
-make lab.lab02.eager KIT=lynn
+make lab.lab02 BACKEND=local VARIANT=eager KIT=lynn
 make lab.lab02.capture KIT=lynn FLASH=0 SECONDS=60
 ```
 

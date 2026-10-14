@@ -70,10 +70,10 @@ Every ESP-IDF lab sources [`client/labs/kconfig/lab_common.projbuild`](../../cli
 |-----------|-------------|
 | You scroll the UI during capture | `make lab.<name>` |
 | Device auto-scrolls (scripted) | `make lab.<name>.scripted` |
-| LAB-02 eager 16-widget comparison | `make lab.lab02.eager` |
-| Drop a variant’s build tree | `make lab.<name>.<variant>.clean` (e.g. `make lab.lab02.phaseb.clean`) |
+| LAB-02 eager 16-widget comparison | `make lab.lab02 BACKEND=local VARIANT=eager` |
+| Drop the default build tree | `make lab.<name>.clean` |
 
-Registry variant keys (`scripted`, `eager`, …) back those targets. Advanced: `VARIANT=scripted` still works. Lab-specific Kconfig (fixtures, etc.) stays in each lab’s `Kconfig.projbuild` menu.
+The registry keeps internal comparison variants such as `eager`; they are not separate operator targets. Advanced `VARIANT=` overrides remain available for evidence work. Lab-specific Kconfig (fixtures, etc.) stays in each lab’s `Kconfig.projbuild` menu.
 
 ## Registry fields (per `labs.<make_name>`)
 

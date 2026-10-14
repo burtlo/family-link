@@ -19,7 +19,6 @@ make lab.help
 make lab.lab02.build
 make lab.lab02 KIT=lynn                    # manual: you scroll during capture
 make lab.lab02.scripted KIT=lynn           # auto-scroll on device
-make lab.lab02.eager KIT=lynn              # eager 16-widget comparison
 make lab.lab02 BACKEND=local KIT=lynn       # explicit local-fixture comparison
 ```
 
@@ -37,7 +36,7 @@ idf.py -C client/labs/lab-02-bounded-inbox -B build/labs/lab-02-bounded-inbox bu
 idf.py -C client/labs/lab-02-bounded-inbox -B build/labs/lab-02-bounded-inbox flash monitor
 ```
 
-Eager build: `make lab.lab02.eager.build` or `-B build/labs/lab-02-bounded-inbox-eager` with `sdkconfig.defaults.eager`.
+The eager comparison is an internal local-fixture control: use `make lab.lab02 BACKEND=local VARIANT=eager KIT=lynn` when comparison evidence requires it.
 
 ## Trace (`lab-trace/v1`)
 

@@ -241,7 +241,7 @@ def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
 
 
 def lab02_scripted_variant_name(backend: str) -> str:
-    """Managed HTTP scripted runs use scripted-phaseb; BACKEND=local uses embedded scripted."""
+    """Managed HTTP scripted runs use the managed build; local uses embedded scripted."""
     return "scripted" if backend == "local" else "scripted-phaseb"
 
 
@@ -376,15 +376,15 @@ def _defaults_files_for_lab_build(
         return defaults_files
     if not kit.strip():
         raise ProjectConfigError(
-            "Phase B build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
-            "e.g. make lab.lab02.phaseb.build KIT=lynn"
+            "Managed HTTP build requires KIT=<nickname> (deployment secrets_profiles are per kit); "
+            "e.g. make lab.lab02.build KIT=lynn"
         )
     deployment = target.deployment if target is not None else load_active_deployment(config)
     resolved = target.kit if target is not None else kit_for(deployment, kit)
     profile = deployment.secrets_profile_for_kit(resolved)
     if not profile or not profile.wifi_ssid or not profile.wifi_password:
         raise ProjectConfigError(
-            "Phase B build requires per-kit Wi-Fi credentials in the private deployment roster"
+            "Managed HTTP build requires per-kit Wi-Fi credentials in the private deployment roster"
         )
     workflow = frozen_workflow or load_lab02_workflow_config(config)
     overlay = write_deployment_kit_sdkconfig(
@@ -716,8 +716,11 @@ def cmd_parse(config: ProjectConfig, args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_list(_: argparse.Namespace) -> int:
+def cmd_list(args: argparse.Namespace) -> int:
     for name, spec in sorted(load_registry().items()):
+        if not getattr(args, "variants", False):
+            print(f"  lab.{name:<8} {spec.lab_id:<8} {spec.description}")
+            continue
         variants = ", ".join(sorted(spec.variants))
         print(f"  lab.{name:<8} {spec.lab_id:<8} variants: {variants}")
         if spec.description:
@@ -757,7 +760,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
 
-    sub.add_parser("list", help="List registered labs (make lab.help)")
+    list_p = sub.add_parser("list", help="List registered labs (make lab.help)")
+    list_p.add_argument("--variants", action="store_true", help="Include internal registry variants")
 
     help_p = sub.add_parser("help", help="Operator instructions (make lab.<name>.help)")
     help_p.add_argument("lab")
@@ -876,7 +880,7 @@ def main() -> int:
                 if var.name == "scripted-phaseb":
                     variant = "scripted"
                 elif var.name == "phaseb":
-                    variant = None
+                    variant = "recycle"
                 var = resolve_variant(spec, variant)
                 mode = "scripted" if var.name == "scripted" else "manual"
                 def _build_local(cfg, name, selected_variant, **kwargs):

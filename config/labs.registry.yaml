@@ -12,7 +12,9 @@ labs:
     target: esp32s3
     description: Bounded inbox; managed HTTP paging, manual or scripted workflow
     variants:
-      default: recycle
+      # The managed HTTP workflow is the regular LAB-02 build. The local
+      # fixture remains an explicit comparison backend, not the default.
+      default: phaseb
       recycle:
         build_dir: build/labs/lab-02-bounded-inbox
       eager:
@@ -41,12 +43,11 @@ labs:
       capture_seconds_default: 120
       flash_by_default: true
       instructions: |
-        Canonical managed HTTP runs: make lab.lab02 (manual free traversal) or
+        Regular managed HTTP runs: make lab.lab02 (manual free traversal) or
         make lab.lab02.scripted (automated harness, no operator touch). Both
         start, health-check, seed, capture, and stop the owned fixture server.
-        BACKEND=local selects an explicit local-fixture comparison. The eager
-        comparison remains make lab.lab02.eager. Scenario and fixture defaults
-        are recorded in each run manifest.
+        BACKEND=local selects an explicit local-fixture comparison. Scenario
+        and fixture defaults are recorded in each run manifest.
       instructions_doc: docs/labs/lab-02-implementation-outline.md#verification-scenarios
     workflow:
       server_path: server/labs/lab-02-paging/server.py

@@ -251,7 +251,7 @@ def run_canonical(config, *, mode: str, kit: str = "", port: str = "", seconds: 
         coordinator = Lab02ScenarioCoordinator(server, capture_active=lambda: True, event_sink=record_event) if server else None
         evidence.update_context({"capture": {"status": "armed", "reset": "RTS pulse after capture arm"}})
         if build_variant == "eager":
-            command = "make lab.lab02.eager"
+            command = "make lab.lab02 BACKEND=local VARIANT=eager"
         elif mode == "scripted":
             command = "make lab.lab02.scripted" + (" BACKEND=local" if backend == "local" else "")
         else:
