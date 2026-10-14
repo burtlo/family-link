@@ -719,7 +719,9 @@ def cmd_parse(config: ProjectConfig, args: argparse.Namespace) -> int:
 def cmd_list(args: argparse.Namespace) -> int:
     for name, spec in sorted(load_registry().items()):
         if not getattr(args, "variants", False):
-            print(f"  lab.{name:<8} {spec.lab_id:<8} {spec.description}")
+            print(f"      {'lab.' + name:<22} {spec.lab_id:<8} Manual — {spec.description}")
+            if "scripted" in spec.variants:
+                print(f"      {'lab.' + name + '.scripted':<22} {spec.lab_id:<8} Scripted workflow")
             continue
         variants = ", ".join(sorted(spec.variants))
         print(f"  lab.{name:<8} {spec.lab_id:<8} variants: {variants}")
