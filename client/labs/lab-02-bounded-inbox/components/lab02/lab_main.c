@@ -5,6 +5,7 @@
 #include "lab02/instrumentation.h"
 #include "lab02/lab02_session.h"
 #include "lab02/page_provider_http.h"
+#include "lab02/trace_emit.h"
 #include "lab02_fixtures/fixtures.h"
 
 #include "lab02_platform/board.h"
@@ -90,6 +91,8 @@ void lab02_app_start(void)
     }
     ESP_ERROR_CHECK(err);
 
+    lab02_trace_init();
+    (void)lab02_trace_start();
     lab02_instrumentation_reset();
 
     if (lab02_board_display_start() != ESP_OK) {

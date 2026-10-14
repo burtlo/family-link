@@ -154,6 +154,44 @@ void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
            event, (unsigned)generation, focus_index, message_id ? message_id : "-", extra ? extra : "");
 }
 
+void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_index,
+                              const char *message_id,
+                              const lab02_trace_payload_t *payload)
+{
+    printf("SESSION_TRACE event=%s op_id=%u page=%d message=%s",
+           event, (unsigned)generation, focus_index, message_id ? message_id : "-");
+    if (payload) {
+        if (payload->fields & LAB02_TRACE_FIELD_SESSION_ID) {
+            printf(" session=%u", (unsigned)payload->session_id);
+        }
+        if (payload->fields & LAB02_TRACE_FIELD_REVISION) {
+            printf(" revision=%u", (unsigned)payload->revision);
+        }
+        if (payload->fields & LAB02_TRACE_FIELD_SNAP_ID) {
+            printf(" snap_id=%u", (unsigned)payload->snap_id);
+        }
+        if (payload->fields & LAB02_TRACE_FIELD_FETCH_SNAP_ID) {
+            printf(" fetch_snap_id=%u", (unsigned)payload->fetch_snap_id);
+        }
+        if (payload->fields & LAB02_TRACE_FIELD_ATTEMPT) {
+            printf(" attempt=%u", (unsigned)payload->attempt);
+        }
+        if (payload->fields & LAB02_TRACE_FIELD_OP_ID) {
+            printf(" op_id=%u", (unsigned)payload->op_id);
+        }
+        if (payload->fields & LAB02_TRACE_FIELD_OUTCOME) {
+            printf(" outcome=%s", payload->outcome ? payload->outcome : "-");
+        }
+        if (payload->fields & LAB02_TRACE_FIELD_REASON) {
+            printf(" reason=%s", payload->reason ? payload->reason : "-");
+        }
+        if (payload->fields & LAB02_TRACE_FIELD_ELAPSED_US) {
+            printf(" elapsed_us=%lld", (long long)payload->elapsed_us);
+        }
+    }
+    putchar('\n');
+}
+
 uint32_t lab02_snap_current_id(void)
 {
     return 0;

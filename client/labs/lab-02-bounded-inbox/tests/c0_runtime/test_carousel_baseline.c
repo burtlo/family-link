@@ -1,9 +1,11 @@
 /* Production C + actual LVGL: F001/C2 acceptance; remaining defects keep their
  * baseline characterization until their separately authorized units. */
 #define lab02_trace_emit c0_discard_trace
+#define lab02_trace_emit_payload c0_host_trace_payload
 #define lab02_snap_current_id c0_discard_snap_id
 #include "../session_host_stubs.c"
 #undef lab02_trace_emit
+#undef lab02_trace_emit_payload
 #undef lab02_snap_current_id
 #include "lab02/carousel_controller.h"
 #include "src/core/lv_obj_scroll_private.h"
@@ -33,6 +35,25 @@ static void pointer_step(lv_indev_t *indev, int x, lv_indev_state_t state)
     pointer_data.point.x = x; pointer_data.point.y = LAB02_CARD_Y + 60;
     pointer_data.state = state;
     lv_indev_read(indev);
+}
+
+void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus,
+                              const char *message_id,
+                              const lab02_trace_payload_t *payload)
+{
+    (void)generation;
+    (void)focus;
+    (void)message_id;
+    if (!strcmp(event, "snap_start")) snap_starts++;
+    if (!strcmp(event, "snap_end")) snap_ends++;
+    if (!strcmp(event, "snap_start") || !strcmp(event, "snap_end")) {
+        assert(payload && (payload->fields & LAB02_TRACE_FIELD_SNAP_ID));
+        unsigned id = payload->snap_id;
+        assert(id < 128);
+        if (!strcmp(event, "snap_start")) assert(++starts_by_id[id] == 1);
+        else assert(++ends_by_id[id] == 1 && starts_by_id[id] == 1);
+    }
+    printf("C0_TRACE scenario=%s event=%s\n", scenario, event);
 }
 
 

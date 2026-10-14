@@ -4,9 +4,9 @@
 #include "lab02/lab02_session.h"
 #include "lab02/lab02_session_io.h"
 #include "esp_timer.h"
-#include <stdio.h>
 #include <stdatomic.h>
 #include <stdint.h>
+#include <string.h>
 
 /* One presentation-owner envelope; no per-tick allocation. LVGL copies the
  * immutable ID into each animation. A recycled envelope is never authority. */
@@ -42,15 +42,26 @@ static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason
     s_operation.status = SNAP_TERMINAL; /* Exactly once, including reentrant deletion. */
     s_operation.state->scroll_lock = false;
     s_operation.state->driving_scroll = false;
-    char extra[240];
     const char *name = outcome == LAB02_SNAP_SUCCESS ? "success" :
                        outcome == LAB02_SNAP_STALE ? "stale" : "cancelled";
-    snprintf(extra, sizeof(extra),
-             "session=%u snap_id=%u outcome=%s reason=%s before=running after=terminal revision=%u elapsed_us=%lld target_x=%ld",
-             (unsigned)s_operation.session_id, (unsigned)id, name, reason,
-             (unsigned)s_operation.revision,
-             (long long)(esp_timer_get_time() - s_operation.submitted_us), (long)s_operation.target);
-    lab02_trace_emit("snap_end", 0, s_operation.focus, s_operation.message_id, extra);
+    const lab02_trace_payload_t payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_SNAP_ID |
+                  LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_REASON |
+                  LAB02_TRACE_FIELD_BEFORE | LAB02_TRACE_FIELD_AFTER |
+                  LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ELAPSED_US |
+                  LAB02_TRACE_FIELD_TARGET_X,
+        .session_id = s_operation.session_id,
+        .snap_id = id,
+        .outcome = name,
+        .reason = reason,
+        .before = "running",
+        .after = "terminal",
+        .revision = s_operation.revision,
+        .elapsed_us = esp_timer_get_time() - s_operation.submitted_us,
+        .target_x = s_operation.target,
+    };
+    lab02_trace_emit_payload("snap_end", 0, s_operation.focus,
+                             s_operation.message_id, &payload);
     if (outcome == LAB02_SNAP_SUCCESS) lab02_instrumentation_get()->snap_count++;
     lab02_snap_terminal_cb cb = s_operation.terminal;
     void *user = s_operation.user;
@@ -106,7 +117,9 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
     s_operation.submitted_us = esp_timer_get_time();
     s_operation.target = target_x;
     s_operation.focus = focus_index;
-    snprintf(s_operation.message_id, sizeof(s_operation.message_id), "%s", message_id ? message_id : "-");
+    strncpy(s_operation.message_id, message_id ? message_id : "-",
+            sizeof(s_operation.message_id) - 1u);
+    s_operation.message_id[sizeof(s_operation.message_id) - 1u] = '\0';
     s_operation.scroller = scroller;
     s_operation.state = st;
     s_operation.terminal = on_done;
@@ -115,10 +128,21 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
     st->operation_id = id;
     st->snap_target_x = target_x;
     st->scroll_lock = true;
-    char extra[160];
-    snprintf(extra, sizeof(extra), "session=%u snap_id=%u before=pending after=running revision=%u start_x=%ld target_x=%ld",
-             (unsigned)s_operation.session_id, (unsigned)id, (unsigned)s_operation.revision, (long)start, (long)target_x);
-    lab02_trace_emit("snap_start", 0, s_operation.focus, s_operation.message_id, extra);
+    const lab02_trace_payload_t payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_SNAP_ID |
+                  LAB02_TRACE_FIELD_BEFORE | LAB02_TRACE_FIELD_AFTER |
+                  LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_START_X |
+                  LAB02_TRACE_FIELD_TARGET_X,
+        .session_id = s_operation.session_id,
+        .snap_id = id,
+        .before = "pending",
+        .after = "running",
+        .revision = s_operation.revision,
+        .start_x = start,
+        .target_x = target_x,
+    };
+    lab02_trace_emit_payload("snap_start", 0, s_operation.focus,
+                             s_operation.message_id, &payload);
     if (start == target_x) {
         finish(id, LAB02_SNAP_SUCCESS, "no_motion");
         return;

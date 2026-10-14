@@ -39,6 +39,40 @@ class Lab02NativeModelTests(unittest.TestCase):
             )
             subprocess.run([str(output)], check=True, capture_output=True, text=True)
 
+    def test_trace_transport_native(self):
+        cc = shutil.which("cc")
+        if not cc:
+            self.skipTest("host C compiler unavailable")
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "lab02_trace_transport"
+            stubs = LAB / "tests/trace_host_stubs"
+            command = [cc, "-std=c11", "-D_POSIX_C_SOURCE=200809L", "-Wall", "-Wextra", "-Werror",
+                       "-pthread", "-I", str(stubs), "-I", str(LAB / "components/lab02/include"),
+                       str(LAB / "tests/test_trace_transport_native.c"),
+                       str(LAB / "tests/trace_host_stubs/trace_host_stubs.c"),
+                       str(LAB / "components/lab02/trace_emit.c"), "-o", str(output)]
+            subprocess.run(command, check=True, capture_output=True, text=True)
+            result = subprocess.run([str(output)], check=True, capture_output=True,
+                                    text=True, timeout=5)
+            trace_lines = [line for line in result.stdout.splitlines() if line.startswith("LAB_TRACE ")]
+            self.assertGreaterEqual(len(trace_lines), 1)
+            self.assertTrue(result.stdout.endswith("\n"))
+            for line in trace_lines:
+                self.assertNotIn("\r", line)
+                self.assertEqual(line.count("LAB_TRACE "), 1)
+                self.assertIn(" trace_schema=lab-trace/v1", line)
+                self.assertNotIn("old_message", line)
+                self.assertNotIn("old_extra", line)
+                self.assertNotIn("mutated_", line)
+            self.assertIn("event=after_reset", result.stdout)
+            self.assertIn("event=whole_row", result.stdout)
+            self.assertIn("msg=message_old", result.stdout)
+            self.assertIn("session_id=7 revision=8 snap_id=9 op_id=10", result.stdout)
+            self.assertIn("state=running outcome=success reason=completed", result.stdout)
+            self.assertIn("elapsed_us=11", result.stdout)
+            self.assertIn("page_receipt_id=receipt_old run_id=run_old", result.stdout)
+            self.assertIn("TRACE_NATIVE_RESULT PASS", result.stdout)
+
     def test_terminal_admission_and_reconciliation(self):
         cc, cjson = self._compiler_inputs()
         with tempfile.TemporaryDirectory() as tmp:

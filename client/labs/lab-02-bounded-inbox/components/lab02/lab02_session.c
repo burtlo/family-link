@@ -413,15 +413,21 @@ static bool apply_page(const lab02_sess_event_t *ev)
     reconcile_focus_id();
     s_presentation_dirty = true;
     s_metrics.apply_ok++;
-    char apply_extra[240];
-    snprintf(apply_extra, sizeof(apply_extra),
-             "op_id=%u revision=%u snap_id=%u fetch_snap_id=%u page_receipt_id=%s run_id=%s server_completed_ns=%llu",
-             (unsigned)ev->op_id, (unsigned)s_inbox_revision, (unsigned)lab02_snap_current_id(),
-             (unsigned)ev->page.snap_id,
-             ev->page.page_receipt_id[0] ? ev->page.page_receipt_id : "-",
-             ev->page.run_id[0] ? ev->page.run_id : "-",
-             (unsigned long long)ev->page.server_completed_ns);
-    lab02_trace_emit("page_apply", ev->op_id, s_focus_index, s_focus_message_id, apply_extra);
+    const lab02_trace_payload_t apply_payload = {
+        .fields = LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_REVISION |
+                  LAB02_TRACE_FIELD_SNAP_ID | LAB02_TRACE_FIELD_FETCH_SNAP_ID |
+                  LAB02_TRACE_FIELD_PAGE_RECEIPT_ID | LAB02_TRACE_FIELD_RUN_ID |
+                  LAB02_TRACE_FIELD_SERVER_COMPLETED_NS,
+        .op_id = ev->op_id,
+        .revision = s_inbox_revision,
+        .snap_id = lab02_snap_current_id(),
+        .fetch_snap_id = ev->page.snap_id,
+        .page_receipt_id = ev->page.page_receipt_id[0] ? ev->page.page_receipt_id : "-",
+        .run_id = ev->page.run_id[0] ? ev->page.run_id : "-",
+        .server_completed_ns = (int64_t)ev->page.server_completed_ns,
+    };
+    lab02_trace_emit_payload("page_apply", ev->op_id, s_focus_index,
+                             s_focus_message_id, &apply_payload);
     if (ev->initial) {
         prefetch_for_focus(s_focus_index);
     } else if (page == 0) {
@@ -725,10 +731,13 @@ static bool owner_retry_page(int page_index)
         s_metrics.fetch_retry++;
         s_coalesce_retry_page = page_index;
         s_coalesce_retry_until_us = now + 20000;
-        char extra[96];
-        snprintf(extra, sizeof(extra), "page=%d attempt=%u op_id=%u",
-                 page_index, (unsigned)s_page_attempt[page_index], (unsigned)op);
-        lab02_trace_emit("owner_retry_page", op, page_index, NULL, extra);
+        const lab02_trace_payload_t retry_payload = {
+            .fields = LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OP_ID,
+            .attempt = s_page_attempt[page_index],
+            .op_id = op,
+        };
+        lab02_trace_emit_payload("owner_retry_page", op, page_index, NULL,
+                                 &retry_payload);
     }
     return queued;
 }
@@ -788,10 +797,13 @@ static void admit_initial_retry(void)
         s_initial_retry_pending = false;
         s_initial_restart_pending = true;
         s_metrics.fetch_retry++;
-        char extra[80];
-        snprintf(extra, sizeof(extra), "attempt=%u op_id=%u", (unsigned)s_page_attempt[0],
-                 (unsigned)boot_op);
-        lab02_trace_emit("owner_retry_initial", boot_op, 0, NULL, extra);
+        const lab02_trace_payload_t retry_payload = {
+            .fields = LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OP_ID,
+            .attempt = s_page_attempt[0],
+            .op_id = boot_op,
+        };
+        lab02_trace_emit_payload("owner_retry_initial", boot_op, 0, NULL,
+                                 &retry_payload);
     }
     xSemaphoreGive(s_post_mutex);
 }
@@ -846,11 +858,16 @@ void lab02_session_pump(void)
     xSemaphoreGive(s_post_mutex);
     if (worker_status) {
         s_worker_available = worker_available;
-        char extra[120];
-        snprintf(extra, sizeof(extra), "session=%u kind=http_startup outcome=%s reason=%s",
-                 (unsigned)s_session_generation, worker_available ? "success" : "failure",
-                 worker_available ? "worker_available" : "worker_unavailable");
-        lab02_trace_emit("io_start_terminal", 0, 0, NULL, extra);
+        const lab02_trace_payload_t startup_payload = {
+            .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_OP_KIND |
+                      LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_REASON,
+            .session_id = s_session_generation,
+            .op_kind = "http_startup",
+            .outcome = worker_available ? "success" : "failure",
+            .reason = worker_available ? "worker_available" : "worker_unavailable",
+        };
+        lab02_trace_emit_payload("io_start_terminal", 0, 0, NULL,
+                                 &startup_payload);
     }
     /* Preserve ordered startup transitions even if both were posted before a
      * pump. Repeated reports coalesce; invalid transitions remain observable. */
@@ -891,11 +908,16 @@ void lab02_session_pump(void)
                     s_pending_revision = s_pump_ev;
                     s_has_pending_revision = true;
                     s_metrics.apply_deferred++;
-                    char pending_extra[96];
-                    snprintf(pending_extra, sizeof(pending_extra),
-                             "revision=%u applied_revision=%u reason=motion_reconciliation_pending",
-                             (unsigned)page->revision, (unsigned)s_inbox_revision);
-                    lab02_trace_emit("model_pending", s_pump_ev.op_id, 0, NULL, pending_extra);
+                    const lab02_trace_payload_t pending_payload = {
+                        .fields = LAB02_TRACE_FIELD_REVISION |
+                                  LAB02_TRACE_FIELD_APPLIED_REVISION |
+                                  LAB02_TRACE_FIELD_REASON,
+                        .revision = page->revision,
+                        .applied_revision = s_inbox_revision,
+                        .reason = "motion_reconciliation_pending",
+                    };
+                    lab02_trace_emit_payload("model_pending", s_pump_ev.op_id, 0,
+                                             NULL, &pending_payload);
                 }
             } else {
                 handle_fetch_done(&s_pump_ev);
@@ -903,14 +925,20 @@ void lab02_session_pump(void)
             stale = s_metrics.apply_stale != prior_stale;
             if (s_metrics.fetch_fail != prior_fail) s_pump_ev.outcome = LAB02_FETCH_FAIL;
         }
-        char extra[160];
-        snprintf(extra, sizeof(extra), "session=%u revision=%u attempt=%u outcome=%s elapsed_us=%lld",
-                 (unsigned)s_pump_ev.session_id, (unsigned)s_pump_ev.request.revision,
-                 (unsigned)s_pump_ev.request.attempt,
-                 stale ? "stale" : (s_pump_ev.outcome == LAB02_FETCH_OK ? "success" :
-                 (s_pump_ev.outcome == LAB02_FETCH_TIMEOUT ? "timed_out" : "failure")),
-                 (long long)(esp_timer_get_time() - s_pump_ev.request.submitted_us));
-        lab02_trace_emit("fetch_terminal", s_pump_ev.op_id, s_pump_ev.page_index, NULL, extra);
+        const lab02_trace_payload_t terminal_payload = {
+            .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                      LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OUTCOME |
+                      LAB02_TRACE_FIELD_ELAPSED_US | LAB02_TRACE_FIELD_OP_ID,
+            .session_id = s_pump_ev.session_id,
+            .revision = s_pump_ev.request.revision,
+            .attempt = s_pump_ev.request.attempt,
+            .outcome = stale ? "stale" : (s_pump_ev.outcome == LAB02_FETCH_OK ? "success" :
+                       (s_pump_ev.outcome == LAB02_FETCH_TIMEOUT ? "timed_out" : "failure")),
+            .elapsed_us = esp_timer_get_time() - s_pump_ev.request.submitted_us,
+            .op_id = s_pump_ev.op_id,
+        };
+        lab02_trace_emit_payload("fetch_terminal", s_pump_ev.op_id,
+                                 s_pump_ev.page_index, NULL, &terminal_payload);
         s_reconciled_slot = slot;
         if (!finish_reconciled_slot()) return;
     }

@@ -148,14 +148,19 @@ static void worker_task(void *arg)
         }
         if (res == LAB02_HTTP_FETCH_OK) {
             s_result_page.snap_id = lab02_snap_current_id();
-            char extra[240];
-            snprintf(extra, sizeof(extra),
-                     "op_id=%u snap_id=%u revision=%u page_receipt_id=%s run_id=%s server_completed_ns=%llu",
-                     (unsigned)req.op_id, (unsigned)s_result_page.snap_id, (unsigned)s_result_page.revision,
-                     s_result_page.page_receipt_id[0] ? s_result_page.page_receipt_id : "-",
-                     s_result_page.run_id[0] ? s_result_page.run_id : "-",
-                     (unsigned long long)s_result_page.server_completed_ns);
-            lab02_trace_emit("page_fetch", req.op_id, offset, NULL, extra);
+            const lab02_trace_payload_t payload = {
+                .fields = LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_SNAP_ID |
+                          LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_PAGE_RECEIPT_ID |
+                          LAB02_TRACE_FIELD_RUN_ID | LAB02_TRACE_FIELD_SERVER_COMPLETED_NS,
+                .op_id = req.op_id,
+                .snap_id = s_result_page.snap_id,
+                .revision = s_result_page.revision,
+                .page_receipt_id = s_result_page.page_receipt_id[0] ?
+                    s_result_page.page_receipt_id : "-",
+                .run_id = s_result_page.run_id[0] ? s_result_page.run_id : "-",
+                .server_completed_ns = (int64_t)s_result_page.server_completed_ns,
+            };
+            lab02_trace_emit_payload("page_fetch", req.op_id, offset, NULL, &payload);
             lab02_session_http_fetch_finished(LAB02_FETCH_OK, req.session_id, req.op_id,
                                               req.page_index,
                                               &s_result_page, false);
@@ -269,9 +274,12 @@ static void start_boot(const lab02_fetch_req_t *request)
     s_boot_request = *request;
     s_io_started = true;
     s_http_ready_logged = false;
-    char extra[80];
-    snprintf(extra, sizeof(extra), "session=%u kind=http_startup", (unsigned)request->session_id);
-    lab02_trace_emit("io_start_admitted", 0, 0, NULL, extra);
+    const lab02_trace_payload_t payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_OP_KIND,
+        .session_id = request->session_id,
+        .op_kind = "http_startup",
+    };
+    lab02_trace_emit_payload("io_start_admitted", 0, 0, NULL, &payload);
     atomic_store(&s_boot_running, true);
     if (xTaskCreate(boot_task, "lab02_http_boot", 10240, NULL, 4, NULL) != pdPASS) {
         lab02_session_http_worker_started(false, request->session_id);

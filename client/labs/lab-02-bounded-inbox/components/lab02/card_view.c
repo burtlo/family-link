@@ -7,7 +7,6 @@
 
 #include "sdkconfig.h"
 
-#include <stdio.h>
 #include <string.h>
 
 /* The existing default font lacks U+2026. A small static fallback preserves
@@ -87,10 +86,15 @@ static void apply_bind_labels(lab02_card_view_t *view, const lab02_inbox_item_t 
     }
     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
     lab02_instrumentation_get()->bind_count++;
-    char context[80];
-    snprintf(context, sizeof(context), "session=%u revision=%u state=bound",
-             (unsigned)view->session_generation, (unsigned)view->inbox_revision);
-    lab02_trace_emit("bind", view->bind_generation, view->bound_index, item->message_id, context);
+    const lab02_trace_payload_t payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                  LAB02_TRACE_FIELD_STATE,
+        .session_id = view->session_generation,
+        .revision = view->inbox_revision,
+        .state = "bound",
+    };
+    lab02_trace_emit_payload("bind", view->bind_generation, view->bound_index,
+                             item->message_id, &payload);
 }
 
 #if CONFIG_LAB02_SLOW_BIND_MS > 0
@@ -188,14 +192,19 @@ void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
     lv_label_set_text(view->sender_lab, view->state == LAB02_CARD_ERROR ?
                       "Message unavailable" : "Loading message…");
     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
-    char context[80];
-    snprintf(context, sizeof(context), "session=%u revision=%u state=%s",
-             (unsigned)slot->session_generation, (unsigned)slot->inbox_revision,
-             view->state == LAB02_CARD_ERROR ? "error" : "loading");
-    lab02_trace_emit("card_state", generation, slot->index,
-                     slot->item ? slot->item->message_id : NULL, context);
+    const lab02_trace_payload_t payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                  LAB02_TRACE_FIELD_STATE,
+        .session_id = slot->session_generation,
+        .revision = slot->inbox_revision,
+        .state = view->state == LAB02_CARD_ERROR ? "error" : "loading",
+    };
+    lab02_trace_emit_payload("card_state", generation, slot->index,
+                             slot->item ? slot->item->message_id : NULL, &payload);
     if (slot->state != LAB02_SLOT_BOUND || !slot->item) return;
-    snprintf(view->bound_message_id, sizeof(view->bound_message_id), "%s", slot->item->message_id);
+    strncpy(view->bound_message_id, slot->item->message_id,
+            sizeof(view->bound_message_id) - 1u);
+    view->bound_message_id[sizeof(view->bound_message_id) - 1u] = '\0';
 #if CONFIG_LAB02_SLOW_BIND_MS > 0
     if (view->bind_timer) {
         view->pending_item = *slot->item;
