@@ -72,7 +72,7 @@ static void update_status_label(lab02_carousel_t *c)
         return;
     }
     if (snap.load_stage == LAB02_LOAD_ERROR) {
-        snprintf(buf, sizeof(buf), "LAB-02  inbox unavailable");
+        snprintf(buf, sizeof(buf), "inbox unavailable - tap to retry");
         lv_label_set_text(c->count_lab, buf);
         return;
     }

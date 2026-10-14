@@ -38,6 +38,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < 6; i++) owner_step();
     assert(lab02_session_snapshot().load_stage == LAB02_LOAD_ERROR);
     assert(strstr(lv_label_get_text(carousel.count_lab), "inbox unavailable"));
+    assert(strstr(lv_label_get_text(carousel.count_lab), "tap to retry"));
     lab02_fetch_req_t original; /* Preserve a stale completion identity. */
     original.session_id = lab02_session_generation(); original.op_id = 1;
     original.page_index = 0;
@@ -84,6 +85,7 @@ int main(int argc, char **argv)
     if (fail_task) {
         assert(lab02_session_snapshot().load_stage == LAB02_LOAD_ERROR);
         assert(strstr(lv_label_get_text(carousel.count_lab), "inbox unavailable"));
+        assert(strstr(lv_label_get_text(carousel.count_lab), "tap to retry"));
         if (!strcmp(scenario, "retry-background-fail")) assert(lab02_inbox_model_item(carousel.provider.model, 0));
         unsigned count = task_calls;
         for (int i = 0; i < 120; i++) { owner_step(); broker(); }
