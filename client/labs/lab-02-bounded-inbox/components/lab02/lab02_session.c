@@ -103,7 +103,8 @@ static uint32_t s_transport_session;
 static bool s_transport_pending;
 static bool s_transport_latest;
 
-static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh);
+static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
+                          bool retry_failed);
 
 static uint16_t effective_page_size(void)
 {
@@ -223,15 +224,15 @@ static void prefetch_for_focus(int focus)
     /* Focus admission precedes speculative neighbors. Retain only the latest
      * not-yet-admitted intent; a failed admitted operation is a separate policy. */
     s_pending_focus_page = -1;
-    if (!lab02_session_http_enqueue_fetch(page, &op) &&
+    if (!enqueue_fetch(page, &op, false, false) &&
         !(s_loaded_pages & (1U << page)) && !s_inflight_op[page] &&
         !(s_failed_pages & (1U << page))) {
         s_pending_focus_page = page;
         s_focus_admission_us = esp_timer_get_time() + 20000;
         lab02_trace_emit("focus_admission_pending", 0, page, NULL, NULL);
     }
-    if (page > 0) (void)enqueue_fetch(page - 1, &op, false);
-    (void)lab02_session_http_enqueue_fetch(page + 1, &op);
+    if (page > 0) (void)enqueue_fetch(page - 1, &op, false, false);
+    (void)enqueue_fetch(page + 1, &op, false, false);
 }
 
 static int find_identity(const char *id)
@@ -314,7 +315,7 @@ static void advance_identity_search(void)
             return;
         }
         uint32_t op = 0;
-        if (!s_inflight_op[p]) (void)enqueue_fetch(p, &op, false);
+        if (!s_inflight_op[p]) (void)enqueue_fetch(p, &op, false, false);
         return;
     }
 }
@@ -336,7 +337,7 @@ static bool apply_page(const lab02_sess_event_t *ev)
         s_metrics.apply_stale++;
         lab02_trace_emit("apply_stale", ev->op_id, page, NULL, "new_revision_needs_page0");
         uint32_t refresh_op = 0;
-        (void)enqueue_fetch(0, &refresh_op, true);
+        (void)enqueue_fetch(0, &refresh_op, true, false);
         return false;
     }
     if (!ev->initial && page_data && page == 0 && s_inbox_revision != 0 &&
@@ -697,7 +698,7 @@ bool lab02_session_intent_refresh(void)
         return false;
     }
     uint32_t op = 0;
-    bool queued = enqueue_fetch(0, &op, true);
+    bool queued = enqueue_fetch(0, &op, true, false);
     if (queued) {
         s_last_refresh_us = esp_timer_get_time();
     }
@@ -726,8 +727,9 @@ static bool owner_retry_page(int page_index)
         s_page_attempt[page_index]++;
     }
     uint32_t op = 0;
-    bool queued = enqueue_fetch(page_index, &op, false);
+    bool queued = enqueue_fetch(page_index, &op, false, true);
     if (queued) {
+        s_presentation_dirty = true;
         s_metrics.fetch_retry++;
         s_coalesce_retry_page = page_index;
         s_coalesce_retry_until_us = now + 20000;
@@ -964,7 +966,7 @@ void lab02_session_pump(void)
         uint32_t op = 0;
         if (page != page_for_focus(s_focus_index, effective_page_size()) ||
             (s_loaded_pages & (1U << page)) || s_inflight_op[page] ||
-            (s_failed_pages & (1U << page)) || enqueue_fetch(page, &op, false)) {
+            (s_failed_pages & (1U << page)) || enqueue_fetch(page, &op, false, false)) {
             s_pending_focus_page = -1;
         }
         s_focus_admission_us = esp_timer_get_time() + 20000;
@@ -1001,10 +1003,11 @@ void lab02_session_start_http_io(void)
 
 bool lab02_session_http_enqueue_fetch(int page_index, uint32_t *op_id_out)
 {
-    return enqueue_fetch(page_index, op_id_out, false);
+    return enqueue_fetch(page_index, op_id_out, false, true);
 }
 
-static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh)
+static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
+                          bool retry_failed)
 {
     if (!s_http_mode || !s_worker_available || !s_fetch_q || page_index < 0 || page_index >= LAB02_HTTP_MAX_PAGES) {
         return false;
@@ -1014,6 +1017,9 @@ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh)
         return false;
     }
     if (!refresh && (s_loaded_pages & (1U << page_index))) {
+        return false;
+    }
+    if (!refresh && !retry_failed && (s_failed_pages & (1U << page_index))) {
         return false;
     }
     if (s_inflight_op[page_index] != 0) {

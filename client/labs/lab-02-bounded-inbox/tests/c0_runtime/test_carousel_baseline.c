@@ -326,9 +326,6 @@ int main(int argc, char **argv)
         assert(view_at(16)->state == LAB02_CARD_ERROR);
         assert(!strcmp(lv_label_get_text(view_at(16)->sender_lab), "Message unavailable"));
         lab02_carousel_set_focus(&carousel, 16, false);
-        req = take_page(1); /* Existing focus admission policy is unchanged. */
-        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, req.session_id,
-            req.op_id, req.page_index, NULL, false);
         lab02_carousel_pump(&carousel);
         checkpoint("focused-error");
         assert(view_at(carousel.focus_index)->state == LAB02_CARD_ERROR);
@@ -337,23 +334,30 @@ int main(int argc, char **argv)
         uint32_t auto_retries = lab02_session_metrics().fetch_retry;
         advance(120);
         assert(lab02_session_metrics().fetch_retry == auto_retries);
+        bool automatic_page_retry = false;
         while (lab02_host_fetch_queue_depth() > 0) {
             lab02_fetch_req_t pending;
             assert(lab02_session_http_take_fetch_request(&pending));
-            if (pending.page_index != 1) {
-                lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, pending.session_id,
-                    pending.op_id, pending.page_index, NULL, false);
-                lab02_carousel_pump(&carousel);
-            }
+            automatic_page_retry |= pending.page_index == 1;
+            lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, pending.session_id,
+                pending.op_id, pending.page_index, NULL, false);
+            lab02_carousel_pump(&carousel);
         }
+        assert(!automatic_page_retry);
         assert(lab02_session_intent_retry_page_for_index(16));
+        lab02_carousel_pump(&carousel);
+        assert(view_at(16)->state == LAB02_CARD_LOADING);
+        assert(!strcmp(lv_label_get_text(view_at(16)->sender_lab), "Loading message…"));
         submit(take_page(1), make_page(1, 16, 64, 0), false);
         advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
         checkpoint("owner-retry-success");
         assert(view_at(16)->state == LAB02_CARD_BOUND);
         lab02_carousel_set_focus(&carousel, 40, false);
+        assert(view_at(carousel.focus_index)->state == LAB02_CARD_ERROR);
+        assert(lab02_session_intent_retry_page_for_index(carousel.focus_index));
+        lab02_carousel_pump(&carousel);
         assert(view_at(carousel.focus_index)->state == LAB02_CARD_LOADING);
-        (void)take_page(2); /* Traversal still submits the newly focused page. */
+        (void)take_page(2); /* A new page is admitted only after explicit retry. */
     } else if (!strcmp(scenario, "pool-bounds")) {
         lv_obj_t *screen = carousel.screen, *scroll = carousel.scroll;
         unsigned nodes = lv_obj_get_child_count(scroll);
