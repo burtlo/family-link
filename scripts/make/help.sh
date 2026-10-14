@@ -38,28 +38,27 @@ echo "    make device.bind KIT=<kit> PORT=<port>  Explicit one-time USB binding.
 echo
 echo "\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////"
 echo
-echo "  DEVICE LABS (ESP-IDF experiments under client/labs/)"
-echo "    Registry: config/labs.registry.yaml"
-echo "    make lab.help              List registered labs with descriptions."
+echo "  DEVICE LABS (experiments under client/labs/)"
 echo
-echo "    Registered labs:"
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-bash "$ROOT/scripts/make/python.sh" run scripts/lab_host.py list
+echo "    make config.labs        Device labs registry snapshot JSON."
+echo "    make lab.help           List registered labs with descriptions."
 echo
-echo "    Actions (available where supported):"
-echo "      <default>          Manual run"
-echo "      scripted           Scripted run"
-echo "      build|flash|capture|clean                    Standard lifecycle"
-echo "      scripted[.build|.flash|.capture|.clean]     Scripted lifecycle"
+echo "    LABS"
+echo
+    ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+    bash "$ROOT/scripts/make/python.sh" run scripts/lab_host.py list
+echo
+echo "   ACTIONS"
+echo "      [help, build, flash, capture, clean]"
 echo "      server             Start a lab server in the foreground"
-echo "      help               Show lab-specific instructions"
 echo
-echo "    Options:"
-echo "      KIT=<kit>          Deployment kit nickname"
-echo "      PORT=<port>        Explicit serial port"
+echo "    OPTIONS"
+echo "      KIT=<kit>          Optional kit override; auto-detects one connected kit"
+echo "      PORT=<port>        Optional port override; follows the selected kit"
 echo "      SECONDS=<seconds>  Capture duration"
 echo "      FLASH=0|1          Skip or force flashing"
 echo "      RUN_ID=<run-id>    Evidence run identifier"
 echo "      BACKEND=<backend>  managed-http (default) or local comparison"
 echo
-echo
+echo "   USAGE"
+echo "     make lab.<lab>.<action> [OPTIONS]  Run a lab action with optional overrides."
