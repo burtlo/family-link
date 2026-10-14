@@ -252,18 +252,11 @@ def run_mode_hint_lines(spec: LabSpec) -> list[str]:
     lines = ["Actions:"]
     lines.extend([
         "  <default>          Manual run",
-        "  build              Build",
-        "  flash              Flash the last built image",
-        "  capture            Capture current device state",
-        "  clean              Remove the default build",
+        "  build|flash|capture|clean                    Standard lifecycle",
     ])
     if "scripted" in spec.variants:
         lines.extend([
-            "  scripted           Scripted run",
-            "  scripted.build     Build scripted image",
-            "  scripted.flash     Flash scripted image",
-            "  scripted.capture   Capture scripted results",
-            "  scripted.clean     Remove scripted build",
+            "  scripted[.build|.flash|.capture|.clean]     Scripted lifecycle",
         ])
     if spec.make_name == "lab02":
         lines.append("  server             Start the lab server in the foreground")
