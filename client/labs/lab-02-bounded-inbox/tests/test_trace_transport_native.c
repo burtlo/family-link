@@ -196,6 +196,39 @@ int main(void)
     strcpy(run_id, "run_mutated");
     lab02_trace_drain();
 
+    /* Exact-capacity identities include the final payload byte plus NUL. */
+    lab02_trace_reset();
+    const char exact_receipt[] = "0123456789abcdef0123456789abcdef";
+    const char exact_run_id[] = "fedcba9876543210fedcba9876543210";
+    const lab02_trace_payload_t exact_payload = {
+        .fields = LAB02_TRACE_FIELD_PAGE_RECEIPT_ID | LAB02_TRACE_FIELD_RUN_ID,
+        .page_receipt_id = exact_receipt,
+        .run_id = exact_run_id,
+    };
+    lab02_trace_stats_t exact_start = stats();
+    lab02_trace_emit_payload("exact_capacity", 3u, 3, "message", &exact_payload);
+    lab02_trace_stats_t exact_end = stats();
+    require_true(exact_end.admitted == exact_start.admitted + 1u,
+                 "exact-capacity fields admitted");
+    lab02_trace_drain();
+
+    /* One byte beyond the payload capacity remains an oversized producer drop. */
+    lab02_trace_reset();
+    char overlong_receipt[LAB02_TRACE_RECEIPT_CAP + 1u];
+    memset(overlong_receipt, 'r', sizeof(overlong_receipt) - 1u);
+    overlong_receipt[sizeof(overlong_receipt) - 1u] = '\0';
+    const lab02_trace_payload_t overlong_payload = {
+        .fields = LAB02_TRACE_FIELD_PAGE_RECEIPT_ID,
+        .page_receipt_id = overlong_receipt,
+    };
+    lab02_trace_stats_t overlong_start = stats();
+    lab02_trace_emit_payload("overlong_receipt", 3u, 3, "message", &overlong_payload);
+    lab02_trace_stats_t overlong_end = stats();
+    require_true(overlong_end.admitted == overlong_start.admitted &&
+                 overlong_end.oversized - overlong_start.oversized == 1u &&
+                 overlong_end.dropped - overlong_start.dropped == 1u,
+                 "overlong receipt rejected");
+
     /* Saturation is observable and never blocks the producer. */
     lab02_trace_reset();
     lab02_trace_stats_t saturation_start = stats();

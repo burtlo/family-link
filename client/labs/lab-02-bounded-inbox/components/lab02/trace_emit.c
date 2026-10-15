@@ -143,7 +143,7 @@ static bool copy_bounded(char *dst, size_t dst_size, const char *src, bool token
         }
     }
     dst[dst_size - 1u] = '\0';
-    return false;
+    return src[dst_size - 1u] == '\0';
 }
 
 static bool copy_field(char *dst, size_t dst_size, const char *src, bool token,

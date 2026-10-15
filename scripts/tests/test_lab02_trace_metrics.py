@@ -18,6 +18,17 @@ parse_trace_line = MODULE._parse_trace_line
 
 
 class Lab02TraceMetricsTests(unittest.TestCase):
+    def test_exact_capacity_page_receipt_is_preserved_as_valid_extra(self):
+        receipt = "0123456789abcdef0123456789abcdef"
+        row, error = parse_trace_line(
+            "LAB_TRACE t_us=1 event=page_fetch gen=1 focus=0 msg=- "
+            f"run_id=run session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            f"page_receipt_id={receipt}\n"
+        )
+        self.assertIsNone(error)
+        self.assertIsNotNone(row)
+        self.assertEqual(row["extras"]["page_receipt_id"], receipt)
+
     def test_additive_context_and_nearest_rank_latency_preserve_legacy_fields(self):
         metrics = parse_trace([
             "LAB02_READY build=abc123 fixture=inbox_64 mode=recycle\n",
