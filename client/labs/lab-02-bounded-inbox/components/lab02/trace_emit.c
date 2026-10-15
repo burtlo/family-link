@@ -42,6 +42,22 @@ typedef struct {
     uint32_t queue_depth;
     uint32_t queue_high_water;
     uint32_t overflow;
+    uint32_t internal_free_bytes;
+    uint32_t internal_min_free_bytes;
+    uint32_t internal_largest_free_bytes;
+    uint32_t dma_free_bytes;
+    uint32_t dma_largest_free_bytes;
+    uint32_t psram_free_bytes;
+    uint32_t psram_largest_free_bytes;
+    uint32_t lvgl_mem_used_bytes;
+    uint32_t lvgl_mem_high_water_bytes;
+    uint32_t lvgl_biggest_free_bytes;
+    uint32_t live_card_roots;
+    uint32_t live_card_nodes;
+    uint32_t active_fetches;
+    uint32_t admitted_fetches;
+    uint32_t fetch_queue_depth;
+    uint32_t terminal_pending;
     int32_t focus_index;
     int32_t start_x;
     int32_t target_x;
@@ -62,7 +78,7 @@ typedef struct {
     bool publication_after_apply;
 } lab02_trace_record_t;
 
-_Static_assert(sizeof(lab02_trace_record_t) <= 768u,
+_Static_assert(sizeof(lab02_trace_record_t) <= 1024u,
                "trace records must remain bounded");
 
 enum {
@@ -204,6 +220,22 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
         record.queue_depth = payload->queue_depth;
         record.queue_high_water = payload->queue_high_water;
         record.overflow = payload->overflow;
+        record.internal_free_bytes = payload->internal_free_bytes;
+        record.internal_min_free_bytes = payload->internal_min_free_bytes;
+        record.internal_largest_free_bytes = payload->internal_largest_free_bytes;
+        record.dma_free_bytes = payload->dma_free_bytes;
+        record.dma_largest_free_bytes = payload->dma_largest_free_bytes;
+        record.psram_free_bytes = payload->psram_free_bytes;
+        record.psram_largest_free_bytes = payload->psram_largest_free_bytes;
+        record.lvgl_mem_used_bytes = payload->lvgl_mem_used_bytes;
+        record.lvgl_mem_high_water_bytes = payload->lvgl_mem_high_water_bytes;
+        record.lvgl_biggest_free_bytes = payload->lvgl_biggest_free_bytes;
+        record.live_card_roots = payload->live_card_roots;
+        record.live_card_nodes = payload->live_card_nodes;
+        record.active_fetches = payload->active_fetches;
+        record.admitted_fetches = payload->admitted_fetches;
+        record.fetch_queue_depth = payload->fetch_queue_depth;
+        record.terminal_pending = payload->terminal_pending;
         record.start_x = payload->start_x;
         record.target_x = payload->target_x;
         record.page_index = payload->page_index;
@@ -269,6 +301,50 @@ void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
         .extra = extra,
     };
     lab02_trace_emit_payload(event, generation, focus_index, message_id, &payload);
+}
+
+void lab02_trace_emit_resource_sample(const lab02_resource_sample_t *sample)
+{
+    if (!sample) return;
+    const lab02_trace_payload_t payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID |
+                  LAB02_TRACE_FIELD_STATE |
+                  LAB02_TRACE_FIELD_INTERNAL_FREE_BYTES |
+                  LAB02_TRACE_FIELD_INTERNAL_MIN_FREE_BYTES |
+                  LAB02_TRACE_FIELD_INTERNAL_LARGEST_FREE_BYTES |
+                  LAB02_TRACE_FIELD_DMA_FREE_BYTES |
+                  LAB02_TRACE_FIELD_DMA_LARGEST_FREE_BYTES |
+                  LAB02_TRACE_FIELD_PSRAM_FREE_BYTES |
+                  LAB02_TRACE_FIELD_PSRAM_LARGEST_FREE_BYTES |
+                  LAB02_TRACE_FIELD_LVGL_MEM_USED_BYTES |
+                  LAB02_TRACE_FIELD_LVGL_MEM_HIGH_WATER_BYTES |
+                  LAB02_TRACE_FIELD_LVGL_BIGGEST_FREE_BYTES |
+                  LAB02_TRACE_FIELD_LIVE_CARD_ROOTS |
+                  LAB02_TRACE_FIELD_LIVE_CARD_NODES |
+                  LAB02_TRACE_FIELD_ACTIVE_FETCHES |
+                  LAB02_TRACE_FIELD_ADMITTED_FETCHES |
+                  LAB02_TRACE_FIELD_FETCH_QUEUE_DEPTH |
+                  LAB02_TRACE_FIELD_TERMINAL_PENDING,
+        .session_id = sample->session_id,
+        .internal_free_bytes = sample->internal_free_bytes,
+        .internal_min_free_bytes = sample->internal_min_free_bytes,
+        .internal_largest_free_bytes = sample->internal_largest_free_bytes,
+        .dma_free_bytes = sample->dma_free_bytes,
+        .dma_largest_free_bytes = sample->dma_largest_free_bytes,
+        .psram_free_bytes = sample->psram_free_bytes,
+        .psram_largest_free_bytes = sample->psram_largest_free_bytes,
+        .lvgl_mem_used_bytes = sample->lvgl_mem_used_bytes,
+        .lvgl_mem_high_water_bytes = sample->lvgl_mem_high_water_bytes,
+        .lvgl_biggest_free_bytes = sample->lvgl_biggest_free_bytes,
+        .live_card_roots = sample->live_card_roots,
+        .live_card_nodes = sample->live_card_nodes,
+        .active_fetches = sample->active_fetches,
+        .admitted_fetches = sample->admitted_fetches,
+        .fetch_queue_depth = sample->fetch_queue_depth,
+        .terminal_pending = sample->terminal_pending,
+        .state = sample->phase,
+    };
+    lab02_trace_emit_payload("resource_sample", 0, 0, NULL, &payload);
 }
 
 static int append_field(char *line, size_t cap, int used, const char *key, const char *value)
@@ -353,6 +429,22 @@ static void write_record(const lab02_trace_record_t *record)
     if (fields & LAB02_TRACE_FIELD_QUEUE_DEPTH) used = append_u32(line, sizeof(line), used, "queue_depth", record->queue_depth);
     if (fields & LAB02_TRACE_FIELD_QUEUE_HIGH_WATER) used = append_u32(line, sizeof(line), used, "queue_high_water", record->queue_high_water);
     if (fields & LAB02_TRACE_FIELD_OVERFLOW) used = append_u32(line, sizeof(line), used, "overflow", record->overflow);
+    if (fields & LAB02_TRACE_FIELD_INTERNAL_FREE_BYTES) used = append_u32(line, sizeof(line), used, "internal_free_bytes", record->internal_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_INTERNAL_MIN_FREE_BYTES) used = append_u32(line, sizeof(line), used, "internal_min_free_bytes", record->internal_min_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_INTERNAL_LARGEST_FREE_BYTES) used = append_u32(line, sizeof(line), used, "internal_largest_free_bytes", record->internal_largest_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_DMA_FREE_BYTES) used = append_u32(line, sizeof(line), used, "dma_free_bytes", record->dma_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_DMA_LARGEST_FREE_BYTES) used = append_u32(line, sizeof(line), used, "dma_largest_free_bytes", record->dma_largest_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_PSRAM_FREE_BYTES) used = append_u32(line, sizeof(line), used, "psram_free_bytes", record->psram_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_PSRAM_LARGEST_FREE_BYTES) used = append_u32(line, sizeof(line), used, "psram_largest_free_bytes", record->psram_largest_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_LVGL_MEM_USED_BYTES) used = append_u32(line, sizeof(line), used, "lvgl_mem_used_bytes", record->lvgl_mem_used_bytes);
+    if (fields & LAB02_TRACE_FIELD_LVGL_MEM_HIGH_WATER_BYTES) used = append_u32(line, sizeof(line), used, "lvgl_mem_high_water_bytes", record->lvgl_mem_high_water_bytes);
+    if (fields & LAB02_TRACE_FIELD_LVGL_BIGGEST_FREE_BYTES) used = append_u32(line, sizeof(line), used, "lvgl_biggest_free_bytes", record->lvgl_biggest_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_LIVE_CARD_ROOTS) used = append_u32(line, sizeof(line), used, "live_card_roots", record->live_card_roots);
+    if (fields & LAB02_TRACE_FIELD_LIVE_CARD_NODES) used = append_u32(line, sizeof(line), used, "live_card_nodes", record->live_card_nodes);
+    if (fields & LAB02_TRACE_FIELD_ACTIVE_FETCHES) used = append_u32(line, sizeof(line), used, "active_fetches", record->active_fetches);
+    if (fields & LAB02_TRACE_FIELD_ADMITTED_FETCHES) used = append_u32(line, sizeof(line), used, "admitted_fetches", record->admitted_fetches);
+    if (fields & LAB02_TRACE_FIELD_FETCH_QUEUE_DEPTH) used = append_u32(line, sizeof(line), used, "fetch_queue_depth", record->fetch_queue_depth);
+    if (fields & LAB02_TRACE_FIELD_TERMINAL_PENDING) used = append_u32(line, sizeof(line), used, "terminal_pending", record->terminal_pending);
     if (used >= 0 && record->extra[0]) {
         size_t remaining = sizeof(line) - (size_t)used;
         int n = snprintf(line + used, remaining, " %s", record->extra);

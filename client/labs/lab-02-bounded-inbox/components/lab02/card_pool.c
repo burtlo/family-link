@@ -71,3 +71,21 @@ void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t
         lab02_card_view_style_root(view->root, idx == focus);
     }
 }
+
+void lab02_card_pool_resource_counts(const lab02_card_pool_t *pool,
+                                     uint32_t *live_roots, uint32_t *live_nodes)
+{
+    uint32_t roots = 0;
+    uint32_t nodes = 0;
+    if (pool) {
+        for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++) {
+            const lab02_card_view_t *view = &pool->views[i];
+            if (view->bound_index >= 0 && view->root) {
+                roots++;
+                nodes += 1u + lv_obj_get_child_count(view->root);
+            }
+        }
+    }
+    if (live_roots) *live_roots = roots;
+    if (live_nodes) *live_nodes = nodes;
+}

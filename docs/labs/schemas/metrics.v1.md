@@ -52,7 +52,9 @@ markers are present, the parser retains them under `resources` and reduces only
 observed values. Largest-free values are retained with their sample provenance
 and remain `null` when a unique simultaneous peak sample cannot be identified.
 It does not infer transient peaks from free-heap deltas. Fetch-attempt timing
-requires an observed worker-start timestamp; terminal elapsed time alone is not
-worker-attempt latency.
+uses the within-session `(session_id, op_kind, op_id, attempt)` identity and does
+not require the server `run_id` until that response-side provenance is observed.
+An observed worker-start timestamp is still required; terminal elapsed time alone
+is not worker-attempt latency.
 Absent allocator, runtime high-water, stack, static-attribution, or visual
 evidence is represented by `null` values and `evidence.missing` entries.

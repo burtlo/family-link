@@ -41,6 +41,7 @@ static bool s_http_mode;
 static bool s_worker_available;
 static int s_focus_index;
 static char s_focus_message_id[sizeof(((lab02_inbox_item_t *)0)->message_id)];
+static char s_last_run_id[33];
 /* Identity resolution reuses the one existing metadata model. Only the exact
  * immediate old neighbors are retained; unmaterialized IDs are never invented. */
 static bool s_resolving_focus;
@@ -119,6 +120,9 @@ static void emit_stale_fetch_terminals(const lab02_fetch_req_t *requests, unsign
             LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_SUBMITTED_US |
             LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_PAGE_INDEX |
             LAB02_TRACE_FIELD_OP_KIND;
+        if (s_pump_ev.has_page && s_pump_ev.page.run_id[0]) {
+            terminal_fields |= LAB02_TRACE_FIELD_RUN_ID;
+        }
         if (req->started_us > 0) {
             terminal_fields |= LAB02_TRACE_FIELD_STARTED_US;
         }
@@ -423,6 +427,7 @@ static void advance_identity_search(void)
 
 static bool apply_page(const lab02_sess_event_t *ev)
 {
+    const int64_t apply_started_us = esp_timer_get_time();
     int page = ev->page_index;
     const lab02_inbox_page_t *page_data = ev->has_page ? &ev->page : NULL;
     if (!ev->initial && page_data && s_inbox_revision != 0 &&
@@ -515,12 +520,17 @@ static bool apply_page(const lab02_sess_event_t *ev)
     reconcile_focus_id();
     s_presentation_dirty = true;
     s_metrics.apply_ok++;
+    if (ev->page.run_id[0]) {
+        snprintf(s_last_run_id, sizeof(s_last_run_id), "%s", ev->page.run_id);
+    }
+    const int64_t apply_terminal_us = esp_timer_get_time();
     const lab02_trace_payload_t apply_payload = {
         .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_OP_ID |
                   LAB02_TRACE_FIELD_PAGE_INDEX | LAB02_TRACE_FIELD_REVISION |
                   LAB02_TRACE_FIELD_SNAP_ID | LAB02_TRACE_FIELD_FETCH_SNAP_ID |
                   LAB02_TRACE_FIELD_PAGE_RECEIPT_ID | LAB02_TRACE_FIELD_RUN_ID |
-                  LAB02_TRACE_FIELD_SERVER_COMPLETED_NS,
+                  LAB02_TRACE_FIELD_SERVER_COMPLETED_NS |
+                  LAB02_TRACE_FIELD_ELAPSED_US | LAB02_TRACE_FIELD_TERMINAL_US,
         .session_id = ev->session_id,
         .op_id = ev->op_id,
         .page_index = ev->page_index,
@@ -530,6 +540,8 @@ static bool apply_page(const lab02_sess_event_t *ev)
         .page_receipt_id = ev->page.page_receipt_id[0] ? ev->page.page_receipt_id : "-",
         .run_id = ev->page.run_id[0] ? ev->page.run_id : "-",
         .server_completed_ns = (int64_t)ev->page.server_completed_ns,
+        .elapsed_us = apply_terminal_us - apply_started_us,
+        .terminal_us = apply_terminal_us,
     };
     lab02_trace_emit_payload("page_apply", ev->op_id, s_focus_index,
                              s_focus_message_id, &apply_payload);
@@ -612,6 +624,7 @@ void lab02_session_reset(void)
     s_worker_available = false;
     s_focus_index = 0;
     s_focus_message_id[0] = 0;
+    s_last_run_id[0] = 0;
     s_resolving_focus = false;
     s_focus_was_last = false;
     s_identity_failed_page = -1;
@@ -741,6 +754,31 @@ uint16_t lab02_session_http_page_size(void)
 lab02_session_metrics_t lab02_session_metrics(void)
 {
     return s_metrics;
+}
+
+bool lab02_session_resource_counts(lab02_session_resource_counts_t *out)
+{
+    if (!out || !s_post_mutex || xSemaphoreTake(s_post_mutex, 0) != pdTRUE) {
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    for (int page = 0; page < LAB02_HTTP_MAX_PAGES; page++) {
+        if (s_inflight_op[page] != 0u) out->active_fetches++;
+    }
+    for (int i = 0; i < TERMINAL_CAP; i++) {
+        if (s_terminals[i].admitted) {
+            out->admitted_fetches++;
+            if (!s_terminals[i].posted) out->terminal_pending++;
+        }
+    }
+    if (s_fetch_q) out->fetch_queue_depth = (uint32_t)uxQueueMessagesWaiting(s_fetch_q);
+    xSemaphoreGive(s_post_mutex);
+    return true;
+}
+
+const char *lab02_session_run_id(void)
+{
+    return s_last_run_id[0] ? s_last_run_id : NULL;
 }
 
 const lab02_page_provider_t *lab02_session_provider(void)
@@ -1074,6 +1112,8 @@ void lab02_session_pump(void)
             .page_index = s_pump_ev.request.page_index,
             .op_kind = "http_fetch",
             .op_id = s_pump_ev.op_id,
+            .run_id = s_pump_ev.has_page && s_pump_ev.page.run_id[0] ?
+                s_pump_ev.page.run_id : NULL,
         };
         lab02_trace_emit_payload("fetch_terminal", s_pump_ev.op_id,
                                  s_pump_ev.page_index, NULL, &terminal_payload);
@@ -1166,11 +1206,13 @@ void lab02_session_http_fetch_started(uint32_t session_id, uint32_t op_id,
     if (!retained) {
         return;
     }
-    const lab02_trace_payload_t started_payload = {
-        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_OP_ID |
+    uint64_t started_fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_OP_ID |
                   LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_PAGE_INDEX |
                   LAB02_TRACE_FIELD_SUBMITTED_US | LAB02_TRACE_FIELD_STARTED_US |
-                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE,
+                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE;
+    if (s_last_run_id[0]) started_fields |= LAB02_TRACE_FIELD_RUN_ID;
+    const lab02_trace_payload_t started_payload = {
+        .fields = started_fields,
         .session_id = session_id,
         .op_id = op_id,
         .attempt = request.attempt,
@@ -1179,6 +1221,7 @@ void lab02_session_http_fetch_started(uint32_t session_id, uint32_t op_id,
         .started_us = started_us,
         .op_kind = "http_fetch",
         .state = "started",
+        .run_id = s_last_run_id[0] ? s_last_run_id : NULL,
     };
     lab02_trace_emit_payload("fetch_started", op_id, page_index, NULL,
                              &started_payload);
@@ -1241,11 +1284,13 @@ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
     s_inflight_op[page_index] = op_id;
     s_failed_pages &= ~(1U << page_index);
     xSemaphoreGive(s_post_mutex);
-    const lab02_trace_payload_t admitted_payload = {
-        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+    uint64_t admitted_fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
                   LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OP_ID |
                   LAB02_TRACE_FIELD_PAGE_INDEX | LAB02_TRACE_FIELD_SUBMITTED_US |
-                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE,
+                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE;
+    if (s_last_run_id[0]) admitted_fields |= LAB02_TRACE_FIELD_RUN_ID;
+    const lab02_trace_payload_t admitted_payload = {
+        .fields = admitted_fields,
         .session_id = req.session_id,
         .revision = req.revision,
         .attempt = req.attempt,
@@ -1254,6 +1299,7 @@ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
         .submitted_us = req.submitted_us,
         .op_kind = "http_fetch",
         .state = "admitted",
+        .run_id = s_last_run_id[0] ? s_last_run_id : NULL,
     };
     lab02_trace_emit_payload("fetch_admitted", op_id, page_index, NULL,
                              &admitted_payload);

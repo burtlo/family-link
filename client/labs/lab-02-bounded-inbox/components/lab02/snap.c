@@ -51,7 +51,8 @@ static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason
                   LAB02_TRACE_FIELD_BEFORE | LAB02_TRACE_FIELD_AFTER |
                   LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ELAPSED_US |
                   LAB02_TRACE_FIELD_TARGET_X | LAB02_TRACE_FIELD_SUBMITTED_US |
-                  LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_OP_KIND,
+                  LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_OP_KIND |
+                  LAB02_TRACE_FIELD_RUN_ID,
         .session_id = s_operation.session_id,
         .snap_id = id,
         .outcome = name,
@@ -64,6 +65,7 @@ static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason
         .terminal_us = terminal_us,
         .op_kind = "snap",
         .target_x = s_operation.target,
+        .run_id = lab02_session_run_id() ? lab02_session_run_id() : "-",
     };
     lab02_trace_emit_payload("snap_end", 0, s_operation.focus,
                              s_operation.message_id, &payload);
@@ -138,7 +140,7 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
                   LAB02_TRACE_FIELD_BEFORE | LAB02_TRACE_FIELD_AFTER |
                   LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_START_X |
                   LAB02_TRACE_FIELD_TARGET_X | LAB02_TRACE_FIELD_SUBMITTED_US |
-                  LAB02_TRACE_FIELD_OP_KIND,
+                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_RUN_ID,
         .session_id = s_operation.session_id,
         .snap_id = id,
         .before = "pending",
@@ -148,6 +150,7 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
         .target_x = target_x,
         .submitted_us = s_operation.submitted_us,
         .op_kind = "snap",
+        .run_id = lab02_session_run_id() ? lab02_session_run_id() : "-",
     };
     lab02_trace_emit_payload("snap_start", 0, s_operation.focus,
                              s_operation.message_id, &payload);

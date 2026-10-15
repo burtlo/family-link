@@ -5,6 +5,7 @@
 #include "lab02/instrumentation.h"
 #include "lab02/lab02_session.h"
 #include "lab02/page_provider_http.h"
+#include "lab02/resource_sample.h"
 #include "lab02/trace_emit.h"
 #include "lab02/layout.h"
 #include "lab02_fixtures/fixtures.h"
@@ -64,6 +65,7 @@ static void session_pump_task(void *arg)
         lab02_carousel_t *c = lab02_carousel_instance();
         if (c) {
             lab02_carousel_pump(c);
+            lab02_resource_sample_emit(c);
         }
         lab02_board_lvgl_unlock();
         lab02_page_provider_http_service_initial_retry();

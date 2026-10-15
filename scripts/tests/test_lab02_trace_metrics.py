@@ -242,7 +242,7 @@ class Lab02TraceMetricsTests(unittest.TestCase):
         ])
         self.assertIsNone(metrics["distributions"]["fetch_queue_wait_ms"])
 
-    def test_missing_run_id_is_retained_as_invalid_provenance(self):
+    def test_fetch_timing_uses_session_identity_before_server_run_id(self):
         row, error = parse_trace_line(
             "LAB_TRACE t_us=0 event=fetch_admitted gen=1 focus=0 msg=- "
             "session_id=1 op_kind=http_fetch op_id=2 attempt=1")
@@ -262,11 +262,25 @@ class Lab02TraceMetricsTests(unittest.TestCase):
             "LAB_TRACE t_us=5 event=snap_end gen=1 focus=0 msg=- "
             "session_id=1 snap_id=3 elapsed_us=1 outcome=success\n",
         ])
-        self.assertEqual(metrics["distributions"]["fetch_attempt_ms"]["n"], 0)
+        self.assertEqual(metrics["distributions"]["fetch_attempt_ms"]["n"], 1)
+        self.assertEqual(metrics["distributions"]["fetch_attempt_ms"]["worst"], 0.001)
         self.assertEqual(metrics["distributions"]["snap_ms"]["n"], 0)
-        self.assertIn("fetch_terminal_missing_run_id", metrics["evidence"]["invalid"])
         self.assertIn("snap_end_missing_run_id", metrics["evidence"]["invalid"])
         self.assertEqual(metrics["evidence"]["status"], "INCOMPLETE")
+
+    def test_fetch_timing_preserves_observed_run_id_as_provenance(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=1 event=fetch_admitted gen=1 focus=0 msg=- "
+            "session_id=1 op_kind=http_fetch op_id=2 attempt=1 submitted_us=1\n",
+            "LAB_TRACE t_us=2 event=fetch_started gen=1 focus=0 msg=- "
+            "session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "submitted_us=1 started_us=2\n",
+            "LAB_TRACE t_us=3 event=fetch_terminal gen=1 focus=0 msg=- "
+            "run_id=server-run session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "started_us=2 terminal_us=3 elapsed_us=1 outcome=success\n",
+        ])
+        self.assertEqual(metrics["run_id"], "server-run")
+        self.assertEqual(metrics["distributions"]["fetch_attempt_ms"]["n"], 1)
 
     def test_trace_build_id_is_retained_and_ready_build_remains_supported(self):
         trace_build = parse_trace([
@@ -445,6 +459,26 @@ class Lab02TraceMetricsTests(unittest.TestCase):
         self.assertIsNone(metrics["peaks"]["lvgl_biggest_free"])
         self.assertIsNone(metrics["peaks"]["internal_largest_free"])
         self.assertIsNone(metrics["resources"]["associated_provenance"]["lvgl_biggest_free"])
+
+    def test_resource_sample_state_is_accepted_as_firmware_phase(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=1 event=resource_sample gen=0 focus=0 msg=- "
+            "session_id=4 state=ready internal_free_bytes=100 "
+            "internal_largest_free_bytes=80 lvgl_mem_used_bytes=20 "
+            "lvgl_mem_high_water_bytes=22 lvgl_biggest_free_bytes=70\n",
+        ])
+        self.assertEqual(metrics["resource_samples"][0]["phase"], "ready")
+        self.assertEqual(metrics["peaks"]["internal_largest_free"], 80)
+        self.assertEqual(metrics["peaks"]["lvgl_mem_used"], 20)
+        self.assertNotIn("resource_samples", metrics["evidence"]["missing"])
+
+    def test_page_apply_elapsed_is_reduced_into_distribution(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=10 event=page_apply gen=1 focus=0 msg=m1 "
+            "run_id=r session_id=1 revision=2 op_id=4 elapsed_us=250\n",
+        ])
+        self.assertEqual(metrics["distributions"]["page_apply_ms"]["n"], 1)
+        self.assertEqual(metrics["distributions"]["page_apply_ms"]["worst"], 0.25)
 
 
 if __name__ == "__main__":

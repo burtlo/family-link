@@ -50,6 +50,13 @@ typedef struct {
     uint32_t stage_rejected;
 } lab02_session_metrics_t;
 
+typedef struct {
+    uint32_t active_fetches;
+    uint32_t admitted_fetches;
+    uint32_t fetch_queue_depth;
+    uint32_t terminal_pending;
+} lab02_session_resource_counts_t;
+
 void lab02_session_reset(void);
 
 /** Local fixture path: model owned elsewhere; session mirrors focus and metadata. */
@@ -78,6 +85,9 @@ lab02_slot_snapshot_t lab02_session_slot_snapshot(const lab02_page_provider_t *p
 
 lab02_session_snapshot_t lab02_session_snapshot(void);
 lab02_session_metrics_t lab02_session_metrics(void);
+/* Non-blocking owner-side snapshot for bounded evidence sampling. */
+bool lab02_session_resource_counts(lab02_session_resource_counts_t *out);
+const char *lab02_session_run_id(void);
 const lab02_page_provider_t *lab02_session_provider(void);
 
 void lab02_session_intent_focus(int focus_index);

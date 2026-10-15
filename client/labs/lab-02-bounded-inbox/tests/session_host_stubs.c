@@ -78,6 +78,15 @@ BaseType_t xQueueReceive(QueueHandle_t q, void *item, uint32_t ticks)
 BaseType_t xQueuePeek(QueueHandle_t q, void *item, uint32_t ticks)
 { return queue_read(q, item, ticks, 0); }
 
+unsigned uxQueueMessagesWaiting(QueueHandle_t q)
+{
+    if (!q) return 0;
+    pthread_mutex_lock(&q->mu);
+    unsigned count = q->count;
+    pthread_mutex_unlock(&q->mu);
+    return count;
+}
+
 struct fake_sem {
     pthread_mutex_t mu;
     pthread_cond_t changed;

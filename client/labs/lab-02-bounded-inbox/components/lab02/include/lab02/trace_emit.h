@@ -56,6 +56,22 @@ enum {
     LAB02_TRACE_FIELD_QUEUE_DEPTH = 1ull << 32,
     LAB02_TRACE_FIELD_QUEUE_HIGH_WATER = 1ull << 33,
     LAB02_TRACE_FIELD_OVERFLOW = 1ull << 34,
+    LAB02_TRACE_FIELD_INTERNAL_FREE_BYTES = 1ull << 35,
+    LAB02_TRACE_FIELD_INTERNAL_MIN_FREE_BYTES = 1ull << 36,
+    LAB02_TRACE_FIELD_INTERNAL_LARGEST_FREE_BYTES = 1ull << 37,
+    LAB02_TRACE_FIELD_DMA_FREE_BYTES = 1ull << 38,
+    LAB02_TRACE_FIELD_DMA_LARGEST_FREE_BYTES = 1ull << 39,
+    LAB02_TRACE_FIELD_PSRAM_FREE_BYTES = 1ull << 40,
+    LAB02_TRACE_FIELD_PSRAM_LARGEST_FREE_BYTES = 1ull << 41,
+    LAB02_TRACE_FIELD_LVGL_MEM_USED_BYTES = 1ull << 42,
+    LAB02_TRACE_FIELD_LVGL_MEM_HIGH_WATER_BYTES = 1ull << 43,
+    LAB02_TRACE_FIELD_LVGL_BIGGEST_FREE_BYTES = 1ull << 44,
+    LAB02_TRACE_FIELD_LIVE_CARD_ROOTS = 1ull << 45,
+    LAB02_TRACE_FIELD_LIVE_CARD_NODES = 1ull << 46,
+    LAB02_TRACE_FIELD_ACTIVE_FETCHES = 1ull << 47,
+    LAB02_TRACE_FIELD_ADMITTED_FETCHES = 1ull << 48,
+    LAB02_TRACE_FIELD_FETCH_QUEUE_DEPTH = 1ull << 49,
+    LAB02_TRACE_FIELD_TERMINAL_PENDING = 1ull << 50,
 };
 
 /* Pointers are borrowed only for the duration of lab02_trace_emit_payload(). */
@@ -76,6 +92,22 @@ typedef struct {
     uint32_t queue_depth;
     uint32_t queue_high_water;
     uint32_t overflow;
+    uint32_t internal_free_bytes;
+    uint32_t internal_min_free_bytes;
+    uint32_t internal_largest_free_bytes;
+    uint32_t dma_free_bytes;
+    uint32_t dma_largest_free_bytes;
+    uint32_t psram_free_bytes;
+    uint32_t psram_largest_free_bytes;
+    uint32_t lvgl_mem_used_bytes;
+    uint32_t lvgl_mem_high_water_bytes;
+    uint32_t lvgl_biggest_free_bytes;
+    uint32_t live_card_roots;
+    uint32_t live_card_nodes;
+    uint32_t active_fetches;
+    uint32_t admitted_fetches;
+    uint32_t fetch_queue_depth;
+    uint32_t terminal_pending;
     int32_t start_x;
     int32_t target_x;
     int32_t page_index;
@@ -97,6 +129,27 @@ typedef struct {
     bool publication_after_apply;
     const char *extra;
 } lab02_trace_payload_t;
+
+typedef struct {
+    const char *phase;
+    uint32_t session_id;
+    uint32_t internal_free_bytes;
+    uint32_t internal_min_free_bytes;
+    uint32_t internal_largest_free_bytes;
+    uint32_t dma_free_bytes;
+    uint32_t dma_largest_free_bytes;
+    uint32_t psram_free_bytes;
+    uint32_t psram_largest_free_bytes;
+    uint32_t lvgl_mem_used_bytes;
+    uint32_t lvgl_mem_high_water_bytes;
+    uint32_t lvgl_biggest_free_bytes;
+    uint32_t live_card_roots;
+    uint32_t live_card_nodes;
+    uint32_t active_fetches;
+    uint32_t admitted_fetches;
+    uint32_t fetch_queue_depth;
+    uint32_t terminal_pending;
+} lab02_resource_sample_t;
 
 typedef struct {
     uint32_t admitted;
@@ -132,6 +185,10 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
 /* Compatibility API for already-structured constant reason text. */
 void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
                       const char *message_id, const char *extra);
+
+/* Bounded, typed resource row. Sampling is owned by the session/presentation
+ * pump; this function only copies into the existing bounded trace queue. */
+void lab02_trace_emit_resource_sample(const lab02_resource_sample_t *sample);
 
 #ifdef __cplusplus
 }

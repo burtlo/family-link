@@ -13,6 +13,7 @@ set(LAB02_SRCS
     snap_math.c
     snap.c
     instrumentation.c
+    resource_sample.c
     trace_emit.c
     lab_harness.c
 )

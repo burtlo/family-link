@@ -263,7 +263,9 @@ def _metadata(lines: list[str], rows: list[dict], invalid: list[str]) -> tuple[s
 
 def _identity(row: dict, kind: str) -> tuple | None:
     if kind == "fetch":
-        names = ("run_id", "session_id", "op_kind", "op_id", "attempt")
+        # Fetches can start before the HTTP response establishes server run_id.
+        # Session/op/attempt identity is sufficient for within-session timing.
+        names = ("session_id", "op_kind", "op_id", "attempt")
     elif kind == "snap":
         names = ("run_id", "session_id", "snap_id")
     else:
@@ -274,7 +276,7 @@ def _identity(row: dict, kind: str) -> tuple | None:
 
 def _missing_identity_fields(row: dict, kind: str) -> tuple[str, ...]:
     if kind == "fetch":
-        names = ("run_id", "session_id", "op_kind", "op_id", "attempt")
+        names = ("session_id", "op_kind", "op_id", "attempt")
     elif kind == "snap":
         names = ("run_id", "session_id", "snap_id")
     else:
@@ -530,7 +532,7 @@ def _observed_resources(rows: list[dict], invalid: list[str]) -> dict:
         event = str(row.get("event"))
         if event in {"resource_sample", "resource"}:
             sample = {name: row.get(name) for name in RESOURCE_SAMPLE_FIELDS}
-            sample["phase"] = row.get("phase")
+            sample["phase"] = row.get("phase") or row.get("state")
             if sample["phase"] is None:
                 invalid.append("resource_sample_missing_phase")
             samples.append(sample)
