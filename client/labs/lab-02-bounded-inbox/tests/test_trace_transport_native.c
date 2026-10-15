@@ -61,6 +61,40 @@ static void *repeated_start(void *arg)
     return NULL;
 }
 
+static void *drain_trace(void *arg)
+{
+    (void)arg;
+    lab02_trace_drain();
+    return NULL;
+}
+
+static void *drain_trace_marked(void *arg)
+{
+    atomic_bool *done = arg;
+    lab02_trace_drain();
+    atomic_store(done, true);
+    return NULL;
+}
+
+static void *reset_trace_marked(void *arg)
+{
+    atomic_bool *done = arg;
+    lab02_trace_reset();
+    atomic_store(done, true);
+    return NULL;
+}
+
+static bool wait_for_true(const atomic_bool *value)
+{
+    for (unsigned i = 0; i < 100000u; ++i) {
+        if (atomic_load(value)) {
+            return true;
+        }
+        sched_yield();
+    }
+    return false;
+}
+
 int main(void)
 {
     lab02_trace_init();
@@ -111,8 +145,12 @@ int main(void)
     lab02_trace_stats_t pre_reset = stats();
     lab02_trace_reset();
     lab02_trace_stats_t post_reset = stats();
+    require_true(post_reset.stale_discarded == pre_reset.stale_discarded,
+                 "reset defers stale queued record reconciliation");
+    lab02_trace_drain();
+    post_reset = stats();
     require_true(post_reset.stale_discarded > pre_reset.stale_discarded,
-                 "reset accounts stale queued record");
+                 "drain accounts stale queued record");
     lab02_trace_emit("after_reset", 2, 2, "new_message", "new_extra");
     lab02_trace_drain();
 
@@ -211,6 +249,72 @@ int main(void)
                  loss_after_reset.queue_full == loss_before_reset.queue_full &&
                  loss_after_reset.stale_discarded == loss_before_reset.stale_discarded,
                  "reset preserves cumulative loss evidence");
+
+    /* A stalled sink may stop the drain context, but it must not stop a
+     * producer that only performs bounded copy/admission. */
+    lab02_trace_reset();
+    lab02_trace_emit("sink_blocked", 5, 5, "stable", "row");
+    trace_host_set_sink_blocked(true);
+    trace_host_reset_sink_observation();
+    pthread_t drain;
+    require_true(pthread_create(&drain, NULL, drain_trace, NULL) == 0,
+                 "stalled drain thread");
+    trace_host_wait_sink_entered();
+    atomic_bool competing_drain_done = false;
+    pthread_t competing_drain;
+    require_true(pthread_create(&competing_drain, NULL, drain_trace_marked,
+                                &competing_drain_done) == 0,
+                 "competing drain thread");
+    bool competing_drain_returned = wait_for_true(&competing_drain_done);
+    if (!competing_drain_returned) {
+        trace_host_set_sink_blocked(false);
+    }
+    pthread_join(competing_drain, NULL);
+    require_true(competing_drain_returned,
+                 "competing public drain does not wait or interleave");
+    lab02_trace_stats_t stalled_start = stats();
+    lab02_trace_emit("producer_while_sink_blocked", 6, 6, "stable", "row");
+    lab02_trace_stats_t stalled_end = stats();
+    require_true(stalled_end.admitted == stalled_start.admitted + 1u,
+                 "producer admission independent of sink progress");
+    trace_host_set_sink_blocked(false);
+    pthread_join(drain, NULL);
+
+    /* Reset must mark the lifecycle and return while the task owns a
+     * blocked sink.  Static queue/task storage stays alive until stop can
+     * safely reap the task after the sink is released. */
+    lab02_trace_reset();
+    lab02_trace_emit("task_sink_blocked", 7, 7, "stable", "row");
+    trace_host_set_sink_blocked(true);
+    trace_host_reset_sink_observation();
+    require_true(lab02_trace_start(), "start task for reset stall");
+    trace_host_wait_sink_entered();
+    atomic_bool competing_task_drain_done = false;
+    pthread_t competing_task_drain;
+    require_true(pthread_create(&competing_task_drain, NULL, drain_trace_marked,
+                                &competing_task_drain_done) == 0,
+                 "task/public drain contention thread");
+    bool competing_task_drain_returned = wait_for_true(&competing_task_drain_done);
+    if (!competing_task_drain_returned) {
+        trace_host_set_sink_blocked(false);
+    }
+    pthread_join(competing_task_drain, NULL);
+    require_true(competing_task_drain_returned,
+                 "public drain does not wait behind task sink");
+
+    atomic_bool reset_done = false;
+    pthread_t reset_thread;
+    require_true(pthread_create(&reset_thread, NULL, reset_trace_marked,
+                                &reset_done) == 0,
+                 "stalled reset thread");
+    bool reset_returned = wait_for_true(&reset_done);
+    if (!reset_returned) {
+        trace_host_set_sink_blocked(false);
+    }
+    pthread_join(reset_thread, NULL);
+    require_true(reset_returned, "reset does not wait behind stalled sink");
+    trace_host_set_sink_blocked(false);
+    lab02_trace_stop();
 
     puts("TRACE_NATIVE_RESULT PASS");
     return 0;

@@ -9,6 +9,14 @@
 #include <stdio.h>
 #include <string.h>
 
+/* The production sink is deliberately a single write of a complete row.
+ * Host transport tests provide a strong replacement to model a stalled
+ * console without changing the firmware path. */
+__attribute__((weak)) void lab02_trace_write_line(const char *line)
+{
+    (void)fputs(line, stdout);
+}
+
 typedef struct {
     int64_t t_us;
     int64_t submitted_us;
@@ -68,14 +76,23 @@ static atomic_uint s_dropped;
 static atomic_uint s_oversized;
 static atomic_uint s_queue_full;
 static atomic_uint s_stale_discarded;
-static atomic_uint s_high_water;
+static atomic_uint s_depth_mask;
 static atomic_uint s_start_failures;
+static atomic_uint s_loss_marker_dropped;
+static atomic_uint s_loss_marker_oversized;
+static atomic_uint s_loss_marker_queue_full;
+static atomic_bool s_loss_marker_pending;
+/* Both the FreeRTOS drain task and the public drain entry point can be
+ * active at once.  A single non-blocking claim keeps complete rows and loss
+ * markers serialized without making a producer or a competing drain wait. */
+static atomic_bool s_drain_owner;
 
 static void reset_lifecycle_counters(void)
 {
     atomic_store(&s_admitted, 0u);
     atomic_store(&s_emitted, 0u);
-    atomic_store(&s_high_water, 0u);
+    atomic_store(&s_depth_mask, 0u);
+    atomic_store(&s_loss_marker_pending, true);
 }
 
 void lab02_trace_init(void)
@@ -87,6 +104,7 @@ void lab02_trace_init(void)
                                      s_queue_storage, &s_queue_control);
         atomic_store(&s_lifecycle, 1u);
         atomic_store(&s_task_state, TRACE_STATE_STOPPED);
+        reset_lifecycle_counters();
         atomic_store(&s_init_state, 2u);
         return;
     }
@@ -207,10 +225,10 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
     }
     atomic_fetch_add(&s_admitted, 1u);
     unsigned depth = (unsigned)uxQueueMessagesWaiting(s_queue);
-    unsigned previous = atomic_load(&s_high_water);
-    while (depth > previous &&
-           !atomic_compare_exchange_weak(&s_high_water, &previous, depth)) {
-    }
+    /* A single atomic bit set records this observed depth.  Do not use an
+     * atomic-max retry loop here: producer admission must have a fixed bound
+     * even when another producer is updating the same statistic. */
+    atomic_fetch_or(&s_depth_mask, 1u << depth);
 }
 
 void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
@@ -302,8 +320,58 @@ static void write_record(const lab02_trace_record_t *record)
         return;
     }
     (void)snprintf(line + used, sizeof(line) - (size_t)used, "\n");
-    fputs(line, stdout);
+    lab02_trace_write_line(line);
     atomic_fetch_add(&s_emitted, 1u);
+}
+
+static void write_loss_marker_if_needed(void)
+{
+    const unsigned dropped = atomic_load(&s_dropped);
+    const unsigned oversized = atomic_load(&s_oversized);
+    const unsigned queue_full = atomic_load(&s_queue_full);
+    const bool pending = atomic_load(&s_loss_marker_pending);
+    if (!pending && dropped == atomic_load(&s_loss_marker_dropped) &&
+        oversized == atomic_load(&s_loss_marker_oversized) &&
+        queue_full == atomic_load(&s_loss_marker_queue_full)) {
+        return;
+    }
+
+    char line[160];
+    const char *status = dropped != 0u ? "OBSERVED" : "NONE";
+    int written = snprintf(line, sizeof(line),
+                           "LAB_TRACE_LOSS status=%s dropped_events=%u "
+                           "oversized_events=%u malformed_rows=0\n",
+                           status, dropped, oversized);
+    if (written < 0 || (size_t)written >= sizeof(line)) {
+        return;
+    }
+    lab02_trace_write_line(line);
+    atomic_store(&s_loss_marker_dropped, dropped);
+    atomic_store(&s_loss_marker_oversized, oversized);
+    atomic_store(&s_loss_marker_queue_full, queue_full);
+    atomic_store(&s_loss_marker_pending, false);
+}
+
+static bool try_claim_drain(void)
+{
+    bool expected = false;
+    return atomic_compare_exchange_strong(&s_drain_owner, &expected, true);
+}
+
+static void release_drain(void)
+{
+    atomic_store(&s_drain_owner, false);
+}
+
+static void write_record_if_current(const lab02_trace_record_t *record,
+                                    bool task_context)
+{
+    if ((task_context && atomic_load(&s_task_state) != TRACE_STATE_RUNNING) ||
+        record->lifecycle != atomic_load(&s_lifecycle)) {
+        atomic_fetch_add(&s_stale_discarded, 1u);
+        return;
+    }
+    write_record(record);
 }
 
 void lab02_trace_drain(void)
@@ -311,14 +379,15 @@ void lab02_trace_drain(void)
     if (atomic_load(&s_init_state) != 2u || !s_queue) {
         return;
     }
+    if (!try_claim_drain()) {
+        return;
+    }
     lab02_trace_record_t record;
     while (xQueueReceive(s_queue, &record, 0) == pdTRUE) {
-        if (record.lifecycle != atomic_load(&s_lifecycle)) {
-            atomic_fetch_add(&s_stale_discarded, 1u);
-            continue;
-        }
-        write_record(&record);
+        write_record_if_current(&record, false);
     }
+    write_loss_marker_if_needed();
+    release_drain();
 }
 
 static void trace_task(void *arg)
@@ -329,15 +398,17 @@ static void trace_task(void *arg)
         vTaskDelay(1u);
     }
     while (atomic_load(&s_task_state) == TRACE_STATE_RUNNING) {
-        if (xQueueReceive(s_queue, &record, pdMS_TO_TICKS(50)) != pdTRUE) {
+        if (!try_claim_drain()) {
+            vTaskDelay(1u);
             continue;
         }
-        if (atomic_load(&s_task_state) == TRACE_STATE_RUNNING &&
-            record.lifecycle == atomic_load(&s_lifecycle)) {
-            write_record(&record);
+        if (xQueueReceive(s_queue, &record, pdMS_TO_TICKS(50)) != pdTRUE) {
+            write_loss_marker_if_needed();
         } else {
-            atomic_fetch_add(&s_stale_discarded, 1u);
+            write_record_if_current(&record, true);
         }
+        write_loss_marker_if_needed();
+        release_drain();
     }
     atomic_store(&s_task, NULL);
     atomic_store(&s_task_state, TRACE_STATE_STOPPED);
@@ -394,13 +465,27 @@ void lab02_trace_stop(void)
 
 void lab02_trace_reset(void)
 {
-    lab02_trace_stop();
     if (atomic_load(&s_init_state) != 2u || !s_queue) {
         lab02_trace_init();
         return;
     }
+
+    /* Reset is deliberately a mark-and-defer operation.  The task and a
+     * public drain may be inside the sink, so reset must not wait for either
+     * one and must not drain/output from this call.  Queue storage, records,
+     * and the task stack are static and remain valid until any in-flight
+     * drain has returned.  The next drain reconciles old lifecycle records
+     * as stale. */
     atomic_fetch_add(&s_lifecycle, 1u);
-    lab02_trace_drain();
+    unsigned state = atomic_load(&s_task_state);
+    /* Do not race the STARTING -> RUNNING publication in lab02_trace_start().
+     * A reset during startup still advances the lifecycle; the task can
+     * start safely and will observe the new lifecycle when it drains. */
+    if (state == TRACE_STATE_RUNNING) {
+        unsigned expected = state;
+        (void)atomic_compare_exchange_strong(&s_task_state, &expected,
+                                              TRACE_STATE_STOPPING);
+    }
     reset_lifecycle_counters();
 }
 
@@ -415,6 +500,13 @@ void lab02_trace_stats(lab02_trace_stats_t *out)
     out->oversized = atomic_load(&s_oversized);
     out->queue_full = atomic_load(&s_queue_full);
     out->stale_discarded = atomic_load(&s_stale_discarded);
-    out->high_water = atomic_load(&s_high_water);
+    unsigned depth_mask = atomic_load(&s_depth_mask);
+    out->high_water = 0u;
+    for (unsigned depth = LAB02_TRACE_QUEUE_CAPACITY; depth > 0u; --depth) {
+        if (depth_mask & (1u << depth)) {
+            out->high_water = depth;
+            break;
+        }
+    }
     out->start_failures = atomic_load(&s_start_failures);
 }

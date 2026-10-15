@@ -4,6 +4,7 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -12,6 +13,22 @@
 static bool s_task_create_failure;
 static unsigned s_task_create_count;
 static unsigned s_last_task_stack_words;
+static pthread_mutex_t s_sink_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t s_sink_changed = PTHREAD_COND_INITIALIZER;
+static bool s_sink_blocked;
+static bool s_sink_entered;
+
+void lab02_trace_write_line(const char *line)
+{
+    pthread_mutex_lock(&s_sink_mutex);
+    s_sink_entered = true;
+    pthread_cond_broadcast(&s_sink_changed);
+    while (s_sink_blocked) {
+        pthread_cond_wait(&s_sink_changed, &s_sink_mutex);
+    }
+    pthread_mutex_unlock(&s_sink_mutex);
+    (void)fputs(line, stdout);
+}
 
 static void *run_task(void *arg)
 {
@@ -119,6 +136,33 @@ unsigned trace_host_task_create_count(void)
 unsigned trace_host_last_task_stack_words(void)
 {
     return s_last_task_stack_words;
+}
+
+void trace_host_set_sink_blocked(bool blocked)
+{
+    pthread_mutex_lock(&s_sink_mutex);
+    s_sink_blocked = blocked;
+    if (!blocked) {
+        pthread_cond_broadcast(&s_sink_changed);
+    }
+    pthread_mutex_unlock(&s_sink_mutex);
+}
+
+void trace_host_reset_sink_observation(void)
+{
+    pthread_mutex_lock(&s_sink_mutex);
+    s_sink_entered = false;
+    pthread_mutex_unlock(&s_sink_mutex);
+}
+
+void trace_host_wait_sink_entered(void)
+{
+    pthread_mutex_lock(&s_sink_mutex);
+    while (!s_sink_entered) {
+        pthread_cond_wait(&s_sink_changed, &s_sink_mutex);
+    }
+    s_sink_entered = false;
+    pthread_mutex_unlock(&s_sink_mutex);
 }
 
 void vTaskDelete(TaskHandle_t task)

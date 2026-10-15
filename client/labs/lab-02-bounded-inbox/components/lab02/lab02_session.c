@@ -84,6 +84,7 @@ static lab02_session_metrics_t s_metrics;
 typedef struct {
     bool admitted;
     bool posted;
+    bool terminal_accounted;
     uint64_t sequence;
     lab02_sess_event_t event;
 } terminal_slot_t;
@@ -102,9 +103,96 @@ static uint32_t s_pending_stages;
 static uint32_t s_transport_session;
 static bool s_transport_pending;
 static bool s_transport_latest;
+static atomic_bool s_fetch_delivery_cleanup_pending;
 
 static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
                           bool retry_failed);
+
+static void emit_stale_fetch_terminals(const lab02_fetch_req_t *requests, unsigned count)
+{
+    for (unsigned i = 0; i < count; i++) {
+        const lab02_fetch_req_t *req = &requests[i];
+        const lab02_trace_payload_t terminal_payload = {
+            .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                      LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OUTCOME |
+                      LAB02_TRACE_FIELD_ELAPSED_US | LAB02_TRACE_FIELD_OP_ID,
+            .session_id = req->session_id,
+            .revision = req->revision,
+            .attempt = req->attempt,
+            .outcome = "stale",
+            .elapsed_us = esp_timer_get_time() - req->submitted_us,
+            .op_id = req->op_id,
+        };
+        lab02_trace_emit_payload("fetch_terminal", req->op_id, req->page_index,
+                                 NULL, &terminal_payload);
+    }
+}
+
+/* The presentation owner cannot wait for a producer. Generation invalidation
+ * is immediate; the ledger and queue are reconciled on a later owner pump. */
+static bool finish_pending_fetch_delivery_cleanup(void)
+{
+    lab02_fetch_req_t stale_requests[TERMINAL_CAP];
+    unsigned stale_count = 0;
+    if (!atomic_load(&s_fetch_delivery_cleanup_pending)) {
+        return true;
+    }
+    if (!s_post_mutex) {
+        memset(s_terminals, 0, sizeof(s_terminals));
+        s_reconciled_slot = -1;
+        s_stage_session = s_session_generation;
+        s_transport_session = s_session_generation;
+        atomic_store(&s_fetch_delivery_cleanup_pending, false);
+        return true;
+    }
+    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) {
+        return false;
+    }
+
+    unsigned released_slots = 0;
+    for (int i = 0; i < LAB02_FETCH_QUEUE_CAP; i++) {
+        if (s_terminals[i].admitted) {
+            released_slots++;
+        }
+    }
+    for (int i = 0; i < TERMINAL_CAP; i++) {
+        if (s_terminals[i].admitted && !s_terminals[i].terminal_accounted &&
+            stale_count < TERMINAL_CAP) {
+            stale_requests[stale_count++] = s_terminals[i].event.request;
+        }
+    }
+    memset(s_terminals, 0, sizeof(s_terminals));
+    s_reconciled_slot = -1;
+    s_stage_session = s_session_generation;
+    s_transport_session = s_session_generation;
+    s_initial_restart_pending = false;
+    s_pending_stages = 0;
+    s_worker_status_pending = false;
+    s_worker_status_available = false;
+    s_worker_status_reported = false;
+    s_transport_pending = false;
+    s_transport_latest = false;
+
+    /* Requests not yet taken by the worker belong to the superseded session. */
+    if (s_fetch_q) {
+        lab02_fetch_req_t discarded;
+        while (xQueueReceive(s_fetch_q, &discarded, 0) == pdTRUE) {
+        }
+    }
+    for (unsigned i = 0; s_fetch_slots && i < released_slots; i++) {
+        xSemaphoreGive(s_fetch_slots);
+    }
+    atomic_store(&s_fetch_delivery_cleanup_pending, false);
+    xSemaphoreGive(s_post_mutex);
+    emit_stale_fetch_terminals(stale_requests, stale_count);
+    return true;
+}
+
+static void reset_fetch_delivery_state(void)
+{
+    atomic_store(&s_fetch_delivery_cleanup_pending, true);
+    (void)finish_pending_fetch_delivery_cleanup();
+}
 
 static uint16_t effective_page_size(void)
 {
@@ -490,6 +578,7 @@ void lab02_session_reset(void)
     if (s_session_generation == 0) {
         s_session_generation = 1;
     }
+    reset_fetch_delivery_state();
     memset(&s_model, 0, sizeof(s_model));
     memset(&s_provider, 0, sizeof(s_provider));
     memset(&s_meta, 0, sizeof(s_meta));
@@ -825,6 +914,7 @@ bool lab02_session_http_take_initial_restart(lab02_fetch_req_t *out)
 void lab02_session_pump(void)
 {
     if (!s_post_mutex || !finish_reconciled_slot()) return;
+    if (!finish_pending_fetch_delivery_cleanup()) return;
     admit_initial_retry();
     if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return;
     uint32_t stages = s_stage_session == s_session_generation ? s_pending_stages : 0;
@@ -856,7 +946,14 @@ void lab02_session_pump(void)
         if (s_terminals[i].posted &&
             (slot < 0 || s_terminals[i].sequence < s_terminals[slot].sequence)) slot = i;
     }
-    if (slot >= 0) s_pump_ev = s_terminals[slot].event;
+    if (slot >= 0) {
+        s_pump_ev = s_terminals[slot].event;
+        /* Account for the terminal while still owning the delivery ledger.
+         * Reset cleanup may reclaim this slot after the mutex is released;
+         * it must not emit a second stale terminal for the same operation. */
+        s_terminals[slot].terminal_accounted = true;
+        s_reconciled_slot = slot;
+    }
     xSemaphoreGive(s_post_mutex);
     if (worker_status) {
         s_worker_available = worker_available;
@@ -941,7 +1038,6 @@ void lab02_session_pump(void)
         };
         lab02_trace_emit_payload("fetch_terminal", s_pump_ev.op_id,
                                  s_pump_ev.page_index, NULL, &terminal_payload);
-        s_reconciled_slot = slot;
         if (!finish_reconciled_slot()) return;
     }
     /* At most one completion acceptance OR one pending model apply per pump.
@@ -1074,6 +1170,11 @@ void lab02_session_http_fetch_finished(lab02_fetch_outcome_t outcome, uint32_t s
                                        uint32_t op_id,
                                        int page_index, const lab02_inbox_page_t *page, bool initial)
 {
+    if (session_id != atomic_load(&s_session_generation)) {
+        lab02_trace_emit("fetch_delivery_rejected", op_id, page_index, NULL,
+                         "duplicate_or_unadmitted");
+        return;
+    }
     if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
     terminal_slot_t *reservation = NULL;
     for (int i = 0; i < TERMINAL_CAP; i++) {

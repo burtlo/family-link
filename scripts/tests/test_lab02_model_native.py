@@ -71,6 +71,11 @@ class Lab02NativeModelTests(unittest.TestCase):
             self.assertIn("state=running outcome=success reason=completed", result.stdout)
             self.assertIn("elapsed_us=11", result.stdout)
             self.assertIn("page_receipt_id=receipt_old run_id=run_old", result.stdout)
+            self.assertIn("LAB_TRACE_LOSS status=OBSERVED", result.stdout)
+            self.assertTrue(any("dropped_events=" in line and "dropped_events=0" not in line
+                                for line in result.stdout.splitlines()
+                                if line.startswith("LAB_TRACE_LOSS ")))
+            self.assertIn("oversized_events=1", result.stdout)
             self.assertIn("TRACE_NATIVE_RESULT PASS", result.stdout)
 
     def test_terminal_admission_and_reconciliation(self):
@@ -89,7 +94,7 @@ class Lab02NativeModelTests(unittest.TestCase):
                 (Path(artifact) / "compile-command.json").write_text(json.dumps(command, indent=2))
             subprocess.run(command, check=True, capture_output=True, text=True)
             for scenario, terminal_count in (("focus-full", 2), ("focus-busy", 1), ("initial-saturation", 9), ("initial-timeout", 1), ("normal-saturation", 9),
-                                             ("pending-mutation", 6), ("pending-session-reset", 4), ("newer-operation", 4), ("response-old-revision", 3), ("stale-session", 3)):
+                                             ("pending-mutation", 6), ("pending-session-reset", 4), ("newer-operation", 4), ("response-old-revision", 3), ("stale-session", 3), ("pending-boot-reset", 3), ("busy-reset", 2), ("terminal-contention-reset", 2)):
                 with self.subTest(scenario=scenario):
                     result = subprocess.run([str(output), scenario], capture_output=True, text=True, timeout=5)
                     if artifact:

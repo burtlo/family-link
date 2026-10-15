@@ -94,7 +94,7 @@ void lab02_trace_init(void);
 bool lab02_trace_start(void);
 void lab02_trace_stop(void);
 
-/* Discards records from the prior lifecycle while preserving cumulative loss evidence. */
+/* Marks a lifecycle boundary without waiting for or interrupting a drain. */
 void lab02_trace_reset(void);
 
 /* Test/lifecycle hook: drain admitted records in the calling non-owner context. */

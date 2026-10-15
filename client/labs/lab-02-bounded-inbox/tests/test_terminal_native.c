@@ -6,6 +6,8 @@
 #include <string.h>
 #include <time.h>
 extern void lab02_host_hold_admission(bool hold);
+extern void lab02_host_hold_after_terminal(bool hold);
+extern unsigned lab02_host_fetch_terminal_count(uint32_t op_id);
 extern unsigned lab02_host_fetch_queue_depth(void);
 
 static lab02_page_provider_t provider;
@@ -195,8 +197,79 @@ int main(int argc, char **argv)
         deliver(old, false, 1); deliver(boot, true, 1); pump(4);
         assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
         assert(!lab02_inbox_model_item(provider.model, 16));
-        assert(lab02_session_metrics().apply_stale == 1);
+        assert(lab02_session_metrics().apply_stale == 0);
         assert(lab02_session_metrics().apply_ok == 1);
+    } else if (!strcmp(argv[1], "pending-boot-reset")) {
+        lab02_fetch_req_t old_boot = start(false);
+        ((lab02_inbox_model_t *)provider.model)->count = 32; /* Seed only the admission-boundary fixture. */
+        uint32_t old_page_op = 0;
+        assert(lab02_session_http_enqueue_fetch(1, &old_page_op));
+        assert(lab02_host_fetch_queue_depth() == 1);
+
+        lab02_fetch_req_t new_boot = start(false);
+        assert(new_boot.session_id != old_boot.session_id);
+        assert(new_boot.op_id != old_boot.op_id);
+        assert(lab02_host_fetch_queue_depth() == 0);
+
+        /* Both old operations arrive after re-entry; neither may enter the new ledger. */
+        lab02_session_http_fetch_finished(LAB02_FETCH_OK, old_boot.session_id, old_boot.op_id,
+                                          old_boot.page_index, &page, true);
+        lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, old_boot.session_id, old_page_op,
+                                          1, NULL, false);
+        pump(1);
+        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_FETCHING);
+        assert(lab02_session_materialized_count() == 0);
+
+        deliver(new_boot, true, 4); pump(4);
+        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
+        assert(lab02_session_snapshot().inbox_revision == 4);
+        assert(lab02_session_metrics().apply_ok == 1);
+    } else if (!strcmp(argv[1], "busy-reset")) {
+        lab02_fetch_req_t old_boot = start(false);
+        lab02_host_hold_admission(true);
+
+        /* Reset and a late producer completion must remain bounded while the
+         * presentation owner's delivery mutex is held elsewhere. */
+        lab02_session_reset();
+        lab02_session_http_fetch_finished(LAB02_FETCH_OK, old_boot.session_id,
+                                          old_boot.op_id, old_boot.page_index,
+                                          &page, true);
+        pump(1);
+
+        lab02_host_hold_admission(false);
+        pump(2); /* Deferred cleanup releases the old boot reservation. */
+        assert(lab02_host_fetch_queue_depth() == 0);
+
+        lab02_fetch_req_t new_boot = start(false);
+        assert(new_boot.session_id != old_boot.session_id);
+        assert(new_boot.op_id != old_boot.op_id);
+        lab02_session_http_fetch_finished(LAB02_FETCH_OK, old_boot.session_id,
+                                          old_boot.op_id, old_boot.page_index,
+                                          &page, true);
+        pump(1);
+        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_FETCHING);
+        assert(lab02_session_materialized_count() == 0);
+
+        deliver(new_boot, true, 5); pump(4);
+        assert(lab02_session_snapshot().load_stage == LAB02_LOAD_READY);
+        assert(lab02_session_snapshot().inbox_revision == 5);
+        assert(lab02_session_metrics().apply_ok == 1);
+    } else if (!strcmp(argv[1], "terminal-contention-reset")) {
+        start(true);
+        lab02_fetch_req_t admitted = take(1);
+
+        /* Force the owner to emit this operation's terminal while the
+         * delivery mutex becomes unavailable for reconciliation. Reset then
+         * gets the mutex before the deferred owner cleanup can run. */
+        lab02_host_hold_after_terminal(true);
+        deliver(admitted, false, 1);
+        pump(1);
+        lab02_host_hold_admission(false);
+        lab02_session_reset();
+
+        assert(lab02_host_fetch_terminal_count(admitted.op_id) == 1);
+        pump(2);
+        assert(lab02_host_fetch_queue_depth() == 0);
     } else assert(!"unknown scenario");
     puts("TERMINAL_RESULT PASS");
     return 0;

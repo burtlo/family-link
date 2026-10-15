@@ -107,6 +107,13 @@ void lab02_host_hold_admission(bool hold)
     if (hold) { if (xSemaphoreTake(s_host_post_mutex, 0) != pdTRUE) abort(); }
     else xSemaphoreGive(s_host_post_mutex);
 }
+static bool s_hold_after_terminal;
+static uint32_t s_terminal_count_op;
+static unsigned s_terminal_count;
+void lab02_host_hold_after_terminal(bool hold)
+{ s_hold_after_terminal = hold; }
+unsigned lab02_host_fetch_terminal_count(uint32_t op_id)
+{ return op_id == s_terminal_count_op ? s_terminal_count : 0; }
 
 BaseType_t xSemaphoreTake(SemaphoreHandle_t sem, uint32_t ticks)
 {
@@ -158,6 +165,19 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
                               const char *message_id,
                               const lab02_trace_payload_t *payload)
 {
+    if (!strcmp(event, "fetch_terminal") && payload &&
+        (payload->fields & LAB02_TRACE_FIELD_OP_ID)) {
+        if (s_terminal_count_op == payload->op_id) {
+            s_terminal_count++;
+        } else {
+            s_terminal_count_op = payload->op_id;
+            s_terminal_count = 1;
+        }
+        if (s_hold_after_terminal) {
+            s_hold_after_terminal = false;
+            lab02_host_hold_admission(true);
+        }
+    }
     printf("SESSION_TRACE event=%s op_id=%u page=%d message=%s",
            event, (unsigned)generation, focus_index, message_id ? message_id : "-");
     if (payload) {
