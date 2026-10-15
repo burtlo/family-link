@@ -39,6 +39,7 @@ static uint32_t animation_id(lv_anim_t *a)
 static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason)
 {
     if (!lab02_snap_is_current(id)) return;
+    int64_t terminal_us = esp_timer_get_time();
     s_operation.status = SNAP_TERMINAL; /* Exactly once, including reentrant deletion. */
     s_operation.state->scroll_lock = false;
     s_operation.state->driving_scroll = false;
@@ -49,7 +50,8 @@ static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason
                   LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_REASON |
                   LAB02_TRACE_FIELD_BEFORE | LAB02_TRACE_FIELD_AFTER |
                   LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ELAPSED_US |
-                  LAB02_TRACE_FIELD_TARGET_X,
+                  LAB02_TRACE_FIELD_TARGET_X | LAB02_TRACE_FIELD_SUBMITTED_US |
+                  LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_OP_KIND,
         .session_id = s_operation.session_id,
         .snap_id = id,
         .outcome = name,
@@ -57,7 +59,10 @@ static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason
         .before = "running",
         .after = "terminal",
         .revision = s_operation.revision,
-        .elapsed_us = esp_timer_get_time() - s_operation.submitted_us,
+        .elapsed_us = terminal_us - s_operation.submitted_us,
+        .submitted_us = s_operation.submitted_us,
+        .terminal_us = terminal_us,
+        .op_kind = "snap",
         .target_x = s_operation.target,
     };
     lab02_trace_emit_payload("snap_end", 0, s_operation.focus,
@@ -132,7 +137,8 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
         .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_SNAP_ID |
                   LAB02_TRACE_FIELD_BEFORE | LAB02_TRACE_FIELD_AFTER |
                   LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_START_X |
-                  LAB02_TRACE_FIELD_TARGET_X,
+                  LAB02_TRACE_FIELD_TARGET_X | LAB02_TRACE_FIELD_SUBMITTED_US |
+                  LAB02_TRACE_FIELD_OP_KIND,
         .session_id = s_operation.session_id,
         .snap_id = id,
         .before = "pending",
@@ -140,6 +146,8 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
         .revision = s_operation.revision,
         .start_x = start,
         .target_x = target_x,
+        .submitted_us = s_operation.submitted_us,
+        .op_kind = "snap",
     };
     lab02_trace_emit_payload("snap_start", 0, s_operation.focus,
                              s_operation.message_id, &payload);

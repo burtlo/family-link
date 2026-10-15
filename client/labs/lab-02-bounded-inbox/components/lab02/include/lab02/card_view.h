@@ -23,6 +23,7 @@ typedef struct {
     lv_obj_t *preview_lab;
     lv_obj_t *dur_lab;
     lv_obj_t *unread_dot;
+    int card_slot;
     int bound_index;
     uint32_t bind_generation;
     char bound_message_id[24];

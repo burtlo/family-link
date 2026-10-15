@@ -71,6 +71,8 @@ class Lab02NativeModelTests(unittest.TestCase):
             self.assertIn("state=running outcome=success reason=completed", result.stdout)
             self.assertIn("elapsed_us=11", result.stdout)
             self.assertIn("page_receipt_id=receipt_old run_id=run_old", result.stdout)
+            self.assertIn("bind_generation=12 card_slot=3", result.stdout)
+            self.assertIn("publication_after_apply=true", result.stdout)
             self.assertIn("LAB_TRACE_LOSS status=OBSERVED", result.stdout)
             self.assertTrue(any("dropped_events=" in line and "dropped_events=0" not in line
                                 for line in result.stdout.splitlines()

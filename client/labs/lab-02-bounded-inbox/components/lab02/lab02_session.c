@@ -112,15 +112,28 @@ static void emit_stale_fetch_terminals(const lab02_fetch_req_t *requests, unsign
 {
     for (unsigned i = 0; i < count; i++) {
         const lab02_fetch_req_t *req = &requests[i];
+        int64_t terminal_us = esp_timer_get_time();
+        uint64_t terminal_fields = LAB02_TRACE_FIELD_SESSION_ID |
+            LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ATTEMPT |
+            LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_ELAPSED_US |
+            LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_SUBMITTED_US |
+            LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_PAGE_INDEX |
+            LAB02_TRACE_FIELD_OP_KIND;
+        if (req->started_us > 0) {
+            terminal_fields |= LAB02_TRACE_FIELD_STARTED_US;
+        }
         const lab02_trace_payload_t terminal_payload = {
-            .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
-                      LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OUTCOME |
-                      LAB02_TRACE_FIELD_ELAPSED_US | LAB02_TRACE_FIELD_OP_ID,
+            .fields = terminal_fields,
             .session_id = req->session_id,
             .revision = req->revision,
             .attempt = req->attempt,
             .outcome = "stale",
-            .elapsed_us = esp_timer_get_time() - req->submitted_us,
+            .elapsed_us = terminal_us - req->submitted_us,
+            .submitted_us = req->submitted_us,
+            .started_us = req->started_us,
+            .terminal_us = terminal_us,
+            .page_index = req->page_index,
+            .op_kind = "http_fetch",
             .op_id = req->op_id,
         };
         lab02_trace_emit_payload("fetch_terminal", req->op_id, req->page_index,
@@ -503,11 +516,14 @@ static bool apply_page(const lab02_sess_event_t *ev)
     s_presentation_dirty = true;
     s_metrics.apply_ok++;
     const lab02_trace_payload_t apply_payload = {
-        .fields = LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_REVISION |
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_OP_ID |
+                  LAB02_TRACE_FIELD_PAGE_INDEX | LAB02_TRACE_FIELD_REVISION |
                   LAB02_TRACE_FIELD_SNAP_ID | LAB02_TRACE_FIELD_FETCH_SNAP_ID |
                   LAB02_TRACE_FIELD_PAGE_RECEIPT_ID | LAB02_TRACE_FIELD_RUN_ID |
                   LAB02_TRACE_FIELD_SERVER_COMPLETED_NS,
+        .session_id = ev->session_id,
         .op_id = ev->op_id,
+        .page_index = ev->page_index,
         .revision = s_inbox_revision,
         .snap_id = lab02_snap_current_id(),
         .fetch_snap_id = ev->page.snap_id,
@@ -574,10 +590,20 @@ static void handle_fetch_done(const lab02_sess_event_t *ev)
 
 void lab02_session_reset(void)
 {
+    uint32_t previous_session = s_session_generation;
     s_session_generation++;
     if (s_session_generation == 0) {
         s_session_generation = 1;
     }
+    const lab02_trace_payload_t reset_payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REASON |
+                  LAB02_TRACE_FIELD_BEFORE | LAB02_TRACE_FIELD_AFTER,
+        .session_id = s_session_generation,
+        .reason = "session_reset",
+        .before = previous_session ? "active" : "initial",
+        .after = "active",
+    };
+    lab02_trace_emit_payload("session_reset", 0, 0, NULL, &reset_payload);
     reset_fetch_delivery_state();
     memset(&s_model, 0, sizeof(s_model));
     memset(&s_provider, 0, sizeof(s_provider));
@@ -1024,16 +1050,29 @@ void lab02_session_pump(void)
             stale = s_metrics.apply_stale != prior_stale;
             if (s_metrics.fetch_fail != prior_fail) s_pump_ev.outcome = LAB02_FETCH_FAIL;
         }
+        int64_t terminal_us = esp_timer_get_time();
+        uint64_t terminal_fields = LAB02_TRACE_FIELD_SESSION_ID |
+            LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ATTEMPT |
+            LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_ELAPSED_US |
+            LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_SUBMITTED_US |
+            LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_PAGE_INDEX |
+            LAB02_TRACE_FIELD_OP_KIND;
+        if (s_pump_ev.request.started_us > 0) {
+            terminal_fields |= LAB02_TRACE_FIELD_STARTED_US;
+        }
         const lab02_trace_payload_t terminal_payload = {
-            .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
-                      LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OUTCOME |
-                      LAB02_TRACE_FIELD_ELAPSED_US | LAB02_TRACE_FIELD_OP_ID,
+            .fields = terminal_fields,
             .session_id = s_pump_ev.session_id,
             .revision = s_pump_ev.request.revision,
             .attempt = s_pump_ev.request.attempt,
             .outcome = stale ? "stale" : (s_pump_ev.outcome == LAB02_FETCH_OK ? "success" :
                        (s_pump_ev.outcome == LAB02_FETCH_TIMEOUT ? "timed_out" : "failure")),
-            .elapsed_us = esp_timer_get_time() - s_pump_ev.request.submitted_us,
+            .elapsed_us = terminal_us - s_pump_ev.request.submitted_us,
+            .submitted_us = s_pump_ev.request.submitted_us,
+            .started_us = s_pump_ev.request.started_us,
+            .terminal_us = terminal_us,
+            .page_index = s_pump_ev.request.page_index,
+            .op_kind = "http_fetch",
             .op_id = s_pump_ev.op_id,
         };
         lab02_trace_emit_payload("fetch_terminal", s_pump_ev.op_id,
@@ -1102,6 +1141,49 @@ bool lab02_session_http_enqueue_fetch(int page_index, uint32_t *op_id_out)
     return enqueue_fetch(page_index, op_id_out, false, true);
 }
 
+void lab02_session_http_fetch_started(uint32_t session_id, uint32_t op_id,
+                                      int page_index, int64_t started_us)
+{
+    /* This is optional telemetry; never delay the worker or terminal delivery
+     * just to record a queue-to-worker timestamp. */
+    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, 0) != pdTRUE) {
+        return;
+    }
+    bool retained = false;
+    lab02_fetch_req_t request = {0};
+    for (int i = 0; i < TERMINAL_CAP; i++) {
+        terminal_slot_t *entry = &s_terminals[i];
+        lab02_fetch_req_t *req = &entry->event.request;
+        if (entry->admitted && !entry->posted && req->session_id == session_id &&
+            req->op_id == op_id && req->page_index == page_index) {
+            req->started_us = started_us;
+            request = *req;
+            retained = true;
+            break;
+        }
+    }
+    xSemaphoreGive(s_post_mutex);
+    if (!retained) {
+        return;
+    }
+    const lab02_trace_payload_t started_payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_OP_ID |
+                  LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_PAGE_INDEX |
+                  LAB02_TRACE_FIELD_SUBMITTED_US | LAB02_TRACE_FIELD_STARTED_US |
+                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE,
+        .session_id = session_id,
+        .op_id = op_id,
+        .attempt = request.attempt,
+        .page_index = page_index,
+        .submitted_us = request.submitted_us,
+        .started_us = started_us,
+        .op_kind = "http_fetch",
+        .state = "started",
+    };
+    lab02_trace_emit_payload("fetch_started", op_id, page_index, NULL,
+                             &started_payload);
+}
+
 static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
                           bool retry_failed)
 {
@@ -1159,7 +1241,22 @@ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
     s_inflight_op[page_index] = op_id;
     s_failed_pages &= ~(1U << page_index);
     xSemaphoreGive(s_post_mutex);
-    lab02_trace_emit("fetch_admitted", op_id, page_index, NULL, NULL);
+    const lab02_trace_payload_t admitted_payload = {
+        .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                  LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OP_ID |
+                  LAB02_TRACE_FIELD_PAGE_INDEX | LAB02_TRACE_FIELD_SUBMITTED_US |
+                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE,
+        .session_id = req.session_id,
+        .revision = req.revision,
+        .attempt = req.attempt,
+        .op_id = req.op_id,
+        .page_index = req.page_index,
+        .submitted_us = req.submitted_us,
+        .op_kind = "http_fetch",
+        .state = "admitted",
+    };
+    lab02_trace_emit_payload("fetch_admitted", op_id, page_index, NULL,
+                             &admitted_payload);
     if (op_id_out) {
         *op_id_out = op_id;
     }

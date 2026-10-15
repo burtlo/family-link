@@ -6,6 +6,7 @@
 #include "lab02/lab02_session.h"
 #include "lab02/page_provider_http.h"
 #include "lab02/trace_emit.h"
+#include "lab02/layout.h"
 #include "lab02_fixtures/fixtures.h"
 
 #include "lab02_platform/board.h"
@@ -82,6 +83,27 @@ static const char *mode_name(void)
 #endif
 }
 
+static const char *backend_name(void)
+{
+#if CONFIG_LAB02_EAGER_BASELINE
+    return "local";
+#else
+    return strlen(CONFIG_LAB02_SERVER_URL) > 0 ? "http" : "local";
+#endif
+}
+
+#if defined(CONFIG_BSP_LCD_DRAW_BUF_DOUBLE) && CONFIG_BSP_LCD_DRAW_BUF_DOUBLE
+#define LAB02_EFFECTIVE_DRAW_BUF_COUNT 2
+#else
+#define LAB02_EFFECTIVE_DRAW_BUF_COUNT 1
+#endif
+
+#ifdef CONFIG_LV_COLOR_DEPTH
+#define LAB02_EFFECTIVE_COLOR_DEPTH_BITS CONFIG_LV_COLOR_DEPTH
+#else
+#define LAB02_EFFECTIVE_COLOR_DEPTH_BITS LV_COLOR_DEPTH
+#endif
+
 void lab02_app_start(void)
 {
     esp_err_t err = nvs_flash_init();
@@ -106,8 +128,14 @@ void lab02_app_start(void)
     const lab02_fixture_blob_t *blob = lab02_fixture_selected();
     const char *fixture_rev = blob && blob->name ? blob->name : fixture_name();
 
-    printf("LAB02_READY build=%s fixture=%s mode=%s harness=%d scenario=%s\n", build_id,
-           fixture_rev, mode_name(), LAB02_HARNESS_ID, CONFIG_LAB02_SCENARIO);
+    printf("LAB02_READY build=%s fixture=%s mode=%s backend=%s harness=%d scenario=%s "
+           "trace_schema=lab-trace/v1 draw_buf_height_lines=%d draw_buf_count=%d "
+           "draw_buf_bytes=%d color_depth_bits=%d\n", build_id, fixture_rev, mode_name(),
+           backend_name(), LAB02_HARNESS_ID, CONFIG_LAB02_SCENARIO,
+           CONFIG_BSP_LCD_DRAW_BUF_HEIGHT, LAB02_EFFECTIVE_DRAW_BUF_COUNT,
+           LAB02_LCD_W * CONFIG_BSP_LCD_DRAW_BUF_HEIGHT * LAB02_EFFECTIVE_DRAW_BUF_COUNT *
+               (LAB02_EFFECTIVE_COLOR_DEPTH_BITS / 8),
+           LAB02_EFFECTIVE_COLOR_DEPTH_BITS);
     ESP_LOGI(TAG, "LAB02_READY build=%s fixture=%s mode=%s", build_id, fixture_rev, mode_name());
 
     if (!lab02_board_lvgl_lock(5000)) {

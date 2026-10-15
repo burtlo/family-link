@@ -169,7 +169,9 @@ int main(void)
                   LAB02_TRACE_FIELD_SNAP_ID | LAB02_TRACE_FIELD_OP_ID |
                   LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_REASON |
                   LAB02_TRACE_FIELD_STATE | LAB02_TRACE_FIELD_PAGE_RECEIPT_ID |
-                  LAB02_TRACE_FIELD_RUN_ID | LAB02_TRACE_FIELD_ELAPSED_US,
+                  LAB02_TRACE_FIELD_RUN_ID | LAB02_TRACE_FIELD_ELAPSED_US |
+                  LAB02_TRACE_FIELD_BIND_GENERATION | LAB02_TRACE_FIELD_CARD_SLOT |
+                  LAB02_TRACE_FIELD_PUBLICATION_AFTER_APPLY,
         .session_id = 7u,
         .revision = 8u,
         .snap_id = 9u,
@@ -180,6 +182,9 @@ int main(void)
         .page_receipt_id = receipt,
         .run_id = run_id,
         .elapsed_us = 11,
+        .bind_generation = 12u,
+        .card_slot = 3u,
+        .publication_after_apply = true,
     };
     lab02_trace_emit_payload(event_name, 10u, 4, message_id, &payload);
     strcpy(event_name, "mutated_event");

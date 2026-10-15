@@ -14,6 +14,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
 parse_trace = MODULE.parse_trace
+parse_trace_line = MODULE._parse_trace_line
 
 
 class Lab02TraceMetricsTests(unittest.TestCase):
@@ -59,7 +60,8 @@ class Lab02TraceMetricsTests(unittest.TestCase):
         self.assertEqual(metrics["distributions"]["bind_ms"]["n"], 0)
         self.assertIsNone(metrics["distributions"]["snap_ms"])
         self.assertIsNone(metrics["counts"]["trace_dropped"])
-        self.assertEqual(metrics["evidence"]["timing_status"], "UNMEASURED")
+        self.assertEqual(metrics["evidence"]["timing_status"], "INCOMPLETE")
+        self.assertIn("bind_ms_missing_identity", metrics["evidence"]["invalid"])
         self.assertEqual(metrics["evidence"]["visual_status"], "UNMEASURED")
 
     def test_malformed_duplicate_orphan_unterminated_and_loss_are_accounted(self):
@@ -125,9 +127,48 @@ class Lab02TraceMetricsTests(unittest.TestCase):
             "LAB_TRACE t_us=2 event=session_reset gen=0 focus=0 msg=- "
             "trace_schema=lab-trace/v1 session_id=2\n",
         ])
-        self.assertEqual(metrics["metadata"]["effective_config"]["draw_buf_bytes"], 32000)
+        self.assertIsNone(metrics["metadata"]["effective_config"]["draw_buf_bytes"])
         self.assertIn("session_reset_violation", metrics["evidence"]["invalid"])
         self.assertEqual(metrics["evidence"]["status"], "INCOMPLETE")
+
+    def test_effective_config_requires_authoritative_ready_marker(self):
+        metrics = parse_trace([
+            "LAB02_READY build=b fixture=inbox_8 mode=recycle "
+            "draw_buf_height_lines=20 draw_buf_count=2 draw_buf_bytes=32000 "
+            "color_depth_bits=16\n",
+            "LAB_TRACE t_us=1 event=resource_sample gen=0 focus=0 msg=- "
+            "draw_buf_bytes=999999 phase=idle\n",
+        ])
+        self.assertEqual(metrics["metadata"]["effective_config"], {
+            "draw_buf_height_lines": 20, "draw_buf_count": 2,
+            "draw_buf_bytes": 32000, "color_depth_bits": 16,
+        })
+
+    def test_effective_config_ready_mismatch_is_not_best_effort(self):
+        metrics = parse_trace([
+            "LAB02_READY build=b fixture=inbox_8 mode=recycle draw_buf_bytes=32000\n",
+            "LAB02_READY build=b fixture=inbox_8 mode=recycle draw_buf_bytes=64000\n",
+        ])
+        self.assertIsNone(metrics["metadata"]["effective_config"]["draw_buf_bytes"])
+        self.assertIn("metadata.effective_config.draw_buf_bytes_mismatch",
+                      metrics["evidence"]["invalid"])
+
+    def test_bind_without_publication_identity_cannot_claim_visible_content(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=1 event=page_apply gen=1 focus=0 msg=m1 "
+            "run_id=r session_id=1 revision=2 op_id=4\n",
+            "LAB_TRACE t_us=2 event=bind gen=1 focus=0 msg=m1 "
+            "run_id=r session_id=1 card_slot=0 bind_generation=1 revision=2 "
+            "elapsed_us=10\n",
+            "LAB_TRACE t_us=3 event=gesture gen=1 focus=0 msg=m1 "
+            "run_id=r session_id=1 gesture_id=8\n",
+            "LAB_TRACE t_us=4 event=input_to_visible gen=1 focus=0 msg=m1 "
+            "run_id=r session_id=1 gesture_id=8 card_slot=0 revision=2 op_id=4 "
+            "publication_after_apply=true elapsed_us=20\n",
+        ])
+        self.assertEqual(metrics["distributions"]["input_to_visible_ms"]["n"], 0)
+        self.assertIn("input_to_visible_missing_correlation",
+                      metrics["evidence"]["invalid"])
 
     def test_duplicate_structured_field_is_malformed(self):
         metrics = parse_trace([
@@ -142,14 +183,25 @@ class Lab02TraceMetricsTests(unittest.TestCase):
         metrics = parse_trace([
             "LAB_TRACE t_us=100 event=ui_tick gen=0 focus=0 msg=- session_id=1\n",
             "LAB_TRACE t_us=300 event=ui_tick gen=0 focus=0 msg=- session_id=1\n",
-            "LAB_TRACE t_us=400 event=bind gen=1 focus=0 msg=m1 elapsed_us=150\n",
-            "LAB_TRACE t_us=500 event=input_to_visible gen=1 focus=0 msg=m1 elapsed_us=800\n",
+            "LAB_TRACE t_us=350 event=page_apply gen=1 focus=0 msg=m1 "
+            "run_id=r session_id=1 revision=2 op_id=4\n",
+            "LAB_TRACE t_us=400 event=bind gen=1 focus=0 msg=m1 elapsed_us=150 "
+            "run_id=r session_id=1 card_slot=0 bind_generation=1 revision=2 "
+            "publication_after_apply=true\n",
+            "LAB_TRACE t_us=450 event=gesture gen=1 focus=0 msg=m1 "
+            "run_id=r session_id=1 gesture_id=8\n",
+            "LAB_TRACE t_us=500 event=input_to_visible gen=1 focus=0 msg=m1 elapsed_us=800 "
+            "run_id=r session_id=1 gesture_id=8 card_slot=0 revision=2 op_id=4 "
+            "publication_after_apply=true\n",
             "LAB_TRACE t_us=1000 event=fetch_admitted gen=1 focus=0 msg=- "
+            "run_id=r session_id=1 op_kind=http_fetch op_id=4 attempt=1 "
+            "submitted_us=1000 started_us=1200\n",
+            "LAB_TRACE t_us=1200 event=fetch_started gen=1 focus=0 msg=- "
             "run_id=r session_id=1 op_kind=http_fetch op_id=4 attempt=1 "
             "submitted_us=1000 started_us=1200\n",
             "LAB_TRACE t_us=1400 event=fetch_terminal gen=1 focus=0 msg=- "
             "run_id=r session_id=1 op_kind=http_fetch op_id=4 attempt=1 "
-            "elapsed_us=200 outcome=failure\n",
+            "terminal_us=1400 elapsed_us=200 outcome=failure\n",
             "LAB_TRACE_LOSS status=NONE dropped_events=0 oversized_events=0 malformed_rows=0\n",
         ])
         self.assertEqual(metrics["distributions"]["ui_tick_ms"]["p50"], 0.2)
@@ -178,6 +230,32 @@ class Lab02TraceMetricsTests(unittest.TestCase):
             "session_id=1 submitted_us=100 started_us=500 elapsed_us=400 outcome=success\n",
         ])
         self.assertIsNone(metrics["distributions"]["fetch_queue_wait_ms"])
+
+    def test_missing_run_id_is_retained_as_invalid_provenance(self):
+        row, error = parse_trace_line(
+            "LAB_TRACE t_us=0 event=fetch_admitted gen=1 focus=0 msg=- "
+            "session_id=1 op_kind=http_fetch op_id=2 attempt=1")
+        self.assertIsNone(error)
+        self.assertIsNone(row["run_id"])
+        metrics = parse_trace([
+            "LAB_TRACE t_us=1 event=fetch_admitted gen=1 focus=0 msg=- "
+            "session_id=1 op_kind=http_fetch op_id=2 attempt=1 submitted_us=1\n",
+            "LAB_TRACE t_us=2 event=fetch_started gen=1 focus=0 msg=- "
+            "session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "submitted_us=1 started_us=2\n",
+            "LAB_TRACE t_us=3 event=fetch_terminal gen=1 focus=0 msg=- "
+            "session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "started_us=2 terminal_us=3 elapsed_us=2 outcome=success\n",
+            "LAB_TRACE t_us=4 event=snap_start gen=1 focus=0 msg=- "
+            "session_id=1 snap_id=3\n",
+            "LAB_TRACE t_us=5 event=snap_end gen=1 focus=0 msg=- "
+            "session_id=1 snap_id=3 elapsed_us=1 outcome=success\n",
+        ])
+        self.assertEqual(metrics["distributions"]["fetch_attempt_ms"]["n"], 0)
+        self.assertEqual(metrics["distributions"]["snap_ms"]["n"], 0)
+        self.assertIn("fetch_terminal_missing_run_id", metrics["evidence"]["invalid"])
+        self.assertIn("snap_end_missing_run_id", metrics["evidence"]["invalid"])
+        self.assertEqual(metrics["evidence"]["status"], "INCOMPLETE")
 
     def test_trace_build_id_is_retained_and_ready_build_remains_supported(self):
         trace_build = parse_trace([
@@ -241,6 +319,121 @@ class Lab02TraceMetricsTests(unittest.TestCase):
         ])
         self.assertEqual(metrics["trace_loss"]["status"], "OBSERVED")
         self.assertEqual(metrics["evidence"]["status"], "INCOMPLETE")
+
+    def test_valid_identity_and_unknown_extras_are_preserved_without_core_overwrite(self):
+        row, error = parse_trace_line(
+            "LAB_TRACE t_us=10 event=bind gen=4 focus=2 msg=msg-2 "
+            "session_id=7 revision=9 bind_generation=4 card_slot=1 "
+            "publication_after_apply=true vendor_note=kept"
+        )
+        self.assertIsNone(error)
+        self.assertEqual(row["session_id"], 7)
+        self.assertEqual(row["bind_generation"], 4)
+        self.assertEqual(row["card_slot"], 1)
+        self.assertEqual(row["extras"], {"vendor_note": "kept"})
+        self.assertEqual(row["bare_extras"], [])
+
+    def test_fetch_started_timestamp_is_used_for_attempt_and_queue_distributions(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=10 event=fetch_admitted gen=1 focus=0 msg=- "
+            "run_id=r session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "submitted_us=100 page_index=0\n",
+            "LAB_TRACE t_us=20 event=fetch_started gen=1 focus=0 msg=- "
+            "run_id=r session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "submitted_us=100 started_us=400 page_index=0\n",
+            "LAB_TRACE t_us=30 event=fetch_terminal gen=1 focus=0 msg=- "
+            "run_id=r session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "submitted_us=100 started_us=400 terminal_us=900 elapsed_us=800 "
+            "outcome=success page_index=0\n",
+        ])
+        self.assertEqual(metrics["distributions"]["fetch_queue_wait_ms"]["worst"], 0.3)
+        self.assertEqual(metrics["distributions"]["fetch_attempt_ms"]["worst"], 0.5)
+
+    def test_terminal_elapsed_without_worker_start_is_not_attempt_latency(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=10 event=fetch_admitted gen=1 focus=0 msg=- "
+            "run_id=r session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "submitted_us=100\n",
+            "LAB_TRACE t_us=20 event=fetch_terminal gen=1 focus=0 msg=- "
+            "run_id=r session_id=1 op_kind=http_fetch op_id=2 attempt=1 "
+            "submitted_us=100 terminal_us=900 elapsed_us=800 outcome=success\n",
+        ])
+        self.assertEqual(metrics["distributions"]["fetch_attempt_ms"]["n"], 0)
+        self.assertIn("fetch_attempt_ms_missing_worker_start",
+                      metrics["evidence"]["invalid"])
+        self.assertEqual(metrics["evidence"]["status"], "INCOMPLETE")
+
+    def test_snap_outcomes_keep_no_motion_success_separate_from_stale_and_cancelled(self):
+        lines = []
+        for snap_id, outcome, reason in ((1, "success", "no_motion"),
+                                         (2, "stale", "superseded"),
+                                         (3, "cancelled", "animation_deleted")):
+            lines.extend([
+                f"LAB_TRACE t_us={snap_id * 10} event=snap_start gen=1 focus=0 msg=- "
+                f"run_id=r session_id=1 snap_id={snap_id}\n",
+                f"LAB_TRACE t_us={snap_id * 10 + 1} event=snap_end gen=1 focus=0 msg=- "
+                f"run_id=r session_id=1 snap_id={snap_id} elapsed_us=100 "
+                f"outcome={outcome} reason={reason}\n",
+            ])
+        metrics = parse_trace(lines)
+        self.assertEqual(metrics["counts"]["snap_success"], 1)
+        self.assertEqual(metrics["counts"]["snap_stale"], 1)
+        self.assertEqual(metrics["counts"]["snap_cancelled"], 1)
+        self.assertEqual(metrics["distributions"]["snap_ms"]["n"], 1)
+        self.assertEqual(metrics["distribution_outcomes"]["snap_ms"]["stale"]["n"], 1)
+        self.assertEqual(metrics["distribution_outcomes"]["snap_ms"]["cancelled"]["n"], 1)
+
+    def test_missing_scoped_identity_invalidates_operation_sample(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=1 event=fetch_admitted gen=1 focus=0 msg=- "
+            "run_id=r session_id=1 op_kind=http_fetch attempt=1 submitted_us=1\n",
+            "LAB_TRACE t_us=2 event=fetch_terminal gen=1 focus=0 msg=- "
+            "run_id=r session_id=1 op_kind=http_fetch attempt=1 elapsed_us=10 "
+            "outcome=success\n",
+        ])
+        self.assertIn("fetch_admitted_missing_identity", metrics["evidence"]["invalid"])
+        self.assertIn("fetch_terminal_missing_identity", metrics["evidence"]["invalid"])
+        self.assertEqual(metrics["distributions"]["fetch_attempt_ms"]["n"], 0)
+
+    def test_nonmonotonic_trace_timestamps_invalidate_evidence(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=20 event=ui_tick gen=0 focus=0 msg=- session_id=1\n",
+            "LAB_TRACE t_us=10 event=ui_tick gen=0 focus=0 msg=- session_id=1\n",
+        ])
+        self.assertIn("trace_timestamp_nonmonotonic", metrics["evidence"]["invalid"])
+        self.assertEqual(metrics["evidence"]["status"], "INCOMPLETE")
+
+    def test_resource_markers_reduce_observed_values_and_keep_missing_fields_null(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=1 event=resource_sample gen=0 focus=0 msg=- "
+            "phase=idle lvgl_mem_used_bytes=10 lvgl_mem_high_water_bytes=12 "
+            "lvgl_biggest_free_bytes=90 internal_largest_free_bytes=80 "
+            "psram_largest_free_bytes=70\n",
+            "LAB_TRACE t_us=2 event=resource_sample gen=0 focus=0 msg=- "
+            "phase=bind lvgl_mem_used_bytes=20 lvgl_mem_high_water_bytes=22 "
+            "lvgl_biggest_free_bytes=81 internal_largest_free_bytes=71 "
+            "psram_largest_free_bytes=61\n",
+        ])
+        self.assertEqual(metrics["peaks"]["lvgl_mem_used"], 20)
+        self.assertEqual(metrics["peaks"]["lvgl_mem_high_water"], 22)
+        self.assertEqual(metrics["peaks"]["internal_largest_free"], 71)
+        self.assertIsNone(metrics["resources"]["static_bytes"]["dram_bss"])
+        self.assertNotIn("lvgl_biggest_free_bytes", metrics["resources"]["maxima"])
+        self.assertNotIn("resource_samples", metrics["evidence"]["missing"])
+        self.assertIn("visual_confirmation", metrics["evidence"]["missing"])
+
+    def test_largest_free_requires_one_identifiable_simultaneous_peak_sample(self):
+        metrics = parse_trace([
+            "LAB_TRACE t_us=1 event=resource_sample gen=0 focus=0 msg=- "
+            "phase=a lvgl_mem_used_bytes=20 lvgl_biggest_free_bytes=90 "
+            "internal_largest_free_bytes=80 psram_largest_free_bytes=70\n",
+            "LAB_TRACE t_us=2 event=resource_sample gen=0 focus=0 msg=- "
+            "phase=b lvgl_mem_used_bytes=20 lvgl_biggest_free_bytes=81 "
+            "internal_largest_free_bytes=71 psram_largest_free_bytes=61\n",
+        ])
+        self.assertIsNone(metrics["peaks"]["lvgl_biggest_free"])
+        self.assertIsNone(metrics["peaks"]["internal_largest_free"])
+        self.assertIsNone(metrics["resources"]["associated_provenance"]["lvgl_biggest_free"])
 
 
 if __name__ == "__main__":

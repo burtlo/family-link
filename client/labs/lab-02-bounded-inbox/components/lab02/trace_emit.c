@@ -26,7 +26,7 @@ typedef struct {
     int64_t server_completed_ns;
     uint32_t generation;
     uint32_t lifecycle;
-    uint32_t fields;
+    uint64_t fields;
     uint32_t session_id;
     uint32_t revision;
     uint32_t snap_id;
@@ -34,6 +34,14 @@ typedef struct {
     uint32_t attempt;
     uint32_t op_id;
     uint32_t applied_revision;
+    uint32_t bind_generation;
+    uint32_t card_slot;
+    uint32_t gesture_id;
+    int32_t focus_before;
+    int32_t focus_after;
+    uint32_t queue_depth;
+    uint32_t queue_high_water;
+    uint32_t overflow;
     int32_t focus_index;
     int32_t start_x;
     int32_t target_x;
@@ -49,9 +57,12 @@ typedef struct {
     char op_kind[LAB02_TRACE_TEXT_CAP];
     char page_receipt_id[LAB02_TRACE_RECEIPT_CAP];
     char run_id[LAB02_TRACE_RUN_ID_CAP];
+    char focus_msg_before[LAB02_TRACE_MESSAGE_ID_CAP];
+    char focus_msg_after[LAB02_TRACE_MESSAGE_ID_CAP];
+    bool publication_after_apply;
 } lab02_trace_record_t;
 
-_Static_assert(sizeof(lab02_trace_record_t) <= 640u,
+_Static_assert(sizeof(lab02_trace_record_t) <= 768u,
                "trace records must remain bounded");
 
 enum {
@@ -136,7 +147,7 @@ static bool copy_bounded(char *dst, size_t dst_size, const char *src, bool token
 }
 
 static bool copy_field(char *dst, size_t dst_size, const char *src, bool token,
-                       uint32_t *fields, uint32_t field)
+                       uint64_t *fields, uint64_t field)
 {
     if (!(*fields & field)) {
         dst[0] = '\0';
@@ -185,6 +196,14 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
         record.attempt = payload->attempt;
         record.op_id = payload->op_id;
         record.applied_revision = payload->applied_revision;
+        record.bind_generation = payload->bind_generation;
+        record.card_slot = payload->card_slot;
+        record.gesture_id = payload->gesture_id;
+        record.focus_before = payload->focus_before;
+        record.focus_after = payload->focus_after;
+        record.queue_depth = payload->queue_depth;
+        record.queue_high_water = payload->queue_high_water;
+        record.overflow = payload->overflow;
         record.start_x = payload->start_x;
         record.target_x = payload->target_x;
         record.page_index = payload->page_index;
@@ -210,6 +229,13 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
                            LAB02_TRACE_FIELD_PAGE_RECEIPT_ID) && valid;
         valid = copy_field(record.run_id, sizeof(record.run_id), payload->run_id, true,
                            &record.fields, LAB02_TRACE_FIELD_RUN_ID) && valid;
+        valid = copy_field(record.focus_msg_before, sizeof(record.focus_msg_before),
+                           payload->focus_msg_before, true, &record.fields,
+                           LAB02_TRACE_FIELD_FOCUS_MSG_BEFORE) && valid;
+        valid = copy_field(record.focus_msg_after, sizeof(record.focus_msg_after),
+                           payload->focus_msg_after, true, &record.fields,
+                           LAB02_TRACE_FIELD_FOCUS_MSG_AFTER) && valid;
+        record.publication_after_apply = payload->publication_after_apply;
         valid = copy_field(record.extra, sizeof(record.extra), payload->extra, false,
                            &record.fields, LAB02_TRACE_FIELD_LEGACY_EXTRA) && valid;
     }
@@ -218,6 +244,10 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
         return;
     }
 
+    /* Queue occupancy is observed before admission. It is a truthful sample,
+     * not a claim about the later drain order or a high-water reduction. */
+    record.fields |= LAB02_TRACE_FIELD_QUEUE_DEPTH;
+    record.queue_depth = (uint32_t)uxQueueMessagesWaiting(s_queue);
     /* A zero-tick send is the only producer-side synchronization with storage. */
     if (xQueueSend(s_queue, &record, 0) != pdTRUE) {
         account_drop(false);
@@ -286,7 +316,7 @@ static void write_record(const lab02_trace_record_t *record)
                         (long long)record->t_us, record->event,
                         (unsigned)record->generation, (long)record->focus_index,
                         record->message_id[0] ? record->message_id : "-");
-    const uint32_t fields = record->fields;
+    const uint64_t fields = record->fields;
     if (fields & LAB02_TRACE_FIELD_SESSION_ID) used = append_u32(line, sizeof(line), used, "session_id", record->session_id);
     if (fields & LAB02_TRACE_FIELD_REVISION) used = append_u32(line, sizeof(line), used, "revision", record->revision);
     if (fields & LAB02_TRACE_FIELD_SNAP_ID) used = append_u32(line, sizeof(line), used, "snap_id", record->snap_id);
@@ -294,6 +324,11 @@ static void write_record(const lab02_trace_record_t *record)
     if (fields & LAB02_TRACE_FIELD_ATTEMPT) used = append_u32(line, sizeof(line), used, "attempt", record->attempt);
     if (fields & LAB02_TRACE_FIELD_OP_ID) used = append_u32(line, sizeof(line), used, "op_id", record->op_id);
     if (fields & LAB02_TRACE_FIELD_APPLIED_REVISION) used = append_u32(line, sizeof(line), used, "applied_revision", record->applied_revision);
+    if (fields & LAB02_TRACE_FIELD_BIND_GENERATION) used = append_u32(line, sizeof(line), used, "bind_generation", record->bind_generation);
+    if (fields & LAB02_TRACE_FIELD_CARD_SLOT) used = append_u32(line, sizeof(line), used, "card_slot", record->card_slot);
+    if (fields & LAB02_TRACE_FIELD_GESTURE_ID) used = append_u32(line, sizeof(line), used, "gesture_id", record->gesture_id);
+    if (fields & LAB02_TRACE_FIELD_FOCUS_BEFORE) used = append_i32(line, sizeof(line), used, "focus_before", record->focus_before);
+    if (fields & LAB02_TRACE_FIELD_FOCUS_AFTER) used = append_i32(line, sizeof(line), used, "focus_after", record->focus_after);
     if (fields & LAB02_TRACE_FIELD_START_X) used = append_i32(line, sizeof(line), used, "start_x", record->start_x);
     if (fields & LAB02_TRACE_FIELD_TARGET_X) used = append_i32(line, sizeof(line), used, "target_x", record->target_x);
     if (fields & LAB02_TRACE_FIELD_PAGE_INDEX) used = append_i32(line, sizeof(line), used, "page_index", record->page_index);
@@ -310,6 +345,14 @@ static void write_record(const lab02_trace_record_t *record)
     if (fields & LAB02_TRACE_FIELD_OP_KIND) used = append_field(line, sizeof(line), used, "op_kind", record->op_kind);
     if (fields & LAB02_TRACE_FIELD_PAGE_RECEIPT_ID) used = append_field(line, sizeof(line), used, "page_receipt_id", record->page_receipt_id);
     if (fields & LAB02_TRACE_FIELD_RUN_ID) used = append_field(line, sizeof(line), used, "run_id", record->run_id);
+    if (fields & LAB02_TRACE_FIELD_FOCUS_MSG_BEFORE) used = append_field(line, sizeof(line), used, "focus_msg_before", record->focus_msg_before);
+    if (fields & LAB02_TRACE_FIELD_FOCUS_MSG_AFTER) used = append_field(line, sizeof(line), used, "focus_msg_after", record->focus_msg_after);
+    if (fields & LAB02_TRACE_FIELD_PUBLICATION_AFTER_APPLY) used = append_field(line, sizeof(line), used,
+                                                                                "publication_after_apply",
+                                                                                record->publication_after_apply ? "true" : "false");
+    if (fields & LAB02_TRACE_FIELD_QUEUE_DEPTH) used = append_u32(line, sizeof(line), used, "queue_depth", record->queue_depth);
+    if (fields & LAB02_TRACE_FIELD_QUEUE_HIGH_WATER) used = append_u32(line, sizeof(line), used, "queue_high_water", record->queue_high_water);
+    if (fields & LAB02_TRACE_FIELD_OVERFLOW) used = append_u32(line, sizeof(line), used, "overflow", record->overflow);
     if (used >= 0 && record->extra[0]) {
         size_t remaining = sizeof(line) - (size_t)used;
         int n = snprintf(line + used, remaining, " %s", record->extra);
@@ -340,8 +383,8 @@ static void write_loss_marker_if_needed(void)
     const char *status = dropped != 0u ? "OBSERVED" : "NONE";
     int written = snprintf(line, sizeof(line),
                            "LAB_TRACE_LOSS status=%s dropped_events=%u "
-                           "oversized_events=%u malformed_rows=0\n",
-                           status, dropped, oversized);
+                           "oversized_events=%u queue_full=%u malformed_rows=0\n",
+                           status, dropped, oversized, queue_full);
     if (written < 0 || (size_t)written >= sizeof(line)) {
         return;
     }

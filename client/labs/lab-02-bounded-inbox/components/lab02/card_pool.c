@@ -42,6 +42,7 @@ void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t
      * Only vacated roots recycle, so overlap is property-only work. */
     for (int s = 0; s < LAB02_CARD_POOL_SIZE; s++) {
         lab02_card_view_t *view = &pool->views[s];
+        view->card_slot = s;
         if (view->bound_index < first || view->bound_index > last ||
             view->bound_index >= count) {
             if (view->bound_index >= 0) lab02_card_view_unbind(view, generation);

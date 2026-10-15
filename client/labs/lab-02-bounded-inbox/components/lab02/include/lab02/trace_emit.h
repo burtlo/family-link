@@ -44,12 +44,23 @@ enum {
     LAB02_TRACE_FIELD_OP_KIND = 1u << 20,
     LAB02_TRACE_FIELD_PAGE_RECEIPT_ID = 1u << 21,
     LAB02_TRACE_FIELD_RUN_ID = 1u << 22,
-    LAB02_TRACE_FIELD_LEGACY_EXTRA = 1u << 23,
+    LAB02_TRACE_FIELD_LEGACY_EXTRA = 1ull << 23,
+    LAB02_TRACE_FIELD_BIND_GENERATION = 1ull << 24,
+    LAB02_TRACE_FIELD_CARD_SLOT = 1ull << 25,
+    LAB02_TRACE_FIELD_GESTURE_ID = 1ull << 26,
+    LAB02_TRACE_FIELD_FOCUS_BEFORE = 1ull << 27,
+    LAB02_TRACE_FIELD_FOCUS_AFTER = 1ull << 28,
+    LAB02_TRACE_FIELD_FOCUS_MSG_BEFORE = 1ull << 29,
+    LAB02_TRACE_FIELD_FOCUS_MSG_AFTER = 1ull << 30,
+    LAB02_TRACE_FIELD_PUBLICATION_AFTER_APPLY = 1ull << 31,
+    LAB02_TRACE_FIELD_QUEUE_DEPTH = 1ull << 32,
+    LAB02_TRACE_FIELD_QUEUE_HIGH_WATER = 1ull << 33,
+    LAB02_TRACE_FIELD_OVERFLOW = 1ull << 34,
 };
 
 /* Pointers are borrowed only for the duration of lab02_trace_emit_payload(). */
 typedef struct {
-    uint32_t fields;
+    uint64_t fields;
     uint32_t session_id;
     uint32_t revision;
     uint32_t snap_id;
@@ -57,6 +68,14 @@ typedef struct {
     uint32_t attempt;
     uint32_t op_id;
     uint32_t applied_revision;
+    uint32_t bind_generation;
+    uint32_t card_slot;
+    uint32_t gesture_id;
+    int32_t focus_before;
+    int32_t focus_after;
+    uint32_t queue_depth;
+    uint32_t queue_high_water;
+    uint32_t overflow;
     int32_t start_x;
     int32_t target_x;
     int32_t page_index;
@@ -73,6 +92,9 @@ typedef struct {
     const char *op_kind;
     const char *page_receipt_id;
     const char *run_id;
+    const char *focus_msg_before;
+    const char *focus_msg_after;
+    bool publication_after_apply;
     const char *extra;
 } lab02_trace_payload_t;
 

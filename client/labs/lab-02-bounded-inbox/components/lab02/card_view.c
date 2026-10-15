@@ -38,8 +38,22 @@ static void cancel_pending(lab02_card_view_t *view, const char *reason)
     if (view->pending_bind) {
         view->state = LAB02_CARD_STALE;
         lab02_instrumentation_get()->stale_bind_drops++;
-        lab02_trace_emit("bind_stale", view->pending_generation, view->bound_index,
-                         view->pending_item.message_id, reason);
+        const lab02_trace_payload_t payload = {
+            .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                      LAB02_TRACE_FIELD_BIND_GENERATION | LAB02_TRACE_FIELD_CARD_SLOT |
+                      LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_REASON |
+                      LAB02_TRACE_FIELD_STATE,
+            .session_id = view->pending_session,
+            .revision = view->pending_revision,
+            .bind_generation = view->pending_generation,
+            .card_slot = view->card_slot >= 0 ? (uint32_t)view->card_slot : 0u,
+            .outcome = "stale",
+            .reason = reason,
+            .state = "stale",
+        };
+        lab02_trace_emit_payload("bind_stale", view->pending_generation,
+                                 view->bound_index, view->pending_item.message_id,
+                                 &payload);
     }
     view->pending_bind = false;
     memset(&view->pending_item, 0, sizeof(view->pending_item));
@@ -88,9 +102,12 @@ static void apply_bind_labels(lab02_card_view_t *view, const lab02_inbox_item_t 
     lab02_instrumentation_get()->bind_count++;
     const lab02_trace_payload_t payload = {
         .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                  LAB02_TRACE_FIELD_BIND_GENERATION | LAB02_TRACE_FIELD_CARD_SLOT |
                   LAB02_TRACE_FIELD_STATE,
         .session_id = view->session_generation,
         .revision = view->inbox_revision,
+        .bind_generation = view->bind_generation,
+        .card_slot = view->card_slot >= 0 ? (uint32_t)view->card_slot : 0u,
         .state = "bound",
     };
     lab02_trace_emit_payload("bind", view->bind_generation, view->bound_index,
@@ -111,7 +128,7 @@ static void delayed_bind_cb(lv_timer_t *timer)
         lab02_session_generation() != view->pending_session ||
         lab02_session_snapshot().inbox_revision != view->pending_revision ||
         strcmp(view->bound_message_id, view->pending_item.message_id) != 0) {
-        cancel_pending(view, "reason=snapshot_changed");
+        cancel_pending(view, "snapshot_changed");
         clear_content(view);
         view->state = LAB02_CARD_STALE;
         lv_label_set_text(view->sender_lab, "Loading message…");
@@ -125,6 +142,7 @@ static void delayed_bind_cb(lv_timer_t *timer)
 void lab02_card_view_create(lab02_card_view_t *view, lv_obj_t *parent)
 {
     memset(view, 0, sizeof(*view));
+    view->card_slot = -1;
     view->bound_index = -1;
     card_font = *LV_FONT_DEFAULT;
     card_font.fallback = &ellipsis_font;
@@ -194,9 +212,12 @@ void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
     const lab02_trace_payload_t payload = {
         .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                  LAB02_TRACE_FIELD_BIND_GENERATION | LAB02_TRACE_FIELD_CARD_SLOT |
                   LAB02_TRACE_FIELD_STATE,
         .session_id = slot->session_generation,
         .revision = slot->inbox_revision,
+        .bind_generation = generation,
+        .card_slot = view->card_slot >= 0 ? (uint32_t)view->card_slot : 0u,
         .state = view->state == LAB02_CARD_ERROR ? "error" : "loading",
     };
     lab02_trace_emit_payload("card_state", generation, slot->index,
@@ -223,6 +244,9 @@ void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
 void lab02_card_view_bind(lab02_card_view_t *view, int index, uint32_t generation,
                           const lab02_inbox_item_t *item)
 {
+    if (view && view->card_slot < 0) {
+        view->card_slot = index;
+    }
     lab02_session_snapshot_t session = lab02_session_snapshot();
     lab02_slot_snapshot_t slot = {.index = index, .item = item,
         .session_generation = lab02_session_generation(), .inbox_revision = session.inbox_revision,
@@ -233,9 +257,20 @@ void lab02_card_view_bind(lab02_card_view_t *view, int index, uint32_t generatio
 void lab02_card_view_unbind(lab02_card_view_t *view, uint32_t generation)
 {
     if (!view) return;
-    cancel_pending(view, "reason=superseded");
+    cancel_pending(view, "superseded");
     if (view->bound_message_id[0]) {
-        lab02_trace_emit("unbind", generation, view->bound_index, view->bound_message_id, NULL);
+        const lab02_trace_payload_t payload = {
+            .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
+                      LAB02_TRACE_FIELD_BIND_GENERATION | LAB02_TRACE_FIELD_CARD_SLOT |
+                      LAB02_TRACE_FIELD_STATE,
+            .session_id = view->session_generation,
+            .revision = view->inbox_revision,
+            .bind_generation = generation,
+            .card_slot = view->card_slot >= 0 ? (uint32_t)view->card_slot : 0u,
+            .state = "unbound",
+        };
+        lab02_trace_emit_payload("unbind", generation, view->bound_index,
+                                 view->bound_message_id, &payload);
         lab02_instrumentation_get()->unbind_count++;
     }
     clear_content(view);

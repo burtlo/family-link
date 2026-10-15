@@ -138,6 +138,8 @@ static void worker_task(void *arg)
         if (!lab02_session_http_take_fetch_request(&req)) {
             continue;
         }
+        lab02_session_http_fetch_started(req.session_id, req.op_id, req.page_index,
+                                         esp_timer_get_time());
         int offset = req.page_offset;
         size_t len = 0;
         lab02_http_fetch_result_t res =
@@ -181,6 +183,8 @@ static void boot_task(void *arg)
     (void)arg;
     const lab02_fetch_req_t req = s_boot_request;
     uint32_t session_id = req.session_id;
+    lab02_session_http_fetch_started(req.session_id, req.op_id, req.page_index,
+                                     esp_timer_get_time());
     lab02_board_wifi_set_transport_notifier(on_wifi_transport);
     lab02_session_http_mark_stage(LAB02_LOAD_CONNECTING, session_id);
     if (!lab02_board_wifi_connect()) {

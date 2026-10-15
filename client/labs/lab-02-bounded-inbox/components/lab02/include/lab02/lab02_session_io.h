@@ -20,12 +20,17 @@ typedef struct {
     int page_offset;
     uint32_t attempt;
     int64_t submitted_us;
+    int64_t started_us;
     /** Response-read budget after headers; not a whole-attempt deadline. */
     int64_t response_read_timeout_us;
 } lab02_fetch_req_t;
 
 /** One startup availability report; applied only by the session pump. */
 void lab02_session_http_worker_started(bool available, uint32_t session_id);
+
+/** Record the worker start timestamp for an already admitted request. */
+void lab02_session_http_fetch_started(uint32_t session_id, uint32_t op_id,
+                                      int page_index, int64_t started_us);
 
 bool lab02_session_http_initial_request(lab02_fetch_req_t *out);
 /** Lifecycle broker only: consumes one immutable admitted owner restart. */
