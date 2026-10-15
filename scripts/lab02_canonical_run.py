@@ -24,6 +24,32 @@ from lab02_workflow_config import load_lab02_workflow_config
 ROOT = Path(__file__).resolve().parents[1]
 READY = ("LAB02_READY", "LAB02_READY ")
 MAX_SERIAL_LINE_BYTES = 4096
+READY_REQUIRED_FIELDS = ("build", "fixture", "mode", "harness", "scenario")
+READY_OPTIONAL_FIELDS = frozenset({
+    "backend", "trace_schema", "draw_buf_height_lines", "draw_buf_count",
+    "draw_buf_bytes", "color_depth_bits",
+})
+
+
+def _parse_ready_marker(line: str) -> dict[str, str] | None:
+    """Parse a LAB02_READY line without making field order part of its contract."""
+    tokens = line.split()
+    if not tokens or tokens[0] != "LAB02_READY":
+        return None
+    fields: dict[str, str] = {}
+    supported_fields = set(READY_REQUIRED_FIELDS) | READY_OPTIONAL_FIELDS
+    for token in tokens[1:]:
+        if "=" not in token:
+            return None
+        key, value = token.split("=", 1)
+        if key not in supported_fields or not value or key in fields:
+            return None
+        fields[key] = value
+    if any(key not in fields for key in READY_REQUIRED_FIELDS):
+        return None
+    if fields["harness"] not in {"0", "1"}:
+        return None
+    return fields
 
 
 def _build_identity(*, variant: str, fixture_size: int, scenario: str, mode: str,
@@ -317,12 +343,12 @@ def run_canonical(config, *, mode: str, kit: str = "", port: str = "", seconds: 
                     if coordinator:
                         coordinator.ingest_line(line)
                     if not fresh_ready and (line.startswith("LAB02_READY ") or line.strip() == "LAB02_READY"):
-                        match = re.search(r"LAB02_READY\s+build=(\S+)\s+fixture=(\S+)\s+mode=(\S+)\s+harness=(\d+)\s+scenario=(\S+)", line)
+                        match = _parse_ready_marker(line)
                         expected_mode = "http" if backend == "managed-http" else "eager" if build_variant == "eager" else "recycle"
                         expected_harness = "1" if mode == "scripted" else "0"
-                        if (not match or match.group(1) != expected_build_id or
-                            match.group(2) != f"inbox_{fixture.size}" or match.group(3) != expected_mode or
-                            match.group(4) != expected_harness or match.group(5) != scenario_name):
+                        if (not match or match["build"] != expected_build_id or
+                            match["fixture"] != f"inbox_{fixture.size}" or match["mode"] != expected_mode or
+                            match["harness"] != expected_harness or match["scenario"] != scenario_name):
                             marker_mismatch = True
                             reason = "fresh_boot_identity_mismatch"
                             workflow = "INCOMPLETE"
@@ -330,9 +356,9 @@ def run_canonical(config, *, mode: str, kit: str = "", port: str = "", seconds: 
                             break
                         fresh_ready = True
                         end_after_ready = time.monotonic() + duration
-                        evidence.update_context({"firmware": {"build_stamp": match.group(1)}})
-                        record_event({"kind": "boot_ready", "outcome": "success", "firmware_build_id": match.group(1),
-                                      "fixture": match.group(2), "mode": match.group(3)})
+                        evidence.update_context({"firmware": {"build_stamp": match["build"]}})
+                        record_event({"kind": "boot_ready", "outcome": "success", "firmware_build_id": match["build"],
+                                      "fixture": match["fixture"], "mode": match["mode"]})
                     if "HARNESS_DONE" in line:
                         expected_steps = min(fixture.size, 20) * 2
                         done = re.search(r"\bHARNESS_DONE\s+build=(\S+)\s+steps=(\d+)\s+scenario=(\S+)", line)

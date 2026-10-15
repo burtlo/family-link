@@ -114,6 +114,65 @@ class FakeConfig:
 
 
 class CanonicalRunTests(unittest.TestCase):
+    def test_ready_marker_parser_accepts_legacy_form(self):
+        marker = "LAB02_READY build=build-1 fixture=inbox_64 mode=http harness=0 scenario=nominal"
+        self.assertEqual(canonical._parse_ready_marker(marker), {
+            "build": "build-1", "fixture": "inbox_64", "mode": "http",
+            "harness": "0", "scenario": "nominal",
+        })
+
+    def test_ready_marker_parser_accepts_new_fields_in_any_order(self):
+        marker = ("LAB02_READY trace_schema=lab-trace/v1 draw_buf_bytes=64000 "
+                  "build=build-1 backend=http fixture=inbox_64 color_depth_bits=16 "
+                  "scenario=nominal mode=http draw_buf_count=2 harness=0 "
+                  "draw_buf_height_lines=100")
+        fields = canonical._parse_ready_marker(marker)
+        self.assertEqual(fields["build"], "build-1")
+        self.assertEqual(fields["mode"], "http")
+        self.assertEqual(fields["backend"], "http")
+        self.assertEqual(fields["trace_schema"], "lab-trace/v1")
+        self.assertEqual(fields["draw_buf_bytes"], "64000")
+
+    def test_ready_marker_parser_rejects_malformed_markers(self):
+        malformed = (
+            "LAB02_READY build=build-1 fixture=inbox_64 mode=http harness=2 scenario=nominal",
+            "LAB02_READY build=build-1 fixture=inbox_64 mode=http scenario=nominal",
+            "LAB02_READY build=build-1 fixture=inbox_64 mode=http harness=0 scenario=nominal extra",
+            "LAB02_READY build=build-1 build=other fixture=inbox_64 mode=http harness=0 scenario=nominal",
+            "LAB02_READY build=build-1 fixture=inbox_64 mode=http harness=0 scenario=nominal unknown=x",
+        )
+        for marker in malformed:
+            with self.subTest(marker=marker):
+                self.assertIsNone(canonical._parse_ready_marker(marker))
+
+    def test_new_ready_marker_establishes_fresh_readiness(self):
+        import shutil
+        run_id = "w9-ready-fields-" + uuid.uuid4().hex[:8]
+        def marker_factory(identity):
+            return (f"LAB02_READY trace_schema=lab-trace/v1 build={identity} backend=http "
+                    "draw_buf_count=2 fixture=inbox_64 mode=recycle "
+                    "draw_buf_bytes=64000 scenario=nominal harness=0 "
+                    "draw_buf_height_lines=100 color_depth_bits=16\n").encode()
+        result = self._local_run(run_id, marker_factory=marker_factory)
+        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        data = json.loads(manifest.read_text())
+        self.assertEqual(result, 0)
+        self.assertEqual(data["workflow_status"], "PASS")
+        shutil.rmtree(manifest.parent, ignore_errors=True)
+
+    def test_new_ready_marker_identity_mismatch_still_fails(self):
+        import shutil
+        run_id = "w9-ready-mismatch-" + uuid.uuid4().hex[:8]
+        def marker_factory(identity):
+            return (f"LAB02_READY build={identity} backend=http fixture=inbox_8 mode=recycle "
+                    "harness=0 scenario=nominal trace_schema=lab-trace/v1\n").encode()
+        result = self._local_run(run_id, marker_factory=marker_factory)
+        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        data = json.loads(manifest.read_text())
+        self.assertEqual(result, 1)
+        self.assertEqual(data["terminal_reason"], "fresh_boot_identity_mismatch")
+        shutil.rmtree(manifest.parent, ignore_errors=True)
+
     def _local_run(self, run_id, *, mode="manual", variant="recycle", seconds=1, tail=b"", marker_factory=None,
                    pre_reset=b"", reset_output=None, fail_reset=False, interrupt_reset=False,
                    straddle_chunk=None, post_reset_chunk=None):
