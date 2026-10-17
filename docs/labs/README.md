@@ -10,6 +10,7 @@ Purpose: measure v2 carousel, media, login, and journey behavior on hardware **b
 | Anyone scoping or running a lab | [Assistant guide](assistant-guide.md) |
 | LAB-02 remediation | [Workflow contract and durable remediation plan](lab-02-workflow-remediation-plan.md) · [Carousel application remediation plan](lab-02-carousel-remediation-plan.md) · [review record](evidence/lab-02/reviews/2026-10-12-workflow.md) |
 | Where code, servers, builds, and evidence live | [Repository layout](repository-layout.md) |
+| Reusable host-runner proposal from the LAB-02 review | [Reusable lab runner pattern](reusable-lab-runner.md) |
 | **LAB-02** file tree, phases, verification scenarios | [LAB-02 implementation outline](lab-02-implementation-outline.md) |
 | Run and metrics JSON shapes | [schemas/](schemas/run-manifest.v1.md) |
 | Inbox carousel, card reuse, audio/sketch (`LAB-01`–`LAB-05`) | [Inbox carousel playback evaluation](inbox-carousel-playback-evaluation.md) |
