@@ -30,9 +30,9 @@ Resolve these values from the user request, map metadata, repository instruction
 | `progress_write_mode` | How to update progress | Default `append-owned-sections`: preserve all existing content and add/update only this skill's clearly delimited state section. Never truncate or replace unrelated content. |
 | `implementer_role`, `verifier_role` | Agent role names and instructions | Discover from map metadata, repository guidance, or available agent definitions. If names are absent, use the environment's generic agent capability with explicit role prompts and any discovered role instructions. |
 | `agent_instruction_paths` | Optional role instruction files | Discover and read when referenced or available. Do not assume `.cursor`, `agents/`, or particular filenames. |
-| `agent_capabilities` | Available delegation, isolation, read-only, and result-return features | Inspect tool capability/schema. Do not assume a tool named `Task`, a particular `subagent_type`, model labels such as `fast`, or background controls. |
+| `agent_capabilities` | Available delegation, isolation, and result-return features | Inspect tool capability/schema. Do not assume a tool named `Task`, a particular `subagent_type`, model labels such as `fast`, or background controls. |
 
-If no mechanism exists to launch separate agents, **stop** and report that orchestration cannot safely proceed. Do not implement the package yourself or substitute the orchestrator for the verifier. If a verifier cannot be made read-only, stop before verification and ask for a suitable capability or operator action.
+If no mechanism exists to launch separate agents, **stop** and report that orchestration cannot safely proceed. Do not implement the package yourself or substitute the orchestrator for the verifier.
 
 ## Required map content and readiness
 
@@ -51,7 +51,7 @@ Stop and report precise gaps if selected packages lack implementable briefs, dep
 1. **No product edits.** The orchestrator may inspect files, repository state, agent definitions, and tool capabilities. It may write only its own configured progress state, following the safe-write rules below. It must not edit source, tests, generated product documentation, the map, specification, or indexes. A user request to edit one of those artifacts is a separate task, not an implied exception to package orchestration.
 2. **One package per implementation handoff.** Never bundle multiple packages into one implementation-agent assignment. Do not begin a package until every dependency has an accepted `pass` verdict, unless the user explicitly waives a named dependency in the conversation. Record any waiver and its rationale.
 3. **Independent verification.** Launch a separate verifier invocation after implementation, in fresh context. Do not resume the implementer session as verifier. Provide the verifier with the frozen brief, relevant requirements, implementation report, and scoped change/evidence references; do not provide the implementer's private reasoning or tool transcript. The verifier must inspect the actual repository state and independently test the claims. It cannot edit files.
-4. **No assumed agent features.** Use only delegation features confirmed available. A generic agent is acceptable when the environment has no named role, provided the full role contract and any discovered role instructions are included. Do not claim background execution, model selection, context isolation, or read-only enforcement unless the interface supports it. If fresh context or read-only verification cannot be ensured, stop.
+4. **No assumed agent features.** Use only delegation features confirmed available. A generic agent is acceptable when the environment has no named role, provided the full role contract and any discovered role instructions are included. Do not claim background execution, model selection, or context isolation enforcement unless the interface supports it. If fresh context verification cannot be ensured, stop.
 5. **No implicit commits.** Neither the orchestrator nor its agents may commit, push, merge, publish, or create a pull request unless the user explicitly authorizes that action. Package completion means implementation and verification only.
 6. **Preexisting changes are protected.** Before any implementation handoff, record the repository's baseline status and changed-file set. Treat every preexisting modified, staged, untracked, ignored, or otherwise user-owned file as protected. Give agents explicit exclusions and require them not to overwrite or “clean up” those files. If package scope overlaps a preexisting change, stop and ask the user how to proceed. Never reset, stash, discard, or restore user changes.
 7. **Detect stale completion.** A prior `pass` in the progress file is not sufficient by itself. Before skipping or relying on it, compare the current map/package brief fingerprint (or captured revision/hash when available), repository baseline/current state, package file scope, and recorded verifier evidence. If the map changed, relevant files changed after verification, evidence cannot be reproduced, or completion cannot be tied to the current package definition, mark the prior result `stale` and re-run implementation and verification as appropriate. Never treat unknown state as current completion.
@@ -86,7 +86,7 @@ If an implementation attempt is repaired, include the verifier findings and repa
 
 ### Independent verifier
 
-Use a new agent invocation with no continuation/resume of the implementer. Enforce read-only behavior using available capabilities; state the prohibition in the prompt as well. Include:
+Use a new agent invocation with no continuation/resume of the implementer. Include:
 
 - Run ID, package ID/title, repository root, map/specification context, full verifier brief, and current package definition fingerprint.
 - Implementer structured report, changed-path list, baseline and current repository state, and a bounded package `change_scope` (or equivalent evidence references).
@@ -224,7 +224,7 @@ If a progress path cannot safely retain multiple runs, do not overwrite it. Use 
 
 ## Stop conditions
 
-Stop before or during execution when any of the following occurs: required agent capability is unavailable; role separation/fresh context/read-only verification cannot be ensured; map readiness fails; dependencies are unresolved; package scope overlaps protected preexisting work; repository or map state changes materially after agenda approval; an agent exceeds scope; a report is blocked or unusable; a verifier fails beyond the repair cap; or progress cannot be safely recorded. Record the observed state, avoid destructive cleanup, and tell the user what input or capability is needed.
+Stop before or during execution when any of the following occurs: required agent capability is unavailable; role separation/fresh context verification cannot be ensured; map readiness fails; dependencies are unresolved; package scope overlaps protected preexisting work; repository or map state changes materially after agenda approval; an agent exceeds scope; a report is blocked or unusable; a verifier fails beyond the repair cap; or progress cannot be safely recorded. Record the observed state, avoid destructive cleanup, and tell the user what input or capability is needed.
 
 ## Anti-patterns
 
