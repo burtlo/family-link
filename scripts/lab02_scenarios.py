@@ -157,7 +157,7 @@ class Lab02ScenarioCoordinator:
                 else:
                     # The sole serial reader supplies run ownership; device snap IDs remain authoritative.
                     event.setdefault("run_id", self.server.run_id)
-                self.event_sink({"kind": "device_trace", **event})
+                self.event_sink({**event, "source": "device", "kind": "device_trace"})
                 if event["event"] == "page_fetch":
                     if event.get("run_id") == self.server.run_id and event.get("page_receipt_id") not in (None, "", "-") and event.get("op_id") is not None:
                         self._page_fetches.append(dict(event))
@@ -191,7 +191,7 @@ class Lab02ScenarioCoordinator:
                                   "selected_message_id": event.get("message_id"),
                                   "revision": event.get("revision"), "page_receipt_id": event.get("page_receipt_id"),
                                   "op_id": event.get("op_id"), "apply_t_us": event["t_us"]}
-                        self.event_sink(effect)
+                        self.event_sink({**effect, "source": "host"})
                         pending["apply_evidence"] = effect
                 if event["event"] == "snap_end" and self._active_snap and event.get("snap_id") == self._active_snap.get("snap_id"):
                     if self._pending_action and self._pending_action.get("snap_id") == event.get("snap_id"):
@@ -249,7 +249,7 @@ class Lab02ScenarioCoordinator:
                             or run_id != self.server.run_id
                             or not _valid_receipt(receipt) or receipt.get("run_id") != run_id
                             or receipt.get("action_id") != action_id):
-                        self.event_sink({"kind": "scenario_action", "run_id": run_id,
+                        self.event_sink({"source": "host", "kind": "scenario_action", "run_id": run_id,
                                          "action_id": action_id, "scenario": scenario, "receipt": receipt,
                                          "proof_status": "INCOMPLETE", "reason": "receipt_after_snap_end"})
                     else:
@@ -259,7 +259,7 @@ class Lab02ScenarioCoordinator:
                         if pending and pending.get("action_id") == action_id:
                             pending["receipt"] = receipt
                             pending["receipt_before_snap_end"] = True
-                self.event_sink({"kind": "scenario_action", "run_id": run_id,
+                self.event_sink({"source": "host", "kind": "scenario_action", "run_id": run_id,
                                  "action_id": action_id, "scenario": scenario,
                                  "snap_id": snap.get("snap_id"), "viewed_message_id": viewed_message_id,
                                  "receipt": receipt})

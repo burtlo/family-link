@@ -97,6 +97,8 @@ static bool wait_for_true(const atomic_bool *value)
 
 int main(void)
 {
+    require_true(LAB02_TRACE_QUEUE_CAPACITY == 10u,
+                 "two-record transport headroom is configured");
     lab02_trace_init();
 
     /* xTaskCreateStatic success is real, repeated start is idempotent, and
@@ -162,6 +164,7 @@ int main(void)
     char reason[64] = "completed";
     char receipt[33] = "receipt_old";
     char run_id[33] = "run_old";
+    char snap_origin[16] = "touch";
     char event_name[32] = "whole_row";
     char message_id[24] = "message_old";
     const lab02_trace_payload_t payload = {
@@ -171,7 +174,8 @@ int main(void)
                   LAB02_TRACE_FIELD_STATE | LAB02_TRACE_FIELD_PAGE_RECEIPT_ID |
                   LAB02_TRACE_FIELD_RUN_ID | LAB02_TRACE_FIELD_ELAPSED_US |
                   LAB02_TRACE_FIELD_BIND_GENERATION | LAB02_TRACE_FIELD_CARD_SLOT |
-                  LAB02_TRACE_FIELD_PUBLICATION_AFTER_APPLY,
+                  LAB02_TRACE_FIELD_PUBLICATION_AFTER_APPLY |
+                  LAB02_TRACE_FIELD_SNAP_ORIGIN,
         .session_id = 7u,
         .revision = 8u,
         .snap_id = 9u,
@@ -181,6 +185,7 @@ int main(void)
         .state = state,
         .page_receipt_id = receipt,
         .run_id = run_id,
+        .snap_origin = snap_origin,
         .elapsed_us = 11,
         .bind_generation = 12u,
         .card_slot = 3u,
@@ -194,6 +199,7 @@ int main(void)
     strcpy(reason, "mutated_reason");
     strcpy(receipt, "receipt_mutated");
     strcpy(run_id, "run_mutated");
+    strcpy(snap_origin, "harness");
     lab02_trace_drain();
 
     /* Exact-capacity identities include the final payload byte plus NUL. */

@@ -28,6 +28,8 @@ typedef struct {
 
 bool lab02_carousel_init(lab02_carousel_t *c);
 void lab02_carousel_set_focus(lab02_carousel_t *c, int index, bool animate);
+void lab02_carousel_set_focus_with_origin(lab02_carousel_t *c, int index, bool animate,
+                                          const char *origin);
 /** Apply session I/O results to carousel layout (call outside snap lock). */
 void lab02_carousel_pump(lab02_carousel_t *c);
 lab02_carousel_t *lab02_carousel_instance(void);

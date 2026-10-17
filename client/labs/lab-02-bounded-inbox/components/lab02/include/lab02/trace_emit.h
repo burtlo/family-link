@@ -7,7 +7,10 @@
 extern "C" {
 #endif
 
-#define LAB02_TRACE_QUEUE_CAPACITY 8u
+/* Two additional fixed records absorb the short semantic-event bursts seen
+ * alongside the unchanged 120 ms resource sampler.  At the current 824-byte
+ * record size this adds 1648 bytes of static storage. */
+#define LAB02_TRACE_QUEUE_CAPACITY 10u
 #define LAB02_TRACE_EVENT_CAP 32u
 #define LAB02_TRACE_MESSAGE_ID_CAP 24u
 #define LAB02_TRACE_EXTRA_CAP 96u
@@ -72,6 +75,7 @@ enum {
     LAB02_TRACE_FIELD_ADMITTED_FETCHES = 1ull << 48,
     LAB02_TRACE_FIELD_FETCH_QUEUE_DEPTH = 1ull << 49,
     LAB02_TRACE_FIELD_TERMINAL_PENDING = 1ull << 50,
+    LAB02_TRACE_FIELD_SNAP_ORIGIN = 1ull << 51,
 };
 
 /* Pointers are borrowed only for the duration of lab02_trace_emit_payload(). */
@@ -126,6 +130,7 @@ typedef struct {
     const char *run_id;
     const char *focus_msg_before;
     const char *focus_msg_after;
+    const char *snap_origin;
     bool publication_after_apply;
     const char *extra;
 } lab02_trace_payload_t;

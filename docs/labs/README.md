@@ -1,6 +1,6 @@
 # Device and experience labs (v2)
 
-Status: **projected layout and process** — lab firmware trees are not required to exist until the first lab is implemented.  
+Status: **active lab registry and evidence process** — registered projects and proof status are listed below; planned labs remain projected until implemented.
 Purpose: measure v2 carousel, media, login, and journey behavior on hardware **before** folding results into [`client/device`](../../client/device/) (product firmware).
 
 ## Start here
@@ -12,7 +12,7 @@ Purpose: measure v2 carousel, media, login, and journey behavior on hardware **b
 | Where code, servers, builds, and evidence live | [Repository layout](repository-layout.md) |
 | Reusable host-runner proposal from the LAB-02 review | [Reusable lab runner pattern](reusable-lab-runner.md) |
 | **LAB-02** file tree, phases, verification scenarios | [LAB-02 implementation outline](lab-02-implementation-outline.md) |
-| Run and metrics JSON shapes | [schemas/](schemas/run-manifest.v1.md) |
+| Run and metrics JSON shapes | [shared manifest v2](schemas/run-manifest.v2.md) · [metrics v2](schemas/metrics.v2.md) · [legacy LAB-02 manifest v1](schemas/run-manifest.v1.md) |
 | Inbox carousel, card reuse, audio/sketch (`LAB-01`–`LAB-05`) | [Inbox carousel playback evaluation](inbox-carousel-playback-evaluation.md) |
 | Login, session, capture/send, composition (`LAB-06`–`LAB-13`) | [V2 experience demo roadmap](v2-experience-demo-roadmap.md) |
 
@@ -38,9 +38,9 @@ Use these IDs in manifests, traces, and evidence paths. Folder names are **kebab
 | `LAB-12` | `lab-12-profile-settings` | `lab-12-profile-settings` | [Roadmap § LAB-12](v2-experience-demo-roadmap.md#lab-12--profile-and-settings-propagation) |
 | `LAB-13` | `lab-13-full-journey` | `lab-13-full-journey` | [Roadmap § LAB-13](v2-experience-demo-roadmap.md#lab-13--composed-v2-journey) |
 
-Recommended first implementation: **`LAB-02`** Phase A (local page provider, no server). Follow [LAB-02 implementation outline](lab-02-implementation-outline.md) and [assistant guide — suggested order](assistant-guide.md#suggested-implementation-order).
+`LAB-02` and `LAB-05` have registered firmware projects and shared-run evidence. The current LAB-05 manual and scripted integration proofs pass the workflow lifecycle with service and scenario stages `not_configured`; experiment verdicts remain `UNMEASURED`. The scripted capture lacks its `LAB05_HARNESS_DONE` marker, and these runs do not measure performance. See [evidence index](evidence/README.md#shared-run-evidence-examples). Other rows below describe planned experiments, not registered runnable labs.
 
-**Run on hardware:** `make lab.lab02` runs managed HTTP with manual free traversal; `make lab.lab02.scripted` runs the harness without operator touch. Step-by-step for assistants: [assistant guide § Host commands and registering a lab](assistant-guide.md#host-commands-make-lab).
+**Run on hardware:** `make lab.lab02` runs managed HTTP with manual free traversal; `make lab.lab02.scripted` runs its harness. `make lab.lab05` and `make lab.lab05.scripted` exercise the no-server generic lifecycle. These target commands require the corresponding registered kit, serial access, and toolchain. Step-by-step for assistants: [assistant guide § Host commands and registering a lab](assistant-guide.md#host-commands-make-lab).
 
 ## Evidence
 

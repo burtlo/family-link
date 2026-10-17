@@ -56,6 +56,7 @@ class LabSpec:
     flash_by_default: bool
     run_instructions: str | None
     run_instructions_doc: str | None
+    adapter_key: str
 
 
 def _repo_path(raw: str, environ: Mapping[str, str]) -> Path:
@@ -125,6 +126,7 @@ def build_catalog(schema_path: Path | None = None) -> dict[str, object]:
             "paths are repo-relative; absolute paths are rejected",
             "project_dir must exist under the repository root",
             "variants.default must name a defined variant",
+            "adapter, when set, must be an allowlisted host-code key",
             "trace_parser, when set, must reference an existing file",
             "run.instructions or run.instructions_doc is required (operator runbook)",
             "instructions_doc path must exist; anchor is optional (#heading-id)",
@@ -330,6 +332,7 @@ def _parse_registry(raw: dict[str, Any], registry_file: Path) -> dict[str, LabSp
             flash_by_default=bool(run.get("flash_by_default", True)),
             run_instructions=run_instructions,
             run_instructions_doc=run_instructions_doc,
+            adapter_key=str(entry.get("adapter", "generic")),
         )
     return specs
 

@@ -1,0 +1,19 @@
+[stdout] LAB02_PAGING_SERVER listening [REDACTED_URL] items=64
+[stdout] [lab02-paging] 192.168.8.236 - "GET /lab/health HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.236 - "POST /lab/seed HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=16&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.236 - "POST /lab/script HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=16&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=32&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -
+[stdout] [lab02-paging] 192.168.8.160 - "GET /v2/inbox?cursor=0&limit=16 HTTP/1.1" 200 -

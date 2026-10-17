@@ -11,14 +11,32 @@ from lab02_server import ServerLifecycleError
 
 def lines_page(snap="7", end=400):
     return parse_trace([
-        f"LAB_TRACE t_us=100 event=snap_start gen=0 focus=4 msg=viewed snap_id={snap} run_id=run",
+        f"LAB_TRACE t_us=100 event=snap_start gen=0 focus=4 msg=viewed snap_id={snap} run_id=run snap_origin=touch",
         f"LAB_TRACE t_us=150 event=page_fetch gen=2 focus=16 msg=- op_id=22 snap_id={snap} revision=8 page_receipt_id=pageabc run_id=run server_completed_ns=99",
         f"LAB_TRACE t_us=200 event=page_apply gen=2 focus=4 msg=viewed op_id=22 snap_id={snap} revision=8 page_receipt_id=pageabc run_id=run server_completed_ns=99",
-        f"LAB_TRACE t_us={end} event=snap_end gen=0 focus=4 msg=viewed snap_id={snap} run_id=run",
+        f"LAB_TRACE t_us={end} event=snap_end gen=0 focus=4 msg=viewed snap_id={snap} run_id=run snap_origin=touch",
     ])
 
 
 class ScenarioTraceTests(unittest.TestCase):
+    def test_snap_origin_survives_parse_and_journal_relay(self):
+        parsed = lines_page()
+        start = next(event for event in parsed if event["event"] == "snap_start")
+        end = next(event for event in parsed if event["event"] == "snap_end")
+        self.assertEqual(start["snap_origin"], "touch")
+        self.assertEqual(end["snap_origin"], start["snap_origin"])
+
+        server = Mock()
+        server.run_id = "run"
+        rows = []
+        coordinator = Lab02ScenarioCoordinator(server, capture_active=lambda: True,
+                                              event_sink=rows.append)
+        coordinator.ingest_line("LAB_TRACE t_us=10 event=snap_start gen=0 focus=4 msg=viewed snap_id=7 snap_origin=harness")
+        coordinator.ingest_line("LAB_TRACE t_us=20 event=snap_end gen=0 focus=4 msg=viewed snap_id=7 snap_origin=harness")
+        self.assertEqual([row["source"] for row in rows], ["device", "device"])
+        self.assertTrue(all(row["snap_origin"] == "harness" for row in rows))
+        coordinator.close()
+
     def test_page_receipt_requires_run_action_and_fetch_apply_pair_inside_snap(self):
         receipt = {"action_id": "act", "run_id": "run", "ok": True, "inbox_revision": 8, "receipt_before_snap_end": True, "snap_id": "7"}
         events = lines_page()

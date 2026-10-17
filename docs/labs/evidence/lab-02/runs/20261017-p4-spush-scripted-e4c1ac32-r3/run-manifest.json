@@ -1,0 +1,89 @@
+{
+  "artifacts": {
+    "device_log": "logs/device/labs/lab-02/20261017-p4-spush-scripted-e4c1ac32-r3/serial.txt",
+    "events": "docs/labs/evidence/lab-02/runs/20261017-p4-spush-scripted-e4c1ac32-r3/events.jsonl",
+    "metrics": "docs/labs/evidence/lab-02/runs/20261017-p4-spush-scripted-e4c1ac32-r3/metrics.json",
+    "serial_log": null,
+    "server_log": "docs/labs/evidence/lab-02/runs/20261017-p4-spush-scripted-e4c1ac32-r3/server.log"
+  },
+  "build": {
+    "status": "built"
+  },
+  "capture": {
+    "duration_seconds": 120,
+    "fresh_boot_marker": true,
+    "harness_done": true,
+    "mode": "scripted",
+    "reset": "RTS pulse after capture arm",
+    "seconds": 120,
+    "stages": {
+      "activity": "passed",
+      "build": "passed",
+      "cleanup": "passed",
+      "preflight": "passed",
+      "scenario": "passed",
+      "service": "passed"
+    },
+    "status": "complete",
+    "variant": "scripted-phaseb"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-17T19:37:37.810877Z",
+  "event_loss": {
+    "dropped_events": 0
+  },
+  "evidence_slug": "lab-02",
+  "experiment_verdict": "PASS",
+  "firmware": {
+    "binary_sha256": "c68b904f6108db4c0233ec19e64acf45116293d97496d2a3351d37f1d5a6195f",
+    "build_fingerprint": "sha256:1e42af5940a0b8bf6d47e8d26b152588f6de6a3869f80c441d4df06a8d4036f3",
+    "build_id": "1e42af5940a0b8bf6d47e8d2",
+    "build_stamp": "1e42af5940a0b8bf6d47e8d2",
+    "cmake_options": {
+      "CONFIG_LAB02_FIXTURE_64": "y",
+      "CONFIG_LAB_AUTO_HARNESS": "y"
+    },
+    "idf_version": null,
+    "project_path": "client/labs/lab-02-bounded-inbox",
+    "sdkconfig_sha256": "f6dd40606ca942cdc2336de47a720699b00fb2bdfd430fec0fbd6a678d90b575",
+    "source_revision": null,
+    "source_sha256": "d0f7b2192c01552d155a8a0bb673d28374b2eab01466c9610dbef94f8f8183c6"
+  },
+  "fixture": {
+    "file": "fixtures/inbox_64.json",
+    "revision": "v1",
+    "schema": "inbox-summary/v1",
+    "sha256": "18cb88f064b98096eeb735434db5a8f88a048326d2080919aad564f55ca78e44"
+  },
+  "hardware": {
+    "board": "esp32s3-box-3",
+    "kit_nickname": "lynn-kit"
+  },
+  "lab_id": "LAB-02",
+  "lab_revision": null,
+  "lab_version_string": null,
+  "operator": null,
+  "run_id": "20261017-p4-spush-scripted-e4c1ac32-r3",
+  "scenarios": [
+    "S-push"
+  ],
+  "server": {
+    "path": "server/labs/lab-02-paging",
+    "revision": null,
+    "source_sha256": "38e4a89bb502e8ba39e7fcadb4160d075919c95d3136527d83ff51a7cf689725"
+  },
+  "source": {
+    "dirty": true,
+    "files": {
+      "firmware_tree_sha256": "d0f7b2192c01552d155a8a0bb673d28374b2eab01466c9610dbef94f8f8183c6",
+      "server_sha256": "38e4a89bb502e8ba39e7fcadb4160d075919c95d3136527d83ff51a7cf689725"
+    },
+    "revision": "a60e368937594a03d711145029d2ffd82dfec18d"
+  },
+  "started_at_utc": "2026-10-17T19:36:20.240116Z",
+  "terminal_reason": "completed",
+  "terminal_reason_truncated": false,
+  "verification_levels": {},
+  "workflow_status": "PASS"
+}

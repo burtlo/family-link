@@ -34,11 +34,18 @@ class EvidenceRunTests(unittest.TestCase):
                               caller_completed=False, cleanup_succeeded=False)
         self.assertEqual(first, second)
         manifest = json.loads(run.manifest_path.read_text())
+        self.assertEqual(manifest["document"], "family-link.lab-run-manifest/v1")
         self.assertEqual(manifest["workflow_status"], "PASS")
         self.assertEqual(manifest["experiment_verdict"], "UNMEASURED")
         self.assertEqual(manifest["firmware"]["cmake_options"], {"LAB02_FIXTURE": "64"})
         self.assertIsNone(manifest["firmware"]["binary_sha256"])
+        self.assertEqual(manifest["event_loss"]["host_journal"],
+                         {"status": "NONE", "dropped_events": 0})
+        self.assertEqual(manifest["event_loss"]["firmware_trace"],
+                         {"status": "UNKNOWN", "dropped_events": None})
         events = run.events_path.read_text()
+        self.assertTrue(all(row.get("source") in {"host", "server", "device", "unknown"}
+                            for row in map(json.loads, events.splitlines())))
         self.assertNotIn("secret", events)
         self.assertNotIn("user:password", events)
         self.assertEqual(events.count('"kind":"run_terminal"'), 1)
@@ -109,6 +116,29 @@ class EvidenceRunTests(unittest.TestCase):
         self.assertEqual(sum(row.get("kind") == "events_truncated" for row in rows), 1)
         self.assertEqual(sum(row.get("kind") == "run_terminal" for row in rows), 1)
         self.assertEqual(result["event_loss"]["dropped_events"], 19)
+        self.assertEqual(result["event_loss"]["host_journal"],
+                         {"status": "OBSERVED", "dropped_events": 19})
+
+    def test_loss_sources_are_separate_and_unknown_is_not_zero(self):
+        run = self.run_writer("loss-sources")
+        run.event_sink({"source": "device", "kind": "device_trace", "event": "snap_start"})
+        run.update_context({"event_loss": {"firmware_trace": {
+            "status": "OBSERVED", "dropped_events": 3,
+            "oversized_events": 1, "malformed_rows": 0}}})
+        result = run.finalize(workflow_status="PASS", experiment_verdict="UNMEASURED",
+                              caller_completed=True, cleanup_succeeded=True)
+        self.assertEqual(result["event_loss"]["host_journal"],
+                         {"status": "NONE", "dropped_events": 0})
+        self.assertEqual(result["event_loss"]["firmware_trace"]["dropped_events"], 3)
+        row = json.loads(run.events_path.read_text().splitlines()[0])
+        self.assertEqual(row["source"], "device")
+
+    def test_invalid_or_missing_event_source_is_explicit_unknown(self):
+        run = self.run_writer("unknown-source")
+        run.event_sink({"kind": "legacy_event"})
+        run.event_sink({"source": "other", "kind": "bad_source"})
+        rows = [json.loads(row) for row in run.events_path.read_text().splitlines()]
+        self.assertEqual([row["source"] for row in rows], ["unknown", "unknown"])
 
     def test_atomic_manifest_failure_retries_same_terminal_facts(self):
         import lab02_evidence as module
@@ -244,6 +274,130 @@ class EvidenceRunTests(unittest.TestCase):
         self.assertEqual(result["firmware"]["binary_sha256"], "observed-hash")
         with self.assertRaises(RuntimeError):
             run.update_context({"firmware": {"build_id": "late"}})
+
+    def test_generic_manifest_uses_registered_identity_and_approved_run_roots(self):
+        run_id = "transition-run-01"
+        run = EvidenceRun(
+            self.root, run_id,
+            {"firmware": {"build_fingerprint": "sha256:compiled-inputs"}},
+            lab_id="LAB-05", evidence_slug="transition-resource",
+            evidence_root="docs/labs/evidence/transition-resource/runs",
+            serial_root="logs/device/labs/transition-resource",
+            document="family-link.lab-run-manifest/v2")
+        metrics = self.root / "docs/labs/evidence/transition-resource/runs" / run_id / "metrics.json"
+        serial = self.root / "logs/device/labs/transition-resource" / run_id / "serial.txt"
+        metrics.write_text('{"document":"family-link.lab-metrics/v2"}')
+        serial.parent.mkdir(parents=True)
+        serial.write_text("captured")
+        run.update_context({"artifacts": {
+            "metrics": metrics.relative_to(self.root).as_posix(),
+            "serial_log": serial.relative_to(self.root).as_posix()}})
+        result = run.finalize(workflow_status="PASS", experiment_verdict="FAIL",
+                              caller_completed=True, cleanup_succeeded=True)
+        self.assertEqual(result["document"], "family-link.lab-run-manifest/v2")
+        self.assertEqual(result["lab_id"], "LAB-05")
+        self.assertEqual(result["evidence_slug"], "transition-resource")
+        self.assertEqual(result["firmware"]["build_fingerprint"], "sha256:compiled-inputs")
+        self.assertEqual(result["run_id"], run_id)
+        self.assertEqual(result["workflow_status"], "PASS")
+        self.assertEqual(result["experiment_verdict"], "FAIL")
+        self.assertEqual(result["artifacts"]["metrics"], metrics.relative_to(self.root).as_posix())
+        self.assertEqual(result["artifacts"]["serial_log"], serial.relative_to(self.root).as_posix())
+
+    def test_v1_rejects_custom_roots_while_v2_accepts_them(self):
+        with self.assertRaisesRegex(ValueError, "v1 manifest requires the canonical evidence_root"):
+            self.run_writer("v1-custom-root", evidence_root="custom/evidence/runs")
+        with self.assertRaisesRegex(ValueError, "v1 manifest requires the canonical serial_root"):
+            self.run_writer("v1-custom-serial-root", serial_root="custom/device-logs")
+
+        run_id = "v2-custom-root"
+        evidence_root = "custom/evidence/runs"
+        serial_root = "custom/device-logs"
+        run = EvidenceRun(
+            self.root, run_id, {}, lab_id="LAB-05", evidence_slug="transition-resource",
+            evidence_root=evidence_root, serial_root=serial_root,
+            document="family-link.lab-run-manifest/v2")
+        metrics = self.root / evidence_root / run_id / "metrics.json"
+        serial = self.root / serial_root / run_id / "serial.txt"
+        metrics.write_text('{"document":"family-link.lab-metrics/v2"}')
+        serial.parent.mkdir(parents=True)
+        serial.write_text("captured")
+        run.update_context({"artifacts": {
+            "metrics": metrics.relative_to(self.root).as_posix(),
+            "serial_log": serial.relative_to(self.root).as_posix()}})
+        result = run.finalize(workflow_status="FAIL", experiment_verdict="UNMEASURED",
+                              caller_completed=False, cleanup_succeeded=True)
+        self.assertEqual(result["document"], "family-link.lab-run-manifest/v2")
+        self.assertEqual(result["artifacts"]["metrics"], metrics.relative_to(self.root).as_posix())
+        self.assertEqual(result["artifacts"]["serial_log"], serial.relative_to(self.root).as_posix())
+
+    def test_generic_paths_reject_traversal_unapproved_and_symlink_escape(self):
+        with self.assertRaises(ValueError):
+            self.run_writer("bad-root", evidence_root="../outside",
+                            document="family-link.lab-run-manifest/v2",
+                            lab_id="LAB-05", evidence_slug="transition-resource")
+        run_id = "generic-unsafe"
+        root = "docs/labs/evidence/transition-resource/runs"
+        run = EvidenceRun(self.root, run_id, {"artifacts": {
+            "metrics": f"{root}/{run_id}/../other/metrics.json",
+            "serial_log": f"logs/device/labs/other/{run_id}/serial.txt"}},
+            lab_id="LAB-05", evidence_slug="transition-resource",
+            evidence_root=root,
+            serial_root="logs/device/labs/transition-resource",
+            document="family-link.lab-run-manifest/v2")
+        outside = Path(self.temp.name).parent / (Path(self.temp.name).name + "-generic-outside")
+        outside.mkdir()
+        try:
+            serial_dir = self.root / "logs/device/labs/transition-resource" / run_id
+            serial_dir.parent.mkdir(parents=True, exist_ok=True)
+            serial_dir.symlink_to(outside, target_is_directory=True)
+            (outside / "serial.txt").write_text("outside")
+            result = run.finalize(workflow_status="FAIL", experiment_verdict="INCOMPLETE",
+                                  caller_completed=False, cleanup_succeeded=False)
+            self.assertIsNone(result["artifacts"]["metrics"])
+            self.assertIsNone(result["artifacts"]["serial_log"])
+            self.assertEqual(result["workflow_status"], "FAIL")
+            self.assertEqual(result["experiment_verdict"], "INCOMPLETE")
+            self.assertEqual(result["event_loss"]["dropped_events"], 0)
+        finally:
+            import shutil
+            shutil.rmtree(outside, ignore_errors=True)
+
+    def test_generic_failure_finalizes_partial_truthful_evidence(self):
+        run = EvidenceRun(self.root, "generic-preflight", {}, lab_id="LAB-05",
+                          evidence_slug="transition-resource",
+                          document="family-link.lab-run-manifest/v2")
+        run.event_sink({"kind": "stage", "stage": "preflight", "status": "failed"})
+        result = run.finalize(workflow_status="FAIL", experiment_verdict="UNMEASURED",
+                              caller_completed=False, cleanup_succeeded=True,
+                              terminal_reason="preflight rejected")
+        self.assertEqual(result["document"], "family-link.lab-run-manifest/v2")
+        self.assertEqual(result["workflow_status"], "FAIL")
+        self.assertEqual(result["experiment_verdict"], "UNMEASURED")
+        self.assertIsNone(result["artifacts"]["metrics"])
+        self.assertIsNone(result["artifacts"]["serial_log"])
+        self.assertTrue(result["artifacts"]["events"].endswith("events.jsonl"))
+        terminal = [json.loads(row) for row in run.events_path.read_text().splitlines()
+                    if json.loads(row).get("kind") == "run_terminal"]
+        self.assertEqual(len(terminal), 1)
+        self.assertEqual(terminal[0]["workflow_status"], "FAIL")
+        self.assertEqual(terminal[0]["experiment_verdict"], "UNMEASURED")
+
+    def test_generic_schema_examples_are_valid_and_versioned(self):
+        schema_dir = Path(__file__).resolve().parents[2] / "docs/labs/schemas"
+        for filename, expected_document in (
+            ("run-manifest.v2.md", "family-link.lab-run-manifest/v2"),
+            ("metrics.v2.md", "family-link.lab-metrics/v2"),
+        ):
+            with self.subTest(filename=filename):
+                source = (schema_dir / filename).read_text()
+                example = source.split("```json\n", 1)[1].split("\n```", 1)[0]
+                payload = json.loads(example)
+                self.assertEqual(payload["document"], expected_document)
+                self.assertIn("run_id", payload)
+        manifest_source = (schema_dir / "run-manifest.v1.md").read_text()
+        self.assertIn("family-link.lab-run-manifest/v1", manifest_source)
+        self.assertIn("family-link.lab-metrics/v1", (schema_dir / "metrics.v1.md").read_text())
 
 
 if __name__ == "__main__":

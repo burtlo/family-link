@@ -98,26 +98,27 @@ Skipping straight to **LAB-02** is consistent with the plans; do not skip eviden
 | Run ID format | `YYYYMMDD-<phase>-<fixture>-<variant>-<seq>` |
 | Serial logs | `logs/device/labs/lab-02/<run-id>/` |
 | Report template | [evidence/lab-02/TEMPLATE-REPORT.md](evidence/lab-02/TEMPLATE-REPORT.md) |
-| Run manifest | [schemas/run-manifest.v1.md](schemas/run-manifest.v1.md) |
+| Run manifest | [schemas/run-manifest.v2.md](schemas/run-manifest.v2.md) for shared runs; [v1](schemas/run-manifest.v1.md) documents the legacy LAB-02 format |
 | Inbox UI | Stub **message** cards — snap geometry may follow roster panel spec; do not ship roster chrome as inbox |
 
-**Boot marker:** the workflow accepts only a fresh `LAB02_READY` marker observed
+**LAB-02 boot marker:** the LAB-02 adapter accepts only a fresh `LAB02_READY` marker observed
 after its capture-armed RTS reset. A missing marker makes device evidence incomplete.
 
 **Eager comparison:** separate build directory; set `comparison_run_id` in both manifests.
 
 ## Host commands (`make lab.*`)
 
-Lab firmware is **not** built by `make build` (that is product bootstrap in `client/device/`). Use the **host lab registry** and shared runner [`scripts/lab_host.py`](../../scripts/lab_host.py).
+Lab firmware is **not** built by `make build` (that is product bootstrap in `client/device/`). Use the **host lab registry** and [`scripts/lab_host.py`](../../scripts/lab_host.py). The `make lab.<name>` and `make lab.<name>.scripted` targets enter the shared run lifecycle and create a common v2 run manifest and event journal. The generic adapter uses this lifecycle without configuring a service or scenario; LAB-02 selects its allowlisted adapter for the managed fixture and experiment-specific checks.
 
 | Make target | What it does |
 |-------------|----------------|
 | `make lab.help` | List registered labs and variants (`lab_host.py list`) |
 | `make lab.<name>.help` | Operator instructions from registry `run.instructions` / `run.instructions_doc` |
-| `make lab.<name>` | Canonical managed run for LAB-02: starts and seeds the owned HTTP fixture, builds, flashes, arms serial capture, resets, and records manifest/log evidence |
+| `make lab.<name>` | Manual shared run: creates evidence, resolves one registered kit, builds, captures serial, and finalizes the run manifest/events |
+| `make lab.<name>.scripted` | Scripted shared run; the generic adapter selects the registered `scripted` variant when present, otherwise the registry default. LAB-02 managed HTTP defaults to `scripted-phaseb` when `VARIANT` is unset |
 | `make lab.<name>.build` | ESP-IDF build only for the selected variant |
 | `make lab.<name>.flash` | Flash an existing build to one kit |
-| `make lab.<name>.capture` | Serial capture only (no build) |
+| `make lab.<name>.capture` | Lower-level serial capture only; it does not create the common run manifest/events |
 
 **Make variables** (optional; same names work as environment variables for `lab_host.py`):
 
@@ -125,12 +126,12 @@ Lab firmware is **not** built by `make build` (that is product bootstrap in `cli
 |----------|---------|---------|
 | `KIT` | `.flash`, `.capture`, `lab.<name>` | Deployment nickname (`lynn`, `mazi`, …) — same as `make flash.lynn` |
 | `PORT` | same | Explicit serial port; overrides `KIT` |
-| `VARIANT` | all build/flash/capture/run | Registry variant key (e.g. `recycle`, `eager`); default from registry `variants.default` |
+| `VARIANT` | all build/flash/capture/run | Registry variant key (e.g. `recycle`, `eager`); generic scripted runs use registered `scripted` when available, else `variants.default`. For LAB-02 managed HTTP scripted runs, an explicit value overrides the `scripted-phaseb` default and the adapter applies its managed-plan mapping |
 | `SECONDS` | `.capture`, `lab.<name>` | Capture duration; default from registry `run.capture_seconds_default` |
 | `FLASH` | `.capture`, `lab.<name>` | `1` / `yes` force flash; `0` / `no` skip flash. Default for `make lab.<name>`: registry `run.flash_by_default` |
 | `RUN_ID` | `.capture`, `lab.<name>` | Override auto-generated run folder name |
 
-**Canonical LAB-02 commands:**
+**LAB-02 commands:**
 
 ```text
 make lab.help
@@ -140,15 +141,32 @@ make lab.lab02 BACKEND=local VARIANT=eager KIT=lynn
 make lab.lab02 BACKEND=local KIT=lynn
 ```
 
-Both canonical commands use managed HTTP by default. Manual mode allows free
-carousel traversal, including loading cards. Scripted mode requires no operator
-touch and must observe `HARNESS_DONE`. The host prints a `CAPTURE ACTIVE`
-briefing before traversal. The owned server is started, health-checked, seeded,
-and stopped by the run. No foreground server or curl step is part of the run.
-`BACKEND=local` is an explicit local-fixture comparison; add `VARIANT=eager`
-only when the eager baseline comparison is required.
+Both shared LAB-02 commands use managed HTTP by default. Manual mode allows free
+carousel traversal, including loading cards. Scripted mode runs the device
+harness; a successful experiment requires its expected completion evidence.
+The host starts, health-checks, seeds, and stops the owned server. `BACKEND=local`
+selects the explicit local-fixture comparison; add `VARIANT=eager` only for that
+comparison. See the LAB-02 runbook for scenario-specific criteria.
 
-Canonical runs parse traces and save the manifest and metrics with their capture. Record the **exact make command** in the evidence report; parser success alone is not a passing experiment result.
+The LAB-02 adapter writes common run evidence and retains its LAB-02 scenario
+proofs and parser output. Record the **exact make command** in the evidence
+report; a workflow pass or parser success alone is not a passing experiment
+result. Shared run schemas: [manifest v2](schemas/run-manifest.v2.md) and
+[metrics v2](schemas/metrics.v2.md).
+
+**No-server example — LAB-05:**
+
+```text
+make lab.lab05 KIT=lynn-kit
+make lab.lab05.scripted KIT=lynn-kit
+```
+
+LAB-05 omits `adapter` (therefore uses `generic`) and `workflow`. Its shared
+manifest records `service` and `scenario` as `not_configured`; no placeholder
+server settings are needed. The current manual and scripted evidence records
+show workflow `PASS` and experiment `UNMEASURED`. The scripted serial capture
+does not contain `LAB05_HARNESS_DONE`; neither run is a performance result.
+See [LAB-05 evidence runs](evidence/README.md#shared-run-evidence-examples).
 
 Host registry standard: [labs configuration](../standards/labs-configuration.md). Product bootstrap flash rules still apply for kit binding (`make devices`, `make device.bind`).
 
@@ -163,7 +181,7 @@ Two registries serve different purposes:
 | Product / plan | [docs/labs/README.md](README.md) § Lab ID registry | `LAB-NN` experiment definition, evidence slug convention, links to plan docs |
 | **Host / make** | [`config/labs.registry.yaml`](../../config/labs.registry.yaml) | Short **make name** (`lab02`), ESP-IDF paths, build variants, capture defaults |
 
-When firmware exists under `client/labs/<slug>/`, add a host entry so assistants and owners can run **`make lab.<name>`** without editing the Makefile (pattern rules in the root [`Makefile`](../../Makefile) already dispatch to `lab_host.py`).
+When firmware exists under `client/labs/<slug>/`, add a host entry so assistants and owners can run **`make lab.<name>`** without editing the Makefile (pattern rules in the root [`Makefile`](../../Makefile) already dispatch to `lab_host.py`). Use `adapter: generic` (or omit it) for the standard no-service/no-scenario lifecycle. Select a built-in adapter key only when the lab has matching host workflow code; adapter keys are fixed in the host allowlist and are not Python import paths.
 
 ### Steps to register
 
@@ -171,7 +189,7 @@ When firmware exists under `client/labs/<slug>/`, add a host entry so assistants
 2. **Choose a make name** — lowercase, no dots (e.g. `lab02`, `lab07`). This becomes `make lab.lab02`.
 3. **Append** a block under `labs:` in `config/labs.registry.yaml`, including **`run.instructions`** (short steps) and/or **`run.instructions_doc`** (`path/to/doc.md#anchor`). Field reference: [labs configuration](../standards/labs-configuration.md#registry-fields-per-labsmake_name).
 
-4. **Validate:** `python scripts/lab_registry.py validate`, `make test` (includes `scripts/tests/test_lab_registry.py`), and `make lab.help` — the new lab must appear with correct variants.
+4. **Validate:** `.venv/bin/python scripts/lab_registry.py validate`, `make config.labs`, `make lab.help`, and `make test` — the new lab must appear with correct variants and defaults.
 5. **Document** in the lab’s `client/labs/<slug>/README.md`: make name, variants, boot marker, menuconfig knobs.
 6. **Optional — agent command catalog:** add `[command.lab.<name>]`, `.build`, `.flash`, `.capture` sections to [`config/host.defaults.ini`](../../config/host.defaults.ini) mirroring `make lab.lab02` entries (helps `make config.host` snapshots; not required for make to work).
 7. **Evidence:** add a row to [evidence/README.md](evidence/README.md) and create `docs/labs/evidence/<evidence_slug>/` when first runs exist.
@@ -196,7 +214,8 @@ When closing a lab revision, ensure:
 - [ ] `client/labs/<slug>/manifest.lab.json` — ids and fixture revision
 - [ ] `fixtures/` or server `fixture/` — deterministic data; hashes in manifest
 - [ ] `docs/labs/evidence/<lab-id>/REPORT-*.md` — target, measured, triggers, decisions
-- [ ] `docs/labs/evidence/<lab-id>/runs/<run-id>/run-manifest.json` — build_id, board, sdkconfig note
+- [ ] For shared `.run` workflows, `docs/labs/evidence/<lab-id>/runs/<run-id>/run-manifest.json` and `events.jsonl` per [manifest v2](schemas/run-manifest.v2.md); link serial under `logs/device/labs/<slug>/<run-id>/`
+- [ ] `metrics.json` follows [metrics v2](schemas/metrics.v2.md) when the lab produces metrics; record `UNMEASURED` when it does not
 - [ ] Parsed [metrics v1](schemas/metrics.v1.md) + serial log under `logs/device/labs/<lab-slug>/` when captured
 - [ ] [Measurement table](../product/device-ui/assessments/TEMPLATE-LVGL-SCREEN-ASSESSMENT.md#4-standard-measurement-table) for UI-heavy labs
 - [ ] Link from affected assessment or contract (decision row only; do not approve OPEN items by assertion)

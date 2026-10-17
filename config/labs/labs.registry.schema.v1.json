@@ -54,6 +54,12 @@
         "description": {
           "type": "string"
         },
+        "adapter": {
+          "type": "string",
+          "enum": ["generic", "lab02"],
+          "default": "generic",
+          "description": "Host-code adapter key resolved by the fixed lab runner allowlist."
+        },
         "variants": {
           "$ref": "#/$defs/variants_map"
         },

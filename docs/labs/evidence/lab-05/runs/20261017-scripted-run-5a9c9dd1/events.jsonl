@@ -1,0 +1,10 @@
+{"kind":"stage","monotonic_ns":210970149709250,"outcome":"not_configured","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":210970149880916,"outcome":"not_configured","source":"host","stage":"scenario"}
+{"kind":"stage","monotonic_ns":210970149944833,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":210970165348333,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":210970165478083,"outcome":"running","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":210970176909500,"outcome":"passed","result":"/Users/lynnfrank/src/family-link/build/labs/lab-05-transition-proof-scripted","source":"host","stage":"build"}
+{"kind":"stage","mode":"scripted","monotonic_ns":210970177034083,"outcome":"running","source":"host","stage":"activity"}
+{"kind":"stage","mode":"scripted","monotonic_ns":211037309226250,"outcome":"passed","source":"host","stage":"activity"}
+{"kind":"stage","monotonic_ns":211037309810625,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"completed","workflow_status":"PASS"}

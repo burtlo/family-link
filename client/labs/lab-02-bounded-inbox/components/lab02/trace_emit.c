@@ -75,6 +75,7 @@ typedef struct {
     char run_id[LAB02_TRACE_RUN_ID_CAP];
     char focus_msg_before[LAB02_TRACE_MESSAGE_ID_CAP];
     char focus_msg_after[LAB02_TRACE_MESSAGE_ID_CAP];
+    char snap_origin[LAB02_TRACE_TEXT_CAP];
     bool publication_after_apply;
 } lab02_trace_record_t;
 
@@ -267,6 +268,8 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
         valid = copy_field(record.focus_msg_after, sizeof(record.focus_msg_after),
                            payload->focus_msg_after, true, &record.fields,
                            LAB02_TRACE_FIELD_FOCUS_MSG_AFTER) && valid;
+        valid = copy_field(record.snap_origin, sizeof(record.snap_origin), payload->snap_origin,
+                           true, &record.fields, LAB02_TRACE_FIELD_SNAP_ORIGIN) && valid;
         record.publication_after_apply = payload->publication_after_apply;
         valid = copy_field(record.extra, sizeof(record.extra), payload->extra, false,
                            &record.fields, LAB02_TRACE_FIELD_LEGACY_EXTRA) && valid;
@@ -423,6 +426,7 @@ static void write_record(const lab02_trace_record_t *record)
     if (fields & LAB02_TRACE_FIELD_RUN_ID) used = append_field(line, sizeof(line), used, "run_id", record->run_id);
     if (fields & LAB02_TRACE_FIELD_FOCUS_MSG_BEFORE) used = append_field(line, sizeof(line), used, "focus_msg_before", record->focus_msg_before);
     if (fields & LAB02_TRACE_FIELD_FOCUS_MSG_AFTER) used = append_field(line, sizeof(line), used, "focus_msg_after", record->focus_msg_after);
+    if (fields & LAB02_TRACE_FIELD_SNAP_ORIGIN) used = append_field(line, sizeof(line), used, "snap_origin", record->snap_origin);
     if (fields & LAB02_TRACE_FIELD_PUBLICATION_AFTER_APPLY) used = append_field(line, sizeof(line), used,
                                                                                 "publication_after_apply",
                                                                                 record->publication_after_apply ? "true" : "false");

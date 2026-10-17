@@ -47,7 +47,7 @@ static void harness_step(lab02_carousel_t *c, int index, int step_one_based, int
 {
     const char *who = "—";
     if (lab02_board_lvgl_lock(500)) {
-        lab02_carousel_set_focus(c, index, true);
+        lab02_carousel_set_focus_with_origin(c, index, true, "harness");
         const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, c->focus_index);
         if (item && item->sender_name[0]) {
             who = item->sender_name;

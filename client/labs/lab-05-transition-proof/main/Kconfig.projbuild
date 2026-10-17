@@ -1,0 +1,11 @@
+menu "LAB-05 transition proof"
+
+config LAB05_SCRIPTED
+    bool "Run one automatic transition after boot"
+    default n
+
+config LAB05_BUILD_ID
+    string "Build identifier"
+    default "lab05-manual-v1"
+
+endmenu

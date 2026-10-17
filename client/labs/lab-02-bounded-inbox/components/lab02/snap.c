@@ -18,6 +18,7 @@ static struct {
     int32_t target;
     int focus;
     char message_id[24];
+    char origin[LAB02_TRACE_TEXT_CAP];
     lv_obj_t *scroller;
     lab02_snap_state_t *state;
     lab02_snap_terminal_cb terminal;
@@ -52,7 +53,7 @@ static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason
                   LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ELAPSED_US |
                   LAB02_TRACE_FIELD_TARGET_X | LAB02_TRACE_FIELD_SUBMITTED_US |
                   LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_OP_KIND |
-                  LAB02_TRACE_FIELD_RUN_ID,
+                  LAB02_TRACE_FIELD_RUN_ID | LAB02_TRACE_FIELD_SNAP_ORIGIN,
         .session_id = s_operation.session_id,
         .snap_id = id,
         .outcome = name,
@@ -66,6 +67,7 @@ static void finish(uint32_t id, lab02_snap_outcome_t outcome, const char *reason
         .op_kind = "snap",
         .target_x = s_operation.target,
         .run_id = lab02_session_run_id() ? lab02_session_run_id() : "-",
+        .snap_origin = s_operation.origin,
     };
     lab02_trace_emit_payload("snap_end", 0, s_operation.focus,
                              s_operation.message_id, &payload);
@@ -111,6 +113,7 @@ void lab02_snap_cancel(lab02_snap_state_t *st, const char *reason)
 
 void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t target_x,
                            int focus_index, const char *message_id,
+                           const char *origin,
                            lab02_snap_terminal_cb on_done, void *user_data)
 {
     if (!scroller || !st) return;
@@ -132,6 +135,11 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
     s_operation.terminal = on_done;
     s_operation.user = user_data;
     s_operation.status = SNAP_RUNNING;
+    const char *selected_origin = (origin &&
+        (!strcmp(origin, "touch") || !strcmp(origin, "harness") ||
+         !strcmp(origin, "programmatic"))) ? origin : "unknown";
+    strncpy(s_operation.origin, selected_origin, sizeof(s_operation.origin) - 1u);
+    s_operation.origin[sizeof(s_operation.origin) - 1u] = '\0';
     st->operation_id = id;
     st->snap_target_x = target_x;
     st->scroll_lock = true;
@@ -140,7 +148,8 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
                   LAB02_TRACE_FIELD_BEFORE | LAB02_TRACE_FIELD_AFTER |
                   LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_START_X |
                   LAB02_TRACE_FIELD_TARGET_X | LAB02_TRACE_FIELD_SUBMITTED_US |
-                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_RUN_ID,
+                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_RUN_ID |
+                  LAB02_TRACE_FIELD_SNAP_ORIGIN,
         .session_id = s_operation.session_id,
         .snap_id = id,
         .before = "pending",
@@ -151,6 +160,7 @@ void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t t
         .submitted_us = s_operation.submitted_us,
         .op_kind = "snap",
         .run_id = lab02_session_run_id() ? lab02_session_run_id() : "-",
+        .snap_origin = s_operation.origin,
     };
     lab02_trace_emit_payload("snap_start", 0, s_operation.focus,
                              s_operation.message_id, &payload);

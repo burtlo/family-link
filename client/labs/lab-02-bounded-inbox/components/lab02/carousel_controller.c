@@ -238,7 +238,7 @@ static void scroll_event_cb(lv_event_t *e)
             int32_t target = lab02_snap_target_x_for_index(idx, c->item_count);
             lab02_session_intent_scroll_lock(true);
             lab02_snap_animate_to(c->scroll, &c->snap, target, idx,
-                                 focused_message_id(c, idx), on_snap_done, c);
+                                 focused_message_id(c, idx), "touch", on_snap_done, c);
         } else {
             lab02_session_intent_scroll_lock(false);
         }
@@ -301,6 +301,12 @@ bool lab02_carousel_init(lab02_carousel_t *c)
 
 void lab02_carousel_set_focus(lab02_carousel_t *c, int index, bool animate)
 {
+    lab02_carousel_set_focus_with_origin(c, index, animate, "programmatic");
+}
+
+void lab02_carousel_set_focus_with_origin(lab02_carousel_t *c, int index, bool animate,
+                                          const char *origin)
+{
     if (!c || !c->scroll) {
         return;
     }
@@ -325,7 +331,7 @@ void lab02_carousel_set_focus(lab02_carousel_t *c, int index, bool animate)
     if (animate) {
         lab02_session_intent_scroll_lock(true);
         lab02_snap_animate_to(c->scroll, &c->snap, target, index,
-                             focused_message_id(c, index), on_snap_done, c);
+                             focused_message_id(c, index), origin, on_snap_done, c);
     } else {
         lab02_session_intent_scroll_lock(false);
         sync_from_session(c, false);

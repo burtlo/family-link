@@ -6,6 +6,7 @@ document: family-link.labs-registry/v1
 
 labs:
   lab02:
+    adapter: lab02
     lab_id: LAB-02
     evidence_slug: lab-02
     project_dir: client/labs/lab-02-bounded-inbox
@@ -62,3 +63,27 @@ labs:
         readiness: 15
         action: 5
         cleanup: 5
+
+  lab05:
+    lab_id: LAB-05
+    evidence_slug: lab-05
+    project_dir: client/labs/lab-05-transition-proof
+    target: esp32s3
+    description: Local two-state transition and simultaneous-resource proof; no server
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-05-transition-proof-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-05-transition-proof-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    run:
+      capture_seconds_default: 30
+      flash_by_default: true
+      instructions: |
+        Touch NEXT on BOX-3 once to move between the two proof states. This is a
+        bounded lifecycle integration proof only; it is not a resource measurement.

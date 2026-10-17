@@ -35,7 +35,7 @@ static void eager_scroll_end(lv_event_t *e)
     int32_t target = lab02_snap_target_x_for_index(idx, st->count);
     const lab02_inbox_item_t *item = lab02_page_provider_item(&st->provider, idx);
     lab02_snap_animate_to(st->scroll, &st->snap, target, idx,
-                          item ? item->message_id : NULL, NULL, NULL);
+                          item ? item->message_id : NULL, "touch", NULL, NULL);
 }
 
 bool lab02_eager_carousel_start(void)

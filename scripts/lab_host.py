@@ -20,9 +20,6 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from deployment_config import Deployment, Kit, load_active_deployment
 from device_targets import Port, kit_for, ports, resolve_port as resolve_kit_port, select, serial_key, validate_bindings
 from lab_deployment_sdkconfig import deployment_defaults_sidecars, write_deployment_kit_sdkconfig
-from lab02_workflow_config import load_lab02_workflow_config
-from lab02_canonical_run import run_canonical
-from lab02_experiment_sdkconfig import write_lab02_local_overlay
 from firmware import idf_environment, run
 from lab_registry import (
     LabSpec,
@@ -33,6 +30,24 @@ from lab_registry import (
     run_mode_hint_lines,
 )
 from project_config import ProjectConfig, ProjectConfigError
+
+
+def load_lab02_workflow_config(*args, **kwargs):
+    """Lazy compatibility import used only while preparing LAB-02 builds."""
+    from lab02_workflow_config import load_lab02_workflow_config as load
+    return load(*args, **kwargs)
+
+
+def write_lab02_local_overlay(*args, **kwargs):
+    """Lazy compatibility import used only while preparing LAB-02 builds."""
+    from lab02_experiment_sdkconfig import write_lab02_local_overlay as write
+    return write(*args, **kwargs)
+
+
+def run_canonical(*args, **kwargs):
+    """Lazy legacy hook retained for compatibility tests and adapter dispatch."""
+    from lab02_canonical_run import run_canonical as run
+    return run(*args, **kwargs)
 
 _BANNER = "-" * 62
 
@@ -238,62 +253,6 @@ def _sdkconfig_defaults_env_from_files(files: list[Path]) -> dict[str, str]:
 
 def _variant_uses_deployment_kit_secrets(variant_name: str) -> bool:
     return variant_name in {"phaseb", "scripted-phaseb"}
-
-
-def lab02_scripted_variant_name(backend: str) -> str:
-    """Managed HTTP scripted runs use the managed build; local uses embedded scripted."""
-    return "scripted" if backend == "local" else "scripted-phaseb"
-
-
-def lab02_managed_canonical_plan(
-    variant_name: str, backend: str
-) -> tuple[str, str] | None:
-    """Return (mode, build_variant) when a lab02 run/capture should use the canonical coordinator."""
-    if backend != "managed-http":
-        return None
-    if variant_name == "scripted-phaseb":
-        return ("scripted", "scripted-phaseb")
-    if variant_name in {"recycle", "phaseb"}:
-        return ("manual", "phaseb")
-    return None
-
-
-def _run_lab02_canonical(
-    config: ProjectConfig,
-    *,
-    mode: str,
-    build_variant: str,
-    kit: str,
-    port: str,
-    seconds: int,
-    flash: bool,
-    run_id: str,
-    no_build: bool,
-    spec: LabSpec,
-) -> int:
-    def _build_canonical(cfg, name, selected_variant, **kwargs):
-        return build_lab(cfg, name, selected_variant, **kwargs)
-
-    def _parse_canonical(serial_path, metrics_path):
-        parse_serial_file(spec, serial_path, metrics_path)
-
-    return run_canonical(
-        config,
-        mode=mode,
-        kit=kit,
-        port=port,
-        seconds=seconds,
-        flash=flash,
-        run_id=run_id,
-        no_build=no_build,
-        build_variant=build_variant,
-        backend="managed-http",
-        target_resolver=resolve_run_target,
-        target_revalidator=revalidate_run_target,
-        build=_build_canonical,
-        flash_build=flash_lab_build,
-        parse=_parse_canonical,
-    )
 
 
 def _prepare_lab_build_directory(build_dir: Path) -> None:
@@ -792,6 +751,7 @@ def main() -> int:
     cap_p.add_argument("--no-flash", action="store_true")
     cap_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
     cap_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
+    cap_p.add_argument("--mode", choices=("manual", "scripted"), default=None)
 
     run_p = sub.add_parser("run")
     run_p.add_argument("lab")
@@ -804,6 +764,7 @@ def main() -> int:
     run_p.add_argument("--no-build", action="store_true")
     run_p.add_argument("--backend", choices=("managed-http", "local"), default="managed-http")
     run_p.add_argument("--run-id", default=os.environ.get("RUN_ID", ""))
+    run_p.add_argument("--mode", choices=("manual", "scripted"), default=None)
 
     parse_p = sub.add_parser("parse", help="Parse serial capture to metrics.json (make lab.<name>.parse)")
     parse_p.add_argument("lab")
@@ -858,43 +819,18 @@ def main() -> int:
                 seconds = spec.capture_seconds_default
             var = resolve_variant(spec, variant)
             flash = _flash_from_env_and_args(args, spec, for_run=args.action == "run")
-            backend = getattr(args, "backend", "managed-http")
-            if args.action == "run" and args.lab == "lab02":
-                managed = lab02_managed_canonical_plan(var.name, backend)
-                if managed is not None:
-                    mode, build_variant = managed
-                    return _run_lab02_canonical(
-                        config,
-                        mode=mode,
-                        build_variant=build_variant,
-                        kit=args.kit,
-                        port=args.port,
-                        seconds=seconds,
-                        flash=flash,
-                        run_id=args.run_id,
-                        no_build=getattr(args, "no_build", False),
-                        spec=spec,
-                    )
-            if args.action == "run" and args.lab == "lab02" and (args.backend == "local" or var.name == "eager"):
-                if var.name == "scripted-phaseb":
-                    variant = "scripted"
-                elif var.name == "phaseb":
-                    variant = "recycle"
-                var = resolve_variant(spec, variant)
-                mode = "scripted" if var.name == "scripted" else "manual"
-                def _build_local(cfg, name, selected_variant, **kwargs):
-                    return build_lab(cfg, name, selected_variant, **kwargs)
-                def _parse_local(serial_path, metrics_path):
-                    parse_serial_file(spec, serial_path, metrics_path)
-                return run_canonical(
-                    config, mode=mode, kit=args.kit, port=args.port, seconds=seconds,
-                    flash=flash, run_id=args.run_id, no_build=args.no_build, backend="local",
-                    build_variant=var.name, target_resolver=resolve_run_target,
-                    target_revalidator=revalidate_run_target, build=_build_local,
-                    flash_build=flash_lab_build, parse=_parse_local,
-                )
-            elif args.backend != "managed-http":
-                raise ProjectConfigError("BACKEND=local is supported only for LAB-02")
+            if args.action == "run":
+                from lab_adapter_registry import resolve_adapter
+                adapter = resolve_adapter(spec)
+                result = adapter.run(host=sys.modules[__name__], config=config,
+                                     spec=spec, args=args, mode=args.mode or "manual")
+                if result is not None:
+                    return result
+                if getattr(args, "backend", "managed-http") != "managed-http":
+                    raise ProjectConfigError("The selected lab adapter does not support this backend")
+                from lab_runner_adapter import Adapter as GenericAdapter
+                return GenericAdapter().run(sys.modules[__name__], config, spec, args,
+                                            mode=args.mode or "manual")
             stamp = datetime.now(timezone.utc).strftime("%Y%m%d")
             rid = args.run_id or f"{stamp}-{var.name}-capture-{uuid.uuid4().hex[:6]}"
             target = resolve_run_target(config, args.kit, args.port)

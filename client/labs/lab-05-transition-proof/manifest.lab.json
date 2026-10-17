@@ -1,0 +1,14 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-05",
+  "lab_revision": "v1-proof",
+  "firmware_path": "client/labs/lab-05-transition-proof",
+  "server_path": "none",
+  "fixture_schema": "none",
+  "fixture_revision": "none",
+  "protocol": "local two-state LVGL transition proof",
+  "trace_schema": "lab05-transition/v1",
+  "run_manifest": "docs/labs/schemas/run-manifest.v2.md",
+  "workflow_runbook": "docs/labs/reusable-lab-runner-impl.md#p5--no-server-integration-proof",
+  "reference_archive": "none"
+}

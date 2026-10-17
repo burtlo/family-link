@@ -15,13 +15,14 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 DOCUMENT = "family-link.lab-run-manifest/v1"
+GENERIC_DOCUMENT = "family-link.lab-run-manifest/v2"
 RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$")
 _SAFE_FIELDS = {
-    "lab_id", "lab_revision", "lab_version_string", "verification_levels",
+    "lab_id", "lab_revision", "lab_version_string", "evidence_slug", "verification_levels",
     "firmware", "server", "fixture", "hardware", "scenarios",
     "comparison_run_id", "operator", "source", "build", "capture",
     "workflow_status", "experiment_verdict", "terminal_reason",
-    "artifacts",
+    "artifacts", "event_loss",
 }
 _SECRET_KEY = re.compile(r"password|secret|token|credential|ssid|wifi|(?:^|_)serial(?:$|_number|_binding)|url|endpoint|auth", re.I)
 _SECRET_TEXT = re.compile(r"(?i)https?://[^\s\"']+|(?:ssid|password|token|authorization)\s*[=:]\s*[^\s,;]+")
@@ -79,20 +80,52 @@ class EvidenceRun:
     """Thread-safe bounded event sink and exactly-once terminal manifest writer."""
 
     def __init__(self, repo_root: Path, run_id: str, context: dict,
-                 *, started_at_utc: str | None = None, max_events: int = 2000):
+                 *, started_at_utc: str | None = None, max_events: int = 2000,
+                 lab_id: str = "LAB-02", evidence_slug: str = "lab-02",
+                 evidence_root: str | Path | None = None,
+                 serial_root: str | Path | None = None,
+                 document: str = DOCUMENT):
         if not isinstance(run_id, str) or not RUN_ID.fullmatch(run_id) or run_id in {".", ".."}:
             raise ValueError("run_id must be a safe single path segment")
         if max_events < 1:
             raise ValueError("max_events must be positive")
+        if not isinstance(lab_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", lab_id):
+            raise ValueError("lab_id must be a safe registered identifier")
+        if not isinstance(evidence_slug, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", evidence_slug):
+            raise ValueError("evidence_slug must be a safe registered slug")
+        if document not in {DOCUMENT, GENERIC_DOCUMENT}:
+            raise ValueError("unsupported manifest document version")
+        if document == DOCUMENT and (lab_id != "LAB-02" or evidence_slug != "lab-02"):
+            raise ValueError("the v1 manifest is reserved for the LAB-02 compatibility path")
         self.repo_root = Path(repo_root).resolve()
         self.run_id = run_id
-        self.run_dir = self.repo_root / "docs/labs/evidence/lab-02/runs" / run_id
+        self.lab_id = lab_id
+        self.evidence_slug = evidence_slug
+        self.document = document
+        self.evidence_root = self._approved_root(
+            evidence_root or f"docs/labs/evidence/{evidence_slug}/runs")
+        self.serial_root = self._approved_root(
+            serial_root or f"logs/device/labs/{evidence_slug}")
+        if document == DOCUMENT:
+            canonical_roots = {
+                "evidence_root": "docs/labs/evidence/lab-02/runs",
+                "serial_root": "logs/device/labs/lab-02",
+            }
+            for name, root in (("evidence_root", self.evidence_root),
+                               ("serial_root", self.serial_root)):
+                expected = self.repo_root / canonical_roots[name]
+                if root != expected:
+                    raise ValueError(f"the v1 manifest requires the canonical {name}")
+        self.run_dir = self.evidence_root / run_id
         if self.run_dir.exists():
             raise FileExistsError(f"evidence run already exists: {run_id}")
         self.run_dir.mkdir(parents=True, exist_ok=False)
         self.events_path = self.run_dir / "events.jsonl"
         self.manifest_path = self.run_dir / "run-manifest.json"
         self.context = self._normalize_context(context)
+        if document == GENERIC_DOCUMENT:
+            self.context["lab_id"] = lab_id
+            self.context["evidence_slug"] = evidence_slug
         self.started_at_utc = _utc(started_at_utc)
         self.max_events = max_events
         self.max_event_bytes = MAX_EVENT_BYTES
@@ -177,9 +210,11 @@ class EvidenceRun:
         if not isinstance(event, dict):
             event = {"kind": "invalid_event"}
         row = _clean(event)
+        if row.get("source") not in {"host", "server", "device", "unknown"}:
+            row["source"] = "unknown"
         encoded = json.dumps(row, sort_keys=True, separators=(",", ":"))
         if len(encoded.encode("utf-8")) > self.max_event_bytes:
-            row = {"kind": "event_oversized"}
+            row = {"source": row["source"], "kind": "event_oversized"}
             encoded = json.dumps(row, separators=(",", ":"))
         with self._lock:
             if self._pending_final is not None:
@@ -200,7 +235,8 @@ class EvidenceRun:
     def _add_truncation_marker(self) -> None:
         if not self._truncated:
             self._truncated = True
-            self._append_event({"kind": "events_truncated"}, '{"kind":"events_truncated"}')
+            self._append_event({"source": "host", "kind": "events_truncated"},
+                               '{"kind":"events_truncated","source":"host"}')
 
     def _bounded_terminal_reason(self, reason: Any, workflow_status: str,
                                  experiment_verdict: str) -> tuple[str, bool]:
@@ -210,7 +246,7 @@ class EvidenceRun:
             cleaned = "[UNSUPPORTED]"
 
         def encoded_size(value: str, truncated: bool) -> int:
-            row = {"kind": "run_terminal", "workflow_status": workflow_status,
+            row = {"source": "host", "kind": "run_terminal", "workflow_status": workflow_status,
                    "experiment_verdict": experiment_verdict, "reason": value}
             if truncated:
                 row["reason_truncated"] = True
@@ -236,9 +272,14 @@ class EvidenceRun:
         candidate = PurePosixPath(value)
         if candidate.is_absolute() or any(part in {"", ".", ".."} for part in candidate.parts):
             return None
-        expected_dir = PurePosixPath("docs/labs/evidence/lab-02/runs") / self.run_id
+        if self.document == DOCUMENT:
+            expected_dir = PurePosixPath("docs/labs/evidence/lab-02/runs") / self.run_id
+            serial_dir = PurePosixPath("logs/device/labs/lab-02") / self.run_id
+        else:
+            expected_dir = PurePosixPath(self.evidence_root.relative_to(self.repo_root).as_posix()) / self.run_id
+            serial_dir = PurePosixPath(self.serial_root.relative_to(self.repo_root).as_posix()) / self.run_id
         if name in {"serial_log", "device_log"}:
-            allowed = (PurePosixPath("logs/device/labs/lab-02") / self.run_id / "serial.txt",)
+            allowed = (serial_dir / "serial.txt",)
         elif name == "metrics":
             allowed = (expected_dir / "metrics.json",)
         else:
@@ -246,7 +287,10 @@ class EvidenceRun:
         if candidate not in allowed:
             return None
         actual = self.repo_root.joinpath(*candidate.parts)
+        approved = self.repo_root.joinpath(*(serial_dir.parts if name in {"serial_log", "device_log"}
+                                             else expected_dir.parts))
         try:
+            actual.resolve(strict=True).relative_to(approved.resolve(strict=True))
             actual.resolve(strict=True).relative_to(self.repo_root)
         except (OSError, ValueError):
             return None
@@ -269,7 +313,7 @@ class EvidenceRun:
                 bounded_reason, reason_truncated = self._bounded_terminal_reason(
                     terminal_reason, workflow_status, experiment_verdict)
                 if not self._terminal_written:
-                    terminal = {"kind": "run_terminal", "workflow_status": workflow_status,
+                    terminal = {"source": "host", "kind": "run_terminal", "workflow_status": workflow_status,
                                 "experiment_verdict": experiment_verdict,
                                 "reason": bounded_reason}
                     if reason_truncated:
@@ -281,9 +325,20 @@ class EvidenceRun:
                 artifacts = {"events": self._relative(self.events_path)}
                 for name in ("serial_log", "metrics", "device_log"):
                     artifacts[name] = self._validated_artifact(name, supplied.get(name))
-                loss = {"dropped_events": self._dropped_events}
+                supplied_loss = self.context.get("event_loss", {})
+                firmware_trace = (supplied_loss.get("firmware_trace")
+                                  if isinstance(supplied_loss, dict) else None)
+                if not isinstance(firmware_trace, dict):
+                    firmware_trace = {"status": "UNKNOWN", "dropped_events": None}
+                loss = {
+                    # Retain the v1 field and meaning for existing readers.
+                    "dropped_events": self._dropped_events,
+                    "host_journal": {"status": "OBSERVED" if self._dropped_events else "NONE",
+                                     "dropped_events": self._dropped_events},
+                    "firmware_trace": firmware_trace,
+                }
                 self._pending_final = {
-                    "document": DOCUMENT, "run_id": self.run_id,
+                    "document": self.document, "run_id": self.run_id,
                     "started_at_utc": self.started_at_utc, "ended_at_utc": _utc(ended_at_utc),
                     **self.context, "workflow_status": workflow_status,
                     "experiment_verdict": experiment_verdict,
@@ -300,6 +355,19 @@ class EvidenceRun:
             return path.resolve().relative_to(self.repo_root).as_posix()
         except ValueError:
             return "unknown"
+
+    def _approved_root(self, value: str | Path) -> Path:
+        """Resolve an approved root, rejecting absolute paths and repo escapes."""
+        raw = str(value)
+        posix = PurePosixPath(raw)
+        if not posix.parts or posix.is_absolute() or "\\" in raw or any(part in {"", ".", ".."} for part in posix.parts):
+            raise ValueError("artifact roots must be safe repo-relative paths")
+        candidate = self.repo_root.joinpath(*posix.parts)
+        try:
+            candidate.resolve().relative_to(self.repo_root)
+        except ValueError as exc:
+            raise ValueError("artifact root must resolve beneath repo_root") from exc
+        return candidate
 
 
 def sha256_file(path: Path) -> str | None:

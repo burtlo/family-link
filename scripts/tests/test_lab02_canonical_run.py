@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 import lab02_canonical_run as canonical
 from lab02_workflow_config import Lab02WorkflowConfig
+from lab_run_evidence import EvidenceRun as SharedEvidenceRun
 from project_config import ProjectConfigError
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,6 +32,7 @@ class FakeSerial:
     straddle_read = False
     straddle_chunk = b""
     post_reset_chunk = b""
+    max_read_size = 11
     read_count = 0
     straddle_started = None
     reset_released = None
@@ -95,7 +97,7 @@ class FakeSerial:
             import time
             time.sleep(0.01)
             return b""
-        size = min(size, 11)
+        size = min(size, self.max_read_size)
         chunk = bytes(self.buffer[:size])
         del self.buffer[:size]
         return chunk
@@ -114,6 +116,88 @@ class FakeConfig:
 
 
 class CanonicalRunTests(unittest.TestCase):
+    def test_unset_trace_run_id_is_owned_before_scenario_dispatch(self):
+        run_id = "capture-run"
+        receipt = {"ok": True, "run_id": run_id, "action_id": "", "inbox_revision": 2}
+
+        class FakeScenarioServer:
+            def __init__(self):
+                self.run_id = run_id
+
+            def post_action(self, action_id, payload, cancelled=None):
+                return {**receipt, "action_id": action_id}
+
+        coordinator = canonical.Lab02ScenarioCoordinator(
+            FakeScenarioServer(), capture_active=lambda: True)
+        trace = "LAB_TRACE t_us=10 event=snap_start gen=0 focus=4 msg=msg-4 snap_id=7 run_id=-"
+        coordinator.ingest_line(canonical._attribute_unowned_trace(trace, run_id))
+        action_id, action_receipt = coordinator.dispatch_action(
+            "S-push", "push_item", {"item": {"preview": "Managed push"}},
+            viewed_message_id="msg-4").result(timeout=1)
+        self.assertEqual(action_receipt["run_id"], run_id)
+        self.assertEqual(action_receipt["action_id"], action_id)
+        coordinator.close()
+
+    def test_trace_attribution_preserves_explicit_run_ids(self):
+        trace = "LAB_TRACE t_us=10 event=snap_start gen=0 focus=4 msg=msg-4 snap_id=7 run_id=other"
+        self.assertEqual(canonical._attribute_unowned_trace(trace, "capture-run"), trace)
+
+    def test_scenario_dispatch_skips_no_motion_snap(self):
+        self.assertFalse(canonical._scenario_snap_has_motion({"start_x": "0", "target_x": "0"}))
+        self.assertTrue(canonical._scenario_snap_has_motion({"start_x": "0", "target_x": "144"}))
+        self.assertFalse(canonical._scenario_snap_has_motion({"start_x": None, "target_x": "144"}))
+
+    def test_metrics_gets_envelope_run_id_without_changing_raw_trace_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            metrics_path = root / "metrics.json"
+            serial_path = root / "serial.txt"
+            raw_trace = "LAB_TRACE t_us=10 event=snap_start gen=0 focus=4 msg=msg-4 run_id=-\n"
+            serial_path.write_text(raw_trace)
+            metrics_path.write_text(json.dumps({"run_id": None, "evidence": {
+                "status": "INCOMPLETE", "missing": ["run_id"]}}))
+            canonical._attach_metrics_run_id(metrics_path, "capture-run")
+            metrics = json.loads(metrics_path.read_text())
+            self.assertEqual(serial_path.read_text(), raw_trace)
+        self.assertEqual(metrics["run_id"], "capture-run")
+        self.assertEqual(metrics["evidence"], {"status": "INCOMPLETE", "missing": ["run_id"]})
+
+    def test_metrics_run_id_attribution_rejects_conflicting_parser_identity(self):
+        with tempfile.TemporaryDirectory() as temp:
+            metrics_path = Path(temp) / "metrics.json"
+            metrics_path.write_text(json.dumps({"run_id": "other"}))
+            with self.assertRaisesRegex(ValueError, "metrics_run_id_mismatch"):
+                canonical._attach_metrics_run_id(metrics_path, "capture-run")
+
+    def test_final_manifest_separates_host_and_firmware_trace_loss(self):
+        import shutil
+        run_id = "w9-loss-sources-" + uuid.uuid4().hex[:8]
+        loss = {"status": "OBSERVED", "dropped_events": 2,
+                "oversized_events": 1, "malformed_rows": 0}
+        result = self._local_run(run_id, metrics_doc={"trace_loss": loss})
+        manifest_path = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = json.loads(manifest_path.read_text())
+        self.assertEqual(result, 0)
+        self.assertEqual(manifest["event_loss"]["host_journal"]["dropped_events"], 0)
+        self.assertEqual(manifest["event_loss"]["firmware_trace"], loss)
+        events = [json.loads(row) for row in (manifest_path.parent / "events.jsonl").read_text().splitlines()]
+        self.assertTrue(all(row.get("source") in {"host", "server", "device", "unknown"}
+                            for row in events))
+        shutil.rmtree(manifest_path.parent, ignore_errors=True)
+        shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+
+    def test_build_fingerprint_ignores_run_and_kit_context_but_tracks_compiled_config(self):
+        common = dict(variant="phaseb", fixture_size=64, scenario="nominal", mode="manual",
+                      backend="managed-http", client_url="https://fixture.invalid",
+                      firmware_source_sha256="source", compiled_config_sha256="config-a")
+        first = canonical._build_identity(**common, kit_id="kit-a", run_id="run-a")
+        same_inputs = canonical._build_identity(**common, kit_id="kit-b", run_id="run-b")
+        changed_inputs = canonical._build_identity(**{**common, "compiled_config_sha256": "config-b"},
+                                                   kit_id="kit-a", run_id="run-a")
+        self.assertEqual(len(first), 64)
+        self.assertEqual(first, same_inputs)
+        self.assertNotEqual(first, changed_inputs)
+
     def test_ready_marker_parser_accepts_legacy_form(self):
         marker = "LAB02_READY build=build-1 fixture=inbox_64 mode=http harness=0 scenario=nominal"
         self.assertEqual(canonical._parse_ready_marker(marker), {
@@ -175,7 +259,8 @@ class CanonicalRunTests(unittest.TestCase):
 
     def _local_run(self, run_id, *, mode="manual", variant="recycle", seconds=1, tail=b"", marker_factory=None,
                    pre_reset=b"", reset_output=None, fail_reset=False, interrupt_reset=False,
-                   straddle_chunk=None, post_reset_chunk=None):
+                   straddle_chunk=None, post_reset_chunk=None, metrics_doc=None,
+                   first_read_through_done=False):
         import shutil
         fake_module = types.ModuleType("serial")
         fake_module.Serial = FakeSerial
@@ -188,6 +273,7 @@ class CanonicalRunTests(unittest.TestCase):
         FakeSerial.straddle_read = straddle_chunk is not None or post_reset_chunk is not None
         FakeSerial.straddle_chunk = straddle_chunk or b""
         FakeSerial.post_reset_chunk = post_reset_chunk or b""
+        FakeSerial.max_read_size = 11
         FakeSerial.read_count = 0
         FakeSerial.straddle_started = threading.Event()
         FakeSerial.reset_released = threading.Event()
@@ -203,6 +289,10 @@ class CanonicalRunTests(unittest.TestCase):
             FakeSerial.marker = marker_factory(kwargs["frozen_build_id"]) if marker_factory else (
                 f"LAB02_READY build={kwargs['frozen_build_id']} fixture=inbox_64 mode=recycle "
                 f"harness={'1' if mode == 'scripted' else '0'} scenario=nominal\n").encode()
+            FakeSerial.tail = FakeSerial.tail.replace(b"placeholder", kwargs["frozen_build_id"].encode())
+            if first_read_through_done:
+                first_line = FakeSerial.tail.split(b"\n", 1)[0] + b"\n"
+                FakeSerial.max_read_size = len(FakeSerial.marker) + len(first_line)
             if FakeSerial.straddle_chunk:
                 FakeSerial.straddle_chunk = FakeSerial.straddle_chunk.replace(b"placeholder", kwargs["frozen_build_id"].encode())
             if FakeSerial.post_reset_chunk:
@@ -214,7 +304,8 @@ class CanonicalRunTests(unittest.TestCase):
                     build_variant=variant, seconds=seconds, run_id=run_id,
                     target_resolver=lambda *a: selected, target_revalidator=lambda *a: selected.device,
                     build=build, flash_build=lambda *a: None,
-                    parse=lambda _serial, metrics: metrics.write_text("{}\n"))
+                    parse=lambda _serial, metrics: metrics.write_text(
+                        json.dumps(metrics_doc or {}) + "\n"))
         finally:
             FakeSerial.tail = b""
             FakeSerial.pre_reset = b""
@@ -224,6 +315,7 @@ class CanonicalRunTests(unittest.TestCase):
             FakeSerial.straddle_read = False
             FakeSerial.straddle_chunk = b""
             FakeSerial.post_reset_chunk = b""
+            FakeSerial.max_read_size = 11
             for name in ("lab02_bounded_inbox.bin", "flasher_args.json", "sdkconfig"):
                 (build_dir / name).unlink(missing_ok=True)
 
@@ -272,7 +364,47 @@ class CanonicalRunTests(unittest.TestCase):
         self.assertEqual(data["terminal_reason"], "harness_failed")
         shutil.rmtree(manifest.parent, ignore_errors=True)
 
+    def test_serial_queue_overflow_cannot_pass_scripted_capture(self):
+        import queue
+        import shutil
+        run_id = "p9-reader-overflow-" + uuid.uuid4().hex[:8]
+        tail = (b"HARNESS_DONE build=placeholder steps=40 scenario=nominal\n"
+                b"LAB_TRACE t_us=42219102 event=snap_end gen=1 focus=4 msg=msg-4 snap_id=7 run_id=-\n")
+        base_queue = canonical.queue.Queue
+
+        class OverflowCaptureQueue(base_queue):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.capture_chunks = 0
+
+            def put_nowait(self, item):
+                if self.maxsize == 64:
+                    if item is None:
+                        raise queue.Full
+                    if isinstance(item, tuple):
+                        self.capture_chunks += 1
+                        if self.capture_chunks > 1:
+                            raise queue.Full
+                return super().put_nowait(item)
+
+        with patch.object(canonical.queue, "Queue", OverflowCaptureQueue):
+            result = self._local_run(run_id, mode="scripted", variant="scripted", tail=tail,
+                                     first_read_through_done=True)
+        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        data = json.loads(manifest.read_text())
+        events = [json.loads(row) for row in (manifest.parent / "events.jsonl").read_text().splitlines()]
+        self.assertEqual(result, 1)
+        self.assertEqual(data["workflow_status"], "INCOMPLETE")
+        self.assertEqual(data["terminal_reason"],
+                         "serial_reader_incomplete:serial consumer queue limit exceeded")
+        self.assertTrue(any(row.get("kind") == "serial_reader" and row.get("outcome") == "incomplete"
+                            for row in events))
+        shutil.rmtree(manifest.parent, ignore_errors=True)
+        shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+
     def test_managed_http_runs_server_build_flash_capture_reset_and_manifest(self):
+        import queue
+        import time
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", 0))
             port = probe.getsockname()[1]
@@ -293,16 +425,25 @@ class CanonicalRunTests(unittest.TestCase):
             fake_module.Serial = FakeSerial
             FakeSerial.instances.clear()
             run_id = "w7-test-" + uuid.uuid4().hex[:8]
+            evidence = SharedEvidenceRun(ROOT, run_id, {}, lab_id="LAB-02", evidence_slug="lab-02")
             flash_order = []
             profile = SimpleNamespace(wifi_ssid="private-ssid", wifi_password="private-password")
             selected = SimpleNamespace(kit_id="testkit", device="/dev/fake", kit=object(),
                 deployment=SimpleNamespace(secrets_profile_for_kit=lambda _kit: profile))
             FakeSerial.marker = b"LAB02_READY build=dev fixture=inbox_64 mode=http private-password private-ssid\n"
+            trailing_traces = (
+                b"HARNESS_DONE build=placeholder steps=40 scenario=nominal\n"
+                b"LAB_TRACE t_us=42000000 event=snap_start gen=1 focus=4 msg=msg-4 snap_id=7 run_id=-\n"
+                b"LAB_TRACE t_us=42219102 event=snap_end gen=1 focus=4 msg=msg-4 snap_id=7 run_id=-\n"
+            )
+            FakeSerial.tail = trailing_traces
+            FakeSerial.max_read_size = 64
 
             def build(*args, **kwargs):
                 flash_order.append("build")
                 FakeSerial.marker = (f"LAB02_READY build={kwargs['frozen_build_id']} fixture=inbox_64 "
-                    "mode=http harness=0 scenario=nominal\n").encode()
+                    "mode=http harness=1 scenario=nominal\n").encode()
+                FakeSerial.tail = trailing_traces.replace(b"placeholder", kwargs["frozen_build_id"].encode())
                 return build_dir
 
             def flash(*args, **kwargs):
@@ -310,17 +451,42 @@ class CanonicalRunTests(unittest.TestCase):
                 self.assertFalse(FakeSerial.instances)
 
             def parse(serial_path, metrics_path):
-                metrics_path.write_text("{}\n")
+                metrics_path.write_text(json.dumps({"raw_trace_rows": sum(
+                    line.startswith("LAB_TRACE ") for line in
+                    serial_path.read_text(encoding="utf-8").splitlines())}) + "\n")
+
+            class WaitForCaptureBacklog(queue.Queue):
+                """Make the completion regression deterministic: all UART reads queue first."""
+                instances = []
+
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+                    self.waited = False
+                    self.backlog_ready = False
+                    self.__class__.instances.append(self)
+
+                def get(self, *args, **kwargs):
+                    if self.maxsize == 64 and not self.waited:
+                        self.waited = True
+                        chunk_count = ((len(FakeSerial.marker) + len(FakeSerial.tail) +
+                                        FakeSerial.max_read_size - 1) // FakeSerial.max_read_size)
+                        deadline = time.monotonic() + 2
+                        while self.qsize() < chunk_count and time.monotonic() < deadline:
+                            time.sleep(0.001)
+                        self.backlog_ready = self.qsize() >= chunk_count
+                    return super().get(*args, **kwargs)
 
             try:
                 with patch.object(canonical, "load_lab02_workflow_config", return_value=cfg), \
+                     patch.object(canonical.queue, "Queue", WaitForCaptureBacklog), \
                      patch.dict(sys.modules, {"serial": fake_module}):
                     FakeSerial.capture_log_path = ROOT / "logs/device/labs/lab-02" / run_id / "serial.txt"
-                    result = canonical.run_canonical(FakeConfig(), mode="manual", kit="testkit",
+                    result = canonical.run_canonical(FakeConfig(), mode="scripted", kit="testkit",
                         seconds=1, run_id=run_id, target_resolver=lambda *a: selected,
                         target_revalidator=lambda *a: selected.device, build=build,
-                        flash_build=flash, parse=parse)
+                        flash_build=flash, parse=parse, evidence=evidence)
                 self.assertEqual(result, 0)
+                self.assertTrue(WaitForCaptureBacklog.instances[0].backlog_ready)
                 self.assertEqual(flash_order, ["build", "flash"])
                 serial = FakeSerial.instances[0]
                 self.assertLess(serial.events.index(("clear", None)), serial.events.index(("rts", True)))
@@ -328,8 +494,26 @@ class CanonicalRunTests(unittest.TestCase):
                 self.assertIn(("log_exists", True), serial.events)
                 self.assertIn(("reader_owned", True), serial.events)
                 self.assertTrue(serial.closed)
-                manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
-                data = json.loads(manifest.read_text())
+                manifest = evidence.manifest_path
+                events_path = evidence.events_path
+                events = [json.loads(line) for line in events_path.read_text().splitlines()]
+                server_logs = [row for row in events if row.get("action_id") == "server_log"
+                               and row.get("stage") == "SERVER_LOG"]
+                device_traces = [row for row in events if row.get("kind") == "device_trace"]
+                host_events = [row for row in events if row.get("source") == "host"]
+                metrics = json.loads((manifest.parent / "metrics.json").read_text())
+                self.assertEqual(metrics["raw_trace_rows"], 2)
+                self.assertEqual(len(device_traces), metrics["raw_trace_rows"])
+                self.assertEqual([row["t_us"] for row in device_traces], [42000000, 42219102])
+                self.assertTrue(any(row.get("kind") == "reset" for row in host_events))
+                self.assertTrue(any(row.get("kind") == "boot_ready" for row in host_events))
+                self.assertTrue(server_logs)
+                server_log = manifest.parent / "server.log"
+                self.assertTrue(server_log.is_file())
+                data = evidence.finalize(workflow_status="PASS", experiment_verdict="UNMEASURED",
+                    caller_completed=True, cleanup_succeeded=True, terminal_reason="completed")
+                self.assertEqual(data["artifacts"]["server_log"], server_log.relative_to(ROOT).as_posix())
+                self.assertEqual(server_logs[0]["artifact_path"], server_log.relative_to(ROOT).as_posix())
                 self.assertEqual(data["workflow_status"], "PASS")
                 self.assertEqual(data["experiment_verdict"], "UNMEASURED")
                 self.assertEqual(data["firmware"]["build_id"], FakeSerial.marker.decode().split("build=", 1)[1].split()[0])
@@ -338,12 +522,14 @@ class CanonicalRunTests(unittest.TestCase):
                 self.assertNotIn("private-password", serial_text)
                 self.assertNotIn("private-ssid", serial_text)
                 self.assertNotIn("private-password", manifest.read_text())
-                self.assertEqual(sum(1 for row in (manifest.parent / "events.jsonl").read_text().splitlines()
+                self.assertEqual(sum(1 for row in events_path.read_text().splitlines()
                                      if '"kind":"run_terminal"' in row), 1)
             finally:
                 import shutil
                 shutil.rmtree(ROOT / "docs/labs/evidence/lab-02/runs" / run_id, ignore_errors=True)
                 shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+                FakeSerial.tail = b""
+                FakeSerial.max_read_size = 11
             for name in ("lab02_bounded_inbox.bin", "flasher_args.json", "sdkconfig"):
                 (build_dir / name).unlink(missing_ok=True)
             FakeSerial.marker = b"LAB02_READY build=dev fixture=inbox_64 mode=http\n"

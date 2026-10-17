@@ -4,7 +4,9 @@ from __future__ import annotations
 import hashlib
 import errno
 import json
+import os
 import select
+import signal
 import socket
 import subprocess
 import sys
@@ -19,6 +21,7 @@ from pathlib import Path
 from typing import Callable
 
 from lab02_workflow_config import Lab02WorkflowConfig
+from server_log import BoundedRedactingLog
 
 ROOT = Path(__file__).resolve().parent.parent
 FIXTURE_DIR = ROOT / "client/labs/lab-02-bounded-inbox/fixtures"
@@ -55,7 +58,8 @@ class ManagedLab02Server:
     """Own one child process and never operate on a listener it did not start."""
 
     def __init__(self, config: Lab02WorkflowConfig, *, run_id: str | None = None,
-                 event_sink: Callable[[dict], None] | None = None):
+                 event_sink: Callable[[dict], None] | None = None,
+                 log_path: str | Path | None = None, max_log_bytes: int = 64 * 1024):
         self.config = config
         self.run_id = run_id or uuid.uuid4().hex
         self._events = event_sink or (lambda event: None)
@@ -66,22 +70,29 @@ class ManagedLab02Server:
         self._spawn_thread: threading.Thread | None = None
         self._spawn_result: queue.Queue = queue.Queue(maxsize=1)
         self._spawn_cancel = threading.Event()
+        self._spawn_cleanup_outcome: str | None = None
+        self._cleanup_failure_recorded = False
         self._process: subprocess.Popen | None = None
+        self.log_path = Path(log_path) if log_path is not None else None
+        self.max_log_bytes = max_log_bytes
+        self._log_sink: BoundedRedactingLog | None = None
+        self._log_threads: list[threading.Thread] = []
+        self._exit_observed = False
         self.fixture: FixtureIdentity | None = None
         self.base_url = config.client_url.rstrip("/")
         parsed = urlsplit(config.client_url)
         self._client_host = parsed.hostname or "127.0.0.1"
 
-    def _event(self, action: str, stage: str, outcome: str, reason: str = "") -> None:
+    def _event(self, action: str, stage: str, outcome: str, reason: str = "", **details) -> None:
         self._events({"run_id": self.run_id, "action_id": action, "stage": stage,
                       "outcome": outcome, "reason": reason,
-                      "monotonic_ns": time.monotonic_ns()})
+                      "monotonic_ns": time.monotonic_ns(), **details})
 
-    def _terminal_event(self, action: str, stage: str, outcome: str, reason: str = "") -> None:
+    def _terminal_event(self, action: str, stage: str, outcome: str, reason: str = "", **details) -> None:
         if action in self._terminal_actions:
             return
         self._terminal_actions.add(action)
-        self._event(action, stage, outcome, reason)
+        self._event(action, stage, outcome, reason, **details)
 
     def _deadline(self, key: str) -> float:
         return time.monotonic() + self.config.deadlines_seconds[key]
@@ -173,22 +184,53 @@ class ManagedLab02Server:
     def _spawn_owned(self, argv: list[str], deadline: float) -> subprocess.Popen:
         """Run process creation in a tracked worker; a late child is reaped by that worker."""
         self._spawn_cancel.clear()
+        self._spawn_cleanup_outcome = None
         self._spawn_result = queue.Queue(maxsize=1)
         def launch() -> None:
+            child = None
             try:
-                child = subprocess.Popen(argv, cwd=str(ROOT), stdout=subprocess.DEVNULL,
-                                         stderr=subprocess.DEVNULL)
-                if self._spawn_cancel.is_set():
-                    child.terminate()
+                capture = self.log_path is not None
+                child = subprocess.Popen(argv, cwd=str(ROOT),
+                                         stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
+                                         stderr=subprocess.PIPE if capture else subprocess.DEVNULL,
+                                         bufsize=0)
+                if capture:
                     try:
-                        child.wait(timeout=self.config.deadlines_seconds["cleanup"])
-                    except subprocess.TimeoutExpired:
-                        child.kill()
-                        child.wait(timeout=self.config.deadlines_seconds["cleanup"])
+                        self._start_log_capture(child)
+                    except BaseException:
+                        try:
+                            child.terminate()
+                            try:
+                                child.wait(timeout=self.config.deadlines_seconds["cleanup"])
+                            except subprocess.TimeoutExpired:
+                                child.kill()
+                                child.wait(timeout=self.config.deadlines_seconds["cleanup"])
+                        except BaseException:
+                            self._process = child
+                            self._spawn_cleanup_outcome = "failure"
+                        raise
+                if self._spawn_cancel.is_set():
+                    try:
+                        child.terminate()
+                        try:
+                            child.wait(timeout=self.config.deadlines_seconds["cleanup"])
+                        except subprocess.TimeoutExpired:
+                            child.kill()
+                            child.wait(timeout=self.config.deadlines_seconds["cleanup"])
+                    except BaseException:
+                        self._process = child
+                        self._spawn_cleanup_outcome = "failure"
+                        raise
+                    self._observe_exit(child.poll())
+                    self._spawn_cleanup_outcome = (
+                        "success" if self._finish_log_capture() else "failure")
                     self._spawn_result.put((None, "cancelled"))
                 else:
                     self._spawn_result.put((child, None))
             except BaseException as exc:
+                if child is not None and self._spawn_cancel.is_set() and self._process is None:
+                    self._process = child
+                    self._spawn_cleanup_outcome = "failure"
                 self._spawn_result.put((None, exc))
         self._spawn_thread = threading.Thread(target=launch, name=f"lab02-spawn-{self.run_id}", daemon=True)
         self._spawn_thread.start()
@@ -209,6 +251,70 @@ class ManagedLab02Server:
             raise ServerLifecycleError("startup_timeout")
         self._spawn_thread = None
         return child
+
+    def _start_log_capture(self, child: subprocess.Popen) -> None:
+        """Drain both child pipes immediately so diagnostics cannot block the service."""
+        assert self.log_path is not None
+        sink = BoundedRedactingLog(self.log_path, max_bytes=self.max_log_bytes)
+        self._log_sink = sink
+        self._log_threads = []
+        for stream_name in ("stdout", "stderr"):
+            pipe = getattr(child, stream_name, None)
+            if pipe is None:
+                continue
+            thread = threading.Thread(target=self._drain_log_pipe,
+                                      args=(pipe, stream_name, sink),
+                                      name=f"lab02-log-{stream_name}-{self.run_id}", daemon=True)
+            self._log_threads.append(thread)
+            thread.start()
+
+    @staticmethod
+    def _drain_log_pipe(pipe, stream_name: str, sink: BoundedRedactingLog) -> None:
+        try:
+            while True:
+                chunk = pipe.read(4096)
+                if not chunk:
+                    return
+                sink.feed(stream_name, chunk)
+        except (OSError, ValueError):
+            return
+        finally:
+            try:
+                pipe.close()
+            except OSError:
+                pass
+
+    def _observe_exit(self, returncode: int | None, *, expected_sigterm: bool = False) -> None:
+        if self._exit_observed or returncode is None:
+            return
+        self._exit_observed = True
+        expected_shutdown = expected_sigterm and returncode == -signal.SIGTERM
+        success = returncode == 0 or expected_shutdown
+        self._terminal_event("server_process_exit", "SERVER_EXIT",
+                             "success" if success else "failure",
+                             "expected_shutdown" if expected_shutdown else (
+                                 "" if success else "nonzero_exit"),
+                             exit_code=returncode)
+
+    def _finish_log_capture(self) -> bool:
+        sink = self._log_sink
+        if sink is None:
+            return True
+        deadline = time.monotonic() + self.config.deadlines_seconds["cleanup"]
+        for thread in self._log_threads:
+            thread.join(timeout=max(0, deadline - time.monotonic()))
+        if any(thread.is_alive() for thread in self._log_threads):
+            return False
+        sink.close()
+        self._log_threads = []
+        self._log_sink = None
+        try:
+            artifact_path = self.log_path.resolve().relative_to(ROOT.resolve()).as_posix()
+        except (ValueError, OSError):
+            artifact_path = self.log_path.name
+        self._event("server_log", "SERVER_LOG", "success", "",
+                    artifact_path=artifact_path, truncated=sink.truncated)
+        return True
 
     def _listener_occupied(self) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
@@ -236,7 +342,11 @@ class ManagedLab02Server:
         except BaseException as exc:
             reason = exc.args[0] if isinstance(exc, ServerLifecycleError) and exc.args else "server_start_failed"
             self._terminal_event("server_start", "SERVER_START", "failure", str(reason))
-            self.close()
+            try:
+                self.close()
+            except ServerLifecycleError:
+                # Preserve the stage failure while close() records cleanup failure.
+                pass
             if isinstance(exc, ServerLifecycleError):
                 raise
             if not isinstance(exc, Exception):
@@ -291,31 +401,75 @@ class ManagedLab02Server:
             self._spawn_cancel.set()
             worker.join(timeout=self.config.deadlines_seconds["cleanup"])
             if worker.is_alive():
-                self._terminal_event("server_cleanup", "CLEANUP", "failure", "spawn_cleanup_timeout")
+                self._record_cleanup("failure", "spawn_cleanup_timeout")
                 raise ServerLifecycleError("cleanup_failed")
             self._spawn_thread = None
+            process = self._process
             if process is None:
                 try:
                     late_child, _ = self._spawn_result.get_nowait()
-                    process = late_child
-                    self._process = process
+                    if late_child is not None:
+                        process = late_child
+                        self._process = process
                 except queue.Empty:
                     pass
+            if self._spawn_cleanup_outcome == "failure":
+                self._record_cleanup("failure", "cleanup_failed")
+                raise ServerLifecycleError("cleanup_failed")
         if process is None:
+            if self._log_sink is not None:
+                if not self._finish_log_capture():
+                    self._record_cleanup("failure", "log_capture_timeout")
+                    raise ServerLifecycleError("cleanup_failed")
+            if worker is not None and self._spawn_cleanup_outcome is not None:
+                if self._spawn_cleanup_outcome == "success":
+                    self._record_cleanup("success")
+                else:
+                    self._record_cleanup("failure", "cleanup_failed")
+                    raise ServerLifecycleError("cleanup_failed")
             return
         try:
-            if process.poll() is None:
-                process.terminate()
+            return_code = process.poll()
+            terminated_by_close = False
+            if return_code is None:
+                if os.name == "posix" and getattr(process, "pid", None) is not None:
+                    try:
+                        os.kill(process.pid, signal.SIGTERM)
+                        terminated_by_close = True
+                    except ProcessLookupError:
+                        # The child exited after poll() and before the signal;
+                        # its exit cannot be attributed to this close request.
+                        pass
+                else:
+                    # terminate() has no portable delivery result.  Cleanup can
+                    # proceed, but a signal exit is not attributed to this runner.
+                    process.terminate()
                 try:
-                    process.wait(timeout=self.config.deadlines_seconds["cleanup"])
+                    return_code = process.wait(timeout=self.config.deadlines_seconds["cleanup"])
                 except subprocess.TimeoutExpired:
                     process.kill()
-                    process.wait(timeout=self.config.deadlines_seconds["cleanup"])
+                    return_code = process.wait(timeout=self.config.deadlines_seconds["cleanup"])
+            self._observe_exit(return_code if return_code is not None else process.poll(),
+                               expected_sigterm=terminated_by_close)
+            if not self._finish_log_capture():
+                self._record_cleanup("failure", "log_capture_timeout")
+                raise ServerLifecycleError("cleanup_failed")
             self._process = None
-            self._terminal_event("server_cleanup", "CLEANUP", "success")
+            self._spawn_cleanup_outcome = None
+            self._record_cleanup("success")
         except Exception:
-            self._terminal_event("server_cleanup", "CLEANUP", "failure", "cleanup_failed")
+            self._record_cleanup("failure", "cleanup_failed")
             raise ServerLifecycleError("cleanup_failed") from None
+
+    def _record_cleanup(self, outcome: str, reason: str = "") -> None:
+        """Record initial cleanup failure and any later retry outcome."""
+        if outcome == "failure":
+            self._cleanup_failure_recorded = True
+            self._terminal_event("server_cleanup", "CLEANUP", outcome, reason)
+        elif self._cleanup_failure_recorded:
+            self._event("server_cleanup", "CLEANUP", outcome, reason)
+        else:
+            self._terminal_event("server_cleanup", "CLEANUP", outcome, reason)
 
     def post_action(self, action_id: str, payload: dict, *, cancelled: threading.Event | None = None) -> dict:
         """Perform one serialized script request with one bounded terminal event."""

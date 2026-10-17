@@ -1,9 +1,13 @@
 import socket
+import signal
+import os
+import subprocess
 import sys
 import tempfile
 import threading
 import time
 import unittest
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -30,6 +34,55 @@ def config(port, server=SERVER, **deadlines):
 
 
 class ManagedLab02ServerTests(unittest.TestCase):
+    def test_owned_child_log_is_bounded_redacted_and_reports_exit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            child_script = root / "diagnostics.py"
+            child_script.write_text(
+                "import sys\n"
+                "sys.stdout.buffer.write(b'password=top'); sys.stdout.flush()\n"
+                "sys.stdout.buffer.write(b'secret-value\\nhttps://private.example/path\\n')\n"
+                "sys.stdout.flush()\n"
+                "sys.stderr.write('failure detail\\n'); sys.stderr.flush()\n"
+                "for _ in range(1000): print('x' * 100)\n"
+                "raise SystemExit(7)\n", encoding="utf-8")
+            log_path = root / "run-123" / "server.log"
+            events = []
+            manager = ManagedLab02Server(config(12345), run_id="run-123",
+                                         event_sink=events.append, log_path=log_path,
+                                         max_log_bytes=1024)
+            child = manager._spawn_owned([sys.executable, str(child_script)],
+                                         time.monotonic() + 2)
+            manager._process = child
+            self.assertEqual(child.wait(timeout=2), 7)
+            manager.close()
+
+            raw = log_path.read_bytes()
+            self.assertLessEqual(len(raw), 1024)
+            self.assertIn(b"password=[REDACTED]", raw)
+            self.assertNotIn(b"topsecret-value", raw)
+            self.assertNotIn(b"private.example", raw)
+            self.assertTrue(any(event["action_id"] == "server_process_exit"
+                                and event.get("exit_code") == 7 for event in events))
+            self.assertTrue(any(event["action_id"] == "server_log"
+                                and event.get("artifact_path", "").endswith("server.log")
+                                and event.get("truncated") is True for event in events))
+            self.assertTrue(any(event["action_id"] == "server_cleanup"
+                                and event["outcome"] == "success" for event in events))
+
+    def test_log_redacts_credentials_split_across_read_chunks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            from server_log import BoundedRedactingLog
+
+            log_path = Path(directory) / "run" / "server.log"
+            sink = BoundedRedactingLog(log_path)
+            sink.feed("stdout", b"token=split-")
+            sink.feed("stdout", b"across-chunks\n")
+            sink.close()
+            text = log_path.read_text(encoding="utf-8")
+            self.assertIn("token=[REDACTED]", text)
+            self.assertNotIn("split-across-chunks", text)
+
     def test_real_owned_child_health_seed_and_idempotent_cleanup(self):
         events = []
         manager = ManagedLab02Server(config(free_port()), run_id="run-test-1", event_sink=events.append)
@@ -135,23 +188,80 @@ HTTPServer((a.host,a.port),H).serve_forever()
         self.assertEqual(sum(e["action_id"] == "act-cancel" for e in events), 1)
 
     def test_startup_deadline_cancels_late_spawn_and_reaps_child(self):
-        events = []
-        manager = ManagedLab02Server(config(free_port(), startup=1), event_sink=events.append)
-        manager.config.deadlines_seconds["startup"] = 0.03
-        class SlowChild:
-            def __init__(self): self.terminated = False
-            def terminate(self): self.terminated = True
-            def wait(self, timeout=None): return 0
-        child = SlowChild()
-        def slow_popen(*args, **kwargs):
-            time.sleep(0.08)
-            return child
-        with patch("lab02_server.subprocess.Popen", side_effect=slow_popen):
-            with self.assertRaisesRegex(ServerLifecycleError, "startup_timeout"):
-                manager.start()
-        self.assertTrue(child.terminated)
-        self.assertIsNone(manager._spawn_thread)
-        self.assertEqual(sum(e["action_id"] == "server_start" and e["outcome"] == "failure" for e in events), 1)
+        with tempfile.TemporaryDirectory() as directory:
+            events = []
+            log_path = Path(directory) / "run" / "server.log"
+            manager = ManagedLab02Server(config(12345, startup=1), event_sink=events.append,
+                                         log_path=log_path)
+            manager.config.deadlines_seconds["startup"] = 0.01
+            class SlowChild:
+                def __init__(self):
+                    self.terminated = False
+                    self.stdout = BytesIO(b"owned server diagnostic\n")
+                    self.stderr = BytesIO(b"")
+                def terminate(self): self.terminated = True
+                def wait(self, timeout=None): return 0
+                def poll(self): return 0 if self.terminated else None
+            child = SlowChild()
+            def slow_popen(*args, **kwargs):
+                time.sleep(0.04)
+                return child
+            with patch.object(manager, "_listener_occupied", return_value=False), \
+                    patch("lab02_server.subprocess.Popen", side_effect=slow_popen):
+                with self.assertRaisesRegex(ServerLifecycleError, "startup_timeout"):
+                    manager.start()
+            self.assertTrue(child.terminated)
+            self.assertIsNone(manager._spawn_thread)
+            self.assertEqual(sum(e["action_id"] == "server_start" and e["outcome"] == "failure" for e in events), 1)
+            self.assertTrue(log_path.is_file())
+            self.assertIn(b"owned server diagnostic", log_path.read_bytes())
+            self.assertTrue(any(e["action_id"] == "server_process_exit" and e.get("exit_code") == 0
+                                for e in events))
+            self.assertTrue(any(e["action_id"] == "server_log" for e in events))
+            cleanup = [e for e in events if e["action_id"] == "server_cleanup"]
+            self.assertEqual(len(cleanup), 1)
+            self.assertEqual(cleanup[0]["outcome"], "success")
+
+    def test_late_spawn_reap_failure_retains_child_for_close_retry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            events = []
+            manager = ManagedLab02Server(config(12345, startup=1), event_sink=events.append,
+                                         log_path=Path(directory) / "run" / "server.log")
+            manager.config.deadlines_seconds["startup"] = 0.01
+            class SlowChild:
+                def __init__(self):
+                    self.wait_calls = 0
+                    self.returncode = None
+                    self.stdout = BytesIO(b"late server diagnostic\n")
+                    self.stderr = BytesIO(b"")
+                def terminate(self): pass
+                def kill(self): pass
+                def wait(self, timeout=None):
+                    self.wait_calls += 1
+                    if self.wait_calls == 1:
+                        raise OSError("simulated wait failure")
+                    self.returncode = 0
+                    return self.returncode
+                def poll(self): return self.returncode
+            child = SlowChild()
+            def slow_popen(*args, **kwargs):
+                time.sleep(0.04)
+                return child
+            with patch.object(manager, "_listener_occupied", return_value=False), \
+                    patch("lab02_server.subprocess.Popen", side_effect=slow_popen):
+                with self.assertRaisesRegex(ServerLifecycleError, "startup_timeout"):
+                    manager.start()
+            self.assertIs(manager._process, child)
+            initial_cleanup = [event for event in events if event["action_id"] == "server_cleanup"]
+            self.assertEqual(len(initial_cleanup), 1)
+            self.assertEqual(initial_cleanup[0]["outcome"], "failure")
+
+            manager.close()
+            self.assertIsNone(manager._process)
+            cleanup_events = [event for event in events if event["action_id"] == "server_cleanup"]
+            self.assertEqual([event["outcome"] for event in cleanup_events], ["failure", "success"])
+            self.assertTrue(any(event["action_id"] == "server_process_exit"
+                                and event.get("exit_code") == 0 for event in events))
 
     def test_seed_interrupt_has_one_cancelled_terminal(self):
         events = []
@@ -195,7 +305,8 @@ HTTPServer((a.host,a.port),H).serve_forever()
             self.assertEqual(matching[0]["outcome"], outcome)
 
     def test_cleanup_failure_keeps_owned_handle_and_can_retry(self):
-        manager = ManagedLab02Server(config(free_port()))
+        events = []
+        manager = ManagedLab02Server(config(free_port()), event_sink=events.append)
         class Child:
             def __init__(self): self.calls = 0
             def poll(self): return None
@@ -212,6 +323,103 @@ HTTPServer((a.host,a.port),H).serve_forever()
         self.assertIs(manager._process, child)
         manager.close()
         self.assertIsNone(manager._process)
+        self.assertTrue(any(e["action_id"] == "server_cleanup" and e["outcome"] == "failure"
+                            for e in events))
+        self.assertTrue(any(e["action_id"] == "server_process_exit" and e.get("exit_code") == 0
+                            for e in events))
+
+    def test_close_records_deliberate_sigterm_as_expected_shutdown(self):
+        events = []
+        manager = ManagedLab02Server(config(12345), event_sink=events.append)
+        class TerminatedByClose:
+            pid = 12345
+            def __init__(self): self.returncode = None
+            def poll(self): return self.returncode
+            def terminate(self): raise AssertionError("POSIX close should use os.kill")
+            def wait(self, timeout=None): return self.returncode
+        child = TerminatedByClose()
+        def deliver_sigterm(pid, signum):
+            self.assertEqual(pid, child.pid)
+            self.assertEqual(signum, signal.SIGTERM)
+            child.returncode = -signal.SIGTERM
+        manager._process = child
+
+        with patch("lab02_server.os.kill", side_effect=deliver_sigterm):
+            manager.close()
+
+        exit_event = next(e for e in events if e["action_id"] == "server_process_exit")
+        self.assertEqual(exit_event["outcome"], "success")
+        self.assertEqual(exit_event["reason"], "expected_shutdown")
+        self.assertEqual(exit_event["exit_code"], -signal.SIGTERM)
+
+    def test_close_does_not_attribute_sigterm_when_child_exits_before_signal_delivery(self):
+        events = []
+        manager = ManagedLab02Server(config(12345), event_sink=events.append)
+        class ExitsInSignalWindow:
+            pid = 12345
+            def __init__(self): self.returncode = None
+            def poll(self): return self.returncode
+            def wait(self, timeout=None): return self.returncode
+        child = ExitsInSignalWindow()
+        manager._process = child
+        def child_disappeared(pid, signum):
+            self.assertEqual(pid, child.pid)
+            self.assertEqual(signum, signal.SIGTERM)
+            child.returncode = -signal.SIGTERM
+            raise ProcessLookupError
+
+        with patch("lab02_server.os.kill", side_effect=child_disappeared):
+            manager.close()
+
+        exit_event = next(e for e in events if e["action_id"] == "server_process_exit")
+        self.assertEqual(exit_event["outcome"], "failure")
+        self.assertEqual(exit_event["reason"], "nonzero_exit")
+        self.assertEqual(exit_event["exit_code"], -signal.SIGTERM)
+
+    def test_non_posix_terminate_fallback_does_not_claim_signal_delivery(self):
+        events = []
+        manager = ManagedLab02Server(config(12345), event_sink=events.append)
+        class FallbackChild:
+            def __init__(self): self.returncode = None
+            def poll(self): return self.returncode
+            def terminate(self): self.returncode = -signal.SIGTERM
+            def wait(self, timeout=None): return self.returncode
+        manager._process = FallbackChild()
+
+        with patch("lab02_server.os.name", "nt"):
+            manager.close()
+
+        exit_event = next(e for e in events if e["action_id"] == "server_process_exit")
+        self.assertEqual(exit_event["outcome"], "failure")
+        self.assertEqual(exit_event["reason"], "nonzero_exit")
+
+    def test_close_keeps_early_exit_and_forced_kill_as_failures(self):
+        early_events = []
+        early = ManagedLab02Server(config(12345), event_sink=early_events.append)
+        class EarlyExit:
+            def poll(self): return -15
+        early._process = EarlyExit()
+        early.close()
+        early_exit = next(e for e in early_events if e["action_id"] == "server_process_exit")
+        self.assertEqual(early_exit["outcome"], "failure")
+
+        forced_events = []
+        forced = ManagedLab02Server(config(12345), event_sink=forced_events.append)
+        class ForcedKill:
+            def __init__(self): self.returncode = None; self.wait_calls = 0
+            def poll(self): return self.returncode
+            def terminate(self): pass
+            def wait(self, timeout=None):
+                self.wait_calls += 1
+                if self.wait_calls == 1:
+                    raise subprocess.TimeoutExpired("server", timeout)
+                return self.returncode
+            def kill(self): self.returncode = -9
+        forced._process = ForcedKill()
+        forced.close()
+        forced_exit = next(e for e in forced_events if e["action_id"] == "server_process_exit")
+        self.assertEqual(forced_exit["outcome"], "failure")
+        self.assertEqual(forced_exit["exit_code"], -9)
 
     def test_real_rejected_http_action_is_failure(self):
         manager = ManagedLab02Server(config(free_port()), run_id="run-rejected")

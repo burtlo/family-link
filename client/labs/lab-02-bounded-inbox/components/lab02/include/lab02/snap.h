@@ -29,6 +29,7 @@ bool lab02_snap_is_current(uint32_t id);
 
 void lab02_snap_animate_to(lv_obj_t *scroller, lab02_snap_state_t *st, int32_t target_x,
                            int focus_index, const char *message_id,
+                           const char *origin,
                            lab02_snap_terminal_cb on_done, void *user_data);
 #ifdef __cplusplus
 }
