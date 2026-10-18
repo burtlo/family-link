@@ -17,6 +17,7 @@ from lab_adapter_lab10 import (  # noqa: E402
     ADAPTER_VERSION,
     Adapter,
     MAX_SERIAL_BYTES,
+    SCRIPTED_COMPLETION_GRACE_SECONDS,
     _scripted_completion_observed,
     _print_capture_active,
     _capture_serial_bounded,
@@ -66,6 +67,14 @@ class _FakeClock:
         return value
 
 
+class _ReadDrivenClock:
+    def __init__(self):
+        self.now = 0.0
+
+    def monotonic(self):
+        return self.now
+
+
 class _ScheduledSerial(_FakeSerial):
     def __init__(self, events, *_args, **_kwargs):
         super().__init__(*_args, **_kwargs)
@@ -76,6 +85,22 @@ class _ScheduledSerial(_FakeSerial):
         self._now += 0.25
         if self._events and self._now >= self._events[0][0]:
             return self._events.pop(0)[1]
+        return b""
+
+
+class _TimedSequenceSerial(_FakeSerial):
+    """Return each supplied serial chunk in its own bounded read turn."""
+
+    def __init__(self, events, clock, *_args, **_kwargs):
+        super().__init__(*_args, **_kwargs)
+        self._events = list(events)
+        self._clock = clock
+
+    def read(self, _size):
+        if self._events:
+            self._clock.now, chunk = self._events.pop(0)
+            return chunk
+        self._clock.now += 0.25
         return b""
 
 
@@ -368,6 +393,116 @@ class Lab10AdapterTests(unittest.TestCase):
             self.assertIn("status=not_configured", text)
             self.assertLessEqual(path.stat().st_size, MAX_SERIAL_BYTES)
 
+    def test_manual_capture_ends_early_on_valid_terminal_marker(self):
+        clock = _FakeClock()
+        device_output = (
+            b"LAB10_CAPTURE_TERMINAL outcome=stopped terminal_event_count=1\r\n"
+        )
+        with tempfile.TemporaryDirectory() as td:
+            fake_host = SimpleNamespace(ROOT=Path(td))
+            fake_serial = types.SimpleNamespace(
+                Serial=lambda *args, **kwargs: _ReplaySerial(
+                    device_output, *args, **kwargs
+                )
+            )
+            with patch.dict(sys.modules, {"serial": fake_serial}), patch(
+                "lab_adapter_lab10.time.monotonic", side_effect=clock.monotonic
+            ):
+                path = _capture_serial_bounded(
+                    fake_host, SimpleNamespace(device="/dev/fake"),
+                    "manual-early-stop", 30, "manual",
+                )
+
+            self.assertIn(device_output.decode().strip(), path.read_text())
+            self.assertLess(clock.now, 30)
+
+    def test_scripted_duration_cap_waits_for_completion_in_later_serial_read(self):
+        started, complete = self._scripted_markers()
+        terminal = b"LAB10_CAPTURE_TERMINAL outcome=duration_cap terminal_event_count=1\n"
+        clock = _ReadDrivenClock()
+        serial_events = [
+            (0.0, started),
+            (9.7, terminal),
+            (9.8, complete),
+        ]
+        with tempfile.TemporaryDirectory() as td:
+            fake_host = SimpleNamespace(ROOT=Path(td))
+            fake_serial = types.SimpleNamespace(
+                Serial=lambda *args, **kwargs: _TimedSequenceSerial(
+                    serial_events, clock, *args, **kwargs
+                )
+            )
+            with patch.dict(sys.modules, {"serial": fake_serial}), patch(
+                "lab_adapter_lab10.time.monotonic", side_effect=clock.monotonic
+            ):
+                path = _capture_serial_bounded(
+                    fake_host, SimpleNamespace(device="/dev/fake"),
+                    "scripted-split-terminal-completion", 10, "scripted",
+                )
+
+            output = path.read_text(encoding="utf-8")
+            self.assertIn(terminal.decode().strip(), output)
+            self.assertIn(complete.decode().strip(), output)
+            self.assertIn(
+                "LAB10_SCENARIO id=synthetic-sparse-multicolor-v1 status=passed",
+                output,
+            )
+
+    def test_scripted_duration_cap_without_completion_never_qualifies(self):
+        started, _complete = self._scripted_markers()
+        terminal = b"LAB10_CAPTURE_TERMINAL outcome=duration_cap terminal_event_count=1\n"
+        clock = _ReadDrivenClock()
+        serial_events = [(0.0, started), (9.7, terminal)]
+        with tempfile.TemporaryDirectory() as td:
+            fake_host = SimpleNamespace(ROOT=Path(td))
+            fake_serial = types.SimpleNamespace(
+                Serial=lambda *args, **kwargs: _TimedSequenceSerial(
+                    serial_events, clock, *args, **kwargs
+                )
+            )
+            with patch.dict(sys.modules, {"serial": fake_serial}), patch(
+                "lab_adapter_lab10.time.monotonic", side_effect=clock.monotonic
+            ):
+                path = _capture_serial_bounded(
+                    fake_host, SimpleNamespace(device="/dev/fake"),
+                    "scripted-duration-cap-without-completion", 10, "scripted",
+                )
+
+            output = path.read_text(encoding="utf-8")
+            self.assertIn(terminal.decode().strip(), output)
+            self.assertNotIn("LAB10_SCRIPTED_DRAWING status=complete", output)
+            self.assertIn(
+                "LAB10_SCENARIO id=synthetic-sparse-multicolor-v1 status=not_configured",
+                output,
+            )
+            self.assertGreaterEqual(
+                clock.now, 10 + SCRIPTED_COMPLETION_GRACE_SECONDS
+            )
+
+    def test_malformed_or_nonterminal_marker_does_not_end_capture_early(self):
+        clock = _FakeClock()
+        device_output = (
+            b"LAB10_CAPTURE_TERMINAL outcome=stopped terminal_event_count=0\n"
+            b"LAB10_CAPTURE_TERMINAL outcome=stopped terminal_event_count=1 extra=1\n"
+        )
+        with tempfile.TemporaryDirectory() as td:
+            fake_host = SimpleNamespace(ROOT=Path(td))
+            fake_serial = types.SimpleNamespace(
+                Serial=lambda *args, **kwargs: _ReplaySerial(
+                    device_output, *args, **kwargs
+                )
+            )
+            with patch.dict(sys.modules, {"serial": fake_serial}), patch(
+                "lab_adapter_lab10.time.monotonic", side_effect=clock.monotonic
+            ):
+                path = _capture_serial_bounded(
+                    fake_host, SimpleNamespace(device="/dev/fake"),
+                    "manual-invalid-terminal", 1, "manual",
+                )
+
+            self.assertIn(device_output.decode().strip(), path.read_text())
+            self.assertGreaterEqual(clock.now, 1)
+
     def test_scripted_completion_marker_closes_workflow_without_experiment_pass(self):
         device_output = (
             b"LAB10_READY build=device-build trace_schema=lab10-record-trace/v1 physical_ring_wipe=1\n"
@@ -406,30 +541,38 @@ class Lab10AdapterTests(unittest.TestCase):
         device_output = (
             b"LAB10_READY build=device-build trace_schema=lab10-record-trace/v1 physical_ring_wipe=1\n"
             b"LAB10_SCRIPTED_DRAWING status=started source=ui_task hardware_touch=0 duration_cap_ms=180000 move_interval_ms=44 accepted_point_cap=4096 palette_changes=0 strokes=1 color=white\n"
-            b"LAB10_SCRIPTED_DRAWING status=complete source=ui_task hardware_touch=0 terminal=stopped duration_cap_ms=180000 accepted_points=1200 strokes=1 palette_changes=0 color=white\n"
+            b"LAB10_CAPTURE_TERMINAL outcome=stopped terminal_event_count=1\n"
         )
+        clock = _FakeClock()
         with tempfile.TemporaryDirectory() as td:
             fake_host = SimpleNamespace(ROOT=Path(td))
             fake_serial = types.SimpleNamespace(
                 Serial=lambda *args, **kwargs: _ReplaySerial(device_output, *args, **kwargs)
             )
             with patch.dict(sys.modules, {"serial": fake_serial}), patch(
-                "lab_adapter_lab10.time.monotonic", side_effect=_FakeClock().monotonic
+                "lab_adapter_lab10.time.monotonic", side_effect=clock.monotonic
             ):
                 path = _capture_serial_bounded(
-                    fake_host, SimpleNamespace(device="/dev/fake"), "scripted-stopped", 1, "scripted"
+                    fake_host, SimpleNamespace(device="/dev/fake"), "scripted-stopped", 180, "scripted"
                 )
 
             text = path.read_text(encoding="utf-8")
-            self.assertIn("status=not_configured", text)
+            self.assertLess(clock.now, 180)
+            self.assertIn(
+                "LAB10_SCENARIO id=synthetic-sparse-multicolor-v1 status=cancelled",
+                text,
+            )
             self.assertNotIn(
                 "LAB10_SCENARIO id=synthetic-sparse-multicolor-v1 status=passed",
                 text,
             )
-            with self.assertRaises(parse_lab_trace.ParseError):
-                parse_lab_trace.parse_file(
-                    path, expected_run_id="scripted-stopped", expected_mode="scripted"
-                )
+            parsed = parse_lab_trace.parse_file(
+                path, expected_run_id="scripted-stopped", expected_mode="scripted"
+            )
+            self.assertEqual(parsed["workflow_status"], "INCOMPLETE")
+            self.assertFalse(
+                parsed["diagnostics"]["scripted_completion_observed"]
+            )
 
     def test_scripted_capture_without_completion_marker_remains_unconfigured(self):
         device_output = b"LAB10_READY build=device-build trace_schema=lab10-record-trace/v1 physical_ring_wipe=1\n"

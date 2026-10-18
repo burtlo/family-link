@@ -31,6 +31,9 @@ typedef struct {
     int16_t transition_origin_y;
     lab10_ui_scripted_schedule_t scripted_schedule;
     bool scripted_started;
+    bool scripted_start_marker_pending;
+    bool scripted_completion_marker_pending;
+    uint32_t scripted_completion_accepted_points;
     bool physical_ring_available;
 } lab10_ui_view_t;
 
@@ -50,3 +53,9 @@ lab10_capture_t *lab10_ui_view_capture(lab10_ui_view_t *view);
 void lab10_ui_view_exit_reverse(lab10_ui_view_t *view);
 void lab10_ui_view_scripted_poll(lab10_ui_view_t *view);
 void lab10_ui_view_poll(lab10_ui_view_t *view);
+/* Nonblocking one-shot handoff consumed by app_main outside LVGL ownership. */
+bool lab10_ui_view_take_pending_scripted_start(void);
+bool lab10_ui_view_take_pending_scripted_completion(
+    uint32_t *accepted_points);
+bool lab10_ui_view_take_pending_terminal_outcome(
+    lab10_capture_terminal_outcome_t *outcome);

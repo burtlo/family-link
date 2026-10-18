@@ -5,10 +5,9 @@
 #include "esp_log.h"
 #include "sdkconfig.h"
 
-#include <inttypes.h>
 #include <stddef.h>
+#include <stdatomic.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #ifndef CONFIG_LAB10_SCRIPTED
 #define CONFIG_LAB10_SCRIPTED 0
@@ -30,6 +29,108 @@ _Static_assert(LAB10_CANVAS_BUFFER_ALIGNMENT > 0u &&
 
 static const char *TAG = "lab10_ui";
 static lab10_ui_view_t *s_anim_view;
+static atomic_bool s_pending_scripted_start = ATOMIC_VAR_INIT(false);
+static atomic_bool s_scripted_start_delivery_required =
+    ATOMIC_VAR_INIT(false);
+static atomic_uint_least32_t s_pending_scripted_completion_points =
+    ATOMIC_VAR_INIT(0u);
+static atomic_int s_pending_capture_outcome =
+    ATOMIC_VAR_INIT(LAB10_CAPTURE_OUTCOME_NONE);
+
+static bool publish_pending_scripted_start(void)
+{
+    bool expected = false;
+    return atomic_compare_exchange_strong_explicit(
+        &s_pending_scripted_start, &expected, true,
+        memory_order_release, memory_order_relaxed);
+}
+
+static bool publish_pending_scripted_completion(uint32_t accepted_points)
+{
+    if (accepted_points == 0u) {
+        return false;
+    }
+
+    uint_least32_t expected = 0u;
+    return atomic_compare_exchange_strong_explicit(
+        &s_pending_scripted_completion_points, &expected, accepted_points,
+        memory_order_release, memory_order_relaxed);
+}
+
+bool lab10_ui_view_take_pending_scripted_start(void)
+{
+    const bool pending = atomic_exchange_explicit(
+        &s_pending_scripted_start, false, memory_order_acq_rel);
+    if (pending) {
+        atomic_store_explicit(&s_scripted_start_delivery_required, false,
+                              memory_order_release);
+    }
+    return pending;
+}
+
+bool lab10_ui_view_take_pending_scripted_completion(
+    uint32_t *accepted_points)
+{
+    if (accepted_points == NULL) {
+        return false;
+    }
+
+    const uint_least32_t pending = atomic_exchange_explicit(
+        &s_pending_scripted_completion_points, 0u, memory_order_acq_rel);
+    if (pending == 0u) {
+        return false;
+    }
+    *accepted_points = (uint32_t)pending;
+    return true;
+}
+
+static void publish_pending_scripted_events(lab10_ui_view_t *view)
+{
+    if (view == NULL) {
+        return;
+    }
+    if (view->scripted_start_marker_pending &&
+        publish_pending_scripted_start()) {
+        view->scripted_start_marker_pending = false;
+    }
+    if (view->scripted_completion_marker_pending &&
+        publish_pending_scripted_completion(
+            view->scripted_completion_accepted_points)) {
+        view->scripted_completion_marker_pending = false;
+    }
+}
+
+static bool publish_pending_capture_outcome(
+    lab10_capture_terminal_outcome_t outcome)
+{
+    if (outcome <= LAB10_CAPTURE_OUTCOME_NONE ||
+        outcome > LAB10_CAPTURE_OUTCOME_FAILED) {
+        return false;
+    }
+
+    int expected = LAB10_CAPTURE_OUTCOME_NONE;
+    return atomic_compare_exchange_strong_explicit(
+        &s_pending_capture_outcome, &expected, (int)outcome,
+        memory_order_release, memory_order_relaxed);
+}
+
+bool lab10_ui_view_take_pending_terminal_outcome(
+    lab10_capture_terminal_outcome_t *outcome)
+{
+    if (outcome == NULL) {
+        return false;
+    }
+
+    const int pending = atomic_exchange_explicit(
+        &s_pending_capture_outcome, LAB10_CAPTURE_OUTCOME_NONE,
+        memory_order_acq_rel);
+    if (pending <= LAB10_CAPTURE_OUTCOME_NONE ||
+        pending > LAB10_CAPTURE_OUTCOME_FAILED) {
+        return false;
+    }
+    *outcome = (lab10_capture_terminal_outcome_t)pending;
+    return true;
+}
 
 static void release_view_resources(lab10_ui_view_t *view)
 {
@@ -184,15 +285,15 @@ static void on_palette_changed(uint8_t previous, uint8_t next, void *context)
 {
     lab10_ui_view_t *view = context;
     refresh_palette(view, previous, next);
-    ESP_LOGI(TAG, "palette index %u -> %u; bounded swatch invalidation", previous, next);
 }
 
 static void on_transition(lab10_screen_state_t from, lab10_screen_state_t to,
                           uint32_t generation, void *context)
 {
+    (void)from;
+    (void)to;
+    (void)generation;
     (void)context;
-    ESP_LOGI(TAG, "ui transition %d -> %d generation=%lu", (int)from, (int)to,
-             (unsigned long)generation);
 }
 
 static void on_render_publish_pixel(const lab10_render_pixel_event_t *event,
@@ -237,16 +338,12 @@ static void on_touch_routed(const lab10_ui_touch_event_t *event, void *context)
     if (event == NULL || view == NULL) {
         return;
     }
-    if (event->route != LAB10_ROUTE_CANVAS) {
-        ESP_LOGD(TAG, "touch route=%d phase=%d x=%d y=%d", (int)event->route,
-                 (int)event->phase, event->display_x, event->display_y);
-    }
     if (view->capture == NULL ||
         view->capture_session_id == LAB10_CAPTURE_INVALID_SESSION_ID ||
         lab10_ui_state(&view->model) != LAB10_SCREEN_RECORDING) {
         return;
     }
-    const lab10_capture_submit_result_t result = lab10_capture_submit(
+    (void)lab10_capture_submit(
         view->capture, view->capture_session_id,
         &(lab10_capture_raw_report_t){
             .timestamp_us = lab10_capture_now_us(view->capture),
@@ -257,9 +354,6 @@ static void on_touch_routed(const lab10_ui_touch_event_t *event, void *context)
             .route = event->route,
             .color_index = event->color_index,
         });
-    if (result == LAB10_CAPTURE_SUBMIT_QUEUE_OVERFLOW) {
-        ESP_LOGW(TAG, "capture raw-report FIFO full; capture will terminalize");
-    }
 }
 
 void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
@@ -269,6 +363,10 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
         view->capture_session_id == LAB10_CAPTURE_INVALID_SESSION_ID) {
         return;
     }
+    /* A one-slot mailbox may still contain the prior event; retry these
+     * bounded latches on each timer poll without overwriting or waiting.
+     */
+    publish_pending_scripted_events(view);
     lab10_capture_stats_t stats;
     if (!lab10_capture_get_stats(view->capture, view->capture_session_id,
                                  &stats)) {
@@ -305,29 +403,23 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
     if (result == LAB10_UI_SCRIPTED_POLL_EVENT) {
         if (!view->scripted_started) {
             view->scripted_started = true;
-            printf("LAB10_SCRIPTED_DRAWING status=started source=ui_task "
-                   "hardware_touch=0 duration_cap_ms=180000 "
-                   "move_interval_ms=%lu accepted_point_cap=%u "
-                   "palette_changes=0 strokes=1 color=white\n",
-                   (unsigned long)(LAB10_UI_SCRIPTED_MOVE_INTERVAL_US / 1000u),
-                   (unsigned)LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY);
+            atomic_store_explicit(&s_scripted_start_delivery_required, true,
+                                  memory_order_release);
+            view->scripted_start_marker_pending = true;
         }
+        publish_pending_scripted_events(view);
         (void)lab10_ui_handle_touch(&view->model, scripted_event.phase,
                                     scripted_event.display_x,
                                     scripted_event.display_y,
                                     scripted_event.touch_id);
     } else if (result == LAB10_UI_SCRIPTED_POLL_COMPLETE &&
                view->scripted_started) {
-        printf("LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
-               "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
-               "accepted_points=%" PRIu32 " strokes=1 palette_changes=0 color=white\n",
-               stats.accepted_point_count);
-    } else if (result == LAB10_UI_SCRIPTED_POLL_INTERRUPTED &&
-               view->scripted_started) {
-        ESP_LOGW(TAG,
-                 "scripted drawing incomplete outcome=%s accepted_points=%" PRIu32,
-                 lab10_capture_outcome_name(stats.terminal_outcome),
-                 stats.accepted_point_count);
+        if (!view->scripted_completion_marker_pending) {
+            view->scripted_completion_marker_pending = true;
+            view->scripted_completion_accepted_points =
+                stats.accepted_point_count;
+        }
+        publish_pending_scripted_events(view);
     }
 #else
     (void)view;
@@ -348,6 +440,17 @@ static bool event_point(lv_event_t *event, lv_point_t *point)
     }
     lv_indev_get_point(indev, point);
     return true;
+}
+
+static void handle_touch_and_poll(lab10_ui_view_t *view,
+                                  lab10_touch_phase_t phase, int16_t x,
+                                  int16_t y)
+{
+    (void)lab10_ui_handle_touch(&view->model, phase, x, y, 0);
+    /* Consume and render this report on the LVGL task without waiting for the
+     * periodic timer. Capture FIFO and per-update renderer budgets stay fixed.
+     */
+    lab10_ui_view_poll(view);
 }
 
 static void on_canvas_event(lv_event_t *event)
@@ -378,7 +481,7 @@ static void on_canvas_event(lv_event_t *event)
         return;
     }
     /* The model rejects x >= 240 even if an input driver reports a wide point. */
-    lab10_ui_handle_touch(&view->model, phase, point.x, point.y, 0);
+    handle_touch_and_poll(view, phase, point.x, point.y);
 }
 
 static lab10_touch_phase_t touch_phase_from_event(lv_event_code_t code)
@@ -413,7 +516,7 @@ static void on_rail_event(lv_event_t *event)
         return;
     }
     /* Rail gaps become explicit rail_rejected reports; they never become ink. */
-    lab10_ui_handle_touch(&view->model, phase, point.x, point.y, 0);
+    handle_touch_and_poll(view, phase, point.x, point.y);
 }
 
 static void on_palette_event(lv_event_t *event)
@@ -428,8 +531,7 @@ static void on_palette_event(lv_event_t *event)
         return;
     }
     /* LVGL object hit testing is rectangular; the model owns the circle test. */
-    lab10_ui_handle_touch(&view->model, LAB10_PHASE_PALETTE_CHANGE, point.x,
-                          point.y, 0);
+    handle_touch_and_poll(view, LAB10_PHASE_PALETTE_CHANGE, point.x, point.y);
 }
 
 static void anim_circle_size(void *object, int32_t radius)
@@ -473,6 +575,9 @@ static void entry_animation_done(lv_anim_t *animation)
             return;
         }
         s_anim_view->scripted_started = false;
+        s_anim_view->scripted_start_marker_pending = false;
+        s_anim_view->scripted_completion_marker_pending = false;
+        s_anim_view->scripted_completion_accepted_points = 0u;
         if (!lab10_ui_scripted_schedule_init(
                 &s_anim_view->scripted_schedule,
                 lab10_capture_now_us(s_anim_view->capture),
@@ -842,7 +947,8 @@ static lab10_screen_state_t capture_outcome_state(
 static void present_capture_outcome(lab10_ui_view_t *view)
 {
     if (view == NULL || view->capture == NULL ||
-        view->capture_session_id == LAB10_CAPTURE_INVALID_SESSION_ID) {
+        view->capture_session_id == LAB10_CAPTURE_INVALID_SESSION_ID ||
+        lab10_ui_state(&view->model) != LAB10_SCREEN_RECORDING) {
         return;
     }
     lab10_capture_stats_t stats;
@@ -851,8 +957,20 @@ static void present_capture_outcome(lab10_ui_view_t *view)
         stats.terminal_event_count != 1) {
         return;
     }
-    lab10_ui_present_outcome(&view->model,
-                             capture_outcome_state(stats.terminal_outcome));
+    if (view->scripted_started &&
+        atomic_load_explicit(&s_scripted_start_delivery_required,
+                             memory_order_acquire)) {
+        return;
+    }
+    /* Do not advance the UI until the one-slot handoff accepts this outcome.
+     * If app_main has not drained the previous terminal yet, the regular UI
+     * poll retries without overwriting it or blocking the LVGL owner.
+     */
+    if (!publish_pending_capture_outcome(stats.terminal_outcome)) {
+        return;
+    }
+    lab10_ui_present_outcome(
+        &view->model, capture_outcome_state(stats.terminal_outcome));
     lab10_ui_view_present_state(view, lab10_ui_state(&view->model));
 }
 

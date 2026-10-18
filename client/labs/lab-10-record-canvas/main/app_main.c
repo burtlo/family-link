@@ -7,7 +7,9 @@
 #include "iot_button.h"
 #include "sdkconfig.h"
 
+#include <inttypes.h>
 #include <stdatomic.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #ifndef CONFIG_LAB10_BUILD_ID
@@ -111,6 +113,32 @@ void app_main(void)
            CONFIG_LAB10_BUILD_ID, ring_available ? 1 : 0);
 
     for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        uint32_t scripted_accepted_points;
+        lab10_capture_terminal_outcome_t terminal_outcome;
+
+        /* Drain in lifecycle order. These atomic one-slot handoffs are
+         * produced by LVGL but all serial output stays on this service task.
+         */
+        if (lab10_ui_view_take_pending_scripted_start()) {
+            printf("LAB10_SCRIPTED_DRAWING status=started source=ui_task "
+                   "hardware_touch=0 duration_cap_ms=180000 "
+                   "move_interval_ms=%lu accepted_point_cap=%u "
+                   "palette_changes=0 strokes=1 color=white\n",
+                   (unsigned long)(LAB10_UI_SCRIPTED_MOVE_INTERVAL_US / 1000u),
+                   (unsigned)LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY);
+        }
+        if (lab10_ui_view_take_pending_scripted_completion(
+                &scripted_accepted_points)) {
+            printf("LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
+                   "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
+                   "accepted_points=%" PRIu32 " strokes=1 palette_changes=0 color=white\n",
+                   scripted_accepted_points);
+        }
+        if (lab10_ui_view_take_pending_terminal_outcome(&terminal_outcome)) {
+            printf("LAB10_CAPTURE_TERMINAL outcome=%s terminal_event_count=1\n",
+                   lab10_capture_outcome_name(terminal_outcome));
+        }
+        /* Service terminal events promptly without spinning when none exist. */
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }

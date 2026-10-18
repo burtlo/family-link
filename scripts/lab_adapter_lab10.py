@@ -21,6 +21,18 @@ SCRIPTED_STARTUP_TIMEOUT_SECONDS = 60
 SCRIPTED_COMPLETION_EARLY_TOLERANCE_SECONDS = 0.5
 SCRIPTED_COMPLETION_GRACE_SECONDS = 5
 _SCRIPTED_DRAWING_PREFIX = b"LAB10_SCRIPTED_DRAWING "
+_CAPTURE_TERMINAL_PREFIX = b"LAB10_CAPTURE_TERMINAL "
+_CAPTURE_TERMINAL_OUTCOMES = frozenset(
+    {
+        b"completed",
+        b"stopped",
+        b"cancelled",
+        b"duration_cap",
+        b"point_cap",
+        b"queue_overflow",
+        b"failed",
+    }
+)
 _SCENARIO_TERMINAL_STATUSES = frozenset(
     {"passed", "failed", "cancelled", "not_configured"}
 )
@@ -104,6 +116,30 @@ def _scripted_completion_line_valid(line: bytes) -> bool:
         and fields.get(b"palette_changes") == b"0"
         and fields.get(b"color") == b"white"
     )
+
+
+def _capture_terminal_outcome(line: bytes) -> bytes | None:
+    """Return the outcome from an exact, one-event firmware terminal marker."""
+
+    if line.endswith(b"\r"):
+        line = line[:-1]
+    if not line.startswith(_CAPTURE_TERMINAL_PREFIX):
+        return None
+    fields: dict[bytes, bytes] = {}
+    for token in line[len(_CAPTURE_TERMINAL_PREFIX):].split():
+        if b"=" not in token:
+            return None
+        key, value = token.split(b"=", 1)
+        if not key or not value or key in fields:
+            return None
+        fields[key] = value
+    if (
+        set(fields) != {b"outcome", b"terminal_event_count"}
+        or fields[b"outcome"] not in _CAPTURE_TERMINAL_OUTCOMES
+        or fields[b"terminal_event_count"] != b"1"
+    ):
+        return None
+    return fields[b"outcome"]
 
 
 def _scripted_completion_observed(path: Path) -> bool:
@@ -210,6 +246,7 @@ def _capture_serial_bounded(host, target, run_id: str, seconds: int, mode: str) 
     completed = False
     scripted_completion_at = None
     scripted_start_count = 0
+    capture_terminal_outcome = None
     pending_line = b""
     try:
         connection = serial.Serial(target.device, 115200, timeout=0.25)
@@ -232,18 +269,34 @@ def _capture_serial_bounded(host, target, run_id: str, seconds: int, mode: str) 
                         )
                     log.write(chunk)
                     total += len(chunk)
-                if mode == "scripted" and chunk:
+                if chunk:
                     lines = (pending_line + chunk).split(b"\n")
                     pending_line = lines.pop()
                     for line in lines:
-                        if _scripted_start_line_valid(line):
-                            scripted_start_count += 1
-                            if scripted_start_count == 1:
-                                capture_started_at = time.monotonic()
-                                deadline = capture_started_at + seconds
-                        elif _scripted_completion_line_valid(line):
-                            scripted_completion_at = time.monotonic()
+                        terminal_outcome = _capture_terminal_outcome(line)
+                        if terminal_outcome is not None:
+                            capture_terminal_outcome = terminal_outcome
+                        if mode == "scripted":
+                            if _scripted_start_line_valid(line):
+                                scripted_start_count += 1
+                                if scripted_start_count == 1:
+                                    capture_started_at = time.monotonic()
+                                    deadline = capture_started_at + seconds
+                            elif _scripted_completion_line_valid(line):
+                                scripted_completion_at = time.monotonic()
                 now = time.monotonic()
+                if capture_terminal_outcome is not None:
+                    if mode != "scripted":
+                        break
+                    if capture_terminal_outcome != b"duration_cap":
+                        # User stop/cancel and every abnormal terminal outcome
+                        # remain promptly observable and can never qualify as
+                        # a complete scripted workload.
+                        break
+                    if scripted_completion_at is not None:
+                        # Duration-cap and completion markers can arrive in
+                        # separate reads; retain both before closing capture.
+                        break
                 if mode == "scripted":
                     if scripted_start_count > 1:
                         break
@@ -258,24 +311,26 @@ def _capture_serial_bounded(host, target, run_id: str, seconds: int, mode: str) 
                             break
                 elif now >= deadline:
                     break
-            # A scripted workflow is complete only when the device emitted its
-            # exact completion marker. Manual captures and scripted captures
-            # without that marker remain explicitly unconfigured.
+            # Scripted success requires exact full-duration completion evidence.
             log.flush()
             scripted_completion_qualified = (
                 scripted_start_count == 1
                 and capture_started_at is not None
                 and scripted_completion_at is not None
+                and capture_terminal_outcome in {None, b"duration_cap"}
                 and capture_started_at + seconds
                 - SCRIPTED_COMPLETION_EARLY_TOLERANCE_SECONDS
                 <= scripted_completion_at
                 < capture_started_at + seconds + SCRIPTED_COMPLETION_GRACE_SECONDS
             )
-            scenario_status = (
-                "passed"
-                if mode == "scripted" and scripted_completion_qualified
-                else "not_configured"
-            )
+            if mode != "scripted":
+                scenario_status = "not_configured"
+            elif scripted_completion_qualified:
+                scenario_status = "passed"
+            elif capture_terminal_outcome in {b"stopped", b"cancelled"}:
+                scenario_status = "cancelled"
+            else:
+                scenario_status = "not_configured"
             terminal_marker = _marker("LAB10_SCENARIO", id=workload, status=scenario_status)
             if total + len(terminal_marker) > MAX_SERIAL_BYTES:
                 raise RuntimeError(
