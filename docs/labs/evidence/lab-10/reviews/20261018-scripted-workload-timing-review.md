@@ -63,6 +63,8 @@ target runs (`20261018-scripted-run-c4d0e447`,
   events, and maximum event deadline lateness 48,000 µs
 
 The three target runs provide repeat L2 workflow/runtime evidence that the
-scripted run qualifies with the profile and telemetry. The visible modal still
-requires user-confirmed L3 observation; that confirmation is pending. No
-performance or experiment verdict is claimed.
+scripted run qualifies with the profile and telemetry. For
+`20261018-scripted-run-c4d0e447`, the user confirmed the visible device modal
+displayed “Completed” (L3; reported in this conversation on 2026-10-18). No
+performance or experiment verdict is claimed; the experiment verdict remains
+`UNMEASURED`.

@@ -84,9 +84,9 @@ Serial reports one `LAB10_CAPTURE_TERMINAL outcome=duration_cap`, followed by
 17 palette changes, color mask `0x3e`; its diagnostic reports zero queue
 overflow and trace loss, one terminal event, scheduler acceptance, renderer
 drain completion, and all color masks `0x3e`. The scenario is `passed` and host
-workflow is `PASS`; experiment verdict is `UNMEASURED`. The user reports the
-device modal says “failed.” No screenshot/video is attached. The current mapping
-code independently explains that observation.
+workflow is `PASS`; experiment verdict is `UNMEASURED`. The user initially
+reported the device modal said “failed”; the later remediation and user-visible
+confirmation are recorded under Outcomes below. No screenshot/video is attached.
 
 ## Commands and results
 
@@ -96,25 +96,25 @@ code independently explains that observation.
 - Fresh read-only reviewer `01a15101-a5b0-7363-9604-dd1569ae7979` confirmed the
   mapping defect and reviewed state/hash provenance. It ran no tests, builds,
   or device actions, as required by its assignment.
-- No fix or target action performed yet.
+- This section records the initial read-only review; remediation, verification,
+  and target runs are recorded under Outcomes below.
 
 ## Evidence levels
 
 - L2 device run artifact: scripted duration-cap, scheduler completion, renderer
   drain, and scenario pass are captured in raw serial and run metadata.
-- L3 user observation: user reports the visible modal says “failed”; no visual
-  artifact independently attached.
+- Initial L3 user observation: the visible modal said “failed”; no visual
+  artifact independently attached. The post-fix L3 observation is recorded below.
 - Host workflow: `PASS`; experiment verdict: `UNMEASURED`. These claims remain
   distinct from the visual defect.
 
 ## Execution plan
 
-No dependency ordering required. Implement this one confirmed defect, preserving
-qualification and all other terminal failures. Then stop edits and give the
-exact diff, tests, and run artifact to a fresh independent read-only verifier.
-After the verifier passes and a scripted build succeeds, perform one new
-scripted target capture, then obtain L3 confirmation that the modal reports
-success. Preserve the run artifacts and unrelated WIP.
+No dependency ordering required. The initial plan was completed: the defect was
+implemented without changing non-scripted duration-cap policy, independently
+verified, and exercised in repeated scripted target runs. Run evidence and the
+user's resulting L3 modal observation are recorded below. Unrelated WIP was
+preserved.
 
 ## Outcomes
 
@@ -124,10 +124,12 @@ success. Preserve the run artifacts and unrelated WIP.
   and `20261018-scripted-run-f6022a36`) passed duration-cap completion with
   respectively 3,518, 3,514, and 3,514 accepted points; all had 18 strokes,
   17 palette changes, mask `0x3e`, no queue/trace loss, renderer drain complete,
-  and scheduler acceptance. L3 confirmation of the visible modal is pending.
+  and scheduler acceptance. For run `20261018-scripted-run-c4d0e447`, the user
+  confirmed the final device modal displayed “Completed” (L3; reported in this
+  conversation on 2026-10-18).
 - Non-scripted duration-cap presentation: OPEN; not changed by this finding.
 - Independent verifier: `01a1510a-2a35-7c30-86bb-a38080f1a949` reviewed the
   guard and reported source/host checks passing; it did not perform target
   actions. The target run above is subsequent L2 evidence.
-- Final modal text: pending user observation for
-  `20261018-scripted-run-c4d0e447`.
+- Final modal text: user-confirmed “Completed” for
+  `20261018-scripted-run-c4d0e447`; no screenshot/video was attached.
