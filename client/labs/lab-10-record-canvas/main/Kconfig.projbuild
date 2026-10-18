@@ -1,0 +1,50 @@
+menu "LAB-10 record canvas"
+
+config LAB10_SCRIPTED
+    bool "Enable deterministic UI smoke harness"
+    default n
+    help
+        Enables the package-local UI transition smoke path. It does not add
+        capture, storage, audio, send, or networking behavior.
+
+config LAB10_BUILD_ID
+    string "LAB-10 firmware build identifier"
+    default "lab10-render-l10-04"
+
+choice LAB10_RENDER_MODE
+    prompt "LAB-10 render mode"
+    default LAB10_RENDER_MODE_DIRECT_POINT
+    help
+        Select the bounded renderer used by the ESP-IDF UI bridge. Direct
+        point is the control mode; the other modes are host/hardware
+        candidates and retain the same explicit per-update budgets.
+
+config LAB10_RENDER_MODE_DIRECT_POINT
+    bool "Direct point control"
+
+config LAB10_RENDER_MODE_SEGMENT
+    bool "Segment candidate"
+
+config LAB10_RENDER_MODE_BOUNDED_BATCH
+    bool "Bounded batch candidate"
+
+config LAB10_RENDER_MODE_WHOLE_FRAME
+    bool "Whole frame candidate"
+endchoice
+
+config LAB10_RENDER_MAX_POINTS_PER_UPDATE
+    int "Maximum source points per render update"
+    range 1 64
+    default 8
+
+config LAB10_RENDER_MAX_RASTER_OPS_PER_UPDATE
+    int "Maximum logical raster operations per render update"
+    range 1 512
+    default 32
+
+config LAB10_RENDER_MAX_PUBLICATION_OPS_PER_UPDATE
+    int "Maximum logical publication operations per render update"
+    range 1 512
+    default 32
+
+endmenu

@@ -87,3 +87,33 @@ labs:
       instructions: |
         Touch NEXT on BOX-3 once to move between the two proof states. This is a
         bounded lifecycle integration proof only; it is not a resource measurement.
+
+  lab10:
+    adapter: lab10
+    lab_id: LAB-10
+    evidence_slug: lab-10
+    project_dir: client/labs/lab-10-record-canvas
+    target: esp32s3
+    description: Bounded local record canvas with manual and deterministic evidence modes
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-10-record-canvas-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-10-record-canvas-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    trace_parser: client/labs/lab-10-record-canvas/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 180
+      flash_by_default: true
+      instructions: |
+        Manual: choose LAB10_WORKLOAD=manual-* when selecting a documented gesture case,
+        then draw or exercise the requested stop/cancel case during capture. Deterministic:
+        use make lab.lab10.scripted with LAB10_WORKLOAD=synthetic-*-v1. Both modes require
+        the LAB10_READY marker; missing trace, synchronized screen/audio, or hardware-only
+        measurements remain UNMEASURED/BLOCKED. This lab has no server or product networking.
+      instructions_doc: client/labs/lab-10-record-canvas/README.md#l10-08-runner-parser-and-structured-evidence

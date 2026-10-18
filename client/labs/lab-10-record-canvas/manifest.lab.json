@@ -1,0 +1,728 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-10",
+  "lab_revision": "v1",
+  "package_id": "L10-06",
+  "run_id_example": "20261017-L10-RECORD-CANVAS-009",
+  "firmware_path": "client/labs/lab-10-record-canvas",
+  "server_path": "none",
+  "fixture_schema": "none-local-capture",
+  "fixture_revision": "none-local-capture",
+  "protocol": "local capture only; no send, recipient, inbox, or product networking",
+  "trace_schema": "lab10-record-trace/v1",
+  "trace_schema_path": "client/labs/lab-10-record-canvas/trace-schema.v1.json",
+  "workload_schema": "lab10-workload/v1",
+  "workload_generator": {
+    "component": "client/labs/lab-10-record-canvas/components/lab10_workload",
+    "generator_version": "synthetic-human-like-v1",
+    "provenance": "host",
+    "deterministic_seed_required": true,
+    "max_events": 512,
+    "max_accepted_points": 320,
+    "max_duration_us": 180000000,
+    "timestamp_jitter_bound_us": 2000,
+    "trace_size_is_bounded": true,
+    "hardware_touch_latency_claim_allowed": false
+  },
+  "criteria": "provisional experiment bounds; not product budgets",
+  "status": "realistic_workload_suite_implemented",
+  "registry": {
+    "make_name": "lab10",
+    "registered": true,
+    "registration_owner": "L10-08",
+    "adapter_identity": "lab10",
+    "adapter_version": "v1",
+    "parser_path": "client/labs/lab-10-record-canvas/tools/parse_lab_trace.py",
+    "parser_identity": "lab10-record-parser",
+    "parser_version": "v1",
+    "note": "The shared registry change is append-only and selects the fixed lab10 adapter allowlist key."
+  },
+  "runner": {
+    "adapter_identity": "lab10",
+    "adapter_version": "v1",
+    "mode_values": ["manual", "scripted"],
+    "deterministic_alias": "scripted",
+    "readiness_marker": "LAB10_READY build=<id> trace_schema=lab10-record-trace/v1 physical_ring_wipe=<0|1>",
+    "run_marker": "LAB10_RUN run_id=<run-id> mode=<manual|scripted> workload=<stable-identity> adapter_version=v1",
+    "scenario_marker": "LAB10_SCENARIO id=<identity> status=<started|passed|failed|cancelled|not_configured>",
+    "scripted_drawing_marker": "LAB10_SCRIPTED_DRAWING status=<started|complete> ...",
+    "scripted_completion_rule": "Scripted workflow may close as passed only after the device emits LAB10_SCRIPTED_DRAWING status=complete; missing or malformed completion remains incomplete.",
+    "cancel_marker": "LAB10_CANCEL requested=1 reason=<bounded-reason>",
+    "marker_uniqueness": "one readiness, one run, one cancel, and at most one terminal scenario status per scenario identity",
+    "serial_log_max_bytes": 2097152,
+    "parser_output_max_bytes": 4194304,
+    "resolved_commands": {
+      "help": "make lab.lab10.help",
+      "manual": "make lab.lab10 KIT=<kit> [LAB10_WORKLOAD=manual-<case>]",
+      "deterministic": "make lab.lab10.scripted KIT=<kit> [LAB10_WORKLOAD=synthetic-<case>-v1]",
+      "build_manual": "make lab.lab10.build KIT=<kit> VARIANT=manual",
+      "build_deterministic": "make lab.lab10.scripted.build KIT=<kit>",
+      "capture_manual": "make lab.lab10.capture KIT=<kit> RUN_ID=<run-id>",
+      "parse": "make lab.lab10.parse RUN_ID=<run-id>",
+      "evidence": "docs/labs/evidence/lab-10/runs/<run-id>/"
+    },
+    "parser_output": {
+      "document": "family-link.lab10-parser-output/v1",
+      "metrics_owner": "client/labs/lab-10-record-canvas/tools/aggregate_metrics.py",
+      "artifact": "metrics.json",
+      "workflow_field": "workflow_status",
+      "experiment_field": "experiment_verdict",
+      "failure_behavior": "malformed, ambiguous, over-bound, or incomplete trace evidence never becomes a hardware PASS"
+    }
+  },
+  "geometry": {
+    "lcd": {
+      "width_px": 320,
+      "height_px": 240,
+      "x_range": "[0,320)",
+      "y_range": "[0,240)"
+    },
+    "canvas": {
+      "origin_px": [0, 0],
+      "width_px": 240,
+      "height_px": 240,
+      "x_range": "[0,240)",
+      "y_range": "[0,240)",
+      "fill": "#000000",
+      "corner_radius_px": 8
+    },
+    "palette_rail": {
+      "origin_px": [240, 0],
+      "width_px": 80,
+      "height_px": 240,
+      "x_range": "[240,320)",
+      "y_range": "[0,240)",
+      "surface": "#101418"
+    },
+    "logical_canvas": {
+      "width": 120,
+      "height": 120,
+      "mapping": "logical_x = clamp(floor(display_x / 2), 0, 119); logical_y = clamp(floor(display_y / 2), 0, 119)",
+      "stored_coordinates": "logical only, with raw and display coordinates retained in trace evidence"
+    },
+    "touch_routing": {
+      "canvas": "0 <= x < 240 and 0 <= y < 240",
+      "rail": "240 <= x < 320 and 0 <= y < 240",
+      "rail_never_appends_canvas_ink": true,
+      "canvas_excludes_x_240": true,
+      "outside_display": "reject and count; never clamp into the canvas"
+    }
+  },
+  "palette": {
+    "target_shape": "circle",
+    "target_diameter_px": 44,
+    "radius_px": 22,
+    "vertical_pitch_px": 36,
+    "rail_center_x_px": 280,
+    "zig_zag_offset_px": 11,
+    "bottom_margin_px": 10,
+    "coordinate_convention": "integer display pixels; circle boundary and bounding-box endpoints are inclusive",
+    "default_index": 1,
+    "order_bottom_to_top": [
+      { "index": 0, "role": "background", "color": "#000000", "center_px": [269, 208], "bounds_px": [247, 186, 291, 230] },
+      { "index": 1, "role": "ink", "color": "#F8F8F8", "center_px": [291, 172], "bounds_px": [269, 150, 313, 194] },
+      { "index": 2, "role": "ink", "color": "#E8C040", "center_px": [269, 136], "bounds_px": [247, 114, 291, 158] },
+      { "index": 3, "role": "ink", "color": "#4CAF50", "center_px": [291, 100], "bounds_px": [269, 78, 313, 122] },
+      { "index": 4, "role": "ink", "color": "#E53935", "center_px": [269, 64], "bounds_px": [247, 42, 291, 86] },
+      { "index": 5, "role": "ink", "color": "#5AA0E8", "center_px": [291, 28], "bounds_px": [269, 6, 313, 50] }
+    ],
+    "hit_test": "a rail touch selects the swatch whose (x-cx)^2 + (y-cy)^2 <= 22^2; touches in the rail outside all circles are rail_rejected",
+    "selection_chrome": {
+      "border": "#B8BEC6",
+      "border_px": 2,
+      "selected_outline": "#E8C040",
+      "selected_outline_px": 2,
+      "outline_pad_px": 1
+    },
+    "background_color_is_erase_behavior": true,
+    "no_eraser_control": true
+  },
+  "capture_policy": {
+    "duration_cap_ms": 180000,
+    "accepted_point_cap": 4096,
+    "queue": {
+      "name": "capture_touch_report_fifo",
+      "capacity": 16,
+      "entry": "immutable raw touch report",
+      "producer": "touch adapter, non-blocking",
+      "consumer": "single capture owner",
+      "overflow": "emit queue_overflow, preserve the overflow count, and terminalize exactly once; never silently drop or overwrite",
+      "terminal_events_are_not_coalesced": true
+    },
+    "minimum_movement": {
+      "display_distance_px": 2,
+      "rule": "coalesce only a consecutive MOVE for the same stroke, same selected color, same logical coordinate, and Euclidean display distance < 2 px from the last accepted point",
+      "never_coalesce": ["DOWN", "UP", "color change", "logical-coordinate change", "stroke boundary", "second-touch rejection", "capacity or queue outcome"],
+      "raw_reports_retained_separately": true
+    },
+    "implementation": {
+      "component": "client/labs/lab-10-record-canvas/components/lab10_capture",
+      "raw_fifo_is_spsc_and_non_blocking": true,
+      "accepted_point_representation": "bounded immutable 4096-entry session result",
+      "session_guard": "lab10_capture_session_id_t: nonzero unsigned 64-bit generation; every issued generation is permanently consumed and never reused",
+      "session_generation": {
+        "representation": "uint64_t",
+        "invalid_value": 0,
+        "maximum_issued_value": 18446744073709551614,
+        "admission_gate_claim_marker": 18446744073709551615,
+        "reuse_policy": "never reuse or wrap; a paused stale producer must fail generation admission after restart",
+        "exhaustion_policy": "start returns the invalid value and leaves the terminal session unchanged"
+      },
+      "terminal_arbitration": "atomic ACTIVE -> TERMINATING -> TERMINAL lifecycle with an in-flight producer count; terminal cleanup waits only for an admitted bounded producer section",
+      "overflow_arbitration": "one-shot overflow latch observed after producer quiescence; an admitted full-queue report outranks stop, cancel, complete, and duration before terminal publication",
+      "terminal_cleanup": "clear raw FIFO and close active stroke exactly once; release point result on renderer release, next start, or destroy"
+    },
+    "adapter_limits": {
+      "lvgl_touch_mode": "single_touch",
+      "lvgl_forwarded_touch_id": 0,
+      "lvgl_forwarding_surfaces": ["canvas", "rail", "palette"],
+      "native_test_touch_ids": "native capture tests inject nonzero IDs",
+      "multi_touch_hardware_evidence": "unmeasured/unavailable"
+    },
+    "phase_rules": {
+      "DOWN": "starts one active stroke when routed to the canvas and capacity remains",
+      "MOVE": "accepted only for the active first touch; preserve phase, stroke identity, and color",
+      "UP": "closes the active stroke; it is a boundary event, not an additional accepted point",
+      "palette_change": "updates the color for subsequent points and never rewrites prior points",
+      "second_touch": "reject with explicit reason and no canvas mutation",
+      "leave_reenter": "a leave ends the active stroke; a later DOWN starts a new stroke",
+      "terminality": "one and only one terminal outcome per capture operation"
+    },
+    "capacity_outcomes": {
+      "duration_cap": "terminal outcome duration_cap at or after 180000 ms on the monotonic clock; no later point is accepted",
+      "point_cap": "terminal outcome point_cap after the 4096th accepted canvas point; no silent truncation",
+      "queue_overflow": "terminal outcome queue_overflow on a full capture queue; raw report and loss are counted",
+      "allocation_failure": "terminal outcome failed with allocation_failure; all owned resources must be released",
+      "stop": "terminal outcome stopped",
+      "cancel": "terminal outcome cancelled",
+      "normal": "terminal outcome completed"
+    }
+  },
+  "rendering_policy": {
+    "component": "client/labs/lab-10-record-canvas/components/lab10_render",
+    "logical_framebuffer": {
+      "width": 120,
+      "height": 120,
+      "pixel_format": "indexed six-color palette",
+      "retained_buffers": 2,
+      "retained_bytes": 28800,
+      "display_expansion": "each logical pixel is presented as a bounded 2x2 display block"
+    },
+    "modes": {
+      "direct_point": {
+        "role": "control",
+        "point_limit_per_update": 1,
+        "semantics": "publish one accepted point without interpolation"
+      },
+      "segment": {
+        "role": "candidate",
+        "point_limit_per_update": 1,
+        "semantics": "bounded Bresenham interpolation only within one stroke and one color"
+      },
+      "bounded_batch": {
+        "role": "candidate",
+        "default_point_limit_per_update": 8,
+        "semantics": "segment semantics with independent point and raster limits"
+      },
+      "whole_frame": {
+        "role": "candidate",
+        "phases": ["clear", "replay", "publish"],
+        "semantics": "build a second framebuffer and publish it in bounded logical-pixel chunks"
+      }
+    },
+    "default_raster_ops_per_update": 32,
+    "default_publication_ops_per_update": 32,
+    "hard_max_raster_ops_per_update": 512,
+    "hard_max_publication_ops_per_update": 512,
+    "hard_max_batch_points_per_update": 64,
+    "hardware_selection": "package-local LAB10_RENDER_MODE Kconfig choice; default direct_point control",
+    "incremental_effective_raster_limit": "min(configured_raster_ops_per_update, configured_publication_ops_per_update)",
+    "whole_frame_publication": "never copy or invalidate the whole logical frame in one UI-task update",
+    "observable_state": [
+      "capture_queue_depth_current",
+      "capture_queue_depth_high_water",
+      "pending_point_count",
+      "backlog_high_water",
+      "raster_ops_last_update",
+      "publication_ops_last_update",
+      "invalidation_count",
+      "full_screen_invalidation_count",
+      "frame_phase",
+      "frame_generation",
+      "presentation_pending",
+      "lock_state"
+    ],
+    "lock_semantics": "the LVGL adapter reports ui_task_owned; lock acquisition timing is not measured by host or this slice",
+    "test_hooks": "bounded raster, publication, invalidation, update, and lock-state callbacks are production-safe observer hooks; no capture test-hook macro is required"
+  },
+  "clock": {
+    "hardware_source": "monotonic device clock (microseconds; esp_timer_get_time or an equivalent monotonic source)",
+    "hardware_rule": "all device event, latency, duration, queue, and cleanup timestamps use the same monotonic clock; wall clock is not valid for ordering",
+    "host_synthetic_source": "host monotonic clock only",
+    "host_timestamp_jitter_bound_us": 2000,
+    "host_rule": "host synthetic timestamps are separate evidence and cannot establish touch latency, display scanout, audio continuity, or hardware scheduling",
+    "unit": "us"
+  },
+  "workloads": {
+    "manual": {
+      "evidence_kind": "hardware",
+      "identity_prefix": "manual-",
+      "purpose": "human touch and visual behavior; use an external camera/microphone when audio or scanout is claimed",
+      "required_cases": [
+        "no-stroke audio control",
+        "sparse strokes at slow, medium, and fast human speeds",
+        "continuous stroke with pauses and corners",
+        "dense multicolor drawing with multiple strokes",
+        "background-colored erase strokes",
+        "edge-adjacent and exact corner points",
+        "rapid color switches between strokes",
+        "leave canvas and re-enter with a new stroke",
+        "stop during stroke",
+        "cancel during audio",
+        "mic failure",
+        "codec failure",
+        "allocation failure"
+      ],
+      "synthetic_timestamps_not_allowed": true,
+      "stable_identities": [
+        "manual-no-stroke-audio-control",
+        "manual-sparse-variable-speed",
+        "manual-continuous-pauses-corners",
+        "manual-dense-multicolor",
+        "manual-background-erase",
+        "manual-edge-corner-leave-reenter",
+        "manual-rapid-color-switch",
+        "manual-stop-during-stroke",
+        "manual-cancel-during-audio",
+        "manual-mic-failure",
+        "manual-codec-failure",
+        "manual-allocation-failure"
+      ]
+    },
+    "deterministic_human_like": {
+      "evidence_kind": "host synthetic evidence only; never hardware latency evidence",
+      "schema_version": "lab10-workload/v1",
+      "generator_version": "synthetic-human-like-v1",
+      "provenance": "host",
+      "identity": "synthetic-human-like-v1",
+      "stable_identities": [
+        "synthetic-sparse-multicolor-v1",
+        "synthetic-continuous-multicolor-v1",
+        "synthetic-dense-multicolor-v1",
+        "synthetic-edge-corner-v1",
+        "synthetic-rapid-color-switch-v1",
+        "synthetic-background-erase-v1",
+        "synthetic-stop-during-stroke-v1",
+        "synthetic-cancel-during-audio-v1"
+      ],
+      "required_variation": [
+        "variable point spacing",
+        "variable velocity",
+        "corners and direction changes",
+        "pauses",
+        "pen-up gaps",
+        "multiple strokes",
+        "color changes",
+        "edge-adjacent points",
+        "bounded timestamp jitter"
+      ],
+      "timestamp_jitter_bound_us": 2000,
+      "repeated_identical_straight_lines_are_primary_workload": false,
+      "seed_policy": "nonzero uint64 seed is recorded in workload_metadata.seed and reproduces the complete trace",
+      "invalid_configuration_is_failure": true
+    }
+  },
+  "scenarios": [
+    "sparse_multicolor",
+    "continuous_multicolor",
+    "dense_multicolor",
+    "variable_speed_pause_pen_up",
+    "background_color_erase_behavior",
+    "edge_and_corner_points",
+    "leave_and_reenter",
+    "rapid_color_switch",
+    "no_stroke_audio_control",
+    "stop_during_stroke",
+    "cancel_during_audio",
+    "mic_failure",
+    "codec_failure",
+    "allocation_failure",
+    "duration_cap",
+    "point_cap",
+    "queue_overflow",
+    "repeated_start_stop_cancel"
+  ],
+  "audio_concurrency_scenarios": [
+    {
+      "id": "no-stroke-control",
+      "description": "Audio-only control with no canvas events.",
+      "expected_outcome": "completed-audio-continuous",
+      "expected_terminal": "completed",
+      "expected_audio_continuity": "model-continuous",
+      "expected_drawing_pressure": false
+    },
+    {
+      "id": "sparse-drawing",
+      "description": "Few drawing events while audio producer and consumer remain balanced.",
+      "expected_outcome": "completed-audio-continuous",
+      "expected_terminal": "completed",
+      "expected_audio_continuity": "model-continuous",
+      "expected_drawing_pressure": false
+    },
+    {
+      "id": "continuous-drawing",
+      "description": "One drawing event is submitted and processed on each audio tick.",
+      "expected_outcome": "completed-audio-continuous",
+      "expected_terminal": "completed",
+      "expected_audio_continuity": "model-continuous",
+      "expected_drawing_pressure": false
+    },
+    {
+      "id": "dense-drawing",
+      "description": "Drawing queue pressure is injected while the audio queue remains balanced.",
+      "expected_outcome": "completed-with-drawing-pressure",
+      "expected_terminal": "completed",
+      "expected_audio_continuity": "model-continuous",
+      "expected_drawing_pressure": true
+    },
+    {
+      "id": "rapid-color-switching",
+      "description": "Frequent color changes between drawing events with balanced audio.",
+      "expected_outcome": "completed-audio-continuous",
+      "expected_terminal": "completed",
+      "expected_audio_continuity": "model-continuous",
+      "expected_drawing_pressure": false
+    },
+    {
+      "id": "stop-during-audio",
+      "description": "Stop with audio and drawing queues active; all resources must be released.",
+      "expected_outcome": "stopped-and-clean",
+      "expected_terminal": "stopped",
+      "expected_audio_continuity": "model-continuous",
+      "expected_drawing_pressure": false
+    },
+    {
+      "id": "cancel-during-audio",
+      "description": "Cancel with audio and drawing queues active; all resources must be released.",
+      "expected_outcome": "cancelled-and-clean",
+      "expected_terminal": "cancelled",
+      "expected_audio_continuity": "model-continuous",
+      "expected_drawing_pressure": false
+    },
+    {
+      "id": "audio-capture-failure",
+      "description": "Inject an audio capture failure and verify terminal cleanup.",
+      "expected_outcome": "capture-failed-and-clean",
+      "expected_terminal": "failed",
+      "expected_failure": "capture",
+      "expected_audio_continuity": "unmeasured",
+      "expected_drawing_pressure": false
+    },
+    {
+      "id": "allocation-failure",
+      "description": "Reject the bounded PCM allocation before audio starts.",
+      "expected_outcome": "allocation-failed-and-clean",
+      "expected_terminal": "failed",
+      "expected_failure": "allocation",
+      "expected_audio_continuity": "unmeasured",
+      "expected_drawing_pressure": false
+    }
+  ],
+  "metric_schema": {
+    "sample_summary": ["p50", "p95", "p99", "max"],
+    "field_record": "{value, unit, provenance, sample_count, missing_reason}",
+    "provenance_enum": ["hardware", "host", "derived_static", "unmeasured/blocked"],
+    "observation_schema": "lab10-metrics-observation/v1",
+    "record_field_order": ["value", "unit", "provenance", "sample_count", "missing_reason"],
+    "percentile_semantics": "nearest-rank: sort finite samples ascending, use one-based rank ceil(p*n/100) clamped to [1,n]; p50/p95/p99/max are emitted only from real samples; an empty series is value=null, sample_count=0, with missing_reason",
+    "missing_behavior": "missing or unavailable evidence is value=null, sample_count=0, provenance=unmeasured/blocked unless an explicit field-level provenance identifies the attempted source; missing is never zero-filled or a pass",
+    "parser_bounds": {
+      "max_document_bytes": 2097152,
+      "max_output_bytes": 4194304,
+      "max_trace_events": 16384,
+      "max_samples_per_series": 4096,
+      "max_total_samples": 32768,
+      "max_repeated_runs": 256
+    },
+    "hardware_only_unmeasured_reason": "hardware-only metric; host cannot measure device task scheduling, stack high-water, heap free space, PSRAM free space, or fragmentation",
+    "hardware_only_fields": [
+      "capture_worker_busy_us",
+      "capture_worker_load_percent",
+      "capture_worker_stack_high_water_bytes",
+      "ui_task_busy_us",
+      "ui_task_load_percent",
+      "ui_task_stack_high_water_bytes",
+      "audio_task_busy_us",
+      "audio_task_load_percent",
+      "audio_task_stack_high_water_bytes",
+      "internal_free_bytes",
+      "internal_min_free_bytes",
+      "internal_largest_free_block_bytes",
+      "psram_free_bytes",
+      "psram_min_free_bytes",
+      "psram_largest_free_block_bytes"
+    ],
+    "sample_series": {
+      "touch_to_ink_us": ["touch_to_ink_us_p50", "touch_to_ink_us_p95", "touch_to_ink_us_p99", "touch_to_ink_us_max"],
+      "accepted_to_present_us": ["accepted_to_present_us_p50", "accepted_to_present_us_p95", "accepted_to_present_us_p99", "accepted_to_present_us_max"],
+      "ui_update_us": ["ui_update_us_p50", "ui_update_us_p95", "ui_update_us_p99", "ui_update_us_max"],
+      "invalidation_us": ["invalidation_us_p50", "invalidation_us_p95", "invalidation_us_p99", "invalidation_us_max"],
+      "drawing_latency_us": ["drawing_latency_us_p50", "drawing_latency_us_p95", "drawing_latency_us_p99", "drawing_latency_us_max"],
+      "stop_cleanup_us": ["stop_cleanup_us_p50", "stop_cleanup_us_p95", "stop_cleanup_us_p99", "stop_cleanup_us_max"],
+      "cancel_cleanup_us": ["cancel_cleanup_us_p50", "cancel_cleanup_us_p95", "cancel_cleanup_us_p99", "cancel_cleanup_us_max"]
+    },
+    "field_units": {
+      "count": [
+        "raw_report_count", "accepted_point_count", "coalesced_move_count", "rejected_report_count", "rejected_rail_touch_count", "rejected_outside_display_count", "rejected_second_touch_count", "duplicate_point_count", "edge_point_count", "stroke_count", "color_change_count", "palette_hit_count", "queue_depth_current", "queue_depth_high_water", "queue_overflow_count", "point_cap_hit_count", "duration_cap_hit_count", "terminal_event_count", "invalidation_count", "full_screen_invalidation_count", "logical_display_mapping_mismatch_count", "replay_2x_geometry_mismatch_count", "render_update_count", "render_pending_point_count", "render_backlog_high_water", "render_raster_ops_last_update", "render_raster_ops_high_water", "render_publication_ops_last_update", "render_publication_ops_high_water", "render_invalidation_count", "render_full_screen_invalidation_count", "render_stale_session_count", "render_cleanup_count", "audio_overrun_count", "audio_underrun_count", "audio_error_count", "drawing_event_count", "drawing_queue_depth", "drawing_queue_high_water", "drawing_queue_overflow_count", "drawing_color_change_count", "drawing_stroke_count", "stale_worker_mutation_count", "allocation_attempt_count", "allocation_failure_count", "final_stroke_count", "final_color_change_count", "pen_up_boundary_count", "trace_loss_count", "live_resources_after_terminal", "repeated_run_count"
+      ],
+      "us": [
+        "touch_to_ink_us_p50", "touch_to_ink_us_p95", "touch_to_ink_us_p99", "touch_to_ink_us_max", "accepted_to_present_us_p50", "accepted_to_present_us_p95", "accepted_to_present_us_p99", "accepted_to_present_us_max", "ui_update_us_p50", "ui_update_us_p95", "ui_update_us_p99", "ui_update_us_max", "invalidation_us_p50", "invalidation_us_p95", "invalidation_us_p99", "invalidation_us_max", "capture_worker_busy_us", "ui_task_busy_us", "audio_task_busy_us", "audio_underrun_duration_us", "drawing_latency_us_p50", "drawing_latency_us_p95", "drawing_latency_us_p99", "drawing_latency_us_max", "cleanup_time_us", "stop_cleanup_us_p50", "stop_cleanup_us_p95", "stop_cleanup_us_p99", "stop_cleanup_us_max", "cancel_cleanup_us_p50", "cancel_cleanup_us_p95", "cancel_cleanup_us_p99", "cancel_cleanup_us_max"
+      ],
+      "bytes": [
+        "retained_pcm_bytes", "transient_pcm_bytes", "retained_sketch_bytes", "transient_sketch_bytes", "retained_framebuffer_bytes", "transient_framebuffer_bytes", "largest_allocation_bytes", "capture_worker_stack_high_water_bytes", "ui_task_stack_high_water_bytes", "audio_task_stack_high_water_bytes", "internal_free_bytes", "internal_min_free_bytes", "internal_largest_free_block_bytes", "psram_free_bytes", "psram_min_free_bytes", "psram_largest_free_block_bytes", "memory_drift_bytes", "audio_buffer_occupancy_bytes", "audio_buffer_high_water_bytes", "final_format_bytes", "raw_trace_bytes", "repeated_run_memory_drift_bytes"
+      ],
+      "percent": ["capture_worker_load_percent", "ui_task_load_percent", "audio_task_load_percent"],
+      "px": ["final_logical_width", "final_logical_height"],
+      "enum": ["terminal_outcome", "render_mode", "render_role", "render_frame_phase", "render_lock_state", "audio_continuity_status"],
+      "boolean": ["render_presentation_pending"],
+      "version": ["final_format_version"],
+      "generation": ["render_frame_generation"],
+      "frames": ["audio_buffer_occupancy_frames", "audio_buffer_high_water_frames", "audio_frame_count_produced", "audio_frame_count_consumed"],
+      "samples": ["audio_sample_count_produced", "audio_sample_count_consumed"]
+    },
+    "fields": {
+      "input": [
+        "raw_report_count",
+        "accepted_point_count",
+        "coalesced_move_count",
+        "rejected_report_count",
+        "rejected_rail_touch_count",
+        "rejected_outside_display_count",
+        "rejected_second_touch_count",
+        "duplicate_point_count",
+        "edge_point_count",
+        "stroke_count",
+        "color_change_count",
+        "palette_hit_count",
+        "queue_depth_current",
+        "queue_depth_high_water",
+        "queue_overflow_count",
+        "point_cap_hit_count",
+        "duration_cap_hit_count",
+        "terminal_event_count",
+        "terminal_outcome"
+      ],
+      "latency_and_ui": [
+        "touch_to_ink_us_p50",
+        "touch_to_ink_us_p95",
+        "touch_to_ink_us_p99",
+        "touch_to_ink_us_max",
+        "accepted_to_present_us_p50",
+        "accepted_to_present_us_p95",
+        "accepted_to_present_us_p99",
+        "accepted_to_present_us_max",
+        "ui_update_us_p50",
+        "ui_update_us_p95",
+        "ui_update_us_p99",
+        "ui_update_us_max",
+        "invalidation_us_p50",
+        "invalidation_us_p95",
+        "invalidation_us_p99",
+        "invalidation_us_max",
+        "invalidation_count",
+        "full_screen_invalidation_count",
+        "logical_display_mapping_mismatch_count",
+        "replay_2x_geometry_mismatch_count"
+      ],
+      "rendering": [
+        "render_mode",
+        "render_role",
+        "render_update_count",
+        "render_pending_point_count",
+        "render_backlog_high_water",
+        "render_raster_ops_last_update",
+        "render_raster_ops_high_water",
+        "render_publication_ops_last_update",
+        "render_publication_ops_high_water",
+        "render_invalidation_count",
+        "render_full_screen_invalidation_count",
+        "render_frame_generation",
+        "render_frame_phase",
+        "render_presentation_pending",
+        "render_lock_state",
+        "render_stale_session_count",
+        "render_cleanup_count"
+      ],
+      "cpu_and_tasks": [
+        "capture_worker_busy_us",
+        "capture_worker_load_percent",
+        "capture_worker_stack_high_water_bytes",
+        "ui_task_busy_us",
+        "ui_task_load_percent",
+        "ui_task_stack_high_water_bytes",
+        "audio_task_busy_us",
+        "audio_task_load_percent",
+        "audio_task_stack_high_water_bytes"
+      ],
+      "audio": [
+        "audio_continuity_status",
+        "audio_buffer_occupancy_bytes",
+        "audio_buffer_high_water_bytes",
+        "audio_buffer_occupancy_frames",
+        "audio_buffer_high_water_frames",
+        "audio_overrun_count",
+        "audio_underrun_count",
+        "audio_underrun_duration_us",
+        "audio_frame_count_produced",
+        "audio_frame_count_consumed",
+        "audio_sample_count_produced",
+        "audio_sample_count_consumed",
+        "audio_error_count",
+        "retained_pcm_bytes",
+        "transient_pcm_bytes"
+      ],
+      "drawing_and_concurrency": [
+        "drawing_event_count",
+        "drawing_queue_depth",
+        "drawing_queue_high_water",
+        "drawing_queue_overflow_count",
+        "drawing_color_change_count",
+        "drawing_stroke_count",
+        "drawing_latency_us_p50",
+        "drawing_latency_us_p95",
+        "drawing_latency_us_p99",
+        "drawing_latency_us_max",
+        "stale_worker_mutation_count"
+      ],
+      "memory": [
+        "retained_sketch_bytes",
+        "transient_sketch_bytes",
+        "retained_framebuffer_bytes",
+        "transient_framebuffer_bytes",
+        "largest_allocation_bytes",
+        "allocation_attempt_count",
+        "allocation_failure_count",
+        "internal_free_bytes",
+        "internal_min_free_bytes",
+        "internal_largest_free_block_bytes",
+        "psram_free_bytes",
+        "psram_min_free_bytes",
+        "psram_largest_free_block_bytes",
+        "memory_drift_bytes"
+      ],
+      "storage_and_format": [
+        "final_format_bytes",
+        "final_format_version",
+        "final_logical_width",
+        "final_logical_height",
+        "final_stroke_count",
+        "final_color_change_count",
+        "pen_up_boundary_count",
+        "raw_trace_bytes",
+        "trace_loss_count"
+      ],
+      "cleanup_and_repetition": [
+        "cleanup_time_us",
+        "stop_cleanup_us_p50",
+        "stop_cleanup_us_p95",
+        "stop_cleanup_us_p99",
+        "stop_cleanup_us_max",
+        "cancel_cleanup_us_p50",
+        "cancel_cleanup_us_p95",
+        "cancel_cleanup_us_p99",
+        "cancel_cleanup_us_max",
+        "live_resources_after_terminal",
+        "repeated_run_count",
+        "repeated_run_memory_drift_bytes"
+      ]
+    }
+  },
+  "evidence": {
+    "required_provenance_per_field": true,
+    "required_artifacts": [
+      "run-manifest.json",
+      "raw serial trace or host trace",
+      "parsed metrics with missing-field reasons",
+      "audio-concurrency-model-result.json",
+      "workload identity and schema version",
+      "build/configuration IDs",
+      "2x display-versus-card replay image comparison",
+      "external synchronized screen/audio recording for hardware audio or scanout claims"
+    ],
+    "workflow_vs_experiment": "workflow completion does not imply experiment PASS; missing hardware evidence remains UNMEASURED or BLOCKED",
+    "parser_output": "family-link.lab10-parser-output/v1; metrics are the L10-07 aggregator output with parser identity, lifecycle markers, diagnostics, and evidence provenance",
+    "evidence_provenance": ["hardware", "host", "derived_static", "unmeasured/blocked"],
+    "trace_loss": "any trace loss makes affected measurements incomplete; it cannot be inferred as zero",
+    "no_credentials_or_media_payloads_in_trace": true
+  },
+  "hardware_prerequisites": {
+    "required_for_manual": [
+      "registered ESP32-S3 Box-3 kit and matching USB serial binding",
+      "clean LAB-10 firmware build with LAB10_READY readiness marker",
+      "external synchronized screen capture for visual/scanout claims",
+      "external synchronized microphone/speaker capture for audio claims"
+    ],
+    "required_for_deterministic": [
+      "registered kit and matching USB serial binding for a device run",
+      "synthetic workload identity, nonzero seed, and lab10-workload/v1 metadata"
+    ],
+    "not_provided_by_host_runner": [
+      "microphone, codec, DAC, DMA, speaker, display scanout, touch latency, task scheduling, heap/PSRAM/stack measurement"
+    ],
+    "missing_prerequisite_outcome": "UNMEASURED or BLOCKED; never synthesized"
+  },
+  "host_hardware_boundary": {
+    "preserved_residual_disclosures": [
+      "application IRAM has 1 byte free after successful link; L10-06 does not relax or remeasure that residual",
+      "hardware visual/touch/scanout/lock/resource/audio evidence remains unmeasured unless the required kit and synchronized capture are present"
+    ],
+    "host_may_verify": [
+      "coordinate mapping and palette hit geometry",
+      "capture state-machine transitions and bounds",
+      "queue and terminal-event rules",
+      "parser, schema, workload generator, and metric aggregation",
+      "deterministic renderer pressure and format-size calculations",
+      "render mode semantics, bounded update work, backlog drain, and host callbacks",
+      "bounded audio producer/consumer accounting, scenario expectations, drawing queue pressure, failure injection, and deterministic cleanup"
+    ],
+    "hardware_required_for": [
+      "visual fidelity and corner radius",
+      "touch-to-ink latency",
+      "LCD scanout or display continuity",
+      "LVGL invalidation and lock behavior",
+      "actual visible color fidelity and display publication timing",
+      "capture/UI/audio task load",
+      "actual internal/PSRAM/stack pressure",
+      "audio continuity, underruns, and synchronized screen/audio conclusions"
+    ],
+    "unmeasured_rule": "a host result must not be labeled as hardware evidence; absent or unsynchronized hardware artifacts are unmeasured/blocked",
+    "audio_model_boundary": "audio continuity, occupancy, overrun, underrun, sample/frame counts, and cleanup are host-model measurements only; DAC, microphone, codec, DMA, task scheduling, and audible continuity remain unmeasured/blocked"
+  },
+  "lab03_boundary": "LAB-03 is playback-only evidence. Its playback traces do not prove LAB-10 capture, touch, recording, or audio-concurrency behavior.",
+  "exclusions": [
+    "server fixture",
+    "send flow or upload",
+    "recipient selection or recipient flow",
+    "inbox integration",
+    "durable outbox or persistence policy",
+    "product networking",
+    "recording timer or on-screen recording indicator",
+    "historical v1 archive modifications or build-time dependencies",
+    "hardware performance claims from host-only tests",
+    "touch latency, scanout, LVGL lock timing, or hardware task/memory claims from host-only renderer tests",
+    "firmware audio/DAC health claims from the bounded host model",
+    "silent point, report, queue, or terminal truncation",
+    "promotion of provisional experiment bounds into product budgets"
+  ],
+  "reserved_commands": {
+    "status": "L10-08 runner and parser registered; hardware capture remains dependent on a registered kit and required synchronized evidence",
+    "help": "make lab.lab10.help",
+    "manual": "make lab.lab10 KIT=<kit>",
+    "scripted": "make lab.lab10.scripted KIT=<kit>",
+    "build": "make lab.lab10.build KIT=<kit>",
+    "flash": "make lab.lab10.flash KIT=<kit>",
+    "capture": "make lab.lab10.capture KIT=<kit>",
+    "parse": "make lab.lab10.parse RUN_ID=<run-id>",
+    "evidence": "docs/labs/evidence/lab-10/runs/<run-id>/"
+  }
+}

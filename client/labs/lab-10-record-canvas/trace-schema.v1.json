@@ -1,0 +1,1407 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "family-link.lab10-record-trace.schema/v1",
+  "title": "Family Link LAB-10 record-canvas trace",
+  "description": "Package-local trace envelope and event contract for bounded local capture. The optional audio_concurrency section is the L10-05 host-model evidence boundary; it does not authorize a server, send flow, product networking, or a hardware audio claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "document",
+    "trace_schema",
+    "run_id",
+    "lab_id",
+    "lab_revision",
+    "firmware_build_id",
+    "session_generation",
+    "workload",
+    "workload_metadata",
+    "evidence_kind",
+    "clock",
+    "bounds",
+    "events",
+    "terminal"
+  ],
+  "properties": {
+    "document": {
+      "const": "family-link.lab10-record-trace/v1"
+    },
+    "trace_schema": {
+      "const": "lab10-record-trace/v1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "lab_id": {
+      "const": "LAB-10"
+    },
+    "lab_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "firmware_build_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "session_generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 18446744073709551614,
+      "description": "Unsigned 64-bit capture generation. Generations are never reused or wrapped; the all-ones value is reserved for the internal admission-gate claim marker."
+    },
+    "workload": {
+      "enum": [
+        "manual",
+        "synthetic-human-like-v1"
+      ]
+    },
+    "workload_metadata": {
+      "$ref": "#/$defs/workload_metadata"
+    },
+    "evidence_kind": {
+      "$ref": "#/$defs/provenance"
+    },
+    "clock": {
+      "$ref": "#/$defs/clock"
+    },
+    "bounds": {
+      "$ref": "#/$defs/bounds"
+    },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/event"
+      },
+      "contains": {
+        "type": "object",
+        "required": ["event_name"],
+        "properties": {
+          "event_name": {
+            "const": "terminal"
+          }
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1,
+      "description": "Events are ordered by the declared monotonic clock. Exactly one terminal event is required; parsers must reject non-monotonic timestamps and any event after terminalization."
+    },
+    "terminal": {
+      "$ref": "#/$defs/terminal_summary"
+    },
+    "audio_concurrency": {
+      "$ref": "#/$defs/audio_concurrency"
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/metric_record"
+      },
+      "description": "Optional parsed metric records. The exact field inventory is defined by manifest.lab.json#/metric_schema/fields."
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "hardware",
+        "host",
+        "derived_static",
+        "unmeasured/blocked"
+      ]
+    },
+    "color": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "workload_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "schema_version",
+        "source",
+        "evidence_provenance",
+        "seed",
+        "generator_version",
+        "timestamp_jitter_bound_us",
+        "declared_features"
+      ],
+      "properties": {
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "schema_version": {
+          "const": "lab10-workload/v1"
+        },
+        "source": {
+          "enum": ["manual", "synthetic"]
+        },
+        "evidence_provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "seed": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "generator_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timestamp_jitter_bound_us": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        },
+        "declared_features": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "variable_spacing",
+              "variable_velocity",
+              "corners",
+              "pauses",
+              "pen_up_gaps",
+              "multiple_strokes",
+              "color_changes",
+              "edge_points",
+              "leave_reenter",
+              "background_erase",
+              "stop",
+              "cancel"
+            ]
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "synthetic"
+              }
+            },
+            "required": ["source"]
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "pattern": "^synthetic-[A-Za-z0-9._-]+-v1$"
+              },
+              "evidence_provenance": {
+                "const": "host"
+              },
+              "generator_version": {
+                "const": "synthetic-human-like-v1"
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "timestamp_jitter_bound_us": {
+                "const": 2000
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "manual"
+              }
+            },
+            "required": ["source"]
+          },
+          "then": {
+            "properties": {
+              "identity": {
+                "pattern": "^manual-[A-Za-z0-9._-]+$"
+              },
+              "seed": {
+                "type": "null"
+              },
+              "evidence_provenance": {
+                "enum": ["hardware", "unmeasured/blocked"]
+              },
+              "generator_version": {
+                "const": "not_applicable"
+              },
+              "timestamp_jitter_bound_us": {
+                "const": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    "clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "unit",
+        "timestamp_jitter_bound_us"
+      ],
+      "properties": {
+        "source": {
+          "enum": [
+            "monotonic_device",
+            "monotonic_host"
+          ]
+        },
+        "unit": {
+          "const": "us"
+        },
+        "timestamp_jitter_bound_us": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "monotonic_device"
+              }
+            },
+            "required": ["source"]
+          },
+          "then": {
+            "properties": {
+              "timestamp_jitter_bound_us": {
+                "const": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "source": {
+                "const": "monotonic_host"
+              }
+            },
+            "required": ["source"]
+          },
+          "then": {
+            "properties": {
+              "timestamp_jitter_bound_us": {
+                "const": 2000
+              }
+            }
+          }
+        }
+      ]
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lcd_width_px",
+        "lcd_height_px",
+        "canvas_width_px",
+        "canvas_height_px",
+        "rail_origin_x_px",
+        "logical_width",
+        "logical_height",
+        "duration_cap_ms",
+        "accepted_point_cap",
+        "queue_capacity",
+        "minimum_move_distance_px"
+      ],
+      "properties": {
+        "lcd_width_px": {
+          "const": 320
+        },
+        "lcd_height_px": {
+          "const": 240
+        },
+        "canvas_width_px": {
+          "const": 240
+        },
+        "canvas_height_px": {
+          "const": 240
+        },
+        "rail_origin_x_px": {
+          "const": 240
+        },
+        "logical_width": {
+          "const": 120
+        },
+        "logical_height": {
+          "const": 120
+        },
+        "duration_cap_ms": {
+          "const": 180000
+        },
+        "accepted_point_cap": {
+          "const": 4096
+        },
+        "queue_capacity": {
+          "const": 16
+        },
+        "minimum_move_distance_px": {
+          "const": 2
+        }
+      }
+    },
+    "terminal_outcome": {
+      "enum": [
+        "completed",
+        "stopped",
+        "cancelled",
+        "duration_cap",
+        "point_cap",
+        "queue_overflow",
+        "failed"
+      ]
+    },
+    "terminal_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "outcome",
+        "event_count"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "pattern": "^e-[0-9]+$"
+        },
+        "outcome": {
+          "$ref": "#/$defs/terminal_outcome"
+        },
+        "event_count": {
+          "const": 1
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "event_name",
+        "t_us",
+        "provenance",
+        "phase"
+      ],
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "pattern": "^e-[0-9]+$"
+        },
+        "event_name": {
+          "enum": [
+            "capture_started",
+            "touch_report",
+            "touch_accepted",
+            "touch_rejected",
+            "point_coalesced",
+            "palette_changed",
+            "stroke_started",
+            "stroke_ended",
+            "ui_update",
+            "render_update",
+            "audio_health",
+            "allocation",
+            "cleanup",
+            "terminal",
+            "trace_loss"
+          ]
+        },
+        "t_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ideal_t_us": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Synthetic source schedule before declared timestamp jitter; omitted for manual traces."
+        },
+        "timestamp_jitter_us": {
+          "type": "integer",
+          "minimum": -2000,
+          "maximum": 2000,
+          "description": "Synthetic timestamp minus ideal_t_us. This is a generator bound, not hardware touch latency."
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "phase": {
+          "enum": [
+            "NONE",
+            "DOWN",
+            "MOVE",
+            "UP",
+            "LEAVE",
+            "PALETTE_CHANGE",
+            "TERMINAL"
+          ]
+        },
+        "raw_touch_id": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "raw_x": {
+          "type": "integer",
+          "minimum": -32768,
+          "maximum": 32767
+        },
+        "raw_y": {
+          "type": "integer",
+          "minimum": -32768,
+          "maximum": 32767
+        },
+        "display_x": {
+          "type": "integer",
+          "minimum": -32768,
+          "maximum": 32767
+        },
+        "display_y": {
+          "type": "integer",
+          "minimum": -32768,
+          "maximum": 32767
+        },
+        "logical_x": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 119
+        },
+        "logical_y": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 119
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "stroke_id": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "color": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/color"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selected_color": {
+          "$ref": "#/$defs/color"
+        },
+        "color_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "boundary": {
+          "enum": [
+            "NONE",
+            "STROKE_START",
+            "STROKE_CONTINUE",
+            "STROKE_END",
+            "PEN_UP_GAP",
+            "COLOR_CHANGE",
+            "TERMINAL"
+          ]
+        },
+        "pause_before_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pen_up_gap_before_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "outcome": {
+          "$ref": "#/$defs/terminal_outcome"
+        },
+        "failure_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duration_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "update_kind": {
+          "enum": [
+            "ink",
+            "palette",
+            "state",
+            "cleanup"
+          ]
+        },
+        "render_mode": {
+          "enum": [
+            "direct_point",
+            "segment",
+            "bounded_batch",
+            "whole_frame"
+          ]
+        },
+        "render_role": {
+          "enum": ["control", "candidate"]
+        },
+        "frame_phase": {
+          "enum": ["idle", "clear", "replay", "publish"]
+        },
+        "lock_state": {
+          "enum": ["unknown", "ui_task_owned", "acquired", "released", "failed"]
+        },
+        "points_processed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "raster_ops": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "publication_ops": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "backlog_points": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "raster_budget": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 512
+        },
+        "publication_budget": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 512
+        },
+        "point_budget": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "frame_generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "presentation_pending": {
+          "type": "boolean"
+        },
+        "invalidation_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "full_screen_invalidation": {
+          "type": "boolean"
+        },
+        "audio_continuity_status": {
+          "enum": [
+            "continuous",
+            "overrun",
+            "underrun",
+            "not_measured",
+            "blocked"
+          ]
+        },
+        "audio_occupancy_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "audio_high_water_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "resource": {
+          "enum": [
+            "sketch",
+            "framebuffer",
+            "pcm",
+            "queue",
+            "worker",
+            "ui"
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "allocation_status": {
+          "enum": [
+            "attempted",
+            "succeeded",
+            "failed",
+            "released"
+          ]
+        },
+        "cleanup_kind": {
+          "enum": [
+            "stop",
+            "cancel",
+            "terminal",
+            "repeated_run"
+          ]
+        },
+        "live_resources": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lost_event_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "terminal_event_count": {
+          "const": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "capture_started"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "properties": {
+              "phase": {
+                "const": "NONE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "enum": [
+                  "touch_report",
+                  "touch_accepted",
+                  "touch_rejected",
+                  "point_coalesced"
+                ]
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": [
+              "raw_touch_id",
+              "raw_x",
+              "raw_y",
+              "display_x",
+              "display_y",
+              "accepted",
+              "stroke_id",
+              "color"
+            ],
+            "properties": {
+              "phase": {
+                "enum": ["DOWN", "MOVE", "UP", "LEAVE"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "touch_accepted"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["logical_x", "logical_y"],
+            "properties": {
+              "accepted": {
+                "const": true
+              },
+              "phase": {
+                "enum": ["DOWN", "MOVE"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "touch_rejected"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["reason"],
+            "properties": {
+              "accepted": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "point_coalesced"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["reason"],
+            "properties": {
+              "accepted": {
+                "const": false
+              },
+              "phase": {
+                "const": "MOVE"
+              },
+              "reason": {
+                "const": "coalesced"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "palette_changed"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["selected_color"],
+            "properties": {
+              "phase": {
+                "const": "PALETTE_CHANGE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "stroke_started"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["stroke_id", "color"],
+            "properties": {
+              "phase": {
+                "const": "DOWN"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "stroke_ended"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["stroke_id"],
+            "properties": {
+              "phase": {
+                "enum": ["UP", "LEAVE"]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "ui_update"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["duration_us", "update_kind", "invalidation_count"],
+            "properties": {
+              "phase": {
+                "const": "NONE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "render_update"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": [
+              "render_mode",
+              "render_role",
+              "frame_phase",
+              "lock_state",
+              "points_processed",
+              "raster_ops",
+              "publication_ops",
+              "backlog_points",
+              "raster_budget",
+              "publication_budget",
+              "point_budget",
+              "frame_generation",
+              "invalidation_count",
+              "full_screen_invalidation",
+              "presentation_pending"
+            ],
+            "properties": {
+              "phase": {
+                "const": "NONE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "audio_health"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": [
+              "audio_continuity_status",
+              "audio_occupancy_bytes",
+              "audio_high_water_bytes"
+            ],
+            "properties": {
+              "phase": {
+                "const": "NONE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "allocation"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["resource", "bytes", "allocation_status"],
+            "properties": {
+              "phase": {
+                "const": "NONE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "cleanup"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["cleanup_kind", "duration_us", "live_resources"],
+            "properties": {
+              "phase": {
+                "const": "NONE"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "terminal"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["outcome", "terminal_event_count"],
+            "properties": {
+              "phase": {
+                "const": "TERMINAL"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "event_name": {
+                "const": "trace_loss"
+              }
+            },
+            "required": ["event_name"]
+          },
+          "then": {
+            "required": ["reason", "lost_event_count"],
+            "properties": {
+              "phase": {
+                "const": "NONE"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "audio_concurrency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "session_token",
+        "scenario_id",
+        "expected_outcome",
+        "observed_outcome",
+        "failure",
+        "expectation_met",
+        "provenance",
+        "unknown_reason",
+        "hardware_audio_health_measured",
+        "resources_released",
+        "cleanup_timestamps_recorded",
+        "terminal_timestamp_us",
+        "cleanup_timestamp_us",
+        "metrics"
+      ],
+      "properties": {
+        "session_token": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615,
+          "description": "Nonzero host audio-model session token returned by lab10_audio_start; tokens are never reused by one model."
+        },
+        "scenario_id": {
+          "enum": [
+            "no-stroke-control",
+            "sparse-drawing",
+            "continuous-drawing",
+            "dense-drawing",
+            "rapid-color-switching",
+            "stop-during-audio",
+            "cancel-during-audio",
+            "audio-capture-failure",
+            "allocation-failure"
+          ]
+        },
+        "expected_outcome": {
+          "enum": [
+            "completed-audio-continuous",
+            "completed-with-drawing-pressure",
+            "stopped-and-clean",
+            "cancelled-and-clean",
+            "capture-failed-and-clean",
+            "allocation-failed-and-clean"
+          ]
+        },
+        "observed_outcome": {
+          "enum": ["completed", "stopped", "cancelled", "failed"]
+        },
+        "failure": {
+          "enum": ["none", "capture", "allocation", "invalid-configuration"]
+        },
+        "provenance": {
+          "enum": ["host", "derived_static", "unmeasured/blocked"]
+        },
+        "unknown_reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hardware_audio_health_measured": {
+          "const": false
+        },
+        "resources_released": {
+          "type": "boolean"
+        },
+        "cleanup_timestamps_recorded": {
+          "type": "boolean"
+        },
+        "terminal_timestamp_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cleanup_timestamp_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expectation_met": {
+          "type": "boolean"
+        },
+        "metrics": {
+          "type": "object",
+          "minProperties": 1,
+          "required": [
+            "audio_continuity_status",
+            "audio_buffer_occupancy_bytes",
+            "audio_buffer_high_water_bytes",
+            "audio_buffer_occupancy_frames",
+            "audio_buffer_high_water_frames",
+            "audio_overrun_count",
+            "audio_underrun_count",
+            "audio_underrun_duration_us",
+            "audio_frame_count_produced",
+            "audio_frame_count_consumed",
+            "audio_sample_count_produced",
+            "audio_sample_count_consumed",
+            "audio_error_count",
+            "retained_pcm_bytes",
+            "transient_pcm_bytes",
+            "drawing_event_count",
+            "drawing_queue_depth",
+            "drawing_queue_high_water",
+            "drawing_queue_overflow_count",
+            "drawing_color_change_count",
+            "drawing_stroke_count",
+            "drawing_latency_us_p50",
+            "drawing_latency_us_p95",
+            "drawing_latency_us_p99",
+            "drawing_latency_us_max",
+            "stale_worker_mutation_count",
+            "retained_sketch_bytes",
+            "transient_sketch_bytes",
+            "retained_framebuffer_bytes",
+            "transient_framebuffer_bytes",
+            "largest_allocation_bytes",
+            "allocation_attempt_count",
+            "allocation_failure_count",
+            "internal_free_bytes",
+            "internal_min_free_bytes",
+            "internal_largest_free_block_bytes",
+            "psram_free_bytes",
+            "psram_min_free_bytes",
+            "psram_largest_free_block_bytes",
+            "memory_drift_bytes",
+            "cleanup_time_us",
+            "stop_cleanup_us_p50",
+            "stop_cleanup_us_p95",
+            "stop_cleanup_us_p99",
+            "stop_cleanup_us_max",
+            "cancel_cleanup_us_p50",
+            "cancel_cleanup_us_p95",
+            "cancel_cleanup_us_p99",
+            "cancel_cleanup_us_max",
+            "live_resources_after_terminal",
+            "repeated_run_count",
+            "repeated_run_memory_drift_bytes"
+          ],
+          "additionalProperties": {
+            "$ref": "#/$defs/metric_record"
+          },
+          "description": "The ordered model and evidence metric inventory is defined by manifest.lab.json#/metric_schema/fields and mirrored in x-contract.metric_inventory. Every record carries provenance and missing_reason."
+        }
+      }
+    },
+    "metric_record": {
+      "type": "object",
+      "description": "Typed field record. A null value is missing evidence, never a zero or pass. Percentile records are produced only from real samples by the package aggregator. An unmeasured/blocked record must use value=null, sample_count=0, and a non-empty missing_reason.",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "unit",
+        "provenance",
+        "sample_count",
+        "missing_reason"
+      ],
+      "properties": {
+        "value": {},
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "sample_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32768
+        },
+        "missing_reason": {
+          "type": ["string", "null"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "provenance": {
+                "const": "unmeasured/blocked"
+              }
+            },
+            "required": ["provenance"]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              },
+              "sample_count": {
+                "const": 0
+              },
+              "missing_reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "x-contract": {
+    "runner_contract": {
+      "adapter_identity": "lab10",
+      "adapter_version": "v1",
+      "parser_document": "family-link.lab10-parser-output/v1",
+      "parser_identity": "lab10-record-parser",
+      "parser_version": "v1",
+      "resolved_commands": {
+        "manual": "make lab.lab10 KIT=<kit>",
+        "deterministic": "make lab.lab10.scripted KIT=<kit>",
+        "parse": "make lab.lab10.parse RUN_ID=<run-id>"
+      },
+      "markers": ["LAB10_READY", "LAB10_RUN", "LAB10_SCENARIO", "LAB10_SCRIPTED_DRAWING", "LAB10_CANCEL"],
+      "evidence_provenance": ["hardware", "host", "derived_static", "unmeasured/blocked"],
+      "hardware_prerequisites": [
+        "registered ESP32-S3 Box-3 kit",
+        "LAB10_READY build identity",
+        "synchronized screen/audio evidence for hardware claims"
+      ],
+      "missing_evidence_rule": "Do not synthesize hardware, audio, display, touch, task, heap, or scanout results."
+    },
+    "metric_field_source": "manifest.lab.json#/metric_schema/fields",
+    "metric_unit_source": "manifest.lab.json#/metric_schema/field_units",
+    "metric_observation_schema": "lab10-metrics-observation/v1",
+    "metric_record_field_order": [
+      "value",
+      "unit",
+      "provenance",
+      "sample_count",
+      "missing_reason"
+    ],
+    "percentile_semantics": "nearest-rank: sort finite samples ascending, use one-based rank ceil(p*n/100) clamped to [1,n]; p50/p95/p99/max are emitted only from real samples; empty input is missing, never zero",
+    "missing_behavior": "missing or unavailable evidence is value=null, sample_count=0, and an explicit missing_reason; unmeasured/blocked records reject supplied numeric values and samples; hardware-only fields also remain missing when provenance is host or derived_static",
+    "instrumentation_bounds": {
+      "max_document_bytes": 2097152,
+      "max_output_bytes": 4194304,
+      "max_trace_events": 16384,
+      "max_samples_per_series": 4096,
+      "max_total_samples": 32768,
+      "max_repeated_runs": 256
+    },
+    "metric_inventory": [
+      "raw_report_count",
+      "accepted_point_count",
+      "coalesced_move_count",
+      "rejected_report_count",
+      "rejected_rail_touch_count",
+      "rejected_outside_display_count",
+      "rejected_second_touch_count",
+      "duplicate_point_count",
+      "edge_point_count",
+      "stroke_count",
+      "color_change_count",
+      "palette_hit_count",
+      "queue_depth_current",
+      "queue_depth_high_water",
+      "queue_overflow_count",
+      "point_cap_hit_count",
+      "duration_cap_hit_count",
+      "terminal_event_count",
+      "terminal_outcome",
+      "touch_to_ink_us_p50",
+      "touch_to_ink_us_p95",
+      "touch_to_ink_us_p99",
+      "touch_to_ink_us_max",
+      "accepted_to_present_us_p50",
+      "accepted_to_present_us_p95",
+      "accepted_to_present_us_p99",
+      "accepted_to_present_us_max",
+      "ui_update_us_p50",
+      "ui_update_us_p95",
+      "ui_update_us_p99",
+      "ui_update_us_max",
+      "invalidation_us_p50",
+      "invalidation_us_p95",
+      "invalidation_us_p99",
+      "invalidation_us_max",
+      "invalidation_count",
+      "full_screen_invalidation_count",
+      "logical_display_mapping_mismatch_count",
+      "replay_2x_geometry_mismatch_count",
+      "render_mode",
+      "render_role",
+      "render_update_count",
+      "render_pending_point_count",
+      "render_backlog_high_water",
+      "render_raster_ops_last_update",
+      "render_raster_ops_high_water",
+      "render_publication_ops_last_update",
+      "render_publication_ops_high_water",
+      "render_invalidation_count",
+      "render_full_screen_invalidation_count",
+      "render_frame_generation",
+      "render_frame_phase",
+      "render_presentation_pending",
+      "render_lock_state",
+      "render_stale_session_count",
+      "render_cleanup_count",
+      "capture_worker_busy_us",
+      "capture_worker_load_percent",
+      "capture_worker_stack_high_water_bytes",
+      "ui_task_busy_us",
+      "ui_task_load_percent",
+      "ui_task_stack_high_water_bytes",
+      "audio_task_busy_us",
+      "audio_task_load_percent",
+      "audio_task_stack_high_water_bytes",
+      "audio_continuity_status",
+      "audio_buffer_occupancy_bytes",
+      "audio_buffer_high_water_bytes",
+      "audio_buffer_occupancy_frames",
+      "audio_buffer_high_water_frames",
+      "audio_overrun_count",
+      "audio_underrun_count",
+      "audio_underrun_duration_us",
+      "audio_frame_count_produced",
+      "audio_frame_count_consumed",
+      "audio_sample_count_produced",
+      "audio_sample_count_consumed",
+      "audio_error_count",
+      "retained_pcm_bytes",
+      "transient_pcm_bytes",
+      "drawing_event_count",
+      "drawing_queue_depth",
+      "drawing_queue_high_water",
+      "drawing_queue_overflow_count",
+      "drawing_color_change_count",
+      "drawing_stroke_count",
+      "drawing_latency_us_p50",
+      "drawing_latency_us_p95",
+      "drawing_latency_us_p99",
+      "drawing_latency_us_max",
+      "stale_worker_mutation_count",
+      "retained_sketch_bytes",
+      "transient_sketch_bytes",
+      "retained_framebuffer_bytes",
+      "transient_framebuffer_bytes",
+      "largest_allocation_bytes",
+      "allocation_attempt_count",
+      "allocation_failure_count",
+      "internal_free_bytes",
+      "internal_min_free_bytes",
+      "internal_largest_free_block_bytes",
+      "psram_free_bytes",
+      "psram_min_free_bytes",
+      "psram_largest_free_block_bytes",
+      "memory_drift_bytes",
+      "final_format_bytes",
+      "final_format_version",
+      "final_logical_width",
+      "final_logical_height",
+      "final_stroke_count",
+      "final_color_change_count",
+      "pen_up_boundary_count",
+      "raw_trace_bytes",
+      "trace_loss_count",
+      "cleanup_time_us",
+      "stop_cleanup_us_p50",
+      "stop_cleanup_us_p95",
+      "stop_cleanup_us_p99",
+      "stop_cleanup_us_max",
+      "cancel_cleanup_us_p50",
+      "cancel_cleanup_us_p95",
+      "cancel_cleanup_us_p99",
+      "cancel_cleanup_us_max",
+      "live_resources_after_terminal",
+      "repeated_run_count",
+      "repeated_run_memory_drift_bytes"
+    ],
+    "workload_contract": {
+      "schema_version": "lab10-workload/v1",
+      "synthetic_generator_version": "synthetic-human-like-v1",
+      "synthetic_identity_examples": [
+        "synthetic-sparse-multicolor-v1",
+        "synthetic-continuous-multicolor-v1",
+        "synthetic-dense-multicolor-v1",
+        "synthetic-edge-corner-v1",
+        "synthetic-rapid-color-switch-v1",
+        "synthetic-background-erase-v1",
+        "synthetic-stop-during-stroke-v1",
+        "synthetic-cancel-during-audio-v1"
+      ],
+      "synthetic_provenance": "host",
+      "timestamp_jitter_rule": "actual timestamp minus ideal source schedule is bounded by ±2000 us; this bound is not a touch-latency measurement",
+      "manual_rule": "manual traces use stable manual-* identities, seed=null, generator_version=not_applicable, device monotonic timestamps, and hardware provenance when hardware is actually exercised",
+      "evidence_boundary": "synthetic host traces may validate generator, schema, bounds, aggregation, and deterministic renderer pressure; they must never be labeled hardware touch latency, display scanout, audio continuity, or task scheduling"
+    },
+    "session_generation_semantics": "session_generation is the nonzero unsigned 64-bit lab10_capture_session_id_t for this capture. It is permanently consumed, never reused, and never wrapped; generation exhaustion fails closed. The all-ones value is reserved only as an internal admission-gate claim marker and is not a valid trace generation.",
+    "audio_session_token_semantics": "audio_concurrency.session_token is the nonzero per-model lab10_audio_session_token_t returned by lab10_audio_start. Each restart consumes a new token; stale worker calls are rejected and counted without changing current queues or counters.",
+    "audio_cleanup_timestamp_semantics": "The host model records terminal_timestamp_us and cleanup_timestamp_us from the same deterministic monotonic schedule. cleanup_time_us is their nonnegative difference. Zero is a valid first timestamp; an allocation failure before the schedule records no timestamps and reports zero cleanup duration.",
+    "phase_semantics": {
+      "DOWN": "Starts one active stroke when the first touch is routed to the canvas and capacity remains.",
+      "MOVE": "Belongs to the active first touch; accepted points retain stroke identity and selected color.",
+      "UP": "Closes the active stroke and is a boundary event, not an additional accepted point.",
+      "LEAVE": "Closes the active stroke; a later DOWN starts a new stroke.",
+      "PALETTE_CHANGE": "Selects a color for subsequent points and never rewrites prior points.",
+      "TERMINAL": "Ends the capture exactly once; no later point or worker mutation is valid."
+    },
+    "color_semantics": "Colors are six-digit display colors. Palette/rail touches may emit palette_changed but never append canvas ink; a color change applies only to subsequent points.",
+    "stroke_semantics": "stroke_id is a positive per-capture identifier. Accepted DOWN/MOVE points carry the active stroke_id and color; UP/LEAVE carries the stroke being closed.",
+    "coordinate_semantics": "Raw and display coordinates are retained without clamping, accepted canvas points use 0 <= x < 240 and 0 <= y < 240, and logical coordinates are floor(display/2) clamped to 0..119.",
+    "coalescing_semantics": "Only a consecutive MOVE for the same stroke, selected color, and logical coordinate with Euclidean display distance < 2 px may be coalesced. DOWN, UP, color changes, logical changes, stroke boundaries, second-touch rejects, capacity outcomes, and terminal events are never coalesced.",
+    "terminal_uniqueness": "The events array must contain exactly one terminal event, terminal.event_count must be 1, and the parser must reject duplicate or post-terminal terminal events.",
+    "ordering_rule": "t_us is from one declared monotonic clock and must be non-decreasing in event order; wall-clock time is not valid for ordering, duration, or latency.",
+    "loss_rule": "Any dropped, malformed, oversized, or otherwise missing trace event must be represented by trace_loss and makes affected measurements incomplete; loss is never zero-filled.",
+    "adapter_touch_semantics": "The current LVGL adapter is single-touch and forwards touch_id=0 for canvas, rail, and palette events. Native capture tests may inject nonzero touch IDs; multi-touch hardware evidence is unmeasured/unavailable.",
+    "rendering_semantics": {
+      "direct_point": "Control mode consumes at most one accepted point per update and publishes one logical pixel without interpolation.",
+      "segment": "Candidate mode consumes at most one accepted point per update and rasterizes only a same-stroke, same-color Bresenham segment in bounded steps.",
+      "bounded_batch": "Candidate mode uses the segment rule with independent point, raster, and publication budgets.",
+      "whole_frame": "Candidate mode stages bounded clear/replay work in a second logical framebuffer and publishes bounded chunks; it never replays the full history or publishes all 120x120 pixels in one update.",
+      "publication": "Each published logical pixel is the only input to the LVGL adapter, which expands it to a fixed 2x2 display block. Host callbacks expose raster, publication, invalidation, backlog, and lock-state observations.",
+      "evidence_boundary": "Host mode equivalence and work bounds do not establish touch latency, display scanout, LVGL lock timing, visual fidelity, or hardware performance."
+    }
+  }
+}

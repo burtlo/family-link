@@ -14,6 +14,7 @@ class LabRunAdapter(Protocol):
 _ADAPTER_MODULES = {
     "generic": "lab_runner_adapter",
     "lab02": "lab_adapter_lab02",
+    "lab10": "lab_adapter_lab10",
 }
 
 

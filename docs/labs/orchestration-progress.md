@@ -570,3 +570,635 @@ P7 — Event provenance and per-source loss accounting. In scope: shared v2 even
 - Final hardware run: `20261017-scripted-phaseb-run-36b925e5`; `make lab.lab02.scripted KIT=lynn` completed with workflow PASS / experiment UNMEASURED. An independent runtime verifier confirmed all 294 raw serial resource samples match both `events.jsonl` and `metrics.json`; 40 `snap_start`/`snap_end` pairs match by snap ID and use `snap_origin=harness`; fresh `LAB02_READY` build identity matches manifest and metrics; `HARNESS_DONE` is present; host and firmware loss counters are zero; managed server expected shutdown and cleanup passed. Minimum `internal_min_free_bytes` was 8,819 bytes.
 - Evidence limitation: this was a scripted nominal lifecycle run. It is UNMEASURED and makes no performance or manual-touch claim.
 - Commit and push: pending.
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-001 -->
+# Orchestration progress — LAB-10 record canvas and media budget
+
+- Run ID: `20261017-L10-RECORD-CANVAS-001`
+- Status: in_progress
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Specification: external LAB-10 brief plus the active roadmap, sketch experience, lab conventions, and v1 assessment context named in the map
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Baseline revision: `83ba74bbb6c5384d60e6d938cbd70ca2be4ad5cb`
+- Started: 2026-10-17 America/Chicago
+- Auto-continue: enabled by user; stop only for human intervention, unsafe scope, blocked evidence, or failed repair cap
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Repair limit: 1 rerun per package
+- Commit/PR/publish actions: none authorized
+
+## Baseline protected paths
+
+Tracked modified paths at dispatch: `Makefile`; `config/labs.registry.yaml`; `config/labs/labs.registry.schema.v1.json`; `docs/labs/README.md`; `docs/labs/evidence/README.md`; `scripts/lab_adapter_registry.py`; `scripts/lab_host.py`.
+
+Protected untracked LAB-03 paths and evidence include `client/labs/lab-03-media-playback/`, `server/labs/lab-03-media/`, `scripts/lab03_build.py`, `scripts/lab_adapter_lab03.py`, `scripts/tests/test_lab03.py`, `docs/labs/evidence/lab-03/`, `docs/labs/evidence/lab-05/runs/`, and all existing `docs/labs/evidence/lab-02/runs/` artifacts. Ignored workspace outputs such as `.venv/`, `build/`, `artifacts/`, `data/`, `logs/`, managed component trees, SDK configs, and agent-run logs are also protected and are not cleanup targets.
+
+## Package queue
+
+| Package | Dependencies | Implement | Verify | Repair attempts | State |
+|---|---|---|---|---:|---|
+| L10-01 | — | completed | pass | 1 | current pass; JSON-schema validator unavailable, JSON/static checks passed |
+| L10-02 | L10-01 | completed | pass | 1 | current pass; hardware visual/touch evidence not run |
+| L10-03 | L10-01, L10-02 | completed | failed after repair | 1 | blocked on unresolved concurrent submit/terminalization race; touch_id=0 adapter limitation also needs documentation |
+| L10-04 | L10-03 | not_started | not_started | 0 | queued |
+| L10-05 | L10-03, L10-04 | not_started | not_started | 0 | queued |
+| L10-06 | L10-03, L10-04 | not_started | not_started | 0 | queued |
+| L10-07 | L10-03, L10-04, L10-05, L10-06 | not_started | not_started | 0 | queued |
+| L10-08 | L10-01…L10-07 | not_started | not_started | 0 | queued |
+| L10-09 | L10-03, L10-05, L10-07, L10-08 | not_started | not_started | 0 | queued |
+
+## Delegation contract
+
+Implementation packages are dispatched one at a time to a generic implementation agent with the frozen brief and protected baseline. Each is followed by a fresh generic read-only verifier with no continuation of the implementer context. Verifiers inspect actual repository state and must return structured `pass`, `fail`, or `blocked` evidence. A failed package gets at most one fresh repair implementation and another fresh verifier.
+
+## Package L10-01: evidence baseline and experiment contract
+
+- Definition fingerprint: `L10-01` brief plus dependency/verification section from map fingerprint `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Implementer invocations: `01a14c9c-330b-7700-9e2e-35bd42fe90c3`; repair `01a14ca0-0246-79e1-9960-7eaeb0a93b12`
+- Implementer result: completed. Added the LAB-10 README, manifest, evidence template, package-local trace schema, exact 91-field metric inventory, geometry/mapping/palette/capture bounds, provenance rules, workloads, and explicit exclusions.
+- Current changed paths: `client/labs/lab-10-record-canvas/README.md`, `client/labs/lab-10-record-canvas/manifest.lab.json`, `client/labs/lab-10-record-canvas/trace-schema.v1.json`, `docs/labs/evidence/lab-10/TEMPLATE-REPORT.md`
+- Repair: 1 allowed repair addressed missing trace-schema artifact, exact README field inventory, and `server_path`/`fixture_schema` manifest convention.
+- Verifier invocation: `01a14ca2-8594-7b51-96b8-6745101f55ee` (fresh read-only context)
+- Verifier verdict: pass. Independent checks passed for artifact existence, manifest convention, exact 91-field consistency, geometry/palette/bounds, clock/workload/evidence boundaries, trace-schema static contract, JSON parsing, archive cleanliness, and protected-file scope.
+- Limitation: Draft 2020-12 validator unavailable (`jsonschema`, Ajv, and json_schemer not installed); static schema inspection and JSON parsing passed. Existing shared registry validation remains unavailable for the same missing dependency.
+- Commit/PR/publish actions: none.
+- Final state: pass.
+
+## Package L10-02: h19-based drawing interface
+
+- Definition fingerprint: `L10-02` brief plus dependency/verification section from map fingerprint `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Implementer invocation: `01a14ca4-b4c0-7c41-a067-43586f7dafeb`; repair `01a14cb0-40ef-7dd3-99a0-fde2cda799ea`
+- Implementer result: completed. Added the ESP-IDF/LVGL project, 320×240 layout, 240×240 canvas, 80×240 rail, six swatches, palette state, FAB/ring transitions, terminal states, bounded invalidation hooks, and native tests.
+- Repair: 1 allowed repair fixed rectangular LVGL swatch false positives by routing actual input coordinates through the circular model hit test, and prevented entry/exit animation overlap with guards and regressions.
+- Verifier invocation: `01a14cb3-37e9-7651-92fb-30b6db7323a7` (fresh read-only context)
+- Verifier verdict: pass. Geometry, routing, circular hit testing, mapping, bounded invalidation, transitions, terminal states, exclusions, native tests, and current-source build evidence passed.
+- Limitation: no hardware flash, display, touch, physical-button, or synchronized visual run; these remain unmeasured.
+- Current scope: new `client/labs/lab-10-record-canvas/` tree only; no L10-specific shared-runner or archive changes.
+- Commit/PR/publish actions: none.
+- Final state: pass.
+
+## Package L10-03: bounded real touch capture
+
+- Definition fingerprint: `L10-03` brief plus dependency/verification section from map fingerprint `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Implementer invocation: `01a14cb5-e3ef-7b02-bc7f-633065554edd`
+- Implementer result: completed. Added the bounded raw FIFO, accepted-point arena, route/phase/color validation, stroke and coalescing rules, terminal paths, stale-session guards, UI capture wiring, native tests, sanitizer checks, and an ESP-IDF build.
+- Fresh verifier invocation: `01a14cbf-6d78-7a30-b730-71c7220150ac`
+- Fresh verifier verdict: fail. Independent checks passed for routing, point representation, phase/stroke behavior, fixed arena/clock/stale-session handling, UI forwarding, strict native tests, sanitizer tests, JSON parsing, and ESP-IDF build. Two major defects were found: queue overflow was a deferred request that could be superseded by stop/cancel/complete or duration handling, and `release_result()` left snapshot `point_count` nonzero while `points` was null.
+- Repair: 1 allowed repair dispatched to a fresh implementation agent for authoritative overflow precedence/accounting and safe post-release snapshot semantics, with regression tests.
+- Repair result: completed. Queue-overflow precedence and safe post-release snapshot semantics were implemented; strict native, sanitizer, focused regression, and ESP-IDF build checks passed.
+- Fresh post-repair verifier invocation: `01a14ccb-0e11-7962-985f-aa925bb85f8b`
+- Fresh post-repair verifier verdict: fail. Sequential overflow/release checks and all build/static checks passed, but source interleaving still permits a producer submit after terminal queue clearing or an overflow request after duration terminalization. The LVGL adapter hardcodes `touch_id=0` on canvas, rail, and palette paths; the documented limitation required by the contract is still absent.
+- Repair cap: exhausted (1 of 1). Further implementation requires human direction on the producer/terminal serialization contract or an explicit repair-cap exception.
+- Hardware limitation: no flash, touch-latency, display, scanout, audio, scheduling, or target-memory evidence was run; these remain unmeasured.
+- Commit/PR/publish actions: none.
+- Final state: blocked pending human intervention.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-001 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-002 -->
+# Orchestration resume — LAB-10 L10-03 concurrency and adapter contract
+
+- Run ID: `20261017-L10-RECORD-CANVAS-002`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-001`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: user explicitly authorized a new implementation and independent verification cycle after the prior L10-03 repair cap was exhausted.
+- Scope: L10-03 only; dependent packages remain gated until L10-03 has a current verifier pass.
+- Repair policy: fresh resume cycle; one implementation handoff followed by one fresh read-only verifier, with no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The previous LAB-10 package artifacts under `client/labs/lab-10-record-canvas/` are the authorized in-scope working state being repaired. All unrelated tracked modifications, untracked LAB-03/LAB-02/LAB-05 work and evidence, ignored build/output trees, the historical archive, and the prior orchestration run section remain protected and must not be changed.
+
+## Resume package queue
+
+| Package | Dependency state | Implement | Verify | State |
+|---|---|---|---|---|
+| L10-03 | L10-01/L10-02 current passes from parent run | pending | pending | concurrency arbitration and adapter limitation documentation |
+| L10-04…L10-09 | gated | not_started | not_started | blocked on L10-03 |
+
+## Resume package L10-03
+
+- Prior verifier findings being addressed: submit-versus-terminalization race can enqueue after terminal queue clearing or let overflow latch after duration terminalization; LVGL adapter hardcodes `touch_id=0` and the limitation is undocumented.
+- Required outcome: preserve bounded SPSC semantics while adding an explicit atomic/serialized terminal-submission arbitration protocol; prove no post-terminal enqueue, overflow precedence, exact terminal/loss counts, and cleanup under boundary/concurrent tests. Document the current single-touch adapter limitation and keep multi-touch hardware evidence unmeasured.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14cdd-309b-79e3-affd-e68ecbe7d447`
+- Implementer result: completed. Added lifecycle ACTIVE/TERMINATING/TERMINAL arbitration, bounded in-flight producer tracking, overflow precedence, deterministic pthread boundary regressions, invalidation-safe release behavior inherited from the prior repair, and single-touch adapter documentation in README/manifest/trace schema.
+- Fresh verifier invocation: `01a14ce3-374e-7d01-9468-d4b4a0dff5fe`
+- Fresh verifier verdict: fail. Native, repeated, ThreadSanitizer, ASan/UBSan, JSON, whitespace, and ESP-IDF checks passed; touch-ID documentation passed. A major pre-admission cross-session ABA race remains: an old submit can pass its first ACTIVE check, survive terminal cleanup and session restart, then pass the second ACTIVE check and enqueue into the new session. Minor gaps: invalid initial-color/mismatched allocator tests are absent; ESP-IDF reports an ambiguous partition-table selection warning.
+- Cycle state: implementation and independent verification completed; no further repair was authorized in this cycle.
+- Hardware limitation: no flash, touch-latency, display, scanout, audio, scheduling, heap, PSRAM, or stack evidence was run; these remain unmeasured.
+- Commit/PR/publish actions: none.
+- Final state: blocked pending another explicitly scoped cycle or revised synchronization direction.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-002 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-003 -->
+# Orchestration resume — LAB-10 L10-03 session-generation admission
+
+- Run ID: `20261017-L10-RECORD-CANVAS-003`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-002`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: user explicitly authorized another implementation and independent verification cycle for the remaining L10-03 defect.
+- Scope: L10-03 only; L10-04…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing `client/labs/lab-10-record-canvas/` tree is the authorized in-scope working state. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Resume package L10-03
+
+- Prior verifier finding: a pre-admission session-generation ABA race remains. An old submit can pass its first ACTIVE load, survive terminal cleanup and a new session start, then pass its second ACTIVE load and enqueue into the new session.
+- Required repair: make admission generation-aware and serialize/reference-count session reset against pre-admission submitters; revalidate the captured session ID after admission before any queue write; add a deterministic pre-increment race regression. Add invalid initial-color and mismatched allocator/free configuration tests. Resolve or document the partition-selection warning without expanding scope.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14cf1-2a67-75f1-a806-3ddb4f1acfb9`
+- Implementer result: completed. Added an atomic generation-aware admission gate, pre-admission cross-session regression, invalid-color and allocator-pair tests, and preserved the prior terminal/overflow fixes.
+- Fresh verifier invocation: `01a14cf5-7b13-70d2-85e7-ed9a43bdce8a`
+- Fresh verifier verdict: fail. Strict native, hook, TSan, ASan/UBSan, repeated, JSON, whitespace, ESP-IDF, production-hook-isolation, and documentation checks passed. A major wrap-boundary defect remains: session IDs wrap from `0x7fffffff` to `1`, and a paused stale producer carrying ID `1` can enqueue into the restarted session. The partition-selection warning remains a non-blocking note.
+- Cycle state: implementation and independent verification completed; no commit/PR/publish actions.
+- Hardware limitation: no flash, touch, display, audio, latency, scanout, heap, PSRAM, or stack evidence was run; these remain unmeasured.
+- Final state: blocked pending a decision between a non-reusing 64-bit generation and an explicit session-retirement/fail-before-reuse policy.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-003 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-004 -->
+# Orchestration resume — LAB-10 L10-03 non-reusing 64-bit session generation
+
+- Run ID: `20261017-L10-RECORD-CANVAS-004`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-003`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: user selected the 64-bit non-reusing session-generation direction and authorized implementation with independent verification.
+- Scope: L10-03 only; L10-04…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing `client/labs/lab-10-record-canvas/` tree is the authorized in-scope working state. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Resume package L10-03
+
+- Prior verifier finding: the current 32-bit session generation wraps from `0x7fffffff` to `1`, allowing a paused stale producer carrying session ID `1` to enqueue into a restarted session.
+- Required repair: use a non-reusing 64-bit session generation end-to-end across capture APIs, implementation, tests, and LVGL adapter state; preserve admission/terminal serialization; add a deterministic wrap-boundary/non-reuse regression without leaking a production-only test escape hatch; update contract documentation.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14cfc-d42e-7421-8089-41ebfb695a92`
+- Implementer result: completed. Migrated session identity, gates, tests, snapshots, and LVGL state to `lab10_capture_session_id_t` (`uint64_t`); added permanently consuming generation issuance with fail-closed exhaustion; added a hook-only deterministic boundary regression; and updated README, manifest, and trace schema.
+- Fresh verifier invocation: `01a14d01-b50a-7fc0-a4e2-77ad68ac4920`
+- Fresh verifier verdict: pass. No P0–P1 defects found. Verified no session-ID narrowing/truncation, monotonic non-reuse excluding zero/all-ones, stale producer rejection at the boundary, preserved admission/terminal arbitration and cleanup, production hook isolation, documentation agreement, and protected unrelated paths.
+- Verification checks: strict UI test; strict capture tests with and without `LAB10_CAPTURE_TEST_HOOKS`; 100 repeated runs of each capture configuration; TSan; ASan/UBSan; JSON parsing/semantic bounds/whitespace; 64-bit static assertion; production hook isolation; and ESP-IDF reconfigure/full build. LeakSanitizer was unsupported on this macOS host; `jsonschema` was unavailable, while parsing/static checks passed.
+- Residual note: ESP-IDF reports an existing P2 partition-selection warning because `sdkconfig.defaults` selects both custom partitions and single-app-large; it is outside L10-03 generation behavior and the build passes.
+- Hardware limitation: flash, touch/display, audio, scheduling, heap/PSRAM, stack, and latency evidence remain unmeasured.
+- Commit/PR/publish actions: none.
+- Final state: pass for L10-03; dependent packages remain gated pending the next authorized orchestration step.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-004 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-005 -->
+# Orchestration resume — LAB-10 L10-04 rendering and presentation pipeline
+
+- Run ID: `20261017-L10-RECORD-CANVAS-005`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-004`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: L10-03 has a current independent verifier pass; automatic continuation is authorized.
+- Scope: L10-04 only; L10-05…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing `client/labs/lab-10-record-canvas/` tree is the authorized in-scope working state. L10-03 is a current pass. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Package L10-04
+
+- Required outcome: implement and instrument direct-point, segment, bounded-batch, and whole-frame control/candidate rendering modes where supported; bound raster and UI publication work per update; expose invalidation/lock/backlog information; and prevent unbounded replay/encoding work from blocking the UI task.
+- Verification gate: work per update is bounded, modes and latency/invalidation hooks are visible, and no unmeasured performance claim is presented as hardware evidence.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14d06-3c3e-7a92-b868-de59830bf6f0`
+- Implementer result: completed. Added four bounded render modes, staged whole-frame presentation, observable backlog/invalidation/publication/lock metrics, LVGL integration, Kconfig mode selection, native tests, and contract documentation.
+- Fresh verifier invocation: `01a14d0f-5de5-7492-987d-fee4e8072d82`
+- Fresh verifier verdict: fail, severity P2. Whole-frame replay bounded raster/publication work but did not enforce the independently promised per-update source-point budget; a temporary probe reproduced `points=448 budget=1` with a 512-point frame. All other mode, staging, ownership, cleanup, test, sanitizer, JSON, whitespace, hook-isolation, scope, and ESP-IDF checks passed.
+- Repair authorization: user authorized automatic continuation; one repair handoff is in progress for the single whole-frame point-budget defect.
+- Final state: in_progress pending repair and fresh verification.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-005 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-006 -->
+# Orchestration resume — LAB-10 L10-04 firmware fit and contract cleanup
+
+- Run ID: `20261017-L10-RECORD-CANVAS-006`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-005`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: automatic continuation remains authorized after the L10-04 verifier identified a firmware-fit blocker and two bounded contract/configuration inconsistencies.
+- Scope: L10-04 stabilization only; L10-05…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing `client/labs/lab-10-record-canvas/` tree is the authorized in-scope working state. L10-03 remains a current pass. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Package L10-04 stabilization
+
+- Prior verifier findings: clean ESP-IDF full build failed with bootloader IRAM overflow by 9787 bytes; `sdkconfig.defaults` selects both custom and single-app partition modes; README inventory claims exact manifest parity but omits 17 `render_*` fields.
+- Required outcome: restore a clean reproducible ESP-IDF full build without weakening renderer bounds or hiding the failure; make partition selection unambiguous; synchronize README/manifest inventory and preserve all prior mode/budget tests and documentation.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14d20-cdcd-7092-a6a4-404730b57efa`
+- Implementer result: completed. Confirmed the prior P1 was a stale bootloader CMake cache using host `/usr/bin/*` tools; made `partitions.csv` the exclusive policy; and added all 17 ordered `render_*` fields to the README inventory.
+- Fresh verifier invocation: `01a14d28-d572-73a1-a38e-89c71c48ba6f`
+- Fresh verifier verdict: pass. Fresh ESP-IDF 5.4.2 reconfigure/full build completed (1981 steps) with Xtensa tools, the generated factory partition is 3 MiB with no ambiguity warning, README/manifest inventories match exactly at 108 fields, native/sanitizer/repeated/JSON/whitespace/hook-isolation checks pass, and unrelated paths remained protected.
+- Residual P2: application IRAM has 1 byte free after successful link; hardware visual/touch/scanout/lock/resource evidence remains unmeasured.
+- Commit/PR/publish actions: none.
+- Final state: pass for L10-04; dependent packages may proceed.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-006 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-007 -->
+# Orchestration resume — LAB-10 L10-05 audio-concurrency experiment
+
+- Run ID: `20261017-L10-RECORD-CANVAS-007`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-006`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: L10-04 has a current independent verifier pass; automatic continuation is authorized.
+- Scope: L10-05 only; L10-06…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing `client/labs/lab-10-record-canvas/` tree is the authorized in-scope working state. L10-03 and L10-04 are current passes, with the documented 1-byte IRAM headroom risk. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Package L10-05
+
+- Required outcome: add local audio capture/concurrency scenarios only; cover no-stroke control, sparse, continuous, dense, rapid color switching, stop/cancel during audio, capture failure, and allocation failure; measure or explicitly model audio continuity, occupancy/high-water, overruns/underruns, drawing latency, retained/transient PCM/sketch/framebuffer bytes, and cleanup time.
+- Verification gate: scenario coverage is represented, audio health is not inferred from UI responsiveness, and unknown audio/DAC facts remain unknown.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14d2d-afb7-7273-9246-ed8e3729b976`
+- Implementer result: completed. Added the bounded host audio model, nine required scenarios, separate audio/drawing/resource metrics, failure/cancel cleanup tests, docs/schema/report template, and explicit unmeasured hardware boundary.
+- Fresh verifier invocation: `01a14d33-2be1-7171-8c6e-7448ef51ee87`
+- Fresh verifier verdict: fail. P1 stale worker calls can mutate a restarted model because operations have no session/generation identity. P2 README inventory omits 19 manifest/schema fields, and cleanup duration is synthetic rather than timestamp-derived. All scenario, bound, sanitizer, repeated, JSON, hook-isolation, ESP-IDF, and scope checks otherwise passed.
+- Repair authorization: user authorized automatic continuation; one repair handoff is in progress for the stale-worker identity, inventory, and cleanup-duration findings.
+- Repair implementer invocation: `01a14d37-e736-7f93-92af-a97b514d1bb3`
+- Repair implementer result: completed. Added restart-unique audio session tokens and validation across worker/terminal/metrics/result APIs; added stale-worker restart regression; made cleanup timestamp-derived; and synchronized the 126-field README/manifest/schema inventory.
+- Repair verifier invocation: `01a14d3d-e174-7190-b623-fff6ffcf8cac`
+- Repair verifier verdict: fail, severity P1. Token rejection, cleanup timing, exact 126-field parity, scenarios, sanitizers, repeated tests, JSON, hook isolation, ESP-IDF build, and scope all passed, but the model has no atomics/mutexes/serialized ownership and the TSan test has no threads, so concurrent producer/consumer/terminal/metrics safety is unverified.
+- Final state: blocked pending a fresh concurrency-synchronization cycle.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-007 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-008 -->
+# Orchestration resume — LAB-10 L10-05 concurrent audio ownership
+
+- Run ID: `20261017-L10-RECORD-CANVAS-008`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-007`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: automatic continuation remains authorized after the L10-05 verifier identified a concurrency-verification blocker.
+- Scope: L10-05 concurrency safety only; L10-06…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing `client/labs/lab-10-record-canvas/` tree and `docs/labs/evidence/lab-10/` template are the authorized in-scope working state. L10-03 and L10-04 are current passes; L10-05 token/metric repairs passed except for real concurrency coverage. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Package L10-05 concurrency repair
+
+- Prior verifier finding: the audio model has plain mutable state, no atomics/mutexes/serialized ownership, and no threaded producer/consumer/terminal/metrics test; TSan therefore does not verify concurrent safety.
+- Required outcome: add an explicit safe ownership/synchronization strategy for concurrent audio worker, drawing, terminal, and metrics/result calls; preserve restart token validation, bounded queues, terminal cleanup, and deterministic host behavior; add a real threaded stress regression that TSan exercises; document the supported ownership boundary and keep destroy/lifetime rules explicit.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14d42-2ffb-70f0-977f-c35547ae37f0`
+- Implementer result: completed. Added portable C11 `atomic_flag` acquire/release synchronization across all audio mutable-state paths, a pthread producer/consumer/drawing/observer/stale-worker/terminal regression with joined workers, ESP-IDF wiring, and concurrency/lifetime documentation.
+- Fresh verifier invocation: `01a14d47-c943-7150-9222-adf7dcc2912b`
+- Fresh verifier verdict: pass. All mutable paths are locked; the threaded regression and TSan pass; stale/current tokens, queue bounds, cleanup, and single-terminal-winner assertions pass; production ESP-IDF objects contain no pthread/test-only symbols; full 1983-step ESP-IDF build, native/sanitizer/repeated/JSON/parity checks pass.
+- Residual P2: application IRAM has 1 byte free; hardware audio/DAC/mic/codec/DMA, audible continuity, target scheduling, and resource evidence remain unmeasured.
+- Commit/PR/publish actions: none.
+- Final state: pass for L10-05; dependent packages may proceed.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-008 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-009 -->
+# Orchestration resume — LAB-10 L10-06 realistic workload suite
+
+- Run ID: `20261017-L10-RECORD-CANVAS-009`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-008`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: L10-05 has a current independent verifier pass; automatic continuation is authorized.
+- Scope: L10-06 only; L10-07…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing `client/labs/lab-10-record-canvas/` tree and LAB-10 evidence template are the authorized in-scope working state. L10-03, L10-04, and L10-05 are current passes, with documented 1-byte IRAM and hardware-evidence residuals. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Package L10-06
+
+- Required outcome: add manual instructions for requested human gestures and a deterministic generator with variable velocity/spacing, corners, pauses, pen-up gaps, multiple strokes, color changes, edge points, and declared timestamp jitter; keep synthetic traces distinct from manual touch-latency evidence and provide workload identities/schema versions.
+- Verification gate: generated traces are varied, bounded, reproducible, and not repeated-line fixtures; evidence provenance keeps synthetic host workloads separate from hardware touch behavior.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14d4c-78d3-7bf3-83bf-3efc006ae079`
+- Implementer result: completed. Added the bounded seeded workload generator, eight synthetic workload identities plus manual procedures, feature/variation/invalid-config tests, schema/provenance documentation, and report-template updates.
+- Fresh verifier invocation: `01a14d53-d8bf-7203-942f-b1d30a58b95f`
+- Fresh verifier verdict: fail, severity P2. Generator/runtime passed 8,000 exhaustive cases, feature diversity, determinism, bounds, sanitizers, JSON/semantic/whitespace, ESP-IDF, and scope checks; the evidence template omitted the manifest/README identity `manual-no-stroke-audio-control`. Parser behavior remains correctly deferred to L10-08.
+- Repair authorization: user authorized automatic continuation; one repair handoff is in progress for the template identity parity gap.
+- Repair implementer invocation: `01a14d59-9601-70b1-b9e8-499822b9be50`
+- Repair implementer result: completed. Added `manual-no-stroke-audio-control` to the evidence template’s manual identity list in the required order.
+- Repair verifier invocation: `01a14d5b-0282-7593-b41f-d3b3bc9eb2be`
+- Repair verifier verdict: pass. Exact manifest/README/template parity passed for 12 manual and 8 synthetic identities; 7/7 comparator tests, exhaustive workload checks, native/sanitizer/repeated/JSON/whitespace/hook-isolation checks, and clean 1985-step ESP-IDF build passed.
+- Residual note: the report template retains its starter run-ID placeholder until a concrete evidence report is published; parser/adapter work remains L10-08.
+- Final state: pass for L10-06; dependent packages may proceed.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-009 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-010 -->
+# Orchestration resume — LAB-10 L10-07 instrumentation and resource evidence
+
+- Run ID: `20261017-L10-RECORD-CANVAS-010`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-009`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: L10-06 has a current independent verifier pass; automatic continuation is authorized.
+- Scope: L10-07 only; L10-08…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing `client/labs/lab-10-record-canvas/` tree and LAB-10 evidence template are the authorized in-scope working state. L10-03…L10-06 are current passes, with documented 1-byte IRAM, hardware-evidence, and report-publication residuals. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Package L10-07
+
+- Required outcome: emit or derive required input, latency/UI, CPU/task, memory, storage/format, queue, cleanup, and repeated-run fields; include p50/p95/p99/max where samples exist, field-level provenance, missing-field reasons, and explicit cap events; preserve color changes and pen-up boundaries.
+- Verification gate: each field has provenance and units, percentiles/cleanup/memory-drift handling is explicit, missing fields fail closed, and host/hardware claims remain separated.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14d5f-b0d4-7113-a353-c8f8f6f34e32`
+- Implementer result: completed. Added bounded aggregation/parsing, typed metric records, nearest-rank percentiles, provenance/missing handling, trace validation, cap/loss/overflow preservation, repeated-run drift summaries, and 19 unit tests.
+- Fresh verifier invocation: `01a14d67-5175-7021-9a41-8fe3f15910a7`
+- Fresh verifier verdict: fail, severity P1. Trace validation accepts invalid typed/conditional events or raises raw `TypeError` instead of bounded `MetricsError`; explicit unmeasured/blocked hardware metrics can be supplied as zero-valued samples and appear as passes. Other metric/parity/native/sanitizer/build/scope checks passed.
+- Repair authorization: user authorized up to three issue-repair cycles; first repair handoff is in progress for strict validation and hardware-missing fail-closed behavior.
+- Repair implementer invocation: `01a14d6c-73ca-7ea2-bec1-133c1af81bb4`
+- Repair implementer result: completed. Added strict typed/conditional `MetricsError` validation, 82 malformed-input regressions, and fail-closed unmeasured/hardware-only metric rules.
+- Repair verifier invocation: `01a14d73-b14a-7703-9147-1bb58e252b04`
+- Repair verifier verdict: fail, severity P1 qualification blocker. The aggregator repair passed 82 probes, 33 Python tests, all native/sanitizer/parity/scope checks, and ownership checks, but the clean ESP-IDF bootloader link failed on `esp_rom_output_switch_buffer` and `esp_rom_install_channel_putc` with USB console enabled.
+- Build repair authorization: user authorized up to three issue-repair cycles; first clean-build qualification cycle is in progress.
+- Final state: in_progress pending clean-build resolution and fresh verification.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-010 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-011 -->
+# Orchestration resume — LAB-10 L10-07 clean firmware qualification
+
+- Run ID: `20261017-L10-RECORD-CANVAS-011`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-010`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: user authorized up to three issue-repair cycles; L10-07 software validation passes and the clean ESP32-S3 firmware qualification cycle is complete.
+- Scope: L10-07 build qualification only; L10-08…L10-09 remain gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions.
+
+## Resume baseline and protected paths
+
+The existing LAB-10 package, evidence template, and orchestration progress are the authorized in-scope state. L10-03…L10-06 are current passes; L10-07 aggregation validation is current pass. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Package L10-07 build qualification
+
+- Prior verifier finding: a clean ESP-IDF bootloader link failed on `esp_rom_output_switch_buffer` and `esp_rom_install_channel_putc` when `CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y`; all host/native/schema/sanitizer checks passed.
+- Investigation result: the symbol failure was not reproducible in a fresh ESP-IDF 5.4.2 ESP32-S3 reconfigure/build with the matching Xtensa ESP-14.2.0 toolchain. Both ROM symbols resolve in the clean bootloader map. This identifies the reported link failure as stale/external to the current package configuration, not an incompatible USB-console/PSRAM path.
+- Package repair: regenerated the ignored package `sdkconfig` to match `sdkconfig.defaults`, removing the stale single-app-large selection and retaining `CONFIG_PARTITION_TABLE_CUSTOM=y` with `CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"`. USB Serial JTAG remains enabled; no UART fallback or instrumentation change was made. `partitions.csv` remains the sole partition policy.
+- Required outcome: reproduce with a truly clean ESP-IDF 5.4.2 toolchain/configuration, resolve only an actionable package configuration/toolchain compatibility issue without weakening instrumentation or hardware boundaries, and prove full bootloader/application build or document an external environment blocker with baseline evidence.
+- Fresh implementation and verifier roles: this first build-qualification repair agent completed the scoped repair and read-only verification; the orchestration’s separate fresh verifier remains pending.
+- Verification: fresh reconfigure/full build completed all 1,985 steps; bootloader completed 115/115; app size is 0xa2260 with a 3 MiB factory partition; DIRAM has 196,973 bytes free and IRAM has 1 byte free. Native UI/capture/render/audio/workload tests, capture hooks on/off, metric/contract tests, ASan/UBSan, TSan, repeats, JSON/parity/whitespace, and production hook-isolation checks pass.
+- Evidence boundary: no flash, physical USB-console capture, display/touch, audio/DAC, scheduling, heap/PSRAM/stack, latency, or other hardware evidence was run; no server/networking claim is made. L10-08…L10-09 remain gated.
+- Fresh independent verifier invocation: `01a14d81-a733-7e30-81da-dff88f27971e`
+- Fresh independent verifier verdict: pass. A fresh 1,985-step build used Xtensa tools with no `/usr/bin` host compiler commands; both ROM symbols resolved; one custom 3 MiB partition policy was selected; the full L10-07 malformed-input/unmeasured-value matrix, native/sanitizer/repeated/schema/parity/isolation checks passed.
+- Final state: pass for L10-07; dependent packages may proceed.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-011 -->
+
+<!-- orchestrate-build:begin run_id=20261017-L10-RECORD-CANVAS-012 -->
+# Orchestration resume — LAB-10 L10-08 runner, parser, and evidence integration
+
+- Run ID: `20261017-L10-RECORD-CANVAS-012`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-011`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: L10-07 has a current independent verifier pass; automatic continuation is authorized.
+- Scope: L10-08 only; L10-09 remains gated.
+- Repair policy: one fresh implementation handoff followed by one fresh read-only verifier; no commit/PR/publish actions until final LAB-10 completion.
+
+## Resume baseline and protected paths
+
+The existing LAB-10 package, evidence template, progress log, and current shared-runner dirty state are protected baselines. L10-03…L10-07 are current passes. Shared files may be changed only surgically for LAB-10 registration, with existing unrelated edits preserved. All unrelated tracked modifications, prior LAB-03/LAB-02/LAB-05 work and evidence, ignored outputs, the historical archive, the map, and prior orchestration sections are protected.
+
+## Package L10-08
+
+- Required outcome: integrate LAB-10 with runner conventions; provide manual/deterministic modes, readiness/run/scenario markers, bounded logs, parser output, malformed/missing-field tests, metric aggregation, terminal uniqueness, cancellation/bounds/color/stroke/cap tests; keep workflow and experiment verdicts independent; synthesize no hardware result.
+- Verification gate: parser/host tests pass, malformed/missing evidence fails closed, registry/runner integration is surgical and scope-safe, bounded logs are enforced, and workflow completion never implies experiment PASS.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Final state: in_progress.
+
+<!-- orchestrate-build:end run_id=20261017-L10-RECORD-CANVAS-012 -->
+
+<!-- orchestrate-build:begin run_id=20261018-L10-RECORD-CANVAS-013 -->
+# Orchestration resume — LAB-10 L10-08 hardware integration repair
+
+- Run ID: `20261018-L10-RECORD-CANVAS-013`
+- Status: in_progress
+- Parent run: `20261017-L10-RECORD-CANVAS-012`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: user supplied concrete hardware findings and authorized implementation plus independent verification, with up to three repair cycles.
+- Scope: repair the L10-08 runner/firmware integration findings; L10-09 remains gated.
+- Repair policy: up to three fresh implementation handoffs, each followed by a fresh read-only verifier; no commit/PR/publish actions until final LAB-10 completion.
+
+## Resume baseline and protected paths
+
+The existing LAB-10 package, evidence, progress log, and current shared-runner dirty state are protected baselines. User-provided device logs establish `canvas buffer allocation failed` during boot, no scripted drawing path, and incorrect center-origin exit animation. Existing unrelated tracked modifications (`Makefile`, shared lab registry/host files, documentation), LAB-03/LAB-02/LAB-05 work and evidence, ignored build outputs, the map, and prior orchestration sections are protected. LAB-10 package files and LAB-10 evidence are the authorized change scope.
+
+## Package L10-08 hardware integration repair
+
+- Required outcome: make manual touch strokes visible by providing a valid display canvas buffer on the configured ESP32-S3/PSRAM target; make scripted mode inject deterministic user-like palette and canvas events through the same UI/capture/render path; print an explicit bounded capture-active lifecycle banner; and make the stop/exit transition reverse the same lower-origin red-circle entry path rather than using a center-origin animation.
+- Verification evidence: device serial logs from the user show the allocation failure and transition sequence; host/native tests must cover the scripted event path, capture-active output, canvas allocation policy, and transition geometry/direction; the verifier must independently recheck package scope and a clean ESP-IDF build.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14ef8-83a8-73b3-9c81-c711853654aa` (Epicurus)
+- Implementer result: completed. Added the operator capture banner, PSRAM-first/aligned canvas allocation with internal fallback, a bounded 15-event UI-task script with three palette changes and three strokes, explicit lower off-screen FAB constants and pure same-origin reversed-radius geometry, plus focused native/Python tests and manual/scripted ESP-IDF builds.
+- Implementer checks: native UI/capture/render/workload tests and focused Python suite (41 tests) passed; manual and scripted ESP-IDF builds passed. No device flash/capture was performed by the implementer.
+- Verifier invocation: `01a14efe-2bf2-7a02-b6ca-7e6e5a3c954a` (Mill)
+- Verifier verdict: fail, P2. The allocation path checks `LV_DRAW_BUF_STRIDE_ALIGN` (1) instead of the configured `LV_DRAW_BUF_ALIGN` (4), so a raw PSRAM pointer passed to `lv_canvas_set_buffer` is not proven correctly aligned. Adapter/native/scripted/transition/build checks passed; no hardware run was performed.
+- Repair attempts: 1 of 3 authorized; fresh alignment repair completed.
+- Repair implementer invocation: `01a14f04-85d2-7070-b31d-e8293597bbf1` (Tesla)
+- Repair implementer result: completed. The LVGL bridge now uses `LV_DRAW_BUF_ALIGN` with `heap_caps_aligned_alloc` for PSRAM-first and internal fallback; added `test_lab10_canvas_alignment.py`. Native UI, 37 package Python tests, ESP-IDF build, and whitespace checks passed; no hardware run was performed.
+- Repair verifier invocation: `01a14f07-76be-7f73-a555-ac0513c98d52` (Carver)
+- Repair verifier verdict: pass. LV_DRAW_BUF_ALIGN/heap_caps_aligned_alloc, adapter banner and bounds, 15-event UI-task scripted path, PSRAM canvas installation, FAB/ring geometry, native suites, 37 package Python tests, clean manual/scripted ESP-IDF builds, scope, and evidence boundaries all passed. Hardware runtime remains unmeasured.
+- Final state: pass for L10-08 hardware integration repair; L10-09 remains gated.
+
+<!-- orchestrate-build:end run_id=20261018-L10-RECORD-CANVAS-013 -->
+
+<!-- orchestrate-build:begin run_id=20261018-L10-RECORD-CANVAS-014 -->
+# Orchestration resume — LAB-10 L10-09 final qualification
+
+- Run ID: `20261018-L10-RECORD-CANVAS-014`
+- Status: in_progress
+- Parent run: `20261018-L10-RECORD-CANVAS-013`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: L10-08 has a current independent verifier pass; user authorized automatic implementation/verification and commit on lab completion.
+- Scope: L10-09 final failure, cancellation, repeated-run, cleanup, memory-drift, and report qualification.
+- Repair policy: up to three fresh implementation handoffs per issue, each followed by a fresh read-only verifier; no commit/PR/publish until the final report and all selected package checks pass.
+
+## Resume baseline and protected paths
+
+The current LAB-10 package, evidence artifacts, progress log, and shared-runner dirty state are protected baselines. L10-03 through L10-08 are current passes, with hardware-only claims explicitly unmeasured. All unrelated tracked modifications, other lab packages/evidence, ignored build outputs, the map, and prior progress sections are protected. L10-09 may change only LAB-10 tests/report/evidence and narrowly scoped LAB-10 implementation files required to close an observed qualification gap.
+
+## Package L10-09
+
+- Required outcome: independently exercise cancellation, stop-in-stroke, color changes, audio stop, allocation/capture/encoder/worker/UI-lock failure boundaries, repeated cycles, full-duration bounds, shell exit, safe reset/boot cases, resource release, stale-worker isolation, callback/timer cleanup, bounded queues, terminal uniqueness, cancellation latency, and memory drift; produce a final report separating implemented, host-verified, hardware-verified, unmeasured, blocked, unresolved decisions, and next experiment.
+- Verification gate: failure/repeat paths are executable or explicitly fail-closed, one terminal outcome is enforced, resources and stale workers are isolated, bounded queues/caps are preserved, repeat drift is reported, and the final report makes no hardware claim without hardware evidence.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14f0c-8fb8-71c3-b8aa-5209407b0e02` (Carson)
+- Implementer result: completed. Added the bounded native L10-09 qualification suite, Python/report contract tests, and final report; host failures/repeats/cleanup pass while hardware and absent encoder/device-worker contracts remain explicitly unmeasured/blocked.
+- Verifier invocation: `01a14f0f-a60f-7933-be63-5ca227d7a73f` (Pasteur)
+- Verifier verdict: fail, P1/P2. Readiness is emitted unconditionally after unchecked capture/renderer/canvas/timer initialization, and the new Python tests are source-string checks rather than semantic execution.
+- Repair attempts: 1 of 3 authorized; fresh fail-closed initialization and semantic-test repair completed.
+- Repair implementer invocation: `01a14f12-f9c0-7962-a4c2-451d311a32cd` (Ramanujan)
+- Repair implementer result: completed. Added a boolean startup gate across capture/renderer/canvas/timer setup, `LAB10_INIT_FAILED` handling before readiness, and executable Python qualification tests for native, parser, adapter, report, and startup behavior. 43 package Python tests, 6 adapter tests, native suites, sanitizers/repeats, JSON checks, and a clean ESP-IDF build passed; hardware remains unmeasured.
+- Repair verifier invocation: pending fresh read-only verification.
+- Repair verifier invocation: `01a14f18-ac20-7263-9bd3-ad09d67b9acd` (Socrates)
+- Repair verifier verdict: fail, P2. The public reverse-exit path accepts an active recording, but `exit_animation_done` released/invalidated the session without cancelling first; an active capture could remain unterminalized. Startup gating, semantic tests, native/sanitizer/repeat suites, JSON/registry, report boundaries, and clean firmware build passed.
+- Repair attempts: 2 of 3 authorized; active-exit cancellation repair completed.
+- Repair implementer invocation: `01a14f1e-ebb7-7c22-a2d6-9c6fabc00e92` (Averroes)
+- Repair implementer result: completed. Active reverse exit now cancels a live capture before renderer/result/session cleanup; L10-09 native/Python regression coverage and report were updated. Native suites, 44 package Python tests, sanitizers, five repeats, and a clean ESP-IDF build passed; hardware remains unmeasured.
+- Repair verifier invocation: pending fresh read-only verification.
+- Final state: in_progress.
+
+<!-- orchestrate-build:end run_id=20261018-L10-RECORD-CANVAS-014 -->
+
+<!-- orchestrate-build:begin run_id=20261018-L10-RECORD-CANVAS-015 -->
+# Orchestration resume — LAB-10 scripted hardware lifecycle repair
+
+- Run ID: `20261018-L10-RECORD-CANVAS-015`
+- Status: in_progress
+- Parent run: `20261018-L10-RECORD-CANVAS-014`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: user authorized unattended implementation and independent verification, with up to three repair cycles per issue, and commit on LAB-10 completion.
+- Scope: repair the newly observed scripted-run terminal classification while preserving the manual unconfigured boundary; refresh the LAB-10 evidence report only with observed hardware facts.
+- Repair policy: up to three fresh implementation handoffs, each followed by a fresh read-only verifier; no commit/PR/publish until the final LAB-10 outcome.
+
+## Hardware finding
+
+- Manual run `20261018-manual-run-c556b525` flashed and booted, allocated the canvas from PSRAM, emitted `LAB10_READY`, and correctly remained `experiment_verdict=UNMEASURED` without operator-drawn trace evidence.
+- Scripted run `20261018-scripted-run-37bed9d5` emitted `LAB10_SCRIPTED_DRAWING status=started` and `status=complete` after three palette changes and three strokes, but the host adapter appended `LAB10_SCENARIO ... status=not_configured`; the parser therefore classified an otherwise completed scripted lifecycle as `workflow_status=INCOMPLETE`.
+- Required boundary: scripted completion may close workflow lifecycle only; it must not synthesize touch, pixel, audio, encoder, or experiment-pass evidence. Manual runs without a terminal scenario remain explicitly unconfigured/unmeasured.
+
+## Package repair
+
+- Required outcome: make the adapter recognize the device's explicit scripted-completion marker and emit a passed terminal scenario only for that observed scripted path; add executable regression coverage and reconcile the final report's observed cancellation-latency sample with the current native output.
+- Verification gate: manual and scripted adapter/parser tests, package native/Python suites, a fresh scripted ESP-IDF flash/run, malformed/missing evidence fail-closed behavior, and a fresh independent verifier all pass without weakening hardware evidence boundaries.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14f2b-ce1b-7781-a68c-8430e7cd7bc9` (Godel)
+- Implementer result: completed. Adapter/parser closure now requires the observed scripted `LAB10_SCRIPTED_DRAWING status=complete` marker; manual and incomplete scripted runs remain `not_configured`/`INCOMPLETE`; executable regressions cover completed/manual/missing/malformed markers; report and marker contracts were reconciled; package tests (45), native qualification, and explicit manual/scripted ESP-IDF builds passed.
+- Implementer boundary: observed manual and scripted artifacts reparse as `PASS / UNMEASURED`; hardware touch, pixels, audio, encoder, and device-latency claims remain unmeasured. The pre-existing `lab.lab10.scripted.build` alias still selects manual; explicit `make lab.lab10.build VARIANT=scripted` is the verified scripted build path.
+- Repair verifier invocation: `01a14f31-49c5-72c3-97fd-4be96446244b` (Noether)
+- Repair verifier verdict: fail, P2. The documented `make lab.lab10.scripted.build` alias expands without `--variant scripted`, so the registry defaults it to the manual build; the direct capture target and explicit `make lab.lab10.build VARIANT=scripted` path remain valid. All scripted-marker, fail-closed, parser/report, native, package, and isolated ESP-IDF checks passed.
+- Repair attempts: 1 of 3 authorized for this newly observed build-path issue; fresh implementation handoff pending.
+- Repair implementer invocation: `01a14f36-7292-75d1-8902-11d6d67d2cdc` (Bernoulli)
+- Repair implementer result: completed. `.scripted.build` now passes `--variant scripted`; executable alias regression covers scripted, manual override, and default expansion. Makefile/registry/adapter tests (17), LAB-10 package tests (45), native qualification, manual build, and scripted build with `CONFIG_LAB10_SCRIPTED=y` passed.
+- Repair verifier invocation: `01a14f38-ba28-7740-b7e4-1762027fdcd1` (Fermat)
+- Repair verifier verdict: pass. The alias expands with `--variant scripted` and produces `CONFIG_LAB10_SCRIPTED=y`; manual/default behavior remains intact; scripted/manual/missing/malformed marker behavior, parser boundaries, 45 package tests, 7 qualification tests, full repository 252-test suite, and manual/scripted ESP-IDF builds passed. Hardware remains explicitly unmeasured/blocked.
+- Final state: pass for the scoped scripted lifecycle/build-path repair; final LAB-10 hardware capture remains an evidence boundary to record after the authorized device rerun.
+
+<!-- orchestrate-build:end run_id=20261018-L10-RECORD-CANVAS-015 -->
+
+<!-- orchestrate-build:begin run_id=20261018-L10-RECORD-CANVAS-016 -->
+# Orchestration resume — LAB-10 scripted manifest-stage consistency repair
+
+- Run ID: `20261018-L10-RECORD-CANVAS-016`
+- Status: in_progress
+- Parent run: `20261018-L10-RECORD-CANVAS-015`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: user authorized unattended implementation and independent verification, with up to three repair cycles per issue, and commit on LAB-10 completion.
+- Scope: make the structured run-manifest scenario stage reflect the observed terminal scenario marker for scripted and manual captures; preserve unconfigured/incomplete states and all evidence boundaries.
+- Repair policy: up to three fresh implementation handoffs, each followed by a fresh read-only verifier; no commit/PR/publish until the final LAB-10 outcome.
+
+## Observed consistency finding
+
+- Corrected scripted hardware run `20261018-scripted-run-16baabaa` flashed and booted the scripted image, allocated the canvas from PSRAM with alignment 4, emitted `LAB10_READY`, emitted scripted drawing start/complete markers, and reparsed as `workflow_status=PASS`, `experiment_verdict=UNMEASURED`.
+- Its structured manifest still reported `capture.stages.scenario=not_configured` even though the terminal `LAB10_SCENARIO ... status=passed` marker and parser metrics were present. This is metadata inconsistency, not evidence for pixels, touch, audio, encoder, or experiment PASS.
+
+## Package repair
+
+- Required outcome: set the scenario stage to `passed` only after the observed scripted terminal marker is appended and parsed; keep manual/no-script and missing/malformed scripted paths explicitly `not_configured`/incomplete.
+- Verification gate: executable adapter/parser regression, package/native suites, fresh independent read-only verifier, and a corrected scripted device run whose manifest, metrics, and serial markers agree.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14f3e-46fd-77c2-a0ea-4f04e8f67619` (Erdos)
+- Implementer result: completed. Adapter stage construction now reflects parsed terminal scenario evidence; manifest-level scripted/manual/incomplete regressions were added. Adapter/runner tests (23), LAB-10 package tests (45), native qualification, and a clean ESP-IDF build passed; historical artifacts were reparsed without rewriting and their hashes remained unchanged.
+- Repair verifier invocation: `01a14f43-8967-76c2-ae43-1322b515bddb` (Archimedes)
+- Repair verifier verdict: pass. Stage mapping is manual → `not_configured`, pre-repair scripted → `not_configured`, corrected scripted → `passed`, and missing/malformed/incomplete cases fail closed. Adapter/shared-runner/alias/package/native/manual-scripted-build checks passed; all 12 checked historical artifact hashes remained unchanged; hardware remains explicitly unmeasured/blocked.
+- Final state: pass for the scoped manifest-stage consistency repair; a post-repair scripted device run remains to refresh the observed manifest evidence.
+
+<!-- orchestrate-build:end run_id=20261018-L10-RECORD-CANVAS-016 -->
+
+<!-- orchestrate-build:begin run_id=20261018-L10-RECORD-CANVAS-017 -->
+# Orchestration resume — LAB-10 final evidence-report reconciliation
+
+- Run ID: `20261018-L10-RECORD-CANVAS-017`
+- Status: in_progress
+- Parent run: `20261018-L10-RECORD-CANVAS-016`
+- Map: `docs/labs/lab-10-implementation-map.md`
+- Repository root: `/Users/lynnfrank/src/family-link`
+- Map fingerprint: `bf1a5e3ea5aba3b7caa2f76577bee4ceb5a67688fd5913806c493cdd7a05b5f5`
+- Resume authorization: user authorized unattended implementation and independent verification, with up to three repair cycles per issue, and commit on LAB-10 completion.
+- Scope: reconcile the final L10-09 report with the observed corrected scripted hardware run while retaining strict limits on visual, touch, audio, timing, and experiment claims.
+- Repair policy: up to three fresh implementation handoffs, each followed by a fresh read-only verifier; no commit/PR/publish until the final LAB-10 outcome.
+
+## Observed evidence
+
+- Final corrected scripted run: `20261018-scripted-run-ed8040af`.
+- Device serial evidence: ESP32-S3 connected and flashed; PSRAM canvas buffer allocated with `bytes=115204 region=psram alignment=4`; `LAB10_READY`; scripted UI-task marker with three palette changes and three strokes; scripted completion; terminal scenario passed.
+- Host evidence: all capture stages including `scenario` passed; `workflow_status=PASS`; `experiment_verdict=UNMEASURED`; `trace_present=false`; no pixel/audio/touch/latency claim is justified.
+
+## Package repair
+
+- Required outcome: update the final report so it no longer says no hardware run occurred or that the kit was absent, distinguish limited hardware lifecycle observations from unmeasured experiment claims, and retain blocked encoder/worker/synchronized-capture boundaries.
+- Verification gate: report-contract and package tests, fresh independent read-only verification, and exact cross-check against the final run manifest/metrics/serial evidence.
+- Fresh implementation and verifier roles: generic implementation agent followed by a separate fresh read-only verifier.
+- Implementer invocation: `01a14f47-403f-7e80-b7db-c840c9277138` (Faraday)
+- Implementer result: completed. The final report and report-contract test now distinguish limited hardware lifecycle evidence from unmeasured visual/touch/audio/timing claims, preserve blocked encoder/worker boundaries, and cross-check the final run. Report-contract, package (45), native UI/capture/render/audio/workload/L10-09, and host-only cancellation-latency checks passed.
+- Repair verifier invocation: `01a14f49-a6ac-7b32-806c-8b5f46b989c9` (Anscombe)
+- Repair verifier verdict: pass. The report is consistent with final run `20261018-scripted-run-ed8040af`: flash/boot, PSRAM `115204` bytes/alignment `4`, readiness, UI-task three-palette/three-stroke completion, scenario pass, and workflow `PASS` are supported; experiment remains `UNMEASURED` and forbidden visual/touch/audio/timing/encoder/worker claims remain excluded. Report/package/native/adapter checks passed and historical hashes remained stable.
+- Final state: pass for L10-08/L10-09 implementation, host qualification, scoped hardware lifecycle evidence, and report boundaries; full hardware experiment remains explicitly unmeasured/blocked.
+
+## Final LAB-10 outcome
+
+- Implementation and independent verification cycles completed; no unresolved code finding remains within the selected LAB-10 scope.
+- Final device run `20261018-scripted-run-ed8040af` confirms the corrected scripted lifecycle and manifest-stage contract. It does not prove visible pixels or operator touch because the scripted path deliberately reports `hardware_touch=0` and no synchronized display capture was collected.
+- Commit authorization is active. Stage only LAB-10 package, LAB-10 evidence/map/progress, LAB-10 adapter/tests, and the LAB-10-specific hunks in shared registry/Makefile files; preserve unrelated LAB-03/LAB-02/LAB-05 work.
+
+<!-- orchestrate-build:end run_id=20261018-L10-RECORD-CANVAS-017 -->

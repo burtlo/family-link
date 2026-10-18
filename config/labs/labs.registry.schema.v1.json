@@ -56,7 +56,7 @@
         },
         "adapter": {
           "type": "string",
-          "enum": ["generic", "lab02"],
+          "enum": ["generic", "lab02", "lab10"],
           "default": "generic",
           "description": "Host-code adapter key resolved by the fixed lab runner allowlist."
         },

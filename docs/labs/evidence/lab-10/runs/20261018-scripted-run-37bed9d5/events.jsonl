@@ -1,0 +1,12 @@
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"lab10_marker","marker":"LAB10_RUN","mode":"scripted","outcome":"observed","run_id":"20261018-scripted-run-37bed9d5","source":"host","workload":"synthetic-sparse-multicolor-v1"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"preflight"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"preflight"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"build"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","result":"/Users/lynnfrank/src/family-link/build/labs/lab-10-record-canvas-scripted","source":"host","stage":"build"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","mode":"scripted","outcome":"running","source":"host","stage":"activity"}
+{"adapter_identity":"lab10","adapter_version":"v1","id":"synthetic-sparse-multicolor-v1","kind":"lab10_marker","marker":"LAB10_SCENARIO","mode":"scripted","outcome":"observed","source":"host","status":"not_configured"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","mode":"scripted","outcome":"passed","source":"host","stage":"activity"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"parser"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"parser"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"markers_or_evidence_incomplete","source":"host","workflow_status":"INCOMPLETE"}
