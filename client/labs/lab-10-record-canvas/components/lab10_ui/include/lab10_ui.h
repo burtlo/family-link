@@ -29,7 +29,8 @@
 #define LAB10_FAB_RADIUS_START 22
 #define LAB10_FAB_RADIUS_FULL 360
 
-#define LAB10_UI_SCRIPTED_EVENT_COUNT 15u
+#define LAB10_UI_SCRIPTED_MOVE_INTERVAL_US UINT64_C(44000)
+#define LAB10_UI_SCRIPTED_MIN_COMPLETION_POINTS 3500u
 
 #define LAB10_SWATCH_COUNT 6
 #define LAB10_SWATCH_DIAMETER 44
@@ -106,6 +107,31 @@ typedef struct {
 } lab10_ui_scripted_event_t;
 
 typedef struct {
+    uint64_t capture_start_timestamp_us;
+    uint64_t duration_cap_us;
+    uint64_t move_interval_us;
+    uint64_t next_move_timestamp_us;
+    uint32_t accepted_point_cap;
+    uint32_t next_path_point_index;
+    bool initialized;
+    bool down_emitted;
+    bool terminal_reported;
+} lab10_ui_scripted_schedule_t;
+
+typedef enum {
+    LAB10_UI_SCRIPTED_CAPTURE_ACTIVE = 0,
+    LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP,
+    LAB10_UI_SCRIPTED_CAPTURE_OTHER_TERMINAL,
+} lab10_ui_scripted_capture_state_t;
+
+typedef enum {
+    LAB10_UI_SCRIPTED_POLL_WAIT = 0,
+    LAB10_UI_SCRIPTED_POLL_EVENT,
+    LAB10_UI_SCRIPTED_POLL_COMPLETE,
+    LAB10_UI_SCRIPTED_POLL_INTERRUPTED,
+} lab10_ui_scripted_poll_result_t;
+
+typedef struct {
     int16_t origin_x;
     int16_t origin_y;
     int32_t radius_start;
@@ -150,9 +176,15 @@ uint8_t lab10_ui_selected_color(const lab10_ui_model_t *model);
 const lab10_ui_invalidation_stats_t *lab10_ui_invalidation(
     const lab10_ui_model_t *model);
 
-/* Fixed UI-task-only smoke workload; it does not claim hardware touch input. */
-size_t lab10_ui_scripted_event_count(void);
-const lab10_ui_scripted_event_t *lab10_ui_scripted_event(size_t index);
+/* UI-task-only deterministic path; it does not claim hardware touch input. */
+bool lab10_ui_scripted_schedule_init(
+    lab10_ui_scripted_schedule_t *schedule, uint64_t capture_start_timestamp_us,
+    uint64_t duration_cap_us, uint32_t accepted_point_cap,
+    uint64_t move_interval_us);
+lab10_ui_scripted_poll_result_t lab10_ui_scripted_schedule_poll(
+    lab10_ui_scripted_schedule_t *schedule, uint64_t now_us,
+    lab10_ui_scripted_capture_state_t capture_state,
+    uint32_t accepted_point_count, lab10_ui_scripted_event_t *event);
 
 size_t lab10_canvas_memory_attempt_count(void);
 lab10_canvas_memory_region_t lab10_canvas_memory_attempt(size_t index);

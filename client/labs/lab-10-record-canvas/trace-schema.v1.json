@@ -1202,6 +1202,7 @@
         "parse": "make lab.lab10.parse RUN_ID=<run-id>"
       },
       "markers": ["LAB10_READY", "LAB10_RUN", "LAB10_SCENARIO", "LAB10_SCRIPTED_DRAWING", "LAB10_CANCEL"],
+      "scripted_completion_rule": "LAB10_SCRIPTED_DRAWING status=complete is valid only after the device capture reaches its 180000 ms duration cap with 3500..4095 accepted points, one uninterrupted white stroke, no color changes or trace loss, and hardware_touch=0; the 4096th point is a point-cap terminal and cannot qualify; stop, cancel, early termination, point-cap termination, or failure must not emit completion",
       "evidence_provenance": ["hardware", "host", "derived_static", "unmeasured/blocked"],
       "hardware_prerequisites": [
         "registered ESP32-S3 Box-3 kit",
@@ -1396,6 +1397,7 @@
     "loss_rule": "Any dropped, malformed, oversized, or otherwise missing trace event must be represented by trace_loss and makes affected measurements incomplete; loss is never zero-filled.",
     "adapter_touch_semantics": "The current LVGL adapter is single-touch and forwards touch_id=0 for canvas, rail, and palette events. Native capture tests may inject nonzero touch IDs; multi-touch hardware evidence is unmeasured/unavailable.",
     "rendering_semantics": {
+      "device_default": "The normal manual and scripted firmware default is segment mode, connecting consecutive accepted points only within the same active stroke; direct_point remains an explicitly labeled control.",
       "direct_point": "Control mode consumes at most one accepted point per update and publishes one logical pixel without interpolation.",
       "segment": "Candidate mode consumes at most one accepted point per update and rasterizes only a same-stroke, same-color Bresenham segment in bounded steps.",
       "bounded_batch": "Candidate mode uses the segment rule with independent point, raster, and publication budgets.",

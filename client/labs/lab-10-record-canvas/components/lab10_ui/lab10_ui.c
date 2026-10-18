@@ -11,24 +11,11 @@ static const lab10_swatch_geometry_t k_swatches[LAB10_SWATCH_COUNT] = {
     {291, 28, 0x5AA0E8},
 };
 
-static const lab10_ui_scripted_event_t k_scripted_events[
-    LAB10_UI_SCRIPTED_EVENT_COUNT] = {
-        {LAB10_PHASE_PALETTE_CHANGE, 269, 64, 0},
-        {LAB10_PHASE_DOWN, 18, 20, 0},
-        {LAB10_PHASE_MOVE, 60, 44, 0},
-        {LAB10_PHASE_MOVE, 96, 82, 0},
-        {LAB10_PHASE_UP, 96, 82, 0},
-        {LAB10_PHASE_PALETTE_CHANGE, 291, 28, 0},
-        {LAB10_PHASE_DOWN, 204, 28, 0},
-        {LAB10_PHASE_MOVE, 170, 62, 0},
-        {LAB10_PHASE_MOVE, 142, 104, 0},
-        {LAB10_PHASE_UP, 142, 104, 0},
-        {LAB10_PHASE_PALETTE_CHANGE, 269, 136, 0},
-        {LAB10_PHASE_DOWN, 32, 196, 0},
-        {LAB10_PHASE_MOVE, 76, 164, 0},
-        {LAB10_PHASE_MOVE, 128, 208, 0},
-        {LAB10_PHASE_UP, 128, 208, 0},
-    };
+enum {
+    LAB10_SCRIPTED_PATH_COLUMNS = 64,
+    LAB10_SCRIPTED_PATH_ORIGIN = 16,
+    LAB10_SCRIPTED_PATH_STEP = 3,
+};
 
 static bool is_outcome(lab10_screen_state_t state)
 {
@@ -135,15 +122,121 @@ const lab10_ui_invalidation_stats_t *lab10_ui_invalidation(
     return model != NULL ? &model->invalidation : NULL;
 }
 
-size_t lab10_ui_scripted_event_count(void)
+bool lab10_ui_scripted_schedule_init(
+    lab10_ui_scripted_schedule_t *schedule, uint64_t capture_start_timestamp_us,
+    uint64_t duration_cap_us, uint32_t accepted_point_cap,
+    uint64_t move_interval_us)
 {
-    return LAB10_UI_SCRIPTED_EVENT_COUNT;
+    if (schedule == NULL || duration_cap_us == 0u ||
+        accepted_point_cap < LAB10_UI_SCRIPTED_MIN_COMPLETION_POINTS ||
+        move_interval_us == 0u || move_interval_us > duration_cap_us ||
+        capture_start_timestamp_us > UINT64_MAX - duration_cap_us) {
+        return false;
+    }
+    *schedule = (lab10_ui_scripted_schedule_t){
+        .capture_start_timestamp_us = capture_start_timestamp_us,
+        .duration_cap_us = duration_cap_us,
+        .move_interval_us = move_interval_us,
+        .accepted_point_cap = accepted_point_cap,
+        .next_path_point_index = 0u,
+        .initialized = true,
+    };
+    return true;
 }
 
-const lab10_ui_scripted_event_t *lab10_ui_scripted_event(size_t index)
+static void scripted_path_coordinates(uint32_t point_index, int16_t *x,
+                                      int16_t *y)
 {
-    return index < LAB10_UI_SCRIPTED_EVENT_COUNT ? &k_scripted_events[index]
-                                                 : NULL;
+    const uint32_t row = point_index / LAB10_SCRIPTED_PATH_COLUMNS;
+    const uint32_t column = point_index % LAB10_SCRIPTED_PATH_COLUMNS;
+    const uint32_t path_column =
+        (row & 1u) == 0u ? column
+                         : LAB10_SCRIPTED_PATH_COLUMNS - 1u - column;
+    *x = (int16_t)(LAB10_SCRIPTED_PATH_ORIGIN +
+                   (int32_t)path_column * LAB10_SCRIPTED_PATH_STEP);
+    *y = (int16_t)(LAB10_SCRIPTED_PATH_ORIGIN +
+                   (int32_t)row * LAB10_SCRIPTED_PATH_STEP);
+}
+
+lab10_ui_scripted_poll_result_t lab10_ui_scripted_schedule_poll(
+    lab10_ui_scripted_schedule_t *schedule, uint64_t now_us,
+    lab10_ui_scripted_capture_state_t capture_state,
+    uint32_t accepted_point_count, lab10_ui_scripted_event_t *event)
+{
+    if (schedule == NULL || !schedule->initialized || event == NULL ||
+        schedule->terminal_reported) {
+        return LAB10_UI_SCRIPTED_POLL_WAIT;
+    }
+
+    const uint64_t elapsed_us =
+        now_us >= schedule->capture_start_timestamp_us
+            ? now_us - schedule->capture_start_timestamp_us
+            : 0u;
+    if (capture_state != LAB10_UI_SCRIPTED_CAPTURE_ACTIVE) {
+        schedule->terminal_reported = true;
+        if (capture_state == LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP &&
+            elapsed_us >= schedule->duration_cap_us && schedule->down_emitted &&
+            accepted_point_count >=
+                LAB10_UI_SCRIPTED_MIN_COMPLETION_POINTS &&
+            accepted_point_count < schedule->accepted_point_cap) {
+            return LAB10_UI_SCRIPTED_POLL_COMPLETE;
+        }
+        return LAB10_UI_SCRIPTED_POLL_INTERRUPTED;
+    }
+
+    if (accepted_point_count >= schedule->accepted_point_cap) {
+        schedule->terminal_reported = true;
+        return LAB10_UI_SCRIPTED_POLL_INTERRUPTED;
+    }
+    if (elapsed_us >= schedule->duration_cap_us) {
+        /* Capture polling owns the terminal duration-cap transition. */
+        return LAB10_UI_SCRIPTED_POLL_WAIT;
+    }
+
+    if (!schedule->down_emitted) {
+        int16_t x = 0;
+        int16_t y = 0;
+        scripted_path_coordinates(0u, &x, &y);
+        *event = (lab10_ui_scripted_event_t){
+            .phase = LAB10_PHASE_DOWN,
+            .display_x = x,
+            .display_y = y,
+            .touch_id = 0u,
+        };
+        schedule->down_emitted = true;
+        schedule->next_path_point_index = 1u;
+        schedule->next_move_timestamp_us =
+            schedule->capture_start_timestamp_us + schedule->move_interval_us;
+        return LAB10_UI_SCRIPTED_POLL_EVENT;
+    }
+
+    if (now_us < schedule->next_move_timestamp_us) {
+        return LAB10_UI_SCRIPTED_POLL_WAIT;
+    }
+
+    /* Skip missed time slots instead of emitting a catch-up burst after a
+     * delayed UI tick. Every emitted move remains tied to one absolute
+     * 44 ms slot, so scheduler latency cannot consume the point budget early.
+     */
+    const uint64_t due_move_index = elapsed_us / schedule->move_interval_us;
+    if (due_move_index < schedule->next_path_point_index) {
+        return LAB10_UI_SCRIPTED_POLL_WAIT;
+    }
+
+    int16_t x = 0;
+    int16_t y = 0;
+    scripted_path_coordinates((uint32_t)due_move_index, &x, &y);
+    *event = (lab10_ui_scripted_event_t){
+        .phase = LAB10_PHASE_MOVE,
+        .display_x = x,
+        .display_y = y,
+        .touch_id = 0u,
+    };
+    schedule->next_path_point_index = (uint32_t)due_move_index + 1u;
+    schedule->next_move_timestamp_us =
+        schedule->capture_start_timestamp_us +
+        (due_move_index + 1u) * schedule->move_interval_us;
+    return LAB10_UI_SCRIPTED_POLL_EVENT;
 }
 
 size_t lab10_canvas_memory_attempt_count(void)

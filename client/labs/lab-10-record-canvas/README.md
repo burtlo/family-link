@@ -23,11 +23,16 @@ Workload metadata uses `lab10-workload/v1`; the deterministic source is
 [`components/lab10_workload/`](components/lab10_workload/). The generator is
 compiled for toolchain coverage but is not executed by the firmware app. The
 `CONFIG_LAB10_SCRIPTED` firmware profile has a separate bounded UI smoke path:
-after entry reaches recording, the LVGL timer/UI task injects 15 fixed events
-through `lab10_ui_handle_touch` (three palette changes and three multi-point
-canvas strokes), one event per timer tick. It uses the same routing, capture,
-render, and canvas publication hooks as touch input, remains recording after
-the final event, and is explicitly not hardware-touch evidence.
+after entry reaches recording, the LVGL timer/UI task injects one DOWN followed
+by MOVE events on absolute 44 ms schedule slots for the bounded 180-second
+capture. It keeps one white stroke active throughout, does not synthesize
+palette changes or touch-up events, and skips missed schedule slots rather than
+catching up with a burst. The schedule can emit at most 4,090 MOVEs plus the
+initial DOWN (4,091 accepted points), below the 4,096-point capture cap; the
+capture duration remains the terminal condition. The active stroke closes when
+capture reaches its duration cap. Events use the same routing, capture, render,
+and canvas publication hooks as touch input, and are explicitly not
+hardware-touch evidence.
 L10-08 registers the package through the fixed `lab10` adapter key and adds the
 bounded parser at [`tools/parse_lab_trace.py`](tools/parse_lab_trace.py). The
 adapter owns lifecycle markers and evidence-file placement; L10-07 remains the
@@ -338,8 +343,8 @@ Four modes are explicit and measurable:
 
 | Mode | Role | Semantics per UI update |
 |---|---|---|
-| `direct_point` | control | Consume at most one accepted point and publish one logical pixel; no interpolation. |
-| `segment` | candidate | Consume at most one point and rasterize the same-stroke/same-color Bresenham segment in bounded pixel steps. |
+| `direct_point` | labeled control | Consume at most one accepted point and publish one logical pixel; no interpolation. |
+| `segment` | device default | Consume at most one point and rasterize the same-stroke/same-color Bresenham segment in bounded pixel steps. |
 | `bounded_batch` | candidate | Use the same segment semantics with independent point and raster budgets; the default batch limit is 8 points. |
 | `whole_frame` | candidate | Build a second logical framebuffer through bounded clear/replay steps, then publish at most the publication budget per update. |
 
@@ -355,9 +360,10 @@ pixel writes per published logical pixel.
 The ESP-IDF bridge selects the mode at build time with the package-local
 `LAB10_RENDER_MODE` Kconfig choice (`DIRECT_POINT`, `SEGMENT`,
 `BOUNDED_BATCH`, or `WHOLE_FRAME`) and uses bounded Kconfig budgets for source
-points, raster operations, and publication operations. The default firmware
-selection is the direct-point control mode; candidate modes can be built for a
-separate labeled run without changing capture behavior.
+points, raster operations, and publication operations. The normal manual and
+scripted firmware default is `SEGMENT`, so accepted points in the same active
+stroke are connected. `DIRECT_POINT` remains available as an explicitly
+labeled control build; it intentionally renders isolated point pixels.
 
 Every update exposes source backlog, capture FIFO depth/high-water, points
 processed, raster operations, publication operations, frame generation,
@@ -841,9 +847,16 @@ not name import paths. The two operator modes are deliberately separate:
 
 Immediately before the bounded serial reader starts, the adapter prints a
 `CAPTURE ACTIVE` line containing the resolved command, backend, mode, kit, and
-remaining seconds. Scripted mode also states that the UI task performs the
-three palette changes and three strokes without operator touch; the drawing is
-left on screen for inspection while capture remains active.
+remaining seconds. Scripted mode runs one continuous white stroke with a DOWN
+and scheduled MOVEs every 44 ms for the full 180-second capture; it makes no
+palette transitions and does not emit touch-up between points. Missed schedule
+slots are skipped (never burst-replayed), keeping the script to at most 4,091
+accepted points. The active stroke is closed by the capture duration cap; the
+scripted completion marker is emitted only after that terminal outcome and at
+least 3,500 accepted points. Stop, cancel, early termination, point-cap
+termination, or failure cannot produce a completion marker. Script-generated
+events use the normal UI/capture path but never synthesize hardware-touch
+evidence.
 
 Resolved support commands are:
 
@@ -869,8 +882,13 @@ The device/host lifecycle contract is one `LAB10_READY` marker, one
 `LAB10_RUN` marker, a bounded scenario sequence with at most one terminal
 status per scenario identity, and at most one `LAB10_CANCEL` marker. Scripted
 mode additionally requires the device-owned
-`LAB10_SCRIPTED_DRAWING status=complete` marker before the host closes the
-scenario as passed; its absence remains incomplete/unconfigured. A trace
+`LAB10_SCRIPTED_DRAWING status=complete` marker, which records the actual
+180-second duration-cap terminal, 3,500–4,095 accepted points, one
+uninterrupted white stroke, no palette changes, and `hardware_touch=0`, before
+the host closes the scenario as passed; its absence remains
+incomplete/unconfigured. An early or stopped run
+must never emit that marker; the 4,096th accepted point terminalizes as
+`point_cap`, never as a scripted duration-cap completion. A trace
 must contain exactly one terminal event; duplicate terminals, post-terminal
 events, non-monotonic timestamps, malformed JSON, unknown fields, wrong types,
 invalid colors/strokes/coordinates, cap violations, and over-bound logs fail

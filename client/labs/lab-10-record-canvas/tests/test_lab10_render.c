@@ -290,6 +290,43 @@ static void test_modes_and_equivalence(void)
     }
 }
 
+static void test_segments_connect_only_within_one_stroke(void)
+{
+    fake_clock_t clock = {.now_us = 5000};
+    lab10_capture_t *capture = new_capture(&clock);
+    assert(capture != NULL);
+    const lab10_capture_session_id_t session = lab10_capture_start(capture);
+    assert(session != LAB10_CAPTURE_INVALID_SESSION_ID);
+
+    submit_and_poll(capture, session, &clock, LAB10_PHASE_DOWN,
+                    LAB10_ROUTE_CANVAS, 20, 20, LAB10_COLOR_WHITE);
+    submit_and_poll(capture, session, &clock, LAB10_PHASE_MOVE,
+                    LAB10_ROUTE_CANVAS, 30, 20, LAB10_COLOR_WHITE);
+    submit_and_poll(capture, session, &clock, LAB10_PHASE_UP,
+                    LAB10_ROUTE_CANVAS, 30, 20, LAB10_COLOR_WHITE);
+    submit_and_poll(capture, session, &clock, LAB10_PHASE_DOWN,
+                    LAB10_ROUTE_CANVAS, 50, 20, LAB10_COLOR_WHITE);
+    assert(lab10_capture_complete(capture, session));
+
+    render_probe_t probe = {0};
+    lab10_render_t *renderer = new_renderer(
+        LAB10_RENDER_MODE_SEGMENT, LAB10_RENDER_ROLE_CANDIDATE, 1, 8, 8,
+        &probe);
+    assert(lab10_render_begin(renderer, session));
+    drain_renderer(renderer, capture, session, false);
+
+    uint8_t color = LAB10_COLOR_BACKGROUND;
+    assert(lab10_render_pixel_at(renderer, session, 12, 10, &color));
+    assert(color == LAB10_COLOR_WHITE);
+    assert(lab10_render_pixel_at(renderer, session, 20, 10, &color));
+    assert(color == LAB10_COLOR_BACKGROUND);
+    assert(lab10_render_pixel_at(renderer, session, 25, 10, &color));
+    assert(color == LAB10_COLOR_WHITE);
+
+    lab10_render_destroy(renderer);
+    lab10_capture_destroy(capture);
+}
+
 static void test_backlog_invalidation_and_cleanup(void)
 {
     fake_clock_t clock = {.now_us = 1000};
@@ -485,6 +522,7 @@ static void test_error_paths(void)
 int main(void)
 {
     test_modes_and_equivalence();
+    test_segments_connect_only_within_one_stroke();
     test_backlog_invalidation_and_cleanup();
     test_whole_frame_point_budget_and_output();
     test_error_paths();

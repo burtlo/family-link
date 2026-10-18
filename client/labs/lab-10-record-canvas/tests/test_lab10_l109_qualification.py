@@ -147,7 +147,7 @@ class Lab10L109QualificationBehaviorTests(unittest.TestCase):
             b"LAB10_READY build=qualification-build "
             b"trace_schema=lab10-record-trace/v1 physical_ring_wipe=1\n"
             b"LAB10_SCENARIO id=synthetic-sparse-multicolor-v1 status=started\n"
-            b"LAB10_SCRIPTED_DRAWING status=complete source=ui_task hardware_touch=0 recording=continues\n"
+            b"LAB10_SCRIPTED_DRAWING status=complete source=ui_task hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 accepted_points=4091 strokes=1 palette_changes=0 color=white\n"
             b"LAB10_SCENARIO id=synthetic-sparse-multicolor-v1 status=passed\n"
         )
         result = parser.parse_bytes(
@@ -175,7 +175,7 @@ class Lab10L109QualificationBehaviorTests(unittest.TestCase):
             banner = buffer.getvalue()
         self.assertIn("CAPTURE ACTIVE", banner)
         self.assertIn("mode=scripted; kit=box3-test; remaining=19s", banner)
-        self.assertIn("no operator touch or hardware-touch claim", banner)
+        self.assertIn("no palette changes or synthetic hardware-touch evidence", banner)
 
         with tempfile.TemporaryDirectory() as td:
             fake_host = SimpleNamespace(ROOT=Path(td))

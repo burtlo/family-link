@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "sdkconfig.h"
 
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -122,7 +123,7 @@ static lab10_render_mode_t configured_render_mode(void)
 #elif defined(CONFIG_LAB10_RENDER_MODE_WHOLE_FRAME)
     return LAB10_RENDER_MODE_WHOLE_FRAME;
 #else
-    return LAB10_RENDER_MODE_DIRECT_POINT;
+    return LAB10_RENDER_MODE_SEGMENT;
 #endif
 }
 
@@ -264,30 +265,69 @@ static void on_touch_routed(const lab10_ui_touch_event_t *event, void *context)
 void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
 {
 #if CONFIG_LAB10_SCRIPTED
-    if (view == NULL || lab10_ui_state(&view->model) != LAB10_SCREEN_RECORDING) {
+    if (view == NULL || view->capture == NULL ||
+        view->capture_session_id == LAB10_CAPTURE_INVALID_SESSION_ID) {
         return;
     }
-    const size_t event_count = lab10_ui_scripted_event_count();
-    if (view->scripted_event_index >= event_count) {
+    lab10_capture_stats_t stats;
+    if (!lab10_capture_get_stats(view->capture, view->capture_session_id,
+                                 &stats)) {
         return;
     }
-    if (view->scripted_event_index == 0u) {
-        printf("LAB10_SCRIPTED_DRAWING status=started source=ui_task "
-               "hardware_touch=0 palette_changes=3 strokes=3\n");
-    }
-    const lab10_ui_scripted_event_t *scripted_event =
-        lab10_ui_scripted_event(view->scripted_event_index);
-    if (scripted_event == NULL) {
+    const bool capture_active =
+        stats.status == LAB10_CAPTURE_STATUS_ACTIVE;
+    if (capture_active &&
+        lab10_ui_state(&view->model) != LAB10_SCREEN_RECORDING) {
         return;
     }
-    (void)lab10_ui_handle_touch(&view->model, scripted_event->phase,
-                                scripted_event->display_x,
-                                scripted_event->display_y,
-                                scripted_event->touch_id);
-    ++view->scripted_event_index;
-    if (view->scripted_event_index == event_count) {
+    const bool completion_eligible =
+        !capture_active &&
+        stats.terminal_outcome == LAB10_CAPTURE_OUTCOME_DURATION_CAP &&
+        stats.duration_cap_hit_count == 1u && stats.terminal_event_count == 1u &&
+        stats.accepted_point_count >=
+            LAB10_UI_SCRIPTED_MIN_COMPLETION_POINTS &&
+        stats.accepted_point_count < LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY &&
+        stats.stroke_count == 1u && stats.stroke_boundary_count == 0u &&
+        stats.selected_color_index == LAB10_COLOR_WHITE &&
+        stats.color_change_count == 0u && stats.queue_overflow_count == 0u &&
+        stats.trace_loss_count == 0u;
+    const lab10_ui_scripted_capture_state_t capture_state =
+        capture_active
+            ? LAB10_UI_SCRIPTED_CAPTURE_ACTIVE
+            : completion_eligible
+                  ? LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP
+                  : LAB10_UI_SCRIPTED_CAPTURE_OTHER_TERMINAL;
+    lab10_ui_scripted_event_t scripted_event;
+    const lab10_ui_scripted_poll_result_t result =
+        lab10_ui_scripted_schedule_poll(
+            &view->scripted_schedule, lab10_capture_now_us(view->capture),
+            capture_state, stats.accepted_point_count, &scripted_event);
+    if (result == LAB10_UI_SCRIPTED_POLL_EVENT) {
+        if (!view->scripted_started) {
+            view->scripted_started = true;
+            printf("LAB10_SCRIPTED_DRAWING status=started source=ui_task "
+                   "hardware_touch=0 duration_cap_ms=180000 "
+                   "move_interval_ms=%lu accepted_point_cap=%u "
+                   "palette_changes=0 strokes=1 color=white\n",
+                   (unsigned long)(LAB10_UI_SCRIPTED_MOVE_INTERVAL_US / 1000u),
+                   (unsigned)LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY);
+        }
+        (void)lab10_ui_handle_touch(&view->model, scripted_event.phase,
+                                    scripted_event.display_x,
+                                    scripted_event.display_y,
+                                    scripted_event.touch_id);
+    } else if (result == LAB10_UI_SCRIPTED_POLL_COMPLETE &&
+               view->scripted_started) {
         printf("LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
-               "hardware_touch=0 recording=continues\n");
+               "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
+               "accepted_points=%" PRIu32 " strokes=1 palette_changes=0 color=white\n",
+               stats.accepted_point_count);
+    } else if (result == LAB10_UI_SCRIPTED_POLL_INTERRUPTED &&
+               view->scripted_started) {
+        ESP_LOGW(TAG,
+                 "scripted drawing incomplete outcome=%s accepted_points=%" PRIu32,
+                 lab10_capture_outcome_name(stats.terminal_outcome),
+                 stats.accepted_point_count);
     }
 #else
     (void)view;
@@ -432,7 +472,19 @@ static void entry_animation_done(lv_anim_t *animation)
             s_anim_view = NULL;
             return;
         }
-        s_anim_view->scripted_event_index = 0u;
+        s_anim_view->scripted_started = false;
+        if (!lab10_ui_scripted_schedule_init(
+                &s_anim_view->scripted_schedule,
+                lab10_capture_now_us(s_anim_view->capture),
+                LAB10_CAPTURE_DURATION_CAP_US,
+                LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY,
+                LAB10_UI_SCRIPTED_MOVE_INTERVAL_US)) {
+            (void)lab10_capture_cancel(s_anim_view->capture,
+                                        s_anim_view->capture_session_id);
+            lab10_ui_view_present_state(s_anim_view, LAB10_SCREEN_FAILED);
+            s_anim_view = NULL;
+            return;
+        }
         lab10_ui_view_present_state(s_anim_view, LAB10_SCREEN_RECORDING);
     } else {
         lab10_ui_view_present_state(s_anim_view, LAB10_SCREEN_FAILED);

@@ -108,39 +108,6 @@ static void test_mapping_and_transitions(void)
     assert(lab10_ui_state(&model) == LAB10_SCREEN_IDLE);
 }
 
-static void test_scripted_ui_task_sequence_contract(void)
-{
-    lab10_ui_model_t model;
-    lab10_ui_model_init(&model);
-    assert(lab10_ui_enter_fab_bloom(&model) == 1);
-    assert(lab10_ui_finish_entry(&model) == 2);
-
-    size_t palette_changes = 0;
-    size_t canvas_events = 0;
-    for (size_t index = 0; index < lab10_ui_scripted_event_count(); ++index) {
-        const lab10_ui_scripted_event_t *event =
-            lab10_ui_scripted_event(index);
-        assert(event != NULL);
-        const lab10_touch_route_t route = lab10_ui_handle_touch(
-            &model, event->phase, event->display_x, event->display_y,
-            event->touch_id);
-        if (event->phase == LAB10_PHASE_PALETTE_CHANGE) {
-            assert(route == LAB10_ROUTE_PALETTE);
-            ++palette_changes;
-        } else {
-            assert(route == LAB10_ROUTE_CANVAS);
-            ++canvas_events;
-        }
-    }
-    assert(lab10_ui_scripted_event_count() == LAB10_UI_SCRIPTED_EVENT_COUNT);
-    assert(palette_changes == 3);
-    assert(canvas_events == 12);
-    assert(lab10_ui_selected_color(&model) == LAB10_COLOR_GOLD);
-    assert(lab10_ui_invalidation(&model)->canvas_invalidation_count == 12);
-    /* This sequence is a UI-task smoke path, not a hardware-touch claim. */
-    assert(lab10_ui_state(&model) == LAB10_SCREEN_RECORDING);
-}
-
 static void test_canvas_memory_policy_contract(void)
 {
     assert(lab10_canvas_memory_attempt_count() == 2);
@@ -167,7 +134,6 @@ int main(void)
     test_geometry();
     test_palette_and_routing();
     test_mapping_and_transitions();
-    test_scripted_ui_task_sequence_contract();
     test_canvas_memory_policy_contract();
     test_fab_transition_geometry_contract();
     puts("LAB10_UI_NATIVE_TEST_PASS");

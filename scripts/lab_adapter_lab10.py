@@ -16,6 +16,10 @@ ADAPTER_IDENTITY = "lab10"
 ADAPTER_VERSION = "v1"
 MAX_SERIAL_BYTES = 2 * 1024 * 1024
 MAX_CAPTURE_SECONDS = 180
+SCRIPTED_STARTUP_TIMEOUT_SECONDS = 60
+# Bound differential marker receipt latency to two 250 ms serial-read intervals.
+SCRIPTED_COMPLETION_EARLY_TOLERANCE_SECONDS = 0.5
+SCRIPTED_COMPLETION_GRACE_SECONDS = 5
 _SCRIPTED_DRAWING_PREFIX = b"LAB10_SCRIPTED_DRAWING "
 _SCENARIO_TERMINAL_STATUSES = frozenset(
     {"passed", "failed", "cancelled", "not_configured"}
@@ -48,6 +52,60 @@ def _marker(name: str, **fields: object) -> bytes:
     return f"{name} {encoded}\n".encode("utf-8")
 
 
+def _scripted_drawing_fields(line: bytes) -> dict[bytes, bytes] | None:
+    if not line.startswith(_SCRIPTED_DRAWING_PREFIX):
+        return None
+    fields: dict[bytes, bytes] = {}
+    for token in line[len(_SCRIPTED_DRAWING_PREFIX):].split():
+        if b"=" not in token:
+            return None
+        key, value = token.split(b"=", 1)
+        if not key or not value or key in fields:
+            return None
+        fields[key] = value
+    return fields
+
+
+def _scripted_start_line_valid(line: bytes) -> bool:
+    fields = _scripted_drawing_fields(line)
+    return fields is not None and all(
+        fields.get(key) == value
+        for key, value in {
+            b"status": b"started",
+            b"source": b"ui_task",
+            b"hardware_touch": b"0",
+            b"duration_cap_ms": b"180000",
+            b"move_interval_ms": b"44",
+            b"accepted_point_cap": b"4096",
+            b"palette_changes": b"0",
+            b"strokes": b"1",
+            b"color": b"white",
+        }.items()
+    )
+
+
+def _scripted_completion_line_valid(line: bytes) -> bool:
+    fields = _scripted_drawing_fields(line)
+    if fields is None:
+        return False
+    if fields.get(b"status") != b"complete":
+        return False
+    try:
+        accepted_points = int(fields.get(b"accepted_points", b""))
+    except ValueError:
+        return False
+    return (
+        fields.get(b"source") == b"ui_task"
+        and fields.get(b"hardware_touch") == b"0"
+        and fields.get(b"terminal") == b"duration_cap"
+        and fields.get(b"duration_cap_ms") == b"180000"
+        and 3500 <= accepted_points <= 4095
+        and fields.get(b"strokes") == b"1"
+        and fields.get(b"palette_changes") == b"0"
+        and fields.get(b"color") == b"white"
+    )
+
+
 def _scripted_completion_observed(path: Path) -> bool:
     """Return true only for a well-formed observed scripted completion line."""
 
@@ -55,67 +113,41 @@ def _scripted_completion_observed(path: Path) -> bool:
         payload = path.read_bytes()
     except OSError:
         return False
-    for line in payload.splitlines():
-        if not line.startswith(_SCRIPTED_DRAWING_PREFIX):
-            continue
-        fields: dict[bytes, bytes] = {}
-        malformed = False
-        for token in line[len(_SCRIPTED_DRAWING_PREFIX):].split():
-            if b"=" not in token:
-                malformed = True
-                break
-            key, value = token.split(b"=", 1)
-            if not key or not value or key in fields:
-                malformed = True
-                break
-            fields[key] = value
-        if not malformed and fields.get(b"status") == b"complete":
-            return True
-    return False
+    return any(_scripted_completion_line_valid(line) for line in payload.splitlines())
 
 
-def _scenario_stage_from_parsed(parsed: dict[str, Any], mode: str, workload: str) -> str:
-    """Map parsed terminal scenario evidence to the manifest stage.
+def _scenario_terminal_marker_status(path: Path, workload: str) -> str:
+    """Read the host-appended terminal scenario status from the serial artifact."""
 
-    The stage is deliberately narrower than the parser's workflow verdict:
-    only a parsed, valid scripted completion may pass it.  Manual runs and
-    scripted runs without a valid terminal marker remain unconfigured (or
-    incomplete for an explicitly failed/cancelled scenario); none of these
-    states promote the experiment verdict.
+    try:
+        terminal_line = path.read_bytes().splitlines()[-1]
+    except (OSError, IndexError):
+        return "not_configured"
+    for status in _SCENARIO_TERMINAL_STATUSES:
+        expected = _marker("LAB10_SCENARIO", id=workload, status=status).rstrip(b"\n")
+        if terminal_line == expected:
+            return status
+    return "not_configured"
+
+
+def _scenario_stage_from_status(status: str, mode: str) -> str:
+    """Mirror the host-appended terminal marker in the scenario stage.
+
+    Parser/readiness failures remain reflected by the overall workflow status;
+    they must not rewrite the separately recorded terminal scenario outcome.
     """
 
     if mode != "scripted":
         return "not_configured"
-
-    markers = parsed.get("markers")
-    scenarios = markers.get("scenarios") if isinstance(markers, dict) else None
-    if not isinstance(scenarios, list):
-        return "incomplete"
-
-    terminal = [
-        item for item in scenarios
-        if isinstance(item, dict)
-        and item.get("id") == workload
-        and item.get("status") in _SCENARIO_TERMINAL_STATUSES
-    ]
-    if not terminal:
-        return "incomplete"
-
-    status = terminal[-1]["status"]
     if status == "passed":
-        diagnostics = parsed.get("diagnostics")
-        completion_observed = (
-            isinstance(diagnostics, dict)
-            and diagnostics.get("scripted_completion_observed") is True
-        )
-        if parsed.get("workflow_status") == "PASS" and completion_observed:
-            return "passed"
-        return "incomplete"
+        return "passed"
     if status == "failed":
         return "failed"
     if status == "cancelled":
         return "incomplete"
-    return "not_configured"
+    if status == "not_configured":
+        return "not_configured"
+    return "incomplete"
 
 
 def _capture_command(mode: str) -> str:
@@ -134,9 +166,9 @@ def _print_capture_active(target, args, mode: str, seconds: int) -> None:
     )
     if mode == "scripted":
         print(
-            "Scripted mode: the UI task injects three palette changes and three "
-            "bounded canvas strokes; no operator touch or hardware-touch claim; "
-            "recording remains active for inspection.",
+            "Scripted mode: the UI task draws one continuous white stroke with "
+            "a DOWN and 44 ms scheduled MOVEs for the bounded 180-second "
+            "capture; no palette changes or synthetic hardware-touch evidence.",
             flush=True,
         )
     else:
@@ -176,6 +208,9 @@ def _capture_serial_bounded(host, target, run_id: str, seconds: int, mode: str) 
     connection = None
     total = 0
     completed = False
+    scripted_completion_at = None
+    scripted_start_count = 0
+    pending_line = b""
     try:
         connection = serial.Serial(target.device, 115200, timeout=0.25)
         connection.dtr = False
@@ -184,24 +219,61 @@ def _capture_serial_bounded(host, target, run_id: str, seconds: int, mode: str) 
         with log_path.open("wb") as log:
             log.write(prefix)
             total = len(prefix)
-            deadline = time.monotonic() + seconds
-            while time.monotonic() < deadline:
+            now = time.monotonic()
+            capture_started_at = now if mode != "scripted" else None
+            startup_deadline = now + SCRIPTED_STARTUP_TIMEOUT_SECONDS
+            deadline = now + seconds
+            while True:
                 chunk = connection.read(4096)
-                if not chunk:
-                    continue
-                if total + len(chunk) > MAX_SERIAL_BYTES:
-                    raise RuntimeError(
-                        f"LAB-10 serial log exceeded {MAX_SERIAL_BYTES} byte bound"
-                    )
-                log.write(chunk)
-                total += len(chunk)
+                if chunk:
+                    if total + len(chunk) > MAX_SERIAL_BYTES:
+                        raise RuntimeError(
+                            f"LAB-10 serial log exceeded {MAX_SERIAL_BYTES} byte bound"
+                        )
+                    log.write(chunk)
+                    total += len(chunk)
+                if mode == "scripted" and chunk:
+                    lines = (pending_line + chunk).split(b"\n")
+                    pending_line = lines.pop()
+                    for line in lines:
+                        if _scripted_start_line_valid(line):
+                            scripted_start_count += 1
+                            if scripted_start_count == 1:
+                                capture_started_at = time.monotonic()
+                                deadline = capture_started_at + seconds
+                        elif _scripted_completion_line_valid(line):
+                            scripted_completion_at = time.monotonic()
+                now = time.monotonic()
+                if mode == "scripted":
+                    if scripted_start_count > 1:
+                        break
+                    if capture_started_at is None and now >= startup_deadline:
+                        break
+                    if capture_started_at is not None:
+                        duration_deadline = capture_started_at + seconds
+                        completion_deadline = (
+                            duration_deadline + SCRIPTED_COMPLETION_GRACE_SECONDS
+                        )
+                        if now >= completion_deadline:
+                            break
+                elif now >= deadline:
+                    break
             # A scripted workflow is complete only when the device emitted its
             # exact completion marker. Manual captures and scripted captures
             # without that marker remain explicitly unconfigured.
             log.flush()
+            scripted_completion_qualified = (
+                scripted_start_count == 1
+                and capture_started_at is not None
+                and scripted_completion_at is not None
+                and capture_started_at + seconds
+                - SCRIPTED_COMPLETION_EARLY_TOLERANCE_SECONDS
+                <= scripted_completion_at
+                < capture_started_at + seconds + SCRIPTED_COMPLETION_GRACE_SECONDS
+            )
             scenario_status = (
                 "passed"
-                if mode == "scripted" and _scripted_completion_observed(log_path)
+                if mode == "scripted" and scripted_completion_qualified
                 else "not_configured"
             )
             terminal_marker = _marker("LAB10_SCENARIO", id=workload, status=scenario_status)
@@ -366,11 +438,7 @@ class Adapter:
                                  "variant": variant},
                     "artifacts": {"serial_log": serial_path.relative_to(host.ROOT).as_posix()},
                 })
-                scenario_status = (
-                    "passed"
-                    if requested_mode == "scripted" and _scripted_completion_observed(serial_path)
-                    else "not_configured"
-                )
+                scenario_status = _scenario_terminal_marker_status(serial_path, workload)
                 event("lab10_marker", "observed", marker="LAB10_SCENARIO", id=workload,
                       status=scenario_status, mode=requested_mode)
                 event("stage", "passed", stage="activity", mode=requested_mode)
@@ -408,12 +476,14 @@ class Adapter:
                 })
                 stages["parser"] = "passed"
                 event("stage", "passed", stage="parser")
-                stages["scenario"] = _scenario_stage_from_parsed(
-                    parsed, requested_mode, workload
+                stages["scenario"] = _scenario_stage_from_status(
+                    scenario_status, requested_mode
                 )
                 event("stage", stages["scenario"], stage="scenario",
                       mode=requested_mode)
                 workflow = parsed["workflow_status"]
+                if requested_mode == "scripted" and scenario_status != "passed":
+                    workflow = "INCOMPLETE"
                 experiment = parsed["experiment_verdict"]
                 completed = True
                 reason = "completed" if workflow == "PASS" else "markers_or_evidence_incomplete"

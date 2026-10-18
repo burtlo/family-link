@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 #ifndef CONFIG_LAB10_BUILD_ID
-#define CONFIG_LAB10_BUILD_ID "lab10-render-l10-04"
+#define CONFIG_LAB10_BUILD_ID "lab10-render-l10-04-segment-default"
 #endif
 
 static const char *TAG = "lab10_ui";

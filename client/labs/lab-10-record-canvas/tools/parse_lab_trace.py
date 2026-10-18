@@ -146,6 +146,46 @@ def _validate_marker(marker_name: str, fields: dict[str, str]) -> dict[str, str]
         _require_marker_fields(fields, ("status",), marker_name)
         if fields["status"] not in {"started", "complete"}:
             raise ParseError("LAB10_SCRIPTED_DRAWING.status is unsupported")
+        if fields["status"] == "complete":
+            required = (
+                "source",
+                "hardware_touch",
+                "terminal",
+                "duration_cap_ms",
+                "accepted_points",
+                "strokes",
+                "palette_changes",
+                "color",
+            )
+            _require_marker_fields(fields, required, marker_name)
+            if fields["source"] != "ui_task" or fields["hardware_touch"] != "0":
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING completion must be UI-task generated "
+                    "and declare hardware_touch=0"
+                )
+            if fields["terminal"] != "duration_cap" or fields["duration_cap_ms"] != "180000":
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING completion requires the full duration cap"
+                )
+            try:
+                accepted_points = int(fields["accepted_points"])
+            except ValueError as error:
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING.accepted_points must be an integer"
+                ) from error
+            if not 3500 <= accepted_points <= 4095:
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING.accepted_points is outside completion bounds"
+                )
+            if (
+                fields["strokes"] != "1"
+                or fields["palette_changes"] != "0"
+                or fields["color"] != "white"
+            ):
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING completion must describe one "
+                    "continuous white stroke"
+                )
         return fields
     if marker_name == "LAB10_CANCEL":
         _require_marker_fields(fields, ("requested",), marker_name)

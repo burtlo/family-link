@@ -1,4 +1,5 @@
 # L10-08 deterministic runner profile.  The firmware remains local-only; this
 # flag is a mode identity and does not synthesize trace or hardware evidence.
 CONFIG_LAB10_SCRIPTED=y
-CONFIG_LAB10_BUILD_ID="lab10-runner-scripted-v1"
+CONFIG_LAB10_BUILD_ID="lab10-runner-scripted-v2-continuous"
+CONFIG_LAB10_RENDER_MODE_SEGMENT=y

@@ -101,7 +101,7 @@ def serial_for(
         lines.extend([
             scripted_marker
             if scripted_marker is not None
-            else "LAB10_SCRIPTED_DRAWING status=complete source=ui_task hardware_touch=0 recording=continues",
+            else "LAB10_SCRIPTED_DRAWING status=complete source=ui_task hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 accepted_points=4095 strokes=1 palette_changes=0 color=white",
         ])
     lines.append(f"LAB10_SCENARIO id={workload} status={scenario_status}")
     if extra:
@@ -188,6 +188,78 @@ class ParserLifecycleAndBoundTests(unittest.TestCase):
         )
         with self.assertRaises(parser.ParseError):
             parser.parse_bytes(malformed)
+
+        early_completion = serial_for(
+            mode="scripted",
+            scripted_marker=(
+                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
+                "hardware_touch=0 terminal=stopped duration_cap_ms=180000 "
+                "accepted_points=1200 strokes=1 palette_changes=0 color=white"
+            ),
+        )
+        with self.assertRaises(parser.ParseError):
+            parser.parse_bytes(early_completion)
+
+        underfilled_completion = serial_for(
+            mode="scripted",
+            scripted_marker=(
+                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
+                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
+                "accepted_points=3499 strokes=1 palette_changes=0 color=white"
+            ),
+        )
+        with self.assertRaises(parser.ParseError):
+            parser.parse_bytes(underfilled_completion)
+
+        lower_bound_completion = parser.parse_bytes(serial_for(
+            mode="scripted",
+            scripted_marker=(
+                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
+                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
+                "accepted_points=3500 strokes=1 palette_changes=0 color=white"
+            ),
+        ))
+        self.assertEqual(lower_bound_completion["workflow_status"], "PASS")
+        self.assertEqual(
+            lower_bound_completion["markers"]["scripted_drawing"][-1]["accepted_points"],
+            "3500",
+        )
+        self.assertTrue(
+            lower_bound_completion["diagnostics"]["scripted_completion_observed"]
+        )
+
+        observed_target_count = parser.parse_bytes(serial_for(
+            mode="scripted",
+            scripted_marker=(
+                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
+                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
+                "accepted_points=3886 strokes=1 palette_changes=0 color=white"
+            ),
+        ))
+        self.assertEqual(observed_target_count["workflow_status"], "PASS")
+        self.assertTrue(observed_target_count["diagnostics"]["scripted_completion_observed"])
+
+        nonwhite_completion = serial_for(
+            mode="scripted",
+            scripted_marker=(
+                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
+                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
+                "accepted_points=4091 strokes=1 palette_changes=0 color=red"
+            ),
+        )
+        with self.assertRaises(parser.ParseError):
+            parser.parse_bytes(nonwhite_completion)
+
+        point_cap_completion = serial_for(
+            mode="scripted",
+            scripted_marker=(
+                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
+                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
+                "accepted_points=4096 strokes=1 palette_changes=0 color=white"
+            ),
+        )
+        with self.assertRaises(parser.ParseError):
+            parser.parse_bytes(point_cap_completion)
 
         passed_without_device_completion = serial_for(
             mode="scripted", scripted_marker="", scenario_status="passed"

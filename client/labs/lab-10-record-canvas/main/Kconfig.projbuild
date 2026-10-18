@@ -9,21 +9,22 @@ config LAB10_SCRIPTED
 
 config LAB10_BUILD_ID
     string "LAB-10 firmware build identifier"
-    default "lab10-render-l10-04"
+    default "lab10-render-l10-04-segment-default"
 
 choice LAB10_RENDER_MODE
     prompt "LAB-10 render mode"
-    default LAB10_RENDER_MODE_DIRECT_POINT
+    default LAB10_RENDER_MODE_SEGMENT
     help
-        Select the bounded renderer used by the ESP-IDF UI bridge. Direct
-        point is the control mode; the other modes are host/hardware
-        candidates and retain the same explicit per-update budgets.
+        Select the bounded renderer used by the ESP-IDF UI bridge. Segment
+        mode is the normal pen-like device default. Direct point remains
+        available for explicitly labeled control runs. All modes retain the
+        same explicit per-update budgets.
 
 config LAB10_RENDER_MODE_DIRECT_POINT
-    bool "Direct point control"
+    bool "Direct point control (labeled control runs)"
 
 config LAB10_RENDER_MODE_SEGMENT
-    bool "Segment candidate"
+    bool "Connected same-stroke segments (device default)"
 
 config LAB10_RENDER_MODE_BOUNDED_BATCH
     bool "Bounded batch candidate"
