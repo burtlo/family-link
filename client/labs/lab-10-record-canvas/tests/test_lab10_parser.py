@@ -368,6 +368,25 @@ class ParserLifecycleAndBoundTests(unittest.TestCase):
             diagnostic_only["diagnostics"]["scripted_completion_observed"]
         )
 
+    def test_optional_scheduler_timing_diagnostic_is_parsed_and_bounded(self):
+        line = (
+            "LAB10_SCRIPTED_DIAGNOSTIC terminal=duration_cap "
+            "ui_poll_count=9001 max_ui_poll_gap_us=52000 "
+            "scripted_event_count=3416 max_event_deadline_lateness_us=19000 "
+            "late_event_count=3280"
+        )
+        parsed = parser.parse_bytes(serial_for(extra=line))
+        diagnostic = parsed["markers"]["scripted_diagnostic"][-1]
+        self.assertEqual(diagnostic["ui_poll_count"], "9001")
+        self.assertEqual(diagnostic["max_ui_poll_gap_us"], "52000")
+        self.assertEqual(diagnostic["scripted_event_count"], "3416")
+
+        with self.assertRaises(parser.ParseError):
+            parser.parse_bytes(serial_for(extra=(
+                "LAB10_SCRIPTED_DIAGNOSTIC terminal=duration_cap "
+                "ui_poll_count=9001"
+            )))
+
     def test_cancellation_is_preserved_and_not_promoted_to_pass(self):
         trace = trace_fixture("cancelled")
         payload = serial_for(trace) + b"LAB10_CANCEL requested=1 reason=operator\n"

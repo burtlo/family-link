@@ -34,8 +34,8 @@ static const uint8_t SCRIPTED_STROKE_COLORS[LAB10_UI_SCRIPTED_STROKE_COUNT] = {
 
 static const uint64_t SCRIPTED_CADENCE_US[
     LAB10_SCRIPTED_CADENCE_PATTERN_LENGTH] = {
-        UINT64_C(36000), UINT64_C(40000), UINT64_C(44000),
-        UINT64_C(48000), UINT64_C(52000),
+        UINT64_C(36000), UINT64_C(36000), UINT64_C(36000),
+        UINT64_C(40000), UINT64_C(40000),
     };
 
 static bool is_outcome(lab10_screen_state_t state)
@@ -141,6 +141,73 @@ const lab10_ui_invalidation_stats_t *lab10_ui_invalidation(
     const lab10_ui_model_t *model)
 {
     return model != NULL ? &model->invalidation : NULL;
+}
+
+void lab10_ui_scripted_qualification_begin(
+    lab10_ui_scripted_qualification_t *qualification, bool scripted_session)
+{
+    if (qualification == NULL) {
+        return;
+    }
+    *qualification = (lab10_ui_scripted_qualification_t){
+        .scripted_session = scripted_session,
+    };
+}
+
+void lab10_ui_scripted_qualification_resolve(
+    lab10_ui_scripted_qualification_t *qualification, bool accepted)
+{
+    if (qualification == NULL || !qualification->scripted_session) {
+        return;
+    }
+    qualification->decision_resolved = true;
+    qualification->completion_accepted = accepted;
+}
+
+bool lab10_ui_terminal_screen_state(
+    lab10_ui_terminal_kind_t terminal,
+    const lab10_ui_scripted_qualification_t *qualification,
+    lab10_screen_state_t *state)
+{
+    if (state == NULL) {
+        return false;
+    }
+
+    switch (terminal) {
+    case LAB10_UI_TERMINAL_COMPLETED:
+        if (qualification != NULL && qualification->scripted_session &&
+            (!qualification->decision_resolved ||
+             !qualification->completion_accepted)) {
+            *state = LAB10_SCREEN_FAILED;
+        } else {
+            *state = LAB10_SCREEN_COMPLETED;
+        }
+        return true;
+    case LAB10_UI_TERMINAL_STOPPED:
+        *state = LAB10_SCREEN_STOPPED;
+        return true;
+    case LAB10_UI_TERMINAL_CANCELLED:
+        *state = LAB10_SCREEN_CANCELLED;
+        return true;
+    case LAB10_UI_TERMINAL_DURATION_CAP:
+        if (qualification != NULL && qualification->scripted_session) {
+            if (!qualification->decision_resolved) {
+                return false;
+            }
+            *state = qualification->completion_accepted
+                         ? LAB10_SCREEN_COMPLETED
+                         : LAB10_SCREEN_FAILED;
+            return true;
+        }
+        *state = LAB10_SCREEN_FAILED;
+        return true;
+    case LAB10_UI_TERMINAL_POINT_CAP:
+    case LAB10_UI_TERMINAL_QUEUE_OVERFLOW:
+    case LAB10_UI_TERMINAL_FAILED:
+    default:
+        *state = LAB10_SCREEN_FAILED;
+        return true;
+    }
 }
 
 bool lab10_ui_scripted_diagnostic_begin(
@@ -336,6 +403,17 @@ lab10_ui_scripted_poll_result_t lab10_ui_scripted_schedule_poll(
         return LAB10_UI_SCRIPTED_POLL_WAIT;
     }
 
+    ++schedule->poll_count;
+    if (schedule->poll_timestamp_valid &&
+        now_us >= schedule->last_poll_timestamp_us) {
+        const uint64_t poll_gap_us = now_us - schedule->last_poll_timestamp_us;
+        if (poll_gap_us > schedule->max_poll_gap_us) {
+            schedule->max_poll_gap_us = poll_gap_us;
+        }
+    }
+    schedule->last_poll_timestamp_us = now_us;
+    schedule->poll_timestamp_valid = true;
+
     const uint64_t elapsed_us =
         now_us >= schedule->capture_start_timestamp_us
             ? now_us - schedule->capture_start_timestamp_us
@@ -380,6 +458,17 @@ lab10_ui_scripted_poll_result_t lab10_ui_scripted_schedule_poll(
     }
     if (now_us < schedule->next_event_timestamp_us) {
         return LAB10_UI_SCRIPTED_POLL_WAIT;
+    }
+
+    const uint64_t event_deadline_lateness_us =
+        now_us - schedule->next_event_timestamp_us;
+    if (event_deadline_lateness_us > 0u) {
+        ++schedule->late_event_count;
+        if (event_deadline_lateness_us >
+            schedule->max_event_deadline_lateness_us) {
+            schedule->max_event_deadline_lateness_us =
+                event_deadline_lateness_us;
+        }
     }
 
     const lab10_ui_scripted_action_t action = schedule->next_action;
@@ -440,6 +529,7 @@ lab10_ui_scripted_poll_result_t lab10_ui_scripted_schedule_poll(
         return LAB10_UI_SCRIPTED_POLL_WAIT;
     }
 
+    ++schedule->event_count;
     scripted_advance(schedule, now_us, action);
     return LAB10_UI_SCRIPTED_POLL_EVENT;
 }

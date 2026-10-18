@@ -48,6 +48,7 @@
 #define LAB10_UI_SCRIPTED_POINTS_PER_STROKE 200u
 #define LAB10_UI_SCRIPTED_CADENCE_MIN_US UINT64_C(36000)
 #define LAB10_UI_SCRIPTED_CADENCE_MAX_US UINT64_C(52000)
+#define LAB10_UI_SCRIPTED_CADENCE_PROFILE "scripted-cadence-36-36-36-40-40-v2"
 #define LAB10_UI_SCRIPTED_PEN_UP_GAP_US UINT64_C(400000)
 #define LAB10_UI_SCRIPTED_PAUSE_US UINT64_C(780000)
 #define LAB10_UI_SCRIPTED_MIN_COMPLETION_STROKES 6u
@@ -102,6 +103,22 @@ typedef enum {
     LAB10_SCREEN_EXIT_REVERSE,
 } lab10_screen_state_t;
 
+typedef enum {
+    LAB10_UI_TERMINAL_COMPLETED = 0,
+    LAB10_UI_TERMINAL_STOPPED,
+    LAB10_UI_TERMINAL_CANCELLED,
+    LAB10_UI_TERMINAL_DURATION_CAP,
+    LAB10_UI_TERMINAL_POINT_CAP,
+    LAB10_UI_TERMINAL_QUEUE_OVERFLOW,
+    LAB10_UI_TERMINAL_FAILED,
+} lab10_ui_terminal_kind_t;
+
+typedef struct {
+    bool scripted_session;
+    bool decision_resolved;
+    bool completion_accepted;
+} lab10_ui_scripted_qualification_t;
+
 typedef struct {
     int16_t center_x;
     int16_t center_y;
@@ -152,19 +169,31 @@ typedef struct {
     uint64_t capture_start_timestamp_us;
     uint64_t duration_cap_us;
     uint64_t next_event_timestamp_us;
+    uint64_t last_poll_timestamp_us;
+    uint64_t max_poll_gap_us;
+    uint64_t max_event_deadline_lateness_us;
     uint32_t accepted_point_cap;
     uint32_t cadence_index;
+    uint32_t poll_count;
+    uint32_t event_count;
+    uint32_t late_event_count;
     uint16_t stroke_point_count;
     uint8_t stroke_index;
     lab10_ui_scripted_action_t next_action;
     bool initialized;
+    bool poll_timestamp_valid;
     bool down_emitted;
     bool terminal_reported;
 } lab10_ui_scripted_schedule_t;
 
 typedef struct {
     uint64_t capture_session_id;
+    uint64_t max_poll_gap_us;
+    uint64_t max_event_deadline_lateness_us;
     uint32_t accepted_points;
+    uint32_t scheduler_poll_count;
+    uint32_t scripted_event_count;
+    uint32_t late_event_count;
     uint8_t renderer_published_color_mask;
     uint8_t canvas_sampled_color_mask;
     uint8_t canvas_readback_color_mask;
@@ -264,6 +293,14 @@ lab10_screen_state_t lab10_ui_state(const lab10_ui_model_t *model);
 uint8_t lab10_ui_selected_color(const lab10_ui_model_t *model);
 const lab10_ui_invalidation_stats_t *lab10_ui_invalidation(
     const lab10_ui_model_t *model);
+void lab10_ui_scripted_qualification_begin(
+    lab10_ui_scripted_qualification_t *qualification, bool scripted_session);
+void lab10_ui_scripted_qualification_resolve(
+    lab10_ui_scripted_qualification_t *qualification, bool accepted);
+bool lab10_ui_terminal_screen_state(
+    lab10_ui_terminal_kind_t terminal,
+    const lab10_ui_scripted_qualification_t *qualification,
+    lab10_screen_state_t *state);
 
 /* UI-task-only deterministic path; it does not claim hardware touch input. */
 bool lab10_ui_scripted_schedule_init(

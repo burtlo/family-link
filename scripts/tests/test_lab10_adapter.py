@@ -20,6 +20,7 @@ from lab_adapter_lab10 import (  # noqa: E402
     MAX_SERIAL_BYTES,
     SCRIPTED_COMPLETION_GRACE_SECONDS,
     SCRIPTED_WORKLOAD_IDENTITY,
+    _scripted_start_line_valid,
     _scripted_completion_observed,
     _workload,
     _print_capture_active,
@@ -33,6 +34,7 @@ import parse_lab_trace  # noqa: E402
 SCRIPTED_STARTED_MARKER = (
     b"LAB10_SCRIPTED_DRAWING status=started source=ui_task "
     b"hardware_touch=0 duration_cap_ms=180000 cadence_min_ms=36 "
+    b"cadence_profile=scripted-cadence-36-36-36-40-40-v2 "
     b"cadence_max_ms=52 stroke_points=200 planned_strokes=18 "
     b"planned_palette_changes=17 required_color_mask=0x3e "
     b"pen_up_gap_ms=400 pause_ms=780 accepted_point_cap=4096\n"
@@ -148,6 +150,24 @@ class Lab10AdapterTests(unittest.TestCase):
             self.assertEqual(
                 _workload("manual"), "manual-sparse-variable-speed"
             )
+
+    def test_scripted_start_requires_exact_cadence_profile(self):
+        self.assertTrue(_scripted_start_line_valid(SCRIPTED_STARTED_MARKER))
+        self.assertFalse(
+            _scripted_start_line_valid(
+                SCRIPTED_STARTED_MARKER.replace(
+                    b"cadence_profile=scripted-cadence-36-36-36-40-40-v2 ", b""
+                )
+            )
+        )
+        self.assertFalse(
+            _scripted_start_line_valid(
+                SCRIPTED_STARTED_MARKER.replace(
+                    b"scripted-cadence-36-36-36-40-40-v2",
+                    b"scripted-cadence-36-36-36-40-40-v1",
+                )
+            )
+        )
 
     @staticmethod
     def _scripted_markers():
@@ -447,7 +467,10 @@ class Lab10AdapterTests(unittest.TestCase):
             output,
         )
         self.assertIn("UI task draws 18 paced strokes with real palette selections", output)
-        self.assertIn("variable 36–52 ms cadence", output)
+        self.assertIn(
+            "deterministic 36/36/36/40/40 ms cadence (within allowed 36–52 ms bounds)",
+            output,
+        )
         self.assertIn("no synthetic hardware-touch evidence", output)
 
     def test_bounded_capture_writes_runner_markers_and_closes(self):

@@ -14,6 +14,37 @@ ROOT = PACKAGE.parents[2]
 
 
 class ScriptedDeviceContractTests(unittest.TestCase):
+    def test_timing_telemetry_is_reported_by_app_task_with_profile_identity(self):
+        app_main = (PACKAGE / "main/app_main.c").read_text(encoding="utf-8")
+        bridge = (PACKAGE / "main/lab10_ui_lvgl.c").read_text(encoding="utf-8")
+
+        self.assertIn("cadence_profile=%s", app_main)
+        self.assertIn("LAB10_UI_SCRIPTED_CADENCE_PROFILE", app_main)
+        self.assertIn("cadence_min_ms=36 cadence_max_ms=52", app_main)
+        for field in (
+            "ui_poll_count",
+            "max_ui_poll_gap_us",
+            "scripted_event_count",
+            "max_event_deadline_lateness_us",
+            "late_event_count",
+        ):
+            self.assertIn(field, app_main)
+        self.assertNotIn("printf(", bridge)
+
+    def test_invalid_terminal_count_fails_closed_in_ui_presentation(self):
+        bridge = (PACKAGE / "main/lab10_ui_lvgl.c").read_text(encoding="utf-8")
+        start = bridge.index("static void present_capture_outcome(")
+        end = bridge.index("void lab10_ui_view_stop_capture(", start)
+        present = bridge[start:end]
+
+        self.assertIn("stats.status != LAB10_CAPTURE_STATUS_TERMINAL", present)
+        self.assertIn("const bool terminal_stats_valid = stats.terminal_event_count == 1u", present)
+        self.assertIn(
+            "? capture_terminal_kind(stats.terminal_outcome)\n                : LAB10_UI_TERMINAL_FAILED",
+            present,
+        )
+        self.assertNotIn("stats.terminal_event_count != 1)", present)
+
     def test_native_scheduler_capture_and_continuous_render(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             binary = Path(temp_dir) / "lab10_scripted_native_test"

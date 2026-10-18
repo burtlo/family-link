@@ -53,6 +53,7 @@ typedef struct {
     int16_t transition_origin_x;
     int16_t transition_origin_y;
     lab10_ui_scripted_schedule_t scripted_schedule;
+    lab10_ui_scripted_qualification_t scripted_qualification;
     bool scripted_started;
     bool scripted_start_marker_pending;
     bool scripted_completion_marker_pending;

@@ -89,6 +89,7 @@ def _scripted_start_line_valid(line: bytes) -> bool:
             b"hardware_touch": b"0",
             b"duration_cap_ms": b"180000",
             b"cadence_min_ms": b"36",
+            b"cadence_profile": b"scripted-cadence-36-36-36-40-40-v2",
             b"cadence_max_ms": b"52",
             b"stroke_points": b"200",
             b"planned_strokes": b"18",
@@ -214,7 +215,8 @@ def _print_capture_active(target, args, mode: str, seconds: int) -> None:
     if mode == "scripted":
         print(
             "Scripted mode: the UI task draws 18 paced strokes with real "
-            "palette selections, variable 36–52 ms cadence, and bounded "
+            "palette selections, deterministic 36/36/36/40/40 ms cadence "
+            "(within allowed 36–52 ms bounds), and bounded "
             "gaps/pauses through the 180-second capture; no synthetic "
             "hardware-touch evidence.",
             flush=True,

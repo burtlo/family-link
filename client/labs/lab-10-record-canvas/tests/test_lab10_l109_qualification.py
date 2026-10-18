@@ -193,7 +193,11 @@ class Lab10L109QualificationBehaviorTests(unittest.TestCase):
         self.assertIn("mode=scripted; kit=box3-test; remaining=19s", banner)
         self.assertIn("18 paced strokes", banner)
         self.assertIn("real palette selections", banner)
-        self.assertIn("variable 36–52 ms cadence", banner)
+        self.assertIn(
+            "deterministic 36/36/36/40/40 ms cadence "
+            "(within allowed 36–52 ms bounds)",
+            banner,
+        )
         self.assertIn("through the 180-second capture", banner)
         self.assertIn("no synthetic hardware-touch evidence", banner)
         self.assertNotIn("no palette changes", banner)

@@ -652,9 +652,11 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
         .trace_clean = stats.queue_overflow_count == 0u &&
                        stats.trace_loss_count == 0u,
     };
-    const bool duration_terminal =
+    const bool duration_cap_outcome =
         !capture_active &&
-        stats.terminal_outcome == LAB10_CAPTURE_OUTCOME_DURATION_CAP &&
+        stats.terminal_outcome == LAB10_CAPTURE_OUTCOME_DURATION_CAP;
+    const bool duration_terminal =
+        duration_cap_outcome &&
         stats.duration_cap_hit_count == 1u && stats.terminal_event_count == 1u;
     const lab10_ui_scripted_capture_state_t capture_state =
         capture_active
@@ -667,6 +669,13 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
         lab10_ui_scripted_schedule_poll(
             &view->scripted_schedule, lab10_capture_now_us(view->capture),
             capture_state, &completion_summary, &scripted_event);
+    if (duration_cap_outcome &&
+        (result == LAB10_UI_SCRIPTED_POLL_COMPLETE ||
+         result == LAB10_UI_SCRIPTED_POLL_INTERRUPTED)) {
+        lab10_ui_scripted_qualification_resolve(
+            &view->scripted_qualification,
+            duration_terminal && result == LAB10_UI_SCRIPTED_POLL_COMPLETE);
+    }
     if (result == LAB10_UI_SCRIPTED_POLL_EVENT) {
         if (!view->scripted_started) {
             view->scripted_started = true;
@@ -697,7 +706,13 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
             .terminal_outcome = stats.terminal_outcome,
             .snapshot = {
                 .capture_session_id = view->capture_session_id,
+                .max_poll_gap_us = view->scripted_schedule.max_poll_gap_us,
+                .max_event_deadline_lateness_us =
+                    view->scripted_schedule.max_event_deadline_lateness_us,
                 .accepted_points = stats.accepted_point_count,
+                .scheduler_poll_count = view->scripted_schedule.poll_count,
+                .scripted_event_count = view->scripted_schedule.event_count,
+                .late_event_count = view->scripted_schedule.late_event_count,
                 .renderer_published_color_mask =
                     view->renderer_published_color_mask,
                 .canvas_sampled_color_mask = view->canvas_sampled_color_mask,
@@ -943,6 +958,13 @@ static void entry_animation_done(lv_anim_t *animation)
         s_anim_view->scripted_started = false;
         s_anim_view->scripted_start_marker_pending = false;
         s_anim_view->scripted_completion_marker_pending = false;
+#if CONFIG_LAB10_SCRIPTED
+        lab10_ui_scripted_qualification_begin(
+            &s_anim_view->scripted_qualification, true);
+#else
+        lab10_ui_scripted_qualification_begin(
+            &s_anim_view->scripted_qualification, false);
+#endif
         s_anim_view->scripted_completion =
             (lab10_ui_scripted_completion_t){0};
         /* The shared slot owns any old snapshot after the local latch clears. */
@@ -1334,23 +1356,26 @@ void lab10_ui_view_present_state(lab10_ui_view_t *view,
     }
 }
 
-static lab10_screen_state_t capture_outcome_state(
+static lab10_ui_terminal_kind_t capture_terminal_kind(
     lab10_capture_terminal_outcome_t outcome)
 {
     switch (outcome) {
     case LAB10_CAPTURE_OUTCOME_COMPLETED:
-        return LAB10_SCREEN_COMPLETED;
+        return LAB10_UI_TERMINAL_COMPLETED;
     case LAB10_CAPTURE_OUTCOME_STOPPED:
-        return LAB10_SCREEN_STOPPED;
+        return LAB10_UI_TERMINAL_STOPPED;
     case LAB10_CAPTURE_OUTCOME_CANCELLED:
-        return LAB10_SCREEN_CANCELLED;
+        return LAB10_UI_TERMINAL_CANCELLED;
     case LAB10_CAPTURE_OUTCOME_DURATION_CAP:
+        return LAB10_UI_TERMINAL_DURATION_CAP;
     case LAB10_CAPTURE_OUTCOME_POINT_CAP:
+        return LAB10_UI_TERMINAL_POINT_CAP;
     case LAB10_CAPTURE_OUTCOME_QUEUE_OVERFLOW:
+        return LAB10_UI_TERMINAL_QUEUE_OVERFLOW;
     case LAB10_CAPTURE_OUTCOME_FAILED:
     case LAB10_CAPTURE_OUTCOME_NONE:
     default:
-        return LAB10_SCREEN_FAILED;
+        return LAB10_UI_TERMINAL_FAILED;
     }
 }
 
@@ -1364,12 +1389,21 @@ static void present_capture_outcome(lab10_ui_view_t *view)
     lab10_capture_stats_t stats;
     if (!lab10_capture_get_stats(view->capture, view->capture_session_id,
                                  &stats) ||
-        stats.terminal_event_count != 1) {
+        stats.status != LAB10_CAPTURE_STATUS_TERMINAL) {
         return;
     }
     if (view->scripted_started &&
         atomic_load_explicit(&s_scripted_start_delivery_required,
                              memory_order_acquire)) {
+        return;
+    }
+    lab10_screen_state_t presentation_state;
+    const bool terminal_stats_valid = stats.terminal_event_count == 1u;
+    if (!lab10_ui_terminal_screen_state(
+            terminal_stats_valid
+                ? capture_terminal_kind(stats.terminal_outcome)
+                : LAB10_UI_TERMINAL_FAILED,
+            &view->scripted_qualification, &presentation_state)) {
         return;
     }
     /* Do not advance the UI until the one-slot handoff accepts this outcome.
@@ -1380,7 +1414,7 @@ static void present_capture_outcome(lab10_ui_view_t *view)
         return;
     }
     lab10_ui_present_outcome(
-        &view->model, capture_outcome_state(stats.terminal_outcome));
+        &view->model, presentation_state);
     lab10_ui_view_present_state(view, lab10_ui_state(&view->model));
 }
 

@@ -64,6 +64,71 @@ static lab10_ui_scripted_capture_summary_t completion_summary(
     };
 }
 
+static void test_terminal_presentation_waits_for_scripted_qualification(void)
+{
+    lab10_ui_scripted_qualification_t qualification;
+    lab10_ui_scripted_qualification_begin(&qualification, true);
+
+    lab10_screen_state_t state = LAB10_SCREEN_FAILED;
+    assert(!lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_DURATION_CAP, &qualification, &state));
+    assert(state == LAB10_SCREEN_FAILED);
+
+    lab10_ui_scripted_qualification_resolve(&qualification, true);
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_DURATION_CAP, &qualification, &state));
+    assert(state == LAB10_SCREEN_COMPLETED);
+    /* Repeated presentation attempts remain qualified if the mailbox is full. */
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_DURATION_CAP, &qualification, &state));
+    assert(state == LAB10_SCREEN_COMPLETED);
+
+    lab10_ui_scripted_qualification_begin(&qualification, true);
+    assert(!qualification.decision_resolved);
+    assert(!lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_DURATION_CAP, &qualification, &state));
+    lab10_ui_scripted_qualification_resolve(&qualification, false);
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_DURATION_CAP, &qualification, &state));
+    assert(state == LAB10_SCREEN_FAILED);
+}
+
+static void test_terminal_failure_and_manual_duration_mappings(void)
+{
+    const lab10_ui_terminal_kind_t failures[] = {
+        LAB10_UI_TERMINAL_POINT_CAP,
+        LAB10_UI_TERMINAL_QUEUE_OVERFLOW,
+        LAB10_UI_TERMINAL_FAILED,
+    };
+    lab10_ui_scripted_qualification_t qualification;
+    lab10_ui_scripted_qualification_begin(&qualification, true);
+    lab10_screen_state_t state = LAB10_SCREEN_COMPLETED;
+    for (size_t index = 0; index < sizeof(failures) / sizeof(failures[0]);
+         ++index) {
+        assert(lab10_ui_terminal_screen_state(
+            failures[index], &qualification, &state));
+        assert(state == LAB10_SCREEN_FAILED);
+    }
+    /* A scripted session must never pass through an unqualified terminal. */
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_COMPLETED, &qualification, &state));
+    assert(state == LAB10_SCREEN_FAILED);
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_STOPPED, &qualification, &state));
+    assert(state == LAB10_SCREEN_STOPPED);
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_CANCELLED, &qualification, &state));
+    assert(state == LAB10_SCREEN_CANCELLED);
+
+    lab10_ui_scripted_qualification_begin(&qualification, false);
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_COMPLETED, &qualification, &state));
+    assert(state == LAB10_SCREEN_COMPLETED);
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_DURATION_CAP, &qualification, &state));
+    assert(state == LAB10_SCREEN_FAILED);
+}
+
 static lab10_ui_scripted_schedule_t new_schedule(uint64_t start_us)
 {
     lab10_ui_scripted_schedule_t schedule;
@@ -97,6 +162,62 @@ static lab10_ui_scripted_poll_result_t poll_duration_completion(
                          start_us + LAB10_CAPTURE_DURATION_CAP_US,
                          LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP, summary,
                          &event);
+}
+
+static void test_malformed_duration_cap_cannot_qualify(void)
+{
+    const uint64_t start_us = UINT64_C(1000000);
+    lab10_ui_scripted_schedule_t schedule = new_schedule(start_us);
+    lab10_ui_scripted_event_t event;
+    assert(poll_schedule(&schedule, start_us, LAB10_UI_SCRIPTED_CAPTURE_ACTIVE,
+                         &(lab10_ui_scripted_capture_summary_t){0}, &event) ==
+           LAB10_UI_SCRIPTED_POLL_EVENT);
+    const lab10_ui_scripted_poll_result_t result = poll_schedule(
+        &schedule, start_us + LAB10_CAPTURE_DURATION_CAP_US,
+        LAB10_UI_SCRIPTED_CAPTURE_OTHER_TERMINAL,
+        &(lab10_ui_scripted_capture_summary_t){
+            .accepted_point_count = 3416u,
+            .stroke_count = 18u,
+            .color_change_count = 17u,
+            .accepted_color_mask = 0x3eu,
+            .trace_clean = true,
+        },
+        &event);
+    assert(result == LAB10_UI_SCRIPTED_POLL_INTERRUPTED);
+
+    lab10_ui_scripted_qualification_t qualification;
+    lab10_ui_scripted_qualification_begin(&qualification, true);
+    /* The caller may resolve only with duration counters validated; an
+     * OTHER_TERMINAL decision is explicitly rejected even if metrics qualify. */
+    lab10_ui_scripted_qualification_resolve(
+        &qualification, result == LAB10_UI_SCRIPTED_POLL_COMPLETE);
+    lab10_screen_state_t state;
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_DURATION_CAP, &qualification, &state));
+    assert(state == LAB10_SCREEN_FAILED);
+}
+
+static void test_scripted_scheduler_timing_telemetry(void)
+{
+    const uint64_t start_us = UINT64_C(1000000);
+    lab10_ui_scripted_schedule_t schedule = new_schedule(start_us);
+    lab10_ui_scripted_event_t event;
+    const lab10_ui_scripted_capture_summary_t summary = {0};
+
+    assert(poll_schedule(&schedule, start_us, LAB10_UI_SCRIPTED_CAPTURE_ACTIVE,
+                         &summary, &event) == LAB10_UI_SCRIPTED_POLL_EVENT);
+    assert(poll_schedule(&schedule, start_us + UINT64_C(25000),
+                         LAB10_UI_SCRIPTED_CAPTURE_ACTIVE, &summary, &event) ==
+           LAB10_UI_SCRIPTED_POLL_WAIT);
+    assert(poll_schedule(&schedule, start_us + UINT64_C(60000),
+                         LAB10_UI_SCRIPTED_CAPTURE_ACTIVE, &summary, &event) ==
+           LAB10_UI_SCRIPTED_POLL_EVENT);
+
+    assert(schedule.poll_count == 3u);
+    assert(schedule.max_poll_gap_us == UINT64_C(35000));
+    assert(schedule.event_count == 2u);
+    assert(schedule.max_event_deadline_lateness_us == UINT64_C(24000));
+    assert(schedule.late_event_count == 1u);
 }
 
 static lab10_ui_scripted_canvas_observation_t diagnostic_observation(
@@ -551,17 +672,20 @@ static void test_scripted_multicolor_strokes_render_until_duration_cap(void)
     assert(down_events == LAB10_UI_SCRIPTED_STROKE_COUNT);
     assert(up_events == LAB10_UI_SCRIPTED_STROKE_COUNT - 1u);
     assert(palette_events == LAB10_UI_SCRIPTED_STROKE_COUNT - 1u);
-    assert(move_events + down_events >=
-           LAB10_UI_SCRIPTED_MIN_COMPLETION_POINTS);
+    assert(move_events + down_events ==
+           LAB10_UI_SCRIPTED_STROKE_COUNT *
+               LAB10_UI_SCRIPTED_POINTS_PER_STROKE);
     assert(max_move_interval_us > min_move_interval_us);
-    assert(min_move_interval_us >= LAB10_UI_SCRIPTED_CADENCE_MIN_US);
-    assert(max_move_interval_us <= UINT64_C(80000));
+    /* A 20 ms UI poll can quantize deadline boundaries to one poll interval. */
+    assert(min_move_interval_us >= UINT64_C(20000));
+    assert(max_move_interval_us <= LAB10_UI_SCRIPTED_CADENCE_MAX_US +
+                                      UINT64_C(20000));
     assert(longest_pen_up_gap_us >=
            LAB10_UI_SCRIPTED_PEN_UP_GAP_US +
                LAB10_UI_SCRIPTED_PAUSE_US);
-    assert(last_scripted_event_us >=
+    assert(last_scripted_event_us <=
            UINT64_C(1000000) + LAB10_CAPTURE_DURATION_CAP_US -
-               UINT64_C(1000000));
+               UINT64_C(10000000));
     assert(lab10_ui_selected_color(&model) == LAB10_COLOR_RED);
 
     const lab10_ui_scripted_capture_summary_t summary = completion_summary(
@@ -662,6 +786,10 @@ static void test_scripted_multicolor_strokes_render_until_duration_cap(void)
 
 int main(void)
 {
+    test_terminal_presentation_waits_for_scripted_qualification();
+    test_terminal_failure_and_manual_duration_mappings();
+    test_malformed_duration_cap_cannot_qualify();
+    test_scripted_scheduler_timing_telemetry();
     test_scripted_diagnostic_waits_for_drain_and_retries_frozen_payload();
     test_scripted_diagnostic_rollover_keeps_old_masks_and_releases_latch();
     test_completion_count_bounds_and_relationship();

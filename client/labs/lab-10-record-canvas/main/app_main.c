@@ -124,10 +124,12 @@ void app_main(void)
         if (lab10_ui_view_take_pending_scripted_start()) {
             printf("LAB10_SCRIPTED_DRAWING status=started source=ui_task "
                    "hardware_touch=0 duration_cap_ms=180000 "
+                   "cadence_profile=%s "
                    "cadence_min_ms=36 cadence_max_ms=52 "
                    "stroke_points=200 planned_strokes=18 "
                    "planned_palette_changes=17 required_color_mask=0x3e "
                    "pen_up_gap_ms=400 pause_ms=780 accepted_point_cap=%u\n",
+                   LAB10_UI_SCRIPTED_CADENCE_PROFILE,
                    (unsigned)LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY);
         }
         if (lab10_ui_view_take_pending_scripted_completion(
@@ -145,6 +147,11 @@ void app_main(void)
                 &scripted_diagnostic)) {
             printf("LAB10_SCRIPTED_DIAGNOSTIC terminal=%s "
                    "capture_session_id=%" PRIu64 " "
+                   "ui_poll_count=%" PRIu32 " "
+                   "max_ui_poll_gap_us=%" PRIu64 " "
+                   "scripted_event_count=%" PRIu32 " "
+                   "max_event_deadline_lateness_us=%" PRIu64 " "
+                   "late_event_count=%" PRIu32 " "
                    "accepted_points=%" PRIu32 " strokes=%" PRIu32 " "
                    "palette_changes=%" PRIu32 " accepted_color_mask=0x%02x "
                    "queue_overflow_count=%" PRIu32 " "
@@ -162,6 +169,11 @@ void app_main(void)
                    lab10_capture_outcome_name(
                        scripted_diagnostic.terminal_outcome),
                    scripted_diagnostic.snapshot.capture_session_id,
+                   scripted_diagnostic.snapshot.scheduler_poll_count,
+                   scripted_diagnostic.snapshot.max_poll_gap_us,
+                   scripted_diagnostic.snapshot.scripted_event_count,
+                   scripted_diagnostic.snapshot.max_event_deadline_lateness_us,
+                   scripted_diagnostic.snapshot.late_event_count,
                    scripted_diagnostic.snapshot.accepted_points,
                    scripted_diagnostic.strokes,
                    scripted_diagnostic.palette_changes,

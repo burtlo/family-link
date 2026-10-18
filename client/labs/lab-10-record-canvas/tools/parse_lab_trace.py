@@ -43,6 +43,7 @@ _MARKER_PREFIXES = (
     "LAB10_RUN ",
     "LAB10_SCENARIO ",
     "LAB10_SCRIPTED_DRAWING ",
+    "LAB10_SCRIPTED_DIAGNOSTIC ",
     "LAB10_CANCEL ",
 )
 
@@ -57,6 +58,7 @@ class MarkerState:
     run: list[dict[str, str]] = field(default_factory=list)
     scenarios: list[dict[str, str]] = field(default_factory=list)
     scripted_drawing: list[dict[str, str]] = field(default_factory=list)
+    scripted_diagnostic: list[dict[str, str]] = field(default_factory=list)
     cancel: list[dict[str, str]] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
@@ -66,6 +68,7 @@ class MarkerState:
             "run": list(self.run),
             "scenarios": list(self.scenarios),
             "scripted_drawing": list(self.scripted_drawing),
+            "scripted_diagnostic": list(self.scripted_diagnostic),
             "cancel": list(self.cancel),
         }
 
@@ -207,6 +210,34 @@ def _validate_marker(marker_name: str, fields: dict[str, str]) -> dict[str, str]
                     "LAB10_SCRIPTED_DRAWING.accepted_color_mask omits required ink colors"
                 )
         return fields
+    if marker_name == "LAB10_SCRIPTED_DIAGNOSTIC":
+        # Older firmware emitted the terminal diagnostic before scheduler
+        # timing telemetry existed. Accept those records while validating the
+        # complete optional timing group when present.
+        timing_fields = (
+            "ui_poll_count",
+            "max_ui_poll_gap_us",
+            "scripted_event_count",
+            "max_event_deadline_lateness_us",
+            "late_event_count",
+        )
+        present = [key for key in timing_fields if key in fields]
+        if present and len(present) != len(timing_fields):
+            raise ParseError(
+                "LAB10_SCRIPTED_DIAGNOSTIC timing telemetry must include all fields"
+            )
+        for key in timing_fields:
+            if key in fields and not re.fullmatch(r"[0-9]+", fields[key]):
+                raise ParseError(
+                    f"LAB10_SCRIPTED_DIAGNOSTIC.{key} must be an unsigned integer"
+                )
+        for key in ("ui_poll_count", "scripted_event_count", "late_event_count"):
+            if key in fields and int(fields[key]) > 0xFFFFFFFF:
+                raise ParseError(f"LAB10_SCRIPTED_DIAGNOSTIC.{key} exceeds uint32")
+        for key in ("max_ui_poll_gap_us", "max_event_deadline_lateness_us"):
+            if key in fields and int(fields[key]) > 0xFFFFFFFFFFFFFFFF:
+                raise ParseError(f"LAB10_SCRIPTED_DIAGNOSTIC.{key} exceeds uint64")
+        return fields
     if marker_name == "LAB10_CANCEL":
         _require_marker_fields(fields, ("requested",), marker_name)
         if fields["requested"] not in {"0", "1", "true", "false"}:
@@ -238,6 +269,9 @@ def _record_marker(markers: MarkerState, name: str, fields: dict[str, str]) -> N
         elif any(item["status"] == "complete" for item in markers.scripted_drawing):
             raise ParseError("LAB10_SCRIPTED_DRAWING marker follows completion")
         markers.scripted_drawing.append(fields)
+        return
+    if name == "LAB10_SCRIPTED_DIAGNOSTIC":
+        markers.scripted_diagnostic.append(fields)
         return
 
     scenario_id = fields["id"]
