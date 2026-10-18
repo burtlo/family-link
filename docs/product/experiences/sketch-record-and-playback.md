@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Experience ID** | `EXP-SKETCH-RECORD-PLAYBACK` |
-| **Revision** | 2 |
+| **Revision** | 3 |
 | **Status** | **OWNER-DECIDED** intent (2026-10-03 interview); **record-screen layout** aligned to **island demo h19** showcase (palette + canvas stub, no capture chrome on screen) |
 | **Owner** | Lynn |
 | **Surfaces** | BOX-3 record screen; carousel message card playback |
@@ -23,6 +23,7 @@ Supporting v1 evidence (as-built baseline, not approval of future behavior): [re
 |-----|------|--------|
 | 1 | 2026-10-10 | Initial spec transcribed from 2026-10-03 owner interview |
 | 2 | 2026-10-10 | Record-screen geometry and color rail matched to h19 on-device showcase; timer and rec indicator removed from layout spec |
+| 3 | 2026-10-18 | Record LAB-10 terminal-screen presentation decision for manual duration cap and scripted qualification |
 
 ---
 
@@ -69,6 +70,7 @@ That mismatch is why the owner asked for one **canonical logical canvas** shared
 | SK-005 | Record screen: **80×240** **color rail** on the right (`#101418` surface); **no** recording timer or recording indicator on this screen in the h19 showcase | SHOWCASE-AS-BUILT |
 | SK-006 | **Multi-color** strokes; selected color applies to new touch ink; **no eraser tool** — background-matching color only | OWNER-DECIDED |
 | SK-007 | Color rail: **44×44** circular swatches, **zig-zag** horizontal offset **±11 px** from rail center, **36 px** vertical pitch, **10 px** margin above bottom swatch; **2 px** gray border + **2 px** gold outline on selection (h19) | SHOWCASE-AS-BUILT |
+| SK-008 | In LAB-10 manual mode, natural 180-second duration cap presents **Completed**; early stop presents **Stopped**, cancel **Cancelled**, and point cap, overflow, or faults **Failed**. Scripted duration-cap presentation waits for scheduler qualification; rejected or unresolved qualification is not Completed. These are screen outcomes only and do not change capture terminal kinds or experiment verdicts. | OWNER-DECIDED (2026-10-18) |
 
 ### Palette (record rail — h19 showcase order, top to bottom in zig-zag stack)
 
@@ -181,6 +183,8 @@ Only the **canvas** and **color rail** are visible on the record screen. There i
 | ACC-SKP-03 | Sender selects background color and draws | Strokes disappear visually; stored points do not corrupt replay |
 | ACC-SKP-04 | Sender uses only audio, no touch | Message sends with no sketch attachment (unchanged audio path) |
 | ACC-SKP-05 | Sender opens record screen (showcase) | Sees 240×240 canvas + six swatches only—no timer, no rec indicator |
+| ACC-SKP-06 | LAB-10 manual capture reaches the natural 180-second duration cap; also exercise red-button stop, cancel, point cap, queue overflow, and fault terminals | Screen shows Completed for duration cap, Stopped for early stop, Cancelled for cancel, and Failed for point cap, overflow, or faults; the underlying capture terminal kinds remain unchanged |
+| ACC-SKP-07 | LAB-10 scripted capture reaches duration cap before scheduler qualification, then resolves accepted or rejected | Presentation stays pending before resolution; accepted qualification shows Completed, while rejected or unresolved qualification never shows Completed |
 
 ---
 

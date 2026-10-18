@@ -287,6 +287,16 @@ stroke; a later DOWN begins a new stroke. Stop, cancel, duration cap, point cap,
 queue overflow, allocation failure, and normal completion each produce at most
 one terminal event.
 
+Terminal screen presentation depends on the run mode while preserving the
+capture terminal kind: in manual mode, a natural 180-second `duration_cap`
+displays **Completed**; a red-button early stop displays **Stopped**, cancel
+displays **Cancelled**, and point cap, queue overflow, allocation failure, or
+another fault displays **Failed**. In scripted mode, a duration-cap result stays
+pending until the UI-task scheduler resolves qualification; acceptance displays
+**Completed**, while rejection or unresolved qualification cannot display
+Completed. This screen state is not an experiment verdict and does not change
+the capture outcome or host workflow.
+
 The implementation lives in
 [`components/lab10_capture/`](components/lab10_capture/). The UI callback only
 copies the routed report into the non-blocking 16-entry FIFO; the UI poll hook

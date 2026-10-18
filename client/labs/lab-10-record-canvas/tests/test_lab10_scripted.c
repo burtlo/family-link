@@ -126,7 +126,13 @@ static void test_terminal_failure_and_manual_duration_mappings(void)
     assert(state == LAB10_SCREEN_COMPLETED);
     assert(lab10_ui_terminal_screen_state(
         LAB10_UI_TERMINAL_DURATION_CAP, &qualification, &state));
-    assert(state == LAB10_SCREEN_FAILED);
+    assert(state == LAB10_SCREEN_COMPLETED);
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_STOPPED, &qualification, &state));
+    assert(state == LAB10_SCREEN_STOPPED);
+    assert(lab10_ui_terminal_screen_state(
+        LAB10_UI_TERMINAL_CANCELLED, &qualification, &state));
+    assert(state == LAB10_SCREEN_CANCELLED);
 }
 
 static lab10_ui_scripted_schedule_t new_schedule(uint64_t start_us)

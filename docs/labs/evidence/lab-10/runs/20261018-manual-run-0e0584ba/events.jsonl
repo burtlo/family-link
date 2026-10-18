@@ -1,0 +1,13 @@
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"lab10_marker","marker":"LAB10_RUN","mode":"manual","outcome":"observed","run_id":"20261018-manual-run-0e0584ba","source":"host","workload":"manual-no-stroke-audio-control"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"preflight"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"preflight"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"build"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","result":"/Users/lynnfrank/src/family-link/build/labs/lab-10-record-canvas-manual","source":"host","stage":"build"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","mode":"manual","outcome":"running","source":"host","stage":"activity"}
+{"adapter_identity":"lab10","adapter_version":"v1","id":"manual-no-stroke-audio-control","kind":"lab10_marker","marker":"LAB10_SCENARIO","mode":"manual","outcome":"observed","source":"host","status":"not_configured"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","mode":"manual","outcome":"passed","source":"host","stage":"activity"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"parser"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"parser"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","mode":"manual","outcome":"not_configured","source":"host","stage":"scenario"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"completed","source":"host","workflow_status":"PASS"}

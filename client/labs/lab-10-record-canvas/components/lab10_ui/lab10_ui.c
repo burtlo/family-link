@@ -199,7 +199,7 @@ bool lab10_ui_terminal_screen_state(
                          : LAB10_SCREEN_FAILED;
             return true;
         }
-        *state = LAB10_SCREEN_FAILED;
+        *state = LAB10_SCREEN_COMPLETED;
         return true;
     case LAB10_UI_TERMINAL_POINT_CAP:
     case LAB10_UI_TERMINAL_QUEUE_OVERFLOW:
