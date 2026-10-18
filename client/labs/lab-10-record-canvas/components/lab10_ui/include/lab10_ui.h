@@ -29,8 +29,29 @@
 #define LAB10_FAB_RADIUS_START 22
 #define LAB10_FAB_RADIUS_FULL 360
 
+/* Physical-button ring wipe follows the LAB10 hardware entry affordance. */
+#define LAB10_RING_ORIGIN_X 160
+#define LAB10_RING_ORIGIN_Y 282
+#define LAB10_RING_RADIUS_START 42
+#define LAB10_RING_RADIUS_COVERAGE 365
+#define LAB10_RING_BAND_WIDTH 18
+#define LAB10_RING_DURATION_MS 600
+
 #define LAB10_UI_SCRIPTED_MOVE_INTERVAL_US UINT64_C(44000)
-#define LAB10_UI_SCRIPTED_MIN_COMPLETION_POINTS 3500u
+#define LAB10_UI_SCRIPTED_MIN_COMPLETION_POINTS 3400u
+#define LAB10_UI_SCRIPTED_MAX_COMPLETION_POINTS 4095u
+#define LAB10_UI_SCRIPTED_STROKE_COUNT 18u
+#define LAB10_UI_SCRIPTED_MAX_COMPLETION_STROKES \
+    LAB10_UI_SCRIPTED_STROKE_COUNT
+#define LAB10_UI_SCRIPTED_MAX_COMPLETION_COLOR_CHANGES \
+    (LAB10_UI_SCRIPTED_STROKE_COUNT - 1u)
+#define LAB10_UI_SCRIPTED_POINTS_PER_STROKE 200u
+#define LAB10_UI_SCRIPTED_CADENCE_MIN_US UINT64_C(36000)
+#define LAB10_UI_SCRIPTED_CADENCE_MAX_US UINT64_C(52000)
+#define LAB10_UI_SCRIPTED_PEN_UP_GAP_US UINT64_C(400000)
+#define LAB10_UI_SCRIPTED_PAUSE_US UINT64_C(780000)
+#define LAB10_UI_SCRIPTED_MIN_COMPLETION_STROKES 6u
+#define LAB10_UI_SCRIPTED_MIN_COMPLETION_COLOR_CHANGES 5u
 
 #define LAB10_SWATCH_COUNT 6
 #define LAB10_SWATCH_DIAMETER 44
@@ -47,6 +68,11 @@ typedef enum {
     LAB10_COLOR_RED = 4,
     LAB10_COLOR_BLUE = 5,
 } lab10_color_index_t;
+
+#define LAB10_UI_SCRIPTED_REQUIRED_COLOR_MASK \
+    ((uint8_t)((1u << LAB10_COLOR_WHITE) | (1u << LAB10_COLOR_GOLD) | \
+               (1u << LAB10_COLOR_GREEN) | (1u << LAB10_COLOR_RED) | \
+               (1u << LAB10_COLOR_BLUE)))
 
 typedef enum {
     LAB10_ROUTE_OUTSIDE = 0,
@@ -107,16 +133,70 @@ typedef struct {
 } lab10_ui_scripted_event_t;
 
 typedef struct {
+    uint32_t accepted_point_count;
+    uint32_t stroke_count;
+    uint32_t color_change_count;
+    uint8_t accepted_color_mask;
+    bool trace_clean;
+} lab10_ui_scripted_capture_summary_t;
+
+typedef enum {
+    LAB10_UI_SCRIPTED_ACTION_DOWN = 0,
+    LAB10_UI_SCRIPTED_ACTION_MOVE,
+    LAB10_UI_SCRIPTED_ACTION_UP,
+    LAB10_UI_SCRIPTED_ACTION_PALETTE_CHANGE,
+    LAB10_UI_SCRIPTED_ACTION_FINISHED,
+} lab10_ui_scripted_action_t;
+
+typedef struct {
     uint64_t capture_start_timestamp_us;
     uint64_t duration_cap_us;
-    uint64_t move_interval_us;
-    uint64_t next_move_timestamp_us;
+    uint64_t next_event_timestamp_us;
     uint32_t accepted_point_cap;
-    uint32_t next_path_point_index;
+    uint32_t cadence_index;
+    uint16_t stroke_point_count;
+    uint8_t stroke_index;
+    lab10_ui_scripted_action_t next_action;
     bool initialized;
     bool down_emitted;
     bool terminal_reported;
 } lab10_ui_scripted_schedule_t;
+
+typedef struct {
+    uint64_t capture_session_id;
+    uint32_t accepted_points;
+    uint8_t renderer_published_color_mask;
+    uint8_t canvas_sampled_color_mask;
+    uint8_t canvas_readback_color_mask;
+    uint8_t canvas_color_match_mask;
+    uint8_t canvas_final_color_mask;
+    uint32_t canvas_color_format;
+    bool canvas_readback_supported;
+    bool renderer_drain_complete;
+} lab10_ui_scripted_diagnostic_snapshot_t;
+
+typedef struct {
+    bool pending;
+    bool reported;
+    bool snapshot_frozen;
+} lab10_ui_scripted_diagnostic_lifecycle_t;
+
+typedef struct {
+    uint32_t source_point_count;
+    uint32_t source_cursor;
+    uint32_t pending_point_count;
+    bool frame_idle;
+} lab10_ui_scripted_renderer_drain_t;
+
+typedef struct {
+    uint8_t renderer_published_color_mask;
+    uint8_t canvas_sampled_color_mask;
+    uint8_t canvas_readback_color_mask;
+    uint8_t canvas_color_match_mask;
+    uint8_t canvas_final_color_mask;
+    uint32_t canvas_color_format;
+    bool canvas_readback_supported;
+} lab10_ui_scripted_canvas_observation_t;
 
 typedef enum {
     LAB10_UI_SCRIPTED_CAPTURE_ACTIVE = 0,
@@ -137,6 +217,15 @@ typedef struct {
     int32_t radius_start;
     int32_t radius_end;
 } lab10_ui_circle_transition_t;
+
+typedef struct {
+    int32_t x;
+    int32_t y;
+    int32_t width;
+    int32_t height;
+    int32_t content_offset_y;
+    bool hidden;
+} lab10_ui_ring_reveal_clip_t;
 
 typedef enum {
     LAB10_CANVAS_MEMORY_PSRAM = 0,
@@ -184,7 +273,26 @@ bool lab10_ui_scripted_schedule_init(
 lab10_ui_scripted_poll_result_t lab10_ui_scripted_schedule_poll(
     lab10_ui_scripted_schedule_t *schedule, uint64_t now_us,
     lab10_ui_scripted_capture_state_t capture_state,
-    uint32_t accepted_point_count, lab10_ui_scripted_event_t *event);
+    const lab10_ui_scripted_capture_summary_t *capture_summary,
+    lab10_ui_scripted_event_t *event);
+
+/* UI-task-only snapshot lifecycle; mailbox delivery stays with the bridge. */
+bool lab10_ui_scripted_diagnostic_begin(
+    lab10_ui_scripted_diagnostic_lifecycle_t *lifecycle,
+    lab10_ui_scripted_diagnostic_snapshot_t *snapshot);
+bool lab10_ui_scripted_diagnostic_prepare_delivery(
+    lab10_ui_scripted_diagnostic_lifecycle_t *lifecycle,
+    lab10_ui_scripted_diagnostic_snapshot_t *snapshot,
+    bool active_session_valid, uint64_t active_session_id,
+    bool renderer_metrics_available,
+    const lab10_ui_scripted_renderer_drain_t *renderer_drain,
+    const lab10_ui_scripted_canvas_observation_t *canvas_observation);
+void lab10_ui_scripted_diagnostic_finish_delivery(
+    lab10_ui_scripted_diagnostic_lifecycle_t *lifecycle,
+    const lab10_ui_scripted_diagnostic_snapshot_t *snapshot,
+    bool mailbox_accepted);
+void lab10_ui_scripted_diagnostic_allow_next_session(
+    lab10_ui_scripted_diagnostic_lifecycle_t *lifecycle);
 
 size_t lab10_canvas_memory_attempt_count(void);
 lab10_canvas_memory_region_t lab10_canvas_memory_attempt(size_t index);
@@ -193,6 +301,12 @@ lab10_ui_circle_transition_t lab10_ui_fab_entry_transition(
     int16_t origin_x, int16_t origin_y);
 lab10_ui_circle_transition_t lab10_ui_fab_exit_transition(
     int16_t origin_x, int16_t origin_y);
+lab10_ui_circle_transition_t lab10_ui_ring_entry_transition(
+    int16_t origin_x, int16_t origin_y);
+lab10_ui_circle_transition_t lab10_ui_ring_exit_transition(
+    int16_t origin_x, int16_t origin_y);
+lab10_ui_ring_reveal_clip_t lab10_ui_ring_reveal_clip(int16_t origin_y,
+                                                       int32_t outer_radius);
 
 lab10_touch_route_t lab10_ui_route_touch(const lab10_ui_model_t *model,
                                          int16_t x, int16_t y);

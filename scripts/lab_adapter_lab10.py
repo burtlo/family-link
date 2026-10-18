@@ -20,6 +20,8 @@ SCRIPTED_STARTUP_TIMEOUT_SECONDS = 60
 # Bound differential marker receipt latency to two 250 ms serial-read intervals.
 SCRIPTED_COMPLETION_EARLY_TOLERANCE_SECONDS = 0.5
 SCRIPTED_COMPLETION_GRACE_SECONDS = 5
+SCRIPTED_WORKLOAD_IDENTITY = "scripted-human-like-multicolor-180s-v1"
+SCRIPTED_REQUIRED_COLOR_MASK = 0x3E
 _SCRIPTED_DRAWING_PREFIX = b"LAB10_SCRIPTED_DRAWING "
 _CAPTURE_TERMINAL_PREFIX = b"LAB10_CAPTURE_TERMINAL "
 _CAPTURE_TERMINAL_OUTCOMES = frozenset(
@@ -48,11 +50,10 @@ def _parser_module(host, spec):
 
 
 def _workload(mode: str) -> str:
-    default = (
-        "synthetic-sparse-multicolor-v1"
-        if mode in {"scripted", "deterministic"}
-        else "manual-no-stroke-audio-control"
-    )
+    if mode in {"scripted", "deterministic"}:
+        # Synthetic identities belong to the separate host trace generator.
+        return SCRIPTED_WORKLOAD_IDENTITY
+    default = "manual-no-stroke-audio-control"
     value = os.environ.get("LAB10_WORKLOAD", default).strip()
     if value:
         return value
@@ -87,11 +88,15 @@ def _scripted_start_line_valid(line: bytes) -> bool:
             b"source": b"ui_task",
             b"hardware_touch": b"0",
             b"duration_cap_ms": b"180000",
-            b"move_interval_ms": b"44",
+            b"cadence_min_ms": b"36",
+            b"cadence_max_ms": b"52",
+            b"stroke_points": b"200",
+            b"planned_strokes": b"18",
+            b"planned_palette_changes": b"17",
+            b"required_color_mask": b"0x3e",
+            b"pen_up_gap_ms": b"400",
+            b"pause_ms": b"780",
             b"accepted_point_cap": b"4096",
-            b"palette_changes": b"0",
-            b"strokes": b"1",
-            b"color": b"white",
         }.items()
     )
 
@@ -104,6 +109,9 @@ def _scripted_completion_line_valid(line: bytes) -> bool:
         return False
     try:
         accepted_points = int(fields.get(b"accepted_points", b""))
+        strokes = int(fields.get(b"strokes", b""))
+        palette_changes = int(fields.get(b"palette_changes", b""))
+        accepted_color_mask = int(fields.get(b"accepted_color_mask", b""), 0)
     except ValueError:
         return False
     return (
@@ -111,10 +119,13 @@ def _scripted_completion_line_valid(line: bytes) -> bool:
         and fields.get(b"hardware_touch") == b"0"
         and fields.get(b"terminal") == b"duration_cap"
         and fields.get(b"duration_cap_ms") == b"180000"
-        and 3500 <= accepted_points <= 4095
-        and fields.get(b"strokes") == b"1"
-        and fields.get(b"palette_changes") == b"0"
-        and fields.get(b"color") == b"white"
+        and 3400 <= accepted_points <= 4095
+        and 6 <= strokes <= 18
+        and 5 <= palette_changes <= 17
+        and strokes == palette_changes + 1
+        and 0 <= accepted_color_mask <= 0x3F
+        and accepted_color_mask & SCRIPTED_REQUIRED_COLOR_MASK
+        == SCRIPTED_REQUIRED_COLOR_MASK
     )
 
 
@@ -202,9 +213,10 @@ def _print_capture_active(target, args, mode: str, seconds: int) -> None:
     )
     if mode == "scripted":
         print(
-            "Scripted mode: the UI task draws one continuous white stroke with "
-            "a DOWN and 44 ms scheduled MOVEs for the bounded 180-second "
-            "capture; no palette changes or synthetic hardware-touch evidence.",
+            "Scripted mode: the UI task draws 18 paced strokes with real "
+            "palette selections, variable 36–52 ms cadence, and bounded "
+            "gaps/pauses through the 180-second capture; no synthetic "
+            "hardware-touch evidence.",
             flush=True,
         )
     else:
@@ -466,7 +478,7 @@ class Adapter:
                 if getattr(args, "no_build", False):
                     build_result = host.ROOT / host.resolve_variant(spec, variant).build_dir
                 else:
-                    build_result = host.ensure_lab_built(
+                    build_result = host.build_lab(
                         config, spec.make_name, variant,
                         kit=target.kit_id, port=target.device, target=target,
                     )

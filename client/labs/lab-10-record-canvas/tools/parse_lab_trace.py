@@ -155,7 +155,7 @@ def _validate_marker(marker_name: str, fields: dict[str, str]) -> dict[str, str]
                 "accepted_points",
                 "strokes",
                 "palette_changes",
-                "color",
+                "accepted_color_mask",
             )
             _require_marker_fields(fields, required, marker_name)
             if fields["source"] != "ui_task" or fields["hardware_touch"] != "0":
@@ -167,24 +167,44 @@ def _validate_marker(marker_name: str, fields: dict[str, str]) -> dict[str, str]
                 raise ParseError(
                     "LAB10_SCRIPTED_DRAWING completion requires the full duration cap"
                 )
-            try:
-                accepted_points = int(fields["accepted_points"])
-            except ValueError as error:
+            decimal_fields = ("accepted_points", "strokes", "palette_changes")
+            if any(not re.fullmatch(r"[0-9]+", fields[key]) for key in decimal_fields):
                 raise ParseError(
-                    "LAB10_SCRIPTED_DRAWING.accepted_points must be an integer"
-                ) from error
-            if not 3500 <= accepted_points <= 4095:
+                    "LAB10_SCRIPTED_DRAWING point and count fields must be unsigned integers"
+                )
+            accepted_points = int(fields["accepted_points"])
+            if not 3400 <= accepted_points <= 4095:
                 raise ParseError(
                     "LAB10_SCRIPTED_DRAWING.accepted_points is outside completion bounds"
                 )
-            if (
-                fields["strokes"] != "1"
-                or fields["palette_changes"] != "0"
-                or fields["color"] != "white"
-            ):
+            strokes = int(fields["strokes"])
+            palette_changes = int(fields["palette_changes"])
+            if not 6 <= strokes <= 18 or not 5 <= palette_changes <= 17:
                 raise ParseError(
-                    "LAB10_SCRIPTED_DRAWING completion must describe one "
-                    "continuous white stroke"
+                    "LAB10_SCRIPTED_DRAWING stroke and palette counts are outside completion bounds"
+                )
+            if strokes != palette_changes + 1:
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING stroke count must equal palette changes plus one"
+                )
+
+            color_mask_text = fields["accepted_color_mask"]
+            if not re.fullmatch(r"(?:0[xX][0-9a-fA-F]+|[0-9]+)", color_mask_text):
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING.accepted_color_mask must be an unsigned integer"
+                )
+            color_mask = (
+                int(color_mask_text, 16)
+                if color_mask_text.lower().startswith("0x")
+                else int(color_mask_text, 10)
+            )
+            if not 0 <= color_mask <= 0x3F:
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING.accepted_color_mask is outside completion bounds"
+                )
+            if color_mask & 0x3E != 0x3E:
+                raise ParseError(
+                    "LAB10_SCRIPTED_DRAWING.accepted_color_mask omits required ink colors"
                 )
         return fields
     if marker_name == "LAB10_CANCEL":
@@ -392,10 +412,10 @@ def _scenario_workflow(markers: MarkerState, mode: str | None) -> tuple[bool, st
         return False, "LAB10_SCENARIO reported failed"
     if any(item["status"] == "cancelled" for item in terminal):
         return False, "LAB10_SCENARIO was cancelled"
-    # The completion marker is device-owned terminal evidence. A current
-    # adapter appends status=passed; an older status=not_configured fallback
-    # (or no host terminal) is accepted only because the exact completion
-    # marker was observed above.
+    if any(item["status"] == "not_configured" for item in terminal):
+        return False, "LAB10_SCENARIO reported not_configured for scripted completion"
+    if not any(item["status"] == "passed" for item in terminal):
+        return False, "LAB10_SCENARIO did not report passed for scripted completion"
     return True, None
 
 
@@ -446,6 +466,32 @@ def parse_bytes(
             trace.get("evidence_kind") if trace else root.get("provenance")
         )
         trace_outcome = trace.get("terminal", {}).get("outcome") if trace else None
+
+    trace_loss_events = [
+        event
+        for event in (trace or {}).get("events", [])
+        if isinstance(event, Mapping) and event.get("event_name") == "trace_loss"
+    ]
+    trace_loss_metric = aggregation.get("metrics", {}).get("trace_loss_count", {})
+    trace_loss_count = (
+        trace_loss_metric.get("value")
+        if isinstance(trace_loss_metric, Mapping)
+        else None
+    )
+    trace_loss_sources = []
+    if trace_loss_events:
+        trace_loss_sources.append(f"{len(trace_loss_events)} trace_loss event(s)")
+    if (
+        isinstance(trace_loss_count, (int, float))
+        and not isinstance(trace_loss_count, bool)
+        and trace_loss_count > 0
+    ):
+        trace_loss_sources.append(f"trace_loss_count={trace_loss_count}")
+    if trace_loss_sources:
+        marker_errors.append(
+            "trace loss reported by " + " and ".join(trace_loss_sources)
+            + "; affected workflow measurements are incomplete"
+        )
 
     if not isinstance(evidence_provenance, str):
         evidence_provenance = "unmeasured/blocked"

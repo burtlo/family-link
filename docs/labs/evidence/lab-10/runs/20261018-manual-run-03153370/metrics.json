@@ -1,0 +1,942 @@
+{
+  "document": "family-link.lab10-parser-output/v1",
+  "parser": {
+    "identity": "lab10-record-parser",
+    "version": "v1",
+    "adapter_identity": "lab10",
+    "adapter_version": "v1",
+    "input_limit_bytes": 2097152,
+    "output_limit_bytes": 4194304
+  },
+  "run_id": "20261018-manual-run-03153370",
+  "workflow_status": "INCOMPLETE",
+  "experiment_verdict": "UNMEASURED",
+  "evidence_provenance": "unmeasured/blocked",
+  "markers": {
+    "ready": [
+      {
+        "build": "lab10-render-l10-04",
+        "trace_schema": "lab10-record-trace/v1",
+        "physical_ring_wipe": "1"
+      }
+    ],
+    "run": [
+      {
+        "run_id": "20261018-manual-run-03153370",
+        "mode": "manual",
+        "workload": "manual-no-stroke-audio-control",
+        "adapter_version": "v1"
+      }
+    ],
+    "scenarios": [
+      {
+        "id": "manual-no-stroke-audio-control",
+        "status": "started"
+      }
+    ],
+    "scripted_drawing": [],
+    "cancel": [
+      {
+        "requested": "1",
+        "reason": "keyboard_interrupt"
+      }
+    ]
+  },
+  "diagnostics": {
+    "errors": [
+      "LAB10_CANCEL has no terminal trace evidence"
+    ],
+    "trace_present": false,
+    "trace_outcome": null,
+    "cancel_requested": true,
+    "scripted_completion_observed": false
+  },
+  "metric_schema": "manifest.lab.json#/metric_schema",
+  "metrics": {
+    "raw_report_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "accepted_point_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "coalesced_move_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "rejected_report_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "rejected_rail_touch_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "rejected_outside_display_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "rejected_second_touch_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "duplicate_point_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "edge_point_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "stroke_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "color_change_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "palette_hit_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "queue_depth_current": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "queue_depth_high_water": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "queue_overflow_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "point_cap_hit_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "duration_cap_hit_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "terminal_event_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "terminal_outcome": {
+      "value": null,
+      "unit": "enum",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "touch_to_ink_us_p50": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "touch_to_ink_us_p95": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "touch_to_ink_us_p99": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "touch_to_ink_us_max": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "accepted_to_present_us_p50": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "accepted_to_present_us_p95": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "accepted_to_present_us_p99": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "accepted_to_present_us_max": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "ui_update_us_p50": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "ui_update_us_p95": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "ui_update_us_p99": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "ui_update_us_max": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "invalidation_us_p50": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "invalidation_us_p95": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "invalidation_us_p99": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "invalidation_us_max": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "invalidation_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "full_screen_invalidation_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "logical_display_mapping_mismatch_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "replay_2x_geometry_mismatch_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_mode": {
+      "value": null,
+      "unit": "enum",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_role": {
+      "value": null,
+      "unit": "enum",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_update_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_pending_point_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_backlog_high_water": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_raster_ops_last_update": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_raster_ops_high_water": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_publication_ops_last_update": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_publication_ops_high_water": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_invalidation_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_full_screen_invalidation_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_frame_generation": {
+      "value": null,
+      "unit": "generation",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_frame_phase": {
+      "value": null,
+      "unit": "enum",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_presentation_pending": {
+      "value": null,
+      "unit": "boolean",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_lock_state": {
+      "value": null,
+      "unit": "enum",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_stale_session_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "render_cleanup_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "capture_worker_busy_us": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "capture_worker_load_percent": {
+      "value": null,
+      "unit": "percent",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "capture_worker_stack_high_water_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "ui_task_busy_us": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "ui_task_load_percent": {
+      "value": null,
+      "unit": "percent",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "ui_task_stack_high_water_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "audio_task_busy_us": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "audio_task_load_percent": {
+      "value": null,
+      "unit": "percent",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "audio_task_stack_high_water_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot measure device task scheduling or stack high-water"
+    },
+    "audio_continuity_status": {
+      "value": null,
+      "unit": "enum",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_buffer_occupancy_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_buffer_high_water_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_buffer_occupancy_frames": {
+      "value": null,
+      "unit": "frames",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_buffer_high_water_frames": {
+      "value": null,
+      "unit": "frames",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_overrun_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_underrun_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_underrun_duration_us": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_frame_count_produced": {
+      "value": null,
+      "unit": "frames",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_frame_count_consumed": {
+      "value": null,
+      "unit": "frames",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_sample_count_produced": {
+      "value": null,
+      "unit": "samples",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_sample_count_consumed": {
+      "value": null,
+      "unit": "samples",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "audio_error_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "retained_pcm_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "transient_pcm_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_event_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_queue_depth": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_queue_high_water": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_queue_overflow_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_color_change_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_stroke_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_latency_us_p50": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_latency_us_p95": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_latency_us_p99": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "drawing_latency_us_max": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "stale_worker_mutation_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "retained_sketch_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "transient_sketch_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "retained_framebuffer_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "transient_framebuffer_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "largest_allocation_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "allocation_attempt_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "allocation_failure_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "internal_free_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot observe device heap/PSRAM free space or fragmentation"
+    },
+    "internal_min_free_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot observe device heap/PSRAM free space or fragmentation"
+    },
+    "internal_largest_free_block_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot observe device heap/PSRAM free space or fragmentation"
+    },
+    "psram_free_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot observe device heap/PSRAM free space or fragmentation"
+    },
+    "psram_min_free_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot observe device heap/PSRAM free space or fragmentation"
+    },
+    "psram_largest_free_block_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "hardware-only metric; host cannot observe device heap/PSRAM free space or fragmentation"
+    },
+    "memory_drift_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "final_format_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "final_format_version": {
+      "value": null,
+      "unit": "version",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "final_logical_width": {
+      "value": 120,
+      "unit": "px",
+      "provenance": "derived_static",
+      "sample_count": 1,
+      "missing_reason": null
+    },
+    "final_logical_height": {
+      "value": 120,
+      "unit": "px",
+      "provenance": "derived_static",
+      "sample_count": 1,
+      "missing_reason": null
+    },
+    "final_stroke_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "final_color_change_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "pen_up_boundary_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "raw_trace_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "trace_loss_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "cleanup_time_us": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "stop_cleanup_us_p50": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "stop_cleanup_us_p95": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "stop_cleanup_us_p99": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "stop_cleanup_us_max": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "cancel_cleanup_us_p50": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "cancel_cleanup_us_p95": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "cancel_cleanup_us_p99": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "cancel_cleanup_us_max": {
+      "value": null,
+      "unit": "us",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "live_resources_after_terminal": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "repeated_run_count": {
+      "value": null,
+      "unit": "count",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    },
+    "repeated_run_memory_drift_bytes": {
+      "value": null,
+      "unit": "bytes",
+      "provenance": "unmeasured/blocked",
+      "sample_count": 0,
+      "missing_reason": "no observation supplied"
+    }
+  },
+  "preserved": {
+    "missing_evidence": "no LAB10_EVIDENCE or complete host trace was supplied"
+  }
+}

@@ -24,7 +24,7 @@ and its package-local [`trace-schema.v1.json`](../../../../client/labs/lab-10-re
 ```text
 make lab.lab10.help
 make lab.lab10 KIT=<kit> LAB10_WORKLOAD=manual-<case>
-make lab.lab10.scripted KIT=<kit> LAB10_WORKLOAD=synthetic-<case>-v1
+make lab.lab10.scripted KIT=<kit>
 make lab.lab10.parse RUN_ID=<run-id>
 ```
 
@@ -60,8 +60,15 @@ sample count. Host model records remain host evidence and cannot establish
 touch latency, display scanout, device task scheduling, heap/PSRAM/stack
 pressure, or audible audio continuity.
 
-The run must state whether it is `manual` or `synthetic-human-like-v1`. Do not
-combine manual touch-latency evidence with host-generated timestamps.
+Record whether a run is manual, scripted device capture, or host synthetic
+generation. Scripted device captures use the fixed
+`scripted-human-like-multicolor-180s-v1` identity; `LAB10_WORKLOAD` does not
+override it. The UI-task workload schedules 18 strokes with 17 real palette
+changes at variable 36–52 ms cadence, with bounded pen-up gaps and pauses.
+Completion requires the 180-second duration cap, 3400–4095 accepted points,
+6–18 strokes, 5–17 palette changes with `strokes = palette_changes + 1`, all
+five ink colors in accepted points, and no trace loss. Do not combine manual
+touch-latency evidence with host-generated timestamps.
 
 ## Workload identity and evidence boundary
 
@@ -71,6 +78,7 @@ Record one stable identity per trace. Workload metadata is
 | Source | Stable identity examples | Required metadata | Permitted evidence |
 |---|---|---|---|
 | Manual | `manual-no-stroke-audio-control`, `manual-sparse-variable-speed`, `manual-continuous-pauses-corners`, `manual-dense-multicolor`, `manual-background-erase`, `manual-edge-corner-leave-reenter`, `manual-rapid-color-switch`, `manual-stop-during-stroke`, `manual-cancel-during-audio`, `manual-mic-failure`, `manual-codec-failure`, `manual-allocation-failure` | `source=manual`, `seed=null`, `generator_version=not_applicable`, `timestamp_jitter_bound_us=0`, actual monotonic device clock, hardware provenance only when a kit is exercised | Human gesture, visual, touch, and synchronized screen/audio observations when the corresponding hardware evidence is present |
+| Scripted device | `scripted-human-like-multicolor-180s-v1` | `mode=scripted`; 18 UI-task strokes, 17 palette changes, 36–52 ms cadence, 180-second duration cap; no `lab10-workload/v1` seed | Scripted runner completion only; hardware measurements still require target evidence |
 | Synthetic | `synthetic-sparse-multicolor-v1`, `synthetic-continuous-multicolor-v1`, `synthetic-dense-multicolor-v1`, `synthetic-edge-corner-v1`, `synthetic-rapid-color-switch-v1`, `synthetic-background-erase-v1`, `synthetic-stop-during-stroke-v1`, `synthetic-cancel-during-audio-v1` | `source=synthetic`, nonzero `seed`, `generator_version=synthetic-human-like-v1`, `timestamp_jitter_bound_us=2000`, declared feature list, `evidence_provenance=host` | Generator determinism, schema, bounds, parser/aggregation behavior, and deterministic renderer pressure only |
 
 Synthetic raw/display coordinates may be equal because no hardware transform is

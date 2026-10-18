@@ -112,8 +112,12 @@ labs:
       flash_by_default: true
       instructions: |
         Manual: choose LAB10_WORKLOAD=manual-* when selecting a documented gesture case,
-        then draw or exercise the requested stop/cancel case during capture. Deterministic:
-        use make lab.lab10.scripted with LAB10_WORKLOAD=synthetic-*-v1. Both modes require
-        the LAB10_READY marker; missing trace, synchronized screen/audio, or hardware-only
-        measurements remain UNMEASURED/BLOCKED. This lab has no server or product networking.
+        then draw or exercise the requested stop/cancel case during capture. Scripted:
+        use make lab.lab10.scripted; it always reports
+        scripted-human-like-multicolor-180s-v1: 18 paced strokes with palette changes.
+        LAB10_WORKLOAD does not change that identity; synthetic-*-v1 identities are
+        reserved for the host workload generator. Both modes
+        require LAB10_READY; missing trace, synchronized screen/audio, or hardware-only
+        measurements remain
+        UNMEASURED/BLOCKED. This lab has no server or product networking.
       instructions_doc: client/labs/lab-10-record-canvas/README.md#l10-08-runner-parser-and-structured-evidence

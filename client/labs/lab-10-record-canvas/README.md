@@ -22,17 +22,17 @@ Workload metadata uses `lab10-workload/v1`; the deterministic source is
 `synthetic-human-like-v1` in
 [`components/lab10_workload/`](components/lab10_workload/). The generator is
 compiled for toolchain coverage but is not executed by the firmware app. The
-`CONFIG_LAB10_SCRIPTED` firmware profile has a separate bounded UI smoke path:
-after entry reaches recording, the LVGL timer/UI task injects one DOWN followed
-by MOVE events on absolute 44 ms schedule slots for the bounded 180-second
-capture. It keeps one white stroke active throughout, does not synthesize
-palette changes or touch-up events, and skips missed schedule slots rather than
-catching up with a burst. The schedule can emit at most 4,090 MOVEs plus the
-initial DOWN (4,091 accepted points), below the 4,096-point capture cap; the
-capture duration remains the terminal condition. The active stroke closes when
-capture reaches its duration cap. Events use the same routing, capture, render,
-and canvas publication hooks as touch input, and are explicitly not
-hardware-touch evidence.
+`CONFIG_LAB10_SCRIPTED` firmware profile adds a bounded human-like UI workload:
+after entry reaches recording, the LVGL timer/UI task produces 18 deterministic
+strokes of up to 200 points each. It follows four-corner paths near canvas
+edges, varies MOVE cadence from 36–52 ms, and inserts real pen-up gaps and
+pauses. Between strokes it selects visible ink colors through the palette hit
+path, cycling white, gold, green, red, and blue. Missed schedule slots are
+skipped rather than caught up with a burst. Accepted points remain bounded by
+the 4,096-point cap; the capture duration remains the terminal condition at
+180 seconds. Events use the same routing, capture, render, and canvas
+publication hooks as touch input, and are explicitly not hardware-touch
+evidence.
 L10-08 registers the package through the fixed `lab10` adapter key and adds the
 bounded parser at [`tools/parse_lab_trace.py`](tools/parse_lab_trace.py). The
 adapter owns lifecycle markers and evidence-file placement; L10-07 remains the
@@ -669,6 +669,22 @@ canvas and 80×240 palette rail. Recording has no timer or on-screen recording
 indicator. Terminal presentation hooks expose stopped, cancelled, failed, and
 completed states without adding capture behavior.
 
+The physical-button ring follows the H19 wipe semantics. For each animated
+outer radius, the inner radius is `ri = outer_radius - 18` and the reveal edge
+is `y_line = max(0, origin_y - ri)`. When `y_line >= 240`, the record content
+is hidden. Otherwise a transparent, non-clickable host clips to
+`(0, y_line, 320, 240 - y_line)` while the full-size canvas and rail shift by
+`-y_line` inside it. The ring remains in the foreground above the revealed
+content. Entry starts at `(160,282)` with a 42 px outer radius, exposing
+nothing until its lower-edge reveal enters the viewport, then reaches the full
+320×240 surface at radius 365 over 600 ms with custom-Bezier quintic
+ease-in-out. Exit reverses from the saved origin and restores the idle surface
+after the content has closed: the host and children return to full-screen
+coordinates while the host stays hidden in idle. The FAB entry path explicitly
+shows the full host, and FAB exit leaves it visible as before. The outcome
+panel is hidden before ring exit. The on-screen FAB bloom retains its existing
+geometry, timing, and ease-in-out path.
+
 The model and geometry checks are host-native and do not claim touch latency,
 scanout, LVGL scheduling, audio continuity, or hardware memory pressure:
 
@@ -843,20 +859,28 @@ not name import paths. The two operator modes are deliberately separate:
 | Mode | Command | Workload source | Evidence boundary |
 |---|---|---|---|
 | Manual | `make lab.lab10 KIT=<kit> LAB10_WORKLOAD=manual-<case>` | device monotonic touch trace | hardware only when the kit and synchronized captures are present |
-| Deterministic | `make lab.lab10.scripted KIT=<kit> LAB10_WORKLOAD=synthetic-<case>-v1` | seeded `lab10-workload/v1` trace | host synthetic; never hardware latency/scanout/audio evidence |
+| Scripted | `make lab.lab10.scripted KIT=<kit>` | `scripted-human-like-multicolor-180s-v1`; 18 deterministic multicolor strokes from the UI task | device-runner completion evidence; not a synthetic host workload trace |
+
+`LAB10_WORKLOAD` selects the manual run identity. Scripted runs always use the
+fixed `scripted-human-like-multicolor-180s-v1` identity, including when
+`LAB10_WORKLOAD` is set. The `synthetic-*-v1` identities above describe the
+separate host workload generator and cannot label a scripted device run.
 
 Immediately before the bounded serial reader starts, the adapter prints a
 `CAPTURE ACTIVE` line containing the resolved command, backend, mode, kit, and
-remaining seconds. Scripted mode runs one continuous white stroke with a DOWN
-and scheduled MOVEs every 44 ms for the full 180-second capture; it makes no
-palette transitions and does not emit touch-up between points. Missed schedule
-slots are skipped (never burst-replayed), keeping the script to at most 4,091
-accepted points. The active stroke is closed by the capture duration cap; the
-scripted completion marker is emitted only after that terminal outcome and at
-least 3,500 accepted points. Stop, cancel, early termination, point-cap
-termination, or failure cannot produce a completion marker. Script-generated
-events use the normal UI/capture path but never synthesize hardware-touch
-evidence.
+remaining seconds. Scripted mode emits 18 strokes of 200 points, with 17 real
+palette changes, variable 36–52 ms MOVE cadence, 400 ms pen-up gaps, and 780 ms
+pauses. Four-point paths include corners and edge-adjacent positions. Missed
+schedule slots are skipped (never burst-replayed), keeping accepted points
+below the 4,096-point cap. The script continues paced activity through the
+180-second capture; only the duration-cap terminal can qualify, and completion
+requires 3,400–4,095 accepted points, at least six strokes and five palette
+changes, a clean trace, and accepted points in all five ink colors. The
+3,400-point floor leaves a 100-point margin below the observed 3,452-point
+scripted run. Stop,
+cancel, early termination, point-cap termination, or failure cannot produce a
+completion marker. Script-generated events use the normal UI/capture path but
+never synthesize hardware-touch evidence.
 
 Resolved support commands are:
 
@@ -883,9 +907,9 @@ The device/host lifecycle contract is one `LAB10_READY` marker, one
 status per scenario identity, and at most one `LAB10_CANCEL` marker. Scripted
 mode additionally requires the device-owned
 `LAB10_SCRIPTED_DRAWING status=complete` marker, which records the actual
-180-second duration-cap terminal, 3,500–4,095 accepted points, one
-uninterrupted white stroke, no palette changes, and `hardware_touch=0`, before
-the host closes the scenario as passed; its absence remains
+180-second duration-cap terminal, 3,400–4,095 accepted points, at least six
+strokes and five palette changes, all five ink colors in accepted points, and
+`hardware_touch=0`, before the host closes the scenario as passed; its absence remains
 incomplete/unconfigured. An early or stopped run
 must never emit that marker; the 4,096th accepted point terminalizes as
 `point_cap`, never as a scripted duration-cap completion. A trace

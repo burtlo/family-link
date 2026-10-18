@@ -129,6 +129,59 @@ static void test_fab_transition_geometry_contract(void)
     assert(exit.radius_end == entry.radius_start);
 }
 
+static void test_ring_transition_geometry_contract(void)
+{
+    const lab10_ui_circle_transition_t entry = lab10_ui_ring_entry_transition(
+        LAB10_RING_ORIGIN_X, LAB10_RING_ORIGIN_Y);
+    const lab10_ui_circle_transition_t exit = lab10_ui_ring_exit_transition(
+        LAB10_RING_ORIGIN_X, LAB10_RING_ORIGIN_Y);
+    assert(entry.origin_x == 160);
+    assert(entry.origin_y == 282);
+    assert(entry.origin_x == exit.origin_x);
+    assert(entry.origin_y == exit.origin_y);
+    assert(entry.origin_y > LAB10_LCD_HEIGHT);
+    assert(entry.radius_start == 42);
+    assert(entry.radius_end == 365);
+    assert(exit.radius_start == entry.radius_end);
+    assert(exit.radius_end == entry.radius_start);
+    assert(LAB10_RING_DURATION_MS == 600);
+}
+
+static void assert_ring_reveal_clip(int32_t outer_radius, int32_t expected_y,
+                                    int32_t expected_height, bool hidden)
+{
+    const lab10_ui_ring_reveal_clip_t clip = lab10_ui_ring_reveal_clip(
+        LAB10_RING_ORIGIN_Y, outer_radius);
+    assert(clip.x == 0);
+    assert(clip.width == LAB10_LCD_WIDTH);
+    assert(clip.y == expected_y);
+    assert(clip.height == expected_height);
+    assert(clip.content_offset_y == -expected_y);
+    assert(clip.hidden == hidden);
+    if (!hidden) {
+        assert(clip.y + clip.height == LAB10_LCD_HEIGHT);
+        assert(clip.y + clip.content_offset_y == 0);
+    }
+}
+
+static void test_ring_reveal_entry_and_reverse_geometry(void)
+{
+    const lab10_ui_circle_transition_t entry = lab10_ui_ring_entry_transition(
+        LAB10_RING_ORIGIN_X, LAB10_RING_ORIGIN_Y);
+    const lab10_ui_circle_transition_t exit = lab10_ui_ring_exit_transition(
+        LAB10_RING_ORIGIN_X, LAB10_RING_ORIGIN_Y);
+
+    /* Entry: hidden below the LCD, partial viewport, then full viewport. */
+    assert_ring_reveal_clip(entry.radius_start, 258, 0, true);
+    assert_ring_reveal_clip(203, 97, 143, false);
+    assert_ring_reveal_clip(entry.radius_end, 0, LAB10_LCD_HEIGHT, false);
+
+    /* Reverse traverses the same clip geometry from full back to hidden. */
+    assert_ring_reveal_clip(exit.radius_start, 0, LAB10_LCD_HEIGHT, false);
+    assert_ring_reveal_clip(203, 97, 143, false);
+    assert_ring_reveal_clip(exit.radius_end, 258, 0, true);
+}
+
 int main(void)
 {
     test_geometry();
@@ -136,6 +189,8 @@ int main(void)
     test_mapping_and_transitions();
     test_canvas_memory_policy_contract();
     test_fab_transition_geometry_contract();
+    test_ring_transition_geometry_contract();
+    test_ring_reveal_entry_and_reverse_geometry();
     puts("LAB10_UI_NATIVE_TEST_PASS");
     return 0;
 }

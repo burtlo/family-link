@@ -94,6 +94,22 @@ class _InterruptingSerial:
 
 
 class Lab10L109QualificationBehaviorTests(unittest.TestCase):
+    def test_physical_entry_closes_with_reverse_ring_transition(self):
+        app_main = (PACKAGE / "main/app_main.c").read_text(encoding="utf-8")
+        view = (PACKAGE / "main/lab10_ui_lvgl.c").read_text(encoding="utf-8")
+        self.assertIn(
+            "lab10_ui_view_enter_ring_wipe(view, LAB10_RING_ORIGIN_X,\n"
+            "                                          LAB10_RING_ORIGIN_Y)",
+            app_main,
+        )
+        self.assertIn("else if (lab10_ui_state(&view->model) == LAB10_SCREEN_RECORDING)", app_main)
+        self.assertIn("lab10_ui_view_stop_capture(view);", app_main)
+        self.assertIn("view->entered_with_ring_wipe = true;", view)
+        self.assertIn("if (view->entered_with_ring_wipe)", view)
+        self.assertIn("start_circle_animation(view, view->ring, transition.origin_x", view)
+        self.assertIn("transition.radius_start,\n                               transition.radius_end, LAB10_RING_DURATION_MS", view)
+        self.assertIn("lab10_ui_fab_exit_transition(view->fab_origin_x, view->fab_origin_y)", view)
+
     def test_native_qualification_executes_terminal_and_cleanup_boundaries(self):
         output = _run_native_qualification()
         lines = output.splitlines()
@@ -143,12 +159,12 @@ class Lab10L109QualificationBehaviorTests(unittest.TestCase):
     def test_parser_executes_real_marker_lifecycle_and_rejects_duplicate_ready(self):
         payload = (
             b"LAB10_RUN run_id=qualification-run mode=scripted "
-            b"workload=synthetic-sparse-multicolor-v1 adapter_version=v1\n"
+            b"workload=scripted-human-like-multicolor-180s-v1 adapter_version=v1\n"
             b"LAB10_READY build=qualification-build "
             b"trace_schema=lab10-record-trace/v1 physical_ring_wipe=1\n"
-            b"LAB10_SCENARIO id=synthetic-sparse-multicolor-v1 status=started\n"
-            b"LAB10_SCRIPTED_DRAWING status=complete source=ui_task hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 accepted_points=4091 strokes=1 palette_changes=0 color=white\n"
-            b"LAB10_SCENARIO id=synthetic-sparse-multicolor-v1 status=passed\n"
+            b"LAB10_SCENARIO id=scripted-human-like-multicolor-180s-v1 status=started\n"
+            b"LAB10_SCRIPTED_DRAWING status=complete source=ui_task hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 accepted_points=4091 strokes=18 palette_changes=17 accepted_color_mask=0x3e\n"
+            b"LAB10_SCENARIO id=scripted-human-like-multicolor-180s-v1 status=passed\n"
         )
         result = parser.parse_bytes(
             payload,
@@ -175,7 +191,12 @@ class Lab10L109QualificationBehaviorTests(unittest.TestCase):
             banner = buffer.getvalue()
         self.assertIn("CAPTURE ACTIVE", banner)
         self.assertIn("mode=scripted; kit=box3-test; remaining=19s", banner)
-        self.assertIn("no palette changes or synthetic hardware-touch evidence", banner)
+        self.assertIn("18 paced strokes", banner)
+        self.assertIn("real palette selections", banner)
+        self.assertIn("variable 36–52 ms cadence", banner)
+        self.assertIn("through the 180-second capture", banner)
+        self.assertIn("no synthetic hardware-touch evidence", banner)
+        self.assertNotIn("no palette changes", banner)
 
         with tempfile.TemporaryDirectory() as td:
             fake_host = SimpleNamespace(ROOT=Path(td))

@@ -1,0 +1,10 @@
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"lab10_marker","marker":"LAB10_RUN","mode":"manual","outcome":"observed","run_id":"20261018-manual-run-03153370","source":"host","workload":"manual-no-stroke-audio-control"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"preflight"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"preflight"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"build"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","result":"/Users/lynnfrank/src/family-link/build/labs/lab-10-record-canvas-manual","source":"host","stage":"build"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","mode":"manual","outcome":"running","source":"host","stage":"activity"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"lab10_marker","marker":"LAB10_CANCEL","outcome":"observed","requested":"1","source":"host"}
+{"adapter_identity":"lab10","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"cleanup"}
+{"kind":"stage","monotonic_ns":273221104069833,"outcome":"failed","reason":"KeyboardInterrupt","source":"host","stage":"run"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"KeyboardInterrupt","source":"host","workflow_status":"INCOMPLETE"}

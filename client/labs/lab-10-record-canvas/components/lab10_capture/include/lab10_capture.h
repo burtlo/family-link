@@ -177,6 +177,7 @@ typedef struct {
     uint32_t trace_loss_count;
     uint32_t allocation_failure_count;
     uint8_t selected_color_index;
+    uint8_t accepted_color_mask;
     uint32_t active_stroke_id;
     lab10_capture_status_t status;
     lab10_capture_terminal_outcome_t terminal_outcome;

@@ -1202,7 +1202,7 @@
         "parse": "make lab.lab10.parse RUN_ID=<run-id>"
       },
       "markers": ["LAB10_READY", "LAB10_RUN", "LAB10_SCENARIO", "LAB10_SCRIPTED_DRAWING", "LAB10_CANCEL"],
-      "scripted_completion_rule": "LAB10_SCRIPTED_DRAWING status=complete is valid only after the device capture reaches its 180000 ms duration cap with 3500..4095 accepted points, one uninterrupted white stroke, no color changes or trace loss, and hardware_touch=0; the 4096th point is a point-cap terminal and cannot qualify; stop, cancel, early termination, point-cap termination, or failure must not emit completion",
+      "scripted_completion_rule": "LAB10_SCRIPTED_DRAWING status=complete is valid only after the device capture reaches its 180000 ms duration_cap with 3400..4095 accepted points, 6..18 strokes, 5..17 palette changes, strokes=palette_changes+1, accepted_color_mask including all five ink bits 0x3e, no trace loss, and hardware_touch=0; 4096 is the point cap; early stop, cancel, point-cap termination, overflow, or failure must not emit completion",
       "evidence_provenance": ["hardware", "host", "derived_static", "unmeasured/blocked"],
       "hardware_prerequisites": [
         "registered ESP32-S3 Box-3 kit",

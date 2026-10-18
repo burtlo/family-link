@@ -32,8 +32,12 @@ static lab10_ui_view_t *s_anim_view;
 static atomic_bool s_pending_scripted_start = ATOMIC_VAR_INIT(false);
 static atomic_bool s_scripted_start_delivery_required =
     ATOMIC_VAR_INIT(false);
-static atomic_uint_least32_t s_pending_scripted_completion_points =
-    ATOMIC_VAR_INIT(0u);
+static lab10_ui_scripted_completion_t s_pending_scripted_completion;
+/* 0=empty, 1=writer/reader owns payload, 2=ready. */
+static atomic_int s_pending_scripted_completion_state = ATOMIC_VAR_INIT(0);
+static lab10_ui_scripted_diagnostic_t s_pending_scripted_diagnostic;
+/* 0=empty, 1=writer/reader owns payload, 2=ready. */
+static atomic_int s_pending_scripted_diagnostic_state = ATOMIC_VAR_INIT(0);
 static atomic_int s_pending_capture_outcome =
     ATOMIC_VAR_INIT(LAB10_CAPTURE_OUTCOME_NONE);
 
@@ -45,16 +49,133 @@ static bool publish_pending_scripted_start(void)
         memory_order_release, memory_order_relaxed);
 }
 
-static bool publish_pending_scripted_completion(uint32_t accepted_points)
+static bool publish_pending_scripted_completion(
+    const lab10_ui_scripted_completion_t *completion)
 {
-    if (accepted_points == 0u) {
+    if (completion == NULL || completion->accepted_points == 0u) {
         return false;
     }
 
-    uint_least32_t expected = 0u;
-    return atomic_compare_exchange_strong_explicit(
-        &s_pending_scripted_completion_points, &expected, accepted_points,
-        memory_order_release, memory_order_relaxed);
+    int expected = 0;
+    if (!atomic_compare_exchange_strong_explicit(
+            &s_pending_scripted_completion_state, &expected, 1,
+            memory_order_acquire, memory_order_relaxed)) {
+        return false;
+    }
+    s_pending_scripted_completion = *completion;
+    atomic_store_explicit(&s_pending_scripted_completion_state, 2,
+                          memory_order_release);
+    return true;
+}
+
+static bool publish_pending_scripted_diagnostic(
+    const lab10_ui_scripted_diagnostic_t *diagnostic)
+{
+    if (diagnostic == NULL ||
+        diagnostic->terminal_outcome == LAB10_CAPTURE_OUTCOME_NONE) {
+        return false;
+    }
+
+    int expected = 0;
+    if (!atomic_compare_exchange_strong_explicit(
+            &s_pending_scripted_diagnostic_state, &expected, 1,
+            memory_order_acquire, memory_order_relaxed)) {
+        return false;
+    }
+    s_pending_scripted_diagnostic = *diagnostic;
+    atomic_store_explicit(&s_pending_scripted_diagnostic_state, 2,
+                          memory_order_release);
+    return true;
+}
+
+static bool canvas_readback_format_supported(lv_color_format_t format)
+{
+    switch (format) {
+    case LV_COLOR_FORMAT_RGB565:
+    case LV_COLOR_FORMAT_RGB888:
+    case LV_COLOR_FORMAT_XRGB8888:
+    case LV_COLOR_FORMAT_ARGB8888:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static uint8_t canvas_final_ink_color_mask(const lab10_ui_view_t *view);
+
+static bool publish_view_pending_scripted_diagnostic(lab10_ui_view_t *view)
+{
+    if (view == NULL || !view->scripted_diagnostic_lifecycle.pending) {
+        return false;
+    }
+
+    lab10_render_metrics_t render_metrics = {0};
+    lab10_ui_scripted_renderer_drain_t renderer_drain = {0};
+    bool renderer_metrics_available = false;
+    bool renderer_drained = false;
+    const bool active_session_valid =
+        view->capture != NULL && view->renderer != NULL &&
+        view->capture_session_id != LAB10_CAPTURE_INVALID_SESSION_ID;
+    if (active_session_valid &&
+        view->capture_session_id ==
+            view->scripted_diagnostic.snapshot.capture_session_id &&
+        lab10_render_get_metrics(view->renderer, view->capture_session_id,
+                                 &render_metrics)) {
+        renderer_metrics_available = true;
+        renderer_drain = (lab10_ui_scripted_renderer_drain_t){
+            .source_point_count = render_metrics.source_point_count,
+            .source_cursor = render_metrics.source_cursor,
+            .pending_point_count = render_metrics.pending_point_count,
+            .frame_idle =
+                render_metrics.frame_phase == LAB10_RENDER_FRAME_IDLE,
+        };
+        renderer_drained =
+            renderer_drain.source_point_count >=
+                view->scripted_diagnostic.snapshot.accepted_points &&
+            renderer_drain.source_cursor >=
+                view->scripted_diagnostic.snapshot.accepted_points &&
+            renderer_drain.pending_point_count == 0u &&
+            renderer_drain.frame_idle;
+    }
+
+    uint8_t canvas_final_color_mask = 0u;
+    if (!view->scripted_diagnostic_lifecycle.snapshot_frozen &&
+        active_session_valid &&
+        view->capture_session_id ==
+            view->scripted_diagnostic.snapshot.capture_session_id &&
+        renderer_metrics_available && renderer_drained) {
+        canvas_final_color_mask = canvas_final_ink_color_mask(view);
+    }
+
+    const lab10_ui_scripted_canvas_observation_t canvas_observation = {
+        .renderer_published_color_mask = view->renderer_published_color_mask,
+        .canvas_sampled_color_mask = view->canvas_sampled_color_mask,
+        .canvas_readback_color_mask = view->canvas_readback_color_mask,
+        .canvas_color_match_mask = view->canvas_color_match_mask,
+        .canvas_final_color_mask = canvas_final_color_mask,
+        .canvas_color_format = view->canvas_color_format,
+        .canvas_readback_supported = view->canvas_readback_supported,
+    };
+    if (!lab10_ui_scripted_diagnostic_prepare_delivery(
+            &view->scripted_diagnostic_lifecycle,
+            &view->scripted_diagnostic.snapshot, active_session_valid,
+            view->capture_session_id, renderer_metrics_available,
+            &renderer_drain, &canvas_observation)) {
+        return false;
+    }
+
+    if (!publish_pending_scripted_diagnostic(&view->scripted_diagnostic)) {
+        lab10_ui_scripted_diagnostic_finish_delivery(
+            &view->scripted_diagnostic_lifecycle,
+            &view->scripted_diagnostic.snapshot, false);
+        return false;
+    }
+
+    lab10_ui_scripted_diagnostic_finish_delivery(
+        &view->scripted_diagnostic_lifecycle,
+        &view->scripted_diagnostic.snapshot, true);
+    view->scripted_diagnostic = (lab10_ui_scripted_diagnostic_t){0};
+    return true;
 }
 
 bool lab10_ui_view_take_pending_scripted_start(void)
@@ -69,18 +190,40 @@ bool lab10_ui_view_take_pending_scripted_start(void)
 }
 
 bool lab10_ui_view_take_pending_scripted_completion(
-    uint32_t *accepted_points)
+    lab10_ui_scripted_completion_t *completion)
 {
-    if (accepted_points == NULL) {
+    if (completion == NULL) {
         return false;
     }
 
-    const uint_least32_t pending = atomic_exchange_explicit(
-        &s_pending_scripted_completion_points, 0u, memory_order_acq_rel);
-    if (pending == 0u) {
+    int expected = 2;
+    if (!atomic_compare_exchange_strong_explicit(
+            &s_pending_scripted_completion_state, &expected, 1,
+            memory_order_acquire, memory_order_relaxed)) {
         return false;
     }
-    *accepted_points = (uint32_t)pending;
+    *completion = s_pending_scripted_completion;
+    atomic_store_explicit(&s_pending_scripted_completion_state, 0,
+                          memory_order_release);
+    return true;
+}
+
+bool lab10_ui_view_take_pending_scripted_diagnostic(
+    lab10_ui_scripted_diagnostic_t *diagnostic)
+{
+    if (diagnostic == NULL) {
+        return false;
+    }
+
+    int expected = 2;
+    if (!atomic_compare_exchange_strong_explicit(
+            &s_pending_scripted_diagnostic_state, &expected, 1,
+            memory_order_acquire, memory_order_relaxed)) {
+        return false;
+    }
+    *diagnostic = s_pending_scripted_diagnostic;
+    atomic_store_explicit(&s_pending_scripted_diagnostic_state, 0,
+                          memory_order_release);
     return true;
 }
 
@@ -94,10 +237,10 @@ static void publish_pending_scripted_events(lab10_ui_view_t *view)
         view->scripted_start_marker_pending = false;
     }
     if (view->scripted_completion_marker_pending &&
-        publish_pending_scripted_completion(
-            view->scripted_completion_accepted_points)) {
+        publish_pending_scripted_completion(&view->scripted_completion)) {
         view->scripted_completion_marker_pending = false;
     }
+    (void)publish_view_pending_scripted_diagnostic(view);
 }
 
 static bool publish_pending_capture_outcome(
@@ -296,6 +439,97 @@ static void on_transition(lab10_screen_state_t from, lab10_screen_state_t to,
     (void)context;
 }
 
+static bool canvas_sample_matches_ink_color(lv_color32_t sample,
+                                             uint8_t color_index,
+                                             lv_color_format_t format)
+{
+    if (color_index <= LAB10_COLOR_BACKGROUND ||
+        color_index >= LAB10_SWATCH_COUNT || sample.alpha != UINT8_MAX) {
+        return false;
+    }
+
+    const uint32_t rgb = lab10_color_rgb(color_index);
+    uint8_t red = (uint8_t)(rgb >> 16);
+    uint8_t green = (uint8_t)(rgb >> 8);
+    uint8_t blue = (uint8_t)rgb;
+    if (format == LV_COLOR_FORMAT_RGB565) {
+        red = (uint8_t)(((red >> 3) * 2106u) >> 8);
+        green = (uint8_t)(((green >> 2) * 1037u) >> 8);
+        blue = (uint8_t)(((blue >> 3) * 2106u) >> 8);
+    } else if (format != LV_COLOR_FORMAT_RGB888 &&
+               format != LV_COLOR_FORMAT_XRGB8888 &&
+               format != LV_COLOR_FORMAT_ARGB8888) {
+        return false;
+    }
+
+    return sample.red == red && sample.green == green && sample.blue == blue;
+}
+
+static uint8_t canvas_readback_color_bit(lv_color32_t sample,
+                                         lv_color_format_t format)
+{
+    for (uint8_t color_index = (uint8_t)(LAB10_COLOR_BACKGROUND + 1u);
+         color_index < LAB10_SWATCH_COUNT; ++color_index) {
+        if (canvas_sample_matches_ink_color(sample, color_index, format)) {
+            return (uint8_t)(1u << color_index);
+        }
+    }
+    return 0u;
+}
+
+static uint8_t canvas_final_ink_color_mask(const lab10_ui_view_t *view)
+{
+    if (view == NULL || view->canvas == NULL || view->canvas_buffer == NULL ||
+        !view->canvas_readback_supported) {
+        return 0u;
+    }
+
+    const lv_color_format_t format =
+        (lv_color_format_t)view->canvas_color_format;
+    if (!canvas_readback_format_supported(format)) {
+        return 0u;
+    }
+
+    const lv_draw_buf_t *draw_buf = lv_canvas_get_draw_buf(view->canvas);
+    if (draw_buf == NULL || draw_buf->data == NULL ||
+        draw_buf->header.cf != format) {
+        return 0u;
+    }
+
+    uint8_t color_mask = 0u;
+    for (uint32_t logical_y = 0u; logical_y < LAB10_LOGICAL_HEIGHT;
+         ++logical_y) {
+        for (uint32_t logical_x = 0u; logical_x < LAB10_LOGICAL_WIDTH;
+             ++logical_x) {
+            const int32_t display_x = (int32_t)logical_x * 2;
+            const int32_t display_y = (int32_t)logical_y * 2;
+            const lv_color32_t sample =
+                lv_canvas_get_px(view->canvas, display_x, display_y);
+            color_mask |= canvas_readback_color_bit(sample, format);
+        }
+    }
+    return color_mask & LAB10_UI_SCRIPTED_REQUIRED_COLOR_MASK;
+}
+
+static void reset_canvas_color_diagnostics(lab10_ui_view_t *view)
+{
+    view->renderer_published_color_mask = 0u;
+    view->canvas_sampled_color_mask = 0u;
+    view->canvas_readback_color_mask = 0u;
+    view->canvas_color_match_mask = 0u;
+    view->canvas_color_format = 0u;
+    view->canvas_readback_supported = false;
+
+    if (view->canvas != NULL && view->canvas_buffer != NULL) {
+        const lv_draw_buf_t *draw_buf = lv_canvas_get_draw_buf(view->canvas);
+        if (draw_buf != NULL && draw_buf->data != NULL) {
+            view->canvas_color_format = (uint32_t)draw_buf->header.cf;
+            view->canvas_readback_supported =
+                canvas_readback_format_supported(draw_buf->header.cf);
+        }
+    }
+}
+
 static void on_render_publish_pixel(const lab10_render_pixel_event_t *event,
                                     void *context)
 {
@@ -305,6 +539,21 @@ static void on_render_publish_pixel(const lab10_render_pixel_event_t *event,
         return;
     }
     const lv_color_t color = lv_color_hex(lab10_color_rgb(event->color_index));
+    const bool ink_color = event->color_index > LAB10_COLOR_BACKGROUND &&
+                           event->color_index < LAB10_SWATCH_COUNT;
+    const uint8_t color_bit = ink_color
+                                  ? (uint8_t)(1u << event->color_index)
+                                  : 0u;
+    const bool first_published_pixel =
+        ink_color && (view->renderer_published_color_mask & color_bit) == 0u;
+    if (first_published_pixel) {
+        view->renderer_published_color_mask |= color_bit;
+    }
+    bool sample_first_write = ink_color && view->canvas_readback_supported &&
+                              view->canvas_sampled_color_mask !=
+                                  LAB10_UI_SCRIPTED_REQUIRED_COLOR_MASK &&
+                              (view->canvas_sampled_color_mask & color_bit) ==
+                                  0u;
     const int32_t display_x = (int32_t)event->logical_x * 2;
     const int32_t display_y = (int32_t)event->logical_y * 2;
     /* One logical pixel is presented as a bounded 2x2 display block. */
@@ -312,6 +561,20 @@ static void on_render_publish_pixel(const lab10_render_pixel_event_t *event,
         for (int32_t dx = 0; dx < 2; ++dx) {
             lv_canvas_set_px(view->canvas, display_x + dx, display_y + dy,
                              color, LV_OPA_COVER);
+            if (sample_first_write) {
+                sample_first_write = false;
+                view->canvas_sampled_color_mask |= color_bit;
+                const lv_color_format_t format =
+                    (lv_color_format_t)view->canvas_color_format;
+                const lv_color32_t sample = lv_canvas_get_px(
+                    view->canvas, display_x + dx, display_y + dy);
+                const uint8_t readback_bit =
+                    canvas_readback_color_bit(sample, format);
+                view->canvas_readback_color_mask |= readback_bit;
+                if (readback_bit == color_bit) {
+                    view->canvas_color_match_mask |= color_bit;
+                }
+            }
         }
     }
 }
@@ -359,13 +622,16 @@ static void on_touch_routed(const lab10_ui_touch_event_t *event, void *context)
 void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
 {
 #if CONFIG_LAB10_SCRIPTED
-    if (view == NULL || view->capture == NULL ||
+    if (view == NULL) {
+        return;
+    }
+    /* Keep the final diagnostic retryable even after the capture is released. */
+    (void)publish_view_pending_scripted_diagnostic(view);
+    if (view->capture == NULL ||
         view->capture_session_id == LAB10_CAPTURE_INVALID_SESSION_ID) {
         return;
     }
-    /* A one-slot mailbox may still contain the prior event; retry these
-     * bounded latches on each timer poll without overwriting or waiting.
-     */
+    /* Retry the existing scripted lifecycle latches on the capture path. */
     publish_pending_scripted_events(view);
     lab10_capture_stats_t stats;
     if (!lab10_capture_get_stats(view->capture, view->capture_session_id,
@@ -378,28 +644,29 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
         lab10_ui_state(&view->model) != LAB10_SCREEN_RECORDING) {
         return;
     }
-    const bool completion_eligible =
+    const lab10_ui_scripted_capture_summary_t completion_summary = {
+        .accepted_point_count = stats.accepted_point_count,
+        .stroke_count = stats.stroke_count,
+        .color_change_count = stats.color_change_count,
+        .accepted_color_mask = stats.accepted_color_mask,
+        .trace_clean = stats.queue_overflow_count == 0u &&
+                       stats.trace_loss_count == 0u,
+    };
+    const bool duration_terminal =
         !capture_active &&
         stats.terminal_outcome == LAB10_CAPTURE_OUTCOME_DURATION_CAP &&
-        stats.duration_cap_hit_count == 1u && stats.terminal_event_count == 1u &&
-        stats.accepted_point_count >=
-            LAB10_UI_SCRIPTED_MIN_COMPLETION_POINTS &&
-        stats.accepted_point_count < LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY &&
-        stats.stroke_count == 1u && stats.stroke_boundary_count == 0u &&
-        stats.selected_color_index == LAB10_COLOR_WHITE &&
-        stats.color_change_count == 0u && stats.queue_overflow_count == 0u &&
-        stats.trace_loss_count == 0u;
+        stats.duration_cap_hit_count == 1u && stats.terminal_event_count == 1u;
     const lab10_ui_scripted_capture_state_t capture_state =
         capture_active
             ? LAB10_UI_SCRIPTED_CAPTURE_ACTIVE
-            : completion_eligible
+            : duration_terminal
                   ? LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP
                   : LAB10_UI_SCRIPTED_CAPTURE_OTHER_TERMINAL;
     lab10_ui_scripted_event_t scripted_event;
     const lab10_ui_scripted_poll_result_t result =
         lab10_ui_scripted_schedule_poll(
             &view->scripted_schedule, lab10_capture_now_us(view->capture),
-            capture_state, stats.accepted_point_count, &scripted_event);
+            capture_state, &completion_summary, &scripted_event);
     if (result == LAB10_UI_SCRIPTED_POLL_EVENT) {
         if (!view->scripted_started) {
             view->scripted_started = true;
@@ -416,11 +683,48 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
                view->scripted_started) {
         if (!view->scripted_completion_marker_pending) {
             view->scripted_completion_marker_pending = true;
-            view->scripted_completion_accepted_points =
-                stats.accepted_point_count;
+            view->scripted_completion = (lab10_ui_scripted_completion_t){
+                .accepted_points = stats.accepted_point_count,
+                .strokes = stats.stroke_count,
+                .palette_changes = stats.color_change_count,
+                .accepted_color_mask = stats.accepted_color_mask,
+            };
         }
-        publish_pending_scripted_events(view);
     }
+    if (stats.status == LAB10_CAPTURE_STATUS_TERMINAL &&
+        !view->scripted_diagnostic_lifecycle.reported) {
+        lab10_ui_scripted_diagnostic_t diagnostic = {
+            .terminal_outcome = stats.terminal_outcome,
+            .snapshot = {
+                .capture_session_id = view->capture_session_id,
+                .accepted_points = stats.accepted_point_count,
+                .renderer_published_color_mask =
+                    view->renderer_published_color_mask,
+                .canvas_sampled_color_mask = view->canvas_sampled_color_mask,
+                .canvas_readback_color_mask =
+                    view->canvas_readback_color_mask,
+                .canvas_color_match_mask = view->canvas_color_match_mask,
+                .canvas_final_color_mask = 0u,
+                .canvas_color_format = view->canvas_color_format,
+                .canvas_readback_supported = view->canvas_readback_supported,
+            },
+            .strokes = stats.stroke_count,
+            .palette_changes = stats.color_change_count,
+            .accepted_color_mask = stats.accepted_color_mask,
+            .queue_overflow_count = stats.queue_overflow_count,
+            .trace_loss_count = stats.trace_loss_count,
+            .duration_cap_count = stats.duration_cap_hit_count,
+            .terminal_event_count = stats.terminal_event_count,
+            .completion_scheduler_accepted =
+                result == LAB10_UI_SCRIPTED_POLL_COMPLETE,
+        };
+        if (lab10_ui_scripted_diagnostic_begin(
+                &view->scripted_diagnostic_lifecycle,
+                &diagnostic.snapshot)) {
+            view->scripted_diagnostic = diagnostic;
+        }
+    }
+    publish_pending_scripted_events(view);
 #else
     (void)view;
 #endif
@@ -534,6 +838,63 @@ static void on_palette_event(lv_event_t *event)
     handle_touch_and_poll(view, LAB10_PHASE_PALETTE_CHANGE, point.x, point.y);
 }
 
+static void set_reveal_clip(lab10_ui_view_t *view,
+                            const lab10_ui_ring_reveal_clip_t *clip)
+{
+    if (view == NULL || clip == NULL || view->reveal_host == NULL ||
+        view->canvas == NULL || view->rail == NULL) {
+        return;
+    }
+    if (clip->hidden) {
+        lv_obj_set_hidden(view->reveal_host, true);
+        return;
+    }
+
+    lv_obj_set_pos(view->reveal_host, clip->x, clip->y);
+    lv_obj_set_size(view->reveal_host, clip->width, clip->height);
+    lv_obj_set_pos(view->canvas, 0, clip->content_offset_y);
+    lv_obj_set_pos(view->rail, LAB10_RAIL_X, clip->content_offset_y);
+    lv_obj_set_hidden(view->reveal_host, false);
+}
+
+static void position_full_reveal(lab10_ui_view_t *view)
+{
+    if (view == NULL || view->reveal_host == NULL || view->canvas == NULL ||
+        view->rail == NULL) {
+        return;
+    }
+    lv_obj_set_pos(view->reveal_host, 0, 0);
+    lv_obj_set_size(view->reveal_host, LAB10_LCD_WIDTH, LAB10_LCD_HEIGHT);
+    lv_obj_set_pos(view->canvas, 0, 0);
+    lv_obj_set_pos(view->rail, LAB10_RAIL_X, 0);
+}
+
+static void update_ring_reveal(lab10_ui_view_t *view, int32_t outer_radius)
+{
+    if (view == NULL) {
+        return;
+    }
+    const lab10_ui_ring_reveal_clip_t clip = lab10_ui_ring_reveal_clip(
+        view->ring_origin_y, outer_radius);
+    set_reveal_clip(view, &clip);
+}
+
+static void show_full_reveal(lab10_ui_view_t *view)
+{
+    position_full_reveal(view);
+    if (view != NULL && view->reveal_host != NULL) {
+        lv_obj_set_hidden(view->reveal_host, false);
+    }
+}
+
+static void hide_full_reveal(lab10_ui_view_t *view)
+{
+    position_full_reveal(view);
+    if (view != NULL && view->reveal_host != NULL) {
+        lv_obj_set_hidden(view->reveal_host, true);
+    }
+}
+
 static void anim_circle_size(void *object, int32_t radius)
 {
     lab10_ui_view_t *view = s_anim_view;
@@ -546,6 +907,9 @@ static void anim_circle_size(void *object, int32_t radius)
     lv_obj_set_size(object, radius * 2, radius * 2);
     lv_obj_set_pos(object, view->transition_origin_x - radius,
                    view->transition_origin_y - radius);
+    if (object == view->ring) {
+        update_ring_reveal(view, radius);
+    }
 }
 
 static void entry_animation_done(lv_anim_t *animation)
@@ -556,6 +920,7 @@ static void entry_animation_done(lv_anim_t *animation)
     }
     lv_obj_set_hidden(s_anim_view->bloom, true);
     lv_obj_set_hidden(s_anim_view->ring, true);
+    show_full_reveal(s_anim_view);
     lab10_ui_finish_entry(&s_anim_view->model);
     if (s_anim_view->capture != NULL) {
         s_anim_view->capture_session_id =
@@ -574,10 +939,19 @@ static void entry_animation_done(lv_anim_t *animation)
             s_anim_view = NULL;
             return;
         }
+        reset_canvas_color_diagnostics(s_anim_view);
         s_anim_view->scripted_started = false;
         s_anim_view->scripted_start_marker_pending = false;
         s_anim_view->scripted_completion_marker_pending = false;
-        s_anim_view->scripted_completion_accepted_points = 0u;
+        s_anim_view->scripted_completion =
+            (lab10_ui_scripted_completion_t){0};
+        /* The shared slot owns any old snapshot after the local latch clears. */
+        if (!s_anim_view->scripted_diagnostic_lifecycle.pending) {
+            lab10_ui_scripted_diagnostic_allow_next_session(
+                &s_anim_view->scripted_diagnostic_lifecycle);
+            s_anim_view->scripted_diagnostic =
+                (lab10_ui_scripted_diagnostic_t){0};
+        }
         if (!lab10_ui_scripted_schedule_init(
                 &s_anim_view->scripted_schedule,
                 lab10_capture_now_us(s_anim_view->capture),
@@ -604,6 +978,12 @@ static void exit_animation_done(lv_anim_t *animation)
         return;
     }
     lv_obj_set_hidden(s_anim_view->bloom, true);
+    lv_obj_set_hidden(s_anim_view->ring, true);
+    if (s_anim_view->entered_with_ring_wipe) {
+        hide_full_reveal(s_anim_view);
+    } else {
+        show_full_reveal(s_anim_view);
+    }
     lab10_ui_finish_exit(&s_anim_view->model);
     lab10_ui_view_present_state(s_anim_view, LAB10_SCREEN_IDLE);
     if (s_anim_view->capture != NULL &&
@@ -629,7 +1009,8 @@ static void exit_animation_done(lv_anim_t *animation)
 static void start_circle_animation(lab10_ui_view_t *view, lv_obj_t *object,
                                    int16_t origin_x, int16_t origin_y,
                                    int32_t radius_start, int32_t radius_end,
-                                   uint32_t duration, lv_anim_completed_cb_t ready_cb)
+                                   uint32_t duration, bool use_ring_easing,
+                                   lv_anim_completed_cb_t ready_cb)
 {
     s_anim_view = view;
     view->transition_origin_x = origin_x;
@@ -643,7 +1024,12 @@ static void start_circle_animation(lab10_ui_view_t *view, lv_obj_t *object,
     lv_anim_set_var(&animation, object);
     lv_anim_set_values(&animation, radius_start, radius_end);
     lv_anim_set_duration(&animation, duration);
-    lv_anim_set_path_cb(&animation, lv_anim_path_ease_in_out);
+    if (use_ring_easing) {
+        lv_anim_set_path_cb(&animation, lv_anim_path_custom_bezier3);
+        LV_ANIM_SET_EASE_IN_OUT_QUINT(&animation);
+    } else {
+        lv_anim_set_path_cb(&animation, lv_anim_path_ease_in_out);
+    }
     lv_anim_set_exec_cb(&animation, anim_circle_size);
     lv_anim_set_completed_cb(&animation, ready_cb);
     lv_anim_start(&animation);
@@ -675,6 +1061,7 @@ bool lab10_ui_view_init(lab10_ui_view_t *view, lv_obj_t *parent)
     *view = (lab10_ui_view_t){0};
     view->fab_origin_x = LAB10_FAB_ORIGIN_X;
     view->fab_origin_y = LAB10_FAB_ORIGIN_Y;
+    view->entered_with_ring_wipe = false;
     lab10_ui_model_init(&view->model);
     view->capture = lab10_capture_create(&(lab10_capture_config_t){
         .clock_now_us = capture_clock_now_us,
@@ -732,7 +1119,19 @@ bool lab10_ui_view_init(lab10_ui_view_t *view, lv_obj_t *parent)
     lv_obj_set_style_bg_color(view->root, lv_color_hex(0x101418), 0);
     lv_obj_set_style_bg_opa(view->root, LV_OPA_COVER, 0);
 
-    view->canvas = lv_canvas_create(view->root);
+    view->reveal_host = lv_obj_create(view->root);
+    if (view->reveal_host == NULL) {
+        return view_init_failed(view, "reveal_host");
+    }
+    make_plain(view->reveal_host);
+    lv_obj_set_size(view->reveal_host, LAB10_LCD_WIDTH, LAB10_LCD_HEIGHT);
+    lv_obj_set_pos(view->reveal_host, 0, 0);
+    lv_obj_set_style_bg_opa(view->reveal_host, LV_OPA_TRANSP, 0);
+    lv_obj_set_clickable(view->reveal_host, false);
+    /* The reveal rectangle clips translated canvas and rail children. */
+    lv_obj_set_overflow_visible(view->reveal_host, false);
+
+    view->canvas = lv_canvas_create(view->reveal_host);
     if (view->canvas == NULL) {
         return view_init_failed(view, "canvas");
     }
@@ -771,7 +1170,7 @@ bool lab10_ui_view_init(lab10_ui_view_t *view, lv_obj_t *parent)
     lv_obj_add_event_cb(view->canvas, on_canvas_event, LV_EVENT_RELEASED, view);
     lv_obj_add_event_cb(view->canvas, on_canvas_event, LV_EVENT_PRESS_LOST, view);
 
-    view->rail = lv_obj_create(view->root);
+    view->rail = lv_obj_create(view->reveal_host);
     if (view->rail == NULL) {
         return view_init_failed(view, "rail");
     }
@@ -832,7 +1231,8 @@ bool lab10_ui_view_init(lab10_ui_view_t *view, lv_obj_t *parent)
     lv_obj_set_clickable(view->ring, false);
     lv_obj_set_style_bg_opa(view->ring, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_arc_width(view->ring, 0, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(view->ring, 18, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_width(view->ring, LAB10_RING_BAND_WIDTH,
+                               LV_PART_INDICATOR);
     lv_obj_set_style_arc_color(view->ring, lv_color_hex(0xE53935), LV_PART_INDICATOR);
     lv_obj_set_style_arc_opa(view->ring, LV_OPA_COVER, LV_PART_INDICATOR);
     lv_arc_set_bg_angles(view->ring, 0, 360);
@@ -885,11 +1285,14 @@ void lab10_ui_view_enter_fab_bloom(lab10_ui_view_t *view, int16_t origin_x,
     lab10_ui_enter_fab_bloom(&view->model);
     view->fab_origin_x = origin_x;
     view->fab_origin_y = origin_y;
+    view->entered_with_ring_wipe = false;
+    show_full_reveal(view);
     const lab10_ui_circle_transition_t transition =
         lab10_ui_fab_entry_transition(origin_x, origin_y);
     start_circle_animation(view, view->bloom, transition.origin_x,
                            transition.origin_y, transition.radius_start,
-                           transition.radius_end, 380, entry_animation_done);
+                           transition.radius_end, 380, false,
+                           entry_animation_done);
 }
 
 void lab10_ui_view_enter_ring_wipe(lab10_ui_view_t *view, int16_t center_x,
@@ -900,7 +1303,14 @@ void lab10_ui_view_enter_ring_wipe(lab10_ui_view_t *view, int16_t center_x,
         return;
     }
     lab10_ui_enter_ring_wipe(&view->model);
-    start_circle_animation(view, view->ring, center_x, center_y, 18, 360, 600,
+    view->ring_origin_x = center_x;
+    view->ring_origin_y = center_y;
+    view->entered_with_ring_wipe = true;
+    const lab10_ui_circle_transition_t transition =
+        lab10_ui_ring_entry_transition(center_x, center_y);
+    start_circle_animation(view, view->ring, transition.origin_x,
+                           transition.origin_y, transition.radius_start,
+                           transition.radius_end, LAB10_RING_DURATION_MS, true,
                            entry_animation_done);
 }
 
@@ -1013,12 +1423,25 @@ void lab10_ui_view_exit_reverse(lab10_ui_view_t *view)
          lab10_ui_state(&view->model) != LAB10_SCREEN_COMPLETED)) {
         return;
     }
+    lv_obj_set_hidden(view->outcome_panel, true);
     lab10_ui_exit_reverse(&view->model);
+    if (view->entered_with_ring_wipe) {
+        const lab10_ui_circle_transition_t transition =
+            lab10_ui_ring_exit_transition(view->ring_origin_x,
+                                          view->ring_origin_y);
+        start_circle_animation(view, view->ring, transition.origin_x,
+                               transition.origin_y, transition.radius_start,
+                               transition.radius_end, LAB10_RING_DURATION_MS,
+                               true,
+                               exit_animation_done);
+        return;
+    }
     const lab10_ui_circle_transition_t transition =
         lab10_ui_fab_exit_transition(view->fab_origin_x, view->fab_origin_y);
     start_circle_animation(view, view->bloom, transition.origin_x,
                            transition.origin_y, transition.radius_start,
-                           transition.radius_end, 400, exit_animation_done);
+                           transition.radius_end, 400, false,
+                           exit_animation_done);
 }
 
 void lab10_ui_view_poll(lab10_ui_view_t *view)

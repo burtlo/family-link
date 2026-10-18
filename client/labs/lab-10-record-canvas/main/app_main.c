@@ -55,7 +55,8 @@ static void ui_poll_timer(lv_timer_t *timer)
     if (atomic_exchange_explicit(&s_physical_button_down, false,
                                  memory_order_acq_rel)) {
         if (lab10_ui_state(&view->model) == LAB10_SCREEN_IDLE) {
-            lab10_ui_view_enter_ring_wipe(view, 160, 120);
+            lab10_ui_view_enter_ring_wipe(view, LAB10_RING_ORIGIN_X,
+                                          LAB10_RING_ORIGIN_Y);
         } else if (lab10_ui_state(&view->model) == LAB10_SCREEN_RECORDING) {
             /* Stop owns the capture terminal event; the next press exits. */
             lab10_ui_view_stop_capture(view);
@@ -113,7 +114,8 @@ void app_main(void)
            CONFIG_LAB10_BUILD_ID, ring_available ? 1 : 0);
 
     for (;;) {
-        uint32_t scripted_accepted_points;
+        lab10_ui_scripted_completion_t scripted_completion;
+        lab10_ui_scripted_diagnostic_t scripted_diagnostic;
         lab10_capture_terminal_outcome_t terminal_outcome;
 
         /* Drain in lifecycle order. These atomic one-slot handoffs are
@@ -122,17 +124,61 @@ void app_main(void)
         if (lab10_ui_view_take_pending_scripted_start()) {
             printf("LAB10_SCRIPTED_DRAWING status=started source=ui_task "
                    "hardware_touch=0 duration_cap_ms=180000 "
-                   "move_interval_ms=%lu accepted_point_cap=%u "
-                   "palette_changes=0 strokes=1 color=white\n",
-                   (unsigned long)(LAB10_UI_SCRIPTED_MOVE_INTERVAL_US / 1000u),
+                   "cadence_min_ms=36 cadence_max_ms=52 "
+                   "stroke_points=200 planned_strokes=18 "
+                   "planned_palette_changes=17 required_color_mask=0x3e "
+                   "pen_up_gap_ms=400 pause_ms=780 accepted_point_cap=%u\n",
                    (unsigned)LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY);
         }
         if (lab10_ui_view_take_pending_scripted_completion(
-                &scripted_accepted_points)) {
+                &scripted_completion)) {
             printf("LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
                    "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
-                   "accepted_points=%" PRIu32 " strokes=1 palette_changes=0 color=white\n",
-                   scripted_accepted_points);
+                   "accepted_points=%" PRIu32 " strokes=%" PRIu32 " "
+                   "palette_changes=%" PRIu32 " accepted_color_mask=0x%02x\n",
+                   scripted_completion.accepted_points,
+                   scripted_completion.strokes,
+                   scripted_completion.palette_changes,
+                   (unsigned)scripted_completion.accepted_color_mask);
+        }
+        if (lab10_ui_view_take_pending_scripted_diagnostic(
+                &scripted_diagnostic)) {
+            printf("LAB10_SCRIPTED_DIAGNOSTIC terminal=%s "
+                   "capture_session_id=%" PRIu64 " "
+                   "accepted_points=%" PRIu32 " strokes=%" PRIu32 " "
+                   "palette_changes=%" PRIu32 " accepted_color_mask=0x%02x "
+                   "queue_overflow_count=%" PRIu32 " "
+                   "trace_loss_count=%" PRIu32 " duration_cap_count=%" PRIu32 " "
+                   "terminal_event_count=%" PRIu32 " "
+                   "completion_scheduler_accepted=%u "
+                   "renderer_published_color_mask=0x%02x "
+                   "canvas_sampled_color_mask=0x%02x "
+                   "canvas_readback_color_mask=0x%02x "
+                   "canvas_color_match_mask=0x%02x "
+                   "canvas_final_color_mask=0x%02x "
+                   "canvas_readback_supported=%u "
+                   "canvas_color_format=%" PRIu32 " "
+                   "renderer_drain_complete=%u\n",
+                   lab10_capture_outcome_name(
+                       scripted_diagnostic.terminal_outcome),
+                   scripted_diagnostic.snapshot.capture_session_id,
+                   scripted_diagnostic.snapshot.accepted_points,
+                   scripted_diagnostic.strokes,
+                   scripted_diagnostic.palette_changes,
+                   (unsigned)scripted_diagnostic.accepted_color_mask,
+                   scripted_diagnostic.queue_overflow_count,
+                   scripted_diagnostic.trace_loss_count,
+                   scripted_diagnostic.duration_cap_count,
+                   scripted_diagnostic.terminal_event_count,
+                   scripted_diagnostic.completion_scheduler_accepted ? 1u : 0u,
+                   (unsigned)scripted_diagnostic.snapshot.renderer_published_color_mask,
+                   (unsigned)scripted_diagnostic.snapshot.canvas_sampled_color_mask,
+                   (unsigned)scripted_diagnostic.snapshot.canvas_readback_color_mask,
+                   (unsigned)scripted_diagnostic.snapshot.canvas_color_match_mask,
+                   (unsigned)scripted_diagnostic.snapshot.canvas_final_color_mask,
+                   scripted_diagnostic.snapshot.canvas_readback_supported ? 1u : 0u,
+                   scripted_diagnostic.snapshot.canvas_color_format,
+                   scripted_diagnostic.snapshot.renderer_drain_complete ? 1u : 0u);
         }
         if (lab10_ui_view_take_pending_terminal_outcome(&terminal_outcome)) {
             printf("LAB10_CAPTURE_TERMINAL outcome=%s terminal_event_count=1\n",

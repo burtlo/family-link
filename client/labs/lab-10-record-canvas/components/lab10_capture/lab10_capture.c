@@ -461,6 +461,8 @@ static bool append_point(lab10_capture_t *capture,
     capture->last_point = point;
     capture->has_last_point = true;
     ++capture->stats.accepted_point_count;
+    capture->stats.accepted_color_mask |=
+        (uint8_t)(1u << point.color_index);
     if (point.display_x == 0 || point.display_x == LAB10_CANVAS_WIDTH - 1 ||
         point.display_y == 0 || point.display_y == LAB10_CANVAS_HEIGHT - 1) {
         ++capture->stats.edge_point_count;

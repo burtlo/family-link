@@ -80,6 +80,24 @@ def trace_fixture(outcome: str = "completed") -> dict:
     }
 
 
+def scripted_completion_marker(**overrides):
+    fields = {
+        "status": "complete",
+        "source": "ui_task",
+        "hardware_touch": "0",
+        "terminal": "duration_cap",
+        "duration_cap_ms": "180000",
+        "accepted_points": "4095",
+        "strokes": "18",
+        "palette_changes": "17",
+        "accepted_color_mask": "0x3e",
+    }
+    fields.update(overrides)
+    return "LAB10_SCRIPTED_DRAWING " + " ".join(
+        f"{key}={value}" for key, value in fields.items()
+    )
+
+
 def serial_for(
     trace=None,
     *,
@@ -101,7 +119,7 @@ def serial_for(
         lines.extend([
             scripted_marker
             if scripted_marker is not None
-            else "LAB10_SCRIPTED_DRAWING status=complete source=ui_task hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 accepted_points=4095 strokes=1 palette_changes=0 color=white",
+            else scripted_completion_marker(),
         ])
     lines.append(f"LAB10_SCENARIO id={workload} status={scenario_status}")
     if extra:
@@ -119,6 +137,56 @@ class ParserMalformedAndMissingTests(unittest.TestCase):
         self.assertFalse(result["diagnostics"]["trace_present"])
         self.assertEqual(result["metrics"]["accepted_point_count"]["value"], None)
         self.assertTrue(result["metrics"]["accepted_point_count"]["missing_reason"])
+
+    def test_trace_loss_event_or_positive_metric_makes_workflow_incomplete(self):
+        trace = trace_fixture("queue_overflow")
+        trace["events"].insert(
+            -1,
+            _event(
+                "e-6",
+                "trace_loss",
+                35,
+                reason="queue_overflow",
+                lost_event_count=2,
+            ),
+        )
+        event_result = parser.parse_bytes(serial_for(trace))
+        self.assertEqual(event_result["workflow_status"], "INCOMPLETE")
+        self.assertEqual(event_result["experiment_verdict"], "UNMEASURED")
+        self.assertTrue(
+            any("trace loss" in error for error in event_result["diagnostics"]["errors"])
+        )
+
+        observation = {
+            "observation_schema": aggregator.OBSERVATION_SCHEMA,
+            "provenance": "host",
+            "fields": {
+                "trace_loss_count": {
+                    "value": 2,
+                    "unit": aggregator.FIELD_UNITS["trace_loss_count"],
+                }
+            },
+        }
+        metric_result = parser.parse_bytes(serial_for(observation))
+        self.assertEqual(metric_result["workflow_status"], "INCOMPLETE")
+        self.assertEqual(metric_result["experiment_verdict"], "UNMEASURED")
+        self.assertTrue(
+            any("trace_loss_count=2" in error for error in metric_result["diagnostics"]["errors"])
+        )
+
+        zero_loss_observation = {
+            **observation,
+            "fields": {
+                "trace_loss_count": {
+                    "value": 0,
+                    "unit": aggregator.FIELD_UNITS["trace_loss_count"],
+                }
+            },
+        }
+        no_loss_result = parser.parse_bytes(serial_for(zero_loss_observation))
+        self.assertEqual(no_loss_result["workflow_status"], "PASS")
+        self.assertEqual(no_loss_result["experiment_verdict"], "UNMEASURED")
+        self.assertEqual(no_loss_result["diagnostics"]["errors"], [])
 
     def test_malformed_json_missing_fields_wrong_types_and_unknown_fields_fail_closed(self):
         base = serial_for()
@@ -177,7 +245,7 @@ class ParserLifecycleAndBoundTests(unittest.TestCase):
         self.assertEqual(scripted["workflow_status"], "PASS")
         self.assertEqual(scripted["markers"]["scripted_drawing"][-1]["status"], "complete")
 
-    def test_scripted_completion_is_required_and_malformed_marker_fails_closed(self):
+    def test_scripted_completion_requires_current_multicolor_protocol(self):
         missing = parser.parse_bytes(serial_for(mode="scripted", scripted_marker=""))
         self.assertEqual(missing["workflow_status"], "INCOMPLETE")
         self.assertIn("missing LAB10_SCRIPTED_DRAWING status=complete marker",
@@ -189,77 +257,82 @@ class ParserLifecycleAndBoundTests(unittest.TestCase):
         with self.assertRaises(parser.ParseError):
             parser.parse_bytes(malformed)
 
-        early_completion = serial_for(
-            mode="scripted",
-            scripted_marker=(
-                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
-                "hardware_touch=0 terminal=stopped duration_cap_ms=180000 "
-                "accepted_points=1200 strokes=1 palette_changes=0 color=white"
-            ),
-        )
-        with self.assertRaises(parser.ParseError):
-            parser.parse_bytes(early_completion)
+        valid = parser.parse_bytes(serial_for())
+        completion = valid["markers"]["scripted_drawing"][-1]
+        self.assertEqual(completion["accepted_color_mask"], "0x3e")
+        self.assertEqual(completion["strokes"], "18")
+        self.assertEqual(completion["palette_changes"], "17")
+        self.assertEqual(valid["workflow_status"], "PASS")
 
-        underfilled_completion = serial_for(
+        unconfigured_scenario = parser.parse_bytes(
+            serial_for(mode="scripted", scenario_status="not_configured")
+        )
+        self.assertEqual(unconfigured_scenario["workflow_status"], "INCOMPLETE")
+        self.assertIn(
+            "LAB10_SCENARIO reported not_configured for scripted completion",
+            unconfigured_scenario["diagnostics"]["errors"],
+        )
+
+        white_only = serial_for(
             mode="scripted",
             scripted_marker=(
                 "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
                 "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
-                "accepted_points=3499 strokes=1 palette_changes=0 color=white"
+                "accepted_points=4095 strokes=1 palette_changes=0 color=white"
             ),
         )
         with self.assertRaises(parser.ParseError):
-            parser.parse_bytes(underfilled_completion)
+            parser.parse_bytes(white_only)
 
-        lower_bound_completion = parser.parse_bytes(serial_for(
+        missing_mask = serial_for(
             mode="scripted",
-            scripted_marker=(
-                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
-                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
-                "accepted_points=3500 strokes=1 palette_changes=0 color=white"
-            ),
+            scripted_marker=scripted_completion_marker().replace(" accepted_color_mask=0x3e", ""),
+        )
+        with self.assertRaises(parser.ParseError):
+            parser.parse_bytes(missing_mask)
+
+        for mask in ("0x00", "0x1e", "0x3d", "0x40", "-1", "0xGG"):
+            with self.subTest(mask=mask), self.assertRaises(parser.ParseError):
+                parser.parse_bytes(serial_for(scripted_marker=scripted_completion_marker(
+                    accepted_color_mask=mask
+                )))
+
+    def test_scripted_completion_duration_point_and_count_bounds_fail_closed(self):
+        for marker_fields in (
+            {"terminal": "stopped"},
+            {"terminal": "point_cap"},
+            {"duration_cap_ms": "179999"},
+            {"accepted_points": "3399"},
+            {"accepted_points": "4096"},
+            {"accepted_points": "not-a-number"},
+            {"strokes": "5"},
+            {"strokes": "19"},
+            {"palette_changes": "4"},
+            {"palette_changes": "18"},
+            {"strokes": "7", "palette_changes": "5"},
+            {"strokes": "18", "palette_changes": "not-a-number"},
+        ):
+            with self.subTest(marker_fields=marker_fields), self.assertRaises(parser.ParseError):
+                parser.parse_bytes(serial_for(scripted_marker=scripted_completion_marker(
+                    **marker_fields
+                )))
+
+        lower_bound = parser.parse_bytes(serial_for(
+            scripted_marker=scripted_completion_marker(accepted_points="3400")
         ))
-        self.assertEqual(lower_bound_completion["workflow_status"], "PASS")
+        self.assertEqual(lower_bound["workflow_status"], "PASS")
         self.assertEqual(
-            lower_bound_completion["markers"]["scripted_drawing"][-1]["accepted_points"],
-            "3500",
+            lower_bound["markers"]["scripted_drawing"][-1]["accepted_points"],
+            "3400",
         )
-        self.assertTrue(
-            lower_bound_completion["diagnostics"]["scripted_completion_observed"]
-        )
+        self.assertTrue(lower_bound["diagnostics"]["scripted_completion_observed"])
 
-        observed_target_count = parser.parse_bytes(serial_for(
-            mode="scripted",
-            scripted_marker=(
-                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
-                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
-                "accepted_points=3886 strokes=1 palette_changes=0 color=white"
-            ),
+        upper_count_bounds = parser.parse_bytes(serial_for(
+            scripted_marker=scripted_completion_marker(
+                accepted_points="4095", strokes="18", palette_changes="17"
+            )
         ))
-        self.assertEqual(observed_target_count["workflow_status"], "PASS")
-        self.assertTrue(observed_target_count["diagnostics"]["scripted_completion_observed"])
-
-        nonwhite_completion = serial_for(
-            mode="scripted",
-            scripted_marker=(
-                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
-                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
-                "accepted_points=4091 strokes=1 palette_changes=0 color=red"
-            ),
-        )
-        with self.assertRaises(parser.ParseError):
-            parser.parse_bytes(nonwhite_completion)
-
-        point_cap_completion = serial_for(
-            mode="scripted",
-            scripted_marker=(
-                "LAB10_SCRIPTED_DRAWING status=complete source=ui_task "
-                "hardware_touch=0 terminal=duration_cap duration_cap_ms=180000 "
-                "accepted_points=4096 strokes=1 palette_changes=0 color=white"
-            ),
-        )
-        with self.assertRaises(parser.ParseError):
-            parser.parse_bytes(point_cap_completion)
+        self.assertEqual(upper_count_bounds["workflow_status"], "PASS")
 
         passed_without_device_completion = serial_for(
             mode="scripted", scripted_marker="", scenario_status="passed"
@@ -267,6 +340,33 @@ class ParserLifecycleAndBoundTests(unittest.TestCase):
         result = parser.parse_bytes(passed_without_device_completion)
         self.assertEqual(result["workflow_status"], "INCOMPLETE")
         self.assertEqual(result["experiment_verdict"], "UNMEASURED")
+
+    def test_scripted_diagnostic_prefix_is_ignored_for_workflow_status(self):
+        diagnostic = (
+            "LAB10_SCRIPTED_DIAGNOSTIC terminal=duration_cap "
+            "accepted_points=3200 strokes=4 palette_changes=3 "
+            "accepted_color_mask=0x0e queue_overflow_count=0 "
+            "trace_loss_count=0 duration_cap_count=1 terminal_event_count=1 "
+            "completion_scheduler_accepted=0 canvas_final_color_mask=0x16 "
+            "renderer_drain_complete=1"
+        )
+        complete = parser.parse_bytes(serial_for(extra=diagnostic))
+        self.assertEqual(complete["workflow_status"], "PASS")
+        self.assertEqual(
+            complete["markers"]["scripted_drawing"][-1]["status"], "complete"
+        )
+
+        diagnostic_only = parser.parse_bytes(
+            serial_for(
+                mode="scripted", scripted_marker="", scenario_status="passed",
+                extra=diagnostic,
+            )
+        )
+        self.assertEqual(diagnostic_only["workflow_status"], "INCOMPLETE")
+        self.assertEqual(diagnostic_only["markers"]["scripted_drawing"], [])
+        self.assertFalse(
+            diagnostic_only["diagnostics"]["scripted_completion_observed"]
+        )
 
     def test_cancellation_is_preserved_and_not_promoted_to_pass(self):
         trace = trace_fixture("cancelled")
@@ -304,6 +404,12 @@ class ParserLifecycleAndBoundTests(unittest.TestCase):
         over_duration["events"][-1]["t_us"] = 180_000_001
         with self.assertRaises(parser.ParseError):
             parser.parse_bytes(serial_for(over_duration))
+
+        point_cap_without_capacity = trace_fixture()
+        point_cap_without_capacity["terminal"]["outcome"] = "point_cap"
+        point_cap_without_capacity["events"][-1]["outcome"] = "point_cap"
+        with self.assertRaises(parser.ParseError):
+            parser.parse_bytes(serial_for(point_cap_without_capacity))
 
     def test_bounded_input_and_output_file_creation(self):
         with self.assertRaises(parser.ParseError):

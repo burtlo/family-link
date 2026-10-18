@@ -1,0 +1,96 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-10/runs/20261018-scripted-run-5d7adf6d/events.jsonl",
+    "metrics": "docs/labs/evidence/lab-10/runs/20261018-scripted-run-5d7adf6d/metrics.json",
+    "serial_log": "logs/device/labs/lab-10/20261018-scripted-run-5d7adf6d/serial.txt",
+    "server_log": null
+  },
+  "build": {
+    "status": "passed"
+  },
+  "capture": {
+    "evidence_provenance": "unmeasured/blocked",
+    "mode": "scripted",
+    "parser_identity": "lab10-record-parser",
+    "parser_status": "parsed",
+    "parser_version": "v1",
+    "seconds": 180,
+    "stages": {
+      "activity": "passed",
+      "build": "passed",
+      "cleanup": "passed",
+      "parser": "passed",
+      "preflight": "passed",
+      "scenario": "not_configured"
+    },
+    "status": "complete",
+    "variant": "scripted"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-18T19:27:49.504257Z",
+  "event_loss": {
+    "firmware_trace": {
+      "dropped_events": null,
+      "status": "UNKNOWN"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-10",
+  "experiment_verdict": "UNMEASURED",
+  "firmware": {
+    "adapter_identity": "lab10",
+    "adapter_version": "v1",
+    "binary_sha256": null,
+    "build_fingerprint": null,
+    "build_id": null,
+    "build_stamp": null,
+    "cmake_options": {},
+    "idf_version": null,
+    "project_path": "client/labs/lab-10-record-canvas",
+    "sdkconfig_sha256": null,
+    "source_revision": null,
+    "source_sha256": null,
+    "target": "esp32s3"
+  },
+  "fixture": {
+    "file": null,
+    "revision": null,
+    "schema": null,
+    "sha256": null
+  },
+  "hardware": {
+    "board": null,
+    "kit_nickname": null
+  },
+  "lab_id": "LAB-10",
+  "lab_revision": null,
+  "lab_version_string": null,
+  "operator": null,
+  "run_id": "20261018-scripted-run-5d7adf6d",
+  "scenarios": [
+    "scripted-human-like-multicolor-180s-v1"
+  ],
+  "server": {
+    "path": null,
+    "revision": null,
+    "source_sha256": null
+  },
+  "source": {
+    "dirty": null,
+    "files": {
+      "adapter": "scripts/lab_adapter_lab10.py",
+      "parser": "client/labs/lab-10-record-canvas/tools/parse_lab_trace.py"
+    },
+    "revision": "lab10/v1"
+  },
+  "started_at_utc": "2026-10-18T19:24:33.559761Z",
+  "terminal_reason": "markers_or_evidence_incomplete",
+  "terminal_reason_truncated": false,
+  "verification_levels": {},
+  "workflow_status": "INCOMPLETE"
+}
