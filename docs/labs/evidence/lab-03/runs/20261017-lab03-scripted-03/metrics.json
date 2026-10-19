@@ -1,0 +1,4950 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261017-lab03-scripted-03",
+  "schema_version": "lab03-trace/v1",
+  "parser_version": "lab03-parser/v1",
+  "evidence": {
+    "status": "INCOMPLETE",
+    "trace_loss": "NONE",
+    "firmware_trace_loss": {
+      "status": "NONE",
+      "dropped_events": 0,
+      "malformed_rows": 0
+    },
+    "missing": [
+      "harness_done",
+      "first_audible_sample",
+      "synchronized_screen_audio",
+      "audio_underrun_count_duration",
+      "dac_position",
+      "lcd_visible_frame_timestamp",
+      "renderer_cpu_utilization",
+      "cache_drift_assessment",
+      "exactly_one_terminal_per_accepted_operation",
+      "sustained_600s",
+      "scenario:cancel_during_audio_fetch",
+      "scenario:cancel_during_sketch_fetch",
+      "scenario:new_page_during_playback",
+      "scenario:maximum_dense_sketch",
+      "scenario:pause_then_move_offscreen",
+      "scenario:sustained_600s"
+    ]
+  },
+  "lab_metrics": {
+    "callback_us": {
+      "n": 3542,
+      "p50": 127,
+      "p95": 2181,
+      "p99": 2866,
+      "worst": 7707
+    },
+    "raster_us": {
+      "n": 1869,
+      "p50": 29,
+      "p95": 389,
+      "p99": 639,
+      "worst": 1176
+    },
+    "decode_us": {
+      "n": 19,
+      "p50": 1178,
+      "p95": 6273,
+      "p99": 6273,
+      "worst": 6273
+    },
+    "reveal_lateness_ms": {
+      "n": 20789,
+      "p50": 63,
+      "p95": 390,
+      "p99": 959,
+      "worst": 1100
+    },
+    "worker_busy_us": {
+      "n": 1869,
+      "p50": 14999,
+      "p95": 30014,
+      "p99": 30105,
+      "worst": 30764
+    },
+    "scenarios_observed": {
+      "play_pause_resume": true,
+      "focus_B_play_B": true,
+      "rapid_20_A_B_A": true,
+      "cancel_during_audio_fetch": false,
+      "cancel_during_sketch_fetch": false,
+      "new_page_during_playback": false,
+      "signout_during_operation": true,
+      "asset_failure": true,
+      "audio_only": true,
+      "maximum_dense_sketch": false,
+      "pause_then_move_offscreen": false,
+      "sustained_600s": false
+    },
+    "accepted_rapid_ABA_cycles": 20,
+    "heap_used_high_water": {
+      "internal_regional_minimum_used_upper_bound_bytes": 202496,
+      "psram_regional_minimum_used_upper_bound_bytes": 314484,
+      "lvgl_used_bytes": 11420,
+      "internal_sampled_peak_used_bytes": 191528,
+      "psram_sampled_peak_used_bytes": 314212
+    },
+    "declared_reserve_check": {
+      "internal_next_plus_reserve_bytes": 24576,
+      "psram_next_plus_reserve_bytes": 128768,
+      "internal_largest_min": 31744,
+      "psram_largest_min": 16252928
+    },
+    "start_to_codec_write_us": {
+      "n": 19,
+      "p50": 1542527,
+      "p95": 2919978,
+      "p99": 2919978,
+      "worst": 2919978
+    },
+    "start_to_audible_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "cancel_to_ui_us": {
+      "n": 93,
+      "p50": 294,
+      "p95": 2619,
+      "p99": 3765,
+      "worst": 3765
+    },
+    "cancel_to_worker_terminal_us": {
+      "n": 82,
+      "p50": 49946,
+      "p95": 182324,
+      "p99": 562190,
+      "worst": 562190
+    },
+    "inactive_or_unpaired_stops": [
+      {
+        "operation_id": 64,
+        "request_t_us": 14638489
+      },
+      {
+        "operation_id": 66,
+        "request_t_us": 17129256
+      },
+      {
+        "operation_id": 69,
+        "request_t_us": 21638521
+      },
+      {
+        "operation_id": 70,
+        "request_t_us": 25148506
+      },
+      {
+        "operation_id": 77,
+        "request_t_us": 51138501
+      },
+      {
+        "operation_id": 81,
+        "request_t_us": 65528464
+      },
+      {
+        "operation_id": 82,
+        "request_t_us": 69128445
+      },
+      {
+        "operation_id": 83,
+        "request_t_us": 72728458
+      },
+      {
+        "operation_id": 88,
+        "request_t_us": 90738503
+      },
+      {
+        "operation_id": 90,
+        "request_t_us": 97948544
+      },
+      {
+        "operation_id": 93,
+        "request_t_us": 108748464
+      }
+    ],
+    "terminal_events": {
+      "1": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "2": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "3": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "4": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "5": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "6": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "7": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "8": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "9": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "10": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "11": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "12": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "13": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "14": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "15": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "16": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "17": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "18": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "19": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "20": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "21": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "22": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "23": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "24": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "25": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "26": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "27": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "28": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "29": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "30": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "31": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "32": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "33": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "34": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "35": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "36": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "37": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "38": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "39": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "40": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "41": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "42": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "43": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "44": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "45": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "46": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "47": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "48": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "49": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "50": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "51": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "52": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "53": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "54": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "55": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "56": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "57": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "58": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "59": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "60": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "61": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "62": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "63": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "64": {
+        "accepted": false,
+        "worker_starts": 0,
+        "count": 0,
+        "outcomes": []
+      },
+      "65": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "66": {
+        "accepted": false,
+        "worker_starts": 0,
+        "count": 0,
+        "outcomes": []
+      },
+      "67": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "68": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "69": {
+        "accepted": false,
+        "worker_starts": 0,
+        "count": 0,
+        "outcomes": []
+      },
+      "70": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_failed"
+        ]
+      },
+      "71": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "72": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "73": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "74": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "75": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "76": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "77": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_failed"
+        ]
+      },
+      "78": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "79": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "80": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "81": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_failed"
+        ]
+      },
+      "82": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_failed"
+        ]
+      },
+      "83": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_failed"
+        ]
+      },
+      "84": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "85": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "86": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "87": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "88": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_completed"
+        ]
+      },
+      "89": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "90": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_completed"
+        ]
+      },
+      "91": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "92": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_cancelled"
+        ]
+      },
+      "93": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_failed"
+        ]
+      },
+      "94": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 0,
+        "outcomes": []
+      }
+    },
+    "exactly_one_terminal": false,
+    "stale_results_rejected": 91,
+    "allocation_failures": 0,
+    "psram_wrapper_allocation_attempts": 8,
+    "audio_underruns": null,
+    "network_buffering_intervals": [
+      {
+        "event": "network_buffering_start",
+        "t_us": 3631178,
+        "operation_id": 1,
+        "session_id": 1,
+        "generation": 1,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 5676872,
+        "operation_id": 2,
+        "session_id": 1,
+        "generation": 2,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 6944124,
+        "operation_id": 3,
+        "session_id": 1,
+        "generation": 3,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 7217287,
+        "operation_id": 6,
+        "session_id": 1,
+        "generation": 6,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 7312558,
+        "operation_id": 7,
+        "session_id": 1,
+        "generation": 7,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 7451991,
+        "operation_id": 9,
+        "session_id": 1,
+        "generation": 9,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 7560481,
+        "operation_id": 10,
+        "session_id": 1,
+        "generation": 10,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 7671083,
+        "operation_id": 11,
+        "session_id": 1,
+        "generation": 11,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 7791179,
+        "operation_id": 13,
+        "session_id": 1,
+        "generation": 13,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 7900910,
+        "operation_id": 14,
+        "session_id": 1,
+        "generation": 14,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 8026189,
+        "operation_id": 16,
+        "session_id": 1,
+        "generation": 16,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 8278394,
+        "operation_id": 19,
+        "session_id": 1,
+        "generation": 19,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 8381446,
+        "operation_id": 20,
+        "session_id": 1,
+        "generation": 20,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 8517124,
+        "operation_id": 22,
+        "session_id": 1,
+        "generation": 22,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 8641045,
+        "operation_id": 24,
+        "session_id": 1,
+        "generation": 24,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 8760700,
+        "operation_id": 25,
+        "session_id": 1,
+        "generation": 25,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 8894682,
+        "operation_id": 27,
+        "session_id": 1,
+        "generation": 27,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 8998453,
+        "operation_id": 28,
+        "session_id": 1,
+        "generation": 28,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 9256048,
+        "operation_id": 31,
+        "session_id": 1,
+        "generation": 31,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 9374324,
+        "operation_id": 33,
+        "session_id": 1,
+        "generation": 33,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 9475800,
+        "operation_id": 34,
+        "session_id": 1,
+        "generation": 34,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 9596094,
+        "operation_id": 36,
+        "session_id": 1,
+        "generation": 36,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 9697696,
+        "operation_id": 37,
+        "session_id": 1,
+        "generation": 37,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 9824000,
+        "operation_id": 38,
+        "session_id": 1,
+        "generation": 38,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 9959649,
+        "operation_id": 40,
+        "session_id": 1,
+        "generation": 40,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 10083729,
+        "operation_id": 42,
+        "session_id": 1,
+        "generation": 42,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 10323327,
+        "operation_id": 45,
+        "session_id": 1,
+        "generation": 45,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 10432369,
+        "operation_id": 46,
+        "session_id": 1,
+        "generation": 46,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 10548672,
+        "operation_id": 48,
+        "session_id": 1,
+        "generation": 48,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 10669337,
+        "operation_id": 49,
+        "session_id": 1,
+        "generation": 49,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 10792296,
+        "operation_id": 50,
+        "session_id": 1,
+        "generation": 50,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 10896210,
+        "operation_id": 52,
+        "session_id": 1,
+        "generation": 52,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 10998228,
+        "operation_id": 53,
+        "session_id": 1,
+        "generation": 53,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 11119811,
+        "operation_id": 55,
+        "session_id": 1,
+        "generation": 55,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 11408222,
+        "operation_id": 58,
+        "session_id": 1,
+        "generation": 58,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 11526981,
+        "operation_id": 60,
+        "session_id": 1,
+        "generation": 60,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 11637465,
+        "operation_id": 61,
+        "session_id": 1,
+        "generation": 61,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 12224208,
+        "operation_id": 62,
+        "session_id": 1,
+        "generation": 62,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 14640239,
+        "operation_id": 65,
+        "session_id": 1,
+        "generation": 65,
+        "message_id": "F",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 17131376,
+        "operation_id": 67,
+        "session_id": 1,
+        "generation": 67,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 18940907,
+        "operation_id": 68,
+        "session_id": 1,
+        "generation": 68,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 21640548,
+        "operation_id": 70,
+        "session_id": 2,
+        "generation": 70,
+        "message_id": "D",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 25150212,
+        "operation_id": 71,
+        "session_id": 2,
+        "generation": 71,
+        "message_id": "C",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 28179304,
+        "operation_id": 72,
+        "session_id": 2,
+        "generation": 72,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 33143335,
+        "operation_id": 73,
+        "session_id": 2,
+        "generation": 73,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 36776305,
+        "operation_id": 74,
+        "session_id": 2,
+        "generation": 74,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 40379578,
+        "operation_id": 75,
+        "session_id": 2,
+        "generation": 75,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 43955075,
+        "operation_id": 76,
+        "session_id": 2,
+        "generation": 76,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 47546385,
+        "operation_id": 77,
+        "session_id": 2,
+        "generation": 77,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 51140782,
+        "operation_id": 78,
+        "session_id": 2,
+        "generation": 78,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 54761382,
+        "operation_id": 79,
+        "session_id": 2,
+        "generation": 79,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 58378330,
+        "operation_id": 80,
+        "session_id": 2,
+        "generation": 80,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 61968218,
+        "operation_id": 81,
+        "session_id": 2,
+        "generation": 81,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 65530626,
+        "operation_id": 82,
+        "session_id": 2,
+        "generation": 82,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 69130582,
+        "operation_id": 83,
+        "session_id": 2,
+        "generation": 83,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 72730706,
+        "operation_id": 84,
+        "session_id": 2,
+        "generation": 84,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 76363308,
+        "operation_id": 85,
+        "session_id": 2,
+        "generation": 85,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 79952459,
+        "operation_id": 86,
+        "session_id": 2,
+        "generation": 86,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 83556424,
+        "operation_id": 87,
+        "session_id": 2,
+        "generation": 87,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 87147167,
+        "operation_id": 88,
+        "session_id": 2,
+        "generation": 88,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 90740720,
+        "operation_id": 89,
+        "session_id": 2,
+        "generation": 89,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 94367355,
+        "operation_id": 90,
+        "session_id": 2,
+        "generation": 90,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 97950914,
+        "operation_id": 91,
+        "session_id": 2,
+        "generation": 91,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 101556072,
+        "operation_id": 92,
+        "session_id": 2,
+        "generation": 92,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 105170009,
+        "operation_id": 93,
+        "session_id": 2,
+        "generation": 93,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_start",
+        "t_us": 108750663,
+        "operation_id": 94,
+        "session_id": 2,
+        "generation": 94,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 5453881,
+        "operation_id": 1,
+        "session_id": 1,
+        "generation": 1,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 26600864,
+        "operation_id": 71,
+        "session_id": 2,
+        "generation": 71,
+        "message_id": "C",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 29603224,
+        "operation_id": 72,
+        "session_id": 2,
+        "generation": 72,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 34812376,
+        "operation_id": 73,
+        "session_id": 2,
+        "generation": 73,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 38235583,
+        "operation_id": 74,
+        "session_id": 2,
+        "generation": 74,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 42513386,
+        "operation_id": 75,
+        "session_id": 2,
+        "generation": 75,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 45429743,
+        "operation_id": 76,
+        "session_id": 2,
+        "generation": 76,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 52646639,
+        "operation_id": 78,
+        "session_id": 2,
+        "generation": 78,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 57014966,
+        "operation_id": 79,
+        "session_id": 2,
+        "generation": 79,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 59929876,
+        "operation_id": 80,
+        "session_id": 2,
+        "generation": 80,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 75116931,
+        "operation_id": 84,
+        "session_id": 2,
+        "generation": 84,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 78226646,
+        "operation_id": 85,
+        "session_id": 2,
+        "generation": 85,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 81382138,
+        "operation_id": 86,
+        "session_id": 2,
+        "generation": 86,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 86425192,
+        "operation_id": 87,
+        "session_id": 2,
+        "generation": 87,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 87709251,
+        "operation_id": 88,
+        "session_id": 2,
+        "generation": 88,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 91590558,
+        "operation_id": 89,
+        "session_id": 2,
+        "generation": 89,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 94858772,
+        "operation_id": 90,
+        "session_id": 2,
+        "generation": 90,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 98840066,
+        "operation_id": 91,
+        "session_id": 2,
+        "generation": 91,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "event": "network_buffering_end",
+        "t_us": 102351165,
+        "operation_id": 92,
+        "session_id": 2,
+        "generation": 92,
+        "message_id": "A",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      }
+    ],
+    "renderer_backlog_max": 0,
+    "segments_per_update_max": 31,
+    "resources": {
+      "internal_heap": {
+        "samples": 136,
+        "first": {
+          "event": "internal_heap",
+          "t_us": 5488355,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 20,
+          "rendered": 1,
+          "value": 109651,
+          "aux": 31744
+        },
+        "last": {
+          "event": "internal_heap",
+          "t_us": 107132555,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 109223,
+          "aux": 31744
+        },
+        "value_min": 107551,
+        "value_max": 109707,
+        "aux_min": 31744,
+        "aux_max": 31744
+      },
+      "psram_heap": {
+        "samples": 136,
+        "first": {
+          "event": "psram_heap",
+          "t_us": 5488432,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 20,
+          "rendered": 1,
+          "value": 16463004,
+          "aux": 16252928
+        },
+        "last": {
+          "event": "psram_heap",
+          "t_us": 107132606,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 16463004,
+          "aux": 16252928
+        },
+        "value_min": 16463004,
+        "value_max": 16463004,
+        "aux_min": 16252928,
+        "aux_max": 16252928
+      },
+      "lvgl_heap": {
+        "samples": 70,
+        "first": {
+          "event": "lvgl_heap",
+          "t_us": 4668881,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 11420,
+          "aux": 52440
+        },
+        "last": {
+          "event": "lvgl_heap",
+          "t_us": 107998706,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 11420,
+          "aux": 52440
+        },
+        "value_min": 11420,
+        "value_max": 11420,
+        "aux_min": 52440,
+        "aux_max": 52440
+      },
+      "heap_min_free": {
+        "samples": 136,
+        "first": {
+          "event": "heap_min_free",
+          "t_us": 5488444,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 20,
+          "rendered": 1,
+          "value": 99015,
+          "aux": 16462868
+        },
+        "last": {
+          "event": "heap_min_free",
+          "t_us": 107132618,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 96583,
+          "aux": 16462732
+        },
+        "value_min": 96583,
+        "value_max": 99015,
+        "aux_min": 16462732,
+        "aux_max": 16462868
+      },
+      "worker_stack": {
+        "samples": 136,
+        "first": {
+          "event": "worker_stack",
+          "t_us": 5488708,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 20,
+          "rendered": 1,
+          "value": 5676,
+          "aux": 0
+        },
+        "last": {
+          "event": "worker_stack",
+          "t_us": 107132859,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 5260,
+          "aux": 0
+        },
+        "value_min": 5260,
+        "value_max": 5676,
+        "aux_min": 0,
+        "aux_max": 0
+      },
+      "ui_stack": {
+        "samples": 70,
+        "first": {
+          "event": "ui_stack",
+          "t_us": 4669021,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 2732,
+          "aux": 0
+        },
+        "last": {
+          "event": "ui_stack",
+          "t_us": 107998840,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 2732,
+          "aux": 0
+        },
+        "value_min": 2732,
+        "value_max": 2732,
+        "aux_min": 0,
+        "aux_max": 0
+      },
+      "resident_bytes": {
+        "samples": 136,
+        "first": {
+          "event": "resident_bytes",
+          "t_us": 5488728,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 20,
+          "rendered": 1,
+          "value": 86400,
+          "aux": 136968
+        },
+        "last": {
+          "event": "resident_bytes",
+          "t_us": 107132880,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 86400,
+          "aux": 136968
+        },
+        "value_min": 86400,
+        "value_max": 86400,
+        "aux_min": 136968,
+        "aux_max": 136968
+      },
+      "allocation": {
+        "samples": 136,
+        "first": {
+          "event": "allocation",
+          "t_us": 5488713,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 20,
+          "rendered": 1,
+          "value": 8,
+          "aux": 0
+        },
+        "last": {
+          "event": "allocation",
+          "t_us": 107132865,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 8,
+          "aux": 0
+        },
+        "value_min": 8,
+        "value_max": 8,
+        "aux_min": 0,
+        "aux_max": 0
+      },
+      "heap_total": {
+        "samples": 136,
+        "first": {
+          "event": "heap_total",
+          "t_us": 5488175,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 20,
+          "rendered": 1,
+          "value": 299079,
+          "aux": 16777216
+        },
+        "last": {
+          "event": "heap_total",
+          "t_us": 107131830,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 299079,
+          "aux": 16777216
+        },
+        "value_min": 299079,
+        "value_max": 299079,
+        "aux_min": 16777216,
+        "aux_max": 16777216
+      },
+      "image_counts": {
+        "samples": 136,
+        "first": {
+          "event": "image_counts",
+          "t_us": 5488724,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 20,
+          "rendered": 1,
+          "value": 3,
+          "aux": 0
+        },
+        "last": {
+          "event": "image_counts",
+          "t_us": 107132875,
+          "operation_id": 93,
+          "session_id": 2,
+          "generation": 93,
+          "message_id": "B",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 3,
+          "aux": 0
+        },
+        "value_min": 3,
+        "value_max": 3,
+        "aux_min": 0,
+        "aux_max": 0
+      }
+    },
+    "position_and_progress": [
+      {
+        "operation_id": 1,
+        "updates": [
+          {
+            "t_us": 3650393,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 5500751,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 5610269,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 2,
+        "updates": [
+          {
+            "t_us": 5692495,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 3,
+        "updates": [
+          {
+            "t_us": 6970392,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 4,
+        "updates": []
+      },
+      {
+        "operation_id": 5,
+        "updates": []
+      },
+      {
+        "operation_id": 6,
+        "updates": [
+          {
+            "t_us": 7230708,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 7,
+        "updates": []
+      },
+      {
+        "operation_id": 8,
+        "updates": []
+      },
+      {
+        "operation_id": 9,
+        "updates": [
+          {
+            "t_us": 7480647,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 10,
+        "updates": [
+          {
+            "t_us": 7567770,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 11,
+        "updates": []
+      },
+      {
+        "operation_id": 12,
+        "updates": []
+      },
+      {
+        "operation_id": 13,
+        "updates": []
+      },
+      {
+        "operation_id": 14,
+        "updates": []
+      },
+      {
+        "operation_id": 15,
+        "updates": []
+      },
+      {
+        "operation_id": 16,
+        "updates": []
+      },
+      {
+        "operation_id": 17,
+        "updates": []
+      },
+      {
+        "operation_id": 18,
+        "updates": []
+      },
+      {
+        "operation_id": 19,
+        "updates": [
+          {
+            "t_us": 8286625,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 20,
+        "updates": []
+      },
+      {
+        "operation_id": 21,
+        "updates": []
+      },
+      {
+        "operation_id": 22,
+        "updates": [
+          {
+            "t_us": 8524788,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 23,
+        "updates": []
+      },
+      {
+        "operation_id": 24,
+        "updates": [
+          {
+            "t_us": 8681278,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 25,
+        "updates": []
+      },
+      {
+        "operation_id": 26,
+        "updates": []
+      },
+      {
+        "operation_id": 27,
+        "updates": [
+          {
+            "t_us": 8902588,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 28,
+        "updates": [
+          {
+            "t_us": 9005905,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 29,
+        "updates": []
+      },
+      {
+        "operation_id": 30,
+        "updates": []
+      },
+      {
+        "operation_id": 31,
+        "updates": []
+      },
+      {
+        "operation_id": 32,
+        "updates": []
+      },
+      {
+        "operation_id": 33,
+        "updates": [
+          {
+            "t_us": 9400431,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 34,
+        "updates": [
+          {
+            "t_us": 9484151,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 35,
+        "updates": []
+      },
+      {
+        "operation_id": 36,
+        "updates": [
+          {
+            "t_us": 9620425,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 37,
+        "updates": [
+          {
+            "t_us": 9706053,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 38,
+        "updates": []
+      },
+      {
+        "operation_id": 39,
+        "updates": []
+      },
+      {
+        "operation_id": 40,
+        "updates": []
+      },
+      {
+        "operation_id": 41,
+        "updates": []
+      },
+      {
+        "operation_id": 42,
+        "updates": [
+          {
+            "t_us": 10091803,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 43,
+        "updates": []
+      },
+      {
+        "operation_id": 44,
+        "updates": []
+      },
+      {
+        "operation_id": 45,
+        "updates": [
+          {
+            "t_us": 10340414,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 46,
+        "updates": []
+      },
+      {
+        "operation_id": 47,
+        "updates": []
+      },
+      {
+        "operation_id": 48,
+        "updates": [
+          {
+            "t_us": 10590882,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 49,
+        "updates": [
+          {
+            "t_us": 10676213,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 50,
+        "updates": []
+      },
+      {
+        "operation_id": 51,
+        "updates": []
+      },
+      {
+        "operation_id": 52,
+        "updates": [
+          {
+            "t_us": 10905798,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 53,
+        "updates": []
+      },
+      {
+        "operation_id": 54,
+        "updates": []
+      },
+      {
+        "operation_id": 55,
+        "updates": []
+      },
+      {
+        "operation_id": 56,
+        "updates": []
+      },
+      {
+        "operation_id": 57,
+        "updates": []
+      },
+      {
+        "operation_id": 58,
+        "updates": []
+      },
+      {
+        "operation_id": 59,
+        "updates": []
+      },
+      {
+        "operation_id": 60,
+        "updates": [
+          {
+            "t_us": 11540684,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 61,
+        "updates": []
+      },
+      {
+        "operation_id": 62,
+        "updates": [
+          {
+            "t_us": 12231676,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 63,
+        "updates": []
+      },
+      {
+        "operation_id": 64,
+        "updates": []
+      },
+      {
+        "operation_id": 65,
+        "updates": [
+          {
+            "t_us": 14645809,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 66,
+        "updates": []
+      },
+      {
+        "operation_id": 67,
+        "updates": [
+          {
+            "t_us": 17136783,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 68,
+        "updates": [
+          {
+            "t_us": 18951419,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      },
+      {
+        "operation_id": 69,
+        "updates": []
+      },
+      {
+        "operation_id": 70,
+        "updates": [
+          {
+            "t_us": 21645221,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 21860490,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 4
+          }
+        ]
+      },
+      {
+        "operation_id": 71,
+        "updates": [
+          {
+            "t_us": 25155837,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 26640592,
+            "submitted_pcm_ms": 20,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 26780408,
+            "submitted_pcm_ms": 140,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 26900362,
+            "submitted_pcm_ms": 260,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27020304,
+            "submitted_pcm_ms": 380,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27140289,
+            "submitted_pcm_ms": 500,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27260800,
+            "submitted_pcm_ms": 620,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27380427,
+            "submitted_pcm_ms": 740,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27500403,
+            "submitted_pcm_ms": 860,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27620362,
+            "submitted_pcm_ms": 980,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27740361,
+            "submitted_pcm_ms": 1100,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27860296,
+            "submitted_pcm_ms": 1220,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 27980402,
+            "submitted_pcm_ms": 1340,
+            "rendered": 0,
+            "stage": 2
+          },
+          {
+            "t_us": 28090993,
+            "submitted_pcm_ms": 1460,
+            "rendered": 0,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 72,
+        "updates": [
+          {
+            "t_us": 28200444,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 29640512,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 3
+          },
+          {
+            "t_us": 30680828,
+            "submitted_pcm_ms": 20,
+            "rendered": 31,
+            "stage": 2
+          },
+          {
+            "t_us": 30770492,
+            "submitted_pcm_ms": 180,
+            "rendered": 265,
+            "stage": 2
+          },
+          {
+            "t_us": 30890500,
+            "submitted_pcm_ms": 280,
+            "rendered": 412,
+            "stage": 2
+          },
+          {
+            "t_us": 30980423,
+            "submitted_pcm_ms": 380,
+            "rendered": 558,
+            "stage": 2
+          },
+          {
+            "t_us": 31100360,
+            "submitted_pcm_ms": 500,
+            "rendered": 733,
+            "stage": 2
+          },
+          {
+            "t_us": 31220383,
+            "submitted_pcm_ms": 620,
+            "rendered": 909,
+            "stage": 2
+          },
+          {
+            "t_us": 31340367,
+            "submitted_pcm_ms": 740,
+            "rendered": 1084,
+            "stage": 2
+          },
+          {
+            "t_us": 31460431,
+            "submitted_pcm_ms": 860,
+            "rendered": 1260,
+            "stage": 2
+          },
+          {
+            "t_us": 31580426,
+            "submitted_pcm_ms": 980,
+            "rendered": 1436,
+            "stage": 2
+          },
+          {
+            "t_us": 31710782,
+            "submitted_pcm_ms": 1100,
+            "rendered": 1611,
+            "stage": 2
+          },
+          {
+            "t_us": 31820565,
+            "submitted_pcm_ms": 1220,
+            "rendered": 1787,
+            "stage": 2
+          },
+          {
+            "t_us": 31960676,
+            "submitted_pcm_ms": 1340,
+            "rendered": 1962,
+            "stage": 2
+          },
+          {
+            "t_us": 32081132,
+            "submitted_pcm_ms": 1460,
+            "rendered": 2138,
+            "stage": 2
+          },
+          {
+            "t_us": 32200756,
+            "submitted_pcm_ms": 1580,
+            "rendered": 2313,
+            "stage": 2
+          },
+          {
+            "t_us": 32320650,
+            "submitted_pcm_ms": 1700,
+            "rendered": 2489,
+            "stage": 2
+          },
+          {
+            "t_us": 32430662,
+            "submitted_pcm_ms": 1820,
+            "rendered": 2664,
+            "stage": 2
+          },
+          {
+            "t_us": 32540558,
+            "submitted_pcm_ms": 1940,
+            "rendered": 2840,
+            "stage": 2
+          },
+          {
+            "t_us": 32680686,
+            "submitted_pcm_ms": 2060,
+            "rendered": 3015,
+            "stage": 2
+          },
+          {
+            "t_us": 32800982,
+            "submitted_pcm_ms": 2180,
+            "rendered": 3191,
+            "stage": 2
+          },
+          {
+            "t_us": 32920749,
+            "submitted_pcm_ms": 2300,
+            "rendered": 3367,
+            "stage": 2
+          },
+          {
+            "t_us": 33041036,
+            "submitted_pcm_ms": 2420,
+            "rendered": 3542,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 73,
+        "updates": [
+          {
+            "t_us": 33162596,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 34850867,
+            "submitted_pcm_ms": 20,
+            "rendered": 31,
+            "stage": 2
+          },
+          {
+            "t_us": 34990739,
+            "submitted_pcm_ms": 140,
+            "rendered": 207,
+            "stage": 2
+          },
+          {
+            "t_us": 35110630,
+            "submitted_pcm_ms": 260,
+            "rendered": 382,
+            "stage": 2
+          },
+          {
+            "t_us": 35230637,
+            "submitted_pcm_ms": 380,
+            "rendered": 558,
+            "stage": 2
+          },
+          {
+            "t_us": 35351120,
+            "submitted_pcm_ms": 500,
+            "rendered": 733,
+            "stage": 2
+          },
+          {
+            "t_us": 35470783,
+            "submitted_pcm_ms": 620,
+            "rendered": 909,
+            "stage": 2
+          },
+          {
+            "t_us": 35590722,
+            "submitted_pcm_ms": 740,
+            "rendered": 1084,
+            "stage": 2
+          },
+          {
+            "t_us": 35710681,
+            "submitted_pcm_ms": 860,
+            "rendered": 1260,
+            "stage": 2
+          },
+          {
+            "t_us": 35830621,
+            "submitted_pcm_ms": 980,
+            "rendered": 1436,
+            "stage": 2
+          },
+          {
+            "t_us": 35940576,
+            "submitted_pcm_ms": 1100,
+            "rendered": 1611,
+            "stage": 2
+          },
+          {
+            "t_us": 36060694,
+            "submitted_pcm_ms": 1220,
+            "rendered": 1787,
+            "stage": 2
+          },
+          {
+            "t_us": 36181177,
+            "submitted_pcm_ms": 1340,
+            "rendered": 1962,
+            "stage": 2
+          },
+          {
+            "t_us": 36300674,
+            "submitted_pcm_ms": 1460,
+            "rendered": 2138,
+            "stage": 2
+          },
+          {
+            "t_us": 36420561,
+            "submitted_pcm_ms": 1580,
+            "rendered": 2313,
+            "stage": 2
+          },
+          {
+            "t_us": 36540560,
+            "submitted_pcm_ms": 1700,
+            "rendered": 2489,
+            "stage": 2
+          },
+          {
+            "t_us": 36660585,
+            "submitted_pcm_ms": 1820,
+            "rendered": 2664,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 74,
+        "updates": [
+          {
+            "t_us": 36790557,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 38290497,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 38400272,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 38520355,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 38640414,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 38760404,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 38880300,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 39000298,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 39120295,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 39240839,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 39360439,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 39480404,
+            "submitted_pcm_ms": 1220,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 39600359,
+            "submitted_pcm_ms": 1340,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 39720298,
+            "submitted_pcm_ms": 1460,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 39840297,
+            "submitted_pcm_ms": 1580,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 39960376,
+            "submitted_pcm_ms": 1700,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 40080480,
+            "submitted_pcm_ms": 1820,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 40200424,
+            "submitted_pcm_ms": 1940,
+            "rendered": 9,
+            "stage": 2
+          },
+          {
+            "t_us": 40320363,
+            "submitted_pcm_ms": 2060,
+            "rendered": 9,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 75,
+        "updates": [
+          {
+            "t_us": 40400627,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 42551469,
+            "submitted_pcm_ms": 20,
+            "rendered": 31,
+            "stage": 2
+          },
+          {
+            "t_us": 42690677,
+            "submitted_pcm_ms": 140,
+            "rendered": 207,
+            "stage": 2
+          },
+          {
+            "t_us": 42800559,
+            "submitted_pcm_ms": 260,
+            "rendered": 382,
+            "stage": 2
+          },
+          {
+            "t_us": 42920569,
+            "submitted_pcm_ms": 380,
+            "rendered": 558,
+            "stage": 2
+          },
+          {
+            "t_us": 43041027,
+            "submitted_pcm_ms": 500,
+            "rendered": 733,
+            "stage": 2
+          },
+          {
+            "t_us": 43160669,
+            "submitted_pcm_ms": 620,
+            "rendered": 909,
+            "stage": 2
+          },
+          {
+            "t_us": 43280599,
+            "submitted_pcm_ms": 740,
+            "rendered": 1084,
+            "stage": 2
+          },
+          {
+            "t_us": 43400608,
+            "submitted_pcm_ms": 860,
+            "rendered": 1260,
+            "stage": 2
+          },
+          {
+            "t_us": 43520588,
+            "submitted_pcm_ms": 980,
+            "rendered": 1436,
+            "stage": 2
+          },
+          {
+            "t_us": 43640584,
+            "submitted_pcm_ms": 1100,
+            "rendered": 1611,
+            "stage": 2
+          },
+          {
+            "t_us": 43760689,
+            "submitted_pcm_ms": 1220,
+            "rendered": 1787,
+            "stage": 2
+          },
+          {
+            "t_us": 43880670,
+            "submitted_pcm_ms": 1340,
+            "rendered": 1962,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 76,
+        "updates": [
+          {
+            "t_us": 43970432,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 45470541,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 45610456,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 45730369,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 45850362,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 45970300,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 46090383,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 46210642,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 46330428,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 46450375,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 46570301,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 46690299,
+            "submitted_pcm_ms": 1220,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 46810293,
+            "submitted_pcm_ms": 1340,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 46930398,
+            "submitted_pcm_ms": 1460,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 47050456,
+            "submitted_pcm_ms": 1580,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 47170371,
+            "submitted_pcm_ms": 1700,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 47290303,
+            "submitted_pcm_ms": 1820,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 47410303,
+            "submitted_pcm_ms": 1940,
+            "rendered": 9,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 77,
+        "updates": [
+          {
+            "t_us": 47554271,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 50130501,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 4
+          }
+        ]
+      },
+      {
+        "operation_id": 78,
+        "updates": [
+          {
+            "t_us": 51144553,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 52710463,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 52820303,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 52940373,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 53060411,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 53180436,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 53300438,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 53420369,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 53540388,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 53660366,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 53780361,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 53900426,
+            "submitted_pcm_ms": 1220,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 54020400,
+            "submitted_pcm_ms": 1340,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 54140362,
+            "submitted_pcm_ms": 1460,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 54260302,
+            "submitted_pcm_ms": 1580,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 54380371,
+            "submitted_pcm_ms": 1700,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 54500487,
+            "submitted_pcm_ms": 1820,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 54620444,
+            "submitted_pcm_ms": 1940,
+            "rendered": 9,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 79,
+        "updates": [
+          {
+            "t_us": 54770490,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 57071138,
+            "submitted_pcm_ms": 20,
+            "rendered": 31,
+            "stage": 2
+          },
+          {
+            "t_us": 57180737,
+            "submitted_pcm_ms": 140,
+            "rendered": 207,
+            "stage": 2
+          },
+          {
+            "t_us": 57300691,
+            "submitted_pcm_ms": 260,
+            "rendered": 382,
+            "stage": 2
+          },
+          {
+            "t_us": 57420591,
+            "submitted_pcm_ms": 380,
+            "rendered": 558,
+            "stage": 2
+          },
+          {
+            "t_us": 57540556,
+            "submitted_pcm_ms": 500,
+            "rendered": 733,
+            "stage": 2
+          },
+          {
+            "t_us": 57681199,
+            "submitted_pcm_ms": 620,
+            "rendered": 909,
+            "stage": 2
+          },
+          {
+            "t_us": 57790734,
+            "submitted_pcm_ms": 740,
+            "rendered": 1084,
+            "stage": 2
+          },
+          {
+            "t_us": 57900695,
+            "submitted_pcm_ms": 860,
+            "rendered": 1260,
+            "stage": 2
+          },
+          {
+            "t_us": 58020611,
+            "submitted_pcm_ms": 980,
+            "rendered": 1436,
+            "stage": 2
+          },
+          {
+            "t_us": 58140613,
+            "submitted_pcm_ms": 1100,
+            "rendered": 1611,
+            "stage": 2
+          },
+          {
+            "t_us": 58260556,
+            "submitted_pcm_ms": 1220,
+            "rendered": 1787,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 80,
+        "updates": [
+          {
+            "t_us": 58386063,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 59980527,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 60090297,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 60210478,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 60330291,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 60450422,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 60570430,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 60690293,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 60810358,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 60930293,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 61050399,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 61170431,
+            "submitted_pcm_ms": 1220,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 61290412,
+            "submitted_pcm_ms": 1340,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 61410301,
+            "submitted_pcm_ms": 1460,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 61530297,
+            "submitted_pcm_ms": 1580,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 61650297,
+            "submitted_pcm_ms": 1700,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 61770622,
+            "submitted_pcm_ms": 1820,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 61890422,
+            "submitted_pcm_ms": 1940,
+            "rendered": 9,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 81,
+        "updates": [
+          {
+            "t_us": 61980462,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 63740490,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 4
+          }
+        ]
+      },
+      {
+        "operation_id": 82,
+        "updates": [
+          {
+            "t_us": 65534358,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 66770384,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 4
+          }
+        ]
+      },
+      {
+        "operation_id": 83,
+        "updates": [
+          {
+            "t_us": 69134360,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 71060500,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 4
+          }
+        ]
+      },
+      {
+        "operation_id": 84,
+        "updates": [
+          {
+            "t_us": 72734350,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 75160453,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 75300653,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 75420569,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 75540663,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 75660471,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 75780514,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 75901053,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 76020647,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 76140562,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 76260489,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 85,
+        "updates": [
+          {
+            "t_us": 76371253,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 78280827,
+            "submitted_pcm_ms": 20,
+            "rendered": 31,
+            "stage": 2
+          },
+          {
+            "t_us": 78390645,
+            "submitted_pcm_ms": 140,
+            "rendered": 207,
+            "stage": 2
+          },
+          {
+            "t_us": 78510565,
+            "submitted_pcm_ms": 260,
+            "rendered": 382,
+            "stage": 2
+          },
+          {
+            "t_us": 78650925,
+            "submitted_pcm_ms": 380,
+            "rendered": 558,
+            "stage": 2
+          },
+          {
+            "t_us": 78771295,
+            "submitted_pcm_ms": 500,
+            "rendered": 733,
+            "stage": 2
+          },
+          {
+            "t_us": 78891226,
+            "submitted_pcm_ms": 620,
+            "rendered": 909,
+            "stage": 2
+          },
+          {
+            "t_us": 79000731,
+            "submitted_pcm_ms": 740,
+            "rendered": 1084,
+            "stage": 2
+          },
+          {
+            "t_us": 79110643,
+            "submitted_pcm_ms": 860,
+            "rendered": 1260,
+            "stage": 2
+          },
+          {
+            "t_us": 79230573,
+            "submitted_pcm_ms": 980,
+            "rendered": 1436,
+            "stage": 2
+          },
+          {
+            "t_us": 79371169,
+            "submitted_pcm_ms": 1100,
+            "rendered": 1611,
+            "stage": 2
+          },
+          {
+            "t_us": 79491297,
+            "submitted_pcm_ms": 1220,
+            "rendered": 1787,
+            "stage": 2
+          },
+          {
+            "t_us": 79611349,
+            "submitted_pcm_ms": 1340,
+            "rendered": 1962,
+            "stage": 2
+          },
+          {
+            "t_us": 79730944,
+            "submitted_pcm_ms": 1460,
+            "rendered": 2138,
+            "stage": 2
+          },
+          {
+            "t_us": 79851178,
+            "submitted_pcm_ms": 1580,
+            "rendered": 2313,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 86,
+        "updates": [
+          {
+            "t_us": 79962801,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 81420610,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 81560457,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 81680382,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 81800359,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 81920304,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 82040635,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 82160414,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 82280410,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 82400382,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 82520303,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 82640300,
+            "submitted_pcm_ms": 1220,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 82760278,
+            "submitted_pcm_ms": 1340,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 82880403,
+            "submitted_pcm_ms": 1460,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 83000394,
+            "submitted_pcm_ms": 1580,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 83120392,
+            "submitted_pcm_ms": 1700,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 83240366,
+            "submitted_pcm_ms": 1820,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 83360360,
+            "submitted_pcm_ms": 1940,
+            "rendered": 9,
+            "stage": 2
+          },
+          {
+            "t_us": 83480409,
+            "submitted_pcm_ms": 2060,
+            "rendered": 9,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 87,
+        "updates": [
+          {
+            "t_us": 83570412,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 86480935,
+            "submitted_pcm_ms": 20,
+            "rendered": 31,
+            "stage": 2
+          },
+          {
+            "t_us": 86590587,
+            "submitted_pcm_ms": 140,
+            "rendered": 207,
+            "stage": 2
+          },
+          {
+            "t_us": 86710592,
+            "submitted_pcm_ms": 260,
+            "rendered": 382,
+            "stage": 2
+          },
+          {
+            "t_us": 86830579,
+            "submitted_pcm_ms": 380,
+            "rendered": 558,
+            "stage": 2
+          },
+          {
+            "t_us": 86950580,
+            "submitted_pcm_ms": 500,
+            "rendered": 733,
+            "stage": 2
+          },
+          {
+            "t_us": 87072041,
+            "submitted_pcm_ms": 620,
+            "rendered": 909,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 88,
+        "updates": [
+          {
+            "t_us": 87162576,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 87770519,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 87870254,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 87990665,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 88110443,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 88230358,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 88350303,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 88470292,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 88590302,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 88710408,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 88830487,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 88950362,
+            "submitted_pcm_ms": 1220,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 89070392,
+            "submitted_pcm_ms": 1340,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 89190294,
+            "submitted_pcm_ms": 1460,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 89310299,
+            "submitted_pcm_ms": 1580,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 89430412,
+            "submitted_pcm_ms": 1700,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 89550429,
+            "submitted_pcm_ms": 1820,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 89670358,
+            "submitted_pcm_ms": 1940,
+            "rendered": 9,
+            "stage": 2
+          },
+          {
+            "t_us": 89790472,
+            "submitted_pcm_ms": 2060,
+            "rendered": 9,
+            "stage": 2
+          },
+          {
+            "t_us": 89910300,
+            "submitted_pcm_ms": 2180,
+            "rendered": 10,
+            "stage": 2
+          },
+          {
+            "t_us": 90030302,
+            "submitted_pcm_ms": 2300,
+            "rendered": 10,
+            "stage": 2
+          },
+          {
+            "t_us": 90150481,
+            "submitted_pcm_ms": 2420,
+            "rendered": 11,
+            "stage": 2
+          },
+          {
+            "t_us": 90270479,
+            "submitted_pcm_ms": 2540,
+            "rendered": 11,
+            "stage": 2
+          },
+          {
+            "t_us": 90390303,
+            "submitted_pcm_ms": 2660,
+            "rendered": 12,
+            "stage": 2
+          },
+          {
+            "t_us": 90510299,
+            "submitted_pcm_ms": 2780,
+            "rendered": 12,
+            "stage": 2
+          },
+          {
+            "t_us": 90630296,
+            "submitted_pcm_ms": 2900,
+            "rendered": 12,
+            "stage": 2
+          },
+          {
+            "t_us": 90721103,
+            "submitted_pcm_ms": 3000,
+            "rendered": 12,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 89,
+        "updates": [
+          {
+            "t_us": 90744869,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 91641304,
+            "submitted_pcm_ms": 20,
+            "rendered": 31,
+            "stage": 2
+          },
+          {
+            "t_us": 91750606,
+            "submitted_pcm_ms": 140,
+            "rendered": 207,
+            "stage": 2
+          },
+          {
+            "t_us": 91890774,
+            "submitted_pcm_ms": 260,
+            "rendered": 382,
+            "stage": 2
+          },
+          {
+            "t_us": 92010709,
+            "submitted_pcm_ms": 380,
+            "rendered": 558,
+            "stage": 2
+          },
+          {
+            "t_us": 92130652,
+            "submitted_pcm_ms": 500,
+            "rendered": 733,
+            "stage": 2
+          },
+          {
+            "t_us": 92250652,
+            "submitted_pcm_ms": 620,
+            "rendered": 909,
+            "stage": 2
+          },
+          {
+            "t_us": 92370611,
+            "submitted_pcm_ms": 740,
+            "rendered": 1084,
+            "stage": 2
+          },
+          {
+            "t_us": 92491170,
+            "submitted_pcm_ms": 860,
+            "rendered": 1260,
+            "stage": 2
+          },
+          {
+            "t_us": 92610761,
+            "submitted_pcm_ms": 980,
+            "rendered": 1436,
+            "stage": 2
+          },
+          {
+            "t_us": 92730741,
+            "submitted_pcm_ms": 1100,
+            "rendered": 1611,
+            "stage": 2
+          },
+          {
+            "t_us": 92850603,
+            "submitted_pcm_ms": 1220,
+            "rendered": 1787,
+            "stage": 2
+          },
+          {
+            "t_us": 92970675,
+            "submitted_pcm_ms": 1340,
+            "rendered": 1962,
+            "stage": 2
+          },
+          {
+            "t_us": 93090688,
+            "submitted_pcm_ms": 1460,
+            "rendered": 2138,
+            "stage": 2
+          },
+          {
+            "t_us": 93210760,
+            "submitted_pcm_ms": 1580,
+            "rendered": 2313,
+            "stage": 2
+          },
+          {
+            "t_us": 93330778,
+            "submitted_pcm_ms": 1700,
+            "rendered": 2489,
+            "stage": 2
+          },
+          {
+            "t_us": 93450665,
+            "submitted_pcm_ms": 1820,
+            "rendered": 2664,
+            "stage": 2
+          },
+          {
+            "t_us": 93570662,
+            "submitted_pcm_ms": 1940,
+            "rendered": 2840,
+            "stage": 2
+          },
+          {
+            "t_us": 93690694,
+            "submitted_pcm_ms": 2060,
+            "rendered": 3015,
+            "stage": 2
+          },
+          {
+            "t_us": 93810688,
+            "submitted_pcm_ms": 2180,
+            "rendered": 3191,
+            "stage": 2
+          },
+          {
+            "t_us": 93931832,
+            "submitted_pcm_ms": 2300,
+            "rendered": 3367,
+            "stage": 2
+          },
+          {
+            "t_us": 94050808,
+            "submitted_pcm_ms": 2420,
+            "rendered": 3542,
+            "stage": 2
+          },
+          {
+            "t_us": 94170623,
+            "submitted_pcm_ms": 2540,
+            "rendered": 3718,
+            "stage": 2
+          },
+          {
+            "t_us": 94290748,
+            "submitted_pcm_ms": 2660,
+            "rendered": 3893,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 90,
+        "updates": [
+          {
+            "t_us": 94383645,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 94910412,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 95020265,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 95140287,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 95260673,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 95380495,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 95500381,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 95620296,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 95740295,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 95860302,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 95980527,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 96100454,
+            "submitted_pcm_ms": 1220,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 96220300,
+            "submitted_pcm_ms": 1340,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 96340344,
+            "submitted_pcm_ms": 1460,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 96460294,
+            "submitted_pcm_ms": 1580,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 96580302,
+            "submitted_pcm_ms": 1700,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 96700416,
+            "submitted_pcm_ms": 1820,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 96820433,
+            "submitted_pcm_ms": 1940,
+            "rendered": 9,
+            "stage": 2
+          },
+          {
+            "t_us": 96940380,
+            "submitted_pcm_ms": 2060,
+            "rendered": 9,
+            "stage": 2
+          },
+          {
+            "t_us": 97060419,
+            "submitted_pcm_ms": 2180,
+            "rendered": 10,
+            "stage": 2
+          },
+          {
+            "t_us": 97180292,
+            "submitted_pcm_ms": 2300,
+            "rendered": 10,
+            "stage": 2
+          },
+          {
+            "t_us": 97300298,
+            "submitted_pcm_ms": 2420,
+            "rendered": 11,
+            "stage": 2
+          },
+          {
+            "t_us": 97420405,
+            "submitted_pcm_ms": 2540,
+            "rendered": 11,
+            "stage": 2
+          },
+          {
+            "t_us": 97540474,
+            "submitted_pcm_ms": 2660,
+            "rendered": 12,
+            "stage": 2
+          },
+          {
+            "t_us": 97660287,
+            "submitted_pcm_ms": 2780,
+            "rendered": 12,
+            "stage": 2
+          },
+          {
+            "t_us": 97780300,
+            "submitted_pcm_ms": 2900,
+            "rendered": 12,
+            "stage": 2
+          },
+          {
+            "t_us": 97871190,
+            "submitted_pcm_ms": 3000,
+            "rendered": 12,
+            "stage": 2
+          },
+          {
+            "t_us": 97900388,
+            "submitted_pcm_ms": 3000,
+            "rendered": 12,
+            "stage": 5
+          }
+        ]
+      },
+      {
+        "operation_id": 91,
+        "updates": [
+          {
+            "t_us": 97954816,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 98891821,
+            "submitted_pcm_ms": 20,
+            "rendered": 31,
+            "stage": 2
+          },
+          {
+            "t_us": 99000579,
+            "submitted_pcm_ms": 140,
+            "rendered": 207,
+            "stage": 2
+          },
+          {
+            "t_us": 99140646,
+            "submitted_pcm_ms": 260,
+            "rendered": 382,
+            "stage": 2
+          },
+          {
+            "t_us": 99260796,
+            "submitted_pcm_ms": 380,
+            "rendered": 558,
+            "stage": 2
+          },
+          {
+            "t_us": 99380742,
+            "submitted_pcm_ms": 500,
+            "rendered": 733,
+            "stage": 2
+          },
+          {
+            "t_us": 99500630,
+            "submitted_pcm_ms": 620,
+            "rendered": 909,
+            "stage": 2
+          },
+          {
+            "t_us": 99610797,
+            "submitted_pcm_ms": 740,
+            "rendered": 1084,
+            "stage": 2
+          },
+          {
+            "t_us": 99731033,
+            "submitted_pcm_ms": 860,
+            "rendered": 1260,
+            "stage": 2
+          },
+          {
+            "t_us": 99850766,
+            "submitted_pcm_ms": 980,
+            "rendered": 1436,
+            "stage": 2
+          },
+          {
+            "t_us": 99971471,
+            "submitted_pcm_ms": 1100,
+            "rendered": 1611,
+            "stage": 2
+          },
+          {
+            "t_us": 100091110,
+            "submitted_pcm_ms": 1220,
+            "rendered": 1787,
+            "stage": 2
+          },
+          {
+            "t_us": 100211160,
+            "submitted_pcm_ms": 1340,
+            "rendered": 1962,
+            "stage": 2
+          },
+          {
+            "t_us": 100330909,
+            "submitted_pcm_ms": 1460,
+            "rendered": 2138,
+            "stage": 2
+          },
+          {
+            "t_us": 100450972,
+            "submitted_pcm_ms": 1580,
+            "rendered": 2313,
+            "stage": 2
+          },
+          {
+            "t_us": 100570903,
+            "submitted_pcm_ms": 1700,
+            "rendered": 2489,
+            "stage": 2
+          },
+          {
+            "t_us": 100691195,
+            "submitted_pcm_ms": 1820,
+            "rendered": 2664,
+            "stage": 2
+          },
+          {
+            "t_us": 100811083,
+            "submitted_pcm_ms": 1940,
+            "rendered": 2840,
+            "stage": 2
+          },
+          {
+            "t_us": 100930957,
+            "submitted_pcm_ms": 2060,
+            "rendered": 3015,
+            "stage": 2
+          },
+          {
+            "t_us": 101051175,
+            "submitted_pcm_ms": 2180,
+            "rendered": 3191,
+            "stage": 2
+          },
+          {
+            "t_us": 101170851,
+            "submitted_pcm_ms": 2300,
+            "rendered": 3367,
+            "stage": 2
+          },
+          {
+            "t_us": 101291034,
+            "submitted_pcm_ms": 2420,
+            "rendered": 3542,
+            "stage": 2
+          },
+          {
+            "t_us": 101411107,
+            "submitted_pcm_ms": 2540,
+            "rendered": 3718,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 92,
+        "updates": [
+          {
+            "t_us": 101563986,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 102400658,
+            "submitted_pcm_ms": 20,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 102510256,
+            "submitted_pcm_ms": 140,
+            "rendered": 1,
+            "stage": 2
+          },
+          {
+            "t_us": 102630404,
+            "submitted_pcm_ms": 260,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 102750481,
+            "submitted_pcm_ms": 380,
+            "rendered": 2,
+            "stage": 2
+          },
+          {
+            "t_us": 102870365,
+            "submitted_pcm_ms": 500,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 102990304,
+            "submitted_pcm_ms": 620,
+            "rendered": 3,
+            "stage": 2
+          },
+          {
+            "t_us": 103110353,
+            "submitted_pcm_ms": 740,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 103230367,
+            "submitted_pcm_ms": 860,
+            "rendered": 4,
+            "stage": 2
+          },
+          {
+            "t_us": 103350658,
+            "submitted_pcm_ms": 980,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 103470445,
+            "submitted_pcm_ms": 1100,
+            "rendered": 5,
+            "stage": 2
+          },
+          {
+            "t_us": 103590411,
+            "submitted_pcm_ms": 1220,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 103710292,
+            "submitted_pcm_ms": 1340,
+            "rendered": 6,
+            "stage": 2
+          },
+          {
+            "t_us": 103830297,
+            "submitted_pcm_ms": 1460,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 103950348,
+            "submitted_pcm_ms": 1580,
+            "rendered": 7,
+            "stage": 2
+          },
+          {
+            "t_us": 104070466,
+            "submitted_pcm_ms": 1700,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 104190431,
+            "submitted_pcm_ms": 1820,
+            "rendered": 8,
+            "stage": 2
+          },
+          {
+            "t_us": 104310371,
+            "submitted_pcm_ms": 1940,
+            "rendered": 9,
+            "stage": 2
+          },
+          {
+            "t_us": 104430553,
+            "submitted_pcm_ms": 2060,
+            "rendered": 9,
+            "stage": 2
+          },
+          {
+            "t_us": 104550289,
+            "submitted_pcm_ms": 2180,
+            "rendered": 10,
+            "stage": 2
+          },
+          {
+            "t_us": 104670287,
+            "submitted_pcm_ms": 2300,
+            "rendered": 10,
+            "stage": 2
+          },
+          {
+            "t_us": 104790938,
+            "submitted_pcm_ms": 2420,
+            "rendered": 11,
+            "stage": 2
+          },
+          {
+            "t_us": 104910419,
+            "submitted_pcm_ms": 2540,
+            "rendered": 11,
+            "stage": 2
+          },
+          {
+            "t_us": 105030367,
+            "submitted_pcm_ms": 2660,
+            "rendered": 12,
+            "stage": 2
+          }
+        ]
+      },
+      {
+        "operation_id": 93,
+        "updates": [
+          {
+            "t_us": 105182849,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 107140779,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 4
+          }
+        ]
+      },
+      {
+        "operation_id": 94,
+        "updates": [
+          {
+            "t_us": 108754312,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          }
+        ]
+      }
+    ],
+    "pause_observations": [
+      {
+        "operation_id": 72,
+        "event": "pause_worker_effect",
+        "t_us": 29628059,
+        "session_id": 2,
+        "generation": 72,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "operation_id": 72,
+        "event": "pause_ui_effect",
+        "t_us": 29640527,
+        "session_id": 2,
+        "generation": 72,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      },
+      {
+        "operation_id": 72,
+        "event": "resume_worker_effect",
+        "t_us": 30659632,
+        "session_id": 2,
+        "generation": 72,
+        "message_id": "B",
+        "position_ms": 0,
+        "rendered": 0,
+        "value": 0,
+        "aux": 0
+      }
+    ],
+    "rapid_switches": 60,
+    "sustained_span_seconds": 75.621156,
+    "criteria_status": "PROVISIONAL_UNMEASURED",
+    "experiment_verdict": "INCOMPLETE",
+    "cache_bytes": 0
+  }
+}

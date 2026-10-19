@@ -1,0 +1,38 @@
+{
+  "lab_revision": "v2",
+  "builds": {
+    "scripted": {
+      "build_id": "da05fed2c2c95a8876189946",
+      "binary_sha256": "754a9ead60d8d8db327bc4d6829df7fbbbec05651ea83374f1597cc25a4cf24b",
+      "sdkconfig_sha256": "424a6b03e608010fb63748c53762cc9d819473642935278da8d423500c73ea25"
+    },
+    "manual": {
+      "build_id": "0930a45c81547a896c3a33b2",
+      "binary_sha256": "88cee4185753d6baa21ded59c41477190b6d4ab9f7715630e24d0aa4bea200c1",
+      "sdkconfig_sha256": "5fc7011b5d86ef70a5deb479dccbd84da6b920a83b1d4763b40d95367cdc0c9a"
+    },
+    "fresh_manual": {
+      "build_id": "0930a45c81547a896c3a33b2",
+      "binary_sha256": "0063b391e8bfae7f8fd5f988dac60fb75c2dd851caa3a71e335d212f49713740",
+      "sdkconfig_sha256": "5fc7011b5d86ef70a5deb479dccbd84da6b920a83b1d4763b40d95367cdc0c9a"
+    }
+  },
+  "fixture_version": "lab03-media/v1",
+  "fixture_manifest_sha256": "e5a2bca61e22453f9cddea26fc2f0167a3de257510a45d780b7fc24c6282f82c",
+  "server_source_sha256": "afc7da6d5b68dd60daba3eef29a72093775294983ab8cce18bfa41b57d0ea2c6",
+  "dependency_lock_sha256": "295fdc6026ed7555597a49e7ca1b4a74e8028920f67aeae4b6bac49281f686ba",
+  "idf_version": "v5.4.2",
+  "board": "BOX-3",
+  "registry_validation": "PASS",
+  "make_help_dispatch": "PASS",
+  "normal_manual_build": "PASS",
+  "fresh_manual_build": "PASS",
+  "scripted_build": "PASS",
+  "full_host_tests": {
+    "count": 241,
+    "result": "PASS"
+  },
+  "manual_dispatch_run": "20261017-lab03-manual-dispatch-08",
+  "manual_dispatch_workflow": "PASS",
+  "parser_sha256": "1fea285b10db22c99313ca7309832708cf9d335fe177cf36fb647b551f067bde"
+}

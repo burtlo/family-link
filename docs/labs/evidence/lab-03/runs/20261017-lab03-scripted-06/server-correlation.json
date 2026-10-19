@@ -1,0 +1,8 @@
+{
+  "run_id": "20261017-lab03-scripted-06",
+  "fresh_ready_host_ns": 224168568546416,
+  "requests_after_ready": 391,
+  "excluded_before_ready": 1,
+  "unmatched_media_requests_after_ready": [],
+  "clock_limit": "host receive timestamps bound correlation; they are not DAC/LCD synchronization"
+}

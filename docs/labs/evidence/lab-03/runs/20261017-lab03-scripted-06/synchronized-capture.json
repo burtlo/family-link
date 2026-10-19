@@ -1,0 +1,10 @@
+{
+  "run_id": "20261017-lab03-scripted-06",
+  "status": "UNAVAILABLE",
+  "reason": "AVFoundation inventory exposed no video or audio capture devices in this session",
+  "screen_audio_artifact": null,
+  "sha256": null,
+  "synchronization_cue_offset_seconds": null,
+  "target_view_verified": false,
+  "inventory": "../../capture-device-inventory.txt"
+}

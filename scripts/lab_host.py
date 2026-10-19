@@ -311,6 +311,11 @@ def _defaults_files_for_lab_build(
     frozen_build_id: str = "",
 ) -> list[Path]:
     defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
+    if spec.lab_id == "LAB-03":
+        import lab03_build
+        overlay, _fingerprint, _private = lab03_build.prepare(
+            sys.modules[__name__], config, spec, var, build_dir, kit=kit, target=target)
+        return defaults_files + [overlay]
     if not _variant_uses_deployment_kit_secrets(var.name):
         if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
             try:
@@ -465,6 +470,9 @@ def build_lab(
             frozen_workflow=frozen_workflow, frozen_fixture_size=frozen_fixture_size,
             frozen_scenario=frozen_scenario, frozen_build_id=frozen_build_id)
     )
+    if spec.lab_id == "LAB-03":
+        import lab03_build
+        lab03_build.restore_header(build_dir)
     _refresh_stale_sdkconfig(build_dir, defaults_files)
     env.update(_sdkconfig_defaults_env_from_files(defaults_files))
     base = idf + [

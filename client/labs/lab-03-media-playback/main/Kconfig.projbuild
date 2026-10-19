@@ -1,0 +1,17 @@
+menu "LAB-03 media experiment"
+config LAB03_SCRIPTED
+    bool "Run fixed scenario sequence and ten-minute sustained loop"
+    default n
+config LAB03_SERVER_URL
+    string "Fixture server address (private build input)"
+    default "http://127.0.0.1:8766"
+config LAB03_WIFI_SSID
+    string "Wi-Fi SSID"
+    default ""
+config LAB03_WIFI_PASSWORD
+    string "Wi-Fi password"
+    default ""
+config LAB03_BUILD_ID
+    string "Compiled input fingerprint"
+    default "standalone"
+endmenu

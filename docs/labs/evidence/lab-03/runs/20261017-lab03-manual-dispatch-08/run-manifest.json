@@ -1,0 +1,93 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-03/runs/20261017-lab03-manual-dispatch-08/events.jsonl",
+    "metrics": "docs/labs/evidence/lab-03/runs/20261017-lab03-manual-dispatch-08/metrics.json",
+    "serial_log": "logs/device/labs/lab-03/20261017-lab03-manual-dispatch-08/serial.txt",
+    "server_log": "docs/labs/evidence/lab-03/runs/20261017-lab03-manual-dispatch-08/server.log"
+  },
+  "build": {
+    "status": "built"
+  },
+  "capture": {
+    "fresh_ready": true,
+    "mode": "manual",
+    "seconds": 5,
+    "stages": {
+      "activity": "passed",
+      "build": "passed",
+      "cleanup": "passed",
+      "preflight": "passed",
+      "scenario": "not_configured",
+      "service": "passed"
+    },
+    "status": "captured",
+    "variant": "manual"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-18T00:48:10.232925Z",
+  "event_loss": {
+    "firmware_trace": {
+      "dropped_events": 0,
+      "malformed_rows": 0,
+      "status": "NONE"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-03",
+  "experiment_verdict": "UNMEASURED",
+  "firmware": {
+    "binary_sha256": "88cee4185753d6baa21ded59c41477190b6d4ab9f7715630e24d0aa4bea200c1",
+    "build_fingerprint": "sha256:0930a45c81547a896c3a33b2a5f6d3c21389b41bbb46dc1200eaa8914ff5ad86",
+    "build_id": "0930a45c81547a896c3a33b2",
+    "build_stamp": null,
+    "cmake_options": {},
+    "idf_version": null,
+    "project_path": "client/labs/lab-03-media-playback",
+    "sdkconfig_sha256": "5fc7011b5d86ef70a5deb479dccbd84da6b920a83b1d4763b40d95367cdc0c9a",
+    "source_revision": null,
+    "source_sha256": "73ac17c3a6ec912af9b87e9b6d515e1d6fe204603e9dcd8178d614d7f47ad2fe",
+    "target": "esp32s3"
+  },
+  "fixture": {
+    "file": null,
+    "revision": "lab03-media/v1",
+    "schema": null,
+    "sha256": "e5a2bca61e22453f9cddea26fc2f0167a3de257510a45d780b7fc24c6282f82c"
+  },
+  "hardware": {
+    "board": "esp32s3-box-3",
+    "kit_nickname": "lynn-kit"
+  },
+  "lab_id": "LAB-03",
+  "lab_revision": "v2",
+  "lab_version_string": "LAB-03/v2",
+  "operator": null,
+  "run_id": "20261017-lab03-manual-dispatch-08",
+  "scenarios": [
+    "manual"
+  ],
+  "server": {
+    "path": null,
+    "revision": "LAB-03/v1",
+    "source_sha256": "afc7da6d5b68dd60daba3eef29a72093775294983ab8cce18bfa41b57d0ea2c6"
+  },
+  "source": {
+    "dirty": null,
+    "files": {},
+    "revision": null
+  },
+  "started_at_utc": "2026-10-18T00:47:29.678539Z",
+  "terminal_reason": "capture_completed",
+  "terminal_reason_truncated": false,
+  "verification_levels": {
+    "build": "L0",
+    "target": null,
+    "target_startup": "L3"
+  },
+  "workflow_status": "PASS"
+}

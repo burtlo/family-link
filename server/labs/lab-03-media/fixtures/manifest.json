@@ -1,0 +1,86 @@
+{
+  "assets": {
+    "dense.sketch": {
+      "bytes": 40968,
+      "sha256": "1bac193a2482c8a4f743d1bf6ada17080c87ca2d58f7964fb20d481664c50985"
+    },
+    "short.sketch": {
+      "bytes": 128,
+      "sha256": "d2efa7e48bcb2eb021211d208acd231a05919edfb00d783dd9221720771d12ec"
+    },
+    "tone.pcm": {
+      "bytes": 96000,
+      "sha256": "efd5e57eae54f90da06e2abec034abb0b4a677a84c7da23e4e4bd5bc40dc85a9"
+    }
+  },
+  "fixture_version": "lab03-media/v1",
+  "max_segments": 4096,
+  "messages": {
+    "A": {
+      "audio": "tone.pcm",
+      "audio_delay_ms": 20,
+      "chunk_bytes": 1024,
+      "chunk_delay_ms": 0,
+      "duration_ms": 3000,
+      "sketch": "short.sketch",
+      "sketch_delay_ms": 20,
+      "status": 200
+    },
+    "B": {
+      "audio": "tone.pcm",
+      "audio_delay_ms": 20,
+      "chunk_bytes": 1024,
+      "chunk_delay_ms": 0,
+      "duration_ms": 3000,
+      "sketch": "dense.sketch",
+      "sketch_delay_ms": 20,
+      "status": 200
+    },
+    "C": {
+      "audio": "tone.pcm",
+      "audio_delay_ms": 20,
+      "chunk_bytes": 1024,
+      "chunk_delay_ms": 0,
+      "duration_ms": 3000,
+      "sketch": null,
+      "sketch_delay_ms": 20,
+      "status": 200
+    },
+    "D": {
+      "audio": "tone.pcm",
+      "audio_delay_ms": 20,
+      "chunk_bytes": 1024,
+      "chunk_delay_ms": 0,
+      "duration_ms": 3000,
+      "sketch": "short.sketch",
+      "sketch_delay_ms": 20,
+      "status": 503
+    },
+    "E": {
+      "audio": "tone.pcm",
+      "audio_delay_ms": 120,
+      "chunk_bytes": 1024,
+      "chunk_delay_ms": 40,
+      "duration_ms": 3000,
+      "sketch": "short.sketch",
+      "sketch_delay_ms": 20,
+      "status": 200
+    },
+    "F": {
+      "audio": "tone.pcm",
+      "audio_delay_ms": 20,
+      "chunk_bytes": 1024,
+      "chunk_delay_ms": 40,
+      "duration_ms": 3000,
+      "sketch": "dense.sketch",
+      "sketch_delay_ms": 120,
+      "status": 200
+    }
+  },
+  "raster": [
+    120,
+    120
+  ],
+  "sample_rate": 16000,
+  "server_version": "LAB-03/v1"
+}

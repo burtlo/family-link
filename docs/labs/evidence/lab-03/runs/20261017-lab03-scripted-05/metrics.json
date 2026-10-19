@@ -1,0 +1,562 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261017-lab03-scripted-05",
+  "schema_version": "lab03-trace/v1",
+  "parser_version": "lab03-parser/v1",
+  "evidence": {
+    "status": "INCOMPLETE",
+    "trace_loss": "NONE",
+    "firmware_trace_loss": {
+      "status": "NONE",
+      "dropped_events": 0,
+      "malformed_rows": 0
+    },
+    "missing": [
+      "raster_us",
+      "decode_us",
+      "first_codec_write",
+      "first_frame_ui",
+      "pause_request",
+      "pause_worker_effect",
+      "pause_ui_effect",
+      "resume_request",
+      "resume_worker_effect",
+      "renderer_backlog",
+      "reveal_lateness_ms",
+      "harness_done",
+      "page_applied",
+      "rapid_switch",
+      "sustained_cycle",
+      "first_audible_sample",
+      "synchronized_screen_audio",
+      "audio_underrun_count_duration",
+      "dac_position",
+      "lcd_visible_frame_timestamp",
+      "renderer_cpu_utilization",
+      "cache_drift_assessment",
+      "20_A_B_A_cycles",
+      "sustained_600s",
+      "scenario:play_pause_resume",
+      "scenario:focus_B_play_B",
+      "scenario:rapid_20_A_B_A",
+      "scenario:cancel_during_audio_fetch",
+      "scenario:cancel_during_sketch_fetch",
+      "scenario:new_page_during_playback",
+      "scenario:signout_during_operation",
+      "scenario:asset_failure",
+      "scenario:audio_only",
+      "scenario:maximum_dense_sketch",
+      "scenario:pause_then_move_offscreen",
+      "scenario:sustained_600s"
+    ]
+  },
+  "lab_metrics": {
+    "callback_us": {
+      "n": 860,
+      "p50": 21,
+      "p95": 143,
+      "p99": 452,
+      "worst": 2904
+    },
+    "raster_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "decode_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "reveal_lateness_ms": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "worker_busy_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "pause_request_to_worker_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "pause_request_to_ui_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "resume_request_to_worker_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "resume_request_to_ui_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "scenarios_observed": {
+      "play_pause_resume": false,
+      "focus_B_play_B": false,
+      "rapid_20_A_B_A": false,
+      "cancel_during_audio_fetch": false,
+      "cancel_during_sketch_fetch": false,
+      "new_page_during_playback": false,
+      "signout_during_operation": false,
+      "asset_failure": false,
+      "audio_only": false,
+      "maximum_dense_sketch": false,
+      "pause_then_move_offscreen": false,
+      "sustained_600s": false
+    },
+    "accepted_rapid_ABA_cycles": 0,
+    "heap_used_high_water": {
+      "internal_regional_minimum_used_upper_bound_bytes": 194628,
+      "psram_regional_minimum_used_upper_bound_bytes": 314348,
+      "lvgl_used_bytes": 11420,
+      "internal_sampled_peak_used_bytes": 191188,
+      "psram_sampled_peak_used_bytes": 314212
+    },
+    "declared_reserve_check": {
+      "internal_next_plus_reserve_bytes": 24576,
+      "psram_next_plus_reserve_bytes": 128768,
+      "internal_largest_min": 31744,
+      "psram_largest_min": 16252928
+    },
+    "start_to_codec_write_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "start_to_first_ui_frame_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "start_to_audible_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "cancel_to_ui_us": {
+      "n": 1,
+      "p50": 662,
+      "p95": 662,
+      "p99": 662,
+      "worst": 662
+    },
+    "cancel_to_worker_terminal_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "inactive_or_unpaired_stops": [
+      {
+        "operation_id": 1,
+        "request_t_us": 29438326
+      }
+    ],
+    "terminal_events": {
+      "1": {
+        "accepted": true,
+        "worker_starts": 1,
+        "count": 1,
+        "outcomes": [
+          "terminal_failed"
+        ]
+      },
+      "2": {
+        "accepted": false,
+        "worker_starts": 0,
+        "count": 0,
+        "outcomes": []
+      }
+    },
+    "exactly_one_terminal": true,
+    "stale_results_rejected": 0,
+    "allocation_failures": 0,
+    "psram_wrapper_allocation_attempts": 8,
+    "audio_underruns": null,
+    "network_buffering_intervals": [
+      {
+        "operation_id": 1,
+        "message_id": "A",
+        "start_us": 4422305,
+        "end_us": 4940536,
+        "duration_us": 518231,
+        "outcome": "terminal_failed"
+      }
+    ],
+    "temporary_network_read_waits": 0,
+    "renderer_backlog_max": null,
+    "segments_per_update_max": null,
+    "resources": {
+      "internal_heap": {
+        "samples": 1,
+        "first": {
+          "event": "internal_heap",
+          "t_us": 4942291,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 107851,
+          "aux": 31744
+        },
+        "last": {
+          "event": "internal_heap",
+          "t_us": 4942291,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 107851,
+          "aux": 31744
+        },
+        "value_min": 107851,
+        "value_max": 107851,
+        "aux_min": 31744,
+        "aux_max": 31744
+      },
+      "psram_heap": {
+        "samples": 1,
+        "first": {
+          "event": "psram_heap",
+          "t_us": 4942340,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 16463004,
+          "aux": 16252928
+        },
+        "last": {
+          "event": "psram_heap",
+          "t_us": 4942340,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 16463004,
+          "aux": 16252928
+        },
+        "value_min": 16463004,
+        "value_max": 16463004,
+        "aux_min": 16252928,
+        "aux_max": 16252928
+      },
+      "lvgl_heap": {
+        "samples": 17,
+        "first": {
+          "event": "lvgl_heap",
+          "t_us": 5408551,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 11420,
+          "aux": 52440
+        },
+        "last": {
+          "event": "lvgl_heap",
+          "t_us": 29408602,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 11420,
+          "aux": 52440
+        },
+        "value_min": 11420,
+        "value_max": 11420,
+        "aux_min": 52440,
+        "aux_max": 52440
+      },
+      "heap_min_free": {
+        "samples": 1,
+        "first": {
+          "event": "heap_min_free",
+          "t_us": 4942351,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 104411,
+          "aux": 16462868
+        },
+        "last": {
+          "event": "heap_min_free",
+          "t_us": 4942351,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 104411,
+          "aux": 16462868
+        },
+        "value_min": 104411,
+        "value_max": 104411,
+        "aux_min": 16462868,
+        "aux_max": 16462868
+      },
+      "worker_stack": {
+        "samples": 1,
+        "first": {
+          "event": "worker_stack",
+          "t_us": 4942593,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 5252,
+          "aux": 0
+        },
+        "last": {
+          "event": "worker_stack",
+          "t_us": 4942593,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 5252,
+          "aux": 0
+        },
+        "value_min": 5252,
+        "value_max": 5252,
+        "aux_min": 0,
+        "aux_max": 0
+      },
+      "ui_stack": {
+        "samples": 17,
+        "first": {
+          "event": "ui_stack",
+          "t_us": 5408691,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 2868,
+          "aux": 0
+        },
+        "last": {
+          "event": "ui_stack",
+          "t_us": 29408744,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 2868,
+          "aux": 0
+        },
+        "value_min": 2868,
+        "value_max": 2868,
+        "aux_min": 0,
+        "aux_max": 0
+      },
+      "resident_bytes": {
+        "samples": 1,
+        "first": {
+          "event": "resident_bytes",
+          "t_us": 4942616,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 86400,
+          "aux": 136968
+        },
+        "last": {
+          "event": "resident_bytes",
+          "t_us": 4942616,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 86400,
+          "aux": 136968
+        },
+        "value_min": 86400,
+        "value_max": 86400,
+        "aux_min": 136968,
+        "aux_max": 136968
+      },
+      "allocation": {
+        "samples": 1,
+        "first": {
+          "event": "allocation",
+          "t_us": 4942600,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 8,
+          "aux": 0
+        },
+        "last": {
+          "event": "allocation",
+          "t_us": 4942600,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 8,
+          "aux": 0
+        },
+        "value_min": 8,
+        "value_max": 8,
+        "aux_min": 0,
+        "aux_max": 0
+      },
+      "heap_total": {
+        "samples": 1,
+        "first": {
+          "event": "heap_total",
+          "t_us": 4942083,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 299039,
+          "aux": 16777216
+        },
+        "last": {
+          "event": "heap_total",
+          "t_us": 4942083,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 299039,
+          "aux": 16777216
+        },
+        "value_min": 299039,
+        "value_max": 299039,
+        "aux_min": 16777216,
+        "aux_max": 16777216
+      },
+      "image_counts": {
+        "samples": 1,
+        "first": {
+          "event": "image_counts",
+          "t_us": 4942611,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 3,
+          "aux": 0
+        },
+        "last": {
+          "event": "image_counts",
+          "t_us": 4942611,
+          "operation_id": 1,
+          "session_id": 1,
+          "generation": 1,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 3,
+          "aux": 0
+        },
+        "value_min": 3,
+        "value_max": 3,
+        "aux_min": 0,
+        "aux_max": 0
+      }
+    },
+    "position_and_progress": [
+      {
+        "operation_id": 1,
+        "updates": [
+          {
+            "t_us": 4450222,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 1
+          },
+          {
+            "t_us": 4950317,
+            "submitted_pcm_ms": 0,
+            "rendered": 0,
+            "stage": 4
+          }
+        ]
+      },
+      {
+        "operation_id": 2,
+        "updates": []
+      }
+    ],
+    "pause_observations": [],
+    "rapid_switches": 0,
+    "sustained_span_seconds": null,
+    "criteria_status": "PROVISIONAL_UNMEASURED",
+    "experiment_verdict": "INCOMPLETE",
+    "cache_bytes": 0
+  }
+}

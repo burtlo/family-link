@@ -8,12 +8,12 @@
  * are placeholders when you flash with WHO=mazi / WHO=arlo (stamped after build).
  */
 
-#define DEMO_WIFI_SSID "your-2.4ghz-ssid"
-#define DEMO_WIFI_PASS "your-password"
+#define DEMO_WIFI_SSID "SunsetHousePutYouOnAPedestal"
+#define DEMO_WIFI_PASS "Ruby1996"
 
 #define DEMO_PIN "1234"
 
-#define DEMO_SERVER_HOST "192.168.8.143"
+#define DEMO_SERVER_HOST "192.168.8.236"
 #define DEMO_SERVER_PORT 8080
 #define DEMO_SERVER_TLS 0
 #define DEMO_TLS_SKIP_VERIFY 1

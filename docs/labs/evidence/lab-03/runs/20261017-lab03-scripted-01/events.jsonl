@@ -1,0 +1,8 @@
+{"kind":"stage","monotonic_ns":223307275647375,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":223307298500875,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":223307298572125,"outcome":"running","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":223307417927291,"outcome":"passed","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":223307418120791,"outcome":"running","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":223357277415958,"outcome":"failed","source":"host","stage":"run"}
+{"kind":"stage","monotonic_ns":223357296976625,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"INCOMPLETE","kind":"run_terminal","reason":"KeyboardInterrupt","source":"host","workflow_status":"FAIL"}

@@ -1,2 +1,0 @@
-8a1770520f1809306c3b35d6e253caf5cffcd3be2e08a7ad85183748a3ae0ae6  scripts/lab02_canonical_run.py
-6bfba10d055a569d524fdf12d0a246eabf0d903931bf456eacc91b0c2b72211c  scripts/tests/test_lab02_canonical_run.py

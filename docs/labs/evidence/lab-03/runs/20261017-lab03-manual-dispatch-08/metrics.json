@@ -1,0 +1,362 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261017-lab03-manual-dispatch-08",
+  "schema_version": "lab03-trace/v1",
+  "parser_version": "lab03-parser/v1",
+  "evidence": {
+    "status": "INCOMPLETE",
+    "trace_loss": "NONE",
+    "firmware_trace_loss": {
+      "status": "NONE",
+      "dropped_events": 0,
+      "malformed_rows": 0
+    },
+    "missing": [
+      "raster_us",
+      "decode_us",
+      "intent_play",
+      "worker_start",
+      "first_codec_write",
+      "first_frame_ui",
+      "pause_request",
+      "pause_worker_effect",
+      "pause_ui_effect",
+      "resume_request",
+      "resume_worker_effect",
+      "stop_ui_effect",
+      "ui_reconcile",
+      "renderer_backlog",
+      "worker_stack",
+      "internal_heap",
+      "psram_heap",
+      "allocation",
+      "resident_bytes",
+      "reveal_lateness_ms",
+      "harness_done",
+      "page_applied",
+      "rapid_switch",
+      "sustained_cycle",
+      "first_audible_sample",
+      "synchronized_screen_audio",
+      "audio_underrun_count_duration",
+      "dac_position",
+      "lcd_visible_frame_timestamp",
+      "renderer_cpu_utilization",
+      "cache_drift_assessment",
+      "exactly_one_terminal_per_accepted_operation",
+      "20_A_B_A_cycles",
+      "sustained_600s",
+      "scenario:play_pause_resume",
+      "scenario:focus_B_play_B",
+      "scenario:rapid_20_A_B_A",
+      "scenario:cancel_during_audio_fetch",
+      "scenario:cancel_during_sketch_fetch",
+      "scenario:new_page_during_playback",
+      "scenario:signout_during_operation",
+      "scenario:asset_failure",
+      "scenario:audio_only",
+      "scenario:maximum_dense_sketch",
+      "scenario:pause_then_move_offscreen",
+      "scenario:sustained_600s"
+    ]
+  },
+  "lab_metrics": {
+    "callback_us": {
+      "n": 173,
+      "p50": 15,
+      "p95": 99,
+      "p99": 428,
+      "worst": 440
+    },
+    "raster_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "decode_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "reveal_lateness_ms": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "continuous_focus_reveal_ms": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "focus_return_reveal_ms": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "worker_busy_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "pause_request_to_worker_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "pause_request_to_ui_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "resume_request_to_worker_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "resume_request_to_ui_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "observed_build_id": "0930a45c81547a896c3a33b2",
+    "ready_marker_count": 1,
+    "pre_ready_trace_rows_excluded": 0,
+    "scenarios_observed": {
+      "play_pause_resume": false,
+      "focus_B_play_B": false,
+      "rapid_20_A_B_A": false,
+      "cancel_during_audio_fetch": false,
+      "cancel_during_sketch_fetch": false,
+      "new_page_during_playback": false,
+      "signout_during_operation": false,
+      "asset_failure": false,
+      "audio_only": false,
+      "maximum_dense_sketch": false,
+      "pause_then_move_offscreen": false,
+      "sustained_600s": false
+    },
+    "accepted_rapid_ABA_cycles": 0,
+    "heap_used_high_water": {
+      "internal_regional_minimum_used_upper_bound_bytes": null,
+      "psram_regional_minimum_used_upper_bound_bytes": null,
+      "lvgl_used_bytes": 11420,
+      "internal_sampled_peak_used_bytes": null,
+      "psram_sampled_peak_used_bytes": null
+    },
+    "declared_reserve_check": {
+      "internal_next_plus_reserve_bytes": 24576,
+      "psram_next_plus_reserve_bytes": 128768,
+      "internal_largest_min": null,
+      "psram_largest_min": null
+    },
+    "start_to_codec_write_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "start_to_first_ui_frame_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "start_to_audible_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "cancel_to_ui_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "cancel_to_worker_terminal_us": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "worst": null
+    },
+    "inactive_or_unpaired_stops": [],
+    "terminal_events": {},
+    "exactly_one_terminal": null,
+    "stale_results_rejected": 0,
+    "allocation_failures": null,
+    "psram_wrapper_allocation_attempts": null,
+    "audio_underruns": null,
+    "network_buffering_intervals": [],
+    "temporary_network_read_waits": 0,
+    "renderer_backlog_max": null,
+    "segments_per_update_max": null,
+    "resources": {
+      "internal_heap": {
+        "samples": 0,
+        "first": null,
+        "last": null,
+        "value_min": null,
+        "value_max": null,
+        "aux_min": null,
+        "aux_max": null
+      },
+      "psram_heap": {
+        "samples": 0,
+        "first": null,
+        "last": null,
+        "value_min": null,
+        "value_max": null,
+        "aux_min": null,
+        "aux_max": null
+      },
+      "lvgl_heap": {
+        "samples": 3,
+        "first": {
+          "event": "lvgl_heap",
+          "t_us": 3638588,
+          "operation_id": 0,
+          "session_id": 1,
+          "generation": 0,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 11420,
+          "aux": 52440
+        },
+        "last": {
+          "event": "lvgl_heap",
+          "t_us": 6638574,
+          "operation_id": 0,
+          "session_id": 1,
+          "generation": 0,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 11420,
+          "aux": 52440
+        },
+        "value_min": 11420,
+        "value_max": 11420,
+        "aux_min": 52440,
+        "aux_max": 52440
+      },
+      "heap_min_free": {
+        "samples": 0,
+        "first": null,
+        "last": null,
+        "value_min": null,
+        "value_max": null,
+        "aux_min": null,
+        "aux_max": null
+      },
+      "worker_stack": {
+        "samples": 0,
+        "first": null,
+        "last": null,
+        "value_min": null,
+        "value_max": null,
+        "aux_min": null,
+        "aux_max": null
+      },
+      "ui_stack": {
+        "samples": 3,
+        "first": {
+          "event": "ui_stack",
+          "t_us": 3638732,
+          "operation_id": 0,
+          "session_id": 1,
+          "generation": 0,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 2956,
+          "aux": 0
+        },
+        "last": {
+          "event": "ui_stack",
+          "t_us": 6638718,
+          "operation_id": 0,
+          "session_id": 1,
+          "generation": 0,
+          "message_id": "A",
+          "position_ms": 0,
+          "rendered": 0,
+          "value": 2956,
+          "aux": 0
+        },
+        "value_min": 2956,
+        "value_max": 2956,
+        "aux_min": 0,
+        "aux_max": 0
+      },
+      "resident_bytes": {
+        "samples": 0,
+        "first": null,
+        "last": null,
+        "value_min": null,
+        "value_max": null,
+        "aux_min": null,
+        "aux_max": null
+      },
+      "allocation": {
+        "samples": 0,
+        "first": null,
+        "last": null,
+        "value_min": null,
+        "value_max": null,
+        "aux_min": null,
+        "aux_max": null
+      },
+      "heap_total": {
+        "samples": 0,
+        "first": null,
+        "last": null,
+        "value_min": null,
+        "value_max": null,
+        "aux_min": null,
+        "aux_max": null
+      },
+      "image_counts": {
+        "samples": 0,
+        "first": null,
+        "last": null,
+        "value_min": null,
+        "value_max": null,
+        "aux_min": null,
+        "aux_max": null
+      }
+    },
+    "position_and_progress": [],
+    "pause_observations": [],
+    "rapid_switches": 0,
+    "sustained_span_seconds": null,
+    "criteria_status": "PROVISIONAL_UNMEASURED",
+    "experiment_verdict": "INCOMPLETE",
+    "cache_bytes": null
+  }
+}

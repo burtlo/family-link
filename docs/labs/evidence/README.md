@@ -65,6 +65,7 @@ Do not commit secrets or household data.
 |-----|---------|
 | `LAB-01` | *(none yet)* |
 | `LAB-02` | [STATUS.md](lab-02/STATUS.md) (checklist; reports when published); see existing run evidence under `lab-02/runs/` |
+| `LAB-03` | [LAB-03/v2 report](lab-03/REPORT-LAB-03-v2.md) · [independent verification](lab-03/independent-verification.md) |
 | `LAB-05` | [Manual run](lab-05/runs/20261017-manual-run-fd3cc46d/run-manifest.json) · [scripted run](lab-05/runs/20261017-scripted-run-5a9c9dd1/run-manifest.json) |
 | … | Add rows when reports land |
 

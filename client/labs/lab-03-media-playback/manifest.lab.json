@@ -1,0 +1,10 @@
+{
+  "lab_id": "LAB-03",
+  "lab_revision": "v2",
+  "firmware_project": "lab03_media_playback",
+  "server": "server/labs/lab-03-media/server.py",
+  "fixture_revision": "lab03-media/v1",
+  "trace_schema": "lab03-trace/v1",
+  "criteria": "provisional",
+  "foundation": "LAB-02 bounded inbox model and reusable-card approach"
+}

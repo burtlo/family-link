@@ -1,0 +1,10 @@
+{"kind":"stage","monotonic_ns":205022187766375,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":205022204236166,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":205023894814791,"outcome":"running","source":"host","stage":"service"}
+{"action_id":"server_bind","monotonic_ns":205023895315833,"outcome":"success","reason":"","run_id":"20261017-p4-spush-manual-6a992c9d","stage":"SERVER_START"}
+{"action_id":"server_start","monotonic_ns":205023898061416,"outcome":"success","reason":"","run_id":"20261017-p4-spush-manual-6a992c9d","stage":"SERVER_START"}
+{"action_id":"server_health","monotonic_ns":205024008507750,"outcome":"failure","reason":"child_exited","run_id":"20261017-p4-spush-manual-6a992c9d","stage":"SERVER_HEALTH"}
+{"action_id":"server_process_exit","exit_code":1,"monotonic_ns":205024008797000,"outcome":"failure","reason":"nonzero_exit","run_id":"20261017-p4-spush-manual-6a992c9d","stage":"SERVER_EXIT"}
+{"action_id":"server_cleanup","monotonic_ns":205024008890875,"outcome":"success","reason":"","run_id":"20261017-p4-spush-manual-6a992c9d","stage":"CLEANUP"}
+{"kind":"stage","monotonic_ns":205024009068708,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"INCOMPLETE","kind":"run_terminal","reason":"child_exited","workflow_status":"FAIL"}

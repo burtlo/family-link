@@ -1,4 +1,0 @@
-Regression test test_identity_matching_marker_from_straddling_read_cannot_satisfy_freshness holds FakeSerial read #2 open across the RTS pulse and returns an exact current build_id readiness line after reset release. The run terminates INCOMPLETE with fresh_boot_marker_timeout; serial.txt retains the line. This would pass with prior read-return phase tagging.
-Positive test test_read_started_after_reset_can_establish_fresh_readiness makes read #2 straddle the reset but return no bytes, then supplies the exact readiness marker on read #3, which begins after reset. It yields workflow PASS and experiment UNMEASURED.
-Existing managed test asserts log exists, named reader owns capture, and read entered before RTS. Reset OSError and Ctrl-C tests pass and assert UART closed.
-No hardware, firmware build, private config, or application edits.

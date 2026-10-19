@@ -26,7 +26,7 @@ Use these IDs in manifests, traces, and evidence paths. Folder names are **kebab
 |----|------------------------|------------------------------|------|
 | `LAB-01` | `lab-01-x02-baseline` | `lab-01-x02-baseline` | [Inbox plan § LAB-01](inbox-carousel-playback-evaluation.md#lab-01--x02-integrated-baseline) |
 | `LAB-02` | `lab-02-bounded-inbox` | `lab-02-paging` (managed Phase B default) | [Inbox plan § LAB-02](inbox-carousel-playback-evaluation.md#lab-02--bounded-inbox-and-card-recycling) |
-| `LAB-03` | `lab-03-audio-sketch-switch` | `lab-03-audio-sketch-switch` | [Inbox plan § LAB-03](inbox-carousel-playback-evaluation.md#lab-03--audiosketch-switching-and-pause) |
+| `LAB-03` | `lab-03-media-playback` | `lab-03-media` | [Inbox plan § LAB-03](inbox-carousel-playback-evaluation.md#lab-03--audiosketch-switching-and-pause) |
 | `LAB-04` | `lab-04-sketch-format` | optional shared with `LAB-03` | [Inbox plan § LAB-04](inbox-carousel-playback-evaluation.md#lab-04--color-sketch-format-and-preview-strategies) |
 | `LAB-05` | `lab-05-transition-peak` | `none` | [Inbox plan § LAB-05](inbox-carousel-playback-evaluation.md#lab-05--transition-and-simultaneous-resource-peak) |
 | `LAB-06` | `lab-06-stage-shell` | `none` | [Roadmap § LAB-06](v2-experience-demo-roadmap.md#lab-06--stage-shell-and-panel-lifecycle) |
@@ -38,7 +38,7 @@ Use these IDs in manifests, traces, and evidence paths. Folder names are **kebab
 | `LAB-12` | `lab-12-profile-settings` | `lab-12-profile-settings` | [Roadmap § LAB-12](v2-experience-demo-roadmap.md#lab-12--profile-and-settings-propagation) |
 | `LAB-13` | `lab-13-full-journey` | `lab-13-full-journey` | [Roadmap § LAB-13](v2-experience-demo-roadmap.md#lab-13--composed-v2-journey) |
 
-`LAB-02` and `LAB-05` have registered firmware projects and shared-run evidence. The current LAB-05 manual and scripted integration proofs pass the workflow lifecycle with service and scenario stages `not_configured`; experiment verdicts remain `UNMEASURED`. The scripted capture lacks its `LAB05_HARNESS_DONE` marker, and these runs do not measure performance. See [evidence index](evidence/README.md#shared-run-evidence-examples). Other rows below describe planned experiments, not registered runnable labs.
+`LAB-02`, `LAB-03`, and `LAB-05` have registered firmware projects. LAB-03 adds paired fixed media fixtures and a scripted sustained run; its criteria are provisional and its acoustic/LCD evidence remains incomplete. See [LAB-03 report](evidence/lab-03/REPORT-LAB-03-v2.md). The current LAB-05 manual and scripted integration proofs pass the workflow lifecycle with service and scenario stages `not_configured`; experiment verdicts remain `UNMEASURED`. The scripted capture lacks its `LAB05_HARNESS_DONE` marker, and these runs do not measure performance. See [evidence index](evidence/README.md#shared-run-evidence-examples). Other rows below describe planned experiments, not registered runnable labs.
 
 **Run on hardware:** `make lab.lab02` runs managed HTTP with manual free traversal; `make lab.lab02.scripted` runs its harness. `make lab.lab05` and `make lab.lab05.scripted` exercise the no-server generic lifecycle. These target commands require the corresponding registered kit, serial access, and toolchain. Step-by-step for assistants: [assistant guide § Host commands and registering a lab](assistant-guide.md#host-commands-make-lab).
 

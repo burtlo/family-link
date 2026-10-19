@@ -1,0 +1,49 @@
+{
+  "run_id": "20261017-lab03-scripted-06",
+  "sustained_duration_seconds": 600.089936,
+  "cycles_started": 163,
+  "cycles_completed": 162,
+  "cycles_cancelled": 1,
+  "cycles_failed": 0,
+  "accepted_operations": 232,
+  "terminal_events": 232,
+  "drift": {
+    "internal_heap": {
+      "scope": "matched completed-playback position=3000ms",
+      "samples": 162,
+      "first_free_bytes": 109511,
+      "last_free_bytes": 109531,
+      "min_free_bytes": 109511,
+      "max_free_bytes": 109539,
+      "min_largest_free_bytes": 31744,
+      "delta_free_bytes": 20
+    },
+    "psram_heap": {
+      "scope": "matched completed-playback position=3000ms",
+      "samples": 162,
+      "first_free_bytes": 16463004,
+      "last_free_bytes": 16463004,
+      "min_free_bytes": 16463004,
+      "max_free_bytes": 16463004,
+      "min_largest_free_bytes": 16252928,
+      "delta_free_bytes": 0
+    }
+  },
+  "artifacts": {
+    "serial.txt": {
+      "path": "logs/device/labs/lab-03/20261017-lab03-scripted-06/serial.txt",
+      "bytes": 20715818,
+      "sha256": "bf1f104e972b56b27869d2e4e13e6c81e67bb13c09f3b4df0c2a85d39e3f7466"
+    },
+    "stroke-reveals.jsonl.gz": {
+      "path": "logs/device/labs/lab-03/20261017-lab03-scripted-06/stroke-reveals.jsonl.gz",
+      "bytes": 2315685,
+      "sha256": "f86de24cc464b3816eb4656c3864d2fa0692d54f0ba39cd3ad426c40d8179a7f"
+    },
+    "server.log": {
+      "path": "docs/labs/evidence/lab-03/runs/20261017-lab03-scripted-06/server.log",
+      "bytes": 82740,
+      "sha256": "8836e8438388b897ef106d4abfed3375a0c216b0bed7021befc1cd717828b8b4"
+    }
+  }
+}

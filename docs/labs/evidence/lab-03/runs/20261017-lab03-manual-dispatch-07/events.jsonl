@@ -1,0 +1,6 @@
+{"kind":"stage","monotonic_ns":224802174415041,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":224802195323416,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":224802195389000,"outcome":"running","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":224802310068375,"outcome":"failed","source":"host","stage":"run"}
+{"kind":"stage","monotonic_ns":224802310506416,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"INCOMPLETE","kind":"run_terminal","reason":"RuntimeError","source":"host","workflow_status":"FAIL"}
