@@ -538,10 +538,11 @@ class CanonicalRunTests(unittest.TestCase):
                 self.assertTrue(server_logs)
                 server_log = manifest.parent / "server.log"
                 self.assertTrue(server_log.is_file())
+                server_log_relative = server_log.resolve().relative_to(self.host_root.resolve()).as_posix()
                 data = evidence.finalize(workflow_status="PASS", experiment_verdict="UNMEASURED",
                     caller_completed=True, cleanup_succeeded=True, terminal_reason="completed")
-                self.assertEqual(data["artifacts"]["server_log"], server_log.relative_to(self.host_root).as_posix())
-                self.assertEqual(server_logs[0]["artifact_path"], server_log.relative_to(self.host_root).as_posix())
+                self.assertEqual(data["artifacts"]["server_log"], server_log_relative)
+                self.assertEqual(server_logs[0]["artifact_path"], server_log_relative)
                 self.assertEqual(data["workflow_status"], "PASS")
                 self.assertEqual(data["experiment_verdict"], "UNMEASURED")
                 self.assertEqual(data["firmware"]["build_id"], FakeSerial.marker.decode().split("build=", 1)[1].split()[0])
