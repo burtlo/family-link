@@ -15,6 +15,7 @@ _ADAPTER_MODULES = {
     "generic": "lab_runner_adapter",
     "lab02": "lab_adapter_lab02",
     "lab03": "lab_adapter_lab03",
+    "lab04": "lab_adapter_lab04",
     "lab10": "lab_adapter_lab10",
 }
 

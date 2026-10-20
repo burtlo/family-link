@@ -1,0 +1,9 @@
+{"adapter_identity":"lab04","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"preflight"}
+{"adapter_identity":"lab04","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"preflight"}
+{"adapter_identity":"lab04","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"build"}
+{"adapter_identity":"lab04","adapter_version":"v1","kind":"stage","outcome":"passed","result":"/Users/lynnfrank/src/family-link/build/labs/lab-04-sketch-format-scripted","source":"host","stage":"build"}
+{"adapter_identity":"lab04","adapter_version":"v1","kind":"stage","mode":"scripted","outcome":"running","source":"host","stage":"activity"}
+{"adapter_identity":"lab04","adapter_version":"v1","kind":"stage","mode":"scripted","outcome":"passed","source":"host","stage":"activity"}
+{"adapter_identity":"lab04","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"parser"}
+{"adapter_identity":"lab04","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"PASS","kind":"run_terminal","reason":"post_reset_capture_parsed","source":"host","workflow_status":"PASS"}

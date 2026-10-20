@@ -1,0 +1,266 @@
+{
+  "document": "LAB-04 QUAL 20261020 postrun raw artifact hashes",
+  "review_run": "20261020-LAB04-POSTRUN-QUAL-001",
+  "raw_files_immutable": true,
+  "capture_source_identity_at_capture": {
+    "project_tree_sha256": "4367754de387636e00a89bb47a9cd4b6f01d061fbeda478156b2c98d351bb8a9",
+    "fixture_tree_sha256": "05a0f684d13831ed47046ec78cfd4c76116b1c70a59d7da5c119e37de81f3160"
+  },
+  "current_project_identity_after_host_parser_fix": {
+    "project_tree_sha256": "8017f2b39f1285e370cb7de3f26eda59eb5beddb7fbd4f3d85aefc6934564bfc",
+    "fixture_tree_sha256": "05a0f684d13831ed47046ec78cfd4c76116b1c70a59d7da5c119e37de81f3160",
+    "scope_note": "Only host parser/test files changed after capture; firmware compiled sources/defaults did not. Captured firmware binary, sdkconfig, build ID, and fixture identities match current registered outputs."
+  },
+  "captures": {
+    "20261020-manual-run-99f0de33": {
+      "manifest": {
+        "path": "docs/labs/evidence/lab-04/runs/20261020-manual-run-99f0de33/run-manifest.json",
+        "bytes": 2792,
+        "sha256": "5cf6eef48b15284de7a1898b7b6d0b86e6b3386d404d5e80941c32e8123570c6"
+      },
+      "events": {
+        "path": "docs/labs/evidence/lab-04/runs/20261020-manual-run-99f0de33/events.jsonl",
+        "bytes": 1210,
+        "sha256": "f1f30e3340825270f087cc4941b702bde1ec2020e70b2ccbbe2779f47b2e1ae2"
+      },
+      "metrics": {
+        "path": "docs/labs/evidence/lab-04/runs/20261020-manual-run-99f0de33/metrics.json",
+        "bytes": 50266,
+        "sha256": "8924e7708a3d08997788b7f4eca003d566c9df0b40e89bd4db758c294c37ca9c"
+      },
+      "serial_log": {
+        "path": "logs/device/labs/lab-04/20261020-manual-run-99f0de33/serial.txt",
+        "bytes": 27666,
+        "sha256": "4476d0c704bc68382defcfe72a58f1608c76020ace6f72857c2bc67a64c08f3b"
+      }
+    },
+    "20261020-scripted-run-047a3247": {
+      "manifest": {
+        "path": "docs/labs/evidence/lab-04/runs/20261020-scripted-run-047a3247/run-manifest.json",
+        "bytes": 2806,
+        "sha256": "8432daf30b0c7ae68e4e2f00bac7be672f54c24be6790a04a3413a76b5ae4b60"
+      },
+      "events": {
+        "path": "docs/labs/evidence/lab-04/runs/20261020-scripted-run-047a3247/events.jsonl",
+        "bytes": 1216,
+        "sha256": "3c8f12261b2034df095db42b5eaff57814b173866703763b8db74c7348076d72"
+      },
+      "metrics": {
+        "path": "docs/labs/evidence/lab-04/runs/20261020-scripted-run-047a3247/metrics.json",
+        "bytes": 50220,
+        "sha256": "91ce25328250b13efac54f7ab18ec06b1225ccbdfc6195db3edaa22538caeb42"
+      },
+      "serial_log": {
+        "path": "logs/device/labs/lab-04/20261020-scripted-run-047a3247/serial.txt",
+        "bytes": 27551,
+        "sha256": "d68246fb00f5a19271f76094be05bfd9be569be7ceaa19dd9fd7ab2d85832a24"
+      }
+    }
+  },
+  "current_parser_reparses": {
+    "20261020-manual-run-99f0de33": {
+      "derivative": "docs/labs/evidence/lab-04/reviews/20261020-LAB04-POSTRUN-QUAL-001/20261020-manual-run-99f0de33-posthoc-metrics.json",
+      "workflow_status": "PASS",
+      "manifest_experiment_verdict": "PASS",
+      "parser_experiment_verdict": "PASS",
+      "performance_verdict": "UNMEASURED",
+      "evidence_status": "COMPLETE",
+      "trace_loss": "UNKNOWN",
+      "firmware_trace_loss": {
+        "status": "UNKNOWN",
+        "dropped_events": null,
+        "oversized_events": null,
+        "malformed_rows": null
+      },
+      "trace_reconciliation": {
+        "status": "COMPLETE",
+        "observed_sequenced_rows": 39,
+        "missing_sequences": [],
+        "duplicate_sequences": [],
+        "out_of_range_sequences": [],
+        "row_count_matches_summary": true,
+        "footer_order_valid": true,
+        "expected_rows_within_parser_line_limit": true
+      },
+      "trace_rows": 35,
+      "scenario_inputs": [
+        "F-malformed",
+        "F-overflow",
+        "F-cancel"
+      ],
+      "resource_samples": 2,
+      "resource_peak_count": 2,
+      "peak_measurement_kind": "decoder_maximum_output_capacity_reservation",
+      "whole_system_temporal_peak": false,
+      "raster_work_accounting": {
+        "status": "OBSERVED",
+        "rows_with_counters": 35,
+        "rows_missing_counters": 0
+      },
+      "timing_series": {
+        "encode_us": {
+          "sample_count": 9,
+          "p50": 599,
+          "p95": 24765,
+          "p99": 24765,
+          "worst": 24765
+        },
+        "decode_us": {
+          "sample_count": 8,
+          "p50": 322,
+          "p95": 18823,
+          "p99": 18823,
+          "worst": 18823
+        },
+        "raster_us": {
+          "sample_count": 8,
+          "p50": 94,
+          "p95": 4250,
+          "p99": 4250,
+          "worst": 4250
+        },
+        "seek_us": {
+          "sample_count": 9,
+          "p50": 7,
+          "p95": 104,
+          "p99": 104,
+          "worst": 104
+        },
+        "internal_largest_free_block_bytes": {
+          "sample_count": 9,
+          "p50": 131072,
+          "p95": 131072,
+          "p99": 131072,
+          "worst": 131072
+        },
+        "psram_largest_free_block_bytes": {
+          "sample_count": 9,
+          "p50": 16515072,
+          "p95": 16515072,
+          "p99": 16515072,
+          "worst": 16515072
+        },
+        "lvgl_largest_free_block_bytes": {
+          "sample_count": 9,
+          "p50": 53416,
+          "p95": 53416,
+          "p99": 53416,
+          "worst": 53416
+        }
+      },
+      "derivative_sha256": "5e8a11e5a97218a753378626241cf0118486954e78282bef211ba109a86e6144",
+      "derivative_bytes": 50269
+    },
+    "20261020-scripted-run-047a3247": {
+      "derivative": "docs/labs/evidence/lab-04/reviews/20261020-LAB04-POSTRUN-QUAL-001/20261020-scripted-run-047a3247-posthoc-metrics.json",
+      "workflow_status": "PASS",
+      "manifest_experiment_verdict": "PASS",
+      "parser_experiment_verdict": "PASS",
+      "performance_verdict": "UNMEASURED",
+      "evidence_status": "COMPLETE",
+      "trace_loss": "UNKNOWN",
+      "firmware_trace_loss": {
+        "status": "UNKNOWN",
+        "dropped_events": null,
+        "oversized_events": null,
+        "malformed_rows": null
+      },
+      "trace_reconciliation": {
+        "status": "COMPLETE",
+        "observed_sequenced_rows": 39,
+        "missing_sequences": [],
+        "duplicate_sequences": [],
+        "out_of_range_sequences": [],
+        "row_count_matches_summary": true,
+        "footer_order_valid": true,
+        "expected_rows_within_parser_line_limit": true
+      },
+      "trace_rows": 35,
+      "scenario_inputs": [
+        "F-malformed",
+        "F-overflow",
+        "F-cancel"
+      ],
+      "resource_samples": 2,
+      "resource_peak_count": 2,
+      "peak_measurement_kind": "decoder_maximum_output_capacity_reservation",
+      "whole_system_temporal_peak": false,
+      "raster_work_accounting": {
+        "status": "OBSERVED",
+        "rows_with_counters": 35,
+        "rows_missing_counters": 0
+      },
+      "timing_series": {
+        "encode_us": {
+          "sample_count": 9,
+          "p50": 404,
+          "p95": 20445,
+          "p99": 20445,
+          "worst": 20445
+        },
+        "decode_us": {
+          "sample_count": 8,
+          "p50": 172,
+          "p95": 15746,
+          "p99": 15746,
+          "worst": 15746
+        },
+        "raster_us": {
+          "sample_count": 8,
+          "p50": 72,
+          "p95": 1900,
+          "p99": 1900,
+          "worst": 1900
+        },
+        "seek_us": {
+          "sample_count": 9,
+          "p50": 7,
+          "p95": 47,
+          "p99": 47,
+          "worst": 47
+        },
+        "internal_largest_free_block_bytes": {
+          "sample_count": 9,
+          "p50": 131072,
+          "p95": 131072,
+          "p99": 131072,
+          "worst": 131072
+        },
+        "psram_largest_free_block_bytes": {
+          "sample_count": 9,
+          "p50": 16515072,
+          "p95": 16515072,
+          "p99": 16515072,
+          "worst": 16515072
+        },
+        "lvgl_largest_free_block_bytes": {
+          "sample_count": 9,
+          "p50": 54152,
+          "p95": 54152,
+          "p99": 54152,
+          "worst": 54152
+        }
+      },
+      "derivative_sha256": "404a58f62a1cfa13da15e424c3b49d29ba18fc91e355bd8ff06c22a9b169ddfc",
+      "derivative_bytes": 50223
+    }
+  },
+  "registered_build_outputs": {
+    "manual": {
+      "build_id": "lab04-fw-v1-manual",
+      "source_sha256": "8017f2b39f1285e370cb7de3f26eda59eb5beddb7fbd4f3d85aefc6934564bfc",
+      "fixture_sha256": "05a0f684d13831ed47046ec78cfd4c76116b1c70a59d7da5c119e37de81f3160",
+      "sdkconfig_sha256": "d381908414a53ba2b3dab2a64488a0a7f0ef6a21cd6cd70cf965585452ccb3ec",
+      "binary_sha256": "187704014b5e3f02ab4f29587f387e51b69f214c6c8ca418b214bdeed0a7c409",
+      "build_fingerprint": "sha256:13cdc83482231bfbce9a74f75f2dee6fb44333e272cc59dbc647bcd013fa7262"
+    },
+    "scripted": {
+      "build_id": "lab04-fw-v1-scripted",
+      "source_sha256": "8017f2b39f1285e370cb7de3f26eda59eb5beddb7fbd4f3d85aefc6934564bfc",
+      "fixture_sha256": "05a0f684d13831ed47046ec78cfd4c76116b1c70a59d7da5c119e37de81f3160",
+      "sdkconfig_sha256": "bb599926bda166b4ed7710ff62a7a7314727fc24a7704350d2592752935c4747",
+      "binary_sha256": "234c6c69c7cf5e485a3152d9eef0f222f700920e9e36b9a0f9132ea9593f82e9",
+      "build_fingerprint": "sha256:e591baabecc6ac91f7a5d39b5211a6bb2b38890059a30746008b9df02865cd9c"
+    }
+  }
+}

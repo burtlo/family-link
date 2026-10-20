@@ -1,0 +1,11 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-04",
+  "lab_revision": "v1",
+  "firmware_path": "client/labs/lab-04-sketch-format",
+  "server_path": "none",
+  "fixture_schema": "lab04-sketch-format-fixtures/v1",
+  "fixture_revision": "lab04-sketch-format/v1",
+  "protocol": "local-only",
+  "trace_schema": "lab04-trace/v1"
+}

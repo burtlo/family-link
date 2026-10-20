@@ -272,8 +272,11 @@ def run_mode_hint_lines(spec: LabSpec) -> list[str]:
         "  SECONDS=<seconds>  Capture duration",
         "  FLASH=0|1          Skip or force flashing",
         "  RUN_ID=<run-id>    Evidence run identifier",
-        "  BACKEND=<backend>  managed-http (default) or local comparison",
     ])
+    if spec.make_name == "lab04":
+        lines.append("  BACKEND=managed-http (required); local comparison is unsupported")
+    else:
+        lines.append("  BACKEND=<backend>  managed-http (default) or local comparison")
     return lines
 
 

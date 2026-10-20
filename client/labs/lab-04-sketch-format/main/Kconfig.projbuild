@@ -1,0 +1,13 @@
+menu "LAB-04 sketch format"
+
+config LAB04_SCRIPTED
+	bool "Run all format scenarios automatically"
+	default n
+	help
+		Automatically run all three format variants, checkpoint observations, and decided fault scenarios.
+
+config LAB04_BUILD_ID
+	string "Firmware build identity"
+	default "lab04-fw-v1-manual"
+
+endmenu

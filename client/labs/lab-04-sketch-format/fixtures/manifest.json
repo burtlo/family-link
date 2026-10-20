@@ -1,0 +1,44 @@
+{
+  "fixture_version": "lab04-sketch-format/v1",
+  "logical_size": [120, 120],
+  "preview_storage_bytes": 28800,
+  "corpus_a": {
+    "source_fixture_version": "lab03-media/v1",
+    "short.sketch": {
+      "bytes": 128,
+      "sha256": "d2efa7e48bcb2eb021211d208acd231a05919edfb00d783dd9221720771d12ec",
+      "point_count": 12,
+      "duration_ms": 3000
+    },
+    "dense.sketch": {
+      "bytes": 40968,
+      "sha256": "1bac193a2482c8a4f743d1bf6ada17080c87ca2d58f7964fb20d481664c50985",
+      "point_count": 4096,
+      "duration_ms": 3000
+    }
+  },
+  "corpus_b": {
+    "file": "corpus-b.csv",
+    "sha256": "1a9fb7e07ddb0518a83aee2459eaa80119b0849d2b0573b7748a7b376609e12f",
+    "point_count": 14,
+    "duration_ms": 2400,
+    "variants": {
+      "timed_colored_points": {
+        "file": "points.bin",
+        "bytes": 156,
+        "sha256": "531acddc0f532a9cf73a68ce786acd12ec32392a6d91b76055662583e0599de5"
+      },
+      "timed_per_stroke_color": {
+        "file": "strokes.bin",
+        "bytes": 166,
+        "sha256": "5a9fc1c1db5bb264eea4826475d071b94f468ecff7d859bcef200f148c7ceb67"
+      },
+      "segment_stream_final_preview": {
+        "file": "preview.bin",
+        "bytes": 28956,
+        "sha256": "fe1533425ae900ee88b7bdfc682bc3921e6e68e07fc7e89b796094a329f3aec7",
+        "preview_bytes": 28800
+      }
+    }
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "family-link.lab04-trace/v1",
+  "title": "LAB-04 emitted trace row",
+  "description": "Field contract for LAB04_TRACE scenario_terminal rows and supplemental resource_sample, resource_peak, publication_loss, and trace_summary rows. A resource_sample is a point observation after preview decode and before raster work, while the encoded preview payload and decoded drawing are live. resource_peak observes the successful decoder maximum-capacity reservation before record insertion while the encoded preview payload remains live. At that instant the decoded vector has allocated capacity but contains zero inserted segments; expected_output_segments reports the count declared for a successful decode, not currently resident contents. The decoder makes no later heap allocation. This is one allocation observation, not a whole-system concurrent-allocation peak or approved performance budget. trace_summary is an unsequenced final sentinel emitted after sequenced rows and publication_loss; expected_rows counts rows emit_trace attempted, publication_queue_drops counts that queue only, and serial_write_errors counts firmware formatting/write API failures for sequenced rows. The host reconciles contiguous sequence numbers 1..expected_rows; absent summary leaves end-to-end trace loss UNKNOWN. publication_loss counts firmware publication-queue rejections only; it says nothing about UART or host-capture loss. Earlier lab04-trace/v1 captures may omit all new supplemental events. raster_us is one bounded raster_update call; raster work counters describe that update. Timings are raw per-operation samples; aggregation and provenance belong to the host parser.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "event"],
+  "dependentRequired": {
+    "raster_work_cap": ["raster_eligible", "raster_rendered", "raster_remaining"],
+    "raster_eligible": ["raster_work_cap", "raster_rendered", "raster_remaining"],
+    "raster_rendered": ["raster_work_cap", "raster_eligible", "raster_remaining"],
+    "raster_remaining": ["raster_work_cap", "raster_eligible", "raster_rendered"]
+  },
+  "properties": {
+    "schema": {"const": "lab04-trace/v1"},
+    "event": {"enum": ["scenario_terminal", "resource_sample", "resource_peak", "publication_loss", "trace_summary"]},
+    "source": {"type": "string"},
+    "dropped_events": {"type": "integer", "minimum": 0},
+    "expected_rows": {"type": "integer", "minimum": 0},
+    "publication_queue_drops": {"type": "integer", "minimum": 0},
+    "serial_write_errors": {"type": "integer", "minimum": 0},
+    "seq": {"type": "integer", "minimum": 1},
+    "monotonic_us": {"type": "integer", "minimum": 0},
+    "scenario": {"enum": ["F-points", "F-strokes", "F-preview", "F-checkpoint", "F-legacy", "F-malformed", "F-overflow", "F-cancel"]},
+    "fixture": {"enum": ["corpus-a-short", "corpus-a-dense", "corpus-b"]},
+    "class": {"enum": ["exploratory", "decided"]},
+    "variant": {"enum": ["points", "strokes", "preview", "legacy", "legacy-colored", "unsupported"]},
+    "checkpoint_position": {"enum": ["", "early", "middle", "late"]},
+    "operation_id": {"type": "integer", "minimum": 1},
+    "terminal": {"enum": ["success", "failure", "cancelled", "unsupported"]},
+    "terminal_count": {"const": 1},
+    "reason": {"type": "string", "maxLength": 64},
+    "encoded_bytes": {"type": "integer", "minimum": 0},
+    "preview_bytes": {"type": "integer", "minimum": 0, "maximum": 28800},
+    "preview_buffers": {"type": "integer", "minimum": 0, "maximum": 1},
+    "live_buffers": {"type": "integer", "minimum": 0},
+    "position_ms": {"type": "integer", "minimum": 0},
+    "encode_us": {"type": "integer", "minimum": 0},
+    "decode_us": {"type": "integer", "minimum": 0},
+    "raster_us": {"type": "integer", "minimum": 0},
+    "raster_work_cap": {"const": 64},
+    "raster_eligible": {"type": "integer", "minimum": 0, "maximum": 4096},
+    "raster_rendered": {"type": "integer", "minimum": 0, "maximum": 64},
+    "raster_remaining": {"type": "integer", "minimum": 0, "maximum": 4096},
+    "seek_us": {"type": "integer", "minimum": 0},
+    "internal_largest_free_block_bytes": {"type": "integer", "minimum": 0},
+    "psram_largest_free_block_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_total_size_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_free_size_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_used_pct": {"type": "integer", "minimum": 0, "maximum": 100},
+    "lvgl_free_biggest_size_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_largest_free_block_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_max_used_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_sample_status": {"enum": ["display_lock_busy"]},
+    "sample_kind": {"type": "string"},
+    "phase": {"type": "string"},
+    "image_resident": {"type": "integer", "enum": [0, 1]},
+    "image_storage": {"type": "string"},
+    "image_bytes": {"type": "integer", "minimum": 0},
+    "decoded_resident": {"type": "integer", "enum": [0, 1]},
+    "decoded_segments": {"type": "integer", "minimum": 0},
+    "expected_output_segments": {"type": "integer", "minimum": 0},
+    "decoded_capacity_bytes": {"type": "integer", "minimum": 0},
+    "ledger_b_image_resident": {"type": "integer", "enum": [0, 1]},
+    "ledger_b_image_storage": {"type": "string"},
+    "ledger_b_image_bytes": {"type": "integer", "minimum": 0},
+    "ledger_b_image_caps": {"type": "string"},
+    "ledger_b_image_lifetime": {"type": "string"},
+    "ledger_b_decoded_resident": {"type": "integer", "enum": [0, 1]},
+    "ledger_b_decoded_segments": {"type": "integer", "minimum": 0},
+    "ledger_b_expected_output_segments": {"type": "integer", "minimum": 0},
+    "ledger_b_decoded_capacity_bytes": {"type": "integer", "minimum": 0}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"event": {"const": "scenario_terminal"}}},
+      "then": {
+        "required": ["seq", "monotonic_us", "scenario", "fixture", "class", "variant", "operation_id", "terminal", "terminal_count"],
+        "properties": {
+          "scenario": {"enum": ["F-points", "F-strokes", "F-preview", "F-checkpoint", "F-legacy", "F-malformed", "F-overflow", "F-cancel"]},
+          "fixture": {"enum": ["corpus-a-short", "corpus-a-dense", "corpus-b"]},
+          "class": {"enum": ["exploratory", "decided"]},
+          "variant": {"enum": ["points", "strokes", "preview", "legacy", "legacy-colored", "unsupported"]},
+          "terminal": {"enum": ["success", "failure", "cancelled", "unsupported"]},
+          "terminal_count": {"const": 1}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"event": {"const": "resource_sample"}}},
+      "then": {
+        "required": ["seq", "monotonic_us", "scenario", "fixture", "variant", "operation_id", "sample_kind", "phase", "image_resident", "image_storage", "image_bytes", "decoded_resident", "decoded_segments", "ledger_b_image_resident", "ledger_b_image_storage", "ledger_b_image_bytes", "ledger_b_image_caps", "ledger_b_image_lifetime", "ledger_b_decoded_resident", "ledger_b_decoded_segments", "ledger_b_decoded_capacity_bytes", "internal_largest_free_block_bytes", "psram_largest_free_block_bytes"],
+        "properties": {
+          "scenario": {"const": "F-preview"},
+          "fixture": {"enum": ["corpus-a-short", "corpus-b"]},
+          "variant": {"const": "preview"},
+          "sample_kind": {"const": "point"},
+          "phase": {"const": "post_decode_pre_raster"},
+          "ledger_b_image_resident": {"const": 1},
+          "ledger_b_image_storage": {"const": "encoded_payload"},
+          "ledger_b_image_bytes": {"const": 28800},
+          "ledger_b_image_caps": {"const": "MALLOC_CAP_DEFAULT"},
+          "ledger_b_image_lifetime": {"const": "encoded_result_live_through_raster"},
+          "ledger_b_decoded_resident": {"const": 1},
+          "ledger_b_decoded_segments": {"type": "integer", "minimum": 1},
+          "ledger_b_decoded_capacity_bytes": {"type": "integer", "minimum": 1},
+          "image_resident": {"const": 1},
+          "image_storage": {"const": "encoded_payload"},
+          "image_bytes": {"const": 28800},
+          "decoded_resident": {"const": 1},
+          "decoded_segments": {"type": "integer", "minimum": 1}
+        },
+        "anyOf": [
+          {"required": ["lvgl_largest_free_block_bytes", "lvgl_total_size_bytes", "lvgl_free_size_bytes", "lvgl_used_pct", "lvgl_free_biggest_size_bytes", "lvgl_max_used_bytes"]},
+          {"required": ["lvgl_sample_status"], "properties": {"lvgl_sample_status": {"const": "display_lock_busy"}}}
+        ]
+      }
+    },
+    {
+      "if": {"properties": {"event": {"const": "publication_loss"}}},
+      "then": {
+        "required": ["source", "dropped_events"],
+        "properties": {"source": {"const": "firmware_publication_queue"}, "dropped_events": {"type": "integer", "minimum": 0}}
+      }
+    },
+    {
+      "if": {"properties": {"event": {"const": "resource_peak"}}},
+      "then": {
+        "required": ["seq", "monotonic_us", "scenario", "fixture", "variant", "operation_id", "sample_kind", "phase", "image_resident", "image_storage", "image_bytes", "decoded_resident", "expected_output_segments", "decoded_capacity_bytes", "internal_largest_free_block_bytes", "psram_largest_free_block_bytes", "ledger_b_image_resident", "ledger_b_image_storage", "ledger_b_image_bytes", "ledger_b_image_caps", "ledger_b_image_lifetime", "ledger_b_decoded_resident", "ledger_b_expected_output_segments", "ledger_b_decoded_capacity_bytes"],
+        "properties": {
+          "scenario": {"const": "F-preview"},
+          "fixture": {"enum": ["corpus-a-short", "corpus-b"]},
+          "variant": {"const": "preview"},
+          "sample_kind": {"const": "peak"},
+          "phase": {"const": "maximum_output_capacity_reserved_before_record_insertion_encoded_payload_live"},
+          "image_resident": {"const": 1},
+          "image_storage": {"const": "encoded_payload"},
+          "image_bytes": {"const": 28800},
+          "decoded_resident": {"const": 1},
+          "expected_output_segments": {"type": "integer", "minimum": 1},
+          "decoded_capacity_bytes": {"type": "integer", "minimum": 1},
+          "ledger_b_image_resident": {"const": 1},
+          "ledger_b_image_storage": {"const": "encoded_payload"},
+          "ledger_b_image_bytes": {"const": 28800},
+          "ledger_b_decoded_resident": {"const": 1},
+          "ledger_b_expected_output_segments": {"type": "integer", "minimum": 1},
+          "ledger_b_decoded_capacity_bytes": {"type": "integer", "minimum": 1}
+        },
+        "anyOf": [
+          {"required": ["lvgl_largest_free_block_bytes", "lvgl_total_size_bytes", "lvgl_free_size_bytes", "lvgl_used_pct", "lvgl_free_biggest_size_bytes", "lvgl_max_used_bytes"]},
+          {"required": ["lvgl_sample_status"], "properties": {"lvgl_sample_status": {"const": "display_lock_busy"}}}
+        ]
+      }
+    },
+    {
+      "if": {"properties": {"event": {"const": "trace_summary"}}},
+      "then": {
+        "required": ["expected_rows", "publication_queue_drops", "serial_write_errors"],
+        "properties": {
+          "expected_rows": {"type": "integer", "minimum": 0},
+          "publication_queue_drops": {"type": "integer", "minimum": 0},
+          "serial_write_errors": {"type": "integer", "minimum": 0}
+        }
+      }
+    }
+  ]
+}
