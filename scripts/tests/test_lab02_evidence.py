@@ -1,10 +1,42 @@
 import json
+import subprocess
 import tempfile
 import threading
 import unittest
 from pathlib import Path
 
 from lab02_evidence import EvidenceRun
+
+
+def _link_directory(link: Path, target: Path) -> None:
+    """Link a directory so path resolution escapes the approved root.
+
+    A directory symlink is preferred. When SeCreateSymbolicLinkPrivilege is
+    absent, a junction still resolves outside the root and the escape check
+    remains in force.
+    """
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError as exc:
+        if getattr(exc, "winerror", None) != 1314:
+            raise
+        completed = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if completed.returncode != 0:
+            detail = (completed.stderr or completed.stdout).strip()
+            raise unittest.SkipTest(
+                "SeCreateSymbolicLinkPrivilege is absent and a directory junction "
+                f"could not be created: {detail}"
+            ) from exc
+
+
+def _unlink_directory_link(link: Path) -> None:
+    if link.is_symlink() or link.exists():
+        link.unlink()
 
 
 class EvidenceRunTests(unittest.TestCase):
@@ -247,18 +279,19 @@ class EvidenceRunTests(unittest.TestCase):
                          "logs/device/labs/lab-02/valid-artifact/serial.txt")
         outside = Path(self.temp.name).parent / (Path(self.temp.name).name + "-outside")
         outside.mkdir()
+        link = self.root / "logs/device/labs/lab-02" / "symlink-escape"
         try:
             escape = self.run_writer("symlink-escape", {"artifacts": {
                 "serial_log": "logs/device/labs/lab-02/symlink-escape/serial.txt"}})
-            link_parent = self.root / "logs/device/labs/lab-02"
-            link_parent.mkdir(parents=True, exist_ok=True)
-            (link_parent / "symlink-escape").symlink_to(outside, target_is_directory=True)
+            link.parent.mkdir(parents=True, exist_ok=True)
+            _link_directory(link, outside)
             (outside / "serial.txt").write_text("outside")
             result = escape.finalize(workflow_status="FAIL", experiment_verdict="UNMEASURED",
                                      caller_completed=False, cleanup_succeeded=True)
             self.assertIsNone(result["artifacts"]["serial_log"])
         finally:
             import shutil
+            _unlink_directory_link(link)
             shutil.rmtree(outside, ignore_errors=True)
 
     def test_context_updates_merge_observed_partial_facts_safely(self):
@@ -347,10 +380,10 @@ class EvidenceRunTests(unittest.TestCase):
             document="family-link.lab-run-manifest/v2")
         outside = Path(self.temp.name).parent / (Path(self.temp.name).name + "-generic-outside")
         outside.mkdir()
+        serial_dir = self.root / "logs/device/labs/transition-resource" / run_id
         try:
-            serial_dir = self.root / "logs/device/labs/transition-resource" / run_id
             serial_dir.parent.mkdir(parents=True, exist_ok=True)
-            serial_dir.symlink_to(outside, target_is_directory=True)
+            _link_directory(serial_dir, outside)
             (outside / "serial.txt").write_text("outside")
             result = run.finalize(workflow_status="FAIL", experiment_verdict="INCOMPLETE",
                                   caller_completed=False, cleanup_succeeded=False)
@@ -361,6 +394,7 @@ class EvidenceRunTests(unittest.TestCase):
             self.assertEqual(result["event_loss"]["dropped_events"], 0)
         finally:
             import shutil
+            _unlink_directory_link(serial_dir)
             shutil.rmtree(outside, ignore_errors=True)
 
     def test_generic_failure_finalizes_partial_truthful_evidence(self):

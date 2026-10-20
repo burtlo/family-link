@@ -23,7 +23,11 @@ void put32(std::vector<std::uint8_t>& out, std::uint32_t v) {
     put16(out, v & 0xffff); put16(out, v >> 16);
 }
 bool get8(const std::uint8_t* p, std::size_t n, std::size_t& at, std::uint8_t& v) {
-    if (at >= n) return false; v = p[at++]; return true;
+    if (at >= n) {
+        return false;
+    }
+    v = p[at++];
+    return true;
 }
 bool get16(const std::uint8_t* p, std::size_t n, std::size_t& at, std::uint16_t& v) {
     std::uint8_t a, b; if (!get8(p,n,at,a) || !get8(p,n,at,b)) return false;
@@ -229,7 +233,10 @@ std::size_t raster_update(std::uint16_t* pixels, const Drawing& d, std::size_t& 
         }
         ++rendered; ++work;
     }
-    if(reason)reason->clear(); return work;
+    if (reason) {
+        reason->clear();
+    }
+    return work;
 }
 
 DecodeOperation::DecodeOperation(std::uint64_t id) { operation_.id=id; }

@@ -107,15 +107,26 @@ class FakeSerial:
 
 
 class FakeConfig:
+    logs_root = ROOT / "logs" / "device"
+
     def path_value(self, name):
         if name == "firmware.logs":
-            return ROOT / "logs/device"
+            return FakeConfig.logs_root
         if name == "labs.registry":
             return ROOT / "config/labs.registry.yaml"
         raise AssertionError(name)
 
 
 class CanonicalRunTests(unittest.TestCase):
+    def setUp(self):
+        self._host_temp = tempfile.TemporaryDirectory()
+        self.host_root = Path(self._host_temp.name)
+        FakeConfig.logs_root = self.host_root / "logs" / "device"
+
+    def tearDown(self):
+        FakeConfig.logs_root = ROOT / "logs" / "device"
+        self._host_temp.cleanup()
+
     def test_unset_trace_run_id_is_owned_before_scenario_dispatch(self):
         run_id = "capture-run"
         receipt = {"ok": True, "run_id": run_id, "action_id": "", "inbox_revision": 2}
@@ -175,7 +186,7 @@ class CanonicalRunTests(unittest.TestCase):
         loss = {"status": "OBSERVED", "dropped_events": 2,
                 "oversized_events": 1, "malformed_rows": 0}
         result = self._local_run(run_id, metrics_doc={"trace_loss": loss})
-        manifest_path = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest_path = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         manifest = json.loads(manifest_path.read_text())
         self.assertEqual(result, 0)
         self.assertEqual(manifest["event_loss"]["host_journal"]["dropped_events"], 0)
@@ -184,7 +195,7 @@ class CanonicalRunTests(unittest.TestCase):
         self.assertTrue(all(row.get("source") in {"host", "server", "device", "unknown"}
                             for row in events))
         shutil.rmtree(manifest_path.parent, ignore_errors=True)
-        shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+        shutil.rmtree(self.host_root / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
 
     def test_build_fingerprint_ignores_run_and_kit_context_but_tracks_compiled_config(self):
         common = dict(variant="phaseb", fixture_size=64, scenario="nominal", mode="manual",
@@ -238,7 +249,7 @@ class CanonicalRunTests(unittest.TestCase):
                     "draw_buf_bytes=64000 scenario=nominal harness=0 "
                     "draw_buf_height_lines=100 color_depth_bits=16\n").encode()
         result = self._local_run(run_id, marker_factory=marker_factory)
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         self.assertEqual(result, 0)
         self.assertEqual(data["workflow_status"], "PASS")
@@ -251,7 +262,7 @@ class CanonicalRunTests(unittest.TestCase):
             return (f"LAB02_READY build={identity} backend=http fixture=inbox_8 mode=recycle "
                     "harness=0 scenario=nominal trace_schema=lab-trace/v1\n").encode()
         result = self._local_run(run_id, marker_factory=marker_factory)
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         self.assertEqual(result, 1)
         self.assertEqual(data["terminal_reason"], "fresh_boot_identity_mismatch")
@@ -260,7 +271,7 @@ class CanonicalRunTests(unittest.TestCase):
     def _local_run(self, run_id, *, mode="manual", variant="recycle", seconds=1, tail=b"", marker_factory=None,
                    pre_reset=b"", reset_output=None, fail_reset=False, interrupt_reset=False,
                    straddle_chunk=None, post_reset_chunk=None, metrics_doc=None,
-                   first_read_through_done=False):
+                   first_read_through_done=False, max_read_size=11):
         import shutil
         fake_module = types.ModuleType("serial")
         fake_module.Serial = FakeSerial
@@ -273,7 +284,7 @@ class CanonicalRunTests(unittest.TestCase):
         FakeSerial.straddle_read = straddle_chunk is not None or post_reset_chunk is not None
         FakeSerial.straddle_chunk = straddle_chunk or b""
         FakeSerial.post_reset_chunk = post_reset_chunk or b""
-        FakeSerial.max_read_size = 11
+        FakeSerial.max_read_size = max_read_size
         FakeSerial.read_count = 0
         FakeSerial.straddle_started = threading.Event()
         FakeSerial.reset_released = threading.Event()
@@ -302,6 +313,7 @@ class CanonicalRunTests(unittest.TestCase):
             with patch.dict(sys.modules, {"serial": fake_module}):
                 return canonical.run_canonical(FakeConfig(), mode=mode, backend="local",
                     build_variant=variant, seconds=seconds, run_id=run_id,
+                    evidence_repo=self.host_root,
                     target_resolver=lambda *a: selected, target_revalidator=lambda *a: selected.device,
                     build=build, flash_build=lambda *a: None,
                     parse=lambda _serial, metrics: metrics.write_text(
@@ -332,7 +344,7 @@ class CanonicalRunTests(unittest.TestCase):
         FakeSerial.marker = b"LAB02_READY build=stale fixture=inbox_64 mode=recycle harness=0 scenario=nominal\n"
         FakeSerial.tail = b""
         result = self._local_run(run_id, marker_factory=lambda _identity: FakeSerial.marker)
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         self.assertEqual(result, 1)
         self.assertEqual(data["terminal_reason"], "fresh_boot_identity_mismatch")
@@ -341,10 +353,11 @@ class CanonicalRunTests(unittest.TestCase):
     def test_unterminated_uart_line_is_bounded_and_preserved_as_partial_evidence(self):
         import shutil
         run_id = "w7-linecap-" + uuid.uuid4().hex[:8]
-        result = self._local_run(run_id, tail=b"x" * (canonical.MAX_SERIAL_LINE_BYTES + 100))
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        result = self._local_run(run_id, tail=b"x" * (canonical.MAX_SERIAL_LINE_BYTES + 100),
+                                 max_read_size=canonical.MAX_SERIAL_LINE_BYTES)
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
-        serial_path = ROOT / "logs/device/labs/lab-02" / run_id / "serial.txt"
+        serial_path = self.host_root / "logs/device/labs/lab-02" / run_id / "serial.txt"
         self.assertEqual(result, 1)
         self.assertEqual(data["terminal_reason"], "serial_line_limit_exceeded")
         self.assertGreater(serial_path.stat().st_size, canonical.MAX_SERIAL_LINE_BYTES)
@@ -358,7 +371,7 @@ class CanonicalRunTests(unittest.TestCase):
             return (f"LAB02_READY build={identity} fixture=inbox_64 mode=recycle harness=1 scenario=nominal\n"
                     "HARNESS_DONE build=foreign steps=40 scenario=nominal\n").encode()
         result = self._local_run(run_id, mode="scripted", variant="scripted", marker_factory=wrong_done)
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         self.assertEqual(result, 1)
         self.assertEqual(data["terminal_reason"], "harness_failed")
@@ -390,7 +403,7 @@ class CanonicalRunTests(unittest.TestCase):
         with patch.object(canonical.queue, "Queue", OverflowCaptureQueue):
             result = self._local_run(run_id, mode="scripted", variant="scripted", tail=tail,
                                      first_read_through_done=True)
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         events = [json.loads(row) for row in (manifest.parent / "events.jsonl").read_text().splitlines()]
         self.assertEqual(result, 1)
@@ -400,7 +413,7 @@ class CanonicalRunTests(unittest.TestCase):
         self.assertTrue(any(row.get("kind") == "serial_reader" and row.get("outcome") == "incomplete"
                             for row in events))
         shutil.rmtree(manifest.parent, ignore_errors=True)
-        shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+        shutil.rmtree(self.host_root / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
 
     def test_managed_http_runs_server_build_flash_capture_reset_and_manifest(self):
         import queue
@@ -425,7 +438,7 @@ class CanonicalRunTests(unittest.TestCase):
             fake_module.Serial = FakeSerial
             FakeSerial.instances.clear()
             run_id = "w7-test-" + uuid.uuid4().hex[:8]
-            evidence = SharedEvidenceRun(ROOT, run_id, {}, lab_id="LAB-02", evidence_slug="lab-02")
+            evidence = SharedEvidenceRun(self.host_root, run_id, {}, lab_id="LAB-02", evidence_slug="lab-02")
             flash_order = []
             profile = SimpleNamespace(wifi_ssid="private-ssid", wifi_password="private-password")
             selected = SimpleNamespace(kit_id="testkit", device="/dev/fake", kit=object(),
@@ -480,7 +493,7 @@ class CanonicalRunTests(unittest.TestCase):
                 with patch.object(canonical, "load_lab02_workflow_config", return_value=cfg), \
                      patch.object(canonical.queue, "Queue", WaitForCaptureBacklog), \
                      patch.dict(sys.modules, {"serial": fake_module}):
-                    FakeSerial.capture_log_path = ROOT / "logs/device/labs/lab-02" / run_id / "serial.txt"
+                    FakeSerial.capture_log_path = self.host_root / "logs/device/labs/lab-02" / run_id / "serial.txt"
                     result = canonical.run_canonical(FakeConfig(), mode="scripted", kit="testkit",
                         seconds=1, run_id=run_id, target_resolver=lambda *a: selected,
                         target_revalidator=lambda *a: selected.device, build=build,
@@ -512,13 +525,13 @@ class CanonicalRunTests(unittest.TestCase):
                 self.assertTrue(server_log.is_file())
                 data = evidence.finalize(workflow_status="PASS", experiment_verdict="UNMEASURED",
                     caller_completed=True, cleanup_succeeded=True, terminal_reason="completed")
-                self.assertEqual(data["artifacts"]["server_log"], server_log.relative_to(ROOT).as_posix())
-                self.assertEqual(server_logs[0]["artifact_path"], server_log.relative_to(ROOT).as_posix())
+                self.assertEqual(data["artifacts"]["server_log"], server_log.relative_to(self.host_root).as_posix())
+                self.assertEqual(server_logs[0]["artifact_path"], server_log.relative_to(self.host_root).as_posix())
                 self.assertEqual(data["workflow_status"], "PASS")
                 self.assertEqual(data["experiment_verdict"], "UNMEASURED")
                 self.assertEqual(data["firmware"]["build_id"], FakeSerial.marker.decode().split("build=", 1)[1].split()[0])
                 self.assertEqual(data["fixture"]["sha256"], canonical.select_fixture(64).sha256)
-                serial_text = (ROOT / "logs/device/labs/lab-02" / run_id / "serial.txt").read_text()
+                serial_text = (self.host_root / "logs/device/labs/lab-02" / run_id / "serial.txt").read_text()
                 self.assertNotIn("private-password", serial_text)
                 self.assertNotIn("private-ssid", serial_text)
                 self.assertNotIn("private-password", manifest.read_text())
@@ -526,8 +539,8 @@ class CanonicalRunTests(unittest.TestCase):
                                      if '"kind":"run_terminal"' in row), 1)
             finally:
                 import shutil
-                shutil.rmtree(ROOT / "docs/labs/evidence/lab-02/runs" / run_id, ignore_errors=True)
-                shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+                shutil.rmtree(self.host_root / "docs/labs/evidence/lab-02/runs" / run_id, ignore_errors=True)
+                shutil.rmtree(self.host_root / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
                 FakeSerial.tail = b""
                 FakeSerial.max_read_size = 11
             for name in ("lab02_bounded_inbox.bin", "flasher_args.json", "sdkconfig"):
@@ -540,9 +553,9 @@ class CanonicalRunTests(unittest.TestCase):
         stale = b"LAB02_READY build=stale fixture=inbox_64 mode=recycle harness=0 scenario=nominal\n"
         result = self._local_run(run_id, marker_factory=lambda _identity: stale,
                                  pre_reset=stale, reset_output=b"")
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
-        serial_path = ROOT / "logs/device/labs/lab-02" / run_id / "serial.txt"
+        serial_path = self.host_root / "logs/device/labs/lab-02" / run_id / "serial.txt"
         self.assertEqual(result, 1)
         self.assertEqual(data["terminal_reason"], "fresh_boot_marker_timeout")
         self.assertIn(stale.decode().strip(), serial_path.read_text())
@@ -556,9 +569,9 @@ class CanonicalRunTests(unittest.TestCase):
             "harness=0 scenario=nominal\n").encode()
         result = self._local_run(run_id, marker_factory=marker_factory,
                                  straddle_chunk=marker_factory("placeholder"))
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
-        serial_path = ROOT / "logs/device/labs/lab-02" / run_id / "serial.txt"
+        serial_path = self.host_root / "logs/device/labs/lab-02" / run_id / "serial.txt"
         identity = data["firmware"]["build_id"]
         self.assertEqual(result, 1)
         self.assertEqual(data["workflow_status"], "INCOMPLETE")
@@ -572,47 +585,48 @@ class CanonicalRunTests(unittest.TestCase):
         run_id = "w7-readstart-fresh-" + uuid.uuid4().hex[:8]
         result = self._local_run(run_id, post_reset_chunk=(b"LAB02_READY build=placeholder fixture=inbox_64 "
                                   b"mode=recycle harness=0 scenario=nominal\n"))
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         self.assertEqual(result, 0)
         self.assertEqual(data["workflow_status"], "PASS")
         self.assertEqual(data["experiment_verdict"], "UNMEASURED")
         shutil.rmtree(manifest.parent, ignore_errors=True)
-        shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+        shutil.rmtree(self.host_root / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
 
     def test_reset_exception_finalizes_and_closes_uart(self):
         import shutil
         run_id = "w7-resetfail-" + uuid.uuid4().hex[:8]
         result = self._local_run(run_id, fail_reset=True)
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         self.assertEqual(result, 1)
         self.assertEqual(data["terminal_reason"], "OSError")
         self.assertTrue(FakeSerial.instances[0].closed)
         shutil.rmtree(manifest.parent, ignore_errors=True)
-        shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+        shutil.rmtree(self.host_root / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
 
     def test_interrupt_during_reset_finalizes_incomplete_and_closes_uart(self):
         import shutil
         run_id = "w7-resetinterrupt-" + uuid.uuid4().hex[:8]
         result = self._local_run(run_id, interrupt_reset=True)
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         self.assertEqual(result, 1)
         self.assertEqual(data["terminal_reason"], "interrupted")
         self.assertEqual(data["workflow_status"], "INCOMPLETE")
         self.assertTrue(FakeSerial.instances[0].closed)
         shutil.rmtree(manifest.parent, ignore_errors=True)
-        shutil.rmtree(ROOT / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
+        shutil.rmtree(self.host_root / "logs/device/labs/lab-02" / run_id, ignore_errors=True)
 
     def test_preflight_failure_writes_partial_manifest_once(self):
         run_id = "w7-prefail-" + uuid.uuid4().hex[:8]
         result = canonical.run_canonical(FakeConfig(), mode="manual", backend="local", run_id=run_id,
+            evidence_repo=self.host_root,
             target_resolver=lambda *a: (_ for _ in ()).throw(ProjectConfigError("invalid target")),
             target_revalidator=lambda *a: "", build=lambda *a, **k: None,
             flash_build=lambda *a: None, parse=lambda *a: None)
         self.assertEqual(result, 1)
-        manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+        manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
         data = json.loads(manifest.read_text())
         self.assertEqual(data["workflow_status"], "FAIL")
         self.assertEqual(data["firmware"]["binary_sha256"], None)
@@ -627,10 +641,11 @@ class CanonicalRunTests(unittest.TestCase):
             config = FakeConfig()
             config.path_value = lambda name: Path(raw) if name == "firmware.logs" else ROOT / "config/labs.registry.yaml"
             result = canonical.run_canonical(config, mode="manual", backend="local", run_id=run_id,
+                evidence_repo=self.host_root,
                 target_resolver=lambda *a: self.fail("target must not be resolved"),
                 target_revalidator=lambda *a: "", build=lambda *a, **k: self.fail("must not build"),
                 flash_build=lambda *a: self.fail("must not flash"), parse=lambda *a: None)
-            manifest = ROOT / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
+            manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / run_id / "run-manifest.json"
             data = json.loads(manifest.read_text())
             self.assertEqual(result, 1)
             self.assertEqual(data["terminal_reason"], "unsafe_artifact_root")
@@ -658,10 +673,11 @@ class CanonicalRunTests(unittest.TestCase):
                     return local_build_dir
                 result = canonical.run_canonical(FakeConfig(), mode="manual", backend="local",
                     build_variant="recycle", seconds=1, run_id=local_id,
+                    evidence_repo=self.host_root,
                     target_resolver=lambda *a: selected, target_revalidator=lambda *a: selected.device,
                     build=local_build, flash_build=lambda *a: None,
                     parse=lambda serial_path, metrics_path: metrics_path.write_text("{}\n"))
-            manifest = ROOT / "docs/labs/evidence/lab-02/runs" / local_id / "run-manifest.json"
+            manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / local_id / "run-manifest.json"
             data = json.loads(manifest.read_text())
             self.assertEqual(result, 0)
             self.assertEqual(data["workflow_status"], "PASS")
@@ -669,8 +685,8 @@ class CanonicalRunTests(unittest.TestCase):
             self.assertEqual(data["experiment_verdict"], "UNMEASURED")
         finally:
             import shutil
-            shutil.rmtree(ROOT / "docs/labs/evidence/lab-02/runs" / local_id, ignore_errors=True)
-            shutil.rmtree(ROOT / "logs/device/labs/lab-02" / local_id, ignore_errors=True)
+            shutil.rmtree(self.host_root / "docs/labs/evidence/lab-02/runs" / local_id, ignore_errors=True)
+            shutil.rmtree(self.host_root / "logs/device/labs/lab-02" / local_id, ignore_errors=True)
             for name in ("lab02_bounded_inbox.bin", "flasher_args.json", "sdkconfig"):
                 (local_build_dir / name).unlink(missing_ok=True)
             FakeSerial.marker = b"LAB02_READY build=dev fixture=inbox_64 mode=http\n"
@@ -691,10 +707,11 @@ class CanonicalRunTests(unittest.TestCase):
                     return eager_build_dir
                 result = canonical.run_canonical(FakeConfig(), mode="manual", backend="local",
                     build_variant="eager", seconds=1, run_id=eager_id,
+                    evidence_repo=self.host_root,
                     target_resolver=lambda *a: selected, target_revalidator=lambda *a: selected.device,
                     build=eager_build, flash_build=lambda *a: None,
                     parse=lambda serial_path, metrics_path: metrics_path.write_text("{}\n"))
-            manifest = ROOT / "docs/labs/evidence/lab-02/runs" / eager_id / "run-manifest.json"
+            manifest = self.host_root / "docs/labs/evidence/lab-02/runs" / eager_id / "run-manifest.json"
             data = json.loads(manifest.read_text())
             self.assertEqual(result, 0)
             self.assertEqual(data["workflow_status"], "PASS")
@@ -702,8 +719,8 @@ class CanonicalRunTests(unittest.TestCase):
             self.assertEqual(data["firmware"]["cmake_options"]["CONFIG_LAB_AUTO_HARNESS"], "n")
         finally:
             import shutil
-            shutil.rmtree(ROOT / "docs/labs/evidence/lab-02/runs" / eager_id, ignore_errors=True)
-            shutil.rmtree(ROOT / "logs/device/labs/lab-02" / eager_id, ignore_errors=True)
+            shutil.rmtree(self.host_root / "docs/labs/evidence/lab-02/runs" / eager_id, ignore_errors=True)
+            shutil.rmtree(self.host_root / "logs/device/labs/lab-02" / eager_id, ignore_errors=True)
             for name in ("lab02_bounded_inbox.bin", "flasher_args.json", "sdkconfig"):
                 (eager_build_dir / name).unlink(missing_ok=True)
             FakeSerial.marker = b"LAB02_READY build=dev fixture=inbox_64 mode=http\n"

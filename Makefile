@@ -6,14 +6,29 @@ ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 ifeq ($(OS),Windows_NT)
   ifeq ($(origin GITBASH),undefined)
-    _GIT_BASH := $(wildcard $(ProgramW6432)/Git/bin/bash.exe)
-    ifeq ($(_GIT_BASH),)
-      _GIT_BASH := $(wildcard $(LOCALAPPDATA)/Programs/Git/bin/bash.exe)
-    endif
-    ifneq ($(_GIT_BASH),)
-      GITBASH := "$(firstword $(_GIT_BASH))"
+    # wildcard cannot see "Program Files". Quote a forward-slash path so both
+    # cmd and the Git Bash sh that a nested make inherits can execute it.
+    ifneq ($(strip $(ProgramW6432)),)
+      GITBASH := "$(subst \,/,$(ProgramW6432))/Git/bin/bash.exe"
     else
-      GITBASH := "$(ProgramW6432)/Git/bin/bash.exe"
+      ifneq ($(strip $(ProgramFiles)),)
+        GITBASH := "$(subst \,/,$(ProgramFiles))/Git/bin/bash.exe"
+      else
+        ifneq ($(strip $(LOCALAPPDATA)),)
+          _LOCAL_BASH := $(subst \,/,$(LOCALAPPDATA))/Programs/Git/bin/bash.exe
+          ifeq ($(shell test -f "$(_LOCAL_BASH)" && echo yes),yes)
+            GITBASH := "$(_LOCAL_BASH)"
+          endif
+        endif
+        ifeq ($(origin GITBASH),undefined)
+          _GIT_BASH := $(wildcard /usr/bin/bash)
+          ifneq ($(_GIT_BASH),)
+            GITBASH := "$(firstword $(_GIT_BASH))"
+          else
+            GITBASH := bash
+          endif
+        endif
+      endif
     endif
   endif
 else

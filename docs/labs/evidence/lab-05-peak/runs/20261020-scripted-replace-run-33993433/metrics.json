@@ -1,0 +1,646 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261020-scripted-replace-run-33993433",
+  "schema_version": "lab05-peak-trace/v1",
+  "parser_version": "lab05-peak-parser/v2",
+  "evidence_provenance": "hardware",
+  "provenance_context": {
+    "kind": "device_serial_capture",
+    "target_id": "audrey-kit",
+    "post_reset": true
+  },
+  "evidence": {
+    "status": "INCOMPLETE",
+    "trace_loss": "UNKNOWN",
+    "firmware_trace_loss": {
+      "status": "UNKNOWN",
+      "dropped_events": null,
+      "oversized_events": null,
+      "malformed_rows": null
+    },
+    "missing": [
+      "anim_frame_us"
+    ]
+  },
+  "lab_metrics": {
+    "experiment_inputs": [
+      "P-alloc-fail",
+      "P-stale-callback",
+      "P-cancel"
+    ],
+    "experiment_verdict": "UNMEASURED",
+    "control": "replace",
+    "scenarios": {
+      "P-overlap": {
+        "class": "exploratory",
+        "terminal": null,
+        "terminal_count": null,
+        "reason": null,
+        "observation": {
+          "terminal": null,
+          "terminal_count": null,
+          "repetition_count": null,
+          "missing_reason": "no trace rows"
+        },
+        "operations": []
+      },
+      "P-replace": {
+        "class": "exploratory",
+        "terminal": null,
+        "terminal_count": null,
+        "reason": null,
+        "observation": {
+          "terminal": "success",
+          "terminal_count": 1,
+          "repetition_count": 20,
+          "reason": "ok",
+          "live_image_count": 1,
+          "control": "replace"
+        },
+        "operations": [
+          {
+            "operation_id": 2,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 3,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 1,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 5,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 6,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 4,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 8,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 9,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 7,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 11,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 12,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 10,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 14,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 15,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 13,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 17,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 18,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 16,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 20,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 21,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 19,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 23,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 24,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 22,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 26,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 27,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 25,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 29,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 30,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 28,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 32,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 33,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 31,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 35,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 36,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 34,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 38,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 39,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 37,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 41,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 42,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 40,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 44,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 45,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 43,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 47,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 48,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 46,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 50,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 51,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 49,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 53,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 54,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 52,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 56,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 57,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 55,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          },
+          {
+            "operation_id": 59,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 60,
+            "kind": "worker",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "done",
+            "control": "replace"
+          },
+          {
+            "operation_id": 58,
+            "kind": "repetition",
+            "terminal": "success",
+            "terminal_count": 1,
+            "reason": "ok",
+            "control": "replace"
+          }
+        ]
+      },
+      "P-alloc-fail": {
+        "class": "decided",
+        "terminal": null,
+        "terminal_count": null,
+        "reason": null,
+        "observation": {
+          "terminal": null,
+          "terminal_count": null,
+          "repetition_count": null,
+          "missing_reason": "no trace rows"
+        },
+        "operations": []
+      },
+      "P-stale-callback": {
+        "class": "decided",
+        "terminal": null,
+        "terminal_count": null,
+        "reason": null,
+        "observation": {
+          "terminal": null,
+          "terminal_count": null,
+          "repetition_count": null,
+          "missing_reason": "no trace rows"
+        },
+        "operations": []
+      },
+      "P-cancel": {
+        "class": "decided",
+        "terminal": null,
+        "terminal_count": null,
+        "reason": null,
+        "observation": {
+          "terminal": null,
+          "terminal_count": null,
+          "repetition_count": null,
+          "missing_reason": "no trace rows"
+        },
+        "operations": []
+      }
+    },
+    "series": {
+      "lvgl_high_water_bytes": {
+        "unit": "bytes",
+        "sample_count": 20,
+        "missing_reason": null,
+        "provenance": "hardware",
+        "max": 11436,
+        "p50": 11436,
+        "p95": 11436,
+        "p99": 11436
+      },
+      "lvgl_largest_free_bytes": {
+        "unit": "bytes",
+        "sample_count": 20,
+        "missing_reason": null,
+        "provenance": "hardware",
+        "max": 52012,
+        "p50": 51924,
+        "p95": 51988,
+        "p99": 52012
+      },
+      "internal_largest_free_bytes": {
+        "unit": "bytes",
+        "sample_count": 20,
+        "missing_reason": null,
+        "provenance": "hardware",
+        "max": 94208,
+        "p50": 94208,
+        "p95": 94208,
+        "p99": 94208
+      },
+      "psram_largest_free_bytes": {
+        "unit": "bytes",
+        "sample_count": 20,
+        "missing_reason": null,
+        "provenance": "hardware",
+        "max": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      },
+      "anim_frame_us": {
+        "unit": "us",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "sample_count": 0,
+        "missing_reason": "no finite samples",
+        "provenance": "unmeasured/blocked"
+      },
+      "temp_image_bytes": {
+        "unit": "bytes",
+        "sample_count": 60,
+        "missing_reason": null,
+        "provenance": "hardware",
+        "max": 28800,
+        "p50": 28800,
+        "p95": 28800,
+        "p99": 28800
+      }
+    }
+  }
+}

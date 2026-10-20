@@ -1,0 +1,65 @@
+{
+  "document": "family-link.lab-trace-schema/v1",
+  "schema": "lab05-peak-trace/v1",
+  "prefix": "LAB05_PEAK_TRACE",
+  "measured_on_device": false,
+  "required_fields": [
+    "scenario",
+    "control",
+    "terminal",
+    "operation_id",
+    "terminal_count",
+    "live_image_count"
+  ],
+  "model_accounting_fields": [
+    "class",
+    "reason",
+    "temp_image_bytes",
+    "kind"
+  ],
+  "device_metric_fields": [
+    "lvgl_high_water_bytes",
+    "lvgl_largest_free_bytes",
+    "internal_largest_free_bytes",
+    "psram_largest_free_bytes",
+    "anim_frame_us"
+  ],
+  "device_metric_policy": "Host model rows emit each device metric name with the token unmeasured. This package does not claim those metrics were measured on a device.",
+  "terminals": ["success", "failure", "cancelled", "stale", "timed_out"],
+  "controls": ["persistent", "replace"],
+  "experiment_inputs": ["P-alloc-fail", "P-stale-callback", "P-cancel"],
+  "scenarios": [
+    {
+      "id": "P-overlap",
+      "class": "exploratory",
+      "experiment_input": false,
+      "repetitions": 20,
+      "terminal": "success"
+    },
+    {
+      "id": "P-replace",
+      "class": "exploratory",
+      "experiment_input": false,
+      "terminal": "success or failure alloc"
+    },
+    {
+      "id": "P-alloc-fail",
+      "class": "decided",
+      "experiment_input": true,
+      "terminal": "failure",
+      "reason": "alloc"
+    },
+    {
+      "id": "P-stale-callback",
+      "class": "decided",
+      "experiment_input": true,
+      "terminal": "stale"
+    },
+    {
+      "id": "P-cancel",
+      "class": "decided",
+      "experiment_input": true,
+      "terminal": "cancelled"
+    }
+  ]
+}

@@ -59,7 +59,8 @@ class ManagedLab02Server:
 
     def __init__(self, config: Lab02WorkflowConfig, *, run_id: str | None = None,
                  event_sink: Callable[[dict], None] | None = None,
-                 log_path: str | Path | None = None, max_log_bytes: int = 64 * 1024):
+                 log_path: str | Path | None = None, max_log_bytes: int = 64 * 1024,
+                 artifact_root: Path | None = None):
         self.config = config
         self.run_id = run_id or uuid.uuid4().hex
         self._events = event_sink or (lambda event: None)
@@ -74,6 +75,7 @@ class ManagedLab02Server:
         self._cleanup_failure_recorded = False
         self._process: subprocess.Popen | None = None
         self.log_path = Path(log_path) if log_path is not None else None
+        self._artifact_root = Path(artifact_root) if artifact_root is not None else ROOT
         self.max_log_bytes = max_log_bytes
         self._log_sink: BoundedRedactingLog | None = None
         self._log_threads: list[threading.Thread] = []
@@ -309,7 +311,7 @@ class ManagedLab02Server:
         self._log_threads = []
         self._log_sink = None
         try:
-            artifact_path = self.log_path.resolve().relative_to(ROOT.resolve()).as_posix()
+            artifact_path = self.log_path.resolve().relative_to(self._artifact_root.resolve()).as_posix()
         except (ValueError, OSError):
             artifact_path = self.log_path.name
         self._event("server_log", "SERVER_LOG", "success", "",

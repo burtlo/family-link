@@ -67,7 +67,8 @@ Do not commit secrets or household data.
 | `LAB-02` | [STATUS.md](lab-02/STATUS.md) (checklist; reports when published); see existing run evidence under `lab-02/runs/` |
 | `LAB-03` | [LAB-03/v2 report](lab-03/REPORT-LAB-03-v2.md) · [independent verification](lab-03/independent-verification.md) |
 | `LAB-04` | [LAB-04/v1 report](lab-04/REPORT-LAB-04-v1.md) · [20261020 postrun QUAL review](lab-04/reviews/20261020-LAB04-POSTRUN-QUAL-001/standards-review.md) · [current-run raw hash ledger and parser derivatives](lab-04/reviews/20261020-LAB04-POSTRUN-QUAL-001/raw-artifact-hashes.json) · [TRACE-PEAK-001 review](lab-04/reviews/20261019-LAB04-TRACE-PEAK-001/standards-review.md) — **software-qualified L0/L1; manual and scripted current-build workflow/experiment PASS observed; firmware trace loss UNKNOWN; L04-05 observed; L04-06 measurements captured but performance UNMEASURED; L04-07 and independent L04-DEVICE qualification pending**
-| `LAB-05` | [Manual run](lab-05/runs/20261017-manual-run-fd3cc46d/run-manifest.json) · [scripted run](lab-05/runs/20261017-scripted-run-5a9c9dd1/run-manifest.json) |
+| `LAB-05` | [Manual run](lab-05/runs/20261017-manual-run-fd3cc46d/run-manifest.json) · [scripted run](lab-05/runs/20261017-scripted-run-5a9c9dd1/run-manifest.json) · [20261020 scripted lifecycle](lab-05/runs/20261020-scripted-run-c5962756/run-manifest.json) |
+| `LAB-05` peak | [LAB-05/v1-peak report](lab-05-peak/REPORT-LAB-05-peak-v1.md) — **L0/L1 software-qualified; L2 captures recorded on audrey-kit; L3 series recorded; performance UNMEASURED; persistent root, replace, cover visual, and performance budget OPEN** |
 | … | Add rows when reports land |
 
 Update this table when publishing a report.

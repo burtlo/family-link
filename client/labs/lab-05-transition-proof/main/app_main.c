@@ -1,3 +1,16 @@
+#include "sdkconfig.h"
+
+#if CONFIG_LAB05_PEAK
+
+#include "lab05_peak_harness.h"
+
+void app_main(void)
+{
+    lab05_peak_harness_main();
+}
+
+#else
+
 #include <stdio.h>
 
 #include "bsp/esp-bsp.h"
@@ -107,3 +120,5 @@ void app_main(void)
     xTaskCreate(scripted_harness, "lab05_harness", 3072, NULL, 4, NULL);
 #endif
 }
+
+#endif

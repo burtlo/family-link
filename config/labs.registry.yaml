@@ -117,6 +117,52 @@ labs:
         Touch NEXT on BOX-3 once to move between the two proof states. This is a
         bounded lifecycle integration proof only; it is not a resource measurement.
 
+  lab05peak:
+    adapter: lab05peak
+    lab_id: LAB-05
+    evidence_slug: lab-05-peak
+    project_dir: client/labs/lab-05-transition-proof
+    target: esp32s3
+    description: Resource-peak harness for a persistent root and a replace control; no server
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-05-transition-proof-peak-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.peak
+      scripted:
+        build_dir: build/labs/lab-05-transition-proof-peak-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+          - sdkconfig.defaults.peak
+      replace:
+        build_dir: build/labs/lab-05-transition-proof-peak-replace
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.peak
+          - sdkconfig.defaults.peak.replace
+      scripted-replace:
+        build_dir: build/labs/lab-05-transition-proof-peak-scripted-replace
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+          - sdkconfig.defaults.peak
+          - sdkconfig.defaults.peak.replace
+    trace_parser: client/labs/lab-05-transition-proof/tools/parse_lab05_peak.py
+    run:
+      capture_seconds_default: 90
+      flash_by_default: true
+      instructions: |
+        Manual capture exercises one persistent overlap, allocation failure, stale
+        callback, or cancel. Scripted capture runs the persistent harness and
+        requires LAB05_PEAK_HARNESS_DONE status=complete control=persistent after
+        the armed reset. VARIANT=replace and VARIANT=scripted-replace select the
+        replace control. This registration has no server. Decided experiment
+        inputs are allocation failure, stale callback, and cancel. Overlap and
+        replace stay exploratory observations.
+
   lab03:
     adapter: lab03
     lab_id: LAB-03

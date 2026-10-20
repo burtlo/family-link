@@ -173,7 +173,8 @@ def run_canonical(config, *, mode: str, kit: str = "", port: str = "", seconds: 
                   backend: str = "managed-http",
                   build_variant: str = "phaseb",
                   target_resolver, target_revalidator, build, flash_build, parse,
-                  evidence=None, outcome_sink=None):
+                  evidence=None, outcome_sink=None,
+                  evidence_repo: Path | None = None):
     """Run LAB-02 end-to-end. The injected callbacks are the established lab_host adapters."""
     from lab02_workflow_config import Lab02WorkflowConfigError
     from lab02_server import ServerLifecycleError
@@ -182,7 +183,7 @@ def run_canonical(config, *, mode: str, kit: str = "", port: str = "", seconds: 
     rid = run_id or datetime.now(timezone.utc).strftime("%Y%m%d-") + uuid.uuid4().hex[:10]
     owned_evidence = evidence is None
     if evidence is None:
-        evidence = EvidenceRun(ROOT, rid, {"lab_revision": "v1", "operator": "human" if mode == "manual" else "harness",
+        evidence = EvidenceRun(evidence_repo or ROOT, rid, {"lab_revision": "v1", "operator": "human" if mode == "manual" else "harness",
         "scenarios": ["nominal"], "hardware": {"kit_nickname": None},
         "build": {"status": "not_started"}, "capture": {"status": "not_started"}})
     evidence_path = evidence.run_dir
@@ -225,7 +226,7 @@ def run_canonical(config, *, mode: str, kit: str = "", port: str = "", seconds: 
         if no_build:
             raise ProjectConfigError("canonical run cannot prove a matching prior build")
         configured_logs = config.path_value("firmware.logs").resolve()
-        expected_logs = (ROOT / "logs/device").resolve()
+        expected_logs = (evidence.repo_root / "logs" / "device").resolve()
         if configured_logs != expected_logs:
             raise ProjectConfigError("unsafe_artifact_root")
         log_dir = configured_logs / "labs" / "lab-02" / rid
@@ -242,7 +243,8 @@ def run_canonical(config, *, mode: str, kit: str = "", port: str = "", seconds: 
         server_log_path = evidence_path / "server.log" if spec else None
         server = (ManagedLab02Server(spec, run_id=rid,
                                      event_sink=lambda event: record_event({**event, "source": "server"}),
-                                     log_path=server_log_path) if spec else None)
+                                     log_path=server_log_path,
+                                     artifact_root=evidence.repo_root) if spec else None)
         scenario_name = spec.scenario_default if spec else local_scenario
         client_url = spec.client_url if spec else ""
         frozen_source_sha = _hash_tree(ROOT / "client/labs/lab-02-bounded-inbox")
@@ -549,7 +551,7 @@ def run_canonical(config, *, mode: str, kit: str = "", port: str = "", seconds: 
             except Exception: cleanup_ok = False
             if server_log_path is not None and server_log_path.is_file():
                 try:
-                    artifact_path = server_log_path.resolve().relative_to(ROOT.resolve()).as_posix()
+                    artifact_path = server_log_path.resolve().relative_to(evidence.repo_root).as_posix()
                 except (OSError, ValueError):
                     artifact_path = None
                 if artifact_path:

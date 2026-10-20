@@ -1,0 +1,22 @@
+{
+  "document": "family-link.lab05-peak-page/v1",
+  "record_count": 16,
+  "records": [
+    {"summary_id": 1, "label": "summary-01"},
+    {"summary_id": 2, "label": "summary-02"},
+    {"summary_id": 3, "label": "summary-03"},
+    {"summary_id": 4, "label": "summary-04"},
+    {"summary_id": 5, "label": "summary-05"},
+    {"summary_id": 6, "label": "summary-06"},
+    {"summary_id": 7, "label": "summary-07"},
+    {"summary_id": 8, "label": "summary-08"},
+    {"summary_id": 9, "label": "summary-09"},
+    {"summary_id": 10, "label": "summary-10"},
+    {"summary_id": 11, "label": "summary-11"},
+    {"summary_id": 12, "label": "summary-12"},
+    {"summary_id": 13, "label": "summary-13"},
+    {"summary_id": 14, "label": "summary-14"},
+    {"summary_id": 15, "label": "summary-15"},
+    {"summary_id": 16, "label": "summary-16"}
+  ]
+}

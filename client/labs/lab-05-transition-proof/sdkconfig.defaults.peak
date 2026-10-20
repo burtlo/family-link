@@ -1,0 +1,6 @@
+# Peak arm. Listed after the lifecycle defaults so this build id replaces
+# lab05-manual-v1 / lab05-scripted-v1. Does not set CONFIG_LAB05_SCRIPTED or
+# CONFIG_LAB05_PEAK_REPLACE. Does not change CONFIG_LV_MEM_SIZE: the LVGL
+# pool stays on the existing default and 65536 is not a pass threshold.
+CONFIG_LAB05_PEAK=y
+CONFIG_LAB05_BUILD_ID="lab05-peak-v1"

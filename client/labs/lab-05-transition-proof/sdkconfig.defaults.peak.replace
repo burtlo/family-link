@@ -1,0 +1,5 @@
+# Replace control. List this file after sdkconfig.defaults.peak so the
+# build id stays distinct from the persistent peak id and from the
+# lifecycle ids.
+CONFIG_LAB05_PEAK_REPLACE=y
+CONFIG_LAB05_BUILD_ID="lab05-peak-replace-v1"

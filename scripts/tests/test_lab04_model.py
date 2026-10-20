@@ -1,13 +1,30 @@
 """Focused native-model checks for the LAB-04 production domain component."""
 import hashlib
 import json
+import os
 import pathlib
+import shutil
 import subprocess
 import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 LAB = ROOT / "client/labs/lab-04-sketch-format"
+
+
+def _native_env():
+    """Keep the compiled binary on the same C++ runtime that built it.
+
+    ``make test`` starts Python from Git Bash, whose ``PATH`` lists Git's
+    MinGW DLLs before the ``c++`` that compiles this harness. Loading that
+    other ``libstdc++`` crashes the process (Windows heap status 0xC0000374).
+    """
+    env = os.environ.copy()
+    compiler = shutil.which("c++")
+    if compiler:
+        bindir = str(pathlib.Path(compiler).resolve().parent)
+        env["PATH"] = bindir + os.pathsep + env.get("PATH", "")
+    return env
 
 
 class Lab04ModelTests(unittest.TestCase):
@@ -21,11 +38,12 @@ class Lab04ModelTests(unittest.TestCase):
             "-I", str(LAB / "main"),
             str(LAB / "components/lab04_format/model.cpp"),
             str(LAB / "tests/model_test.cpp"), "-o", str(cls.binary),
-        ], check=True, cwd=ROOT)
+        ], check=True, cwd=ROOT, env=_native_env())
         cls.output_dir = pathlib.Path(cls.temp.name) / "variant-output"
         cls.output_dir.mkdir()
         subprocess.run([str(cls.binary), str(LAB / "fixtures/corpus-b.csv"),
-                        str(LAB / "fixtures/dense.sketch"), str(cls.output_dir)], check=True)
+                        str(LAB / "fixtures/dense.sketch"), str(cls.output_dir)],
+                       check=True, env=_native_env())
 
     @classmethod
     def tearDownClass(cls):
@@ -33,7 +51,7 @@ class Lab04ModelTests(unittest.TestCase):
 
     def test_lab04_roundtrip_and_fault_contracts(self):
         subprocess.run([str(self.binary), str(LAB / "fixtures/corpus-b.csv"),
-                        str(LAB / "fixtures/dense.sketch")], check=True)
+                        str(LAB / "fixtures/dense.sketch")], check=True, env=_native_env())
 
     def test_lab04_preview_bytes(self):
         manifest = json.loads((LAB / "fixtures/manifest.json").read_text())
@@ -54,8 +72,8 @@ class Lab04ModelTests(unittest.TestCase):
             "c++", "-std=c++14", "-Wall", "-Wextra", "-Werror", "-pedantic", "-pthread",
             "-I", str(LAB / "main"), str(LAB / "tests/failure_publication_test.cpp"),
             "-o", str(binary),
-        ], check=True, cwd=ROOT)
-        subprocess.run([str(binary)], check=True, cwd=ROOT)
+        ], check=True, cwd=ROOT, env=_native_env())
+        subprocess.run([str(binary)], check=True, cwd=ROOT, env=_native_env())
 
     def test_app_queue_callbacks_are_installed_after_resources_and_removed_before_cleanup(self):
         source = (LAB / "main/app_main.cpp").read_text()

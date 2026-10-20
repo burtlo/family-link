@@ -130,6 +130,7 @@ def build_catalog(schema_path: Path | None = None) -> dict[str, object]:
             "trace_parser, when set, must reference an existing file",
             "run.instructions or run.instructions_doc is required (operator runbook)",
             "instructions_doc path must exist; anchor is optional (#heading-id)",
+            "evidence_slug is unique; lab_id and project_dir are unique except the LAB-05 lab05/lab05peak pair",
         ],
         "docs": str(ROOT / DOCS_RELATIVE),
         "product_registry_docs": str(ROOT / "docs/labs/README.md"),
@@ -220,6 +221,15 @@ def operator_help_lines(
     elif spec.make_name == "lab02":
         lines.append(f"Managed capture: {capture_s}s after a fresh boot marker; set SECONDS= to override.")
         lines.append("The host writes the serial log, metrics, and run manifest.")
+    elif spec.make_name == "lab05peak":
+        lines.append(
+            f"Host serial capture: {capture_s}s after an armed reset "
+            "(set SECONDS= to override capture_seconds_default in labs.registry.yaml)."
+        )
+        lines.append(
+            "Scripted workflow completion requires LAB05_PEAK_HARNESS_DONE after that reset. "
+            "This lab has no server."
+        )
     else:
         lines.append(
             f"Host serial capture: {capture_s}s after flash "
@@ -275,6 +285,8 @@ def run_mode_hint_lines(spec: LabSpec) -> list[str]:
     ])
     if spec.make_name == "lab04":
         lines.append("  BACKEND=managed-http (required); local comparison is unsupported")
+    elif spec.make_name == "lab05peak":
+        lines.append("  BACKEND is unsupported; this lab has no server and binds no port")
     else:
         lines.append("  BACKEND=<backend>  managed-http (default) or local comparison")
     return lines
@@ -340,6 +352,60 @@ def _parse_registry(raw: dict[str, Any], registry_file: Path) -> dict[str, LabSp
     return specs
 
 
+_LAB05_PEAK_PROJECT = "client/labs/lab-05-transition-proof"
+_LAB05_PEAK_PAIR = frozenset({"lab05", "lab05peak"})
+
+
+def _lab05_peak_share_allowed(specs: dict[str, LabSpec], names: set[str]) -> bool:
+    """True only for the lifecycle lab05 entry paired with lab05peak."""
+    if names != _LAB05_PEAK_PAIR:
+        return False
+    lifecycle = specs["lab05"]
+    peak = specs["lab05peak"]
+    if lifecycle.lab_id != "LAB-05" or peak.lab_id != "LAB-05":
+        return False
+    if lifecycle.evidence_slug != "lab-05" or peak.evidence_slug != "lab-05-peak":
+        return False
+    if lifecycle.project_dir.as_posix() != _LAB05_PEAK_PROJECT:
+        return False
+    if peak.project_dir.as_posix() != _LAB05_PEAK_PROJECT:
+        return False
+    if lifecycle.adapter_key != "generic" or peak.adapter_key != "lab05peak":
+        return False
+    if set(lifecycle.variants) != {"manual", "scripted"}:
+        return False
+    return True
+
+
+def enforce_unique_registration(specs: dict[str, LabSpec]) -> None:
+    """Reject shared identity fields except the one LAB-05 lifecycle/peak pair.
+
+    evidence_slug is unique across every entry. lab_id and project_dir are
+    unique except when the only sharers are make names lab05 and lab05peak
+    with the lifecycle and peak identities above.
+    """
+    by_lab: dict[str, set[str]] = {}
+    by_project: dict[str, set[str]] = {}
+    by_slug: dict[str, str] = {}
+    for make_name, spec in specs.items():
+        by_lab.setdefault(spec.lab_id, set()).add(make_name)
+        by_project.setdefault(spec.project_dir.as_posix(), set()).add(make_name)
+        previous = by_slug.get(spec.evidence_slug)
+        if previous is not None:
+            raise LabRegistryError(
+                f"evidence_slug {spec.evidence_slug} is shared by lab.{previous} and lab.{make_name}"
+            )
+        by_slug[spec.evidence_slug] = make_name
+    for lab_id, names in by_lab.items():
+        if len(names) > 1 and not _lab05_peak_share_allowed(specs, names):
+            joined = ", ".join(f"lab.{name}" for name in sorted(names))
+            raise LabRegistryError(f"lab_id {lab_id} is shared by {joined}")
+    for project_dir, names in by_project.items():
+        if len(names) > 1 and not _lab05_peak_share_allowed(specs, names):
+            joined = ", ".join(f"lab.{name}" for name in sorted(names))
+            raise LabRegistryError(f"project_dir {project_dir} is shared by {joined}")
+
+
 def load_registry_yaml(registry_file: Path) -> dict[str, Any]:
     if not registry_file.is_file():
         raise LabRegistryError(f"Lab registry not found: {registry_file}")
@@ -359,7 +425,9 @@ def load_registry(
     raw = load_registry_yaml(registry_file)
     if validate_schema:
         validate_document_schema(raw, project=project)
-    return _parse_registry(raw, registry_file)
+    specs = _parse_registry(raw, registry_file)
+    enforce_unique_registration(specs)
+    return specs
 
 
 def get_lab(

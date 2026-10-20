@@ -344,7 +344,7 @@ HTTPServer((a.host,a.port),H).serve_forever()
             child.returncode = -signal.SIGTERM
         manager._process = child
 
-        with patch("lab02_server.os.kill", side_effect=deliver_sigterm):
+        with patch("lab02_server.os.name", "posix"), patch("lab02_server.os.kill", side_effect=deliver_sigterm):
             manager.close()
 
         exit_event = next(e for e in events if e["action_id"] == "server_process_exit")
@@ -368,7 +368,7 @@ HTTPServer((a.host,a.port),H).serve_forever()
             child.returncode = -signal.SIGTERM
             raise ProcessLookupError
 
-        with patch("lab02_server.os.kill", side_effect=child_disappeared):
+        with patch("lab02_server.os.name", "posix"), patch("lab02_server.os.kill", side_effect=child_disappeared):
             manager.close()
 
         exit_event = next(e for e in events if e["action_id"] == "server_process_exit")

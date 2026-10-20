@@ -1,0 +1,11 @@
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","outcome":"not_configured","source":"host","stage":"service"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","outcome":"not_configured","source":"host","stage":"scenario"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"preflight"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"preflight"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"build"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","outcome":"passed","result":"C:\\Users\\lynnv\\src\\family-link-lab05\\build\\labs\\lab-05-transition-proof-peak-scripted-replace","source":"host","stage":"build"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","mode":"scripted","outcome":"running","source":"host","stage":"activity"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","mode":"scripted","outcome":"passed","source":"host","stage":"activity"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","outcome":"running","source":"host","stage":"parser"}
+{"adapter_identity":"lab05peak","adapter_version":"v1","kind":"stage","outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"post_reset_capture_parsed","source":"host","workflow_status":"PASS"}

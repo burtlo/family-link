@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <pthread.h>
+#include <sched.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,8 +15,22 @@ static lab02_fetch_req_t req2;
 
 static void pause_ms(long ms)
 {
+#ifdef _WIN32
+    /* nanosleep(1 ms) waits out the scheduler quantum on this host and makes
+     * the bounded race loops miss the test deadline. Spin for the requested
+     * interval, yielding so the worker can run, using a high-resolution clock. */
+    struct timespec start, now;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    long long target = (long long)start.tv_sec * 1000000000LL + start.tv_nsec
+                       + ms * 1000000LL;
+    do {
+        sched_yield();
+        clock_gettime(CLOCK_MONOTONIC, &now);
+    } while ((long long)now.tv_sec * 1000000000LL + now.tv_nsec < target);
+#else
     struct timespec delay = {.tv_sec = 0, .tv_nsec = ms * 1000000};
     nanosleep(&delay, NULL);
+#endif
 }
 
 static lab02_fetch_req_t boot_req;

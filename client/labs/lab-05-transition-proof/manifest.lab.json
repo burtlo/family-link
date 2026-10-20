@@ -10,5 +10,11 @@
   "trace_schema": "lab05-transition/v1",
   "run_manifest": "docs/labs/schemas/run-manifest.v2.md",
   "workflow_runbook": "docs/labs/reusable-lab-runner-impl.md#p5--no-server-integration-proof",
-  "reference_archive": "none"
+  "reference_archive": "none",
+  "peak": {
+    "lab_revision": "v1-peak",
+    "evidence_slug": "lab-05-peak",
+    "trace_schema": "lab05-peak-trace/v1",
+    "server_path": "none"
+  }
 }

@@ -1,0 +1,14 @@
+{
+  "document": "family-link.lab05-peak-resource-budget/v1",
+  "provisional_lab_probe": true,
+  "product_budget": false,
+  "max_live_nodes": 20,
+  "max_transient_bytes": 28800,
+  "max_persistent_bytes": 28800,
+  "max_concurrent_operations": 3,
+  "max_stack_or_call_depth": 6,
+  "maximum_input_size": 57600,
+  "steady_live_images": 1,
+  "audio_stop_queue_capacity": 8,
+  "page_apply_queue_capacity": 8
+}

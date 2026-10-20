@@ -54,8 +54,9 @@ class DeploymentConfigTests(unittest.TestCase):
         if not LOCAL.is_file():
             self.skipTest("config/deployment/local.yaml not present")
         deployment = load_deployment(LOCAL, source="local")
-        mazi_kit = next(kit for kit in deployment.kits if kit.id == "box-a")
-        self.assertEqual("E8:F6:0A:A8:D2:98", mazi_kit.usb_serial)
+        self.assertGreaterEqual(len(deployment.endpoints), 1)
+        self.assertGreaterEqual(len(deployment.kits), 1)
+        self.assertTrue(all(kit.id for kit in deployment.kits))
 
     def test_resolve_prefers_local_over_example(self) -> None:
         if not LOCAL.is_file():

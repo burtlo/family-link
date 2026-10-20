@@ -16,6 +16,7 @@ _ADAPTER_MODULES = {
     "lab02": "lab_adapter_lab02",
     "lab03": "lab_adapter_lab03",
     "lab04": "lab_adapter_lab04",
+    "lab05peak": "lab_adapter_lab05peak",
     "lab10": "lab_adapter_lab10",
 }
 

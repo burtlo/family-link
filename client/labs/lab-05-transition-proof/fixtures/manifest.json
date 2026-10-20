@@ -1,0 +1,23 @@
+{
+  "document": "family-link.lab05-peak-fixtures/v1",
+  "fixture_revision": "lab05-peak-fixtures/v1",
+  "page_records": 16,
+  "image_width": 120,
+  "image_height": 120,
+  "bytes_per_pixel": 2,
+  "image_bytes": 28800,
+  "image_pair_bytes": 57600,
+  "images": {
+    "image-a.rgb565": {
+      "bytes": 28800,
+      "sha256": "9b144c64f65dfdb0a427bf1c059cc29350b5c04efa6660dc568e1c35474b551d",
+      "pattern": "rgb565-constant-0x001F"
+    },
+    "image-b.rgb565": {
+      "bytes": 28800,
+      "sha256": "383541a4ebe15b202f940b9668ca52bf153fd0eea809ce4017a9bcf807fed781",
+      "pattern": "rgb565-green-channel-index-mask-0x3F"
+    }
+  },
+  "notes": "Synthetic harness patterns. Not a photograph, a sketch wire format, or household media."
+}

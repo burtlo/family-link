@@ -33,7 +33,8 @@ def generate():
     manifest = {'fixture_version': 'lab03-media/v1', 'server_version': 'LAB-03/v1',
                 'raster': [120, 120], 'max_segments': 4096, 'sample_rate': 16000,
                 'assets': assets, 'messages': messages}
-    (ROOT / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+    manifest_text = json.dumps(manifest, indent=2, sort_keys=True) + '\n'
+    (ROOT / 'manifest.json').write_bytes(manifest_text.encode('utf-8'))
 
 if __name__ == '__main__':
     generate()

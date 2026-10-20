@@ -1,0 +1,20 @@
+menu "LAB-05 peak model"
+
+config LAB05_PEAK
+    bool "Compile the additive LAB-05 peak model"
+    default n
+    help
+        Default off. The component CMakeLists adds lab05_peak_model.c only
+        when this symbol is y. Kconfig depends-on does not keep the .c file
+        out of the lifecycle link; the CMake source list does. Firmware
+        variant sdkconfig files are not part of the model package.
+
+config LAB05_PEAK_REPLACE
+    bool "Select the peak replace control in firmware"
+    depends on LAB05_PEAK
+    default n
+    help
+        Reserved for the firmware package. The domain model implements both
+        the persistent-root and replace controls without this symbol.
+
+endmenu
