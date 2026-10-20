@@ -6,16 +6,27 @@
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
+#include <sched.h>
 #include <time.h>
 
 static atomic_int done;
 static lab02_fetch_req_t req1;
 static lab02_fetch_req_t req2;
 
+/* Let the worker run. Sleeping 1 ms on every pump exceeds the host timeout on
+ * Windows, where the scheduler tick stretches each nanosleep. Yield most
+ * calls and sleep on a few so both platforms still interleave. The caller
+ * freezes the session clock. */
 static void pause_ms(long ms)
 {
-    struct timespec delay = {.tv_sec = 0, .tv_nsec = ms * 1000000};
-    nanosleep(&delay, NULL);
+    static unsigned calls;
+    (void)ms;
+    if ((++calls % 20U) == 0U) {
+        struct timespec delay = {.tv_sec = 0, .tv_nsec = 1000000L};
+        nanosleep(&delay, NULL);
+        return;
+    }
+    sched_yield();
 }
 
 static lab02_fetch_req_t boot_req;

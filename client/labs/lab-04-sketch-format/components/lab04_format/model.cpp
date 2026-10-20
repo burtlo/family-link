@@ -10,6 +10,20 @@ namespace lab04 {
 namespace {
 constexpr char kAllocationFailureReason[] = "no_memory";
 
+#ifdef LAB04_HOST_TEST
+bool allocation_failure_armed = false;
+#endif
+
+void throw_if_allocation_failure_armed() {
+#ifdef LAB04_HOST_TEST
+    // The host test arms one failure. Replacing global operator new crashes
+    // on Windows: libstdc++ and this executable then free across two heaps.
+    if (!allocation_failure_armed) return;
+    allocation_failure_armed = false;
+    throw std::bad_alloc();
+#endif
+}
+
 void set_allocation_failure_reason(std::string& reason) {
     // This short reason fits the target std::string's inline storage, so
     // reporting the allocation failure does not need another heap allocation.
@@ -23,7 +37,9 @@ void put32(std::vector<std::uint8_t>& out, std::uint32_t v) {
     put16(out, v & 0xffff); put16(out, v >> 16);
 }
 bool get8(const std::uint8_t* p, std::size_t n, std::size_t& at, std::uint8_t& v) {
-    if (at >= n) return false; v = p[at++]; return true;
+    if (at >= n) return false;
+    v = p[at++];
+    return true;
 }
 bool get16(const std::uint8_t* p, std::size_t n, std::size_t& at, std::uint16_t& v) {
     std::uint8_t a, b; if (!get8(p,n,at,a) || !get8(p,n,at,b)) return false;
@@ -68,6 +84,12 @@ bool read_header(const std::uint8_t* p, std::size_t n, Encoding e, std::size_t& 
 }
 }
 
+#ifdef LAB04_HOST_TEST
+void arm_one_allocation_failure_for_test() {
+    allocation_failure_armed = true;
+}
+#endif
+
 bool valid_drawing(const Drawing& d, std::string* reason) {
     auto fail = [reason](const char* why) { if (reason) *reason = why; return false; };
     if (d.width != kSide || d.height != kSide) return fail("wrong_raster_size");
@@ -95,6 +117,7 @@ Result encode(const Drawing& d, Encoding e) {
             [](const Segment& s) { return s.color != kUncolored; })) {
         r.reason = "unsupported_legacy"; return r;
     }
+    throw_if_allocation_failure_armed();
     std::uint16_t record_count = static_cast<std::uint16_t>(d.segments.size());
     if (e == Encoding::TimedStrokes) {
         record_count = 0;
@@ -138,6 +161,7 @@ static bool decode_impl(const std::uint8_t* p, std::size_t n, Encoding e, Drawin
     if (n > kMaximumInputSize) { reason="input_too_large"; return false; }
     Drawing candidate; std::size_t at=0; std::uint16_t count=0;
     if (!read_header(p,n,e,at,count,candidate,reason)) return false;
+    throw_if_allocation_failure_armed();
     candidate.segments.reserve(kMaximumSegments);
     if (reservation_observer && e == Encoding::SegmentPreview) {
         // SegmentPreview's header count is the expected decoded segment count.
@@ -229,7 +253,8 @@ std::size_t raster_update(std::uint16_t* pixels, const Drawing& d, std::size_t& 
         }
         ++rendered; ++work;
     }
-    if(reason)reason->clear(); return work;
+    if (reason) reason->clear();
+    return work;
 }
 
 DecodeOperation::DecodeOperation(std::uint64_t id) { operation_.id=id; }

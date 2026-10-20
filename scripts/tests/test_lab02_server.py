@@ -328,6 +328,12 @@ HTTPServer((a.host,a.port),H).serve_forever()
         self.assertTrue(any(e["action_id"] == "server_process_exit" and e.get("exit_code") == 0
                             for e in events))
 
+    @unittest.skipUnless(
+        os.name == "posix",
+        f"Cannot run on os.name={os.name!r}: this platform does not stop a child "
+        "with POSIX SIGTERM. Parallel coverage: "
+        "test_non_posix_terminate_fallback_does_not_claim_signal_delivery.",
+    )
     def test_close_records_deliberate_sigterm_as_expected_shutdown(self):
         events = []
         manager = ManagedLab02Server(config(12345), event_sink=events.append)
@@ -352,6 +358,12 @@ HTTPServer((a.host,a.port),H).serve_forever()
         self.assertEqual(exit_event["reason"], "expected_shutdown")
         self.assertEqual(exit_event["exit_code"], -signal.SIGTERM)
 
+    @unittest.skipUnless(
+        os.name == "posix",
+        f"Cannot run on os.name={os.name!r}: this platform does not stop a child "
+        "with POSIX SIGTERM. Parallel coverage: "
+        "test_non_posix_terminate_fallback_does_not_claim_signal_delivery.",
+    )
     def test_close_does_not_attribute_sigterm_when_child_exits_before_signal_delivery(self):
         events = []
         manager = ManagedLab02Server(config(12345), event_sink=events.append)
@@ -377,6 +389,7 @@ HTTPServer((a.host,a.port),H).serve_forever()
         self.assertEqual(exit_event["exit_code"], -signal.SIGTERM)
 
     def test_non_posix_terminate_fallback_does_not_claim_signal_delivery(self):
+        """Windows parallel for the two POSIX SIGTERM close tests."""
         events = []
         manager = ManagedLab02Server(config(12345), event_sink=events.append)
         class FallbackChild:

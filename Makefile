@@ -5,17 +5,38 @@
 ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 ifeq ($(OS),Windows_NT)
+  EMPTY :=
+  SPACE := $(EMPTY) $(EMPTY)
+  # wildcard splits on spaces. Escape them after turning backslashes into slashes.
+  _win_path = $(subst $(SPACE),\ ,$(subst \,/,$(1)))
   ifeq ($(origin GITBASH),undefined)
-    _GIT_BASH := $(wildcard $(ProgramW6432)/Git/bin/bash.exe)
+    # ProgramW6432 is not a reliable make variable: a copied Windows environment
+    # can spell it in a different case, and GNU make looks names up exactly.
+    _GIT_BASH := $(wildcard C:/Program\ Files/Git/bin/bash.exe)
     ifeq ($(_GIT_BASH),)
-      _GIT_BASH := $(wildcard $(LOCALAPPDATA)/Programs/Git/bin/bash.exe)
+      _X86_GIT := C:/Program Files (x86)/Git/bin/bash.exe
+      _GIT_BASH := $(wildcard $(call _win_path,$(_X86_GIT)))
     endif
-    ifneq ($(_GIT_BASH),)
-      GITBASH := "$(firstword $(_GIT_BASH))"
-    else
-      GITBASH := "$(ProgramW6432)/Git/bin/bash.exe"
+    ifeq ($(_GIT_BASH),)
+      _GIT_BASH := $(wildcard $(call _win_path,$(LOCALAPPDATA)/Programs/Git/bin/bash.exe))
     endif
+    ifeq ($(_GIT_BASH),)
+      $(error Git for Windows bash was not found. Install Git or set GITBASH= to bash.exe)
+    endif
+    GITBASH := "$(_GIT_BASH)"
   endif
+  # This GNU make looks for sh.exe before it can run a recipe. Recipes invoke
+  # Git bash themselves, so cmd.exe only has to launch that quoted path.
+  # SystemRoot has the same case-sensitive lookup problem as ProgramW6432.
+  _CMD := $(wildcard C:/Windows/System32/cmd.exe)
+  ifeq ($(_CMD),)
+    _CMD := $(wildcard $(call _win_path,$(SystemRoot)/System32/cmd.exe))
+  endif
+  ifeq ($(_CMD),)
+    _CMD := $(wildcard $(call _win_path,$(SYSTEMROOT)/System32/cmd.exe))
+  endif
+  SHELL := $(_CMD)
+  .SHELLFLAGS := /c
 else
   ifeq ($(origin GITBASH),undefined)
     GITBASH := bash

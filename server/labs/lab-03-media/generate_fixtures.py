@@ -33,7 +33,9 @@ def generate():
     manifest = {'fixture_version': 'lab03-media/v1', 'server_version': 'LAB-03/v1',
                 'raster': [120, 120], 'max_segments': 4096, 'sample_rate': 16000,
                 'assets': assets, 'messages': messages}
-    (ROOT / 'manifest.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+    text = json.dumps(manifest, indent=2, sort_keys=True) + '\n'
+    # LF bytes stay identical on Windows and macOS. write_text() would use the locale newline.
+    (ROOT / 'manifest.json').write_bytes(text.encode('utf-8'))
 
 if __name__ == '__main__':
     generate()
