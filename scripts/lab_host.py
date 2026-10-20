@@ -516,7 +516,38 @@ def flash_lab_build(config: ProjectConfig, build_dir: Path, port: str) -> None:
     for offset, filename in meta["flash_files"].items():
         cmd.extend([offset, str(build_dir / filename)])
     timeout = config.integer("command.flash.timeout_seconds", default=180, minimum=1)
+    _print_pre_reset_operator_briefing(config, build_dir)
     subprocess.run(cmd, check=True, timeout=timeout)
+
+
+def _print_pre_reset_operator_briefing(config: ProjectConfig, build_dir: Path) -> None:
+    """Put the registered lab's next action next to the firmware reset step."""
+    try:
+        resolved_build_dir = build_dir.resolve()
+        specs = load_registry(project=config)
+        match = next(
+            (
+                (spec, variant)
+                for spec in specs.values()
+                for variant in spec.variants.values()
+                if (ROOT / variant.build_dir).resolve() == resolved_build_dir
+            ),
+            None,
+        )
+    except (OSError, ProjectConfigError, StopIteration):
+        match = None
+    if match is None:
+        return
+    spec, variant = match
+    body = [
+        "Read these steps before the board resets.",
+        f"After upload, wait for the {spec.lab_id} screen, then:",
+    ]
+    if spec.run_instructions:
+        body.extend(f"  {line.strip()}" for line in spec.run_instructions.splitlines() if line.strip())
+    if spec.run_instructions_doc:
+        body.append(f"  Guide: {spec.run_instructions_doc}")
+    _print_run_banner(f"OPERATOR STEPS BEFORE RESET: {spec.lab_id} ({variant.name})", body)
 
 
 def capture_serial(port: str, log_path: Path, seconds: int) -> None:

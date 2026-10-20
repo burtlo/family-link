@@ -1,0 +1,9 @@
+menu "LAB-06 stage shell"
+    config LAB06_SCRIPTED
+        bool "Run scripted stage lifecycle"
+        default n
+
+    config LAB06_BUILD_ID
+        string "LAB-06 firmware build identity"
+        default "lab06-fw-unconfigured"
+endmenu

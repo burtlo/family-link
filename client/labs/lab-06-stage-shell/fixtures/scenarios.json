@@ -1,0 +1,21 @@
+{
+  "document": "family-link.lab06-scenarios/v1",
+  "fixture_revision": "lab06-stage-shell/v1",
+  "experiment_inputs": [
+    "H-cycle",
+    "H-data",
+    "H-data-during-exit",
+    "H-level2-control",
+    "H-destroyed",
+    "H-cancel"
+  ],
+  "scenarios": [
+    {"id":"H-cycle", "class":"decided", "expected_terminal":"success", "repetitions_per_stage":20},
+    {"id":"H-data", "class":"decided", "expected_terminal":"success", "update_levels":[0,1], "preserve":["focused_synthetic_id"]},
+    {"id":"H-data-during-exit", "class":"decided", "expected_terminal":["success","stale"], "old_panel_text_visible":0},
+    {"id":"H-level2-control", "class":"decided", "expected_terminal":"failure", "reason":"level2_on_data"},
+    {"id":"H-destroyed", "class":"decided", "expected_terminal":"stale", "handle_uses":0},
+    {"id":"H-cancel", "class":"decided", "expected_terminal":"cancelled", "terminal_count":1},
+    {"id":"H-placeholder", "class":"exploratory", "observation":{"placeholder":1}, "screens":["connecting", "wifi", "inbox", "settings", "recipient-picker", "record-chrome", "send-progress", "send-result"]}
+  ]
+}

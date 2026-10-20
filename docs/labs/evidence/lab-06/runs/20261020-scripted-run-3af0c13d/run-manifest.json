@@ -1,0 +1,95 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-06/runs/20261020-scripted-run-3af0c13d/events.jsonl",
+    "metrics": null,
+    "serial_log": "logs/device/labs/lab-06/20261020-scripted-run-3af0c13d/serial.txt",
+    "server_log": null
+  },
+  "build": {
+    "status": "passed"
+  },
+  "capture": {
+    "mode": "scripted",
+    "seconds": 180,
+    "stages": {
+      "activity": "not_started",
+      "build": "passed",
+      "cleanup": "passed",
+      "parser": "not_started",
+      "preflight": "passed",
+      "scenario": "not_configured",
+      "service": "not_configured"
+    },
+    "status": "not_started",
+    "variant": "scripted"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-20T12:30:46.886478Z",
+  "event_loss": {
+    "firmware_trace": {
+      "dropped_events": null,
+      "status": "UNKNOWN"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-06",
+  "experiment_verdict": "UNMEASURED",
+  "firmware": {
+    "binary_sha256": "7ef06cf3d6cd1b778bd3bc7bc44f4404c04a2b525a4f9afcd03d157742cc480c",
+    "build_fingerprint": "sha256:274ed2cada81a7383e6bb2a62cf8adeea766a79f58519b947573a9b1f06b3ab7",
+    "build_id": "lab06-fw-scripted-v3",
+    "build_stamp": null,
+    "cmake_options": {},
+    "fixture_sha256": "742c63abaca14bcd4d7bf1d948a49e2537a3f2e3c0c32005501d1c40c56b0ade",
+    "idf_version": null,
+    "project_path": "client/labs/lab-06-stage-shell",
+    "sdkconfig_sha256": "9aca9f678e7b5199b17974120a1570e7cab4c04ee31cb124a59b05450da6b271",
+    "source_revision": null,
+    "source_sha256": "38145c1e1e090f50f2440d4a3818c5c615355ecd3ff14f0d239d4ffeeb0b1df1",
+    "target": "esp32s3",
+    "variant": "scripted"
+  },
+  "fixture": {
+    "file": null,
+    "revision": "lab06-stage-shell/v1",
+    "schema": "lab06-stage-shell-fixtures/v1",
+    "sha256": "742c63abaca14bcd4d7bf1d948a49e2537a3f2e3c0c32005501d1c40c56b0ade"
+  },
+  "hardware": {
+    "board": null,
+    "kit_nickname": "lynn-kit"
+  },
+  "lab_id": "LAB-06",
+  "lab_revision": null,
+  "lab_version_string": null,
+  "operator": null,
+  "run_id": "20261020-scripted-run-3af0c13d",
+  "scenarios": [
+    "H-cycle",
+    "H-data",
+    "H-data-during-exit",
+    "H-level2-control",
+    "H-destroyed",
+    "H-cancel"
+  ],
+  "server": {
+    "path": "none",
+    "revision": null,
+    "source_sha256": null
+  },
+  "source": {
+    "dirty": null,
+    "files": {},
+    "revision": "lab06-host/v1"
+  },
+  "started_at_utc": "2026-10-20T12:26:32.512527Z",
+  "terminal_reason": "RuntimeError",
+  "terminal_reason_truncated": false,
+  "verification_levels": {},
+  "workflow_status": "FAIL"
+}
