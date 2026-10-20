@@ -223,3 +223,36 @@ labs:
         including one real 1-second timeout, one heartbeat, and one roster refresh.
         The 10-minute idle and 5-minute cadence are virtual-clock checks unless a run waits.
         Capture default is 90 seconds. Flash follows flash_by_default unless FLASH=0.
+
+  lab06:
+    adapter: lab06
+    lab_id: LAB-06
+    evidence_slug: lab-06
+    project_dir: client/labs/lab-06-stage-shell
+    target: esp32s3
+    description: Local stage shell, panel lifecycle, and bounded trace evidence; no server
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-06-stage-shell-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.manual
+      scripted:
+        build_dir: build/labs/lab-06-stage-shell-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    trace_parser: client/labs/lab-06-stage-shell/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 30
+      flash_by_default: true
+      instructions: |
+        Manual: the main cancellation probe uses only the two large buttons: tap Cancel,
+        then Exit+Data once, and watch the automatic reverse. Badge and Stale are optional
+        separate probes. Capture ends after 30 seconds; set SECONDS= to change the window.
+        Scripted: runs H-cycle, H-data, H-data-during-exit, H-level2-control, H-destroyed,
+        H-cancel, then exploratory H-placeholder. Server is none. Host-only results do
+        not establish target visual or performance claims. Do not set BACKEND; LAB-06 has
+        no service backend and rejects non-default backend values before target I/O.
+      instructions_doc: client/labs/lab-06-stage-shell/README.md

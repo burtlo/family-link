@@ -116,6 +116,21 @@ class FakeConfig:
 
 
 class CanonicalRunTests(unittest.TestCase):
+    def _register_run_cleanup(self, run_id):
+        """Remove only this test's canonical evidence and serial-log paths."""
+        import shutil
+
+        self.addCleanup(
+            shutil.rmtree,
+            ROOT / "docs/labs/evidence/lab-02/runs" / run_id,
+            ignore_errors=True,
+        )
+        self.addCleanup(
+            shutil.rmtree,
+            ROOT / "logs/device/labs/lab-02" / run_id,
+            ignore_errors=True,
+        )
+
     def test_unset_trace_run_id_is_owned_before_scenario_dispatch(self):
         run_id = "capture-run"
         receipt = {"ok": True, "run_id": run_id, "action_id": "", "inbox_revision": 2}
@@ -261,7 +276,7 @@ class CanonicalRunTests(unittest.TestCase):
                    pre_reset=b"", reset_output=None, fail_reset=False, interrupt_reset=False,
                    straddle_chunk=None, post_reset_chunk=None, metrics_doc=None,
                    first_read_through_done=False):
-        import shutil
+        self._register_run_cleanup(run_id)
         fake_module = types.ModuleType("serial")
         fake_module.Serial = FakeSerial
         FakeSerial.instances.clear()
@@ -607,6 +622,7 @@ class CanonicalRunTests(unittest.TestCase):
 
     def test_preflight_failure_writes_partial_manifest_once(self):
         run_id = "w7-prefail-" + uuid.uuid4().hex[:8]
+        self._register_run_cleanup(run_id)
         result = canonical.run_canonical(FakeConfig(), mode="manual", backend="local", run_id=run_id,
             target_resolver=lambda *a: (_ for _ in ()).throw(ProjectConfigError("invalid target")),
             target_revalidator=lambda *a: "", build=lambda *a, **k: None,
@@ -623,6 +639,7 @@ class CanonicalRunTests(unittest.TestCase):
 
     def test_unsafe_configured_log_root_fails_before_target_or_flash(self):
         run_id = "w7-logroot-" + uuid.uuid4().hex[:8]
+        self._register_run_cleanup(run_id)
         with tempfile.TemporaryDirectory() as raw:
             config = FakeConfig()
             config.path_value = lambda name: Path(raw) if name == "firmware.logs" else ROOT / "config/labs.registry.yaml"

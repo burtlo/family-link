@@ -1,13 +1,17 @@
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from lab_host import (  # noqa: E402
+    ROOT,
     _defaults_files_for_lab_build,
+    _print_pre_reset_operator_briefing,
     _prepare_lab_build_directory,
     _refresh_stale_sdkconfig,
     _sdkconfig_missing_assignments,
@@ -38,6 +42,25 @@ class Lab02MakeVariantTests(unittest.TestCase):
         )
         self.assertIsNone(managed_canonical_plan("scripted", "managed-http"))
         self.assertIsNone(managed_canonical_plan("phaseb", "local"))
+
+
+class LabOperatorResetBannerTests(unittest.TestCase):
+    def test_registered_instructions_are_shown_at_flash_reset_for_each_lab(self):
+        for name in ("lab02", "lab03", "lab04", "lab05", "lab06", "lab07", "lab10"):
+            spec = get_lab(name)
+            variant = spec.variants[spec.default_variant]
+            output = StringIO()
+            with self.subTest(lab=name), redirect_stdout(output):
+                _print_pre_reset_operator_briefing(ProjectConfig(), ROOT / variant.build_dir)
+            self.assertIn(f"OPERATOR STEPS BEFORE RESET: {spec.lab_id}", output.getvalue())
+            self.assertIn("After upload, wait", output.getvalue())
+            self.assertIn(spec.run_instructions.splitlines()[0].strip(), output.getvalue())
+
+    def test_lab06_manual_window_is_short_and_other_defaults_are_unchanged(self):
+        self.assertEqual(get_lab("lab06").capture_seconds_default, 30)
+        self.assertEqual(get_lab("lab07").capture_seconds_default, 90)
+        self.assertEqual(get_lab("lab02").capture_seconds_default, 120)
+        self.assertEqual(get_lab("lab10").capture_seconds_default, 180)
 
     def test_local_backend_maps_managed_default_to_local_fixture(self):
         self.assertEqual(resolve_variant(get_lab("lab02"), None).name, "phaseb")
@@ -248,7 +271,9 @@ class LabHostTargetSelectionTests(unittest.TestCase):
         events = []
         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
         config = self.config
-        with patch("lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]), patch(
+        with patch("lab_host.ROOT", self.temp_path), patch(
+            "lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]
+        ), patch(
             "lab_host.ProjectConfig", return_value=config
         ), patch("lab_host.run_canonical", side_effect=lambda *args, **kwargs: events.append("canonical") or 0) as run:
             self.assertEqual(main(), 0)
@@ -295,6 +320,8 @@ class LabHostTargetSelectionTests(unittest.TestCase):
         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
         for variant in ("scripted-phaseb", "eager"):
             with self.subTest(variant=variant), patch(
+                "lab_host.ROOT", self.temp_path
+            ), patch(
                 "lab_host.sys.argv",
                 ["lab_host.py", "run", "lab02", "--variant", variant, "--no-flash"],
             ), patch("lab_host.ProjectConfig", return_value=self.config), patch(
