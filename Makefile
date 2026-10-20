@@ -47,7 +47,7 @@ define py_run
 	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind lab.help lab.lab02.server lab.lab03.server
+.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind lab.help lab.lab02.server lab.lab03.server lab.lab07.server
 
 # Lab device firmware (registry: config/labs.registry.yaml). Optional: KIT PORT SECONDS FLASH RUN_ID
 # Prefer the explicit .scripted profile over VARIANT= for operator workflows.
@@ -105,6 +105,9 @@ lab.lab02.server:
 
 lab.lab03.server:
 	$(call py_host_run,server/labs/lab-03-media/server.py --bind 0.0.0.0 --port 8766 --run-id standalone)
+
+lab.lab07.server:
+	$(call py_host_run,server/labs/lab-07-readiness-roster/server.py --bind 0.0.0.0 --port 8767 --run-id standalone)
 
 lab.%.help:
 	$(call py_run,scripts/lab_host.py help $*)

@@ -178,3 +178,48 @@ labs:
         measurements remain
         UNMEASURED/BLOCKED. This lab has no server or product networking.
       instructions_doc: client/labs/lab-10-record-canvas/README.md#l10-08-runner-parser-and-structured-evidence
+
+  lab07:
+    adapter: lab07
+    lab_id: LAB-07
+    evidence_slug: lab-07
+    project_dir: client/labs/lab-07-readiness-roster
+    target: esp32s3
+    description: Readiness, synthetic roster, mute, and endpoint health
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-07-readiness-roster-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-07-readiness-roster-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    trace_parser: client/labs/lab-07-readiness-roster/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 90
+      flash_by_default: true
+      instructions: |
+        Manual 320x240 screen. Scroll the operator guide. Status line shows stage,
+        user count, focused user id, stale, and in-flight count.
+        Wi-Fi down: Wi-Fi unavailable message and no cards.
+        Wi-Fi return: immediate readiness check, then the synthetic roster.
+        Empty roster: empty hangout message, not the connecting animation.
+        One user: one touchable card under Sign in as ...
+        Eight users: horizontal carousel; scroll sideways to reach all eight.
+        Add: new card at the end, same focused id.
+        Remove: that card leaves, focused id stays when the person remains.
+        Reorder: same focused id on a moved card.
+        One failed check: roster stays, then the refresh returns.
+        Two failed checks: connecting animation and no cards.
+        Invalid HTTP 200: connecting and no cards.
+        Hold 1 second: the screen stays touchable during the real one-second hold.
+        Mute: display goes blank except the lab stand-in.
+        Unmute stand-in: immediate readiness check. The stand-in is lab chrome, not product chrome.
+        Connecting, Wi-Fi, and empty copy are exploratory.
+        Scripted: make lab.lab07.scripted runs the decided scenarios without taps,
+        including one real 1-second timeout, one heartbeat, and one roster refresh.
+        The 10-minute idle and 5-minute cadence are virtual-clock checks unless a run waits.
+        Capture default is 90 seconds. Flash follows flash_by_default unless FLASH=0.
