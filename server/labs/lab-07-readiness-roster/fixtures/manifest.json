@@ -5,32 +5,32 @@
   "server_version": "lab07-server/v1",
   "files": {
     "malformed.json": {
-      "bytes": 14,
-      "sha256": "b2508355aa9cc03024c9c22daef0dfba6f1a177518a2f2b2a274fa8af259a509"
+      "bytes": 13,
+      "sha256": "97ccc0b28889225803e60ab8dc68ed2e70331d7429db20645b9ead41a5e2a01a"
     },
     "roster-eight.json": {
-      "bytes": 161,
-      "sha256": "12e01f9ffd159043e98314bfd3e6428414f928967f46e8a0c72ab189f0e0dff7"
+      "bytes": 160,
+      "sha256": "f465a8e1d36e39bf6f5687c266af4d3d65579587cdbc133919b5d254faee053e"
     },
     "roster-empty.json": {
-      "bytes": 27,
-      "sha256": "5c5598ec9883e5fa104876dc9f4323490638fe908ed5d3c822c3442eafc9ee01"
+      "bytes": 26,
+      "sha256": "20b85cac9e80fed2be37b35ee9bd0f50177f74be4d54809d1faa480a0bea0d1f"
     },
     "roster-invalid.json": {
-      "bytes": 42,
-      "sha256": "72dbf7d1583a5e9121cbeb428220dbc40d943dd2d04c8bdb2e5036e5a8fb6a7e"
+      "bytes": 41,
+      "sha256": "9c67f8e783ef4869153d8605b22c5f6cdc08d3470c222ab651617b931c5e0d99"
     },
     "roster-one.json": {
-      "bytes": 42,
-      "sha256": "3129ffd66abcb5f46bb273a6e88c64998de5c0caa23dc9607398d4847b72f535"
+      "bytes": 41,
+      "sha256": "58f0a3199ae2b2045e3b6a6103450cc8e20494658088e785a7ac7cdb921da9a4"
     },
     "roster-reordered.json": {
-      "bytes": 161,
-      "sha256": "e103a8b76317ddb86f657b4007c69b8b8d9161732753abc07f059cbe48dab225"
+      "bytes": 160,
+      "sha256": "2c6eba9df8c6aced82cf6913581893c59bf4387df0d4369a1b66a5ce84b333f0"
     },
     "roster-seven.json": {
-      "bytes": 144,
-      "sha256": "89a703a22eb62007f4d72a8ee0cbaf03e4cf9bba6c41e1c2127598a02434664b"
+      "bytes": 143,
+      "sha256": "a5dee19a927c45506de086bc41c00407f997ca5eac0631e8fd2e6ad33ac020bf"
     }
   }
 }
