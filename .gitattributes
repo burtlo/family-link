@@ -1,5 +1,25 @@
-# Store text files with consistent LF line endings across Windows and macOS.
+# Store text files with LF. `text=auto` alone skips files Git does not
+# classify as text, so Windows editors leave YAML, JSON, and Markdown as
+# CRLF and a later add rewrites every line of those files.
 * text=auto eol=lf
+*.c text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.csv text eol=lf
+*.txt text eol=lf
+*.cmake text eol=lf
+*.defaults text eol=lf
+*.projbuild text eol=lf
+CMakeLists.txt text eol=lf
+Makefile text eol=lf
+Kconfig text eol=lf
 
 # Windows command scripts conventionally use CRLF.
 *.bat text eol=crlf

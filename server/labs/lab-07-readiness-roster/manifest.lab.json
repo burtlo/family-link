@@ -1,0 +1,8 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-07",
+  "lab_revision": "lab07-server/v1",
+  "fixture_schema": "lab07-health-roster/v1",
+  "fixture_revision": "lab07-fixture/v1",
+  "protocol": "lab07-health-roster/v1"
+}

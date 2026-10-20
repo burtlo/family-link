@@ -1,0 +1,527 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261020-manual-run-8658e29a",
+  "schema_version": "lab07-trace/v1",
+  "parser_version": "lab07-parser/v1",
+  "mode": "manual",
+  "evidence_provenance": "hardware",
+  "evidence": {
+    "status": "COMPLETE",
+    "trace_loss": "UNKNOWN",
+    "firmware_trace_loss": {
+      "status": "UNKNOWN",
+      "dropped_events": null
+    },
+    "missing": []
+  },
+  "lab_metrics": {
+    "experiment_inputs": [
+      "R-wifi-absent",
+      "R-invalid-200",
+      "R-empty",
+      "R-eight",
+      "R-retry",
+      "R-retry-fail",
+      "R-idle",
+      "R-stale-beat",
+      "R-mute",
+      "R-timeout-ui"
+    ],
+    "experiment_verdict": "PASS",
+    "performance_verdict": "UNMEASURED",
+    "scenarios": {
+      "R-wifi-absent": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 1,
+            "monotonic_us": 0,
+            "session_id": "s-boot",
+            "user_id": "none",
+            "operation_id": 4,
+            "generation": 1,
+            "scenario": "R-wifi-absent",
+            "class": "decided",
+            "terminal": "success",
+            "terminal_count": 1,
+            "attempt": 1,
+            "stage": "wifi_unavailable",
+            "user_count": 0,
+            "selectable_cards": 0,
+            "focus_id": "none",
+            "focus_stable": 0,
+            "stale": 0,
+            "missed_beats": 1,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 0,
+            "stage_unchanged": 1,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "success",
+          "stage": "wifi_unavailable",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-empty": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 4,
+            "monotonic_us": 0,
+            "session_id": "s-boot",
+            "user_id": "none",
+            "operation_id": 7,
+            "generation": 4,
+            "scenario": "R-empty",
+            "class": "decided",
+            "terminal": "success",
+            "terminal_count": 1,
+            "attempt": 1,
+            "stage": "empty_hangout",
+            "user_count": 0,
+            "selectable_cards": 0,
+            "focus_id": "none",
+            "focus_stable": 0,
+            "stale": 0,
+            "missed_beats": 2,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 1,
+            "stage_unchanged": 0,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "success",
+          "stage": "empty_hangout",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-eight": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 5,
+            "monotonic_us": 0,
+            "session_id": "s-boot",
+            "user_id": "su-01",
+            "operation_id": 15,
+            "generation": 5,
+            "scenario": "R-eight",
+            "class": "decided",
+            "terminal": "success",
+            "terminal_count": 1,
+            "attempt": 1,
+            "stage": "roster",
+            "user_count": 8,
+            "selectable_cards": 8,
+            "focus_id": "su-01",
+            "focus_stable": 1,
+            "stale": 0,
+            "missed_beats": 2,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 1,
+            "stage_unchanged": 1,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "success",
+          "stage": "roster",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-retry": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 5,
+            "monotonic_us": 60000000,
+            "session_id": "s-boot",
+            "user_id": "su-01",
+            "operation_id": 17,
+            "generation": 5,
+            "scenario": "R-retry",
+            "class": "decided",
+            "terminal": "success",
+            "terminal_count": 1,
+            "attempt": 2,
+            "stage": "roster",
+            "user_count": 8,
+            "selectable_cards": 8,
+            "focus_id": "su-01",
+            "focus_stable": 1,
+            "stale": 0,
+            "missed_beats": 2,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 1,
+            "stage_unchanged": 1,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "success",
+          "stage": "roster",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-retry-fail": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 6,
+            "monotonic_us": 120000000,
+            "session_id": "s-boot",
+            "user_id": "su-01",
+            "operation_id": 19,
+            "generation": 6,
+            "scenario": "R-retry-fail",
+            "class": "decided",
+            "terminal": "failure",
+            "terminal_count": 1,
+            "attempt": 2,
+            "stage": "connecting",
+            "user_count": 8,
+            "selectable_cards": 0,
+            "focus_id": "su-01",
+            "focus_stable": 1,
+            "stale": 0,
+            "missed_beats": 2,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 1,
+            "stage_unchanged": 0,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "failure",
+          "stage": "connecting",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-invalid-200": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 6,
+            "monotonic_us": 120000000,
+            "session_id": "s-boot",
+            "user_id": "su-01",
+            "operation_id": 20,
+            "generation": 6,
+            "scenario": "R-invalid-200",
+            "class": "decided",
+            "terminal": "failure",
+            "terminal_count": 1,
+            "attempt": 1,
+            "stage": "connecting",
+            "user_count": 8,
+            "selectable_cards": 0,
+            "focus_id": "su-01",
+            "focus_stable": 1,
+            "stale": 0,
+            "missed_beats": 2,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 0,
+            "stage_unchanged": 1,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "failure",
+          "stage": "connecting",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-timeout-ui": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 7,
+            "monotonic_us": 121000000,
+            "session_id": "s-boot",
+            "user_id": "su-01",
+            "operation_id": 22,
+            "generation": 7,
+            "scenario": "R-timeout-ui",
+            "class": "decided",
+            "terminal": "timed_out",
+            "terminal_count": 1,
+            "attempt": 1,
+            "stage": "roster",
+            "user_count": 8,
+            "selectable_cards": 8,
+            "focus_id": "su-01",
+            "focus_stable": 1,
+            "stale": 0,
+            "missed_beats": 2,
+            "inflight_requests": 0,
+            "touch_during_wait": 1,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 1,
+            "stage_unchanged": 1,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "timed_out",
+          "stage": "roster",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-mute": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 8,
+            "monotonic_us": 180000000,
+            "session_id": "s-boot",
+            "user_id": "su-01",
+            "operation_id": 24,
+            "generation": 8,
+            "scenario": "R-mute",
+            "class": "decided",
+            "terminal": "stale",
+            "terminal_count": 1,
+            "attempt": 1,
+            "stage": "muted",
+            "user_count": 8,
+            "selectable_cards": 0,
+            "focus_id": "su-01",
+            "focus_stable": 1,
+            "stale": 0,
+            "missed_beats": 2,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 1,
+            "stage_unchanged": 0,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "stale",
+          "stage": "muted",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-idle": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 1,
+            "monotonic_us": 600000000,
+            "session_id": "s-boot",
+            "user_id": "su-01",
+            "operation_id": 48,
+            "generation": 1,
+            "scenario": "R-idle",
+            "class": "decided",
+            "terminal": "success",
+            "terminal_count": 1,
+            "attempt": 1,
+            "stage": "roster",
+            "user_count": 8,
+            "selectable_cards": 8,
+            "focus_id": "su-01",
+            "focus_stable": 1,
+            "stale": 0,
+            "missed_beats": 0,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 300000,
+            "heartbeat_period_ms": 60000,
+            "valid": 1,
+            "stage_unchanged": 1,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "success",
+          "stage": "roster",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      },
+      "R-stale-beat": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab07-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 1,
+            "monotonic_us": 180000000,
+            "session_id": "s-boot",
+            "user_id": "su-01",
+            "operation_id": 57,
+            "generation": 1,
+            "scenario": "R-stale-beat",
+            "class": "decided",
+            "terminal": "failure",
+            "terminal_count": 1,
+            "attempt": 1,
+            "stage": "roster",
+            "user_count": 8,
+            "selectable_cards": 8,
+            "focus_id": "su-01",
+            "focus_stable": 1,
+            "stale": 1,
+            "missed_beats": 3,
+            "inflight_requests": 0,
+            "touch_during_wait": 0,
+            "queue_count": 0,
+            "roster_period_ms": 60000,
+            "heartbeat_period_ms": 60000,
+            "valid": 1,
+            "stage_unchanged": 1,
+            "parsed_keys": "none",
+            "grace_ms": 0,
+            "clear_stale": 0
+          }
+        ],
+        "observation": {
+          "terminal": "failure",
+          "stage": "roster",
+          "terminal_count": 1
+        },
+        "terminal_count": 1
+      }
+    },
+    "measurements": {
+      "elapsed_ms": {
+        "sample_count": 0,
+        "unit": "ms",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      },
+      "lvgl_largest_free_block_bytes": {
+        "sample_count": 0,
+        "unit": "bytes",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      },
+      "lvgl_high_water_bytes": {
+        "sample_count": 0,
+        "unit": "bytes",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      },
+      "pixel_largest_free_block_bytes": {
+        "sample_count": 0,
+        "unit": "bytes",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      },
+      "pixel_high_water_bytes": {
+        "sample_count": 0,
+        "unit": "bytes",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      }
+    }
+  }
+}

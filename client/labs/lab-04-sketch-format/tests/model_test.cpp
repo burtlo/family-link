@@ -7,24 +7,9 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <new>
-#include <cstdlib>
-
-namespace {
-bool fail_next_allocation = false;
+namespace lab04 {
+void arm_one_allocation_failure_for_test();
 }
-
-void* operator new(std::size_t size) {
-    if (fail_next_allocation) {
-        fail_next_allocation = false;
-        throw std::bad_alloc();
-    }
-    if (void* memory = std::malloc(size)) return memory;
-    throw std::bad_alloc();
-}
-
-void operator delete(void* memory) noexcept { std::free(memory); }
-void operator delete(void* memory, std::size_t) noexcept { std::free(memory); }
 
 using namespace lab04;
 
@@ -171,7 +156,7 @@ int main(int argc,char** argv) {
     DecodeOperation reserve_failure(43);
     Drawing reserve_destination = source;
     const auto preserved_segment_count = reserve_destination.segments.size();
-    fail_next_allocation = true;
+    arm_one_allocation_failure_for_test();
     assert(!reserve_failure.run(preview.bytes.data(), preview.bytes.size(),
                                 Encoding::SegmentPreview, reserve_destination));
     assert(reserve_failure.state().terminal == Terminal::Failure);
@@ -180,7 +165,7 @@ int main(int argc,char** argv) {
     assert(reserve_failure.state().reason == "no_memory");
     assert(reserve_destination.segments.size() == preserved_segment_count);
 
-    fail_next_allocation = true;
+    arm_one_allocation_failure_for_test();
     const auto encode_failure = encode(source, Encoding::TimedPoints);
     assert(!encode_failure.ok && encode_failure.bytes.empty());
     assert(encode_failure.reason == "no_memory");

@@ -1,0 +1,78 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-07/runs/20261020-scripted-run-5c448b64/events.jsonl",
+    "metrics": "docs/labs/evidence/lab-07/runs/20261020-scripted-run-5c448b64/metrics.json",
+    "serial_log": "logs/device/labs/lab-07/20261020-scripted-run-5c448b64/serial.txt",
+    "server_log": "docs/labs/evidence/lab-07/runs/20261020-scripted-run-5c448b64/server.log"
+  },
+  "build": {
+    "status": "passed"
+  },
+  "capture": {
+    "mode": "scripted",
+    "post_reset": true,
+    "seconds": 90,
+    "stages": {},
+    "status": "captured",
+    "variant": "scripted"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-20T13:41:04.512516Z",
+  "event_loss": {
+    "firmware_trace": {
+      "dropped_events": null,
+      "status": "UNKNOWN"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-07",
+  "experiment_verdict": "PASS",
+  "firmware": {
+    "binary_sha256": null,
+    "build_fingerprint": null,
+    "build_id": null,
+    "build_stamp": null,
+    "cmake_options": {},
+    "idf_version": null,
+    "project_path": "client\\labs\\lab-07-readiness-roster",
+    "sdkconfig_sha256": null,
+    "source_revision": null,
+    "source_sha256": null
+  },
+  "fixture": {
+    "file": null,
+    "revision": "lab07-fixture/v1",
+    "schema": "lab07-health-roster/v1",
+    "sha256": "57a341dfa5a9ab2984b7918e3c2ac099371c4f971c64aa7ad4890036ad989ee1"
+  },
+  "hardware": {
+    "board": null,
+    "kit_nickname": "box-a"
+  },
+  "lab_id": "LAB-07",
+  "lab_revision": "v1",
+  "lab_version_string": null,
+  "operator": null,
+  "run_id": "20261020-scripted-run-5c448b64",
+  "scenarios": [],
+  "server": {
+    "path": "server/labs/lab-07-readiness-roster",
+    "revision": "lab07-server/v1",
+    "source_sha256": "c2a3ea5bfd086ff6072aaee29f9296be1ac8db250a4780e82d523e1e6f112303"
+  },
+  "source": {
+    "dirty": null,
+    "files": {},
+    "revision": null
+  },
+  "started_at_utc": "2026-10-20T13:40:30.318209Z",
+  "terminal_reason": "post_reset_capture_parsed",
+  "terminal_reason_truncated": false,
+  "verification_levels": {},
+  "workflow_status": "PASS"
+}

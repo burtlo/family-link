@@ -287,6 +287,8 @@ def run_mode_hint_lines(spec: LabSpec) -> list[str]:
         lines.append("  BACKEND=managed-http (required); local comparison is unsupported")
     elif spec.make_name == "lab05peak":
         lines.append("  BACKEND is unsupported; this lab has no server and binds no port")
+    elif spec.make_name == "lab06":
+        lines.append("  BACKEND is unsupported; LAB-06 has no service backend")
     else:
         lines.append("  BACKEND=<backend>  managed-http (default) or local comparison")
     return lines

@@ -1,0 +1,36 @@
+{
+  "fixture_schema": "lab07-health-roster/v1",
+  "fixture_version": "lab07-health-roster/v1",
+  "fixture_revision": "lab07-fixture/v1",
+  "server_version": "lab07-server/v1",
+  "files": {
+    "malformed.json": {
+      "bytes": 14,
+      "sha256": "b2508355aa9cc03024c9c22daef0dfba6f1a177518a2f2b2a274fa8af259a509"
+    },
+    "roster-eight.json": {
+      "bytes": 161,
+      "sha256": "12e01f9ffd159043e98314bfd3e6428414f928967f46e8a0c72ab189f0e0dff7"
+    },
+    "roster-empty.json": {
+      "bytes": 27,
+      "sha256": "5c5598ec9883e5fa104876dc9f4323490638fe908ed5d3c822c3442eafc9ee01"
+    },
+    "roster-invalid.json": {
+      "bytes": 42,
+      "sha256": "72dbf7d1583a5e9121cbeb428220dbc40d943dd2d04c8bdb2e5036e5a8fb6a7e"
+    },
+    "roster-one.json": {
+      "bytes": 42,
+      "sha256": "3129ffd66abcb5f46bb273a6e88c64998de5c0caa23dc9607398d4847b72f535"
+    },
+    "roster-reordered.json": {
+      "bytes": 161,
+      "sha256": "e103a8b76317ddb86f657b4007c69b8b8d9161732753abc07f059cbe48dab225"
+    },
+    "roster-seven.json": {
+      "bytes": 144,
+      "sha256": "89a703a22eb62007f4d72a8ee0cbaf03e4cf9bba6c41e1c2127598a02434664b"
+    }
+  }
+}

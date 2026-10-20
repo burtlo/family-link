@@ -34,6 +34,7 @@ class Lab04ModelTests(unittest.TestCase):
         cls.binary = pathlib.Path(cls.temp.name) / "model_test"
         subprocess.run([
             "c++", "-std=c++14", "-Wall", "-Wextra", "-Werror", "-pedantic",
+            "-DLAB04_HOST_TEST",
             "-I", str(LAB / "components/lab04_format/include"),
             "-I", str(LAB / "main"),
             str(LAB / "components/lab04_format/model.cpp"),

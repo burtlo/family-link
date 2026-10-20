@@ -1,0 +1,26 @@
+menu "LAB-07 readiness roster"
+
+config LAB07_SCRIPTED
+    bool "Run decided readiness scenarios automatically"
+    default n
+    help
+        Run the decided roster, health, mute, and timeout scenarios without taps.
+        The 10-minute idle and 5-minute cadence stay on the virtual clock.
+
+config LAB07_BUILD_ID
+    string "Firmware build identity"
+    default "lab07-fw-v1-manual"
+
+config LAB07_HEALTH_URL
+    string "Synthetic health URL"
+    default "http://127.0.0.1:8767/health"
+
+config LAB07_ROSTER_URL
+    string "Synthetic roster URL"
+    default "http://127.0.0.1:8767/roster?script=eight"
+
+config LAB07_HOLD_URL
+    string "Synthetic held-response URL"
+    default "http://127.0.0.1:8767/roster?script=delayed"
+
+endmenu

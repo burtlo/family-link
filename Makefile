@@ -5,32 +5,38 @@
 ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 ifeq ($(OS),Windows_NT)
+  EMPTY :=
+  SPACE := $(EMPTY) $(EMPTY)
+  # wildcard splits on spaces. Escape them after turning backslashes into slashes.
+  _win_path = $(subst $(SPACE),\ ,$(subst \,/,$(1)))
   ifeq ($(origin GITBASH),undefined)
-    # wildcard cannot see "Program Files". Quote a forward-slash path so both
-    # cmd and the Git Bash sh that a nested make inherits can execute it.
-    ifneq ($(strip $(ProgramW6432)),)
-      GITBASH := "$(subst \,/,$(ProgramW6432))/Git/bin/bash.exe"
-    else
-      ifneq ($(strip $(ProgramFiles)),)
-        GITBASH := "$(subst \,/,$(ProgramFiles))/Git/bin/bash.exe"
-      else
-        ifneq ($(strip $(LOCALAPPDATA)),)
-          _LOCAL_BASH := $(subst \,/,$(LOCALAPPDATA))/Programs/Git/bin/bash.exe
-          ifeq ($(shell test -f "$(_LOCAL_BASH)" && echo yes),yes)
-            GITBASH := "$(_LOCAL_BASH)"
-          endif
-        endif
-        ifeq ($(origin GITBASH),undefined)
-          _GIT_BASH := $(wildcard /usr/bin/bash)
-          ifneq ($(_GIT_BASH),)
-            GITBASH := "$(firstword $(_GIT_BASH))"
-          else
-            GITBASH := bash
-          endif
-        endif
-      endif
+    # ProgramW6432 is not a reliable make variable: a copied Windows environment
+    # can spell it in a different case, and GNU make looks names up exactly.
+    _GIT_BASH := $(wildcard C:/Program\ Files/Git/bin/bash.exe)
+    ifeq ($(_GIT_BASH),)
+      _X86_GIT := C:/Program Files (x86)/Git/bin/bash.exe
+      _GIT_BASH := $(wildcard $(call _win_path,$(_X86_GIT)))
     endif
+    ifeq ($(_GIT_BASH),)
+      _GIT_BASH := $(wildcard $(call _win_path,$(LOCALAPPDATA)/Programs/Git/bin/bash.exe))
+    endif
+    ifeq ($(_GIT_BASH),)
+      $(error Git for Windows bash was not found. Install Git or set GITBASH= to bash.exe)
+    endif
+    GITBASH := "$(_GIT_BASH)"
   endif
+  # This GNU make looks for sh.exe before it can run a recipe. Recipes invoke
+  # Git bash themselves, so cmd.exe only has to launch that quoted path.
+  # SystemRoot has the same case-sensitive lookup problem as ProgramW6432.
+  _CMD := $(wildcard C:/Windows/System32/cmd.exe)
+  ifeq ($(_CMD),)
+    _CMD := $(wildcard $(call _win_path,$(SystemRoot)/System32/cmd.exe))
+  endif
+  ifeq ($(_CMD),)
+    _CMD := $(wildcard $(call _win_path,$(SYSTEMROOT)/System32/cmd.exe))
+  endif
+  SHELL := $(_CMD)
+  .SHELLFLAGS := /c
 else
   ifeq ($(origin GITBASH),undefined)
     GITBASH := bash
@@ -62,7 +68,7 @@ define py_run
 	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind lab.help lab.lab02.server lab.lab03.server
+.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind lab.help lab.lab02.server lab.lab03.server lab.lab07.server
 
 # Lab device firmware (registry: config/labs.registry.yaml). Optional: KIT PORT SECONDS FLASH RUN_ID
 # Prefer the explicit .scripted profile over VARIANT= for operator workflows.
@@ -120,6 +126,9 @@ lab.lab02.server:
 
 lab.lab03.server:
 	$(call py_host_run,server/labs/lab-03-media/server.py --bind 0.0.0.0 --port 8766 --run-id standalone)
+
+lab.lab07.server:
+	$(call py_host_run,server/labs/lab-07-readiness-roster/server.py --bind 0.0.0.0 --port 8767 --run-id standalone)
 
 lab.%.help:
 	$(call py_run,scripts/lab_host.py help $*)

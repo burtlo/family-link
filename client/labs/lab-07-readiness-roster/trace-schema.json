@@ -1,0 +1,11 @@
+{
+  "document": "lab07-trace/v1",
+  "schema": "lab07-trace/v1",
+  "prefix": "LAB07_TRACE",
+  "required": ["schema", "event"],
+  "events": ["scenario_terminal", "resource_sample", "device_timeout", "device_http"],
+  "scenario_terminal": {
+    "required": ["monotonic_us", "session_id", "operation_id", "generation", "scenario", "terminal", "terminal_count"]
+  },
+  "notes": "No PIN, credential, URL secret, or raw media. wrong_pin is not a field."
+}

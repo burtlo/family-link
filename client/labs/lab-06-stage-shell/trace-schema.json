@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "lab06-trace/v1",
+  "title": "LAB-06 stage-shell trace line",
+  "type": "object",
+  "required": ["schema", "event"],
+  "properties": {
+    "schema": {"const": "lab06-trace/v1"},
+    "event": {"enum": ["scenario_terminal", "transition_terminal", "panel_update", "resource_sample", "queue_overflow", "trace_summary"]},
+    "scenario": {"enum": ["H-cycle", "H-data", "H-data-during-exit", "H-level2-control", "H-destroyed", "H-cancel", "H-placeholder"]},
+    "class": {"enum": ["decided", "exploratory"]},
+    "operation_id": {"type": "integer", "minimum": 0},
+    "publication_id": {"type": "integer", "minimum": 0},
+    "generation": {"type": "integer", "minimum": 0},
+    "stage_before": {"enum": ["roster", "pin", "hangout", "inbox", "record", "receipt"]},
+    "stage_after": {"enum": ["roster", "pin", "hangout", "inbox", "record", "receipt"]},
+    "terminal": {"enum": ["success", "failure", "cancelled", "stale", "timed_out"]},
+    "terminal_count": {"const": 1},
+    "reason": {"type": "string"},
+    "update_level": {"enum": [0, 1, 2]},
+    "timer_count": {"type": "integer", "minimum": 0},
+    "widget_live": {"type": "integer", "minimum": 0},
+    "operation_count": {"type": "integer", "minimum": 0},
+    "queue_overflow": {"type": "integer", "minimum": 0},
+    "stale_handle_use": {"type": "integer", "minimum": 0},
+    "anim_us": {"type": "integer", "minimum": 0},
+    "build_us": {"type": "integer", "minimum": 0},
+    "lvgl_total_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_free_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_largest_free_bytes": {"type": "integer", "minimum": 0},
+    "lvgl_high_water_pct": {"type": "integer", "minimum": 0},
+    "internal_free_bytes": {"type": "integer", "minimum": 0},
+    "internal_largest_free_bytes": {"type": "integer", "minimum": 0},
+    "psram_free_bytes": {"type": "integer", "minimum": 0},
+    "psram_largest_free_bytes": {"type": "integer", "minimum": 0},
+    "ledger_a": {"type": "string"},
+    "ledger_b": {"type": "string"},
+    "provenance": {"type": "string"},
+    "probe": {"type": "string"},
+    "performance": {"enum": ["UNMEASURED"]},
+    "experiment_inputs": {"type": "array", "items": {"type": "string"}},
+    "scenario_pass_count": {"type": "integer", "minimum": 0},
+    "scenario_fail_count": {"type": "integer", "minimum": 0},
+    "peak_panel_widgets": {"type": "integer", "minimum": 0},
+    "old_panel_text_visible": {"enum": [0, 1]},
+    "placeholder": {"enum": [0, 1]}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"event": {"const": "scenario_terminal"}}},
+      "then": {"required": ["scenario", "class", "operation_id", "generation", "stage_before", "stage_after", "terminal", "terminal_count", "reason", "update_level", "operation_count", "queue_overflow", "stale_handle_use", "widget_live", "timer_count", "anim_us", "build_us"]}
+    },
+    {
+      "if": {"properties": {"event": {"const": "transition_terminal"}}},
+      "then": {"required": ["operation_id", "generation", "stage_before", "stage_after", "terminal", "terminal_count", "reason", "update_level", "widget_live", "timer_count", "anim_us"]}
+    },
+    {
+      "if": {"properties": {"event": {"const": "panel_update"}}},
+      "then": {"required": ["scenario", "operation_id", "update_level"]}
+    },
+    {
+      "if": {"properties": {"event": {"const": "queue_overflow"}}},
+      "then": {"required": ["publication_id", "terminal", "terminal_count", "reason", "queue_overflow"]}
+    },
+    {
+      "if": {"properties": {"event": {"const": "resource_sample"}}},
+      "then": {"required": ["ledger_a", "ledger_b", "lvgl_total_bytes", "lvgl_free_bytes", "lvgl_largest_free_bytes", "lvgl_high_water_pct", "internal_free_bytes", "internal_largest_free_bytes", "psram_free_bytes", "psram_largest_free_bytes", "provenance"]}
+    },
+    {
+      "if": {"properties": {"event": {"const": "trace_summary"}}},
+      "then": {"required": ["scenario", "class", "placeholder", "experiment_inputs", "scenario_pass_count", "scenario_fail_count", "operation_count", "queue_overflow", "stale_handle_use", "peak_panel_widgets", "timer_count", "performance"]}
+    }
+  ],
+  "additionalProperties": false
+}
