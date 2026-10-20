@@ -270,7 +270,9 @@ class LabHostTargetSelectionTests(unittest.TestCase):
         events = []
         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
         config = self.config
-        with patch("lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]), patch(
+        with patch("lab_host.ROOT", self.temp_path), patch(
+            "lab_host.sys.argv", ["lab_host.py", "run", "lab02", "--flash"]
+        ), patch(
             "lab_host.ProjectConfig", return_value=config
         ), patch("lab_host.run_canonical", side_effect=lambda *args, **kwargs: events.append("canonical") or 0) as run:
             self.assertEqual(main(), 0)
@@ -317,6 +319,8 @@ class LabHostTargetSelectionTests(unittest.TestCase):
         target = RunTarget("A", "/dev/a", "serial-a", self.kit_a, self.deployment)
         for variant in ("scripted-phaseb", "eager"):
             with self.subTest(variant=variant), patch(
+                "lab_host.ROOT", self.temp_path
+            ), patch(
                 "lab_host.sys.argv",
                 ["lab_host.py", "run", "lab02", "--variant", variant, "--no-flash"],
             ), patch("lab_host.ProjectConfig", return_value=self.config), patch(

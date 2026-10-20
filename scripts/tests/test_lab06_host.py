@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import sys
 import tempfile
 import types
@@ -236,6 +237,11 @@ class FirmwareTraceContractTests(unittest.TestCase):
 
 
 class AdapterTests(unittest.TestCase):
+    def _temporary_root(self):
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        return root
+
     def args(self, **updates):
         values = {"backend":"managed-http","mode":"manual","variant":None,"seconds":2,"run_id":"host-test","kit":"kit","port":None,"no_build":False}
         values.update(updates)
@@ -289,7 +295,7 @@ class AdapterTests(unittest.TestCase):
                     def reset_input_buffer(self): pass
                     def read(self,n): payload,self.buffer=self.buffer,b""; return payload
                     def close(self): pass
-                host=SimpleNamespace(ROOT=Path(tempfile.mkdtemp()))
+                host=SimpleNamespace(ROOT=self._temporary_root())
                 target=SimpleNamespace(device="/dev/fake")
                 with patch.dict(sys.modules,{"serial":types.SimpleNamespace(Serial=lambda *a,**k:FakeSerial())}):
                     with self.assertRaises(RuntimeError):
@@ -307,7 +313,7 @@ class AdapterTests(unittest.TestCase):
             def reset_input_buffer(self): pass
             def read(self,n): payload,self.buffer=self.buffer,b""; return payload
             def close(self): pass
-        host=SimpleNamespace(ROOT=Path(tempfile.mkdtemp()))
+        host=SimpleNamespace(ROOT=self._temporary_root())
         target=SimpleNamespace(device="/dev/fake")
         with patch.dict(sys.modules,{"serial":types.SimpleNamespace(Serial=lambda *a,**k:FakeSerial())}):
             captured=adapter_module._capture(host,target,"json-password",1,"scripted","scripted",parser)
@@ -324,7 +330,7 @@ class AdapterTests(unittest.TestCase):
             def reset_input_buffer(self): pass
             def read(self,n): payload,self.buffer=self.buffer,b""; return payload
             def close(self): pass
-        host=SimpleNamespace(ROOT=Path(tempfile.mkdtemp()))
+        host=SimpleNamespace(ROOT=self._temporary_root())
         target=SimpleNamespace(device="/dev/fake")
         with patch.dict(sys.modules,{"serial":types.SimpleNamespace(Serial=lambda *a,**k:FakeSerial())}):
             captured=adapter_module._capture(host,target,"safe-json",1,"scripted","scripted",parser)
@@ -338,7 +344,7 @@ class AdapterTests(unittest.TestCase):
             def close(self): pass
         fake = FakeSerial()
         serial_module = types.SimpleNamespace(Serial=lambda *a,**k:fake)
-        host = SimpleNamespace(ROOT=Path(tempfile.mkdtemp()))
+        host = SimpleNamespace(ROOT=self._temporary_root())
         target = SimpleNamespace(device="/dev/fake")
         with patch.dict(sys.modules,{"serial":serial_module}), patch.object(adapter_module,"BOOT_TIMEOUT_SECONDS",0):
             with self.assertRaises(RuntimeError):
@@ -355,7 +361,7 @@ class AdapterTests(unittest.TestCase):
             def read(self,n): payload,self.buffer=self.buffer,b""; return payload
             def close(self): pass
         fake=FakeSerial()
-        host=SimpleNamespace(ROOT=Path(tempfile.mkdtemp()))
+        host=SimpleNamespace(ROOT=self._temporary_root())
         target=SimpleNamespace(device="/dev/fake")
         with patch.dict(sys.modules,{"serial":types.SimpleNamespace(Serial=lambda *a,**k:fake)}):
             captured=adapter_module._capture(host,target,"post-reset",1,"scripted","scripted",parser)
@@ -368,7 +374,7 @@ class AdapterTests(unittest.TestCase):
                 self.calls.append("reset")
                 self.buffer=b"LAB06_READY build=lab06-fw-scripted-v3 mode=manual server=none trace_schema=lab06-trace/v1\n"
         mismatched=MismatchSerial()
-        host=SimpleNamespace(ROOT=Path(tempfile.mkdtemp()))
+        host=SimpleNamespace(ROOT=self._temporary_root())
         with patch.dict(sys.modules,{"serial":types.SimpleNamespace(Serial=lambda *a,**k:mismatched)}):
             with self.assertRaises(RuntimeError):
                 adapter_module._capture(host,target,"mismatch",1,"scripted","scripted",parser)
@@ -382,10 +388,10 @@ class AdapterTests(unittest.TestCase):
             resolve_run_target=lambda *a,**k:target,resolve_variant=lambda *a,**k:spec.variants["manual"],
             build_lab=lambda *a,**k:SimpleNamespace(),revalidate_run_target=lambda *a,**k:None,flash_lab_build=lambda *a,**k:None)
         class Evidence:
-            run_dir = Path(tempfile.mkdtemp())
             def update_context(self,*a,**k): pass
             def event_sink(self,*a,**k): pass
         evidence=Evidence()
+        evidence.run_dir = self._temporary_root()
         def runner(**kwargs):
             return kwargs["execute"](SimpleNamespace(run_id="host-test"),evidence)
         fake_serial = ROOT/".tmp-lab06-test-serial"
@@ -407,7 +413,7 @@ class AdapterTests(unittest.TestCase):
         host=SimpleNamespace(ROOT=ROOT,_flash_from_env_and_args=lambda *a,**k:False,
             resolve_run_target=lambda *a,**k:target,resolve_variant=lambda *a,**k:spec.variants["manual"],
             build_lab=lambda *a,**k:SimpleNamespace())
-        evidence=SimpleNamespace(run_dir=ROOT/".tmp-partial-evidence",update_context=Mock(),event_sink=Mock())
+        evidence=SimpleNamespace(run_dir=self._temporary_root(),update_context=Mock(),event_sink=Mock())
         def runner(**kwargs):
             return kwargs["execute"](SimpleNamespace(run_id="partial-run"),evidence)
         with patch.object(adapter_module,"_parser_module",return_value=fake_parser), \

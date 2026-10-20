@@ -33,27 +33,33 @@ do not need to remain after their assertions run. The helper's callers include
 `test_reset_exception_finalizes_and_closes_uart`, and
 `test_interrupt_during_reset_finalizes_incomplete_and_closes_uart`.
 
-Several callers remove their run directory after assertions. That cleanup is
-not protected by `finally`/`TestCase.addCleanup`, so an assertion failure can
-leave its synthetic evidence behind. `test_preflight_failure_writes_partial_manifest_once`
-and `test_unsafe_configured_log_root_fails_before_target_or_flash` also call
-the production coordinator directly and clean up after assertions, with the
-same failure-path gap. `test_managed_http_runs_server_build_flash_capture_reset_and_manifest`
-and the local/eager shared-path test already use `finally` cleanup and should
-retain that behavior or use the common cleanup helper.
+Before this change, several callers removed their run directory only after
+assertions, so an assertion failure could leave synthetic evidence behind.
+`test_preflight_failure_writes_partial_manifest_once` and
+`test_unsafe_configured_log_root_fails_before_target_or_flash` had the same
+failure-path gap. `test_managed_http_runs_server_build_flash_capture_reset_and_manifest`
+and the local/eager shared-path test already use `finally` cleanup; that
+behavior is retained.
 
 The generic runner unit tests in `scripts/tests/test_lab_runner.py` already use
 `TemporaryDirectory` roots. Evidence tests in `test_lab02_evidence.py` also use
-temporary roots. Preserve those isolation patterns.
+temporary roots. LAB-03, LAB-04, LAB-06, and LAB-10 host/model tests likewise
+write fixtures and generated evidence under temporary roots or class-scoped
+`TemporaryDirectory` instances. Preserve those isolation patterns; LAB-06
+adapter temporary roots now also get explicit `addCleanup` callbacks. The two
+LAB-02 CLI tests that route through the generic runner now patch `lab_host.ROOT`
+to a per-test temporary directory as well, so their synthetic run envelopes
+cannot land in the repository.
 
 ## Attribution and preservation boundaries
 
-The dated directories named like `20261020-phaseb-run-*`,
-`20261020-eager-run-*`, and `20261020-scripted-phaseb-run-*` are not produced by
-the run IDs or paths used by the current unittest cases above. The checked-in
-tests use explicit IDs such as `w7-*`/`w9-*`, or temporary roots. Do not treat
-the dated directories as disposable test output without establishing their
-provenance; retain them as existing evidence.
+The three dated directories named `20261020-phaseb-run-ce049047`,
+`20261020-eager-run-caf8b4b3`, and
+`20261020-scripted-phaseb-run-faf572aa` do not use the explicit IDs of the
+canonical-run unit tests below. The user identified them as output from their
+`make test` run, and their manifests matched the generic runner's
+`<date>-<variant>-run-<hash>` format. They were removed after that provenance
+was established. Do not clean other dated directories by prefix alone.
 
 Likewise, preserve `docs/labs/evidence/lab-04/agent-run-accounting.md` as a
 protected baseline. The LAB-04 run
@@ -61,24 +67,32 @@ protected baseline. The LAB-04 run
 verdicts, so it is a real lab run rather than a synthetic unittest artifact.
 Neither is in scope for test cleanup.
 
-## Recommended implementation
+## Implemented cleanup
 
-1. Add a small helper to `CanonicalRunTests` that registers exact paths with
-   `self.addCleanup` for a supplied test run ID. It should remove only that
-   run's LAB-02 evidence directory and serial-log directory.
-2. Register cleanup in `_local_run` before invoking the coordinator. This
-   covers every helper caller even if an assertion later fails.
-3. Register the same cleanup immediately after assigning IDs in the two direct
-   coordinator tests (`test_preflight_failure_writes_partial_manifest_once`
-   and `test_unsafe_configured_log_root_fails_before_target_or_flash`). Keep
-   existing `finally` blocks for managed-HTTP and local/eager runs, or migrate
-   them to the helper without weakening their cleanup-on-exception behavior.
-4. Never glob/delete all LAB-02 run folders or clean by date/prefix alone. The
-   cleanup must be scoped to IDs created by the current test instance; user
-   captures and other test runs must remain untouched.
-5. Keep artifact assertions before unittest cleanup runs. This preserves full
-   manifest/serial evidence during a failing assertion while preventing the
-   fake run from persisting after the test completes.
+`CanonicalRunTests` registers exact evidence and serial-log directories with
+`TestCase.addCleanup` before each synthetic run starts. The helper covers
+`_local_run` and both direct coordinator tests that allocate canonical
+evidence. Existing `finally` cleanup for managed-HTTP and local/eager cases is
+preserved. Lab 06 adapter tests now register each temporary root for cleanup,
+including roots holding partial captures and evidence fixtures.
+
+Cleanup is limited to the current test's run ID or temporary root; it never
+glob-deletes evidence. Assertions can inspect the artifacts before unittest
+runs the registered cleanup callbacks. No test output needs to remain in the
+working repository, so a broad `make test-clean` target is unnecessary and
+would risk deleting real lab evidence.
+
+The three dated run directories named above were identified by the owner as
+artifacts of the test run and removed. No corresponding serial-log directories
+existed. Other existing LAB-02 and LAB-04 evidence remains out of scope.
+The current LAB-04 and LAB-06 dated runs are tracked device-capture evidence
+with serial logs and build identities; they are not outputs of the unit-test
+fixtures and were preserved. No other untracked test-run evidence directories
+were present during that audit. The later directories
+`20261020-eager-run-fc108050`, `20261020-phaseb-run-46dc44a9`, and
+`20261020-scripted-phaseb-run-3fb97d87` each contained only a PASS envelope
+and terminal event with no build or serial artifacts; they came from those
+LAB-02 CLI test doubles and were removed after redirecting their test roots.
 
 The LAB-02 v1 evidence writer currently enforces its canonical evidence and log
 roots. Do not loosen that production path contract solely to redirect tests.
