@@ -1,11 +1,11 @@
 # Header title (left) panel
 
-ID: `PANEL-HEADER-TITLE-LEFT`  
-Type: Panel module  
-Revision: 0.1  
-Status: Draft  
-Owner: Product owner  
-Approval: No visual approval claimed  
+ID: `PANEL-HEADER-TITLE-LEFT`
+Type: Panel module
+Revision: 0.1
+Status: Draft
+Owner: Product owner
+Approval: No visual approval claimed
 Slot: `upper` on [`LAYOUT-SPLIT-PANE`](../layouts/LAYOUT-SPLIT-PANE.md)
 
 ## Purpose

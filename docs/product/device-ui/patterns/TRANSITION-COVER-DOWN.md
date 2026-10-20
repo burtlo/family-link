@@ -1,11 +1,11 @@
 # Cover-down screen transition
 
-ID: `TRANSITION-COVER-DOWN`  
-Type: Pattern  
-Revision: 0.1  
-Status: Draft — owner-aligned with h19 device demo  
-Owner: Product owner  
-Approval: No visual approval claimed  
+ID: `TRANSITION-COVER-DOWN`
+Type: Pattern
+Revision: 0.1
+Status: Draft — owner-aligned with h19 device demo
+Owner: Product owner
+Approval: No visual approval claimed
 Target: v2 fixed-hardware 320 × 240 (LVGL)
 
 ## Purpose

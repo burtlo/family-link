@@ -1,6 +1,6 @@
 # LVGL assessment — demo p04 (mood face tweens)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 **Pattern ledger:** **ADOPT**
 
 ## Header

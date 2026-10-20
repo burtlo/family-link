@@ -1,11 +1,11 @@
 # Split-pane layout
 
-ID: `LAYOUT-SPLIT-PANE`  
-Type: Layout (shell)  
-Revision: 0.3  
-Status: Draft — shell geometry and inset model owner-aligned; theme-linked colors  
-Owner: Product owner  
-Approval: No visual approval claimed  
+ID: `LAYOUT-SPLIT-PANE`
+Type: Layout (shell)
+Revision: 0.3
+Status: Draft — shell geometry and inset model owner-aligned; theme-linked colors
+Owner: Product owner
+Approval: No visual approval claimed
 Target: v2 fixed-hardware 320 × 240 landscape canvas
 
 ## Purpose and scope

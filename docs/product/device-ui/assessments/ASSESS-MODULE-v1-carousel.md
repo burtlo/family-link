@@ -1,8 +1,8 @@
 # LVGL assessment — v1 carousel module (inbox carousel + playback)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
-**Prior art:** [`carousel-playback`](../../../v1-assessments/carousel-playback.md), [`ui-update-taxonomy`](../../../v1-assessments/ui-update-taxonomy.md), [`async-operation-envelope`](../../../v1-assessments/async-operation-envelope.md), [`session-stage-vs-background-poller`](../../../v1-assessments/session-stage-vs-background-poller.md)  
-**Pattern ledger:** `v1_carousel` — **AVOID** (patterns) with selective **ADOPT**  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
+**Prior art:** [`carousel-playback`](../../../v1-assessments/carousel-playback.md), [`ui-update-taxonomy`](../../../v1-assessments/ui-update-taxonomy.md), [`async-operation-envelope`](../../../v1-assessments/async-operation-envelope.md), [`session-stage-vs-background-poller`](../../../v1-assessments/session-stage-vs-background-poller.md)
+**Pattern ledger:** `v1_carousel` — **AVOID** (patterns) with selective **ADOPT**
 **V2 targets:** [`COMP-USER-CARD`](../components/COMP-USER-CARD.md), inbox carousel panel (TBD), [`sketch-record-and-playback`](../../experiences/sketch-record-and-playback.md)
 
 ## Header

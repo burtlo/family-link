@@ -1,11 +1,11 @@
 # Device motion foundation
 
-ID: `FOUNDATION-MOTION`  
-Type: Foundation  
-Revision: 0.2  
-Status: Draft — stage transitions owner-aligned (h19 cover-down)  
-Owner: Product owner  
-Approval: No visual approval claimed  
+ID: `FOUNDATION-MOTION`
+Type: Foundation
+Revision: 0.2
+Status: Draft — stage transitions owner-aligned (h19 cover-down)
+Owner: Product owner
+Approval: No visual approval claimed
 Target: v2 fixed-hardware device UI (LVGL)
 
 ## Purpose

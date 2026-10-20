@@ -3,7 +3,7 @@
 Copy this file to `docs/product/device-ui/assessments/ASSESS-<SCOPE>.md` and
 delete the instructional lines marked *(remove in copy)*.
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 **Pattern verdicts:** [`DEMO-PATTERN-LEDGER`](DEMO-PATTERN-LEDGER.md) (ADOPT / ADAPT / AVOID; add a ledger row when a demo graduates from the review queue)
 
 ---

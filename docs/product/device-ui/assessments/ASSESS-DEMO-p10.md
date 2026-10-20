@@ -1,6 +1,6 @@
 # LVGL assessment — demo p10 (packed portrait)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 **Pattern ledger:** **ADOPT**
 
 ## Header

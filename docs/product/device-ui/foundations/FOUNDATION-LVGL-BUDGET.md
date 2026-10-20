@@ -1,11 +1,11 @@
 # LVGL memory and performance budget
 
-ID: `FOUNDATION-LVGL-BUDGET`  
-Type: Foundation  
-Revision: 0.2  
-Status: Draft — measurement framework for v2 firmware and demos  
-Owner: Product owner  
-Approval: No firmware budget numbers are approved until measured on target  
+ID: `FOUNDATION-LVGL-BUDGET`
+Type: Foundation
+Revision: 0.2
+Status: Draft — measurement framework for v2 firmware and demos
+Owner: Product owner
+Approval: No firmware budget numbers are approved until measured on target
 Target: v2 fixed-hardware 320 × 240 landscape canvas (RGB565, LVGL)
 
 ## Purpose and scope
@@ -26,7 +26,7 @@ Related portable concepts (with v1 examples):
 - [Resource budget envelope](../../../v1-assessments/resource-budget-envelope.md) — envelope shape
 - [Client application coding standards](../../../standards/client-application-coding-standards.md) §§5, 8
 
-Canvas and touch tokens: [`FOUNDATION-DEVICE-CANVAS`](FOUNDATION-DEVICE-CANVAS.md).  
+Canvas and touch tokens: [`FOUNDATION-DEVICE-CANVAS`](FOUNDATION-DEVICE-CANVAS.md).
 Stage motion cost: [`FOUNDATION-MOTION`](FOUNDATION-MOTION.md).
 
 ## Screen assessments (repeatable reviews)

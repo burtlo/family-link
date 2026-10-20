@@ -1,11 +1,11 @@
 # Demo pattern ledger — LVGL USE vs AVOID (V2)
 
-Status: working review artifact  
-Revision: **0.2**  
-Owner: Product / firmware agents  
-Evidence: full **h** / **p** / **x** island catalog (static scan of legacy v1 POC firmware demos) + product shell **x02** modules (connect, auth, carousel, record)  
-Normative V2 UI: [`device-ui/README.md`](../README.md)  
-Measurement worksheet: [`TEMPLATE-LVGL-SCREEN-ASSESSMENT.md`](TEMPLATE-LVGL-SCREEN-ASSESSMENT.md) · [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+Status: working review artifact
+Revision: **0.2**
+Owner: Product / firmware agents
+Evidence: full **h** / **p** / **x** island catalog (static scan of legacy v1 POC firmware demos) + product shell **x02** modules (connect, auth, carousel, record)
+Normative V2 UI: [`device-ui/README.md`](../README.md)
+Measurement worksheet: [`TEMPLATE-LVGL-SCREEN-ASSESSMENT.md`](TEMPLATE-LVGL-SCREEN-ASSESSMENT.md) · [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 Thematic catalog (purpose, PASS, flash shortlist): [`DEMO-EXPLORER-INDEX`](DEMO-EXPLORER-INDEX.md)
 
 This ledger catalogs **as-built LVGL patterns** from the v1 POC archive and assigns a
@@ -112,8 +112,8 @@ analysis. **SCAN** rows are static code review (grep + header intent) — fill
 
 ## Summary (revision 0.2 scan pass)
 
-**Island demo ids cataloged:** **51** — **34** `h**` + **13** `p**` + **4** `x**` sources (`x01`, `x02`, two Opus build probes).  
-**Shell module rows (DEEP):** **4** (`v1_connect`, `v1_auth`, `v1_carousel`, `v1_record`) decomposed from **x02**.  
+**Island demo ids cataloged:** **51** — **34** `h**` + **13** `p**` + **4** `x**` sources (`x01`, `x02`, two Opus build probes).
+**Shell module rows (DEEP):** **4** (`v1_connect`, `v1_auth`, `v1_carousel`, `v1_record`) decomposed from **x02**.
 **Total ledger rows:** **55** (51 island + 4 shell modules).
 
 ### Verdict counts (all rows)
@@ -138,9 +138,9 @@ analysis. **SCAN** rows are static code review (grep + header intent) — fill
 
 ### V2-irrelevant demos (SKIP — keep for lab, not UI specs)
 
-**h:** h05, h06, h07, h08, h09, h10, h11, h16, h22, h23, h24, h25, h30, h31, h32, h35, h37, h38  
-**p:** p06, p11  
-**x:** x02-opus-dep, x02-opus-probe  
+**h:** h05, h06, h07, h08, h09, h10, h11, h16, h22, h23, h24, h25, h30, h31, h32, h35, h37, h38
+**p:** p06, p11
+**x:** x02-opus-dep, x02-opus-probe
 
 ---
 

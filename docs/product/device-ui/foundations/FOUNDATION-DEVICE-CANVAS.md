@@ -1,11 +1,11 @@
 # Device canvas foundation
 
-ID: `FOUNDATION-DEVICE-CANVAS`  
-Type: Foundation  
-Revision: 0.3  
-Status: Draft — margin, touch, Montserrat **600**, typography ladder; colors in THEME-DARK  
-Owner: Product owner  
-Approval: No visual approval claimed  
+ID: `FOUNDATION-DEVICE-CANVAS`
+Type: Foundation
+Revision: 0.3
+Status: Draft — margin, touch, Montserrat **600**, typography ladder; colors in THEME-DARK
+Owner: Product owner
+Approval: No visual approval claimed
 Target: v2 fixed-hardware 320 × 240 landscape canvas
 
 ## Purpose and scope
@@ -41,11 +41,11 @@ The default layout surface is inset from the display edge.
 (0,0)                              (320,0)
 ┌────────────────────────────────────────┐
 │▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│ 12 px margin (all sides)
-│▒┌──────────────────────────────────┐▒│
-│▒│                                  │▒│
-│▒│     fl-content-well 296 × 216    │▒│
-│▒│                                  │▒│
-│▒└──────────────────────────────────┘▒│
+│▒┌─────────────────────────────────────┐▒│
+│▒│                                     │▒│
+│▒│     fl-content-well 296 × 216       │▒│
+│▒│                                     │▒│
+│▒└─────────────────────────────────────┘▒│
 │▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│
 (0,240)                            (320,240)
 ```
@@ -75,6 +75,9 @@ Inherited from the historical BOX brief and adopted for v2.
 
 Touch targets MUST remain fully inside their owning layout slot and MUST NOT
 rely on hover or off-screen affordances.
+
+Rectangular primary control minimums and login PIN grid math:
+[`FOUNDATION-BUTTON-MINIMUMS`](FOUNDATION-BUTTON-MINIMUMS.md) (`fl-button-min-width` **101 px**, `fl-button-min-height` **48 px**).
 
 ## Typography ladder (v2)
 

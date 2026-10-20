@@ -1,12 +1,12 @@
 # PIN cooldown screen
 
-ID: `SCR-PIN-COOLDOWN`  
-Type: Screen composition  
-Revision: 0.1  
-Status: Draft  
-Owner: Product owner  
-Approval: No visual approval claimed  
-Target: v2 fixed-hardware 320 × 240 landscape canvas  
+ID: `SCR-PIN-COOLDOWN`
+Type: Screen composition
+Revision: 0.1
+Status: Draft
+Owner: Product owner
+Approval: No visual approval claimed
+Target: v2 fixed-hardware 320 × 240 landscape canvas
 Experience: [`EXP-LOGIN`](../../experiences/endpoint-login.md), PIN cooldown after five failed attempts (`EXP-014`, `DEC-034`)
 
 ## Purpose

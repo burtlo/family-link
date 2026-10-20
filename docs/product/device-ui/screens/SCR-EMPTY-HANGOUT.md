@@ -1,12 +1,12 @@
 # Empty hangout screen
 
-ID: `SCR-EMPTY-HANGOUT`  
-Type: Screen composition  
-Revision: 0.1  
-Status: Draft  
-Owner: Product owner  
-Approval: No visual approval claimed  
-Target: v2 fixed-hardware 320 × 240 landscape canvas  
+ID: `SCR-EMPTY-HANGOUT`
+Type: Screen composition
+Revision: 0.1
+Status: Draft
+Owner: Product owner
+Approval: No visual approval claimed
+Target: v2 fixed-hardware 320 × 240 landscape canvas
 Experience: [`EXP-LOGIN`](../../experiences/endpoint-login.md), empty hangout stage (`EXP-020`)
 
 ## Purpose

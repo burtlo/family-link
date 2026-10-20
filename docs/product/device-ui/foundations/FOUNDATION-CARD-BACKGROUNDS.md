@@ -1,10 +1,10 @@
 # Card background catalog (placeholder)
 
-ID: `FOUNDATION-CARD-BACKGROUNDS`  
-Type: Foundation  
-Revision: 0.1  
-Status: **Placeholder** — catalog not authored  
-Owner: Product owner  
+ID: `FOUNDATION-CARD-BACKGROUNDS`
+Type: Foundation
+Revision: 0.1
+Status: **Placeholder** — catalog not authored
+Owner: Product owner
 
 ## Owner intent (recorded)
 

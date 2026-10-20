@@ -1,11 +1,11 @@
 # User card component
 
-ID: `COMP-USER-CARD`  
-Type: Component  
-Revision: 0.2  
-Status: Draft — geometry and states owner-aligned  
-Owner: Product owner  
-Approval: No visual approval claimed  
+ID: `COMP-USER-CARD`
+Type: Component
+Revision: 0.2
+Status: Draft — geometry and states owner-aligned
+Owner: Product owner
+Approval: No visual approval claimed
 Target: v2 fixed-hardware 320 × 240 landscape canvas
 
 ## Purpose

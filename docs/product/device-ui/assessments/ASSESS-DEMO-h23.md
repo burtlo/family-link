@@ -1,6 +1,6 @@
 # LVGL assessment — demo h23 (record idle stop)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 **Pattern ledger:** **SKIP** (LVGL); **ADAPT** (audio policy)
 
 ## Header

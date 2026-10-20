@@ -83,6 +83,7 @@ experience work before their visual artifacts can be implementation-ready.
 | ID | Document | Status |
 |---|---|---|
 | `FOUNDATION-DEVICE-CANVAS` | [Device canvas](foundations/FOUNDATION-DEVICE-CANVAS.md) | Draft — margin, touch, Montserrat **16 / 24 / 32** |
+| `FOUNDATION-BUTTON-MINIMUMS` | [Button minimums](foundations/FOUNDATION-BUTTON-MINIMUMS.md) | Draft — PIN grid **101 × 48** suggested minimum |
 | `FOUNDATION-MOTION` | [Motion](foundations/FOUNDATION-MOTION.md) | Draft — cross-fade proposed; timing OPEN |
 | `THEME-DARK` | [Dark theme](themes/THEME-DARK.md) | Draft — token placement map (single scheme) |
 | `FOUNDATION-CARD-BACKGROUNDS` | [Card backgrounds](foundations/FOUNDATION-CARD-BACKGROUNDS.md) | Placeholder — catalog TBD |

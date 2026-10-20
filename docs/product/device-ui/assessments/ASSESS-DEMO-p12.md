@@ -1,6 +1,6 @@
 # LVGL assessment — demo p12 (Tamagotchi CPU framebuffer)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 **Pattern ledger:** **ADAPT**
 
 ## Header

@@ -1,11 +1,11 @@
 # Dark theme
 
-ID: `THEME-DARK`  
-Type: Theme  
-Revision: 0.2  
-Status: Draft — first intentional color scheme (no second theme in v2)  
-Owner: Product owner  
-Approval: No visual approval claimed  
+ID: `THEME-DARK`
+Type: Theme
+Revision: 0.2
+Status: Draft — first intentional color scheme (no second theme in v2)
+Owner: Product owner
+Approval: No visual approval claimed
 Target: v2 fixed-hardware 320 × 240 landscape canvas (RGB565)
 
 ## Purpose

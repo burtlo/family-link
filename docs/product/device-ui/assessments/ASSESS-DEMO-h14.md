@@ -1,6 +1,6 @@
 # LVGL assessment — demo h14 (heartbeat inbox badge)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 **Pattern ledger:** **ADAPT**
 
 ## Header

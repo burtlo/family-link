@@ -1,10 +1,10 @@
 # Demo explorer index — legacy v1 POC island catalog
 
-Status: working navigation artifact  
-Revision: **0.3**  
-Owner: Product / firmware agents  
-Evidence: static scan of **51** island demo sources in the legacy v1 POC firmware archive  
-Verdicts and LVGL depth: [`DEMO-PATTERN-LEDGER`](DEMO-PATTERN-LEDGER.md) (rev 0.2)  
+Status: working navigation artifact
+Revision: **0.3**
+Owner: Product / firmware agents
+Evidence: static scan of **51** island demo sources in the legacy v1 POC firmware archive
+Verdicts and LVGL depth: [`DEMO-PATTERN-LEDGER`](DEMO-PATTERN-LEDGER.md) (rev 0.2)
 Measurement template: [`TEMPLATE-LVGL-SCREEN-ASSESSMENT`](TEMPLATE-LVGL-SCREEN-ASSESSMENT.md)
 
 This index groups **island demos** (`h**`, `p**`, `x**`) by product theme so agents

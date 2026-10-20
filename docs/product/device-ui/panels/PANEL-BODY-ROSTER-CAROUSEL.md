@@ -1,11 +1,11 @@
 # Roster carousel body panel
 
-ID: `PANEL-BODY-ROSTER-CAROUSEL`  
-Type: Panel module  
-Revision: 0.1  
-Status: Draft  
-Owner: Product owner  
-Approval: No visual approval claimed  
+ID: `PANEL-BODY-ROSTER-CAROUSEL`
+Type: Panel module
+Revision: 0.1
+Status: Draft
+Owner: Product owner
+Approval: No visual approval claimed
 Slot: `lower` on [`LAYOUT-SPLIT-PANE`](../layouts/LAYOUT-SPLIT-PANE.md)
 
 ## Purpose

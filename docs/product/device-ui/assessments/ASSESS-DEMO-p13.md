@@ -1,6 +1,6 @@
 # LVGL assessment — demo p13 (UI showcase / LVGL lab)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 **Pattern ledger:** **ADOPT** (lab reference)
 
 ## Header

@@ -1,12 +1,12 @@
 # Sign-in roster screen
 
-ID: `SCR-SIGN-IN-ROSTER`  
-Type: Screen composition  
-Revision: 0.3  
-Status: Draft — composition and roster visuals owner-aligned; motion OPEN  
-Owner: Product owner  
-Approval: No visual approval claimed  
-Target: v2 fixed-hardware 320 × 240 landscape canvas  
+ID: `SCR-SIGN-IN-ROSTER`
+Type: Screen composition
+Revision: 0.3
+Status: Draft — composition and roster visuals owner-aligned; motion OPEN
+Owner: Product owner
+Approval: No visual approval claimed
+Target: v2 fixed-hardware 320 × 240 landscape canvas
 Experience: [`EXP-LOGIN`](../../experiences/endpoint-login.md), sign-in roster stage
 
 ## Purpose and experience contract

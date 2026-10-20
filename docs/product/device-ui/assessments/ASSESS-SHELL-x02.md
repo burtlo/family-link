@@ -1,7 +1,7 @@
 # LVGL assessment — product shell x02 (stage router)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
-**Pattern ledger:** `x02` + `v1_connect`, `v1_auth`, `v1_carousel`, `v1_record` — **ADAPT** / mixed  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
+**Pattern ledger:** `x02` + `v1_connect`, `v1_auth`, `v1_carousel`, `v1_record` — **ADAPT** / mixed
 **Carousel deep-dive:** [`ASSESS-MODULE-v1-carousel`](ASSESS-MODULE-v1-carousel.md)
 
 ## Header

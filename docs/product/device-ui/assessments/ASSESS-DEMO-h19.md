@@ -1,6 +1,6 @@
 # LVGL assessment — demo h19 (message list transitions)
 
-**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)  
+**Framework:** [`FOUNDATION-LVGL-BUDGET`](../foundations/FOUNDATION-LVGL-BUDGET.md)
 **Pattern ledger:** [`DEMO-PATTERN-LEDGER`](DEMO-PATTERN-LEDGER.md)
 
 ## Header
