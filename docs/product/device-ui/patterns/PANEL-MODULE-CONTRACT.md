@@ -113,6 +113,8 @@ screen snapshot unchanged. See
 |---|---|---|
 | Sign-in roster | `PANEL-HEADER-TITLE-LEFT` | `PANEL-BODY-ROSTER-CAROUSEL` |
 | PIN entry | `PANEL-HEADER-PIN-STATUS` | `PANEL-BODY-PIN-GRID` |
+| Title + supporting line | `PANEL-HEADER-TITLE-SUBTITLE` | `PANEL-BODY-FOUR-BUTTON` |
+| Title + supporting line + action | `PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION` | `PANEL-BODY-LABEL-WITH-TWO-BUTTONS` |
 | Message home | `PANEL-HEADER-MESSAGE-CHROME` | `PANEL-BODY-MESSAGE-CAROUSEL` |
 
 Panel IDs are created as separate artifacts when authored; this table is not

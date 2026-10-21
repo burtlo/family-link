@@ -161,13 +161,17 @@ geometry) requires a **new layout ID**, not a one-off panel flag.
 Consumers:
 
 - [`SCR-SIGN-IN-ROSTER`](../screens/SCR-SIGN-IN-ROSTER.md)
+- [`PANEL-HEADER-TITLE-SUBTITLE`](../panels/PANEL-HEADER-TITLE-SUBTITLE.md)
+- [`PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION`](../panels/PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION.md)
+- [`PANEL-BODY-FOUR-BUTTON`](../panels/PANEL-BODY-FOUR-BUTTON.md)
+- [`PANEL-BODY-LABEL-WITH-TWO-BUTTONS`](../panels/PANEL-BODY-LABEL-WITH-TWO-BUTTONS.md)
 
 ## OPEN items
 
 | ID | Question | Blocks |
 |---|---|---|
 | `UI-OPEN-001` | *(Superseded 2026-10-10)* Surface tokens — see [`THEME-DARK`](../themes/THEME-DARK.md) | — |
-| `UI-OPEN-002` | Stage transition motion (cross-fade proposed) | [`FOUNDATION-MOTION`](../foundations/FOUNDATION-MOTION.md) |
+| `UI-OPEN-002` | *(Superseded 2026-10-20)* Stage transitions use the cover-down default in [`FOUNDATION-MOTION`](../foundations/FOUNDATION-MOTION.md) and [`TRANSITION-COVER-DOWN`](../patterns/TRANSITION-COVER-DOWN.md). | — |
 
 Resolved in 0.2: distinct pane backgrounds allowed; margins codified on shell;
 no per-panel margin exceptions without new layout.
@@ -180,6 +184,7 @@ no per-panel margin exceptions without new layout.
 
 ## Revision history
 
+- **0.4 — 2026-10-20:** Mark the old cross-fade motion question superseded by the cover-down default.
 - **0.3 — 2026-10-10:** Link `THEME-DARK` surface tokens; sign-in same-color panes.
 - **0.2 — 2026-10-10:** Three-layer shell: default bg, per-panel override,
   `slot_chrome_bounds` vs `slot_content_bounds`, panel module composition.

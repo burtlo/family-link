@@ -4,8 +4,8 @@
 |---|---|
 | ID | `SCR-PIN-ENTRY` |
 | Type | Screen composition |
-| Revision | 0.5 |
-| Status | Draft — v1 shell layout and transitions owner-aligned; `checking...` placement OPEN |
+| Revision | 0.7 |
+| Status | Draft — PIN contents composed through panels; `checking...` placement OPEN |
 | Owner | Product owner |
 | Approval | No visual approval claimed |
 | Target | v2 fixed-hardware 320 × 240 landscape canvas |
@@ -30,29 +30,29 @@ Four-digit PIN entry for the selected user. Cooldown after five failures uses
 ```text
 SCR-PIN-ENTRY
 └─ LAYOUT-SPLIT-PANE
-   ├─ upper → identity row + four PIN slot labels (v1 product layout)
-   └─ lower → COMP-PIN-KEYPAD
+   ├─ upper → PANEL-HEADER-PIN-STATUS
+   └─ lower → PANEL-BODY-PIN-GRID
+       └─ COMP-PIN-KEYPAD
 ```
 
-## Upper band (v1 product shell, ribbonless split)
+The two panels satisfy the one-panel-per-slot rule in
+[`PANEL-MODULE-CONTRACT`](../patterns/PANEL-MODULE-CONTRACT.md). Their
+slot-local visual details are specified in
+[`PANEL-HEADER-PIN-STATUS`](../panels/PANEL-HEADER-PIN-STATUS.md) and
+[`PANEL-BODY-PIN-GRID`](../panels/PANEL-BODY-PIN-GRID.md).
 
-Mapped into upper `slot_chrome_bounds` (80 px). Legacy v1 product PIN screen
-geometry:
+## Upper band
 
-| Element | Rule |
-|---|---|
-| Identity cluster (left) | `Sign in as` prefix + **28 px** avatar + display name (`fl-type-24`, weight 600); name ellipsize end |
-| PIN slots (right) | Four positions, LTR; filled digit shows `*` in `fl-color-accent`; empty shows `_` in `fl-color-text-secondary`; slot font **`fl-type-32`** (or nearest linked size if 32 absent — match v1 device fallback) |
-| Vertical alignment | PIN slot vertical center aligned with identity row midline (v1 `pin_shared_mid_y_ofs` behavior) |
-
-Wrong PIN: replace the **identity cluster** (prefix, avatar, name — not the
-PIN slots) with the literal copy **`wrong pin`** for **2 seconds**, then restore
-the identity cluster and clear entered digits (experience clears entry).
+[`PANEL-HEADER-PIN-STATUS`](../panels/PANEL-HEADER-PIN-STATUS.md) occupies the
+80 px upper slot and presents the selected identity, PIN progress, and
+verification feedback.
 
 ## Lower band
 
-[`COMP-PIN-KEYPAD`](../components/COMP-PIN-KEYPAD.md) — v1 product keypad math in
-the 160 px lower chrome (10 px top inset in pane).
+[`PANEL-BODY-PIN-GRID`](../panels/PANEL-BODY-PIN-GRID.md) occupies the 160 px
+lower slot and contains [`COMP-PIN-KEYPAD`](../components/COMP-PIN-KEYPAD.md).
+The keypad's existing origin and digit-size disagreement are recorded in the
+panel's OPEN items; this screen does not choose a correction.
 
 ## Wireframe
 
@@ -75,10 +75,13 @@ the 160 px lower chrome (10 px top inset in pane).
 | Wrong PIN | Identity cluster → `wrong pin` for **2000 ms**, then restore + clear |
 | Cooldown | Leave screen → `SCR-PIN-COOLDOWN` (cover-down) |
 | Success | Reverse cover-down to inbox; no success chrome on this screen |
+| Overlay (`connecting` / `no Wi-Fi`) | Keep this screen mounted. [`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md) covers it and ignores all keypad touch. Entered digits stay. |
 | Verification / cooldown on keypad | Ignore touch; visual dim **OPEN** if not full-screen cooldown |
 
 BOOT (`DEC-037`): no digits → roster; 1–3 digits → clear in place; after digit
-four → ignore BOOT until verification completes.
+four → ignore BOOT until verification completes. While
+[`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md) is visible,
+ignore BOOT and pause the 60-second partial-PIN idle timer.
 
 ## OPEN items
 
@@ -93,4 +96,7 @@ wrong-pin 2 s; cooldown on separate screen.
 
 - **0.5 — 2026-10-10:** h19 cover-down; v1 product PIN layout; 2 s wrong pin;
   cooldown screen; keypad from product shell not h03 demo.
+- **0.7 — 2026-10-20:** Overlay may cover this screen and block keypad touch.
+- **0.6 — 2026-10-20:** Compose upper and lower PIN content through panels;
+  retain checking placement as OPEN.
 - **0.4 — 2026-10-10:** Prior h03-based keypad note superseded.

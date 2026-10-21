@@ -21,7 +21,9 @@ the split PIN layout; not a panel on `SCR-PIN-ENTRY`.
 | Fifth wrong PIN on `SCR-PIN-ENTRY` | Forward [`TRANSITION-COVER-DOWN`](../patterns/TRANSITION-COVER-DOWN.md) |
 | Countdown reaches zero | Reverse cover-down to [`SCR-SIGN-IN-ROSTER`](SCR-SIGN-IN-ROSTER.md) |
 
-Carousel touch on the roster is normal after exit.
+Carousel touch on the roster is normal after exit. If Wi-Fi or the server is
+unavailable during cooldown, [`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md)
+covers this screen and blocks touch.
 
 ## Copy
 

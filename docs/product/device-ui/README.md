@@ -71,7 +71,7 @@ inventories, not approved specifications:
 | Components | [MISSING](components/MISSING.md) | Reusable status/error message, message card, transport, settings and recipient tiles, record canvas and swatches |
 | Layouts | [MISSING](layouts/MISSING.md) | Full-canvas, carousel-stage, record canvas/rail, receipt geometry |
 | Panels | [MISSING](panels/MISSING.md) | Status-message composition, signed-in carousel, picker, settings, color rail, send feedback |
-| Screens | [MISSING](screens/MISSING.md) | Connecting, Wi-Fi unavailable, inbox, settings, recipient picker, record, send |
+| Screens | [MISSING](screens/MISSING.md) | Inbox, settings, recipient picker, record, send. Login connecting and Wi-Fi are overlays, not replacement screens |
 
 The active [login experience](../experiences/endpoint-login.md) and [sketch
 experience](../experiences/sketch-record-and-playback.md) govern the behavior and
@@ -84,7 +84,7 @@ experience work before their visual artifacts can be implementation-ready.
 |---|---|---|
 | `FOUNDATION-DEVICE-CANVAS` | [Device canvas](foundations/FOUNDATION-DEVICE-CANVAS.md) | Draft — margin, touch, Montserrat **16 / 24 / 32** |
 | `FOUNDATION-BUTTON-MINIMUMS` | [Button minimums](foundations/FOUNDATION-BUTTON-MINIMUMS.md) | Draft — PIN grid **101 × 48** suggested minimum |
-| `FOUNDATION-MOTION` | [Motion](foundations/FOUNDATION-MOTION.md) | Draft — cross-fade proposed; timing OPEN |
+| `FOUNDATION-MOTION` | [Motion](foundations/FOUNDATION-MOTION.md) | Draft — cover-down is the stage-transition default; carousel snap timing OPEN |
 | `THEME-DARK` | [Dark theme](themes/THEME-DARK.md) | Draft — token placement map (single scheme) |
 | `FOUNDATION-CARD-BACKGROUNDS` | [Card backgrounds](foundations/FOUNDATION-CARD-BACKGROUNDS.md) | Placeholder — catalog TBD |
 | `FOUNDATION-LVGL-BUDGET` | [LVGL budget & assessments](foundations/FOUNDATION-LVGL-BUDGET.md) | Draft — two-budget model, measurement table, review template |
@@ -123,7 +123,13 @@ and reviewed.
 | ID | Document | Slot |
 |---|---|---|
 | `PANEL-HEADER-TITLE-LEFT` | [Header title left](panels/PANEL-HEADER-TITLE-LEFT.md) | `upper` |
+| `PANEL-HEADER-TITLE-SUBTITLE` | [Header title + subtitle](panels/PANEL-HEADER-TITLE-SUBTITLE.md) | `upper` |
+| `PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION` | [Header title + subtitle with action](panels/PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION.md) | `upper` |
 | `PANEL-BODY-ROSTER-CAROUSEL` | [Roster carousel](panels/PANEL-BODY-ROSTER-CAROUSEL.md) | `lower` |
+| `PANEL-BODY-FOUR-BUTTON` | [Four-button body](panels/PANEL-BODY-FOUR-BUTTON.md) | `lower` |
+| `PANEL-BODY-LABEL-WITH-TWO-BUTTONS` | [Label with two buttons](panels/PANEL-BODY-LABEL-WITH-TWO-BUTTONS.md) | `lower` |
+| `PANEL-HEADER-PIN-STATUS` | [PIN status header](panels/PANEL-HEADER-PIN-STATUS.md) | `upper` |
+| `PANEL-BODY-PIN-GRID` | [PIN keypad body](panels/PANEL-BODY-PIN-GRID.md) | `lower` |
 
 ### Components
 
@@ -131,6 +137,7 @@ and reviewed.
 |---|---|---|
 | `COMP-USER-CARD` | [User card](components/COMP-USER-CARD.md) | Roster/inbox card geometry and states |
 | `COMP-PIN-KEYPAD` | [PIN keypad](components/COMP-PIN-KEYPAD.md) | 3×3 grid for digits 1–9; v1 h03 key sizing and spacing |
+| `COMP-STATUS-MESSAGE` | [Status message](components/COMP-STATUS-MESSAGE.md) | Centered information overlay; login uses `connecting` and `no Wi-Fi` |
 
 ### Screens
 
@@ -138,7 +145,7 @@ and reviewed.
 |---|---|---|---|
 | `SCR-SIGN-IN-ROSTER` | [Sign-in roster](screens/SCR-SIGN-IN-ROSTER.md) | `EXP-LOGIN` | Draft — roster visuals owner-aligned |
 | `SCR-EMPTY-HANGOUT` | [Empty hangout](screens/SCR-EMPTY-HANGOUT.md) | `EXP-LOGIN` | Draft — fixed empty copy |
-| `SCR-PIN-ENTRY` | [PIN entry](screens/SCR-PIN-ENTRY.md) | `EXP-LOGIN` | Draft — v1 layout, cover-down; `checking...` OPEN |
+| `SCR-PIN-ENTRY` | [PIN entry](screens/SCR-PIN-ENTRY.md) | `EXP-LOGIN` | Draft — panel composition; `checking...` OPEN |
 | `SCR-PIN-COOLDOWN` | [PIN cooldown](screens/SCR-PIN-COOLDOWN.md) | `EXP-LOGIN` | Draft — full-screen countdown |
 
 ## Authority and readiness

@@ -2,7 +2,7 @@
 
 ID: `SCR-SIGN-IN-ROSTER`
 Type: Screen composition
-Revision: 0.3
+Revision: 0.4
 Status: Draft — composition and roster visuals owner-aligned; motion OPEN
 Owner: Product owner
 Approval: No visual approval claimed
@@ -118,9 +118,12 @@ Center the focused card; outward side shows intentional empty track space.
 
 Use [`SCR-EMPTY-HANGOUT`](SCR-EMPTY-HANGOUT.md), not this screen.
 
-### Connecting or server unavailable
+### Connecting or Wi-Fi unavailable
 
-Use the connecting screen; do not show selectable roster cards.
+Keep this screen mounted. Show [`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md)
+over it: `connecting` when Wi-Fi is up and the server is not ready, or
+`no Wi-Fi` when Wi-Fi is down. Whether roster touch is ignored while that
+overlay is up is `EXP-LOGIN` `OPEN-042`.
 
 ## Copy
 
@@ -162,6 +165,7 @@ upper content bounds.
 2. [`FOUNDATION-DEVICE-CANVAS`](../foundations/FOUNDATION-DEVICE-CANVAS.md)
 3. [`TRANSITION-COVER-DOWN`](../patterns/TRANSITION-COVER-DOWN.md)
 4. Panel and component docs listed above
+5. [`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md) when connecting or Wi-Fi overlays this screen
 
 ## OPEN items
 
@@ -180,6 +184,7 @@ updating-hangout UI.
 
 ## Revision history
 
+- **0.4 — 2026-10-20:** Connecting and Wi-Fi stay on this screen under `COMP-STATUS-MESSAGE`.
 - **0.3 — 2026-10-10:** Theme, panels, user card geometry, center snap, EXP-036
   wait state, cross-fade intent.
 - **0.2 — 2026-10-10:** Shell chrome/content insets; planned `PANEL-*` per slot.
