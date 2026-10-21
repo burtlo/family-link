@@ -87,8 +87,8 @@ owner-approved exception.
 | **Full-width actions** | Width MAY span `fl-content-well` (**296 px**) or slot width; height ≥ **48 px** |
 | **Non-rectangular targets** | MUST satisfy `fl-touch-min-height`; width minimums here do not apply |
 
-Typography follows device canvas and component specs (PIN digits: **`fl-type-24`**
-per [`COMP-PIN-KEYPAD`](../components/COMP-PIN-KEYPAD.md)).
+Typography follows device canvas and component specs (PIN digits: **`fl-type-32`**
+per [`COMP-PIN-KEYPAD`](../components/COMP-PIN-KEYPAD.md) and `DEC-061`).
 
 ## Out of scope
 

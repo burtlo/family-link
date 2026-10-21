@@ -4,8 +4,8 @@ Status: planning inventory, 2026-10-11. The four existing login screens are inde
 
 | Proposed document | Specific gap and v1 evidence | Composition and handoff |
 |---|---|---|
-| `SCR-CONNECTING.md` | Not a separate screen. `EXP-LOGIN` `DEC-041` shows `connecting` as [`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md) over the current login surface. | Do not author a full-canvas replacement. Geometry stays on the component. |
-| `SCR-WIFI-UNAVAILABLE.md` | Not a separate screen. `DEC-043` shows `no Wi-Fi` in the same overlay. The historical extra guidance lines are not adopted. | Do not author a full-canvas replacement. Keep this condition distinct from connecting. |
+| `SCR-CONNECTING.md` | Not a separate screen. `DEC-051` shows `connecting` in the lower split-pane slot via [`PANEL-STATUS-MESSAGE`](../panels/PANEL-STATUS-MESSAGE.md). | Do not author a full-canvas replacement or overlay card. |
+| `SCR-WIFI-UNAVAILABLE.md` | Not a separate screen. `no Wi-Fi` uses that same lower-slot panel. Extra historical guidance lines are not adopted. | Keep this condition distinct from connecting. |
 | `SCR-MESSAGE-INBOX.md` | Successful login enters a signed-in message carousel (`EXP-012`), but no screen composes its header, cards, and transport. | Compose carousel-stage layout, status chrome, sender header, inbox body, message card and transport. Specify empty, one/many, unread, refreshing, playing and unavailable visual states. First author signed-in browsing/playback behavior. |
 | `SCR-SETTINGS.md` | V1 exposes a settings carousel and detail overlays; no v2 screen exists. | Compose settings body and detail overlay if the owner retains this stage. Resolve setting set, values and persistence in an experience specification before locking screen variants. |
 | `SCR-RECIPIENT-PICKER.md` | V1 moves from inbox to a horizontal recipient carousel with Everyone and possible multi-select. | Compose picker header/body and the selected-recipient visual. Specify empty roster, one/many, Everyone, focus versus selection, and back/record transition; author recipient-selection behavior first. |

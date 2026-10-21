@@ -2,7 +2,7 @@
 
 ID: `THEME-DARK`
 Type: Theme
-Revision: 0.2
+Revision: 0.3
 Status: Draft — first intentional color scheme (no second theme in v2)
 Owner: Product owner
 Approval: No visual approval claimed
@@ -21,8 +21,8 @@ matching legacy v1 device quantization.
 | Token | Hex (reference) | Used on |
 |---|---|---|
 | `fl-color-surface` | `#101418` | Full canvas default; sign-in upper/lower chrome; empty hangout; cooldown screen |
-| `fl-color-surface-upper` | `#101418` (default) | Upper `slot_chrome_bounds` when a screen uses two pane colors |
-| `fl-color-surface-lower` | `#101418` (default) | Lower `slot_chrome_bounds`; message home **may** differ later |
+| `fl-color-surface-upper` | `#101418` | Upper `slot_chrome_bounds` when a screen uses two pane colors |
+| `fl-color-surface-lower` | `#242C34` | Lower `slot_chrome_bounds` for the two-pane treatment |
 | `fl-color-text-primary` | `#E8F0E8` | Headings, keypad digits, primary labels on surface |
 | `fl-color-text-secondary` | `#A8B0B8` | De-emphasized chrome, empty PIN slots (`_`) |
 | `fl-color-accent` | `#E8C040` | Filled PIN `*` marks; send-user pick outline |
@@ -60,5 +60,7 @@ on the full canvas before panel overrides.
 
 ## Revision history
 
+- **0.3 — 2026-10-21:** Two-pane lower surface `#242C34` (same pair as the
+  profile-settings lab fixture).
 - **0.2 — 2026-10-10:** Placement map; catalog card backgrounds; single-scheme intent.
 - **0.1 — 2026-10-10:** Initial dark tokens.

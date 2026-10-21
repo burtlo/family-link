@@ -1,0 +1,17 @@
+id: CAT-09
+order: 22
+title: Empty hangout + connecting
+group: Login
+screen: SCR-EMPTY-HANGOUT
+state: connecting
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: "Loading hangout ..."
+  lower:
+    panel: PANEL-STATUS-MESSAGE
+    props:
+      variant: waiting
+      headline: connecting

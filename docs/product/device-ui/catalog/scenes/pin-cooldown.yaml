@@ -1,0 +1,11 @@
+id: CAT-14
+order: 40
+title: PIN cooldown
+group: PIN
+screen: SCR-PIN-COOLDOWN
+state: lockout
+layout: LAYOUT-FULL-CANVAS
+notes: Catalog LAYOUT-FULL-CANVAS until the product layout spec is authored
+props:
+  message: "Too many attempts. Try again in 60"
+  type: fl-type-24

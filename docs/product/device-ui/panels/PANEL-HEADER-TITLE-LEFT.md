@@ -2,8 +2,8 @@
 
 ID: `PANEL-HEADER-TITLE-LEFT`
 Type: Panel module
-Revision: 0.1
-Status: Draft
+Revision: 0.2
+Status: Draft — empty hangout keeps `Sign in as ...`
 Owner: Product owner
 Approval: No visual approval claimed
 Slot: `upper` on [`LAYOUT-SPLIT-PANE`](../layouts/LAYOUT-SPLIT-PANE.md)
@@ -35,7 +35,8 @@ roster, empty hangout, and roster refresh-wait states.
 |---|---|---|
 | Roster ready | `Sign in as ...` | `EXP-006`, `DEC-004` |
 | Awaiting roster after unknown user | `Updating hangout ...` | `EXP-036` |
-| Empty hangout | `No people in this hangout` | `EXP-020`, `DEC-017` |
+| Empty hangout | `Sign in as ...` | `DEC-065`, `EXP-048` |
+| Before first roster | `Loading hangout ...` | `EXP-038`, `DEC-048` |
 
 Use ASCII three periods in `Sign in as ...` and `Updating hangout ...`.
 
@@ -45,4 +46,5 @@ This panel is display-only. It does not own touch targets.
 
 ## Revision history
 
+- **0.2 — 2026-10-21:** Empty hangout keeps `Sign in as ...`; empty copy is not a heading (`DEC-062`, `DEC-065`).
 - **0.1 — 2026-10-10:** Initial panel; three heading variants tied to experience.

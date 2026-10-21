@@ -1,0 +1,18 @@
+id: CAT-12
+order: 32
+title: Wrong PIN
+group: PIN
+screen: SCR-PIN-ENTRY
+state: wrong-pin
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-PIN-STATUS
+    props:
+      name: Lynn
+      filled: 0
+      state: wrong
+  lower:
+    panel: PANEL-BODY-PIN-GRID
+    props:
+      state: ready

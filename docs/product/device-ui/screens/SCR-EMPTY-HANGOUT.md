@@ -2,8 +2,8 @@
 
 ID: `SCR-EMPTY-HANGOUT`
 Type: Screen composition
-Revision: 0.4
-Status: Draft
+Revision: 0.7
+Status: Draft — empty copy in the lower body; header stays `Sign in as ...`
 Owner: Product owner
 Approval: No visual approval claimed
 Target: v2 fixed-hardware 320 × 240 landscape canvas
@@ -12,24 +12,23 @@ Experience: [`EXP-LOGIN`](../../experiences/endpoint-login.md), empty hangout st
 ## Purpose
 
 Signed-out presentation when the server returns a reachable hangout with **zero**
-users, and the surface under [`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md)
-before the first valid roster (`EXP-038`). Not used when the roster has
-selectable cards.
+users, and the pre-roster surface before the first valid roster (`EXP-038`).
+While connecting or Wi-Fi is unavailable, keep the current upper heading and
+swap the lower slot to [`PANEL-STATUS-MESSAGE`](../panels/PANEL-STATUS-MESSAGE.md).
+Not used when the roster has selectable cards.
 
-Headings:
-
-| When | Copy |
-|---|---|
-| Before the first valid roster | `Loading hangout ...` |
-| Server returned zero users | `No people in this hangout` |
+| When | Upper heading | Lower body |
+|---|---|---|
+| Before the first valid roster | `Loading hangout ...` | `connecting` or `no Wi-Fi` |
+| Server returned zero users | `Sign in as ...` | `No people in this hangout` |
 
 ## Composition
 
 ```text
 SCR-EMPTY-HANGOUT
 └─ LAYOUT-SPLIT-PANE
-   ├─ upper → PANEL-HEADER-TITLE-LEFT  (copy: empty hangout)
-   └─ lower → (no carousel; surface fill only)
+   ├─ upper → PANEL-HEADER-TITLE-LEFT
+   └─ lower → PANEL-STATUS-MESSAGE
 ```
 
 ## Copy
@@ -37,9 +36,12 @@ SCR-EMPTY-HANGOUT
 | Element | Copy | When |
 |---|---|---|
 | Heading | `Loading hangout ...` | Before first valid roster |
-| Heading | `No people in this hangout` | Valid empty roster |
+| Heading | `Sign in as ...` | Valid empty roster (`DEC-065`) |
+| Lower body | `No people in this hangout` | Valid empty roster; not a header (`DEC-062`) |
+| Lower body | `connecting` / `no Wi-Fi` | Connectivity status; replaces the empty-body copy |
 
-Lower slot shows only `fl-color-surface` background — no placeholder cards.
+No placeholder cards. The empty-roster sentence uses
+[`PANEL-STATUS-MESSAGE`](../panels/PANEL-STATUS-MESSAGE.md) with no dots.
 
 ## Transitions
 
@@ -50,6 +52,9 @@ When roster becomes non-empty, transition forward to
 
 ## Revision history
 
+- **0.7 — 2026-10-21:** Known-empty header is `Sign in as ...` (`DEC-065`).
+- **0.6 — 2026-10-21:** Empty-roster copy moves to the lower body (`DEC-062`).
+- **0.5 — 2026-10-21:** Connecting / Wi-Fi swap the lower slot; no overlay card.
 - **0.4 — 2026-10-20:** Pre-roster heading `Loading hangout ...`; known-empty heading unchanged.
 - **0.3 — 2026-10-20:** Also used as the surface under the connecting / Wi-Fi overlay before the first roster.
 - **0.2 — 2026-10-20:** Replace the stale cross-fade recommendation with the cover-down default.

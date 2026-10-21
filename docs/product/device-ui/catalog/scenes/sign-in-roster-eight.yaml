@@ -1,0 +1,27 @@
+id: CAT-03
+order: 12
+title: Eight-user roster
+group: Login
+screen: SCR-SIGN-IN-ROSTER
+state: eight-users
+layout: LAYOUT-SPLIT-PANE
+notes: Same card geometry as four users
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: "Sign in as ..."
+  lower:
+    panel: PANEL-BODY-ROSTER-CAROUSEL
+    props:
+      focused: 3
+      touch: true
+      users:
+        - {id: lynn, name: Lynn, background: "#5AA0E8", text: "#101418"}
+        - {id: arlo, name: Arlo, background: "#67C587", text: "#101418"}
+        - {id: mazi, name: Mazi, background: "#E8C040", text: "#101418"}
+        - {id: audrey, name: Audrey, background: "#D875A8", text: "#101418"}
+        - {id: nico, name: Nico, background: "#E85B5B", text: "#101418"}
+        - {id: jules, name: Jules, background: "#8B7CE8", text: "#101418"}
+        - {id: rene, name: Rene, background: "#E88840", text: "#101418"}
+        - {id: sage, name: Sage, background: "#4EC4C8", text: "#101418"}

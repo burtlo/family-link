@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "family-link.device-ui-catalog.schema/v1",
+  "title": "Family Link device UI catalog",
+  "type": "object",
+  "required": ["document", "revision", "theme", "tokens", "scenes"],
+  "additionalProperties": false,
+  "properties": {
+    "document": { "const": "family-link.device-ui-catalog/v1" },
+    "revision": { "type": "integer", "minimum": 1 },
+    "theme": { "type": "string", "minLength": 1 },
+    "title": { "type": "string" },
+    "tokens": { "type": "object" },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/scene" }
+    }
+  },
+  "$defs": {
+    "scene": {
+      "type": "object",
+      "required": ["id", "title", "layout"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^CAT-[0-9]{2}$" },
+        "order": { "type": "integer" },
+        "title": { "type": "string", "minLength": 1 },
+        "group": { "type": "string" },
+        "screen": { "type": "string" },
+        "state": { "type": "string" },
+        "layout": { "enum": ["LAYOUT-SPLIT-PANE", "LAYOUT-FULL-CANVAS"] },
+        "notes": { "type": "string" },
+        "slots": { "$ref": "#/$defs/slots" },
+        "props": { "type": "object" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "layout": { "const": "LAYOUT-SPLIT-PANE" } } },
+          "then": { "required": ["slots"] }
+        }
+      ]
+    },
+    "slots": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "upper": { "$ref": "#/$defs/slot" },
+        "lower": { "$ref": "#/$defs/slot" }
+      }
+    },
+    "slot": {
+      "type": "object",
+      "required": ["panel"],
+      "additionalProperties": false,
+      "properties": {
+        "panel": {
+          "type": "string",
+          "enum": [
+            "none",
+            "PANEL-HEADER-TITLE-LEFT",
+            "PANEL-HEADER-TITLE-SUBTITLE",
+            "PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION",
+            "PANEL-HEADER-PIN-STATUS",
+            "PANEL-BODY-ROSTER-CAROUSEL",
+            "PANEL-BODY-FOUR-BUTTON",
+            "PANEL-BODY-LABEL-WITH-TWO-BUTTONS",
+            "PANEL-BODY-PIN-GRID",
+            "PANEL-STATUS-MESSAGE"
+          ]
+        },
+        "props": { "type": "object" }
+      }
+    }
+  }
+}

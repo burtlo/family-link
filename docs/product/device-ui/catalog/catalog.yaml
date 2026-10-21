@@ -1,0 +1,5 @@
+document: family-link.device-ui-catalog/v1
+revision: 3
+theme: THEME-DARK
+title: Device UI catalog
+scene_dir: scenes

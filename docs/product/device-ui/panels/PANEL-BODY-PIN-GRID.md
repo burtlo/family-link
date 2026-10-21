@@ -4,8 +4,8 @@
 |---|---|
 | ID | `PANEL-BODY-PIN-GRID` |
 | Type | Panel module |
-| Revision | 0.1 |
-| Status | Draft — panel boundary specified; inherited keypad fit and typography conflict OPEN |
+| Revision | 0.2 |
+| Status | Draft — 32 px digits and in-slot fit owner-decided; keypad dim amount OPEN |
 | Owner | Product owner |
 | Approval | No visual approval claimed |
 | Target | v2 fixed-hardware 320 × 240 landscape canvas |
@@ -39,15 +39,16 @@ lower slot_chrome_bounds (320 × 160; y=80…239)
 └────────────────────────────────────────┘
 ```
 
-The keypad's key sizes, grid gaps, and current vertical-origin proposal remain
-defined by `COMP-PIN-KEYPAD`. This panel does not silently change those values.
+The keypad's key sizes and gaps remain defined by `COMP-PIN-KEYPAD`. Digit
+labels are `fl-type-32`. The extra 10 px v1 origin is withdrawn so the grid
+starts at the lower-slot top and stays inside y=80…239 (`DEC-061`).
 
 ## Visual and interaction states
 
 | State | Presentation | Authority |
 |---|---|---|
 | Ready for entry | Show digits 1–9 in the 3×3 grid | `EXP-014`; `COMP-PIN-KEYPAD` |
-| Verification in progress | Ignore keypad input after digit four; whether keys dim is OPEN in `SCR-PIN-ENTRY` | `EXP-014`; `SCR-PIN-ENTRY` |
+| Verification in progress | Dim and disable the keypad after digit four; ignore taps | `DEC-059`, `EXP-045` |
 | Cooldown | The screen leaves PIN entry for `SCR-PIN-COOLDOWN`; no keypad is mounted there | `EXP-014` |
 
 The keypad component receives the applicable visual state. This panel does not
@@ -57,8 +58,7 @@ define when input is enabled or when a state transition occurs.
 
 | ID | Question | Blocks |
 |---|---|---|
-| `UI-OPEN-001` | Reconcile the inherited keypad origin and dimensions: the current 10 px offset places a 152 px-tall grid at y=90…241, two pixels beyond the 240 px canvas and below the lower slot; the shell content inset is y=92…227. Confirm the intended placement and touch bounds. | Visual approval and implementation |
-| `UI-OPEN-002` | Reconcile keypad digit typography: `COMP-PIN-KEYPAD` specifies `fl-type-24`, while `FOUNDATION-DEVICE-CANVAS` assigns `fl-type-32` to large numeric keypad digits. | Visual approval and implementation |
+| `UI-OPEN-001` | Exact keypad dim amount while checking | Visual approval |
 
 ## Dependencies and consumers
 
@@ -69,10 +69,12 @@ define when input is enabled or when a state transition occurs.
 
 ## Readiness
 
-- **Owner review:** Panel boundary and child ownership are ready for review.
-- **Visual approval:** Pending the two OPEN items above and a disabled-state review.
-- **Implementation:** Not ready until the keypad's native-pixel fit and typography agree with the canvas foundation.
+- **Owner review:** In-slot 32 px keypad and dim-while-checking are ready for correction.
+- **Visual approval:** Pending the exact dim amount.
+- **Implementation:** Geometry and type size are decided. Dim amount is not.
 
 ## Revision history
 
+- **0.2 — 2026-10-21:** 32 px digits; drop the overflowing 10 px origin;
+  dim-while-checking.
 - **0.1 — 2026-10-20:** Extract keypad composition into the lower panel required by the panel contract; record inherited geometry and typography conflicts.

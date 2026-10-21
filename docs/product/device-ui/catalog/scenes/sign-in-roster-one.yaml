@@ -1,0 +1,20 @@
+id: CAT-02
+order: 11
+title: One-user roster
+group: Login
+screen: SCR-SIGN-IN-ROSTER
+state: one-user
+layout: LAYOUT-SPLIT-PANE
+notes: Single card centered
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: "Sign in as ..."
+  lower:
+    panel: PANEL-BODY-ROSTER-CAROUSEL
+    props:
+      focused: 0
+      touch: true
+      users:
+        - {id: lynn, name: Lynn, background: "#5AA0E8", text: "#101418"}

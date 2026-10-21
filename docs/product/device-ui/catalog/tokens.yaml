@@ -1,0 +1,65 @@
+# Machine twin of FOUNDATION-DEVICE-CANVAS, THEME-DARK, LAYOUT-SPLIT-PANE,
+# and measured panel geometry. Renderers read these at mount.
+canvas:
+  width: 320
+  height: 240
+split_pane:
+  split_y: 80
+  margin: 12
+theme:
+  fl-color-surface: "#101418"
+  fl-color-surface-upper: "#101418"
+  fl-color-surface-lower: "#242C34"
+  fl-color-text-primary: "#E8F0E8"
+  fl-color-text-secondary: "#A8B0B8"
+  fl-color-accent: "#E8C040"
+  fl-color-card-peek: "#242C34"
+  fl-color-control: "#3A444E"
+  fl-color-key-pressed: "#1A2228"
+type:
+  fl-type-16: 16
+  fl-type-24: 24
+  fl-type-32: 32
+user_card:
+  width: 132
+  height: 133
+  gap: 12
+  radius: 8
+  avatar: 66
+  unfocused_opacity: 148
+  unfocused_scale_pct: 90
+pin_keypad:
+  pad: 4
+  gap: 4
+  width: 101
+  height: 48
+  radius: 8
+  dim_opa: 128
+four_button:
+  gutter: 16
+  width: 136
+  height: 56
+label_two_button:
+  label_y: 12
+  button_w: 296
+  button_h: 48
+  button_y0: 40
+  button_y1: 100
+title_subtitle:
+  title_x: 12
+  title_y: 12
+  subtitle_x: 12
+  subtitle_y: 41
+  text_w: 296
+header_action:
+  title_w: 183
+  subtitle_w: 183
+  action_x: 207
+  action_y: 12
+  action_w: 101
+  action_h: 56
+pin_status:
+  avatar: 28
+  prefix: "Sign in as"
+full_canvas:
+  message_type: fl-type-24

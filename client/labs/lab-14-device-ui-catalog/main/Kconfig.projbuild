@@ -1,0 +1,11 @@
+menu "LAB-14 device UI catalog"
+
+    config LAB14_SCRIPTED
+        bool "Walk every packed scene after boot"
+        default n
+
+    config LAB14_BUILD_ID
+        string "LAB-14 firmware build identity"
+        default "lab14-fw-manual-v1"
+
+endmenu

@@ -1,0 +1,14 @@
+id: CAT-08
+order: 21
+title: No people in this hangout
+group: Login
+screen: SCR-EMPTY-HANGOUT
+state: empty-roster
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: "No people in this hangout"
+  lower:
+    panel: none

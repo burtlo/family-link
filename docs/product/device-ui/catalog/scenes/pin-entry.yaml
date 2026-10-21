@@ -1,0 +1,19 @@
+id: CAT-10
+order: 30
+title: PIN entry
+group: PIN
+screen: SCR-PIN-ENTRY
+state: partial
+layout: LAYOUT-SPLIT-PANE
+notes: Two digits entered; keypad accepts taps in the catalog
+slots:
+  upper:
+    panel: PANEL-HEADER-PIN-STATUS
+    props:
+      name: Lynn
+      filled: 2
+      state: partial
+  lower:
+    panel: PANEL-BODY-PIN-GRID
+    props:
+      state: ready

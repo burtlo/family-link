@@ -1,0 +1,20 @@
+id: CAT-13
+order: 33
+title: PIN + connecting
+group: PIN
+screen: SCR-PIN-ENTRY
+state: connecting
+layout: LAYOUT-SPLIT-PANE
+notes: Header keeps entered digits; lower slot is status
+slots:
+  upper:
+    panel: PANEL-HEADER-PIN-STATUS
+    props:
+      name: Lynn
+      filled: 3
+      state: partial
+  lower:
+    panel: PANEL-STATUS-MESSAGE
+    props:
+      variant: waiting
+      headline: connecting

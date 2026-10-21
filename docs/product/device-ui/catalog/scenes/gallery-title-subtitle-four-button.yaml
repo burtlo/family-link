@@ -1,0 +1,20 @@
+id: CAT-15
+order: 50
+title: Title + four buttons
+group: Gallery
+notes: No SCR-* yet; measurement fixtures from the panel specs
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-SUBTITLE
+    props:
+      title: Profile Settings for Love
+      subtitle: Card details. Settings previews. That should wrap now quit I tiny lil' aggro.
+  lower:
+    panel: PANEL-BODY-FOUR-BUTTON
+    props:
+      buttons:
+        - Settings Polars
+        - Inbox cards
+        - Recipients
+        - Record sketch

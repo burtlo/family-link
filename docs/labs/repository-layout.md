@@ -160,7 +160,7 @@ Do not commit credentials, PINs, or raw media from real households. Use syntheti
 **Preferred host flow** ([labs configuration](../standards/labs-configuration.md)):
 
 - Register the lab in [`config/labs.registry.yaml`](../../config/labs.registry.yaml) with make name, `project_dir`, variants, and `build_dir` paths.
-- Run **`make lab.<name>`** (build if needed, flash, capture), **`make lab.<name>.build`**, **`.flash`**, **`.capture`**.
+- Run **`make lab.<name>`** (build, flash, capture), **`make lab.<name>.build`**, **`.flash`**, **`.capture`**.
 - Validate with `python scripts/lab_registry.py validate` and inspect with `make config.labs`.
 - Optional: add `[command.lab.<name>]` sections to `config/host.defaults.ini` for the agent command catalog.
 - Do **not** point `[firmware].source` at a lab tree or overwrite bootstrap `artifacts/device/bootstrap/current.json`.

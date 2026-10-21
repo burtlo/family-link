@@ -1,0 +1,18 @@
+id: CAT-05
+order: 14
+title: Roster + connecting
+group: Login
+screen: SCR-SIGN-IN-ROSTER
+state: connecting
+layout: LAYOUT-SPLIT-PANE
+notes: Lower slot swaps to PANEL-STATUS-MESSAGE; header stays
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: "Sign in as ..."
+  lower:
+    panel: PANEL-STATUS-MESSAGE
+    props:
+      variant: waiting
+      headline: connecting

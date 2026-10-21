@@ -1,0 +1,582 @@
+{
+  "document": "family-link.device-ui-catalog/v1",
+  "revision": 3,
+  "theme": "THEME-DARK",
+  "title": "Device UI catalog",
+  "tokens": {
+    "canvas": {
+      "width": 320,
+      "height": 240
+    },
+    "split_pane": {
+      "split_y": 80,
+      "margin": 12
+    },
+    "theme": {
+      "fl-color-surface": "#101418",
+      "fl-color-surface-upper": "#101418",
+      "fl-color-surface-lower": "#242C34",
+      "fl-color-text-primary": "#E8F0E8",
+      "fl-color-text-secondary": "#A8B0B8",
+      "fl-color-accent": "#E8C040",
+      "fl-color-card-peek": "#242C34",
+      "fl-color-control": "#3A444E",
+      "fl-color-key-pressed": "#1A2228"
+    },
+    "type": {
+      "fl-type-16": 16,
+      "fl-type-24": 24,
+      "fl-type-32": 32
+    },
+    "user_card": {
+      "width": 132,
+      "height": 133,
+      "gap": 12,
+      "radius": 8,
+      "avatar": 66,
+      "unfocused_opacity": 148,
+      "unfocused_scale_pct": 90
+    },
+    "pin_keypad": {
+      "pad": 4,
+      "gap": 4,
+      "width": 101,
+      "height": 48,
+      "radius": 8,
+      "dim_opa": 128
+    },
+    "four_button": {
+      "gutter": 16,
+      "width": 136,
+      "height": 56
+    },
+    "label_two_button": {
+      "label_y": 12,
+      "button_w": 296,
+      "button_h": 48,
+      "button_y0": 40,
+      "button_y1": 100
+    },
+    "title_subtitle": {
+      "title_x": 12,
+      "title_y": 12,
+      "subtitle_x": 12,
+      "subtitle_y": 41,
+      "text_w": 296
+    },
+    "header_action": {
+      "title_w": 183,
+      "subtitle_w": 183,
+      "action_x": 207,
+      "action_y": 12,
+      "action_w": 101,
+      "action_h": 56
+    },
+    "pin_status": {
+      "avatar": 28,
+      "prefix": "Sign in as"
+    },
+    "full_canvas": {
+      "message_type": "fl-type-24"
+    }
+  },
+  "scenes": [
+    {
+      "id": "CAT-01",
+      "order": 10,
+      "title": "Sign in as ...",
+      "group": "Login",
+      "screen": "SCR-SIGN-IN-ROSTER",
+      "state": "roster-ready",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "Four-user roster; focused card centered",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Sign in as ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-ROSTER-CAROUSEL",
+          "props": {
+            "focused": 1,
+            "touch": true,
+            "users": [
+              {
+                "id": "lynn",
+                "name": "Lynn",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              },
+              {
+                "id": "arlo",
+                "name": "Arlo",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "mazi",
+                "name": "Mazi",
+                "background": "#E8C040",
+                "text": "#101418"
+              },
+              {
+                "id": "audrey",
+                "name": "Audrey",
+                "background": "#D875A8",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-02",
+      "order": 11,
+      "title": "One-user roster",
+      "group": "Login",
+      "screen": "SCR-SIGN-IN-ROSTER",
+      "state": "one-user",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "Single card centered",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Sign in as ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-ROSTER-CAROUSEL",
+          "props": {
+            "focused": 0,
+            "touch": true,
+            "users": [
+              {
+                "id": "lynn",
+                "name": "Lynn",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-03",
+      "order": 12,
+      "title": "Eight-user roster",
+      "group": "Login",
+      "screen": "SCR-SIGN-IN-ROSTER",
+      "state": "eight-users",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "Same card geometry as four users",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Sign in as ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-ROSTER-CAROUSEL",
+          "props": {
+            "focused": 3,
+            "touch": true,
+            "users": [
+              {
+                "id": "lynn",
+                "name": "Lynn",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              },
+              {
+                "id": "arlo",
+                "name": "Arlo",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "mazi",
+                "name": "Mazi",
+                "background": "#E8C040",
+                "text": "#101418"
+              },
+              {
+                "id": "audrey",
+                "name": "Audrey",
+                "background": "#D875A8",
+                "text": "#101418"
+              },
+              {
+                "id": "nico",
+                "name": "Nico",
+                "background": "#E85B5B",
+                "text": "#101418"
+              },
+              {
+                "id": "jules",
+                "name": "Jules",
+                "background": "#8B7CE8",
+                "text": "#101418"
+              },
+              {
+                "id": "rene",
+                "name": "Rene",
+                "background": "#E88840",
+                "text": "#101418"
+              },
+              {
+                "id": "sage",
+                "name": "Sage",
+                "background": "#4EC4C8",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-04",
+      "order": 13,
+      "title": "Updating hangout ...",
+      "group": "Login",
+      "screen": "SCR-SIGN-IN-ROSTER",
+      "state": "roster-refresh-wait",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "EXP-036 heading and touch lock; cards may be stale",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Updating hangout ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-ROSTER-CAROUSEL",
+          "props": {
+            "focused": 1,
+            "touch": false,
+            "users": [
+              {
+                "id": "lynn",
+                "name": "Lynn",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              },
+              {
+                "id": "arlo",
+                "name": "Arlo",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "mazi",
+                "name": "Mazi",
+                "background": "#E8C040",
+                "text": "#101418"
+              },
+              {
+                "id": "audrey",
+                "name": "Audrey",
+                "background": "#D875A8",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-05",
+      "order": 14,
+      "title": "Roster + connecting",
+      "group": "Login",
+      "screen": "SCR-SIGN-IN-ROSTER",
+      "state": "connecting",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "Lower slot swaps to PANEL-STATUS-MESSAGE; header stays",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Sign in as ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-STATUS-MESSAGE",
+          "props": {
+            "variant": "waiting",
+            "headline": "connecting"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-06",
+      "order": 15,
+      "title": "Roster + no Wi-Fi",
+      "group": "Login",
+      "screen": "SCR-SIGN-IN-ROSTER",
+      "state": "no-wifi",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Sign in as ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-STATUS-MESSAGE",
+          "props": {
+            "variant": "link-absent",
+            "headline": "no Wi-Fi"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-07",
+      "order": 20,
+      "title": "Loading hangout ...",
+      "group": "Login",
+      "screen": "SCR-EMPTY-HANGOUT",
+      "state": "before-first-roster",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Loading hangout ..."
+          }
+        },
+        "lower": {
+          "panel": "none"
+        }
+      }
+    },
+    {
+      "id": "CAT-08",
+      "order": 21,
+      "title": "No people in this hangout",
+      "group": "Login",
+      "screen": "SCR-EMPTY-HANGOUT",
+      "state": "empty-roster",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "No people in this hangout"
+          }
+        },
+        "lower": {
+          "panel": "none"
+        }
+      }
+    },
+    {
+      "id": "CAT-09",
+      "order": 22,
+      "title": "Empty hangout + connecting",
+      "group": "Login",
+      "screen": "SCR-EMPTY-HANGOUT",
+      "state": "connecting",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Loading hangout ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-STATUS-MESSAGE",
+          "props": {
+            "variant": "waiting",
+            "headline": "connecting"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-10",
+      "order": 30,
+      "title": "PIN entry",
+      "group": "PIN",
+      "screen": "SCR-PIN-ENTRY",
+      "state": "partial",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "Two digits entered; keypad accepts taps in the catalog",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-PIN-STATUS",
+          "props": {
+            "name": "Lynn",
+            "filled": 2,
+            "state": "partial"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-PIN-GRID",
+          "props": {
+            "state": "ready"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-11",
+      "order": 31,
+      "title": "PIN checking",
+      "group": "PIN",
+      "screen": "SCR-PIN-ENTRY",
+      "state": "checking",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "checking... replaces marks; keypad dim 50% is a catalog stand-in",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-PIN-STATUS",
+          "props": {
+            "name": "Lynn",
+            "filled": 4,
+            "state": "checking"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-PIN-GRID",
+          "props": {
+            "state": "checking"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-12",
+      "order": 32,
+      "title": "Wrong PIN",
+      "group": "PIN",
+      "screen": "SCR-PIN-ENTRY",
+      "state": "wrong-pin",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-PIN-STATUS",
+          "props": {
+            "name": "Lynn",
+            "filled": 0,
+            "state": "wrong"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-PIN-GRID",
+          "props": {
+            "state": "ready"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-13",
+      "order": 33,
+      "title": "PIN + connecting",
+      "group": "PIN",
+      "screen": "SCR-PIN-ENTRY",
+      "state": "connecting",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "Header keeps entered digits; lower slot is status",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-PIN-STATUS",
+          "props": {
+            "name": "Lynn",
+            "filled": 3,
+            "state": "partial"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-STATUS-MESSAGE",
+          "props": {
+            "variant": "waiting",
+            "headline": "connecting"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-14",
+      "order": 40,
+      "title": "PIN cooldown",
+      "group": "PIN",
+      "screen": "SCR-PIN-COOLDOWN",
+      "state": "lockout",
+      "layout": "LAYOUT-FULL-CANVAS",
+      "notes": "Catalog LAYOUT-FULL-CANVAS until the product layout spec is authored",
+      "props": {
+        "message": "Too many attempts. Try again in 60",
+        "type": "fl-type-24"
+      }
+    },
+    {
+      "id": "CAT-15",
+      "order": 50,
+      "title": "Title + four buttons",
+      "group": "Gallery",
+      "notes": "No SCR-* yet; measurement fixtures from the panel specs",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-SUBTITLE",
+          "props": {
+            "title": "Profile Settings for Love",
+            "subtitle": "Card details. Settings previews. That should wrap now quit I tiny lil' aggro."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-FOUR-BUTTON",
+          "props": {
+            "buttons": [
+              "Settings Polars",
+              "Inbox cards",
+              "Recipients",
+              "Record sketch"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-16",
+      "order": 51,
+      "title": "Title + action + two buttons",
+      "group": "Gallery",
+      "notes": "No SCR-* yet; subtitle wrap fixture from the panel spec",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION",
+          "props": {
+            "title": "Profile Setting",
+            "subtitle": "Subtitle wraps twice g. Forty-seven character.",
+            "action": "Back"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-LABEL-WITH-TWO-BUTTONS",
+          "props": {
+            "label": "Preview is local until Save. extra ggg",
+            "buttons": [
+              "Profile accent and avatar pad gg",
+              "Sketch stroke color max line 32g"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

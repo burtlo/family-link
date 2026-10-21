@@ -2,7 +2,7 @@
 
 ID: `LAYOUT-SPLIT-PANE`
 Type: Layout (shell)
-Revision: 0.3
+Revision: 0.5
 Status: Draft — shell geometry and inset model owner-aligned; theme-linked colors
 Owner: Product owner
 Approval: No visual approval claimed
@@ -53,7 +53,7 @@ types over one header with many modes.
 |---|---|
 | Default | Shell paints **`fl-color-surface`** (`#101418` in [`THEME-DARK`](../themes/THEME-DARK.md)) across the full canvas |
 | Panel override | Each mounted panel **MAY** paint **`fl-color-surface-upper`** or **`fl-color-surface-lower`** on its **`slot_chrome_bounds`** |
-| Same vs different | Sign-in family uses the **same** surface in both slots; message home **MAY** use two pane colors |
+| Same vs different | Two-pane treatment paints **`fl-color-surface-upper`** (`#101418`) on the upper slot and **`fl-color-surface-lower`** (`#242C34`) on the lower slot. Sign-in screens MAY still paint `fl-color-surface` on both slots |
 
 Background choice does not drive performance requirements. Scoped invalidation
 and update level drive performance (see panel contract).
@@ -184,6 +184,7 @@ no per-panel margin exceptions without new layout.
 
 ## Revision history
 
+- **0.5 — 2026-10-21:** Two-pane colors use `#101418` / `#242C34`.
 - **0.4 — 2026-10-20:** Mark the old cross-fade motion question superseded by the cover-down default.
 - **0.3 — 2026-10-10:** Link `THEME-DARK` surface tokens; sign-in same-color panes.
 - **0.2 — 2026-10-10:** Three-layer shell: default bg, per-panel override,

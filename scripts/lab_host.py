@@ -422,23 +422,25 @@ def ensure_lab_built(
     port: str = "",
     target: RunTarget | None = None,
 ) -> Path:
-    """Build when artifacts are missing or sdkconfig is stale vs variant defaults."""
+    """Always run the lab IDF build, then return the variant build directory.
+
+    `idf.py build` is incremental when sources are unchanged. Skipping it when
+    `flasher_args.json` already exists left operators flashing stale images.
+    """
     spec = get_lab(make_name)
     var = resolve_variant(spec, variant)
     build_dir = ROOT / var.build_dir
     defaults_files = _defaults_files_for_lab_build(config, spec, var, build_dir, kit, port, target)
-    stale = _refresh_stale_sdkconfig(build_dir, defaults_files)
-    if stale or not (build_dir / "flasher_args.json").is_file():
-        return build_lab(
-            config,
-            make_name,
-            variant,
-            kit=kit,
-            port=port,
-            target=target,
-            frozen_defaults_files=defaults_files,
-        )
-    return build_dir
+    _refresh_stale_sdkconfig(build_dir, defaults_files)
+    return build_lab(
+        config,
+        make_name,
+        variant,
+        kit=kit,
+        port=port,
+        target=target,
+        frozen_defaults_files=defaults_files,
+    )
 
 
 def build_lab(

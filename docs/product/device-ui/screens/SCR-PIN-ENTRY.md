@@ -4,8 +4,8 @@
 |---|---|
 | ID | `SCR-PIN-ENTRY` |
 | Type | Screen composition |
-| Revision | 0.7 |
-| Status | Draft — PIN contents composed through panels; `checking...` placement OPEN |
+| Revision | 0.9 |
+| Status | Draft — PIN contents composed through panels; checking dims keypad; 32 px digits |
 | Owner | Product owner |
 | Approval | No visual approval claimed |
 | Target | v2 fixed-hardware 320 × 240 landscape canvas |
@@ -31,8 +31,8 @@ Four-digit PIN entry for the selected user. Cooldown after five failures uses
 SCR-PIN-ENTRY
 └─ LAYOUT-SPLIT-PANE
    ├─ upper → PANEL-HEADER-PIN-STATUS
-   └─ lower → PANEL-BODY-PIN-GRID
-       └─ COMP-PIN-KEYPAD
+   └─ lower → PANEL-BODY-PIN-GRID        (entry / checking)
+            or PANEL-STATUS-MESSAGE     (connecting / no Wi-Fi)
 ```
 
 The two panels satisfy the one-panel-per-slot rule in
@@ -51,8 +51,8 @@ verification feedback.
 
 [`PANEL-BODY-PIN-GRID`](../panels/PANEL-BODY-PIN-GRID.md) occupies the 160 px
 lower slot and contains [`COMP-PIN-KEYPAD`](../components/COMP-PIN-KEYPAD.md).
-The keypad's existing origin and digit-size disagreement are recorded in the
-panel's OPEN items; this screen does not choose a correction.
+Digit labels are `fl-type-32`. The 3×3 grid must fit inside the 160 px lower
+slot (`DEC-061`). The extra 10 px v1 vertical origin is withdrawn.
 
 ## Wireframe
 
@@ -71,31 +71,35 @@ panel's OPEN items; this screen does not choose a correction.
 | State | Presentation |
 |---|---|
 | Partial PIN | Up to four `*` / `_` slots as above |
-| Checking | **`checking...` placement OPEN** (see question below) |
-| Wrong PIN | Identity cluster → `wrong pin` for **2000 ms**, then restore + clear |
+| Checking | Replace the four PIN marks with `checking...`; keep name and avatar; dim and disable the keypad |
+| Wrong PIN | Restore PIN marks; restore keypad appearance and input; identity cluster → `wrong pin` for **2000 ms**, then clear entry |
+| Connecting / no Wi-Fi | Keep the PIN header. Crossfade the lower slot to [`PANEL-STATUS-MESSAGE`](../panels/PANEL-STATUS-MESSAGE.md) in 150–200 ms. Entered digits stay. |
 | Cooldown | Leave screen → `SCR-PIN-COOLDOWN` (cover-down) |
 | Success | Reverse cover-down to inbox; no success chrome on this screen |
-| Overlay (`connecting` / `no Wi-Fi`) | Keep this screen mounted. [`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md) covers it and ignores all keypad touch. Entered digits stay. |
-| Verification / cooldown on keypad | Ignore touch; visual dim **OPEN** if not full-screen cooldown |
 
 BOOT (`DEC-037`): no digits → roster; 1–3 digits → clear in place; after digit
 four → ignore BOOT until verification completes. While
-[`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md) is visible,
-ignore BOOT and pause the 60-second partial-PIN idle timer.
+[`PANEL-STATUS-MESSAGE`](../panels/PANEL-STATUS-MESSAGE.md) occupies the lower
+slot, ignore BOOT and pause the 60-second partial-PIN idle timer.
 
 ## OPEN items
 
 | ID | Question |
 |---|---|
-| `UI-OPEN-001` | While verifying after the 4th digit, where does **`checking...`** appear? (A) replace identity cluster like `wrong pin`; (B) small line under identity; (C) replace the four PIN slots temporarily) |
+| `UI-OPEN-001` | Exact keypad dim amount while checking |
 
-Resolved: cover-down transitions; v1 PIN vertical placement; v1 keypad grid;
-wrong-pin 2 s; cooldown on separate screen.
+Resolved: cover-down transitions; v1 PIN vertical placement; in-slot 3×3 grid
+with `fl-type-32` digits; wrong-pin 2 s; cooldown on separate screen;
+`checking...` replaces the four PIN marks; keypad dims and ignores taps while
+checking.
 
 ## Revision history
 
 - **0.5 — 2026-10-10:** h19 cover-down; v1 product PIN layout; 2 s wrong pin;
   cooldown screen; keypad from product shell not h03 demo.
+- **0.9 — 2026-10-21:** Checking dims the keypad. Digits are `fl-type-32` and
+  stay inside the lower slot. Lower-slot status uses a 150–200 ms crossfade.
+- **0.8 — 2026-10-21:** `checking...` replaces PIN marks. Connecting swaps the lower slot; no overlay card.
 - **0.7 — 2026-10-20:** Overlay may cover this screen and block keypad touch.
 - **0.6 — 2026-10-20:** Compose upper and lower PIN content through panels;
   retain checking placement as OPEN.

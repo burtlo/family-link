@@ -58,6 +58,12 @@ Shell layouts codify **`slot_chrome_bounds`** and **`slot_content_bounds`** so
 panels do not re-apply margins. Waiving insets requires a new layout ID.
 Drawing and other edge-to-edge experiences use an explicit full-canvas layout.
 
+A machine-readable twin of this composition lives in
+[`catalog/`](catalog/README.md). [`LAB-14`](../../../client/labs/lab-14-device-ui-catalog/README.md)
+packs those YAML scenes at build and mounts them on the BOX-3 so a spec change
+can be flashed as a visual review image. The Markdown artifacts remain the
+review surface.
+
 ## Artifact index
 
 ### Remaining x02 coverage
@@ -130,6 +136,7 @@ and reviewed.
 | `PANEL-BODY-LABEL-WITH-TWO-BUTTONS` | [Label with two buttons](panels/PANEL-BODY-LABEL-WITH-TWO-BUTTONS.md) | `lower` |
 | `PANEL-HEADER-PIN-STATUS` | [PIN status header](panels/PANEL-HEADER-PIN-STATUS.md) | `upper` |
 | `PANEL-BODY-PIN-GRID` | [PIN keypad body](panels/PANEL-BODY-PIN-GRID.md) | `lower` |
+| `PANEL-STATUS-MESSAGE` | [Connection status body](panels/PANEL-STATUS-MESSAGE.md) | `lower` — `connecting` / `no Wi-Fi` |
 
 ### Components
 
@@ -137,7 +144,7 @@ and reviewed.
 |---|---|---|
 | `COMP-USER-CARD` | [User card](components/COMP-USER-CARD.md) | Roster/inbox card geometry and states |
 | `COMP-PIN-KEYPAD` | [PIN keypad](components/COMP-PIN-KEYPAD.md) | 3×3 grid for digits 1–9; v1 h03 key sizing and spacing |
-| `COMP-STATUS-MESSAGE` | [Status message](components/COMP-STATUS-MESSAGE.md) | Centered information overlay; login uses `connecting` and `no Wi-Fi` |
+| `COMP-STATUS-MESSAGE` | [Status message](components/COMP-STATUS-MESSAGE.md) | Centered lower-slot copy; login uses `connecting` and `no Wi-Fi` |
 
 ### Screens
 
@@ -145,8 +152,19 @@ and reviewed.
 |---|---|---|---|
 | `SCR-SIGN-IN-ROSTER` | [Sign-in roster](screens/SCR-SIGN-IN-ROSTER.md) | `EXP-LOGIN` | Draft — roster visuals owner-aligned |
 | `SCR-EMPTY-HANGOUT` | [Empty hangout](screens/SCR-EMPTY-HANGOUT.md) | `EXP-LOGIN` | Draft — fixed empty copy |
-| `SCR-PIN-ENTRY` | [PIN entry](screens/SCR-PIN-ENTRY.md) | `EXP-LOGIN` | Draft — panel composition; `checking...` OPEN |
-| `SCR-PIN-COOLDOWN` | [PIN cooldown](screens/SCR-PIN-COOLDOWN.md) | `EXP-LOGIN` | Draft — full-screen countdown |
+| `SCR-PIN-ENTRY` | [PIN entry](screens/SCR-PIN-ENTRY.md) | `EXP-LOGIN` | Draft — panel composition; checking dims keypad; 32 px digits |
+| `SCR-PIN-COOLDOWN` | [PIN cooldown](screens/SCR-PIN-COOLDOWN.md) | `EXP-LOGIN` | Draft — full-canvas lockout stays through connectivity loss |
+
+### On-device catalog
+
+| Artifact | Role |
+|---|---|
+| [`catalog/`](catalog/README.md) | YAML scenes, tokens, and schema (`family-link.device-ui-catalog/v1`) |
+| `LAB-14` | Flashable renderer: `make lab.lab14` |
+
+Adding a screen that reuses existing panels is a new `catalog/scenes/*.yaml`
+file with the next unused `CAT-NN` id. New panel types still need a Markdown
+spec and a C renderer. Name a visual by its catalog ID (`CAT-01` … `CAT-16`).
 
 ## Authority and readiness
 

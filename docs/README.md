@@ -14,6 +14,7 @@ Read [`AGENTS.md`](AGENTS.md) before inventing product behavior or touching code
 | `docs/product/experiences/<slug>.md` | Owner-approved experience specifications (create as needed) |
 | [`product/device-ui-specification-authoring.md`](product/device-ui-specification-authoring.md) | Workflow and required structure for fixed-hardware layouts, components, and screens |
 | [`product/device-ui/`](product/device-ui/README.md) | V2 device UI foundations, reusable layouts, components, and screen compositions |
+| [`product/device-ui/catalog/`](product/device-ui/catalog/README.md) | YAML catalog of those layouts; flash with `make lab.lab14` |
 | [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) | Reusable client/server contract format and review questions |
 | [`product/communication-contracts/endpoint-health-and-login.md`](product/communication-contracts/endpoint-health-and-login.md) | Draft v2 health, roster, and PIN exchange contract; blocking wire decisions recorded |
 | [`product/communication-contracts/user-scoped-envelope.md`](product/communication-contracts/user-scoped-envelope.md) | Proposed signed-in authority and shared error schema |

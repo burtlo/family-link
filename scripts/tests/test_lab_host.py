@@ -134,6 +134,22 @@ class LabHostSdkconfigTests(unittest.TestCase):
                     config, spec, var, self.temp_path, "A", "", target
                 )
 
+    def test_ensure_lab_built_always_runs_idf_build(self):
+        from lab_host import ensure_lab_built
+
+        config = ProjectConfig()
+        with patch("lab_host.get_lab") as get_lab_mock, patch(
+            "lab_host.resolve_variant"
+        ) as resolve_variant, patch(
+            "lab_host._defaults_files_for_lab_build", return_value=[]
+        ), patch(
+            "lab_host._refresh_stale_sdkconfig", return_value=False
+        ), patch("lab_host.build_lab", return_value=self.temp_path) as build:
+            get_lab_mock.return_value = type("Spec", (), {"project_dir": Path("client/labs/lab-14-device-ui-catalog")})()
+            resolve_variant.return_value = type("Var", (), {"build_dir": Path("build/labs/lab-14")})()
+            ensure_lab_built(config, "lab14", "manual")
+        build.assert_called_once()
+
     def test_ensure_build_uses_same_frozen_defaults(self):
         from lab_host import ensure_lab_built
 

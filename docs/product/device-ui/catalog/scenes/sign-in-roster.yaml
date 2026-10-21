@@ -1,0 +1,23 @@
+id: CAT-01
+order: 10
+title: Sign in as ...
+group: Login
+screen: SCR-SIGN-IN-ROSTER
+state: roster-ready
+layout: LAYOUT-SPLIT-PANE
+notes: Four-user roster; focused card centered
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: "Sign in as ..."
+  lower:
+    panel: PANEL-BODY-ROSTER-CAROUSEL
+    props:
+      focused: 1
+      touch: true
+      users:
+        - {id: lynn, name: Lynn, background: "#5AA0E8", text: "#101418"}
+        - {id: arlo, name: Arlo, background: "#67C587", text: "#101418"}
+        - {id: mazi, name: Mazi, background: "#E8C040", text: "#101418"}
+        - {id: audrey, name: Audrey, background: "#D875A8", text: "#101418"}

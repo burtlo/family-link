@@ -1,0 +1,20 @@
+id: CAT-16
+order: 51
+title: Title + action + two buttons
+group: Gallery
+notes: No SCR-* yet; subtitle wrap fixture from the panel spec
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION
+    props:
+      title: Profile Setting
+      subtitle: "Subtitle wraps twice g. Forty-seven character."
+      action: Back
+  lower:
+    panel: PANEL-BODY-LABEL-WITH-TWO-BUTTONS
+    props:
+      label: "Preview is local until Save. extra ggg"
+      buttons:
+        - Profile accent and avatar pad gg
+        - Sketch stroke color max line 32g

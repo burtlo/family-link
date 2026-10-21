@@ -1,0 +1,19 @@
+id: CAT-11
+order: 31
+title: PIN checking
+group: PIN
+screen: SCR-PIN-ENTRY
+state: checking
+layout: LAYOUT-SPLIT-PANE
+notes: checking... replaces marks; keypad dim 50% is a catalog stand-in
+slots:
+  upper:
+    panel: PANEL-HEADER-PIN-STATUS
+    props:
+      name: Lynn
+      filled: 4
+      state: checking
+  lower:
+    panel: PANEL-BODY-PIN-GRID
+    props:
+      state: checking

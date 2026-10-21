@@ -128,7 +128,17 @@ docs/product/device-ui/
   panels/PANEL-<NAME>.md
   components/COMP-<NAME>.md
   screens/SCR-<NAME>.md
+  catalog/
+    catalog.yaml
+    tokens.yaml
+    scenes/<slug>.yaml   # id: CAT-NN inside the file
 ```
+
+When a screen or panel is ready for visual review on hardware, add or update
+the matching catalog scene under `catalog/scenes/` and flash
+[`LAB-14`](../../../client/labs/lab-14-device-ui-catalog/README.md). YAML records
+composition and tokens; Markdown remains the review surface. See
+[`device-ui/catalog/README.md`](device-ui/catalog/README.md).
 
 Preserve an identifier when its meaning remains stable. If meaning changes
 materially, supersede it and record the replacement rather than silently

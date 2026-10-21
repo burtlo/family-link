@@ -4,8 +4,8 @@
 |---|---|
 | ID | `PANEL-HEADER-TITLE-SUBTITLE` |
 | Type | Panel module |
-| Revision | 0.2 |
-| Status | Draft — placement, type sizes, and visible character limits measured; no visual approval claimed |
+| Revision | 0.3 |
+| Status | Draft — placement, type sizes, and visible character limits measured (title max 25); no visual approval claimed |
 | Owner | Product owner |
 | Approval | No visual approval claimed |
 | Target | v2 fixed-hardware 320 × 240 landscape canvas |
@@ -89,7 +89,7 @@ including spaces and punctuation.
 
 | Role | Max visible characters | Lines | Measurement fixture (not product copy) |
 |---|---|---|---|
-| Title | **26** | 1 | `Profile Settings for Lover` |
+| Title | **25** | 1 | `Profile Settings for Love` |
 | Subtitle | **77** | 2 | `Card details. Settings previews. That should wrap now quit I tiny lil' aggro.` |
 
 Rules:
@@ -148,6 +148,10 @@ No `SCR-*` mounts this panel yet.
 
 ## Revision history
 
+- **0.3 — 2026-10-21:** Title max is **25** on the 296 px `fl-type-24` box.
+  The previous 26-character fixture (`Profile Settings for Lover`) overflowed
+  the LVGL Montserrat Medium 24 stand-in by about 4 px and wrapped. Geometry
+  stays 296 px; copy shortened to `Profile Settings for Love`.
 - **0.2 — 2026-10-21:** Trailing-action question resolved as a separate panel ID.
 - **0.1 — 2026-10-21:** Initial title + subtitle header from owner-measured
   upper-slot placement and maximum visible string lengths.

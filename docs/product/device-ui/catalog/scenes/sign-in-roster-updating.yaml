@@ -1,0 +1,23 @@
+id: CAT-04
+order: 13
+title: Updating hangout ...
+group: Login
+screen: SCR-SIGN-IN-ROSTER
+state: roster-refresh-wait
+layout: LAYOUT-SPLIT-PANE
+notes: EXP-036 heading and touch lock; cards may be stale
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: "Updating hangout ..."
+  lower:
+    panel: PANEL-BODY-ROSTER-CAROUSEL
+    props:
+      focused: 1
+      touch: false
+      users:
+        - {id: lynn, name: Lynn, background: "#5AA0E8", text: "#101418"}
+        - {id: arlo, name: Arlo, background: "#67C587", text: "#101418"}
+        - {id: mazi, name: Mazi, background: "#E8C040", text: "#101418"}
+        - {id: audrey, name: Audrey, background: "#D875A8", text: "#101418"}

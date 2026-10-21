@@ -2,8 +2,8 @@
 
 ID: `FOUNDATION-MOTION`
 Type: Foundation
-Revision: 0.3
-Status: Draft — stage transitions owner-aligned (h19 cover-down); status-overlay motion separate
+Revision: 0.5
+Status: Draft — stage transitions owner-aligned (h19 cover-down); lower-slot status uses a 150–200 ms crossfade
 Owner: Product owner
 Approval: No visual approval claimed
 Target: v2 fixed-hardware device UI (LVGL)
@@ -20,12 +20,13 @@ ease-in-out quint, forward and reverse as defined there.
 
 Cross-fade is **withdrawn** as the default roster ↔ PIN policy (owner, 2026-10-10).
 
-## Information overlay
+## Lower-slot status
 
-[`COMP-STATUS-MESSAGE`](../components/COMP-STATUS-MESSAGE.md) slides up from the
-bottom to the canvas center and slides down off screen when its condition
-clears. That motion is not cover-down: cover-down parks a full screen at
-`y = 0`. Duration and easing for the overlay are OPEN on the component.
+[`PANEL-STATUS-MESSAGE`](../panels/PANEL-STATUS-MESSAGE.md) replaces the lower
+split-pane body. Use a **150–200 ms** crossfade: fade the current lower content
+out, then fade the new state in. Keep the upper panel stable. Do not slide.
+Rapid connectivity fluctuations must not flicker; the exact hold is delegated
+to engineering. Cover-down remains the stage-change default.
 
 ## Carousel focus motion
 
@@ -47,6 +48,8 @@ remain on the v1 device carousel implementation before v2 copies timing constant
 
 ## Revision history
 
+- **0.5 — 2026-10-21:** Lower-slot status is a 150–200 ms crossfade; no slide.
+- **0.4 — 2026-10-21:** Withdraw the status overlay slide. Lower-slot status uses a subtle in-slot change.
 - **0.3 — 2026-10-20:** Record the centered status-message overlay as separate from cover-down.
 - **0.2 — 2026-10-10:** Cover-down default; carousel snap deferred; web twin rejected.
 - **0.1 — 2026-10-10:** Cross-fade proposed (superseded for login stages).

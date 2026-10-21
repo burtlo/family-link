@@ -1,0 +1,17 @@
+id: CAT-06
+order: 15
+title: Roster + no Wi-Fi
+group: Login
+screen: SCR-SIGN-IN-ROSTER
+state: no-wifi
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: "Sign in as ..."
+  lower:
+    panel: PANEL-STATUS-MESSAGE
+    props:
+      variant: link-absent
+      headline: "no Wi-Fi"

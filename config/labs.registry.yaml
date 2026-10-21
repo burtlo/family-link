@@ -344,3 +344,30 @@ labs:
         saved until acknowledged; Cancel discards preview; rejected save says
         it was not saved. The sketch stroke swatch is separate. See the LAB-12
         report for exploratory policy observations and device evidence status.
+
+  lab14:
+    lab_id: LAB-14
+    evidence_slug: lab-14
+    project_dir: client/labs/lab-14-device-ui-catalog
+    target: esp32s3
+    description: YAML-driven visual catalog of current device-ui layouts, panels, and screens
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-14-device-ui-catalog-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-14-device-ui-catalog-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    run:
+      capture_seconds_default: 30
+      flash_by_default: true
+      instructions: |
+        Visual catalog. The index lists packed scenes from docs/product/device-ui/catalog.
+        Tap a scene to mount it at 320x240. Press BOOT to return to the index.
+        Serial: list, scene <id>, next, prev, index.
+        Scripted: walks every scene and prints LAB14_HARNESS_DONE. No server.
+      instructions_doc: client/labs/lab-14-device-ui-catalog/README.md

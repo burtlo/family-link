@@ -4,8 +4,8 @@
 |---|---|
 | ID | `PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION` |
 | Type | Panel module |
-| Revision | 0.2 |
-| Status | Draft — placement measured; subtitle line lengths owner-measured; title and action names still estimated |
+| Revision | 0.3 |
+| Status | Draft — placement measured; subtitle wrap and title length measured; action name still estimated |
 | Owner | Product owner |
 | Approval | No visual approval claimed |
 | Target | v2 fixed-hardware 320 × 240 landscape canvas |
@@ -27,7 +27,7 @@ title and subtitle.
 | Source | Authority | Contribution |
 |---|---|---|
 | Product owner, 2026-10-21 | Owner measurement | Title, subtitle, and action origins; action 101 × 56; 12 px inset on the action’s top, right, and bottom; subtitle wrap lengths |
-| [`PANEL-HEADER-TITLE-SUBTITLE`](PANEL-HEADER-TITLE-SUBTITLE.md) | Measured sibling | Title and subtitle type, colors, and vertical placement; full-width character maxima used to estimate this panel’s limits |
+| [`PANEL-HEADER-TITLE-SUBTITLE`](PANEL-HEADER-TITLE-SUBTITLE.md) | Measured sibling | Title and subtitle type, colors, and vertical placement |
 | [`PANEL-BODY-FOUR-BUTTON`](PANEL-BODY-FOUR-BUTTON.md) | Measured sibling | 15-character name in a 136 × 56 `fl-type-16` button, used to estimate the 101 px action |
 | [`FOUNDATION-DEVICE-CANVAS`](../foundations/FOUNDATION-DEVICE-CANVAS.md) | Foundation | `fl-margin-screen` **12 px**; `fl-type-24` / `fl-type-16`; `fl-touch-min-height` prefers 56 px |
 | [`FOUNDATION-BUTTON-MINIMUMS`](../foundations/FOUNDATION-BUTTON-MINIMUMS.md) | Foundation | Action width is `fl-button-min-width` **101 px** |
@@ -98,7 +98,7 @@ Counts include every visible character, including spaces and punctuation.
 
 | Role | Max | Lines | Source |
 |---|---|---|---|
-| Title | **16** (estimated) | 1 | Scaled from 26 chars in 296 px at `fl-type-24` |
+| Title | **15** (measured) | 1 | `Profile Setting` in the 183 px `fl-type-24` column |
 | Subtitle line 1 | **23** (measured) | 1 of 2 | Owner-amended wrap on the 183 px column |
 | Subtitle line 2 | **22** (measured) | 2 of 2 | Owner-amended wrap on the 183 px column |
 | Subtitle total | **46** in the source string (23 + wrapping space + 22) | 2 | Same fixture |
@@ -119,8 +119,9 @@ Rules:
 
 - Copy authors MUST keep subtitle line 1 to 23 characters and line 2 to 22
   characters at `fl-type-16` in the 183 px column.
-- Title and action names do not wrap. Stay within the estimates above until
-  those are measured on this layout.
+- Title does not wrap. Stay within **15** characters at `fl-type-24` in the
+  183 px column. Action names do not wrap; the 11-character action limit is
+  still an estimate.
 - Extra subtitle characters are not visible; ellipsize the end with ASCII
   `...` if a caller supplies a longer string.
 - Mixed-case Montserrat was the measurement basis. All-caps or many wide
@@ -161,18 +162,22 @@ mounts this panel yet.
 
 | ID | Question | Blocks |
 |---|---|---|
-| `UI-OPEN-001` | Confirm the estimated title (16) and action (11) limits on device. Subtitle is measured: 23 then 22. | Copy that must fill the title or action |
+| `UI-OPEN-001` | Confirm the estimated action (11) limit on device. Title is measured at **15**. Subtitle is measured: 23 then 22. | Copy that must fill the action |
 | `UI-OPEN-002` | Action fill, corner radius, and pressed/disabled appearance | Visual approval of chrome, not the grid math |
 
 ## Readiness
 
 - **Owner review:** Placement, action size, and subtitle wrap lengths are ready for correction.
-- **Visual approval:** Action insets and subtitle line lengths were accepted on device. Title and action name lengths are still estimates. Button chrome is not approved.
+- **Visual approval:** Action insets and subtitle wrap lengths were accepted on device. Title length is measured at 15 on the LVGL Montserrat Medium 24 stand-in. Action name length is still an estimate. Button chrome is not approved.
 - **Implementation:** Agents MAY use this geometry in new UI. No consuming screen is specified.
 - **Verification:** No formal evidence pack is claimed.
 
 ## Revision history
 
+- **0.3 — 2026-10-21:** Title max is **15** on the 183 px `fl-type-24` column.
+  The previous 16-character fixture (`Profile Settings`) overflowed by about
+  3 px and wrapped. Column width stays 183 px; copy shortened to
+  `Profile Setting`.
 - **0.2 — 2026-10-21:** Subtitle wrap measured on device: 23 characters, then
   22. Total source string 46.
 - **0.1 — 2026-10-21:** Initial title + subtitle + action header from

@@ -4,8 +4,8 @@
 |---|---|
 | ID | `PANEL-HEADER-PIN-STATUS` |
 | Type | Panel module |
-| Revision | 0.1 |
-| Status | Draft — identity and PIN slots owner-aligned; checking placement OPEN |
+| Revision | 0.2 |
+| Status | Draft — identity and PIN slots owner-aligned; checking replaces marks |
 | Owner | Product owner |
 | Approval | No visual approval claimed |
 | Target | v2 fixed-hardware 320 × 240 landscape canvas |
@@ -48,7 +48,7 @@ upper slot_chrome_bounds (320 × 80)
 |---|---|---|
 | Partial PIN | Show entered digits as masked `*` characters and remaining `_` positions | `EXP-014`; `SCR-PIN-ENTRY` |
 | Wrong PIN | Replace the identity cluster with literal `wrong pin` for 2 seconds, then restore identity; the experience clears entered digits | `EXP-014`; `SCR-PIN-ENTRY` |
-| Checking | The screen requires `checking...` after the fourth digit, but its placement is unresolved; see [`SCR-PIN-ENTRY` UI-OPEN-001](../screens/SCR-PIN-ENTRY.md#open-items) | `EXP-014` |
+| Checking | Replace the four PIN marks with `checking...`; keep the identity cluster | `DEC-053`, `EXP-014` |
 | Cooldown | The screen transitions to [`SCR-PIN-COOLDOWN`](../screens/SCR-PIN-COOLDOWN.md); this panel does not show the cooldown countdown | `EXP-014` |
 
 ## Interaction and ownership
@@ -67,9 +67,10 @@ experience determine the state supplied to it.
 ## Readiness
 
 - **Owner review:** Composition reflects the requested panel boundary and existing PIN presentation decisions.
-- **Visual approval:** Pending `checking...` placement and review of name truncation / slot spacing at the target canvas.
-- **Implementation:** Not ready while the checking state and linked font fallback remain unresolved.
+- **Visual approval:** Pending name truncation / slot spacing at the target canvas.
+- **Implementation:** Checking placement is decided; linked font fallback remains open on the foundation.
 
 ## Revision history
 
+- **0.2 — 2026-10-21:** `checking...` replaces the four PIN marks; identity stays.
 - **0.1 — 2026-10-20:** Extract identity and PIN-slot composition from `SCR-PIN-ENTRY` into the upper panel required by the panel contract.
