@@ -302,3 +302,45 @@ labs:
         not establish target visual or performance claims. Do not set BACKEND; LAB-06 has
         no service backend and rejects non-default backend values before target I/O.
       instructions_doc: client/labs/lab-06-stage-shell/README.md
+
+  lab12:
+    adapter: lab12
+    lab_id: LAB-12
+    evidence_slug: lab-12
+    project_dir: client/labs/lab-12-profile-settings
+    target: esp32s3
+    description: Profile preview, settings focus, and shared-profile failure propagation
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-12-profile-settings-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-12-profile-settings-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+      shared:
+        build_dir: build/labs/lab-12-profile-settings-shared
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.shared
+      scripted-shared:
+        build_dir: build/labs/lab-12-profile-settings-scripted-shared
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.shared
+          - sdkconfig.defaults.scripted-shared
+    trace_parser: client/labs/lab-12-profile-settings/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 30
+      flash_by_default: true
+      instructions: |
+        Visual only: make lab.lab12 or make lab.lab12.scripted. These commands
+        never start a server. Shared profile only: make lab.lab12 VARIANT=shared
+        KIT=<kit> or make lab.lab12.scripted VARIANT=scripted-shared KIT=<kit>;
+        these own the synthetic fixture on port 8771. Settings preview is not
+        saved until acknowledged; Cancel discards preview; rejected save says
+        it was not saved. The sketch stroke swatch is separate. See the LAB-12
+        report for exploratory policy observations and device evidence status.

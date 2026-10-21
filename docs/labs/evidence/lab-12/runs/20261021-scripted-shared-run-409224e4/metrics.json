@@ -1,0 +1,95 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261021-scripted-shared-run-409224e4",
+  "lab_metrics": {
+    "experiment_phase": "shared",
+    "variant": "scripted-shared",
+    "experiment_inputs": [
+      "P-save-fail",
+      "P-conflict",
+      "P-lost",
+      "P-invalid",
+      "P-hint"
+    ],
+    "experiment_verdict": "FAIL",
+    "harness_complete": true,
+    "missing_reason": "decided scenario violation",
+    "scenarios": {
+      "P-save-fail": {
+        "class": "decided",
+        "terminal": "failure",
+        "terminal_count": 1,
+        "fields": {
+          "presented_saved": 0
+        }
+      },
+      "P-conflict": {
+        "class": "decided",
+        "terminal": "failure",
+        "terminal_count": 1,
+        "fields": {
+          "first_success": 1,
+          "revision": 8,
+          "first_body_unchanged": 0
+        }
+      },
+      "P-lost": {
+        "class": "decided",
+        "terminal": "failure",
+        "terminal_count": 1,
+        "fields": {
+          "replayed_same_operation_id": 1,
+          "replay_count": 1,
+          "side_effect_count": 0
+        }
+      },
+      "P-invalid": {
+        "class": "decided",
+        "terminal": "failure",
+        "terminal_count": 1,
+        "fields": {
+          "profile_unchanged": 1,
+          "fallback_avatar": 1
+        }
+      },
+      "P-hint": {
+        "class": "decided",
+        "terminal": "failure",
+        "terminal_count": 1,
+        "fields": {
+          "stroke_color_changed": 0,
+          "inbox_rebuilds": 0
+        }
+      },
+      "P-save-policy": {
+        "class": "exploratory",
+        "observation": {
+          "terminal": "observed",
+          "reject_preview": "rollback"
+        }
+      },
+      "P-offline": {
+        "class": "exploratory",
+        "observation": {
+          "terminal": "failure",
+          "presented_saved": 0,
+          "work": "retained"
+        }
+      },
+      "P-message-color": {
+        "class": "exploratory",
+        "observation": {
+          "terminal": "observed",
+          "values": [
+            "follow-profile",
+            "frozen-on-message"
+          ]
+        }
+      }
+    },
+    "performance": {
+      "status": "UNMEASURED",
+      "provenance": "unmeasured/blocked"
+    }
+  }
+}

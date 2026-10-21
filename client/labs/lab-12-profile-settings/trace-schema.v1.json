@@ -1,0 +1,1 @@
+{"document":"lab12-trace-schema/v1","prefix":"LAB12_TRACE ","required":["scenario","operation_id","terminal","terminal_count"],"ready":"LAB12_READY","harness":"LAB12_HARNESS_DONE","phases":{"visual":["P-preview","P-modal","P-return"],"shared":["P-save-fail","P-conflict","P-lost","P-invalid","P-hint"]},"exploratory":["P-save-policy","P-offline","P-message-color","P-layout"]}

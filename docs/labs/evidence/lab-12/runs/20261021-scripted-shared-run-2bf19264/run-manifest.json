@@ -1,0 +1,98 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-12/runs/20261021-scripted-shared-run-2bf19264/events.jsonl",
+    "metrics": null,
+    "serial_log": null,
+    "server_log": "docs/labs/evidence/lab-12/runs/20261021-scripted-shared-run-2bf19264/server.log"
+  },
+  "build": {
+    "status": "built"
+  },
+  "capture": {
+    "experiment_phase": "shared",
+    "mode": "scripted",
+    "seconds": 30,
+    "stages": {
+      "activity": "running",
+      "build": "passed",
+      "cleanup": "passed",
+      "parser": "not_started",
+      "preflight": "passed",
+      "run": "failed",
+      "scenario": "not_started",
+      "service": "passed"
+    },
+    "status": "not_started",
+    "variant": "scripted-shared"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-21T00:41:51.634188Z",
+  "event_loss": {
+    "firmware_trace": {
+      "dropped_events": null,
+      "status": "UNKNOWN"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-12",
+  "experiment_verdict": "UNMEASURED",
+  "firmware": {
+    "binary_sha256": "d97de9c05c9d1ddf14b68d878f5427bba3ca25d4c829a9782ef7a181c0de2f99",
+    "build_fingerprint": "sha256:c4409fd579e7ec910dc85938f0b51f250caa1bb6179db14aebe2dce79d116239",
+    "build_id": "lab12-fw-scripted-shared-v1",
+    "build_stamp": null,
+    "cmake_options": {},
+    "idf_version": null,
+    "project_path": "client/labs/lab-12-profile-settings",
+    "sdkconfig_sha256": "86eee622a210c6dce13ab8d9986c1e2c0f5e7a4b71c52168819460035d556424",
+    "source_revision": null,
+    "source_sha256": "88e2d4eabfff5501ee7d1ebf313a4d306d3c00a13e8e91db1b4e70d40aba9c5d",
+    "target": "esp32s3",
+    "variant": "scripted-shared"
+  },
+  "fixture": {
+    "file": null,
+    "revision": "lab12-profile/v1",
+    "schema": "lab12-profile/v1",
+    "sha256": "00bdc48a0ce4d947fcacfef688f45e34eaa45f1352ddc15424572466f9e2154e"
+  },
+  "hardware": {
+    "board": null,
+    "kit_nickname": null
+  },
+  "lab_id": "LAB-12",
+  "lab_revision": null,
+  "lab_version_string": null,
+  "operator": null,
+  "run_id": "20261021-scripted-shared-run-2bf19264",
+  "scenarios": [
+    "P-save-fail",
+    "P-conflict",
+    "P-lost",
+    "P-invalid",
+    "P-hint"
+  ],
+  "server": {
+    "path": "server/labs/lab-12-profile-settings",
+    "revision": "LAB-12/v1",
+    "source_sha256": "de3808a2d7fcf67927cd18d1090795fe819ff8b889132f984a4badc568f41b14"
+  },
+  "source": {
+    "dirty": null,
+    "files": {},
+    "revision": null
+  },
+  "started_at_utc": "2026-10-21T00:41:37.823047Z",
+  "terminal_reason": "RuntimeError",
+  "terminal_reason_truncated": false,
+  "verification_levels": {
+    "build": "L0",
+    "target": null
+  },
+  "workflow_status": "FAIL"
+}

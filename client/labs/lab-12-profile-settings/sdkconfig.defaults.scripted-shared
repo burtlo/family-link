@@ -1,0 +1,7 @@
+CONFIG_LAB12_SCRIPTED=y
+CONFIG_LAB12_PHASE_SHARED=y
+CONFIG_LAB12_BUILD_ID="lab12-fw-scripted-shared-v1"
+# The integrated shared-profile harness holds several profile and reconciliation
+# snapshots while issuing fixture requests. The default ESP-IDF main task stack
+# is too small for this scripted-only workload.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192

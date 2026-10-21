@@ -1,0 +1,1 @@
+{"schema":"lab12-profile/v1","fixture_revision":"lab12-profile/v1","files":{"profiles.json":"initial two-endpoint synthetic state","allowed-colors.json":"fixture color allowlist","reject-preview.json":"rollback probe","offline-probe.json":"retained-work probe","layout.json":"split-pane exploratory probe","message-color.json":"follow-profile and frozen-on-message observations"}}

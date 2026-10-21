@@ -1,0 +1,97 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-12/runs/20261021-manual-run-96337803/events.jsonl",
+    "metrics": "docs/labs/evidence/lab-12/runs/20261021-manual-run-96337803/metrics.json",
+    "serial_log": "logs/device/labs/lab-12/20261021-manual-run-96337803/serial.txt",
+    "server_log": null
+  },
+  "build": {
+    "status": "built"
+  },
+  "capture": {
+    "experiment_phase": "visual",
+    "mode": "manual",
+    "post_reset": true,
+    "seconds": 30,
+    "stages": {
+      "activity": "passed",
+      "build": "passed",
+      "cleanup": "passed",
+      "parser": "passed",
+      "preflight": "passed",
+      "scenario": "not_configured",
+      "service": "not_configured"
+    },
+    "status": "captured",
+    "variant": "manual"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-21T00:24:38.009968Z",
+  "event_loss": {
+    "firmware_trace": {
+      "count": null,
+      "dropped_events": null,
+      "status": "UNKNOWN"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-12",
+  "experiment_verdict": "UNMEASURED",
+  "firmware": {
+    "binary_sha256": "ff2f62971bda3fd989624c32dd1174c19beaa49501469ef6e0f87bdeaa53d285",
+    "build_fingerprint": "sha256:6fc2256203696601a63cd7b2126018c842d4691bbed4fff4aaa2cadcb6d80bf7",
+    "build_id": "lab12-fw-manual-v1",
+    "build_stamp": null,
+    "cmake_options": {},
+    "idf_version": null,
+    "project_path": "client/labs/lab-12-profile-settings",
+    "sdkconfig_sha256": "786eb583f7c62d978190b1787c6b4ece5fdc95d0f3283d7ee51749fd66ccb970",
+    "source_revision": null,
+    "source_sha256": "d2f42179aa7b64f7d1cd7416cbcfe6c8b09f352433afce0b93b7e1111b851a3d",
+    "target": "esp32s3",
+    "variant": "manual"
+  },
+  "fixture": {
+    "file": null,
+    "revision": "lab12-profile/v1",
+    "schema": "lab12-profile/v1",
+    "sha256": "00bdc48a0ce4d947fcacfef688f45e34eaa45f1352ddc15424572466f9e2154e"
+  },
+  "hardware": {
+    "board": null,
+    "kit_nickname": null
+  },
+  "lab_id": "LAB-12",
+  "lab_revision": null,
+  "lab_version_string": null,
+  "operator": null,
+  "run_id": "20261021-manual-run-96337803",
+  "scenarios": [
+    "P-preview",
+    "P-modal",
+    "P-return"
+  ],
+  "server": {
+    "path": "none",
+    "revision": null,
+    "source_sha256": null
+  },
+  "source": {
+    "dirty": null,
+    "files": {},
+    "revision": null
+  },
+  "started_at_utc": "2026-10-21T00:23:07.280562Z",
+  "terminal_reason": "post_reset_manual_capture_complete",
+  "terminal_reason_truncated": false,
+  "verification_levels": {
+    "build": "L0",
+    "target": null
+  },
+  "workflow_status": "PASS"
+}

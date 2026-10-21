@@ -1,0 +1,20 @@
+menu "LAB-12 profile/settings"
+config LAB12_SCRIPTED
+    bool "Run LAB-12 scripted harness"
+    default n
+config LAB12_PHASE_SHARED
+    bool "Use shared-profile phase"
+    default n
+config LAB12_BUILD_ID
+    string "LAB-12 firmware build identity"
+    default "lab12-fw-manual-v1"
+config LAB12_WIFI_SSID
+    string "Fixture Wi-Fi SSID"
+    default ""
+config LAB12_WIFI_PASSWORD
+    string "Fixture Wi-Fi password"
+    default ""
+config LAB12_SERVER_URL
+    string "LAB-12 fixture service URL"
+    default "http://127.0.0.1:8771"
+endmenu

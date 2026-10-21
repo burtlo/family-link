@@ -1,0 +1,21 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261020-manual-run-9a328ad5",
+  "lab_metrics": {
+    "experiment_phase": "visual",
+    "variant": "manual",
+    "experiment_inputs": [
+      "P-preview",
+      "P-modal",
+      "P-return"
+    ],
+    "experiment_verdict": "UNMEASURED",
+    "harness_complete": false,
+    "missing_reason": "missing decided scenario",
+    "scenarios": {},
+    "performance": {
+      "status": "UNMEASURED",
+      "provenance": "unmeasured/blocked"
+    }
+  }
+}

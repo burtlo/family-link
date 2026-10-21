@@ -1,0 +1,13 @@
+{"kind":"stage","monotonic_ns":482212434978041,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":482212956175708,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":482212956420291,"outcome":"running","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":482213093089625,"outcome":"passed","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":482213093269208,"outcome":"running","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":482286314972125,"outcome":"passed","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":482299623007000,"outcome":"running","source":"host","stage":"activity"}
+{"kind":"stage","monotonic_ns":482302579193416,"outcome":"passed","source":"host","stage":"activity"}
+{"kind":"stage","monotonic_ns":482302579620375,"outcome":"running","source":"host","stage":"parser"}
+{"kind":"stage","monotonic_ns":482302583400375,"outcome":"passed","source":"host","stage":"parser"}
+{"kind":"stage","monotonic_ns":482302583669125,"outcome":"passed","source":"host","stage":"scenario"}
+{"kind":"stage","monotonic_ns":482302587959833,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"FAIL","kind":"run_terminal","reason":"post_reset_phase_harness_complete","source":"host","workflow_status":"PASS"}

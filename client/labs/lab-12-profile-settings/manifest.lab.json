@@ -1,0 +1,11 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-12",
+  "lab_revision": "v1",
+  "firmware_path": "client/labs/lab-12-profile-settings",
+  "server_path": "server/labs/lab-12-profile-settings",
+  "fixture_schema": "lab12-profile/v1",
+  "fixture_revision": "lab12-profile/v1",
+  "protocol": "synthetic-http-profile-fixture/v1",
+  "trace_schema": "lab12-trace-schema/v1"
+}

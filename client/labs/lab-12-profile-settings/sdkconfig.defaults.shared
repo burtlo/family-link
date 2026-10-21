@@ -1,0 +1,6 @@
+CONFIG_LAB12_PHASE_SHARED=y
+CONFIG_LAB12_BUILD_ID="lab12-fw-shared-v1"
+# Non-empty placeholders keep the shared transport linked in offline builds.
+# The run adapter replaces these with the selected kit's private settings.
+CONFIG_LAB12_WIFI_SSID="lab12-build-only"
+CONFIG_LAB12_WIFI_PASSWORD="lab12-build-only"

@@ -1,0 +1,65 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261021-scripted-run-22296250",
+  "lab_metrics": {
+    "experiment_phase": "visual",
+    "variant": "scripted",
+    "experiment_inputs": [
+      "P-preview",
+      "P-modal",
+      "P-return"
+    ],
+    "experiment_verdict": "PASS",
+    "harness_complete": true,
+    "missing_reason": null,
+    "scenarios": {
+      "P-preview": {
+        "class": "decided",
+        "terminal": "cancelled",
+        "terminal_count": 1,
+        "fields": {
+          "saved": 0,
+          "success_copy": 0
+        }
+      },
+      "P-modal": {
+        "class": "decided",
+        "terminal": "success",
+        "terminal_count": 1,
+        "fields": {
+          "focus_id": "card-2",
+          "overlay_widgets": 0
+        }
+      },
+      "P-return": {
+        "class": "decided",
+        "terminal": "success",
+        "terminal_count": 1,
+        "fields": {
+          "inbox_root": 1,
+          "focus_id": "card-2",
+          "update_level": 1
+        }
+      },
+      "P-layout": {
+        "class": "exploratory",
+        "observation": {
+          "terminal": "observed",
+          "layout": "split-pane",
+          "upper": [
+            320,
+            80
+          ],
+          "lower": [
+            320,
+            160
+          ]
+        }
+      }
+    },
+    "performance": {
+      "status": "UNMEASURED",
+      "provenance": "unmeasured/blocked"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{"event": "ready", "port": 8771, "run_id": "20261021-scripted-shared-run-409224e4", "fixture_sha256": "00bdc48a0ce4d947fcacfef688f45e34eaa45f1352ddc15424572466f9e2154e"}
+{"event": "http", "route": "/health", "status": "200"}
+{"event": "http", "route": "/profile/endpoint-a", "status": "200"}
+{"event": "http", "route": "/fixtures", "status": "200"}
+{"event": "http", "route": "/profile/endpoint-a", "status": "403"}
+{"event": "http", "route": "/profile/endpoint-a", "status": "200"}
+{"event": "http", "route": "/profile/endpoint-b", "status": "200"}
+{"event": "http", "route": "/profile/endpoint-b", "status": "409"}
+{"event": "http", "route": "/profile/endpoint-a", "status": "200"}
+{"event": "http", "route": "/stats", "status": "200"}
+{"event": "http", "route": "/profile/endpoint-b", "status": "409"}
+{"event": "http", "route": "/profile/endpoint-b", "status": "409"}
+{"event": "http", "route": "/stats", "status": "200"}
+{"event": "http", "route": "/profile/endpoint-a", "status": "200"}
+{"event": "http", "route": "/profile/endpoint-a", "status": "409"}
+{"event": "http", "route": "/profile/endpoint-a", "status": "200"}
+{"event": "http", "route": "/profile/endpoint-b", "status": "409"}

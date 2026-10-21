@@ -1,0 +1,10 @@
+{"kind":"stage","monotonic_ns":481759501438958,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":481759944979250,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":481759945214041,"outcome":"running","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":481762096044000,"outcome":"passed","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":481762096925625,"outcome":"running","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":481826745663750,"outcome":"passed","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":481840049733250,"outcome":"running","source":"host","stage":"activity"}
+{"kind":"stage","monotonic_ns":481847883047333,"outcome":"failed","source":"host","stage":"run"}
+{"kind":"stage","monotonic_ns":481847892780333,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"RuntimeError","source":"host","workflow_status":"FAIL"}

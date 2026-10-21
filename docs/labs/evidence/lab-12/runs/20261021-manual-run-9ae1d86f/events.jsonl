@@ -1,0 +1,11 @@
+{"kind":"stage","monotonic_ns":478479956782666,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":478480477921291,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":478480478153916,"outcome":"running","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":478534160865416,"outcome":"passed","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":478541860279291,"outcome":"running","source":"host","stage":"activity"}
+{"kind":"stage","monotonic_ns":478572712456250,"outcome":"passed","source":"host","stage":"activity"}
+{"kind":"stage","monotonic_ns":478572713194208,"outcome":"running","source":"host","stage":"parser"}
+{"kind":"stage","monotonic_ns":478572718442375,"outcome":"passed","source":"host","stage":"parser"}
+{"kind":"stage","monotonic_ns":478572718702666,"outcome":"not_configured","source":"host","stage":"scenario"}
+{"kind":"stage","monotonic_ns":478572718921875,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"post_reset_manual_capture_complete","source":"host","workflow_status":"PASS"}
