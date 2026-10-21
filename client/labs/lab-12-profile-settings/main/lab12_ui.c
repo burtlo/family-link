@@ -345,18 +345,17 @@ static void show_settings(lv_event_t *e) {
         lv_obj_set_style_bg_opa(settings_root,LV_OPA_TRANSP,0); lv_obj_set_style_border_width(settings_root,0,0);
         lv_obj_set_style_pad_all(settings_root,0,0);
         lv_obj_t *hint=lv_label_create(settings_root); lv_label_set_text(hint,"Preview is local until Save."); lv_obj_set_width(hint,296); lv_label_set_long_mode(hint,LV_LABEL_LONG_WRAP); lv_obj_set_pos(hint,12,12); style_label(hint,TEXT,&lv_font_montserrat_16);
-        button(settings_root,"Profile accent and avatar",16,36,288,48,open_profile_settings,NULL);
-        button(settings_root,"Sketch stroke color",16,88,288,48,open_stroke_settings,NULL);
+        button(settings_root,"Profile accent and avatar",12,40,296,48,open_profile_settings,NULL);
+        button(settings_root,"Sketch stroke color",12,100,296,48,open_stroke_settings,NULL);
     }
     lv_obj_set_hidden(settings_root,false);
     if (title_label) lv_label_set_text(title_label,"Settings");
     if (status_label) {
-        lv_obj_set_width(status_label,174);
-        lv_label_set_text(status_label,"Preview stays local.");
+        lv_obj_set_width(status_label,183);
         lv_obj_set_hidden(status_label,false);
     }
     if (back_button) lv_obj_set_hidden(back_button,false);
-    set_status("Settings. Open a card to preview; Cancel discards local changes.");
+    set_status("Open a card to preview");
 }
 static void settings_click(lv_event_t *e) { show_settings(e); }
 static void back_inbox_click(lv_event_t *e) { (void)e; return_inbox(NULL); }
@@ -376,14 +375,13 @@ bool lab12_ui_init(lv_obj_t *root,bool shared,bool scripted) {
     lv_obj_t *upper=lv_obj_create(screen); lv_obj_set_size(upper,320,80); lv_obj_set_pos(upper,0,0); lv_obj_set_style_bg_color(upper,lv_color_hex(BG),0); lv_obj_set_style_border_width(upper,0,0); lv_obj_set_style_pad_all(upper,0,0); lv_obj_set_scrollable(upper,false);
     lv_obj_t *lower=lv_obj_create(screen); lv_obj_set_size(lower,320,160); lv_obj_set_pos(lower,0,80); lv_obj_set_style_bg_color(lower,lv_color_hex(PANEL),0); lv_obj_set_style_border_width(lower,0,0); lv_obj_set_style_pad_all(lower,0,0); lv_obj_set_scrollable(lower,false);
     title_label=lv_label_create(upper); lv_label_set_text(title_label,"Profile Settings"); lv_obj_set_pos(title_label,12,12); style_label(title_label,TEXT,&lv_font_montserrat_24);
-    status_label=lv_label_create(upper); lv_label_set_text(status_label,"Card details. Settings previews."); lv_obj_set_width(status_label,296); lv_label_set_long_mode(status_label,LV_LABEL_LONG_DOT); lv_obj_set_pos(status_label,12,45); style_label(status_label,MUTED,&lv_font_montserrat_16);
+    status_label=lv_label_create(upper); lv_label_set_text(status_label,"Tap a card for details."); lv_obj_set_width(status_label,296); lv_label_set_long_mode(status_label,LV_LABEL_LONG_DOT); lv_obj_set_pos(status_label,12,41); style_label(status_label,MUTED,&lv_font_montserrat_16);
     inbox_view=lv_obj_create(lower); lv_obj_set_size(inbox_view,320,160); lv_obj_set_pos(inbox_view,0,0); lv_obj_set_scrollable(inbox_view,false);
     lv_obj_set_style_bg_opa(inbox_view,LV_OPA_TRANSP,0); lv_obj_set_style_border_width(inbox_view,0,0); lv_obj_set_style_pad_all(inbox_view,0,0);
-    lv_obj_t *hint=lv_label_create(inbox_view); lv_label_set_text(hint,"Tap a card for details."); lv_obj_set_width(hint,296); lv_label_set_long_mode(hint,LV_LABEL_LONG_WRAP); lv_obj_set_pos(hint,12,12); style_label(hint,TEXT,&lv_font_montserrat_16);
     const char *cards[]={"Card 1","Card 2","Card 3"}; const char *ids[]={"card-1","card-2","card-3"};
-    for(int i=0;i<3;i++) button(inbox_view,cards[i],16+(i%2)*152,36+(i/2)*52,136,48,open_detail,(void*)ids[i]);
-    button(inbox_view,"Settings",168,88,136,48,settings_click,NULL);
-    back_button=button(upper,"Back",195,12,101,48,back_inbox_click,NULL);
+    for(int i=0;i<3;i++) button(inbox_view,cards[i],16+(i%2)*152,16+(i/2)*72,136,56,open_detail,(void*)ids[i]);
+    button(inbox_view,"Settings",168,88,136,56,settings_click,NULL);
+    back_button=button(upper,"Back",207,12,101,56,back_inbox_click,NULL);
     lv_obj_set_hidden(back_button,true);
     return lv_timer_create(status_cb,100,NULL)!=NULL;
 }
