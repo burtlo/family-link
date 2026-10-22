@@ -1,0 +1,14 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-11",
+  "lab_revision": "v1",
+  "firmware_path": "client/labs/lab-11-send-receipt",
+  "server_path": "server/labs/lab-11-send-receipt",
+  "fixture_schema": "lab11-send/v1",
+  "fixture_revision": "lab11-send/v1",
+  "protocol": "lab11-send-receipt/v1",
+  "trace_schema": "lab11-trace/v1",
+  "frozen_capture_sha256": "c2f881f1b4c1a99bc7b3112acadf2e8588ccae36fd975a11e05f941b93ef39e1",
+  "chunk_probes": [1024, 4096],
+  "part_queue_capacity": 8
+}

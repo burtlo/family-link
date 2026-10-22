@@ -292,7 +292,9 @@ def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Non
     for sidecar in deployment_defaults_sidecars(build_dir):
         sidecar.unlink(missing_ok=True)
     for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
-                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256"):
+                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256",
+                    build_dir.parent / f"{build_dir.name}.lab11.defaults",
+                    build_dir.parent / f"{build_dir.name}.lab11.defaults.sha256"):
         sidecar.unlink(missing_ok=True)
     print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
 
@@ -316,6 +318,11 @@ def _defaults_files_for_lab_build(
         overlay, _fingerprint, _private = lab03_build.prepare(
             sys.modules[__name__], config, spec, var, build_dir, kit=kit, target=target)
         return defaults_files + [overlay]
+    if spec.lab_id == "LAB-11":
+        import lab11_build
+        overlay = lab11_build.prepare(
+            sys.modules[__name__], config, spec, var, build_dir, kit=kit, target=target)
+        return defaults_files + ([overlay] if overlay is not None else [])
     if not _variant_uses_deployment_kit_secrets(var.name):
         if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
             try:
