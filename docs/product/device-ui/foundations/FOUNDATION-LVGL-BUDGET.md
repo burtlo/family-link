@@ -2,7 +2,7 @@
 
 ID: `FOUNDATION-LVGL-BUDGET`
 Type: Foundation
-Revision: 0.2
+Revision: 0.3
 Status: Draft — measurement framework for v2 firmware and demos
 Owner: Product owner
 Approval: No firmware budget numbers are approved until measured on target
@@ -124,8 +124,11 @@ fill **Measured** on device or approved simulator.
 | Logical sketch **120 × 120** (SK-002) | **28 800** |
 | Record display **240 × 240** (SK-004) | **115 200** |
 | Card outer ~**132 × 134** | ~**35 376** |
+| Profile avatar master **66 × 66** (flash) | **8 712** per entry |
+| Profile avatar master **48 × 48** (flash) | **4 608** per entry |
 
-Owner decisions **SK-002–SK-004** live in
+Catalog rules: [`FOUNDATION-PROFILE-AVATARS`](FOUNDATION-PROFILE-AVATARS.md). Owner
+decisions **SK-002–SK-004** live in
 [`EXP-SKETCH-RECORD-PLAYBACK`](../../experiences/sketch-record-and-playback.md).
 
 ## Architecture review dimensions
@@ -342,3 +345,4 @@ Wrap the UI task paint entry or `lv_timer_handler` duration; record p95/p99 over
 |---|---|---|
 | 0.1 | 2026-10-11 | Initial LVGL budget foundation and assessment workflow |
 | 0.2 | 2026-10-11 | Guided re-implementation vs heap pressure (v1-assessments + standards) |
+| 0.3 | 2026-10-22 | RGB565 quick reference rows for profile avatar flash sizes |

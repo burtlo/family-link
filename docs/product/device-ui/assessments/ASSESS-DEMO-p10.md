@@ -13,7 +13,7 @@
 | **Status** | Draft (static) |
 | **Date** | 2026-10-11 |
 | **Firmware / demo ref** | Legacy v1 POC archive — `p10` |
-| **Related specs** | [`COMP-USER-CARD`](../components/COMP-USER-CARD.md), avatar pipeline |
+| **Related specs** | [`COMP-USER-CARD`](../components/COMP-USER-CARD.md), [`FOUNDATION-PROFILE-AVATARS`](../foundations/FOUNDATION-PROFILE-AVATARS.md) |
 
 ## 1. User-visible scope
 

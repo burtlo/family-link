@@ -53,6 +53,11 @@ screen
    ├─ upper slot → PANEL-* (panel module)
    └─ lower slot → PANEL-* (panel module)
         └─ optional nested layout / COMP-*
+
+screen
+└─ LAYOUT-SPLIT-PANE-FOCUSED-SIDE
+   ├─ focused (left)  → PANEL-*
+   └─ side    (right) → PANEL-*
 ```
 
 **Chrome vs content:** the shell defines **`slot_chrome_bounds`** (full slot,

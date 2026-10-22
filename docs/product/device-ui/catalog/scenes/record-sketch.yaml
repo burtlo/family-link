@@ -1,0 +1,17 @@
+id: CAT-17
+order: 60
+title: Record sketch
+group: Record
+screen: SCR-RECORD-SKETCH
+state: empty-white
+layout: LAYOUT-SPLIT-PANE-FOCUSED-SIDE
+notes: Empty 240×240 canvas; white swatch selected (default)
+slots:
+  focused:
+    panel: PANEL-FOCUSED-DRAWING
+    props:
+      state: empty
+  side:
+    panel: PANEL-SIDE-COLOR-PALETTE
+    props:
+      selected: 1

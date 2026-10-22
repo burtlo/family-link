@@ -1,5 +1,7 @@
 #include "lab14_ui.h"
 
+#include "esp_heap_caps.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +15,11 @@ static lv_timer_t *g_dots_timer;
 static lv_obj_t *g_dots_label;
 static int g_dot_frame;
 static char g_current_id[48];
+static void *g_canvas_buffer;
+static uint32_t g_canvas_buffer_bytes;
+static lv_obj_t *g_draw_canvas;
+static lv_obj_t *g_swatches[LAB14_SWATCH_COUNT];
+static int g_selected_swatch;
 
 static const lv_font_t *font_px(int px)
 {
@@ -80,6 +87,17 @@ static void stop_dots(void)
     }
     g_dots_label = NULL;
     g_dot_frame = 0;
+}
+
+static void release_drawing(void)
+{
+    g_draw_canvas = NULL;
+    memset(g_swatches, 0, sizeof(g_swatches));
+    if (g_canvas_buffer != NULL) {
+        heap_caps_free(g_canvas_buffer);
+        g_canvas_buffer = NULL;
+        g_canvas_buffer_bytes = 0;
+    }
 }
 
 static void dots_cb(lv_timer_t *timer)
@@ -469,6 +487,187 @@ static void panel_status(lv_obj_t *slot, cJSON *props)
     }
 }
 
+static bool event_point(lv_event_t *event, lv_point_t *point)
+{
+    if (event == NULL || point == NULL) {
+        return false;
+    }
+    lv_indev_t *indev = lv_event_get_indev(event);
+    if (indev == NULL) {
+        indev = lv_indev_active();
+    }
+    if (indev == NULL) {
+        return false;
+    }
+    lv_indev_get_point(indev, point);
+    return true;
+}
+
+static void refresh_swatch(int index)
+{
+    if (g_catalog == NULL || index < 0 || index >= LAB14_SWATCH_COUNT ||
+        g_swatches[index] == NULL) {
+        return;
+    }
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    lv_obj_t *swatch = g_swatches[index];
+    lv_obj_set_style_border_width(swatch, t->swatch_border_w, 0);
+    lv_obj_set_style_border_color(swatch, lv_color_hex(t->swatch_ring), 0);
+    lv_obj_set_style_border_opa(swatch, LV_OPA_COVER, 0);
+    if (index == g_selected_swatch) {
+        lv_obj_set_style_outline_width(swatch, t->swatch_outline_w, 0);
+        lv_obj_set_style_outline_color(swatch, lv_color_hex(t->accent), 0);
+        lv_obj_set_style_outline_opa(swatch, LV_OPA_COVER, 0);
+        lv_obj_set_style_outline_pad(swatch, t->swatch_outline_pad, 0);
+    } else {
+        lv_obj_set_style_outline_width(swatch, 0, 0);
+    }
+    lv_obj_invalidate(swatch);
+}
+
+static int swatch_hit(int16_t x, int16_t y)
+{
+    if (g_catalog == NULL) {
+        return -1;
+    }
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    const int radius = t->swatch_r;
+    for (int i = 0; i < t->swatch_count && i < LAB14_SWATCH_COUNT; i++) {
+        const int dx = (int)x - t->swatches[i].cx;
+        const int dy = (int)y - t->swatches[i].cy;
+        if (dx * dx + dy * dy <= radius * radius) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void on_swatch_pressed(lv_event_t *event)
+{
+    lv_point_t point;
+    if (!event_point(event, &point)) {
+        return;
+    }
+    const int next = swatch_hit(point.x, point.y);
+    if (next < 0 || next == g_selected_swatch) {
+        return;
+    }
+    const int previous = g_selected_swatch;
+    g_selected_swatch = next;
+    cJSON *props = lab14_slot_props(g_scene, "side");
+    set_json_int(props, "selected", next);
+    refresh_swatch(previous);
+    refresh_swatch(next);
+    printf("LAB14_TAP control=swatch-%d scene=%s\n", next, g_current_id);
+}
+
+static void paint_canvas_point(int x, int y)
+{
+    if (g_draw_canvas == NULL || g_catalog == NULL || g_canvas_buffer == NULL) {
+        return;
+    }
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    if (x < 0 || y < 0 || x >= t->focused_w || y >= t->canvas_h) {
+        return;
+    }
+    const int index = g_selected_swatch;
+    const uint32_t rgb =
+        (index >= 0 && index < t->swatch_count) ? t->swatches[index].rgb
+                                                : t->sketch_canvas;
+    const lv_color_t color = lv_color_hex(rgb);
+    const int px = (x / 2) * 2;
+    const int py = (y / 2) * 2;
+    for (int dy = 0; dy < 2; ++dy) {
+        for (int dx = 0; dx < 2; ++dx) {
+            lv_canvas_set_px(g_draw_canvas, px + dx, py + dy, color, LV_OPA_COVER);
+        }
+    }
+}
+
+static void on_canvas_event(lv_event_t *event)
+{
+    const lv_event_code_t code = lv_event_get_code(event);
+    if (code != LV_EVENT_PRESSED && code != LV_EVENT_PRESSING) {
+        return;
+    }
+    lv_point_t point;
+    if (!event_point(event, &point)) {
+        return;
+    }
+    if (g_catalog != NULL && point.x >= g_catalog->tokens.focused_w) {
+        return;
+    }
+    if (code == LV_EVENT_PRESSED) {
+        printf("LAB14_TAP control=canvas scene=%s\n", g_current_id);
+    }
+    paint_canvas_point(point.x, point.y);
+}
+
+static void *allocate_canvas_buffer(uint32_t bytes)
+{
+    void *buffer = heap_caps_aligned_alloc(4, bytes,
+                                           MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (buffer == NULL) {
+        buffer = heap_caps_aligned_alloc(4, bytes,
+                                         MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    }
+    return buffer;
+}
+
+static void panel_focused_drawing(lv_obj_t *slot, cJSON *props)
+{
+    (void)props;
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    lv_obj_t *canvas = lv_canvas_create(slot);
+    lv_obj_remove_style_all(canvas);
+    lv_obj_set_size(canvas, t->focused_w, t->canvas_h);
+    lv_obj_set_pos(canvas, 0, 0);
+    lv_obj_set_scrollable(canvas, false);
+    lv_obj_set_style_pad_all(canvas, 0, 0);
+    lv_obj_set_style_border_width(canvas, 0, 0);
+    lv_obj_set_style_radius(canvas, t->canvas_radius, 0);
+    lv_obj_set_style_clip_corner(canvas, true, 0);
+    g_canvas_buffer_bytes = lv_canvas_buf_size(
+        t->focused_w, t->canvas_h, LV_COLOR_DEPTH, LV_DRAW_BUF_STRIDE_ALIGN);
+    if (g_canvas_buffer_bytes == 0u) {
+        paint_plain(canvas, t->sketch_canvas);
+        return;
+    }
+    g_canvas_buffer = allocate_canvas_buffer(g_canvas_buffer_bytes);
+    if (g_canvas_buffer == NULL) {
+        paint_plain(canvas, t->sketch_canvas);
+        return;
+    }
+    lv_canvas_set_buffer(canvas, g_canvas_buffer, t->focused_w, t->canvas_h,
+                         LV_COLOR_FORMAT_NATIVE);
+    lv_canvas_fill_bg(canvas, lv_color_hex(t->sketch_canvas), LV_OPA_COVER);
+    lv_obj_add_flag(canvas, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(canvas, on_canvas_event, LV_EVENT_PRESSED, NULL);
+    lv_obj_add_event_cb(canvas, on_canvas_event, LV_EVENT_PRESSING, NULL);
+    g_draw_canvas = canvas;
+}
+
+static void panel_side_color_palette(lv_obj_t *slot, cJSON *props)
+{
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    g_selected_swatch = lab14_json_int(props, "selected", 1);
+    if (g_selected_swatch < 0 || g_selected_swatch >= t->swatch_count) {
+        g_selected_swatch = 1;
+    }
+    for (int i = 0; i < t->swatch_count && i < LAB14_SWATCH_COUNT; i++) {
+        lv_obj_t *swatch = lv_obj_create(slot);
+        paint_plain(swatch, t->swatches[i].rgb);
+        lv_obj_set_size(swatch, t->swatch_d, t->swatch_d);
+        lv_obj_set_pos(swatch, t->swatches[i].cx - t->split_x - t->swatch_r,
+                       t->swatches[i].cy - t->swatch_r);
+        lv_obj_set_style_radius(swatch, LV_RADIUS_CIRCLE, 0);
+        lv_obj_add_flag(swatch, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(swatch, on_swatch_pressed, LV_EVENT_PRESSED, NULL);
+        g_swatches[i] = swatch;
+        refresh_swatch(i);
+    }
+}
+
 static void mount_panel(lv_obj_t *slot, const char *panel, cJSON *props)
 {
     if (panel == NULL || strcmp(panel, "none") == 0) {
@@ -492,6 +691,10 @@ static void mount_panel(lv_obj_t *slot, const char *panel, cJSON *props)
         panel_pin_grid(slot, props);
     } else if (strcmp(panel, "PANEL-STATUS-MESSAGE") == 0) {
         panel_status(slot, props);
+    } else if (strcmp(panel, "PANEL-FOCUSED-DRAWING") == 0) {
+        panel_focused_drawing(slot, props);
+    } else if (strcmp(panel, "PANEL-SIDE-COLOR-PALETTE") == 0) {
+        panel_side_color_palette(slot, props);
     }
 }
 
@@ -534,12 +737,31 @@ static void mount_split(const lab14_scene_t *scene)
     lv_obj_add_event_cb(lower, long_press_back, LV_EVENT_LONG_PRESSED, NULL);
 }
 
+static void mount_focused_side(const lab14_scene_t *scene)
+{
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    paint_plain(g_root, t->surface);
+    lv_obj_t *focused = make_slot(g_root, 0, 0, t->focused_w, t->canvas_h, t->sketch_canvas);
+    lv_obj_t *side = make_slot(g_root, t->split_x, 0, t->side_w, t->canvas_h, t->surface);
+    mount_panel(focused, lab14_slot_panel(scene, "focused"),
+                lab14_slot_props(scene, "focused"));
+    mount_panel(side, lab14_slot_panel(scene, "side"),
+                lab14_slot_props(scene, "side"));
+    lv_obj_add_event_cb(focused, long_press_back, LV_EVENT_LONG_PRESSED, NULL);
+    lv_obj_add_event_cb(side, long_press_back, LV_EVENT_LONG_PRESSED, NULL);
+}
+
 static void mount_scene_id_badge(const lab14_scene_t *scene)
 {
     const lab14_tokens_t *t = &g_catalog->tokens;
     lv_obj_t *badge = lv_obj_create(g_root);
     lv_obj_set_size(badge, 72, 22);
-    lv_obj_align(badge, LV_ALIGN_TOP_RIGHT, -4, 4);
+    if (scene->layout != NULL &&
+        strcmp(scene->layout, "LAYOUT-SPLIT-PANE-FOCUSED-SIDE") == 0) {
+        lv_obj_align(badge, LV_ALIGN_TOP_LEFT, 4, 4);
+    } else {
+        lv_obj_align(badge, LV_ALIGN_TOP_RIGHT, -4, 4);
+    }
     lv_obj_set_style_bg_color(badge, lv_color_hex(t->card_peek), 0);
     lv_obj_set_style_bg_opa(badge, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(badge, 4, 0);
@@ -581,13 +803,15 @@ static void make_index_row(lv_obj_t *parent, const lab14_scene_t *scene, int y)
 
 static void emit_scene_trace(const lab14_scene_t *scene)
 {
-    printf("LAB14_TRACE {\"scene\":\"%s\",\"screen\":\"%s\",\"state\":\"%s\",\"layout\":\"%s\",\"upper\":\"%s\",\"lower\":\"%s\"}\n",
+    printf("LAB14_TRACE {\"scene\":\"%s\",\"screen\":\"%s\",\"state\":\"%s\",\"layout\":\"%s\",\"upper\":\"%s\",\"lower\":\"%s\",\"focused\":\"%s\",\"side\":\"%s\"}\n",
            scene->id,
            scene->screen != NULL ? scene->screen : "",
            scene->state != NULL ? scene->state : "",
            scene->layout,
            lab14_slot_panel(scene, "upper"),
-           lab14_slot_panel(scene, "lower"));
+           lab14_slot_panel(scene, "lower"),
+           lab14_slot_panel(scene, "focused"),
+           lab14_slot_panel(scene, "side"));
 }
 
 bool lab14_ui_show_scene(const char *id)
@@ -599,11 +823,14 @@ bool lab14_ui_show_scene(const char *id)
     }
     stop_dots();
     lv_obj_clean(g_root);
+    release_drawing();
     g_scene = scene;
     g_showing_index = false;
     snprintf(g_current_id, sizeof(g_current_id), "%s", scene->id);
     if (strcmp(scene->layout, "LAYOUT-FULL-CANVAS") == 0) {
         mount_full_canvas(scene);
+    } else if (strcmp(scene->layout, "LAYOUT-SPLIT-PANE-FOCUSED-SIDE") == 0) {
+        mount_focused_side(scene);
     } else {
         mount_split(scene);
     }
@@ -627,6 +854,7 @@ void lab14_ui_show_index(void)
     const lab14_tokens_t *t = &g_catalog->tokens;
     stop_dots();
     lv_obj_clean(g_root);
+    release_drawing();
     g_scene = NULL;
     g_showing_index = true;
     g_current_id[0] = '\0';

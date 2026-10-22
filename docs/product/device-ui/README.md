@@ -51,12 +51,19 @@ SCR-* screen
 └─ LAYOUT-SPLIT-PANE (shell)
    ├─ upper → PANEL-*
    └─ lower → PANEL-*
+
+SCR-RECORD-SKETCH
+└─ LAYOUT-SPLIT-PANE-FOCUSED-SIDE (shell)
+   ├─ focused (left)  → PANEL-FOCUSED-DRAWING
+   └─ side    (right) → PANEL-SIDE-COLOR-PALETTE
 ```
 
 See [`patterns/PANEL-MODULE-CONTRACT.md`](patterns/PANEL-MODULE-CONTRACT.md).
 Shell layouts codify **`slot_chrome_bounds`** and **`slot_content_bounds`** so
 panels do not re-apply margins. Waiving insets requires a new layout ID.
-Drawing and other edge-to-edge experiences use an explicit full-canvas layout.
+The record sketch uses [`LAYOUT-SPLIT-PANE-FOCUSED-SIDE`](layouts/LAYOUT-SPLIT-PANE-FOCUSED-SIDE.md)
+(edge-to-edge left canvas / right rail). Other full-bleed experiences still use
+an explicit full-canvas layout.
 
 A machine-readable twin of this composition lives in
 [`catalog/`](catalog/README.md). [`LAB-14`](../../../client/labs/lab-14-device-ui-catalog/README.md)
@@ -74,10 +81,10 @@ inventories, not approved specifications:
 
 | Directory | Missing-artifact inventory | Main coverage |
 |---|---|---|
-| Components | [MISSING](components/MISSING.md) | Reusable status/error message, message card, transport, settings and recipient tiles, record canvas and swatches |
-| Layouts | [MISSING](layouts/MISSING.md) | Full-canvas, carousel-stage, record canvas/rail, receipt geometry |
-| Panels | [MISSING](panels/MISSING.md) | Status-message composition, signed-in carousel, picker, settings, color rail, send feedback |
-| Screens | [MISSING](screens/MISSING.md) | Inbox, settings, recipient picker, record, send. Login connecting and Wi-Fi are overlays, not replacement screens |
+| Components | [MISSING](components/MISSING.md) | Message card, transport, settings and recipient tiles |
+| Layouts | [MISSING](layouts/MISSING.md) | Full-canvas, carousel-stage, receipt geometry |
+| Panels | [MISSING](panels/MISSING.md) | Status-message composition, signed-in carousel, picker, settings, send feedback |
+| Screens | [MISSING](screens/MISSING.md) | Inbox, settings, recipient picker, send. Login connecting and Wi-Fi are overlays, not replacement screens |
 
 The active [login experience](../experiences/endpoint-login.md) and [sketch
 experience](../experiences/sketch-record-and-playback.md) govern the behavior and
@@ -92,7 +99,8 @@ experience work before their visual artifacts can be implementation-ready.
 | `FOUNDATION-BUTTON-MINIMUMS` | [Button minimums](foundations/FOUNDATION-BUTTON-MINIMUMS.md) | Draft — PIN grid **101 × 48** suggested minimum |
 | `FOUNDATION-MOTION` | [Motion](foundations/FOUNDATION-MOTION.md) | Draft — cover-down is the stage-transition default; carousel snap timing OPEN |
 | `THEME-DARK` | [Dark theme](themes/THEME-DARK.md) | Draft — token placement map (single scheme) |
-| `FOUNDATION-CARD-BACKGROUNDS` | [Card backgrounds](foundations/FOUNDATION-CARD-BACKGROUNDS.md) | Placeholder — catalog TBD |
+| `FOUNDATION-CARD-BACKGROUNDS` | [Card backgrounds](foundations/FOUNDATION-CARD-BACKGROUNDS.md) | Draft — eight owner-selected solid fills; hardware visual review pending |
+| `FOUNDATION-PROFILE-AVATARS` | [Profile avatars](foundations/FOUNDATION-PROFILE-AVATARS.md) | Draft — new artwork deferred; LAB-14 initials fallback approved for now |
 | `FOUNDATION-LVGL-BUDGET` | [LVGL budget & assessments](foundations/FOUNDATION-LVGL-BUDGET.md) | Draft — two-budget model, measurement table, review template |
 
 ### Assessments
@@ -112,6 +120,7 @@ experience work before their visual artifacts can be implementation-ready.
 | ID | Document | Status |
 |---|---|---|
 | `LAYOUT-SPLIT-PANE` | [Split pane shell](layouts/LAYOUT-SPLIT-PANE.md) | Draft — chrome/content insets, theme-linked surfaces |
+| `LAYOUT-SPLIT-PANE-FOCUSED-SIDE` | [Focused-side split pane](layouts/LAYOUT-SPLIT-PANE-FOCUSED-SIDE.md) | Draft — 240 × 240 left canvas, 80 × 240 right rail |
 
 ### Patterns
 
@@ -120,9 +129,8 @@ experience work before their visual artifacts can be implementation-ready.
 | [Panel module contract](patterns/PANEL-MODULE-CONTRACT.md) | Chrome vs content inset; swappable `PANEL-*`; background override |
 | [Cover-down transition](patterns/TRANSITION-COVER-DOWN.md) | h19 stage motion (400 ms, ease-in-out quint) |
 
-Planned examples include a horizontal carousel layout, PIN pad grid, and
-full-canvas drawing layout. Planned entries are not requirements until authored
-and reviewed.
+Planned examples include a horizontal carousel layout and a centered receipt
+layout. Planned entries are not requirements until authored and reviewed.
 
 ### Panel modules
 
@@ -137,6 +145,8 @@ and reviewed.
 | `PANEL-HEADER-PIN-STATUS` | [PIN status header](panels/PANEL-HEADER-PIN-STATUS.md) | `upper` |
 | `PANEL-BODY-PIN-GRID` | [PIN keypad body](panels/PANEL-BODY-PIN-GRID.md) | `lower` |
 | `PANEL-STATUS-MESSAGE` | [Connection status body](panels/PANEL-STATUS-MESSAGE.md) | `lower` — `connecting` / `no Wi-Fi` |
+| `PANEL-FOCUSED-DRAWING` | [Focused drawing](panels/PANEL-FOCUSED-DRAWING.md) | `focused` — 240 × 240 record canvas |
+| `PANEL-SIDE-COLOR-PALETTE` | [Side color palette](panels/PANEL-SIDE-COLOR-PALETTE.md) | `side` — 80 × 240 six-swatch rail |
 
 ### Components
 
@@ -145,6 +155,8 @@ and reviewed.
 | `COMP-USER-CARD` | [User card](components/COMP-USER-CARD.md) | Roster/inbox card geometry and states |
 | `COMP-PIN-KEYPAD` | [PIN keypad](components/COMP-PIN-KEYPAD.md) | 3×3 grid for digits 1–9; v1 h03 key sizing and spacing |
 | `COMP-STATUS-MESSAGE` | [Status message](components/COMP-STATUS-MESSAGE.md) | Centered lower-slot copy; login uses `connecting` and `no Wi-Fi` |
+| `COMP-RECORD-CANVAS` | [Record canvas](components/COMP-RECORD-CANVAS.md) | 240 × 240 black drawing surface, 8 px corners |
+| `COMP-COLOR-SWATCH` | [Color swatch](components/COMP-COLOR-SWATCH.md) | 44 px circle, gray ring, gold selected outline |
 
 ### Screens
 
@@ -154,6 +166,7 @@ and reviewed.
 | `SCR-EMPTY-HANGOUT` | [Empty hangout](screens/SCR-EMPTY-HANGOUT.md) | `EXP-LOGIN` | Draft — fixed empty copy |
 | `SCR-PIN-ENTRY` | [PIN entry](screens/SCR-PIN-ENTRY.md) | `EXP-LOGIN` | Draft — panel composition; checking dims keypad; 32 px digits |
 | `SCR-PIN-COOLDOWN` | [PIN cooldown](screens/SCR-PIN-COOLDOWN.md) | `EXP-LOGIN` | Draft — full-canvas lockout stays through connectivity loss |
+| `SCR-RECORD-SKETCH` | [Record sketch](screens/SCR-RECORD-SKETCH.md) | `EXP-SKETCH-RECORD-PLAYBACK` | Draft — left canvas + right palette |
 
 ### On-device catalog
 
@@ -164,7 +177,7 @@ and reviewed.
 
 Adding a screen that reuses existing panels is a new `catalog/scenes/*.yaml`
 file with the next unused `CAT-NN` id. New panel types still need a Markdown
-spec and a C renderer. Name a visual by its catalog ID (`CAT-01` … `CAT-16`).
+spec and a C renderer. Name a visual by its catalog ID (`CAT-01` … `CAT-19`).
 
 ## Authority and readiness
 

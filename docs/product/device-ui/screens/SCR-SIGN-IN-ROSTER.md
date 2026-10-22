@@ -2,8 +2,8 @@
 
 ID: `SCR-SIGN-IN-ROSTER`
 Type: Screen composition
-Revision: 0.5
-Status: Draft — composition and roster visuals owner-aligned; motion OPEN
+Revision: 0.6
+Status: Draft — composition, card palette, and interim initials fallback owner-aligned; motion OPEN
 Owner: Product owner
 Approval: No visual approval claimed
 Target: v2 fixed-hardware 320 × 240 landscape canvas
@@ -73,8 +73,9 @@ Non-focused cards use reduced scale and opacity per `COMP-USER-CARD`.
 ### Roster ready
 
 - Heading: `Sign in as ...` (`PANEL-HEADER-TITLE-LEFT`).
-- One `COMP-USER-CARD` per roster user; message-color gradient face, 66 px
-  avatar, `fl-type-16` name.
+- One `COMP-USER-CARD` per roster user; solid catalog fill, 66 px identity
+  circle with LAB-14 initials until new avatar art is ready, and `fl-type-16`
+  name.
 - Carousel touch **enabled**.
 
 ### Roster refresh wait (`EXP-036`)
@@ -181,11 +182,13 @@ updating-hangout UI.
 ## Readiness
 
 - **Owner review:** Ready for roster visual policy and refresh-wait UI.
-- **Visual approval:** Pending motion and RGB565 gradient check.
+- **Visual approval:** Pending motion and target-hardware review of the solid
+  card fills and text pairing.
 - **Implementation:** Geometry and states are specified; motion timing is not.
 
 ## Revision history
 
+- **0.6 — 2026-10-22:** Adopted the eight solid card fills and LAB-14 initials-in-circle fallback; avatar art remains deferred.
 - **0.5 — 2026-10-21:** Connecting and Wi-Fi replace the lower slot; no overlay card.
 - **0.4 — 2026-10-20:** Connecting and Wi-Fi stay on this screen under `COMP-STATUS-MESSAGE`.
 - **0.3 — 2026-10-10:** Theme, panels, user card geometry, center snap, EXP-036

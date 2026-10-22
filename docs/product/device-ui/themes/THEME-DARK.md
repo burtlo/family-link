@@ -2,7 +2,7 @@
 
 ID: `THEME-DARK`
 Type: Theme
-Revision: 0.3
+Revision: 0.4
 Status: Draft — first intentional color scheme (no second theme in v2)
 Owner: Product owner
 Approval: No visual approval claimed
@@ -25,13 +25,15 @@ matching legacy v1 device quantization.
 | `fl-color-surface-lower` | `#242C34` | Lower `slot_chrome_bounds` for the two-pane treatment |
 | `fl-color-text-primary` | `#E8F0E8` | Headings, keypad digits, primary labels on surface |
 | `fl-color-text-secondary` | `#A8B0B8` | De-emphasized chrome, empty PIN slots (`_`) |
-| `fl-color-accent` | `#E8C040` | Filled PIN `*` marks; send-user pick outline |
+| `fl-color-accent` | `#E8C040` | Filled PIN `*` marks; send-user pick outline; selected color-swatch outline |
+| `fl-color-sketch-canvas` | `#000000` | Record drawing surface fill and background-color ink |
+| `fl-color-swatch-ring` | `#B8BEC6` | Ring on every record-palette swatch |
 | `fl-color-card-peek` | `#242C34` | Optional non-focused peek fills when specified |
 | `fl-color-text-on-card` | *(per catalog entry)* | User name on [`COMP-USER-CARD`](../components/COMP-USER-CARD.md) |
 
-Card faces use **[`FOUNDATION-CARD-BACKGROUNDS`](foundations/FOUNDATION-CARD-BACKGROUNDS.md)**
-entries (gradient/fill + paired `fl-color-text-on-card`), not free-form
-per-user hex.
+Card faces use solid fills from
+**[`FOUNDATION-CARD-BACKGROUNDS`](foundations/FOUNDATION-CARD-BACKGROUNDS.md)**
+with their paired `fl-color-text-on-card`, not free-form per-user hex.
 
 ## RGB565
 
@@ -42,6 +44,8 @@ Exact hex match on desk monitors is not required.
 
 [`LAYOUT-SPLIT-PANE`](../layouts/LAYOUT-SPLIT-PANE.md) paints `fl-color-surface`
 on the full canvas before panel overrides.
+[`LAYOUT-SPLIT-PANE-FOCUSED-SIDE`](../layouts/LAYOUT-SPLIT-PANE-FOCUSED-SIDE.md)
+does the same; the focused panel then paints `fl-color-sketch-canvas`.
 
 ## Dependents
 
@@ -50,6 +54,7 @@ on the full canvas before panel overrides.
 - [`SCR-SIGN-IN-ROSTER`](../screens/SCR-SIGN-IN-ROSTER.md)
 - [`SCR-PIN-ENTRY`](../screens/SCR-PIN-ENTRY.md)
 - [`SCR-PIN-COOLDOWN`](../screens/SCR-PIN-COOLDOWN.md)
+- [`SCR-RECORD-SKETCH`](../screens/SCR-RECORD-SKETCH.md)
 
 ## OPEN items
 
@@ -60,6 +65,7 @@ on the full canvas before panel overrides.
 
 ## Revision history
 
+- **0.4 — 2026-10-21:** Sketch canvas `#000000` and swatch ring `#B8BEC6`.
 - **0.3 — 2026-10-21:** Two-pane lower surface `#242C34` (same pair as the
   profile-settings lab fixture).
 - **0.2 — 2026-10-10:** Placement map; catalog card backgrounds; single-scheme intent.

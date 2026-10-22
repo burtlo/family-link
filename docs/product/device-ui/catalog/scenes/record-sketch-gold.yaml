@@ -1,0 +1,17 @@
+id: CAT-19
+order: 62
+title: Record sketch, gold selected
+group: Record
+screen: SCR-RECORD-SKETCH
+state: empty-gold
+layout: LAYOUT-SPLIT-PANE-FOCUSED-SIDE
+notes: Empty canvas; gold swatch selected
+slots:
+  focused:
+    panel: PANEL-FOCUSED-DRAWING
+    props:
+      state: empty
+  side:
+    panel: PANEL-SIDE-COLOR-PALETTE
+    props:
+      selected: 2

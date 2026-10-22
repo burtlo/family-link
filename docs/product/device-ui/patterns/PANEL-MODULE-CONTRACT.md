@@ -6,9 +6,9 @@ artifact.
 ## Purpose
 
 A **panel module** is a swappable UI unit that mounts in **one slot** of a parent
-layout (typically `upper` or `lower` on `LAYOUT-SPLIT-PANE`). Screens compose
-**which panel** fills each slot; they do not embed one header component with many
-modes.
+layout (typically `upper` or `lower` on `LAYOUT-SPLIT-PANE`, or `focused` /
+`side` on `LAYOUT-SPLIT-PANE-FOCUSED-SIDE`). Screens compose **which panel**
+fills each slot; they do not embed one header component with many modes.
 
 This pattern separates:
 
@@ -84,7 +84,8 @@ performance requirement either way.
 
 Each `PANEL-<NAME>.md` (or equivalent section in a screen) MUST state:
 
-1. **Slot:** `upper` or `lower` on `LAYOUT-SPLIT-PANE`.
+1. **Slot:** `upper` or `lower` on `LAYOUT-SPLIT-PANE`, or `focused` or `side`
+   on `LAYOUT-SPLIT-PANE-FOCUSED-SIDE`.
 2. **Chrome:** background color token or inherit shell default.
 3. **Content:** what appears in `slot_content_bounds` (copy roles, controls).
 4. **Full-bleed list:** elements that may use `slot_chrome_bounds` beyond the
@@ -116,6 +117,7 @@ screen snapshot unchanged. See
 | Title + supporting line | `PANEL-HEADER-TITLE-SUBTITLE` | `PANEL-BODY-FOUR-BUTTON` |
 | Title + supporting line + action | `PANEL-HEADER-TITLE-SUBTITLE-WITH-ACTION` | `PANEL-BODY-LABEL-WITH-TWO-BUTTONS` |
 | Message home | `PANEL-HEADER-MESSAGE-CHROME` | `PANEL-BODY-MESSAGE-CAROUSEL` |
+| Record sketch | `PANEL-FOCUSED-DRAWING` (`focused`) | `PANEL-SIDE-COLOR-PALETTE` (`side`) |
 
 Panel IDs are created as separate artifacts when authored; this table is not
 approval of their geometry.
@@ -123,5 +125,6 @@ approval of their geometry.
 ## Related artifacts
 
 - Shell geometry and numeric insets:
-  [`LAYOUT-SPLIT-PANE`](../layouts/LAYOUT-SPLIT-PANE.md)
+  [`LAYOUT-SPLIT-PANE`](../layouts/LAYOUT-SPLIT-PANE.md) ·
+  [`LAYOUT-SPLIT-PANE-FOCUSED-SIDE`](../layouts/LAYOUT-SPLIT-PANE-FOCUSED-SIDE.md)
 - Margin token: [`FOUNDATION-DEVICE-CANVAS`](../foundations/FOUNDATION-DEVICE-CANVAS.md)

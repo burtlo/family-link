@@ -29,7 +29,13 @@
         "group": { "type": "string" },
         "screen": { "type": "string" },
         "state": { "type": "string" },
-        "layout": { "enum": ["LAYOUT-SPLIT-PANE", "LAYOUT-FULL-CANVAS"] },
+        "layout": {
+          "enum": [
+            "LAYOUT-SPLIT-PANE",
+            "LAYOUT-FULL-CANVAS",
+            "LAYOUT-SPLIT-PANE-FOCUSED-SIDE"
+          ]
+        },
         "notes": { "type": "string" },
         "slots": { "$ref": "#/$defs/slots" },
         "props": { "type": "object" }
@@ -38,6 +44,22 @@
         {
           "if": { "properties": { "layout": { "const": "LAYOUT-SPLIT-PANE" } } },
           "then": { "required": ["slots"] }
+        },
+        {
+          "if": {
+            "properties": {
+              "layout": { "const": "LAYOUT-SPLIT-PANE-FOCUSED-SIDE" }
+            }
+          },
+          "then": {
+            "required": ["slots"],
+            "properties": {
+              "slots": {
+                "type": "object",
+                "required": ["focused", "side"]
+              }
+            }
+          }
         }
       ]
     },
@@ -46,7 +68,9 @@
       "additionalProperties": false,
       "properties": {
         "upper": { "$ref": "#/$defs/slot" },
-        "lower": { "$ref": "#/$defs/slot" }
+        "lower": { "$ref": "#/$defs/slot" },
+        "focused": { "$ref": "#/$defs/slot" },
+        "side": { "$ref": "#/$defs/slot" }
       }
     },
     "slot": {
@@ -66,7 +90,9 @@
             "PANEL-BODY-FOUR-BUTTON",
             "PANEL-BODY-LABEL-WITH-TWO-BUTTONS",
             "PANEL-BODY-PIN-GRID",
-            "PANEL-STATUS-MESSAGE"
+            "PANEL-STATUS-MESSAGE",
+            "PANEL-FOCUSED-DRAWING",
+            "PANEL-SIDE-COLOR-PALETTE"
           ]
         },
         "props": { "type": "object" }

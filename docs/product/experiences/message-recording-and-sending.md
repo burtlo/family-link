@@ -1,13 +1,16 @@
 # Message recording and sending experience
 
 Status: interview draft — reconstruction, ordinary-flow, exception, and
-contract checkpoints confirmed 2026-10-21
+contract checkpoints confirmed 2026-10-21; sender-copy and refusal-vs-wait
+meanings, recipient-picker presentation, and sending-feedback treatment
+accepted 2026-10-21
 Experience ID: EXP-MESSAGE-RECORD-SEND
-Revision: 1.2
+Revision: 1.6
 Owner: Product owner
 Approval: Contract checkpoint confirmed 2026-10-21 for the recorded
-locked behavior. No product-wide approval claimed; no implementation
-authorization implied
+locked behavior. Sender-copy, refusal-vs-wait, recipient-picker, and
+sending-feedback decisions accepted 2026-10-21. No product-wide approval
+claimed; no implementation authorization implied
 
 ## 1. Identity, scope, and authority
 
@@ -69,10 +72,13 @@ outlive a single screen paint).
 | SRC-OWNER-010 | Product owner, 2026-10-21 exception interview | Power-loss discards unfinished capture and keeps a finished send if storage survives; selected people who leave the hangout are dropped before freeze; a full sketch ignores further drawing and keeps audio |
 | SRC-OWNER-011 | Product owner, 2026-10-21 exception checkpoint | Capture cannot start → `couldn't record` and keep selection; mid-recording mic failure finishes and sends; named engineering items delegated |
 | SRC-OWNER-012 | Product owner, 2026-10-21 contract checkpoint | Confirmed the locked ordinary journey, cancel rules, truthful `sent`, keep/resume policy, and delegated engineering set |
+| SRC-OWNER-013 | Product owner, 2026-10-21 communication-contract interview | Recipients-only publication (no sender inbox copy); timeouts/5xx/expired session keep waiting; unsupported/too-large media and identity-conflict are `couldn't send` |
+| SRC-OWNER-014 | Product owner, 2026-10-21 recipient-picker follow-up | Selected cards use the 2 px accent outline alone; when selected names exceed the 25-character header limit, show the first name plus `+N`; an empty picker keeps the split pane with centered `No people to message` and no illustration or cards |
+| SRC-OWNER-015 | Product owner, 2026-10-21 send-feedback follow-up | When frozen names do not fit the sending subtitle, use first name plus `+N`; status presentation remains text-only without status icons |
 | SRC-EXP-CAR-001 | Active experience draft; owner-decided for inbox | [`EXP-MESSAGE-CAROUSEL`](message-carousel-and-playback.md): red-button exit pauses playback and preserves audio position and sketch (`DEC-039`, `EXP-037`); same-session play heads survive this exit (`DEC-026`); return re-entry staging is delegated here |
 | SRC-EXP-LOGIN-001 | Active experience draft; owner-decided for login | [`EXP-LOGIN`](endpoint-login.md): mute signs out and blanks the display; lower-slot `connecting` / `no Wi-Fi` presentation; hangout roster is server-owned |
 | SRC-EXP-SKETCH-001 | Active experience; owner-decided canvas geometry | [`EXP-SKETCH-RECORD-PLAYBACK`](sketch-record-and-playback.md): 120×120 logical sketch; 240×240 record canvas and 80×240 color rail; audio is the sketch clock; audio-only messages have no sketch. This send experience closes the timer/indicator question for its record screen (`DEC-021`) |
-| SRC-COM-SEND-001 | Proposed v2 communication contract; not approved | [Message delivery](../communication-contracts/message-delivery.md): `accepted` means server archive commit, not notification or playback; atomic multi-recipient policy is `COM-OPEN-001`; outbox/retry is `COM-OPEN-003` |
+| SRC-COM-SEND-001 | Proposed v2 communication contract; not approved | [Message delivery](../communication-contracts/message-delivery.md): `accepted` means server archive commit, not notification or playback; atomic frozen-set send, keep/resume, recipients-only publication (`DEC-041`), and refusal-vs-wait classes (`DEC-042`) are recorded. Remaining work is routes, codecs, chunking, retention, and HTTP mapping of those classes |
 | SRC-V1-SEND-001 | Active v1 assessment; implementation evidence only | [Recording and send](../../v1-assessments/recording-send.md): picker, capture, finishing/sending/sent, cancel, partial multi-recipient, discard-on-fail |
 | SRC-UI-SPLIT-001 | Active device-UI draft | [`LAYOUT-SPLIT-PANE`](../device-ui/layouts/LAYOUT-SPLIT-PANE.md); [`PANEL-HEADER-TITLE-SUBTITLE`](../device-ui/panels/PANEL-HEADER-TITLE-SUBTITLE.md) for the sending sequence header |
 | SRC-LAB-10-001 | Lab motion reference; owner-adopted for this experience | `lab.lab10` physical-button ring-wipe enter and reverse red-circle collapse. Pixel timing and clip geometry are delegated to match that lab, not reinvented |
@@ -93,8 +99,10 @@ outlive a single screen paint).
    per-recipient uploads that could partially succeed. The owner rejected
    Everyone and long-press (`DEC-013`), adopted a 2-second confirmation
    dwell (`DEC-019`), and replaced v1 body copy with lowercase `preparing`
-   / `sending` / `sent` (`DEC-020`). Discard-on-fail and partial-upload
-   behavior stay unadopted unless accepted later. Legacy v1 leading-audio
+   / `sending` / `sent` (`DEC-020`). V1 discard-on-fail is replaced by
+   keep/resume for connectivity (`DEC-029`) and by atomic `couldn't send`
+   for definite refusals (`DEC-034`, `DEC-042`). V1 partial multi-recipient
+   upload is replaced by all-or-nothing (`DEC-034`). Legacy v1 leading-audio
    clipping is historical evidence for `DEC-017`, not a copied clip length.
 4. `EXP-SKETCH-RECORD-PLAYBACK` locks canvas geometry and multi-color
    strokes. This send experience owns capture+send behavior and decides
@@ -105,10 +113,11 @@ outlive a single screen paint).
    (`DEC-011`). The lab's on-screen FAB bloom is not the product enter path.
    Exact radii, origin, duration, and easing are delegated to engineering
    with the invariant that the motion matches that lab ring-wipe.
-6. Proposed delivery `COM-OPEN-001` (atomic versus partial multi-recipient
-   success) and `COM-OPEN-003` (outbox / failed-send retention) are
-   unresolved product/protocol decisions. They will be interviewed here only
-   for user-visible outcomes.
+6. Delivery atomic frozen-set send (`DEC-034`), keep/resume (`DEC-029`–
+   `DEC-035`), recipients-only publication (`DEC-041`), and refusal-vs-wait
+   classes (`DEC-042`) are owner-decided. Wire routes, codecs, chunking,
+   receipt retention, and exact HTTP status mapping of those classes stay
+   engineering.
 
 ### Revision history
 
@@ -126,6 +135,10 @@ outlive a single screen paint).
 | 1.0 | 2026-10-21 | Locked power-loss, hangout-member removal during selection, and full-sketch ignore-further-ink. |
 | 1.1 | 2026-10-21 | Locked `couldn't record`, mid-recording mic-fail-as-finish, and exception-checkpoint delegated set. |
 | 1.2 | 2026-10-21 | Contract checkpoint confirmed. No implementation authorization. |
+| 1.3 | 2026-10-21 | Delivery contract rev 0.2 recorded atomic send and keep/resume. Remaining product meanings are refusal-vs-wait classification and sender inbox copy. |
+| 1.4 | 2026-10-21 | Locked recipients-only publication and the refusal-vs-wait map. No implementation authorization. |
+| 1.5 | 2026-10-21 | Locked recipient-picker selected-card cue, long-name header treatment, and empty-state composition. |
+| 1.6 | 2026-10-21 | Locked sending-subtitle overflow and text-only status marks. |
 
 ## 2. Scenario and intended experience
 
@@ -279,8 +292,8 @@ the starting product statement, not as an approved specification.
 ## 4. Experience model and ordinary journey
 
 Ordinary send path locked, including physical controls. Connectivity
-presentation is locked. Send retention, send timing, non-connectivity
-failure, and mute-during-send remain to be interviewed.
+presentation, keep/resume, mute-during-send, atomic refusal, recipients-
+only publication, and refusal-versus-wait classification are locked.
 
 | Stage | Purpose | Entry | Exit | Surviving work |
 |---|---|---|---|---|
@@ -357,7 +370,11 @@ to the inbox without discarding. If she already left, skip `sent`. Red
 from the inbox while it is still pending returns her to this wait
 screen. Mute during recording discards. Mute after finish keeps the send
 and resumes it when Maya signs in again. A definite server refusal shows
-`couldn't send`, then discards that attempt. Power loss drops unfinished
+`couldn't send`, then discards that attempt. Timeouts, 5xx, and an expired
+session keep waiting. Unsupported or too-large media, and a
+`client_message_id` content conflict, are `couldn't send`. The accepted
+message is published only to the frozen recipients; Maya's inbox does not
+gain a card of her own send. Power loss drops unfinished
 recording. A finished queued send survives restart if storage does, then
 resumes when Maya signs in. If Jordan leaves the hangout before she
 presses red, he is dropped from selection. A full sketch stops taking ink
@@ -480,10 +497,12 @@ the microphone fails after recording has started, that finish is sent.
   returns to the wait screen and does not start another recording
   (`DEC-031`).
 - Inbox return: the previously selected inbox message, still paused, no
-  autoplay. Do not select the just-sent message.
+  autoplay. Do not select the just-sent message. The sender's inbox MUST
+  NOT gain a card of this send (`DEC-041`).
 - Never acceptable: `sent` without server acceptance; presenting `sent` as
   playback or notification proof; showing `sent` after a refusal; delivering
-  to only some of a frozen recipient set; uploading while signed out.
+  to only some of a frozen recipient set; uploading while signed out;
+  publishing a copy into the sender's inbox.
 
 Connectivity wait (`DEC-028`–`DEC-031`): if Wi-Fi is unavailable, the body
 shows `no Wi-Fi`. If Wi-Fi is up but the server has not accepted this
@@ -507,11 +526,19 @@ still pending. Skip `sent` if it was accepted while she was away
 (`DEC-033`). A pending send belongs to that sender. It must not run as a
 different signed-in user.
 
-Definite refusal (`DEC-034`): if the server refuses this send for a
-non-connectivity reason, nobody in the recipient set receives it. Body
-shows `couldn't send` with no dots. Header stays `sending to ...`. After
-2 seconds, return to the inbox and discard that attempt. Do not
+Definite refusal (`DEC-034`, `DEC-042`): if the server refuses this send
+for a non-connectivity reason, nobody in the recipient set receives it.
+Body shows `couldn't send` with no dots. Header stays `sending to ...`.
+After 2 seconds, return to the inbox and discard that attempt. Do not
 auto-retry a refusal. Do not show `sent`.
+
+Classified as definite refusal: frozen recipient is not a current hangout
+member; unsupported or too-large media; same `client_message_id` with
+different content. Classified as wait, not refusal: no Wi-Fi, timeout,
+connection reset, HTTP 5xx, expired or forbidden session, and a malformed
+or unknown-schema success body. Wait keeps the queued send and never
+shows `sent`. An expired session does not upload until this same user
+has a valid session again.
 
 Power loss (`DEC-035`): unfinished capture is gone. A finished queued send
 is kept across restart if local storage survives, then resumes when that
@@ -531,6 +558,8 @@ Known never-acceptable outcomes already in force:
   sent message.
 - Implementation substitutes a different enter/finish motion for the
   `lab.lab10` physical ring-wipe.
+- The sender's inbox gains a card of this send.
+- A timeout, 5xx, or expired session is shown as `couldn't send`.
 
 ## 6. Continuity, data, and side effects
 
@@ -544,7 +573,8 @@ Inherited facts that this experience must not contradict:
   discarded. A finished send is kept for that user and resumes after they
   sign in (`DEC-032`, `DEC-033`).
 - Server acceptance is distinct from recipient notification and playback
-  (`COM-MESSAGE-DELIVERY`).
+  (`COM-MESSAGE-DELIVERY`). Acceptance publishes only to frozen recipients;
+  it does not add a card to the sender's inbox (`DEC-041`).
 - The sent audio/sketch timeline starts when the ring-wipe completes. Sketch
   timestamps must align with that kept audio (`DEC-016`, `DEC-017`).
 
@@ -606,12 +636,22 @@ Inherited facts that this experience must not contradict:
 | SCN-040 | Jordan selected; microphone unavailable | Press red | `couldn't record` for 2 seconds; carousel restores with Jordan still selected; nothing sent | EXP-038 |
 | SCN-041 | Wipe already started; capture cannot start | Capture failure | Reverse to recipient selection, then SCN-040 | EXP-038 |
 | SCN-042 | Interactive recording; microphone fails | Mic failure | Same finish path as red: reverse collapse, then preparing/sending | EXP-039 |
+| SCN-043 | Server accepts Maya's send to Jordan; Maya returns to inbox | Observe Maya's inbox | Previous selection restored; no new card of Maya's own send | EXP-019, EXP-040 |
+| SCN-044 | Upload result is unsupported or too-large media | Refusal | Body `couldn't send`; attempt discarded; nobody received it | EXP-034, EXP-041 |
+| SCN-045 | Complete times out or the server returns 5xx | Wait | Body `connecting` or `no Wi-Fi`; same send kept; not `sent` | EXP-028, EXP-041 |
+| SCN-046 | Same `client_message_id` replayed with different content | Identity conflict | `couldn't send`; no second delivery; attempt discarded | EXP-034, EXP-041 |
+| SCN-047 | Session expired or forbidden while Maya is still signed in locally | Auth failure | Keep queued; do not upload until Maya has a valid session; not `sent` | EXP-033, EXP-041 |
+| SCN-048 | Multiple recipients selected; their names exceed the 25-character `To` header limit | Observe header | Header shows the first selected recipient's first name and `+N` for the remaining recipients | EXP-007 |
+| SCN-049 | A recipient is selected | Observe that person's card | Selected state is shown by the 2 px accent outline alone; no checkmark appears | EXP-006 |
+| SCN-050 | Hangout has no other members | Open recipient selection | Split pane remains; lower slot centers `No people to message` with no illustration or cards | EXP-010 |
+| SCN-051 | Frozen recipient names do not fit in the sending subtitle | Observe preparing/sending/sent | Subtitle shows the first recipient's first name and `+N` for the remaining recipients | EXP-042 |
+| SCN-052 | Observe preparing/sending/sent and refusal feedback | Status changes | Centered text appears without icons; only `preparing` and `sending` have progressive dots | EXP-020, EXP-043 |
 | SCN-007 | Recipient selection, any selection | Press Boot | Return to inbox; no message created | EXP-009 |
 | SCN-008 | Maya is the signed-in user | Open recipient selection | Maya's card is not in the carousel | EXP-004 |
 | SCN-009 | Hangout has no other members | Open recipient selection | Lower slot shows `No people to message`; red is ignored; Boot returns to inbox | EXP-010 |
 
-Traceability for later send, failure, and connectivity scenarios is not
-issued yet.
+Traceability for send, failure, connectivity, sender-copy, and
+refusal-versus-wait scenarios is in the table below.
 
 ### Requirements issued so far
 
@@ -631,17 +671,21 @@ issued yet.
   selection. Nobody is pre-selected on entry. (Owner-decided)
 - **EXP-006:** The centered/focused card is not the same as selection.
   Selected cards keep a persistent selected state while they remain
-  selected. (Owner-decided)
+  selected, shown by a 2 px accent outline alone, without a checkmark.
+  (Owner-decided)
 - **EXP-007:** Header copy is `Send a message to ...` when none are
   selected, `To [name]` for one selected person, and `To` plus the selected
-  names when more than one are selected. (Owner-decided)
+  names when more than one are selected. If selected names exceed the
+  25-character header limit, show `To [first name] +N`, where `N` is the
+  number of remaining selected recipients. (Owner-decided)
 - **EXP-008:** Recipient selection is valid only when at least one person
   is selected. The red button is ignored until then. (Owner-decided)
 - **EXP-009:** Boot from recipient selection returns to the message inbox
   and does not create a message. (Owner-decided)
 - **EXP-010:** If there are no other hangout members, keep the split
-  layout, show `No people to message` in the lower slot, ignore red, and
-  still allow Boot to return to the inbox. (Owner-decided)
+  layout, show centered `No people to message` in the lower slot with no
+  illustration or cards, ignore red, and still allow Boot to return to the
+  inbox. (Owner-decided)
 - **EXP-011:** When selection is valid, red starts the `lab.lab10` physical
   ring-wipe onto the inherited full-screen record canvas and freezes the
   recipient set. (Owner-decided)
@@ -668,7 +712,8 @@ issued yet.
 - **EXP-018:** The reverse collapse returns to the split pane. The sending
   header is [`PANEL-HEADER-TITLE-SUBTITLE`](../device-ui/panels/PANEL-HEADER-TITLE-SUBTITLE.md)
   and stays stable through preparing, sending, and confirmation: title
-  `sending to ...`; subtitle the frozen recipient names. The lower body
+  `sending to ...`; subtitle the frozen recipient names, reduced to the
+  first recipient's first name plus `+N` if they do not fit. The lower body
   replaces the recipient carousel with centered status copy (`EXP-020`).
   (Owner-decided)
 - **EXP-019:** After server acceptance, keep `sent` visible for 2 seconds,
@@ -677,7 +722,8 @@ issued yet.
   (Owner-decided)
 - **EXP-020:** Lower-body copy is `preparing` with three progressive dots,
   then `sending` with three progressive dots, then `sent` with no dots. Use
-  the established centered status presentation: no overlay and no dim.
+  the established centered, text-only status presentation: no icons,
+  overlay, or dim.
   (Owner-decided)
 - **EXP-021:** The record screen shows only the inherited canvas and color
   rail. It MUST NOT show a recording timer or recording indicator.
@@ -750,6 +796,24 @@ issued yet.
 - **EXP-039:** If the microphone fails after wipe-complete, treat it as
   finish: prepare and send the audio and sketch captured so far.
   (Owner-decided)
+- **EXP-040:** After acceptance, publish only to the frozen recipients.
+  The sender's inbox MUST NOT receive a card of this send. Return still
+  restores the previous inbox selection and MUST NOT select a just-sent
+  identity. (Owner-decided)
+- **EXP-041:** Timeouts, connection reset, HTTP 5xx, and an expired or
+  forbidden session keep this send queued (`no Wi-Fi` or `connecting`) and
+  MUST NOT show `sent`. Unsupported or too-large media, and the same
+  `client_message_id` with different content, are definite refusals
+  (`couldn't send`, discard, no auto-retry). A malformed or unknown-schema
+  success body is a wait, never `sent`. Frozen-recipient hangout refusal
+  remains EXP-034. (Owner-decided; HTTP status numbers remain in the
+  delivery contract)
+- **EXP-042:** If frozen recipient names do not fit in the sending
+  subtitle, show the first recipient's first name followed by `+N` for the
+  remaining recipients. (Owner-decided)
+- **EXP-043:** Sending status uses centered text without status icons;
+  only `preparing` and `sending` use the already-defined progressive dots.
+  (`sent` and `couldn't send` have no dots.) (Owner-decided)
 
 ### Traceability
 
@@ -768,6 +832,9 @@ issued yet.
 | SRC-OWNER-009 / DEC-032, DEC-033, DEC-034 | EXP-032–EXP-034 | Recording, queued send, refusal | SCN-030–SCN-033 |
 | SRC-OWNER-010 / DEC-035, DEC-036, DEC-037 | EXP-035–EXP-037 | Power-loss, recipient selection, recording | SCN-034–SCN-039 |
 | SRC-OWNER-011 / DEC-038, DEC-039 | EXP-038, EXP-039 | Recipient selection, recording | SCN-040–SCN-042 |
+| SRC-OWNER-013 / DEC-041, DEC-042 | EXP-040, EXP-041 | Preparing/sending/sent, inbox return | SCN-043–SCN-047 |
+| SRC-OWNER-014 / DEC-043–DEC-045 | EXP-006, EXP-007, EXP-010 | Recipient selection, empty recipients | SCN-048–SCN-050 |
+| SRC-OWNER-015 / DEC-046, DEC-047 | EXP-018, EXP-020, EXP-042, EXP-043 | Preparing/sending/sent | SCN-051, SCN-052 |
 
 ## 9. Decisions, OPEN items, and readiness
 
@@ -814,7 +881,14 @@ issued yet.
 | DEC-037 | When the sketch buffer is full, ignore further drawing, keep audio, and do not auto-finish | A full sketch must not kill the spoken message | SRC-OWNER-010, 2026-10-21 | High | OWNER-DECIDED; cap size delegated | EXP-037 |
 | DEC-038 | If capture cannot start, keep recipient selection and the current selection. Show `couldn't record` for 2 seconds. Reverse a started wipe back first. Nothing is sent | Every message needs audio; do not lose the chosen people | SRC-OWNER-011, 2026-10-21 | High | OWNER-DECIDED | EXP-038 |
 | DEC-039 | Microphone failure after wipe-complete is a finish, not a cancel. Prepare and send what was captured | She already spoke | SRC-OWNER-011, 2026-10-21 | High | OWNER-DECIDED | EXP-039 |
-| DEC-040 | Exception checkpoint: ring-wipe pixels, leading-audio clip length, sketch buffer size, retry cadence, storage medium, and interrupted-wipe motion are delegated under their existing invariants | Remaining uncertainty is engineering, not product policy | SRC-OWNER-011, 2026-10-21 | High | OWNER-DECIDED | — | |
+| DEC-040 | Exception checkpoint: ring-wipe pixels, leading-audio clip length, sketch buffer size, retry cadence, storage medium, and interrupted-wipe motion are delegated under their existing invariants | Remaining uncertainty is engineering, not product policy | SRC-OWNER-011, 2026-10-21 | High | OWNER-DECIDED | — |
+| DEC-041 | After acceptance, publish only to the frozen recipients. The sender's inbox does not receive a copy. Return still restores the previous selection and does not select a just-sent identity | Self is not a recipient; inbox is incoming mail | SRC-OWNER-013, 2026-10-21 | High | OWNER-DECIDED | EXP-040 |
+| DEC-042 | Timeouts, 5xx, connection reset, and expired/forbidden session keep waiting. Unsupported or too-large media and `client_message_id` content conflict are `couldn't send`. Malformed success bodies wait and never show `sent` | Copy is already decided; this is which results use it | SRC-OWNER-013, 2026-10-21 | High | OWNER-DECIDED; HTTP numbers delegated | EXP-041 |
+| DEC-043 | When selected names exceed the 25-character `To` header limit, show the first selected recipient's first name followed by `+N` for the remaining recipients | Preserve recipient identity and make multi-selection visible in a short header | SRC-OWNER-014, 2026-10-21 | High | OWNER-DECIDED | EXP-007 |
+| DEC-044 | A selected recipient card uses the 2 px accent outline as its only selection cue; no checkmark | Keep selection visible without adding a second cue | SRC-OWNER-014, 2026-10-21 | High | OWNER-DECIDED | EXP-006 |
+| DEC-045 | With no other hangout members, retain the split pane and show centered `No people to message` in the lower slot, without cards or an illustration | Keep the established empty-state copy simple and in place | SRC-OWNER-014, 2026-10-21 | High | OWNER-DECIDED | EXP-010 |
+| DEC-046 | If frozen recipient names do not fit in the sending subtitle, show the first recipient's first name followed by `+N` for the remaining recipients | Keep the recipient summary compact while retaining the first name and multi-recipient count | SRC-OWNER-015, 2026-10-21 | High | OWNER-DECIDED | EXP-018, EXP-042 |
+| DEC-047 | Sending status remains centered text without status icons; progressive dots appear only for `preparing` and `sending` | Preserve the simple status treatment across progress and result | SRC-OWNER-015, 2026-10-21 | High | OWNER-DECIDED | EXP-020, EXP-043 |
 
 ### Locked behavior
 
@@ -825,8 +899,12 @@ issued yet.
 - Tap-to-toggle one or more other hangout members; no Everyone; no
   long-press; none pre-selected; red ignored until at least one is selected
   (`DEC-004`, `DEC-013`, `DEC-015`).
-- Focus is not selection; header names the current recipients (`DEC-014`).
-- Empty available recipients show `No people to message` (`DEC-015`).
+- Focus is not selection. Selected cards use only the 2 px accent outline;
+  long recipient headers use first name + `+N` (`DEC-014`, `DEC-043`,
+  `DEC-044`).
+- Empty available recipients keep the split pane and show centered
+  `No people to message`, with no cards or illustration (`DEC-015`,
+  `DEC-045`).
 - Valid selection + red begins recording; Boot from selection returns with
   no message (`DEC-005`).
 - Recording and sketching share the inherited full-screen canvas (`DEC-006`).
@@ -845,11 +923,12 @@ issued yet.
   speech is discarded (`DEC-016`). Hardware may capture earlier only to
   clip startup noise (`DEC-017`).
 - Reverse collapse returns to split pane. Sending header is
-  `sending to ...` plus the frozen names on `PANEL-HEADER-TITLE-SUBTITLE`.
-  Body moves through preparing, sending, and confirmation (`DEC-018`).
+  `sending to ...` plus the frozen names on `PANEL-HEADER-TITLE-SUBTITLE`;
+  overflow uses first name + `+N` (`DEC-018`, `DEC-046`).
 - Sent confirmation lasts 2 seconds, then the previous inbox selection
   returns paused (`DEC-019`).
-- Lower body copy is `preparing` / `sending` / `sent` (`DEC-020`).
+- Lower body uses centered text without icons; only `preparing` and
+  `sending` show progressive dots (`DEC-020`, `DEC-047`).
 - No record timer or indicator (`DEC-021`).
 - 3-minute auto-finish; no silence auto-stop (`DEC-022`).
 - Wipe: Boot cancels; red ignored (`DEC-023`).
@@ -873,6 +952,11 @@ issued yet.
 - Capture that cannot start shows `couldn't record` and keeps selection
   (`DEC-038`). Microphone failure after recording starts finishes and
   sends (`DEC-039`).
+- After acceptance, only frozen recipients receive the message. The
+  sender's inbox does not gain a card of this send (`DEC-041`).
+- Timeouts, 5xx, connection reset, and expired/forbidden session keep
+  waiting. Unsupported or too-large media and a `client_message_id`
+  content conflict are `couldn't send` (`DEC-042`).
 
 ### Bounded variation
 
@@ -883,15 +967,9 @@ None yet.
 - `lab.lab10` ring-wipe origin, inner/outer radii, duration, easing, and
   clip geometry, provided the visible motion matches that lab's physical
   ring-wipe rather than its FAB bloom (`DEC-011`).
-- Pixel styling of recipient selected chrome, provided it stays distinct
-  from the centered/focused card (`DEC-014`).
 - Order of recipient cards among other hangout members, provided the
   signed-in user is omitted and membership stays the current hangout
   (`DEC-015`).
-- Truncation of multiple names in the `To` header and in the sending
-  subtitle, provided the `To` / `sending to ...` role remains and the
-  person can still tell that more than one is selected (`DEC-014`,
-  `DEC-018`). Title stays within the panel's 25-character visible limit.
 - Leading-audio clip duration, provided kept audio and sketch start at
   wipe-complete (`DEC-017`).
 - Interrupted-wipe motion, provided Boot during wipe discards and returns
@@ -907,6 +985,8 @@ None yet.
   until acceptance or an owner-decided discard (`DEC-029`, `DEC-035`).
 - Sketch buffer capacity, provided further ink is ignored and audio
   continues when it is full (`DEC-037`).
+- Exact HTTP status numbers for the refusal-versus-wait classes, provided
+  the user-visible map in `DEC-042` is preserved.
 
 ### OPEN items
 
@@ -922,6 +1002,8 @@ None yet.
 | OPEN-008 | *(resolved)* 2-second confirmation and previous-selection return adopted as `DEC-019` | — | No |
 | OPEN-009 | *(resolved)* Power-loss adopted as `DEC-035` | — | No |
 | OPEN-010 | *(resolved)* Capture-start and mid-recording mic failure adopted as `DEC-038` / `DEC-039` | — | No |
+| OPEN-011 | *(resolved)* Recipients-only publication adopted as `DEC-041` | — | No |
+| OPEN-012 | *(resolved)* Refusal-versus-wait classes adopted as `DEC-042` | — | No |
 
 ### Challenge walkthroughs
 
@@ -932,8 +1014,9 @@ None yet.
   inbox; the same send continues and does not show `sent` if accepted
   after she left. (SCN-027, SCN-029)
 - **Failure:** Microphone unavailable keeps selection and shows
-  `couldn't record`. A server refusal shows `couldn't send` and delivers
-  to nobody. (SCN-040, SCN-033)
+  `couldn't record`. Unsupported media or a content-conflict is
+  `couldn't send`. Timeouts and 5xx keep waiting. (SCN-040, SCN-033,
+  SCN-044–SCN-047)
 - **Boundary:** 3-minute auto-finish; full sketch ignores ink; power loss
   drops unfinished work and keeps a finished send only if storage
   survives. (SCN-016, SCN-039, SCN-034–SCN-036)
@@ -944,7 +1027,7 @@ None yet.
 |---|---|---|
 | Concrete | CLEAR | Desk endpoint, red/Boot/mute, named copy, Maya/Jordan/Sam examples |
 | Understandable | CLEAR | Each stage lists available actions and what follows |
-| Complete | CLEAR | Ordinary, cancel, connectivity, mute, refusal, power-loss, capture failure, and drawing cap are decided or delegated |
+| Complete | CLEAR | Ordinary, cancel, connectivity, mute, refusal, power-loss, capture failure, drawing cap, sender-copy, and refusal-vs-wait classes are decided or delegated |
 | Truthful | CLEAR | `sent` is server acceptance only; wait copy is not success |
 | Continuous | CLEAR | Inbox play heads survive; queued send is one operation; late `sent` does not steal the inbox |
 | Consistent | CLEAR | Copy, controls, and scenarios agree after DEC-024's wait-exit exception |
@@ -964,10 +1047,13 @@ Locked behavior is the list above. Bounded variation: none; the 2-second
 
 Delegated choices are the list above.
 
-No blocking OPEN product items remain in this experience. Offline capture
+No blocking OPEN product items remain in this experience. Sender-copy and
+refusal-versus-wait classes were accepted after the original contract
+checkpoint (`SRC-OWNER-013`, `DEC-041`, `DEC-042`). Offline capture
 feasibility is an engineering assumption: if it is not possible, return to
-the owner. Message-delivery wire details remain in the communication
-contract and do not change this user-visible policy.
+the owner. Message-delivery routes, codecs, chunking, retention, and HTTP
+status numbers remain in the communication contract and do not change this
+user-visible policy.
 
 This confirmation records what was reviewed. It is not product-wide
 approval and does not authorize implementation.

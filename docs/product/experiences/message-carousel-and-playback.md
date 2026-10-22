@@ -1,10 +1,10 @@
 # Message carousel and playback experience
 
-Status: interview draft — reconstruction, ordinary-flow, exception, and contract checkpoints reviewed 2026-10-21
+Status: interview draft — reconstruction, ordinary-flow, exception, and contract checkpoints reviewed 2026-10-21; last-viewed, outage-playback, sketch-card chrome, header transport, and no-sketch card metadata accepted 2026-10-21
 Experience ID: EXP-MESSAGE-CAROUSEL
-Revision: 0.9
+Revision: 0.13
 Owner: Product owner
-Approval: Contract checkpoint confirmed 2026-10-21 for the recorded locked behavior. No product-wide approval claimed; no implementation authorization implied
+Approval: Contract checkpoint confirmed 2026-10-21 for the recorded locked behavior. Last-viewed live-steal, offline cache play, last-viewed writes, header transport, and no-sketch card metadata accepted 2026-10-21. No product-wide approval claimed; no implementation authorization implied
 
 ## 1. Identity, scope, and authority
 
@@ -40,10 +40,14 @@ policy unless the owner adopts a specific statement.
 | SRC-OWNER-006 | Product owner, 2026-10-21 exception interview | Play-start and mid-play audio failures show `can't play`; sketch-only faults do not abort audio |
 | SRC-OWNER-007 | Product owner, 2026-10-21 ordinary-flow interview | Empty copy `Messages` / `No messages`; full current inbox reachable; BOOT exits to settings |
 | SRC-OWNER-008 | Product owner, 2026-10-21 contract-checkpoint amendment | Red recording button pauses playback and exits to the message-sending sequence |
+| SRC-OWNER-009 | Product owner, 2026-10-21 communication-contract interview | Last-viewed does not steal a live selection; no offline/cached play during status; last-viewed writes are coalesced settled selection only |
+| SRC-OWNER-010 | Product owner, 2026-10-21 | Hide card portrait and meta while a sketch is showing |
+| SRC-OWNER-011 | Product owner, 2026-10-21 inbox visual follow-up | Use a labeled Play/Pause button with no playback progress bar |
+| SRC-OWNER-012 | Product owner, 2026-10-21 message-card visual follow-up | No-sketch cards show a centered sender portrait, one-line sender name, and `m:ss` duration beneath; no unread dot is shown |
 | SRC-EXP-LOGIN-001 | Active experience draft; owner-decided for login | [`EXP-LOGIN`](endpoint-login.md): successful authentication enters the signed-in message carousel (`DEC-010`, `EXP-012`); mute signs out and blanks the display; lower-slot `connecting` / `no Wi-Fi` presentation (`DEC-051`–`DEC-052`, `DEC-060`, `EXP-037`) |
-| SRC-EXP-SKETCH-001 | Active experience; owner-decided canvas geometry | [`EXP-SKETCH-RECORD-PLAYBACK`](sketch-record-and-playback.md): 120×120 logical sketch framed inside the message card; audio is the sketch clock; audio-only messages have no sketch |
+| SRC-EXP-SKETCH-001 | Active experience; owner-decided canvas geometry | [`EXP-SKETCH-RECORD-PLAYBACK`](sketch-record-and-playback.md): 120×120 logical sketch framed inside the message card; hide portrait/meta while sketch ink is showing (`SK-009`); audio is the sketch clock; audio-only messages have no sketch |
 | SRC-V1-CAR-001 | Active v1 assessment; implementation evidence only | [Carousel and playback assessment](../../v1-assessments/carousel-playback.md): browsing, snap, playback, inbox refresh; open v1 product decisions on failure copy, offline blobs, autoplay-new, and scrub |
-| SRC-COM-INBOX-001 | Proposed v2 communication contract; not approved | [Inbox, media, and playback-state](../communication-contracts/inbox-and-media.md): server-owned inbox and persisted playback state; client-owned focus and active playback; `COM-OPEN-002`–`COM-OPEN-005` |
+| SRC-COM-INBOX-001 | Proposed v2 communication contract; not approved | [Inbox, media, and playback-state](../communication-contracts/inbox-and-media.md): server-owned inbox and last-viewed; client-owned focus and play heads; remaining `COM-OPEN` items are wire |
 | SRC-UI-001 | Supporting concept guide | [UI update taxonomy](../../v1-assessments/ui-update-taxonomy.md): inbox membership is a Level 1 identity-keyed update; playback progress is Level 0 |
 | SRC-UI-SPLIT-001 | Active device-UI draft | [`LAYOUT-SPLIT-PANE`](../device-ui/layouts/LAYOUT-SPLIT-PANE.md); [`PANEL-STATUS-MESSAGE`](../device-ui/panels/PANEL-STATUS-MESSAGE.md); [`FOUNDATION-MOTION`](../device-ui/foundations/FOUNDATION-MOTION.md) |
 | SRC-STD-001 | Normative engineering standard, not product policy | [Client application coding standards](../../standards/client-application-coding-standards.md) §§3–5, 7, 9: identity-bound async results, update levels, failure contracts, coalesced remote writes |
@@ -58,7 +62,10 @@ policy unless the owner adopts a specific statement.
    `DEC-018`). V1's autoplay-new OPEN item is not adopted.
 3. The owner requires reporting current selection to the server. Pause
    position and sketch progress are **not** server facts in this experience
-   (`DEC-028`). The proposed inbox `position_ms` write is not adopted here.
+   (`DEC-028`, `DEC-043`). The proposed inbox `position_ms` and unread
+   writes are not adopted here. Last-viewed from another endpoint must not
+   steal a live selection (`DEC-041`). Offline or cached audio must not
+   play during connecting or `no Wi-Fi` (`DEC-042`).
 4. Mute-on signs the user out (`DEC-016`). Login is controlling.
 5. Sketch replay uses the existing 120×120 card-framed canvas (`DEC-017`).
 6. Selection uses stable message identity, not v1 recipient sequence.
@@ -82,6 +89,11 @@ policy unless the owner adopts a specific statement.
 | 0.7 | 2026-10-21 | Locked empty-inbox copy, full-inbox reach, and BOOT-to-settings exit. |
 | 0.8 | 2026-10-21 | Recorded the red recording button as a defined exit to the message-sending sequence. |
 | 0.9 | 2026-10-21 | Contract checkpoint confirmed. No implementation authorization. |
+| 0.10 | 2026-10-21 | Last-viewed live-steal, offline cache play, and coalesced last-viewed writes decided. |
+| 0.11 | 2026-10-21 | Moved non-product OPEN rows to a follow-on table. |
+| 0.12 | 2026-10-21 | Hide card portrait and meta while a sketch is showing (`DEC-044`). |
+| 0.13 | 2026-10-21 | Lock the labeled Play/Pause button and omit a playback progress bar. |
+| 0.14 | 2026-10-21 | Lock no-sketch message-card metadata and `m:ss` duration; confirm no unread marker. |
 
 ## 2. Scenario and intended experience
 
@@ -320,7 +332,7 @@ for the message-sending sequence. Mute still signs the user out.
   Wi-Fi copy is `no Wi-Fi` with no icon.
 - If audio is playing when the lower slot is replaced, pause immediately.
   Keep that message's audio position and partial sketch. Do not continue
-  from a buffer (`DEC-029`).
+  from a buffer, cache, or earlier fetch (`DEC-029`, `DEC-042`).
 - Keep `From [sender name]` while a message remains selected. Show the
   header Play action in its disabled state. Do not show Pause, because
   playback is already paused. Play becomes available again only after the
@@ -342,9 +354,13 @@ for the message-sending sequence. Mute still signs the user out.
 - On first entry after login, select last-viewed if present and center it;
   otherwise select the newest (rightmost) message; do not autoplay
   (`DEC-018`).
-- Report the current selection to the server. Write coalescing, retry, and
-  conflict handling remain OPEN in the inbox communication contract
-  (`OPEN-008`).
+- Report the current selection to the server after it settles. Rapid swipes
+  are coalesced into one last-viewed write. A lost-response retry replays
+  that same write and must not move selection backward (`DEC-043`). While
+  this endpoint stays signed in, a last-viewed value from another endpoint
+  or a later inbox snapshot must not steal the current selection
+  (`DEC-041`). Last-viewed is applied on first entry after login
+  (`DEC-018`). Wire field names remain in the inbox communication contract.
 - New messages join on the right without changing the current selection or
   moving the user's position (`DEC-005`, `DEC-023`).
 - Swipe or tap selects and centers a card. Card gestures never start audio.
@@ -406,7 +422,10 @@ for the message-sending sequence. Mute still signs the user out.
   the beginning (`DEC-013`).
 - When audio starts, an accompanying sketch draws onto the message card
   synchronized with playback (`DEC-009`). The logical canvas is 120×120
-  inside the card (`DEC-017`).
+  inside the card (`DEC-017`). While that sketch is visible (playing, paused,
+  or completed this session), hide the card portrait and meta, including the
+  unread dot. Keep the header `From [sender name]`. Restore portrait and meta
+  when the card has no sketch ink (`DEC-044`).
 - Pause via the header action or via changing messages preserves audio
   position and sketch progress for this signed-in session. The paused card
   keeps the partial sketch (`DEC-011`, `DEC-026`). Header Play on that
@@ -450,11 +469,16 @@ for the message-sending sequence. Mute still signs the user out.
 - Mute ends the signed-in session and discards play heads and sketches.
   Unmute starts `EXP-LOGIN`, not this screen. A later login of the same user
   may restore last-viewed only (`DEC-027`).
-- This experience does not write mid-play position or sketch progress to the
-  server. Another endpoint of the same user does not show this session's
-  partial or completed sketches (`DEC-028`).
+- This experience does not write mid-play position, sketch progress, or
+  unread/read flags to the server (`DEC-028`, `DEC-043`). Another endpoint
+  of the same user does not show this session's partial or completed
+  sketches (`DEC-028`). Another endpoint's last-viewed write updates the
+  server value for the next login and must not jump this endpoint's
+  current selection (`DEC-041`).
 - Duplicate or late inbox snapshots must not apply to a different user or a
-  newer revision (`EXP-021`; wire details in `OPEN-008`).
+  newer revision (`EXP-021`). A later snapshot's `last_viewed` must not
+  steal this endpoint's live selection (`DEC-041`). Wire names remain in
+  the inbox communication contract.
 
 ## 7. Limits and responsiveness
 
@@ -464,7 +488,7 @@ inbox cap. A later device cap needs measurement and owner approval. Card
 geometry from the sketch experience (outer chrome about 132×134, sketch
 120×120) is owner-decided for record/replay matching and is reused here.
 Engineering measurement of snap, start-to-audible, and sketch reveal budgets
-remains required before performance claims (`OPEN-012`).
+remains required before performance claims.
 
 ## 8. Acceptance scenarios and evidence
 
@@ -477,7 +501,7 @@ These are draft scenario outlines, not completed verification.
 | SCN-003 | PIN succeeds; inbox is empty | Heading `Messages`; lower body `No messages`; no cards; Play hidden | EXP-020, EXP-034 |
 | SCN-004 | Signed in; switch mute on | Endpoint stays powered, signs out, screen goes off; audio stops | EXP-002, EXP-021 |
 | SCN-005 | New message arrives while browsing a different selected message | New card joins on the right; selection and viewport stay on the previous identity | EXP-007, EXP-022 |
-| SCN-006 | Play a message that has a sketch | Audio starts; sketch draws on that card in time with audio | EXP-011, EXP-018 |
+| SCN-006 | Play a message that has a sketch | Audio starts; sketch draws on that card in time with audio; that card’s portrait and meta hide | EXP-011, EXP-018, EXP-041 |
 | SCN-007 | Pause during playback | Audio stops; card keeps the partial sketch and position | EXP-013 |
 | SCN-008 | Change selection while playing | Previous message pauses and keeps its position; new message does not autoplay | EXP-009, EXP-013 |
 | SCN-009 | Playback finishes | Card keeps the full sketch; header Play will restart from the beginning | EXP-014, EXP-015 |
@@ -495,6 +519,9 @@ These are draft scenario outlines, not completed verification.
 | SCN-030 | Signed in on the message screen; press BOOT while Ari is playing | Audio pauses; same-session play head kept; leave for settings; stay signed in | EXP-036 |
 | SCN-031 | Signed in; Ari is playing; press the red recording button | Audio pauses; Ari's position and partial sketch are kept; leave for the message-sending sequence; stay signed in | EXP-037 |
 | SCN-032 | Empty inbox; press the red recording button | Leave for the message-sending sequence; stay signed in; no play head to pause | EXP-037 |
+| SCN-036 | Unplayed sketch message is selected, then Play | Before Play, portrait and meta are visible. After Play, they stay hidden while sketch ink remains this session | EXP-041 |
+| SCN-037 | Inbox is showing a selected message | Observe the header during idle and playback | Header action is a labeled `Play` or `Pause` button; no progress bar appears | EXP-004, EXP-042 |
+| SCN-038 | An audio-only or unplayed message has no sketch visible | Observe the card | Centered portrait, one-line sender name, and `m:ss` duration appear beneath; no unread dot appears | EXP-043 |
 | SCN-012 | A peek card is tapped | That card becomes selected and centered; audio does not start | EXP-005, EXP-023 |
 | SCN-013 | The already-selected centered card is tapped | Selection is unchanged; playback does not start, pause, or resume | EXP-023 |
 | SCN-014 | A selected middle message is deleted | Selection moves to the nearest older (left) neighbor; that identity is reported; no autoplay | EXP-008 |
@@ -504,9 +531,12 @@ These are draft scenario outlines, not completed verification.
 | SCN-018 | Finish Ari, swipe to Sam, swipe back to Ari | Ari still shows the full sketch; header Play restarts audio and sketch from the beginning | EXP-014, EXP-015, EXP-024 |
 | SCN-019 | Mute during a half-played Ari; same user signs in again; last-viewed is Ari | Ari is selected; the card looks unplayed (no ink); Play starts from the beginning | EXP-002, EXP-019, EXP-025 |
 | SCN-020 | Ari is half-played on this endpoint; the same user is signed in on a second endpoint | The second endpoint does not show this session's partial sketch or pause position | EXP-026 |
+| SCN-033 | Maya is signed in on the kitchen looking at Sam; the bedroom reports last-viewed Ari | Kitchen selection stays on Sam. Server last-viewed may become Ari for the next login | EXP-038, EXP-006 |
+| SCN-034 | Wi-Fi drops; earlier-fetched audio for Ari is still in memory | Audio pauses if it was playing; Play is disabled; that cached audio does not continue | EXP-016, EXP-027, EXP-039 |
+| SCN-035 | Maya swipes Ari then Sam then Jordan; the Ari last-viewed write is lost and retried | Server last-viewed is Jordan. The retry does not move the carousel back to Ari | EXP-006, EXP-040 |
 
-Required future coverage includes settings re-entry and inbox/media wire.
-Evidence level is not yet planned against a v2 runtime/device.
+Required future coverage includes settings re-entry and remaining inbox/media
+wire names. Evidence level is not yet planned against a v2 runtime/device.
 
 ### Traceability
 
@@ -532,6 +562,12 @@ Evidence level is not yet planned against a v2 runtime/device.
 | SRC-OWNER-004 / DEC-026 | EXP-024, EXP-013–EXP-015 | Paused, Complete | SCN-017–018 |
 | SRC-OWNER-004 / DEC-027 | EXP-025 | Muted, Message carousel | SCN-019 |
 | SRC-OWNER-004 / DEC-028 | EXP-026 | Message carousel | SCN-020 |
+| SRC-OWNER-009 / DEC-041 | EXP-038, EXP-006 | Message carousel | SCN-033 |
+| SRC-OWNER-009 / DEC-042 | EXP-039, EXP-027 | Connecting, Wi-Fi unavailable | SCN-034 |
+| SRC-OWNER-009 / DEC-043 | EXP-040, EXP-006 | Message carousel | SCN-035 |
+| SRC-OWNER-010 / DEC-044 | EXP-041 | Playing, Paused, Complete | SCN-006, SCN-036 |
+| SRC-OWNER-011 / DEC-045 | EXP-004, EXP-042 | Message carousel, Playing | SCN-037 |
+| SRC-OWNER-012 / DEC-046 | EXP-040, EXP-043 | Message carousel, Paused | SCN-038 |
 | SRC-OWNER-006 / DEC-033–DEC-035 | EXP-031–EXP-033 | Playing, Paused, Message carousel | SCN-024–026 |
 
 ### Requirements
@@ -546,7 +582,9 @@ Evidence level is not yet planned against a v2 runtime/device.
   upper third sender and Play/Pause, lower two-thirds message carousel.
   (Owner-decided)
 - **EXP-004:** While a message is selected, the upper heading is
-  `From [sender name]` and the trailing action is contextual Play or Pause.
+  `From [sender name]` and the trailing action is a button labeled `Play`
+  or `Pause`, according to playback state. No playback progress bar is
+  shown.
   When the inbox is empty, the heading is `Messages` (`EXP-034`).
   (Owner-decided)
 - **EXP-005:** The person moves through the message timeline by swiping or
@@ -554,7 +592,8 @@ Evidence level is not yet planned against a v2 runtime/device.
   start audio (`EXP-023`). (Owner-decided)
 - **EXP-006:** The currently selected message is tracked by stable message
   identity and reported to the server, including after a deletion fallback.
-  (Owner-decided; write protocol OPEN)
+  Writes follow `EXP-038` and `EXP-040`. (Owner-decided; wire names remain
+  in the inbox contract)
 - **EXP-007:** Newly arrived messages join on the right without changing the
   current selection or moving the user's position. (Owner-decided)
 - **EXP-008:** If the selected message is deleted, select the nearest older
@@ -615,13 +654,29 @@ Evidence level is not yet planned against a v2 runtime/device.
   sketches. After a new login, cards look unplayed and Play starts from the
   beginning. Last-viewed selection may still be restored. (Owner-decided)
 - **EXP-026:** This experience reports last-viewed selection to the server
-  and does not report mid-play position or sketch progress. Another
-  endpoint of the same user does not inherit this session's pause or sketch
-  state. (Owner-decided)
+  and does not report mid-play position, sketch progress, or unread state.
+  Another endpoint of the same user does not inherit this session's pause
+  or sketch state. Live last-viewed from another endpoint follows
+  `EXP-038`. (Owner-decided)
 - **EXP-027:** If audio is playing when connecting or `no Wi-Fi` replaces
   the lower slot, pause immediately. Keep the current audio position and
-  partial sketch. Do not continue playback from a buffer. Do not autoplay
-  when the carousel returns. (Owner-decided)
+  partial sketch. Do not continue playback from a buffer, cache, or earlier
+  fetch (`EXP-039`). Do not autoplay when the carousel returns.
+  (Owner-decided)
+- **EXP-038:** Last-viewed is applied only on first entry after login
+  (`EXP-019`). While this endpoint stays signed in, a last-viewed value
+  from another endpoint or from a later inbox snapshot MUST NOT change the
+  current selection. New messages still join on the right without moving
+  the current card (`EXP-007`). (Owner-decided)
+- **EXP-039:** While connecting or `no Wi-Fi` is showing, Play stays
+  disabled and audio MUST NOT start from a buffer, cache, or previously
+  fetched bytes. Recovery restores the carousel and previous selection if
+  present, still paused, without autoplay. (Owner-decided)
+- **EXP-040:** Only the settled selected message is written as last-viewed.
+  Rapid selection changes are coalesced into one write. A lost-response
+  retry of that write MUST NOT move selection backward. The server does
+  not store pause position or sketch progress. This experience has no
+  unread badge. (Owner-decided)
 - **EXP-028:** While the connection-status body occupies the lower slot and
   a message remains selected, keep `From [sender name]` and show header
   Play disabled. Do not show Pause. Enable Play only after the carousel
@@ -666,6 +721,17 @@ Evidence level is not yet planned against a v2 runtime/device.
   signed in, and leaves for the message-sending sequence. Recipient
   selection, recording/sketching, and send confirmation are specified
   separately. (Owner-decided)
+- **EXP-041:** While a sketch is visible on a message card, hide that
+  card’s portrait and meta. Restore them when the card has no sketch ink.
+  The header `From [sender name]` does not hide. (`DEC-044`; sketch
+  `SK-009`)
+- **EXP-042:** The header action is a labeled `Play` or `Pause` button
+  based on playback state. Do not show a playback progress bar.
+  (Owner-decided)
+- **EXP-043:** When no sketch is visible on a message card, show the
+  sender portrait centered, with the sender name on one line and duration
+  in `m:ss` beneath it. Do not show an unread dot; this experience has no
+  unread state (`EXP-040`). (Owner-decided)
 
 ## 9. Decisions, OPEN items, and readiness
 
@@ -676,7 +742,7 @@ Evidence level is not yet planned against a v2 runtime/device.
 | DEC-001 | Use the existing split-panel layout; upper third sender + Play/Pause; lower two-thirds message carousel | Layout of the main message screen | SRC-OWNER-001, 2026-10-21 | OWNER-DECIDED at reconstruction checkpoint | EXP-003 |
 | DEC-002 | Upper copy is `From [sender name]` for the selected message, with a contextual Play/Pause action on the right | Header identity and transport | SRC-OWNER-001, 2026-10-21 | OWNER-DECIDED at reconstruction checkpoint | EXP-004 |
 | DEC-003 | Users swipe or tap message cards to move through their message timeline | Navigation gestures; tap does not start play (`DEC-024`) | SRC-OWNER-001 / SRC-OWNER-003, 2026-10-21 | OWNER-DECIDED | EXP-005, EXP-023 |
-| DEC-004 | Track the currently selected message by stable identity and report that selection to the server | Selection truth and server sync | SRC-OWNER-001, 2026-10-21 | OWNER-DECIDED; wire OPEN-008 | EXP-006 |
+| DEC-004 | Track the currently selected message by stable identity and report that selection to the server | Selection truth and server sync | SRC-OWNER-001, 2026-10-21 | OWNER-DECIDED; live-steal and coalesce are DEC-041 and DEC-043; wire names remain in the inbox contract | EXP-006 |
 | DEC-005 | New messages are added without changing the current selection or moving the user's position | Arrival must not steal place; they join on the right (`DEC-023`) | SRC-OWNER-001 / SRC-OWNER-003, 2026-10-21 | OWNER-DECIDED | EXP-007 |
 | DEC-006 | If the selected message is deleted, move selection to an appropriate remaining message | Neighbor rule specified in DEC-025 | SRC-OWNER-001 / SRC-OWNER-003, 2026-10-21 | OWNER-DECIDED; refined by DEC-025 | EXP-008 |
 | DEC-007 | Changing the selected message pauses playback of the previous message | Selection change is not a discard of the previous play head | SRC-OWNER-001, 2026-10-21 | OWNER-DECIDED | EXP-009 |
@@ -700,7 +766,7 @@ Evidence level is not yet planned against a v2 runtime/device.
 | DEC-021 | Async inbox and playback results are identity-bound; mute and selection changes reject stale completions | Reliability requirement from engineering standard | SRC-STD-001, 2026-10-21 | PROPOSED as applicable constraint | EXP-021 |
 | DEC-026 | In the same signed-in session, returning to a card keeps its pause position and partial or completed sketch. Play resumes a paused message and restarts a completed one | Same-session continuity | SRC-OWNER-004, 2026-10-21 | OWNER-DECIDED | EXP-024 |
 | DEC-027 | Play heads and sketches do not survive mute. After a new login, cards look unplayed and Play starts from the beginning. Only last-viewed selection comes back | Shared-desk session reset | SRC-OWNER-004, 2026-10-21 | OWNER-DECIDED | EXP-025 |
-| DEC-028 | Pause position and sketch progress stay on this signed-in session on this endpoint. The server still gets last-viewed. It does not get mid-play position or sketch progress | No cross-endpoint play-head sync in this experience | SRC-OWNER-004, 2026-10-21 | OWNER-DECIDED | EXP-026 |
+| DEC-028 | Pause position and sketch progress stay on this signed-in session on this endpoint. The server still gets last-viewed. It does not get mid-play position or sketch progress | No cross-endpoint play-head sync in this experience | SRC-OWNER-004, 2026-10-21 | OWNER-DECIDED; unread and write coalesce are DEC-043; live last-viewed steal is DEC-041 | EXP-026 |
 | DEC-029 | If audio is playing when the link drops, pause immediately. Keep position and partial sketch. Do not keep playing from a buffer. Do not autoplay on recovery | Mid-play outage | SRC-OWNER-005, 2026-10-21 | OWNER-DECIDED | EXP-027 |
 | DEC-030 | While the lower slot is status, keep `From [sender name]` and show disabled Play. Do not show Pause. Play is available again only after the carousel returns | Header during signed-in status | SRC-OWNER-005, 2026-10-21 | OWNER-DECIDED | EXP-028 |
 | DEC-031 | If the selected message disappeared during the outage, apply the usual deletion fallback on recovery. Report the new identity. Do not autoplay. If it is still there, restore it paused | Outage plus deletion | SRC-OWNER-005, 2026-10-21 | OWNER-DECIDED | EXP-029 |
@@ -713,20 +779,35 @@ Evidence level is not yet planned against a v2 runtime/device.
 | DEC-038 | Physical BOOT while signed in transitions to the settings screen. Settings behavior is covered in another experience. This experience pauses playing audio, keeps the same-session play head, and stays signed in | Settings exit | SRC-OWNER-007, 2026-10-21 | OWNER-DECIDED; destination owned elsewhere | EXP-036 |
 | DEC-039 | The physical off-screen red recording button is available during the carousel. On press: pause any active playback, preserving position and sketch progress; exit this experience; hand off to the message-sending sequence (recipients, record/sketch, sent confirmation). Those flows are specified separately | Defined message-sending exit and cross-experience dependency | SRC-OWNER-008, 2026-10-21 | OWNER-DECIDED; destination owned elsewhere | EXP-037 |
 | DEC-040 | Treat the listed locked behaviors as locked requirements. Destination experiences, inbox/media wire, and measured budgets remain delegated or OPEN. Confirmation is not implementation authorization | Contract-checkpoint confirmation | SRC-OWNER-008, 2026-10-21 | OWNER-DECIDED | — |
+| DEC-041 | Last-viewed from another endpoint or a later snapshot must not steal this endpoint's current selection while signed in. Last-viewed applies on first entry after login. New mail still joins on the right without moving the card | Live place is local until mute/login | SRC-OWNER-009, 2026-10-21 | OWNER-DECIDED | EXP-038 |
+| DEC-042 | During connecting or `no Wi-Fi`, do not play from a buffer, cache, or earlier fetch. Pause immediately if playing. Play stays disabled until the carousel returns | Offline playback is not part of this experience | SRC-OWNER-009, 2026-10-21 | OWNER-DECIDED | EXP-039 |
+| DEC-043 | Only the settled selected message is last-viewed. Rapid swipes coalesce to one write. A lost-response retry of that write must not move selection backward. No pause position, sketch, or unread is written | Last-viewed is the only server playback fact | SRC-OWNER-009, 2026-10-21 | OWNER-DECIDED | EXP-040 |
+| DEC-044 | While a sketch is visible on the inbox card, hide that card’s portrait and meta. Restore them when the card has no sketch ink. Header identity stays | Sketch is the card face during replay | SRC-OWNER-010 / SRC-EXP-SKETCH-001, 2026-10-21 | OWNER-DECIDED; closes sketch OPEN-SKP-02 | EXP-041 |
+| DEC-045 | Use a labeled `Play` / `Pause` button in the inbox header and no playback progress bar | Make the transport action explicit without adding progress chrome | SRC-OWNER-011, 2026-10-21 | OWNER-DECIDED | EXP-004, EXP-042 |
+| DEC-046 | A no-sketch card shows a centered sender portrait, one-line sender name, and `m:ss` duration beneath; do not show an unread dot | Give the card useful identity and length metadata without introducing read tracking | SRC-OWNER-012, 2026-10-21 | OWNER-DECIDED | EXP-040, EXP-043 |
 
 ### OPEN items
 
-| ID | Question | Consequence if unresolved | Needed from | Blocks |
-|---|---|---|---|---|
-| OPEN-008 | Inbox snapshot, media fetch, and last-viewed write schemas in the [inbox contract](../communication-contracts/inbox-and-media.md). Mid-play position is not written (`DEC-028`). Device paging, if any, must preserve `EXP-035` | Interoperability remains blocked | Communication-contract work | Implementation |
-| OPEN-012 | Snap, start-to-audible, and sketch-reveal budgets on target hardware | Performance claims cannot be tested | Engineering | Performance claim |
-| OPEN-014 | Settings experience return path and settings behavior | Re-entry staging from settings is unspecified here | Settings experience owner | Cross-experience shell, not this screen's ordinary playback |
-| OPEN-015 | Message-sending experience internals and return path | Recipient selection, record/sketch, send confirmation, and re-entry staging are unspecified here | Message-sending experience owner | Cross-experience shell, not this screen's ordinary playback |
+Owner-visible behavior that is still unknown. Do not list engineering wire,
+measurement, or work owned by another experience here.
 
-The red recording button itself is **not** an OPEN item. `OPEN-015`
-tracks only the separate sending experience and its return path.
-Resolved earlier: `OPEN-004` (`DEC-037`), `OPEN-011` (`DEC-036`), and
-`OPEN-013` (`DEC-038`).
+None. Carousel and playback behavior in this specification is decided or
+delegated. The red recording button itself is not an OPEN item.
+
+### Follow-on work (not product OPEN)
+
+Former `OPEN-###` IDs are retained. These rows are **not** unresolved product
+behavior. Do not interview the owner for them.
+
+| ID | Kind | Why it is not product OPEN | Where it lives now |
+|---|---|---|---|
+| OPEN-004 | Closed | Full current-inbox reach is decided | `DEC-037`, `EXP-035` |
+| OPEN-008 | Engineering wire | Last-viewed live-steal, offline cache play, and last-viewed write meanings are decided (`DEC-041`–`DEC-043`) | `COM-OPEN-001`–`005` in [inbox and media](../communication-contracts/inbox-and-media.md). Device paging, if any, must preserve `EXP-035` |
+| OPEN-011 | Closed | Empty copy is decided | `DEC-036`, `EXP-034` |
+| OPEN-012 | Engineering measurement | Snap, start-to-audible, and sketch-reveal budgets | Engineering measures on target hardware and proposes budgets |
+| OPEN-013 | Closed | BOOT leaves for settings | `DEC-038`, `EXP-036` |
+| OPEN-014 | Other experience | Volume return destination is decided | [`EXP-SETTINGS`](settings.md) `DEC-006` |
+| OPEN-015 | Other experience | Send return to the previous paused inbox selection is decided | [`EXP-MESSAGE-RECORD-SEND`](message-recording-and-sending.md) `DEC-019` |
 
 ### Checkpoint and readiness status
 
@@ -745,25 +826,25 @@ Resolved earlier: `OPEN-004` (`DEC-037`), `OPEN-011` (`DEC-036`), and
   the BOOT and red-button exits. Destination-experience internals, wire,
   and measured budgets stay delegated or OPEN. Confirmation is not
   implementation authorization.
-- **Locked behavior:** DEC-001–DEC-020 and DEC-022–DEC-040 within the
-  boundaries stated in the intent ledger. Wire, measured performance, and
+- **Locked behavior:** DEC-001–DEC-020 and DEC-022–DEC-044 within the
+  boundaries stated in the intent ledger. Wire names, measured performance, and
   destination-experience behavior are excluded.
 - **Bounded variation:** Connecting copy is the established login status.
   Empty copy is fixed to `Messages` / `No messages`. `can't play` is fixed
   and lasts 2 seconds. Lower-slot crossfade is 150–200 ms.
 - **Delegated choices:** anti-flicker hold; visual composition of the header
-  and message cards; inbox/media/last-viewed wire; settings screen and
-  return path; message-sending sequence (recipients, record/sketch, sent
-  confirmation) and return path; any later device inbox cap after
-  measurement.
+  and message cards; inbox/media routes and field names; last-viewed
+  coalesce interval; settings screen and return path; message-sending
+  sequence (recipients, record/sketch, sent confirmation) and return path;
+  any later device inbox cap after measurement.
 - **Analysis readiness:** ready for analysis of the locked signed-in
-  browsing and playback journey. Wire schemas and settings re-entry remain
-  conditional.
-- **Implementation readiness:** not ready. Communication-protocol
-  (`OPEN-008`) blocks implementation. Engineering measurement (`OPEN-012`)
-  blocks performance claims. Settings and send return paths (`OPEN-014`,
-  `OPEN-015`) block a complete signed-in shell, not this screen's recorded
-  playback behavior. The red-button and BOOT exits themselves are decided.
+  browsing and playback journey, including last-viewed and outage playback
+  meanings. Wire schemas and settings re-entry remain conditional.
+- **Implementation readiness:** user-visible carousel behavior does not
+  depend on a product OPEN item. Firmware still needs accepted inbox/media
+  wire (`COM-OPEN` in that contract). Performance claims still need
+  engineering measurement. Settings and send returns are owned by those
+  experiences. No implementation authorization is claimed.
 
 ### Review criteria (draft)
 
@@ -771,13 +852,13 @@ Resolved earlier: `OPEN-004` (`DEC-037`), `OPEN-011` (`DEC-036`), and
 |---|---|---|
 | Concrete | CLEAR | Setting, controls, copy, and sequence are specified for the signed-in journey. |
 | Understandable | CLEAR | Each stage states what is showing, what can be done, and what follows. |
-| Complete | OPEN | Destination-experience return paths and inbox/media wire remain unresolved (`OPEN-008`, `OPEN-014`, `OPEN-015`). The exits themselves are decided. |
+| Complete | CLEAR | Owner-visible carousel outcomes are decided or owned by linked experiences. Wire names and measured budgets are follow-on work, not product OPEN. |
 | Truthful | CLEAR | Draft distinguishes last-viewed sync, local play heads, and unmeasured budgets. |
 | Continuous | CLEAR | Arrival, deletion, mute, outage, and same-session pause rules are decided. |
 | Consistent | CLEAR | Empty copy, connecting, and `can't play` do not overlap. |
-| Implementable | OPEN | Wire schemas and measured budgets still block implementation claims. |
-| Testable | INCOMPLETE | Behavioral scenarios exist; timing/capacity claims still need targets (`OPEN-012`). |
-| Traceable | CLEAR | Current decisions link to EXP/SCN IDs; remaining OPEN items are listed. |
+| Implementable | CLEAR | Product policy does not depend on an OPEN item. Unaccepted contract wire and unmeasured budgets still block shipping; they live in the follow-on table. |
+| Testable | INCOMPLETE | Behavioral scenarios exist; timing and capacity claims still need engineering-proposed budgets. |
+| Traceable | CLEAR | Current decisions link to EXP/SCN IDs; former OPEN items are in the follow-on table. |
 | Proportionate | CLEAR | Settings and message-sending behavior are referenced as exits, not specified. |
 
 ## Change record
@@ -819,3 +900,15 @@ Resolved earlier: `OPEN-004` (`DEC-037`), `OPEN-011` (`DEC-036`), and
 - 2026-10-21, revision 0.9: Owner confirmed the contract checkpoint
   (`DEC-040`). Locked behavior is accepted for the recorded browsing and
   playback journey. No implementation authorization is claimed.
+- 2026-10-21, revision 0.10: Owner accepted that live last-viewed from
+  another endpoint does not steal selection (`DEC-041`, `EXP-038`), that
+  connecting / `no Wi-Fi` must not play from cache (`DEC-042`, `EXP-039`),
+  and that last-viewed writes are the coalesced settled selection only
+  (`DEC-043`, `EXP-040`). Remaining former `OPEN-008` work is wire names in
+  the inbox contract. No implementation authorization is claimed.
+- 2026-10-21, revision 0.11: Moved former OPEN-008, OPEN-012, OPEN-014, and
+  OPEN-015 out of the product OPEN table into follow-on work. No product
+  behavior changed.
+- 2026-10-21, revision 0.12: Owner accepted hide card portrait and meta
+  while a sketch is showing (`DEC-044`, `EXP-041`). No implementation
+  authorization is claimed.

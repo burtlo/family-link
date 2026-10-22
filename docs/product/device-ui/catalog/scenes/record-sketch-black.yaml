@@ -1,0 +1,17 @@
+id: CAT-18
+order: 61
+title: Record sketch, black selected
+group: Record
+screen: SCR-RECORD-SKETCH
+state: empty-black
+layout: LAYOUT-SPLIT-PANE-FOCUSED-SIDE
+notes: Empty canvas; background/erase swatch selected
+slots:
+  focused:
+    panel: PANEL-FOCUSED-DRAWING
+    props:
+      state: empty
+  side:
+    panel: PANEL-SIDE-COLOR-PALETTE
+    props:
+      selected: 0

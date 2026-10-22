@@ -6,6 +6,8 @@ Purpose: specify the device labs that still have to be built, on the host and fi
 
 This plan covers **LAB-04**, the still-missing **LAB-05 resource-peak experiment**, **LAB-06**, **LAB-07**, **LAB-08**, **LAB-09**, **LAB-11**, **LAB-12**, and **LAB-13**.
 
+**Current product-scope note (2026-10-22):** Later owner decisions supersede older OPEN labels in this dated lab plan. Profile editing and the full settings hub are outside core V2; core roster/inbox cards use `card_background_id` and do not render `profile_accent` ([user profile contract](../product/communication-contracts/user-profile.md#2-decided-product-meaning)). Treat LAB-12 as optional future profile/settings research, not a core V2 prerequisite. Historical exploratory scenarios and reports remain evidence of what the lab proposed or measured, not current product policy.
+
 **LAB-01 is excluded.** It is not future work, not a dependency, and not a baseline later labs wait for. Where an older lab note treats an integrated x02 run as a prerequisite, this plan replaces that comparison with a concrete control named in the lab section: an existing lab artifact, a fixed fixture, or an explicit no-baseline measurement.
 
 **LAB-02, LAB-03, and LAB-10 are not re-planned.** They are the pattern. This plan states only the shared-structure obligations a new lab copies from them.

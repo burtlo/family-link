@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Experience ID** | `EXP-SKETCH-RECORD-PLAYBACK` |
-| **Revision** | 3 |
+| **Revision** | 4 |
 | **Status** | **OWNER-DECIDED** intent (2026-10-03 interview); **record-screen layout** aligned to **island demo h19** showcase (palette + canvas stub, no capture chrome on screen) |
 | **Owner** | Lynn |
 | **Surfaces** | BOX-3 record screen; carousel message card playback |
@@ -24,6 +24,7 @@ Supporting v1 evidence (as-built baseline, not approval of future behavior): [re
 | 1 | 2026-10-10 | Initial spec transcribed from 2026-10-03 owner interview |
 | 2 | 2026-10-10 | Record-screen geometry and color rail matched to h19 on-device showcase; timer and rec indicator removed from layout spec |
 | 3 | 2026-10-18 | Record LAB-10 terminal-screen presentation decision for manual duration cap and scripted qualification |
+| 4 | 2026-10-21 | Hide card portrait and meta while a sketch is showing (`SK-009`). Move non-product OPEN rows to follow-on work. |
 
 ---
 
@@ -71,6 +72,7 @@ That mismatch is why the owner asked for one **canonical logical canvas** shared
 | SK-006 | **Multi-color** strokes; selected color applies to new touch ink; **no eraser tool** — background-matching color only | OWNER-DECIDED |
 | SK-007 | Color rail: **44×44** circular swatches, **zig-zag** horizontal offset **±11 px** from rail center, **36 px** vertical pitch, **10 px** margin above bottom swatch; **2 px** gray border + **2 px** gold outline on selection (h19) | SHOWCASE-AS-BUILT |
 | SK-008 | In LAB-10 manual mode, natural 180-second duration cap presents **Completed**; early stop presents **Stopped**, cancel **Cancelled**, and point cap, overflow, or faults **Failed**. Scripted duration-cap presentation waits for scheduler qualification; rejected or unresolved qualification is not Completed. These are screen outcomes only and do not change capture terminal kinds or experiment verdicts. | OWNER-DECIDED (2026-10-18) |
+| SK-009 | While a sketch is visible on the inbox card (playing, paused, or completed this session), **hide** that card’s portrait and meta (including unread dot) so the drawing is the card face. Restore portrait and meta when the card has no sketch ink (unplayed, audio-only, or after mute). Header `From [sender name]` is unchanged. | OWNER-DECIDED (2026-10-21); closes OPEN-SKP-02 |
 
 ### Palette (record rail — h19 showcase order, top to bottom in zig-zag stack)
 
@@ -96,9 +98,21 @@ RGB565 packing for protocol work remains **OPEN** where it must match the global
 ### Carousel playback (card)
 
 ```
+Unplayed / audio-only (portrait and meta visible):
+
 ┌──────────────── 132 ────────────────┐
 │  card chrome (gradient, meta, dot)   │  ~134 tall
 │    ┌──────── 120 ────────┐           │
+│    │  empty frame or     │           │
+│    │  portrait/meta      │           │
+│    └─────────────────────┘           │
+└──────────────────────────────────────┘
+
+Sketch visible (playing, paused, or completed this session):
+portrait and meta hidden; 120×120 drawing is the card face (`SK-009`).
+
+┌──────────────── 132 ────────────────┐
+│    ┌──────── 120 ────────┐           │  ~134 tall
 │    │  sketch 120×120     │  framed   │
 │    │  (1:1 logical)      │           │
 │    └─────────────────────┘           │
@@ -161,7 +175,8 @@ Only the **canvas** and **color rail** are visible on the record screen. There i
 | EXP-SKP-005 | Each stored point (or stroke segment policy TBD in protocol work) MUST carry **color** sufficient to replay accurately. |
 | EXP-SKP-006 | The product MUST NOT offer a separate eraser; choosing the **background color** MUST paint with the canvas background color. |
 | EXP-SKP-007 | Card chrome on record SHOULD match inbox card language (e.g. **8 px** corner radius on the canvas) so send and receive feel related. |
-| EXP-SKP-008 | The steady-state record screen layout documented here MUST NOT require a on-screen recording timer or recording indicator unless a later owner decision adds them (see OPEN-SKP-05). |
+| EXP-SKP-008 | The steady-state record screen layout documented here MUST NOT require a on-screen recording timer or recording indicator. Send `DEC-021` already closed that question; do not reintroduce the chrome. |
+| EXP-SKP-009 | While a sketch is visible on an inbox card, the product MUST hide that card’s portrait and meta. Restore them when the card has no sketch ink (`SK-009`). |
 
 ---
 
@@ -178,25 +193,34 @@ Only the **canvas** and **color rail** are visible on the record screen. There i
 
 | ID | Scenario | Pass |
 |----|----------|------|
-| ACC-SKP-01 | Sender draws a square in gold on the record card; recipient plays message | Square appears gold, same proportions, framed in card |
+| ACC-SKP-01 | Sender draws a square in gold on the record card; recipient plays message | Square appears gold, same proportions, framed in card; card portrait and meta are hidden while that sketch is showing |
 | ACC-SKP-02 | Sender switches white → red mid-stroke session | Replay shows two colors in correct time order |
 | ACC-SKP-03 | Sender selects background color and draws | Strokes disappear visually; stored points do not corrupt replay |
 | ACC-SKP-04 | Sender uses only audio, no touch | Message sends with no sketch attachment (unchanged audio path) |
 | ACC-SKP-05 | Sender opens record screen (showcase) | Sees 240×240 canvas + six swatches only—no timer, no rec indicator |
 | ACC-SKP-06 | LAB-10 manual capture reaches the natural 180-second duration cap; also exercise red-button stop, cancel, point cap, queue overflow, and fault terminals | Screen shows Completed for duration cap, Stopped for early stop, Cancelled for cancel, and Failed for point cap, overflow, or faults; the underlying capture terminal kinds remain unchanged |
 | ACC-SKP-07 | LAB-10 scripted capture reaches duration cap before scheduler qualification, then resolves accepted or rejected | Presentation stays pending before resolution; accepted qualification shows Completed, while rejected or unresolved qualification never shows Completed |
+| ACC-SKP-08 | Unplayed sketch message on the inbox; then Play | Before Play, portrait and meta are visible. After Play starts, they are hidden for as long as sketch ink remains this session |
 
 ---
 
 ## 9. Open items
 
-| ID | Topic |
-|----|--------|
-| OPEN-SKP-01 | Final RGB565 hex for each rail color in wire/protocol form |
-| OPEN-SKP-02 | Whether portrait/meta on the card is hidden during sketch replay (legacy overlay behavior) |
-| OPEN-SKP-03 | Exact wire format for per-point color and backward compatibility with FLSK v1 |
-| OPEN-SKP-04 | Owner approval checkpoint for full capture + send (this document records layout from h19 showcase plus 2026-10-03 canvas decisions) |
-| OPEN-SKP-05 | Whether recording timer and/or recording indicator return on the record screen (removed from 2026-10-03 interview sketch in favor of h19 steady-state UI) |
+Owner-visible behavior that is still unknown.
+
+None. Canvas, color, no-timer record chrome, and hide-portrait-during-sketch are decided.
+
+### Follow-on work (not product OPEN)
+
+Former `OPEN-SKP-*` IDs are retained. These rows are **not** unresolved product behavior. Do not interview the owner for them.
+
+| ID | Kind | Why it is not product OPEN | Where it lives now |
+|---|---|---|---|
+| OPEN-SKP-01 | Engineering wire | Rail colors are decided as 24-bit showcase hex | RGB565 packing for the protocol; [`SCR-RECORD-SKETCH`](../device-ui/screens/SCR-RECORD-SKETCH.md) `UI-OPEN-002` |
+| OPEN-SKP-02 | Closed | Hide card portrait and meta while a sketch is showing | `SK-009`, `EXP-SKP-009`; carousel `DEC-044` |
+| OPEN-SKP-03 | Engineering wire | Per-point color is required (`EXP-SKP-005`) | Sketch format and FLSK v1 compatibility in protocol work |
+| OPEN-SKP-04 | Process | Not a behavior rule. Capture and send are specified elsewhere | [`EXP-MESSAGE-RECORD-SEND`](message-recording-and-sending.md) |
+| OPEN-SKP-05 | Closed | No recording timer or indicator on the record screen | Send `DEC-021`; `EXP-SKP-008`. Do not reintroduce that chrome |
 
 ---
 
@@ -204,7 +228,7 @@ Only the **canvas** and **color rail** are visible on the record screen. There i
 
 | Gate | Status |
 |------|--------|
-| Owner ordinary flow | **Decided** (2026-10-03) for canvas + multi-color intent |
+| Owner ordinary flow | **Decided** (2026-10-03 canvas; 2026-10-21 hide portrait/meta during sketch) |
 | Record screen visuals | **Showcased** in island demo h19 (stub, no draw/send) |
 | Exception / failure paths | **Partial** — inherit from [recording and send](../../v1-assessments/recording-send.md) unless extended |
 | Product firmware (x02) | **Not started** under this spec |

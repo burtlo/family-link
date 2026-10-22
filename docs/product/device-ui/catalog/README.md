@@ -9,9 +9,9 @@ the device can mount:
 
 ```text
 scene
-└─ layout (LAYOUT-SPLIT-PANE or catalog LAYOUT-FULL-CANVAS)
-   ├─ upper → PANEL-* + props
-   └─ lower → PANEL-* + props
+└─ layout (LAYOUT-SPLIT-PANE, LAYOUT-SPLIT-PANE-FOCUSED-SIDE, or catalog LAYOUT-FULL-CANVAS)
+   ├─ upper / focused → PANEL-* + props
+   └─ lower / side    → PANEL-* + props
 ```
 
 [`LAB-14`](../../../../client/labs/lab-14-device-ui-catalog/README.md) packs this
@@ -44,7 +44,7 @@ missing.
 
 Use **`CAT-NN`** when talking about a visual on the device. The catalog index
 prefixes every row with this ID, and a corner badge repeats it on the mounted
-scene. Do not reuse a number; the next unused ID is `CAT-17`.
+scene. Do not reuse a number; the next unused ID is `CAT-20`.
 
 | ID | Index title | Screen |
 |---|---|---|
@@ -64,6 +64,9 @@ scene. Do not reuse a number; the next unused ID is `CAT-17`.
 | `CAT-14` | PIN cooldown | `SCR-PIN-COOLDOWN` |
 | `CAT-15` | Title + four buttons | gallery fixture |
 | `CAT-16` | Title + action + two buttons | gallery fixture |
+| `CAT-17` | Record sketch | `SCR-RECORD-SKETCH` |
+| `CAT-18` | Record sketch, black selected | `SCR-RECORD-SKETCH` |
+| `CAT-19` | Record sketch, gold selected | `SCR-RECORD-SKETCH` |
 
 The badge is catalog chrome for review, not a product component.
 
@@ -76,15 +79,17 @@ python scripts/device_ui_catalog.py pack
 
 ## Catalog-only stand-ins
 
-These are labeled review fixtures, not owner-approved product policy:
+These are labeled review fixtures, not owner-approved product policy, except
+where a current foundation explicitly adopts them:
 
-- card face colors until [`FOUNDATION-CARD-BACKGROUNDS`](../foundations/FOUNDATION-CARD-BACKGROUNDS.md) exists;
-- circular initial avatars until an avatar catalog exists;
+- the eight card-face fills and paired text colors are adopted by [`FOUNDATION-CARD-BACKGROUNDS`](../foundations/FOUNDATION-CARD-BACKGROUNDS.md);
+- circular initial avatars are the owner-approved interim fallback until the new [`FOUNDATION-PROFILE-AVATARS`](../foundations/FOUNDATION-PROFILE-AVATARS.md) artwork is ready; V1 avatar art is not reused;
 - two-pane surfaces `#101418` / `#242C34` and control fill `#3A444E` so buttons stay visible on the lower pane;
 - 8 px button radius where panel chrome is still `UI-OPEN`;
 - keypad dim at 50% opacity while `SCR-PIN-ENTRY` `UI-OPEN-001` is open;
 - `LAYOUT-FULL-CANVAS` for [`SCR-PIN-COOLDOWN`](../screens/SCR-PIN-COOLDOWN.md) until the missing layout spec is authored;
 - `CAT-NN` corner badge and index prefix, catalog chrome for naming a scene.
+  On record-sketch scenes the badge sits top-left so it does not cover the palette.
 
 Built-in LVGL Montserrat 16/24/32 is the current glyph stand-in for weight 600
 (`FOUNDATION-DEVICE-CANVAS` `UI-OPEN-001`).

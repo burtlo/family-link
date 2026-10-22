@@ -64,7 +64,9 @@ static void load_tokens(lab14_tokens_t *tokens, const cJSON *root)
 {
     const cJSON *canvas = lab14_json_obj(root, "canvas");
     const cJSON *split = lab14_json_obj(root, "split_pane");
+    const cJSON *focused = lab14_json_obj(root, "focused_side");
     const cJSON *theme = lab14_json_obj(root, "theme");
+    const cJSON *rail = lab14_json_obj(root, "color_rail");
     const cJSON *type = lab14_json_obj(root, "type");
     const cJSON *card = lab14_json_obj(root, "user_card");
     const cJSON *pin = lab14_json_obj(root, "pin_keypad");
@@ -79,6 +81,10 @@ static void load_tokens(lab14_tokens_t *tokens, const cJSON *root)
     tokens->canvas_h = lab14_json_int(canvas, "height", 240);
     tokens->split_y = lab14_json_int(split, "split_y", 80);
     tokens->margin = lab14_json_int(split, "margin", 12);
+    tokens->split_x = lab14_json_int(focused, "split_x", 240);
+    tokens->focused_w = lab14_json_int(focused, "focused_width", 240);
+    tokens->side_w = lab14_json_int(focused, "side_width", 80);
+    tokens->canvas_radius = lab14_json_int(focused, "canvas_radius", 8);
     tokens->surface = theme_color(theme, "fl-color-surface", 0x101418);
     tokens->surface_upper = theme_color(theme, "fl-color-surface-upper", tokens->surface);
     tokens->surface_lower = theme_color(theme, "fl-color-surface-lower", tokens->surface);
@@ -88,6 +94,43 @@ static void load_tokens(lab14_tokens_t *tokens, const cJSON *root)
     tokens->card_peek = theme_color(theme, "fl-color-card-peek", 0x242C34);
     tokens->control = theme_color(theme, "fl-color-control", 0x3A444E);
     tokens->key_pressed = theme_color(theme, "fl-color-key-pressed", 0x1A2228);
+    tokens->sketch_canvas = theme_color(theme, "fl-color-sketch-canvas", 0x000000);
+    tokens->swatch_ring = theme_color(theme, "fl-color-swatch-ring", 0xB8BEC6);
+    tokens->swatch_d = lab14_json_int(rail, "swatch_diameter", 44);
+    tokens->swatch_r = lab14_json_int(rail, "swatch_radius", 22);
+    tokens->swatch_border_w = lab14_json_int(rail, "border_width", 2);
+    tokens->swatch_outline_w = lab14_json_int(rail, "outline_width", 2);
+    tokens->swatch_outline_pad = lab14_json_int(rail, "outline_pad", 1);
+    tokens->swatch_count = 0;
+    const cJSON *swatches = cJSON_GetObjectItemCaseSensitive(rail, "swatches");
+    if (cJSON_IsArray(swatches)) {
+        int count = cJSON_GetArraySize(swatches);
+        if (count > LAB14_SWATCH_COUNT) {
+            count = LAB14_SWATCH_COUNT;
+        }
+        static const lab14_swatch_t k_default_swatches[LAB14_SWATCH_COUNT] = {
+            {269, 208, 0x000000}, {291, 172, 0xF8F8F8}, {269, 136, 0xE8C040},
+            {291, 100, 0x4CAF50}, {269, 64, 0xE53935}, {291, 28, 0x5AA0E8},
+        };
+        for (int i = 0; i < count; i++) {
+            const cJSON *item = cJSON_GetArrayItem(swatches, i);
+            tokens->swatches[i].cx =
+                lab14_json_int(item, "cx", k_default_swatches[i].cx);
+            tokens->swatches[i].cy =
+                lab14_json_int(item, "cy", k_default_swatches[i].cy);
+            tokens->swatches[i].rgb = lab14_hex(
+                lab14_json_str(item, "rgb", NULL), k_default_swatches[i].rgb);
+        }
+        tokens->swatch_count = count;
+    }
+    if (tokens->swatch_count <= 0) {
+        static const lab14_swatch_t k_fallback[LAB14_SWATCH_COUNT] = {
+            {269, 208, 0x000000}, {291, 172, 0xF8F8F8}, {269, 136, 0xE8C040},
+            {291, 100, 0x4CAF50}, {269, 64, 0xE53935}, {291, 28, 0x5AA0E8},
+        };
+        memcpy(tokens->swatches, k_fallback, sizeof(k_fallback));
+        tokens->swatch_count = LAB14_SWATCH_COUNT;
+    }
     tokens->type16 = lab14_json_int(type, "fl-type-16", 16);
     tokens->type24 = lab14_json_int(type, "fl-type-24", 24);
     tokens->type32 = lab14_json_int(type, "fl-type-32", 32);

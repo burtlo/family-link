@@ -1,6 +1,6 @@
 {
   "document": "family-link.device-ui-catalog/v1",
-  "revision": 3,
+  "revision": 4,
   "theme": "THEME-DARK",
   "title": "Device UI catalog",
   "tokens": {
@@ -12,6 +12,12 @@
       "split_y": 80,
       "margin": 12
     },
+    "focused_side": {
+      "split_x": 240,
+      "focused_width": 240,
+      "side_width": 80,
+      "canvas_radius": 8
+    },
     "theme": {
       "fl-color-surface": "#101418",
       "fl-color-surface-upper": "#101418",
@@ -21,7 +27,52 @@
       "fl-color-accent": "#E8C040",
       "fl-color-card-peek": "#242C34",
       "fl-color-control": "#3A444E",
-      "fl-color-key-pressed": "#1A2228"
+      "fl-color-key-pressed": "#1A2228",
+      "fl-color-sketch-canvas": "#000000",
+      "fl-color-swatch-ring": "#B8BEC6"
+    },
+    "color_rail": {
+      "swatch_diameter": 44,
+      "swatch_radius": 22,
+      "pitch": 36,
+      "zig_zag": 11,
+      "bottom_margin": 10,
+      "border_width": 2,
+      "outline_width": 2,
+      "outline_pad": 1,
+      "default_selected": 1,
+      "swatches": [
+        {
+          "cx": 269,
+          "cy": 208,
+          "rgb": "#000000"
+        },
+        {
+          "cx": 291,
+          "cy": 172,
+          "rgb": "#F8F8F8"
+        },
+        {
+          "cx": 269,
+          "cy": 136,
+          "rgb": "#E8C040"
+        },
+        {
+          "cx": 291,
+          "cy": 100,
+          "rgb": "#4CAF50"
+        },
+        {
+          "cx": 269,
+          "cy": 64,
+          "rgb": "#E53935"
+        },
+        {
+          "cx": 291,
+          "cy": 28,
+          "rgb": "#5AA0E8"
+        }
+      ]
     },
     "type": {
       "fl-type-16": 16,
@@ -574,6 +625,78 @@
               "Profile accent and avatar pad gg",
               "Sketch stroke color max line 32g"
             ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-17",
+      "order": 60,
+      "title": "Record sketch",
+      "group": "Record",
+      "screen": "SCR-RECORD-SKETCH",
+      "state": "empty-white",
+      "layout": "LAYOUT-SPLIT-PANE-FOCUSED-SIDE",
+      "notes": "Empty 240\u00d7240 canvas; white swatch selected (default)",
+      "slots": {
+        "focused": {
+          "panel": "PANEL-FOCUSED-DRAWING",
+          "props": {
+            "state": "empty"
+          }
+        },
+        "side": {
+          "panel": "PANEL-SIDE-COLOR-PALETTE",
+          "props": {
+            "selected": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-18",
+      "order": 61,
+      "title": "Record sketch, black selected",
+      "group": "Record",
+      "screen": "SCR-RECORD-SKETCH",
+      "state": "empty-black",
+      "layout": "LAYOUT-SPLIT-PANE-FOCUSED-SIDE",
+      "notes": "Empty canvas; background/erase swatch selected",
+      "slots": {
+        "focused": {
+          "panel": "PANEL-FOCUSED-DRAWING",
+          "props": {
+            "state": "empty"
+          }
+        },
+        "side": {
+          "panel": "PANEL-SIDE-COLOR-PALETTE",
+          "props": {
+            "selected": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-19",
+      "order": 62,
+      "title": "Record sketch, gold selected",
+      "group": "Record",
+      "screen": "SCR-RECORD-SKETCH",
+      "state": "empty-gold",
+      "layout": "LAYOUT-SPLIT-PANE-FOCUSED-SIDE",
+      "notes": "Empty canvas; gold swatch selected",
+      "slots": {
+        "focused": {
+          "panel": "PANEL-FOCUSED-DRAWING",
+          "props": {
+            "state": "empty"
+          }
+        },
+        "side": {
+          "panel": "PANEL-SIDE-COLOR-PALETTE",
+          "props": {
+            "selected": 2
           }
         }
       }

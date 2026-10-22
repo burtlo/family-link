@@ -2,7 +2,7 @@
 
 ID: `PANEL-BODY-ROSTER-CAROUSEL`
 Type: Panel module
-Revision: 0.1
+Revision: 0.2
 Status: Draft
 Owner: Product owner
 Approval: No visual approval claimed
@@ -47,8 +47,10 @@ When refresh completes, restore normal touch handling.
 ## Collection updates
 
 - Add/remove children by stable **user ID**, not list index.
-- Updating avatar, name, or message color is a **Level 1** property update on
-  the existing card node.
+- Updating avatar, name, or card background is a **Level 1** property update
+  on the existing card node. `profile_accent` is not rendered on core V2
+  roster cards; see [`COM-USER-PROFILE`](../../communication-contracts/user-profile.md)
+  `COM-005`.
 
 ## Empty roster
 
@@ -64,5 +66,6 @@ shell with an empty lower slot or a dedicated empty presentation per
 
 ## Revision history
 
+- **0.2 — 2026-10-22:** Specified that core roster cards update from `card_background_id`; `profile_accent` is not rendered.
 - **0.1 — 2026-10-10:** Full-bleed lower carousel; center snap; touch lock for
   updating hangout.

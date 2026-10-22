@@ -2,7 +2,7 @@
 
 ID: `LAYOUT-SPLIT-PANE`
 Type: Layout (shell)
-Revision: 0.5
+Revision: 0.6
 Status: Draft — shell geometry and inset model owner-aligned; theme-linked colors
 Owner: Product owner
 Approval: No visual approval claimed
@@ -23,8 +23,10 @@ It does not define specific header or body UIs. Those are separate
 **`PANEL-*`** modules following
 [`PANEL-MODULE-CONTRACT`](../patterns/PANEL-MODULE-CONTRACT.md).
 
-Do not use this shell for full-canvas experiences (drawing, connecting hero, and
-similar). Use an explicit full-canvas layout instead.
+Do not use this shell for the record sketch or other edge-to-edge drawing.
+Use [`LAYOUT-SPLIT-PANE-FOCUSED-SIDE`](LAYOUT-SPLIT-PANE-FOCUSED-SIDE.md) for
+the 240 / 80 left/right split. Connecting hero and similar stages still need
+an explicit full-canvas layout.
 
 ## Composition model
 
@@ -166,6 +168,9 @@ Consumers:
 - [`PANEL-BODY-FOUR-BUTTON`](../panels/PANEL-BODY-FOUR-BUTTON.md)
 - [`PANEL-BODY-LABEL-WITH-TWO-BUTTONS`](../panels/PANEL-BODY-LABEL-WITH-TWO-BUTTONS.md)
 
+The record sketch is **not** a consumer. It uses
+[`LAYOUT-SPLIT-PANE-FOCUSED-SIDE`](LAYOUT-SPLIT-PANE-FOCUSED-SIDE.md).
+
 ## OPEN items
 
 | ID | Question | Blocks |
@@ -184,6 +189,7 @@ no per-panel margin exceptions without new layout.
 
 ## Revision history
 
+- **0.6 — 2026-10-21:** Point drawing at `LAYOUT-SPLIT-PANE-FOCUSED-SIDE`.
 - **0.5 — 2026-10-21:** Two-pane colors use `#101418` / `#242C34`.
 - **0.4 — 2026-10-20:** Mark the old cross-fade motion question superseded by the cover-down default.
 - **0.3 — 2026-10-10:** Link `THEME-DARK` surface tokens; sign-in same-color panes.

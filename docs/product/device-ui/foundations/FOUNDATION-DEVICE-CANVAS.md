@@ -2,7 +2,7 @@
 
 ID: `FOUNDATION-DEVICE-CANVAS`
 Type: Foundation
-Revision: 0.3
+Revision: 0.4
 Status: Draft — margin, touch, Montserrat **600**, typography ladder; colors in THEME-DARK
 Owner: Product owner
 Approval: No visual approval claimed
@@ -54,8 +54,10 @@ The default layout surface is inset from the display edge.
 
 - Default screens place user-focused text and aligned controls inside
   `fl-content-well`.
-- Full-bleed experiences (for example a drawing canvas) MUST use an explicit
-  full-canvas layout and document why the margin is waived.
+- Full-bleed experiences MUST use an explicit layout that waives
+  `fl-margin-screen` and document why. The record sketch uses
+  [`LAYOUT-SPLIT-PANE-FOCUSED-SIDE`](../layouts/LAYOUT-SPLIT-PANE-FOCUSED-SIDE.md).
+  Other full-bleed stages use an explicit full-canvas layout.
 - On [`LAYOUT-SPLIT-PANE`](../layouts/LAYOUT-SPLIT-PANE.md), the shell defines
   per-slot **`slot_content_bounds`** using this same 12 px inset. The union of
   upper and lower content bounds matches `fl-content-well`. Panel modules paint
@@ -161,6 +163,7 @@ Layouts and screens SHOULD cite this foundation when specifying alignment,
 padding, type size, or touch size:
 
 - [`LAYOUT-SPLIT-PANE`](../layouts/LAYOUT-SPLIT-PANE.md)
+- [`LAYOUT-SPLIT-PANE-FOCUSED-SIDE`](../layouts/LAYOUT-SPLIT-PANE-FOCUSED-SIDE.md)
 - [`SCR-SIGN-IN-ROSTER`](../screens/SCR-SIGN-IN-ROSTER.md)
 
 ## OPEN items
@@ -180,6 +183,7 @@ padding, type size, or touch size:
 
 ## Revision history
 
+- **0.4 — 2026-10-21:** Record sketch waives margin via `LAYOUT-SPLIT-PANE-FOCUSED-SIDE`.
 - **0.3 — 2026-10-10:** Owner standardizes on Montserrat weight **600** for all UI sizes.
 - **0.2 — 2026-10-10:** Montserrat approved; colors delegated to `THEME-DARK`.
 - **0.1 — 2026-10-10:** Initial foundation: 12 px margin / 296×216 well,

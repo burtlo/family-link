@@ -4,8 +4,8 @@
 |---|---|
 | ID | `PANEL-HEADER-PIN-STATUS` |
 | Type | Panel module |
-| Revision | 0.2 |
-| Status | Draft — identity and PIN slots owner-aligned; checking replaces marks |
+| Revision | 0.3 |
+| Status | Draft — identity, PIN slots, and interim LAB-14 initials fallback specified |
 | Owner | Product owner |
 | Approval | No visual approval claimed |
 | Target | v2 fixed-hardware 320 × 240 landscape canvas |
@@ -38,7 +38,7 @@ upper slot_chrome_bounds (320 × 80)
 
 | Region | Presentation |
 |---|---|
-| Identity cluster | `Sign in as` prefix, 28 px avatar, and display name in `fl-type-24`, weight 600; ellipsize the name at the end |
+| Identity cluster | `Sign in as` prefix, **28 px** identity circle (`pin_status.avatar`; use centered LAB-14 initials in a `#5AA0E8` circle with dark text until owner-authored V2 artwork is ready), and display name in `fl-type-24`, weight 600; ellipsize the name at the end |
 | PIN slots | Four LTR positions; filled positions show `*` in `fl-color-accent`, empty positions show `_` in `fl-color-text-secondary`; use `fl-type-32` or the nearest linked size if 32 is absent, as recorded by the existing screen spec |
 | Row alignment | PIN slots vertically center on the identity row midline, preserving the v1 product placement recorded by the owner |
 
@@ -62,6 +62,7 @@ experience determine the state supplied to it.
 - [`PANEL-MODULE-CONTRACT`](../patterns/PANEL-MODULE-CONTRACT.md)
 - [`FOUNDATION-DEVICE-CANVAS`](../foundations/FOUNDATION-DEVICE-CANVAS.md)
 - [`THEME-DARK`](../themes/THEME-DARK.md)
+- [`FOUNDATION-PROFILE-AVATARS`](../foundations/FOUNDATION-PROFILE-AVATARS.md)
 - [`SCR-PIN-ENTRY`](../screens/SCR-PIN-ENTRY.md)
 
 ## Readiness
@@ -72,5 +73,6 @@ experience determine the state supplied to it.
 
 ## Revision history
 
+- **0.3 — 2026-10-22:** Replaced the bitmap-only assumption with the owner-approved LAB-14 initials-in-circle fallback until new avatar artwork lands.
 - **0.2 — 2026-10-21:** `checking...` replaces the four PIN marks; identity stays.
 - **0.1 — 2026-10-20:** Extract identity and PIN-slot composition from `SCR-PIN-ENTRY` into the upper panel required by the panel contract.

@@ -1,0 +1,10 @@
+{"kind":"stage","monotonic_ns":510378065379875,"outcome":"not_configured","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":510378065528541,"outcome":"not_configured","source":"host","stage":"scenario"}
+{"kind":"stage","monotonic_ns":510378065596708,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":510378080739208,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":510378080860416,"outcome":"running","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":510378100169625,"outcome":"passed","result":"/Users/lynnfrank/src/family-link/build/labs/lab-14-device-ui-catalog-manual","source":"host","stage":"build"}
+{"kind":"stage","mode":"manual","monotonic_ns":510378100258916,"outcome":"running","source":"host","stage":"activity"}
+{"kind":"stage","monotonic_ns":510392780072083,"outcome":"failed","reason":"SerialException","source":"host","stage":"run"}
+{"kind":"stage","monotonic_ns":510392780998041,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"SerialException","source":"host","workflow_status":"FAIL"}

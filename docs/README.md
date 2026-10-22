@@ -13,12 +13,12 @@ Read [`AGENTS.md`](AGENTS.md) before inventing product behavior or touching code
 | [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) | Interview workflow and spec structure for new experiences |
 | `docs/product/experiences/<slug>.md` | Owner-approved experience specifications (create as needed) |
 | [`product/device-ui-specification-authoring.md`](product/device-ui-specification-authoring.md) | Workflow and required structure for fixed-hardware layouts, components, and screens |
-| [`product/device-ui/`](product/device-ui/README.md) | V2 device UI foundations, reusable layouts, components, and screen compositions |
+| [`product/device-ui/`](product/device-ui/README.md) | V2 device UI foundations, reusable layouts, components, and screen compositions (including [`FOUNDATION-PROFILE-AVATARS`](product/device-ui/foundations/FOUNDATION-PROFILE-AVATARS.md)) |
 | [`product/device-ui/catalog/`](product/device-ui/catalog/README.md) | YAML catalog of those layouts; flash with `make lab.lab14` |
 | [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) | Reusable client/server contract format and review questions |
 | [`product/communication-contracts/endpoint-health-and-login.md`](product/communication-contracts/endpoint-health-and-login.md) | Draft v2 health, roster, and PIN exchange contract; blocking wire decisions recorded |
 | [`product/communication-contracts/user-scoped-envelope.md`](product/communication-contracts/user-scoped-envelope.md) | Proposed signed-in authority and shared error schema |
-| [`product/communication-contracts/message-delivery.md`](product/communication-contracts/message-delivery.md) | V1 send wire capture and proposed v2 delivery schemas |
+| [`product/communication-contracts/message-delivery.md`](product/communication-contracts/message-delivery.md) | Draft v2 send exchange; atomic frozen-set, keep/resume, recipients-only publication, and refusal-vs-wait classes recorded; remaining work is engineering wire |
 | [`product/communication-contracts/inbox-and-media.md`](product/communication-contracts/inbox-and-media.md) | V1 inbox/media capture and proposed v2 sync, fetch, and playback-state schemas |
 | [`product/communication-contracts/user-profile.md`](product/communication-contracts/user-profile.md) | V1 icon/color capture and proposed v2 profile schemas |
 

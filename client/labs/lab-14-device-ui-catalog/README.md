@@ -33,8 +33,10 @@ Boot marker: `LAB14_READY build=<id> scenes=<n> theme=THEME-DARK`.
 3. Press **BOOT** to return to the index from any scene.
 4. Roster cards accept taps to change focus when the scene allows touch.
 5. PIN keys add marks on the partial-PIN scene.
+6. Record-sketch scenes (`CAT-17`–`CAT-19`) draw on the left canvas and change
+   the selected swatch on press. BOOT still returns to the index.
 
-IDs: [`CAT-01`–`CAT-16`](../../../docs/product/device-ui/catalog/README.md#scene-ids).
+IDs: [`CAT-01`–`CAT-19`](../../../docs/product/device-ui/catalog/README.md#scene-ids).
 
 Serial (USB console), one command per line:
 
@@ -70,9 +72,11 @@ python scripts/device_ui_catalog.py validate
 
 ## Stand-ins and limits
 
-This image does not approve draft specs. Card colors, initial avatars, button
-fill, keypad dim, and `LAYOUT-FULL-CANVAS` are catalog stand-ins documented in
-the catalog README. Motion (cover-down, carousel snap, status crossfade) is not
+This image does not approve draft specs. The eight card colors are now the
+owner-selected catalog values, and the centered initial-in-circle portrait is
+the approved interim fallback until new avatar art is ready. Button fill,
+keypad dim, and `LAYOUT-FULL-CANVAS` remain catalog stand-ins documented in the
+catalog README. Motion (cover-down, carousel snap, status crossfade) is not
 implemented. Live YAML push without reflash is not implemented yet; scene
 switching among the packed catalog is.
 

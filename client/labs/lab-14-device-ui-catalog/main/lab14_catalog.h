@@ -6,11 +6,23 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define LAB14_SWATCH_COUNT 6
+
+typedef struct {
+    int cx;
+    int cy;
+    uint32_t rgb;
+} lab14_swatch_t;
+
 typedef struct {
     int canvas_w;
     int canvas_h;
     int split_y;
     int margin;
+    int split_x;
+    int focused_w;
+    int side_w;
+    int canvas_radius;
     uint32_t surface;
     uint32_t surface_upper;
     uint32_t surface_lower;
@@ -20,6 +32,8 @@ typedef struct {
     uint32_t card_peek;
     uint32_t control;
     uint32_t key_pressed;
+    uint32_t sketch_canvas;
+    uint32_t swatch_ring;
     int type16;
     int type24;
     int type32;
@@ -57,6 +71,13 @@ typedef struct {
     int act_h;
     int pin_avatar;
     char pin_prefix[24];
+    int swatch_d;
+    int swatch_r;
+    int swatch_border_w;
+    int swatch_outline_w;
+    int swatch_outline_pad;
+    int swatch_count;
+    lab14_swatch_t swatches[LAB14_SWATCH_COUNT];
 } lab14_tokens_t;
 
 typedef struct {
