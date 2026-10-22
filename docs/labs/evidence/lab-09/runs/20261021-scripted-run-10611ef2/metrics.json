@@ -1,0 +1,461 @@
+{
+  "document": "family-link.lab-metrics/v2",
+  "run_id": "20261021-scripted-run-10611ef2",
+  "schema_version": "lab09-trace/v1",
+  "parser_version": "lab09-parser/v1",
+  "mode": "scripted",
+  "evidence_provenance": "hardware",
+  "evidence": {
+    "status": "COMPLETE",
+    "trace_loss": "UNKNOWN",
+    "firmware_trace_loss": {
+      "status": "UNKNOWN",
+      "dropped_events": null
+    },
+    "missing": []
+  },
+  "lab_metrics": {
+    "experiment_inputs": [
+      "I-mute",
+      "I-signout",
+      "I-switch",
+      "I-push",
+      "I-expire-client"
+    ],
+    "experiment_verdict": "PASS",
+    "performance_verdict": "UNMEASURED",
+    "scenarios": {
+      "I-expire-http": {
+        "class": "exploratory",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab09-trace/v1",
+            "event": "observation",
+            "scenario": "I-expire-http",
+            "class": "exploratory",
+            "terminal": "recorded",
+            "mode": "none",
+            "http_status": 401,
+            "b_side_effects": 0,
+            "revoked": 0
+          }
+        ],
+        "observation": {
+          "terminal": "recorded",
+          "b_side_effects": 0,
+          "http_status": 401
+        }
+      },
+      "I-mute": {
+        "class": "decided",
+        "sample_count": 4,
+        "samples": [
+          {
+            "schema": "lab09-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 1,
+            "monotonic_us": 0,
+            "session_id": "s1",
+            "user_id": "user-a",
+            "operation_id": 1,
+            "generation": 1,
+            "session_generation": 2,
+            "scenario": "I-mute",
+            "class": "decided",
+            "kind": "inbox",
+            "terminal": "stale",
+            "terminal_count": 1,
+            "stage": "muted",
+            "applied": 0,
+            "image_bytes": 0,
+            "card_count": 0,
+            "duplicate_cards": 0,
+            "display_power": 0,
+            "http_status": 0,
+            "b_side_effects": 0,
+            "stage_restored": 0,
+            "reason": "mute",
+            "update_level": 2
+          },
+          {
+            "schema": "lab09-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 4,
+            "monotonic_us": 0,
+            "session_id": "s4",
+            "user_id": "user-a",
+            "operation_id": 2,
+            "generation": 4,
+            "session_generation": 5,
+            "scenario": "I-mute",
+            "class": "decided",
+            "kind": "media",
+            "terminal": "stale",
+            "terminal_count": 1,
+            "stage": "muted",
+            "applied": 0,
+            "image_bytes": 0,
+            "card_count": 0,
+            "duplicate_cards": 0,
+            "display_power": 0,
+            "http_status": 200,
+            "b_side_effects": 0,
+            "stage_restored": 0,
+            "reason": "mute",
+            "update_level": 2
+          },
+          {
+            "schema": "lab09-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 7,
+            "monotonic_us": 0,
+            "session_id": "s7",
+            "user_id": "user-a",
+            "operation_id": 3,
+            "generation": 7,
+            "session_generation": 8,
+            "scenario": "I-mute",
+            "class": "decided",
+            "kind": "playback",
+            "terminal": "stale",
+            "terminal_count": 1,
+            "stage": "muted",
+            "applied": 0,
+            "image_bytes": 0,
+            "card_count": 0,
+            "duplicate_cards": 0,
+            "display_power": 0,
+            "http_status": 200,
+            "b_side_effects": 0,
+            "stage_restored": 0,
+            "reason": "mute",
+            "update_level": 2
+          },
+          {
+            "schema": "lab09-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 10,
+            "monotonic_us": 0,
+            "session_id": "s10",
+            "user_id": "user-a",
+            "operation_id": 4,
+            "generation": 10,
+            "session_generation": 11,
+            "scenario": "I-mute",
+            "class": "decided",
+            "kind": "profile",
+            "terminal": "stale",
+            "terminal_count": 1,
+            "stage": "muted",
+            "applied": 0,
+            "image_bytes": 0,
+            "card_count": 0,
+            "duplicate_cards": 0,
+            "display_power": 0,
+            "http_status": 200,
+            "b_side_effects": 0,
+            "stage_restored": 0,
+            "reason": "mute",
+            "update_level": 2
+          }
+        ],
+        "observation": {
+          "terminal": "stale",
+          "stage": "muted",
+          "terminal_count": 1,
+          "applied": 0,
+          "image_bytes": 0,
+          "http_status": 200,
+          "b_side_effects": 0,
+          "reason": "mute",
+          "display_power": 0
+        },
+        "terminal_count": 1
+      },
+      "I-signout": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab09-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 13,
+            "monotonic_us": 0,
+            "session_id": "s14",
+            "user_id": "user-a",
+            "operation_id": 5,
+            "generation": 13,
+            "session_generation": 14,
+            "scenario": "I-signout",
+            "class": "decided",
+            "kind": "profile",
+            "terminal": "cancelled",
+            "terminal_count": 1,
+            "stage": "signed_out",
+            "applied": 0,
+            "image_bytes": 0,
+            "card_count": 0,
+            "duplicate_cards": 0,
+            "display_power": 1,
+            "http_status": 200,
+            "b_side_effects": 0,
+            "stage_restored": 0,
+            "reason": "sign_out",
+            "update_level": 2
+          }
+        ],
+        "observation": {
+          "terminal": "cancelled",
+          "stage": "signed_out",
+          "terminal_count": 1,
+          "applied": 0,
+          "image_bytes": 0,
+          "http_status": 200,
+          "b_side_effects": 0,
+          "reason": "sign_out",
+          "display_power": 1
+        },
+        "terminal_count": 1
+      },
+      "I-switch": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab09-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 15,
+            "monotonic_us": 0,
+            "session_id": "s16",
+            "user_id": "user-a",
+            "operation_id": 6,
+            "generation": 15,
+            "session_generation": 16,
+            "scenario": "I-switch",
+            "class": "decided",
+            "kind": "media",
+            "terminal": "stale",
+            "terminal_count": 1,
+            "stage": "signed_in",
+            "applied": 0,
+            "image_bytes": 0,
+            "card_count": 0,
+            "duplicate_cards": 0,
+            "display_power": 1,
+            "http_status": 200,
+            "b_side_effects": 0,
+            "stage_restored": 0,
+            "reason": "switch",
+            "update_level": 0
+          }
+        ],
+        "observation": {
+          "terminal": "stale",
+          "stage": "signed_in",
+          "terminal_count": 1,
+          "applied": 0,
+          "image_bytes": 0,
+          "http_status": 200,
+          "b_side_effects": 0,
+          "reason": "switch",
+          "display_power": 1
+        },
+        "terminal_count": 1
+      },
+      "I-push": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab09-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 17,
+            "monotonic_us": 0,
+            "session_id": "s17",
+            "user_id": "user-a",
+            "operation_id": 7,
+            "generation": 17,
+            "session_generation": 17,
+            "scenario": "I-push",
+            "class": "decided",
+            "kind": "inbox",
+            "terminal": "success",
+            "terminal_count": 1,
+            "stage": "signed_in",
+            "applied": 1,
+            "image_bytes": 0,
+            "card_count": 12,
+            "duplicate_cards": 0,
+            "display_power": 1,
+            "http_status": 200,
+            "b_side_effects": 0,
+            "stage_restored": 0,
+            "reason": "ok",
+            "update_level": 1
+          }
+        ],
+        "observation": {
+          "terminal": "success",
+          "stage": "signed_in",
+          "terminal_count": 1,
+          "applied": 1,
+          "image_bytes": 0,
+          "http_status": 200,
+          "b_side_effects": 0,
+          "reason": "ok",
+          "display_power": 1
+        },
+        "terminal_count": 1
+      },
+      "I-expire-client": {
+        "class": "decided",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab09-trace/v1",
+            "event": "scenario_terminal",
+            "seq": 17,
+            "monotonic_us": 0,
+            "session_id": "s17",
+            "user_id": "user-a",
+            "operation_id": 8,
+            "generation": 17,
+            "session_generation": 17,
+            "scenario": "I-expire-client",
+            "class": "decided",
+            "kind": "playback",
+            "terminal": "failure",
+            "terminal_count": 1,
+            "stage": "signed_in",
+            "applied": 0,
+            "image_bytes": 0,
+            "card_count": 0,
+            "duplicate_cards": 0,
+            "display_power": 1,
+            "http_status": 401,
+            "b_side_effects": 0,
+            "stage_restored": 0,
+            "reason": "expired",
+            "update_level": 0
+          }
+        ],
+        "observation": {
+          "terminal": "failure",
+          "stage": "signed_in",
+          "terminal_count": 1,
+          "applied": 0,
+          "image_bytes": 0,
+          "http_status": 401,
+          "b_side_effects": 0,
+          "reason": "expired",
+          "display_power": 1
+        },
+        "terminal_count": 1
+      },
+      "I-confused": {
+        "class": "exploratory",
+        "sample_count": 1,
+        "samples": [
+          {
+            "schema": "lab09-trace/v1",
+            "event": "observation",
+            "scenario": "I-confused",
+            "class": "exploratory",
+            "terminal": "recorded",
+            "mode": "none",
+            "http_status": 0,
+            "b_side_effects": 0,
+            "revoked": 0
+          }
+        ],
+        "observation": {
+          "terminal": "recorded",
+          "b_side_effects": 0
+        }
+      },
+      "I-revoke-branches": {
+        "class": "exploratory",
+        "sample_count": 2,
+        "samples": [
+          {
+            "schema": "lab09-trace/v1",
+            "event": "observation",
+            "scenario": "I-revoke-branches",
+            "class": "exploratory",
+            "terminal": "recorded",
+            "mode": "revoke-on-mute",
+            "http_status": 200,
+            "b_side_effects": 0,
+            "revoked": 0
+          },
+          {
+            "schema": "lab09-trace/v1",
+            "event": "observation",
+            "scenario": "I-revoke-branches",
+            "class": "exploratory",
+            "terminal": "recorded",
+            "mode": "leave-server-session",
+            "http_status": 200,
+            "b_side_effects": 0,
+            "revoked": 0
+          }
+        ],
+        "observation": {
+          "terminal": "recorded",
+          "b_side_effects": 0,
+          "modes": {
+            "revoke-on-mute": {
+              "revoked": 0
+            },
+            "leave-server-session": {
+              "revoked": 0
+            }
+          }
+        }
+      }
+    },
+    "measurements": {
+      "mute_cancel_us": {
+        "sample_count": 0,
+        "unit": "us",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      },
+      "internal_largest_free_block_bytes": {
+        "sample_count": 0,
+        "unit": "bytes",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      },
+      "psram_largest_free_block_bytes": {
+        "sample_count": 0,
+        "unit": "bytes",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      },
+      "lvgl_largest_free_block_bytes": {
+        "sample_count": 0,
+        "unit": "bytes",
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null,
+        "provenance": "unmeasured/blocked",
+        "missing_reason": "no eligible samples in trace"
+      }
+    }
+  }
+}

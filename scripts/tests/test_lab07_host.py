@@ -9,7 +9,9 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 import unittest
+import urllib.error
 import urllib.request
 from pathlib import Path
 from types import SimpleNamespace
@@ -44,25 +46,49 @@ LAB = ROOT / "client/labs/lab-07-readiness-roster"
 FIXTURES = ROOT / "server/labs/lab-07-readiness-roster/fixtures"
 
 
-def _emit() -> str:
-    binary = Path(tempfile.mkdtemp(prefix="lab07-emit-")) / "emit.exe"
-    compiler = shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")
-    subprocess.run([
-        compiler, "-std=c++14", "-Wall", "-Wextra", "-Werror", "-pedantic",
-        "-I", str(LAB / "components/lab07_session/include"),
-        str(LAB / "components/lab07_session/session.cpp"),
-        str(LAB / "components/lab07_session/pollers.cpp"),
-        str(LAB / "tests/model_test.cpp"),
-        "-o", str(binary),
-    ], check=True, cwd=ROOT)
-    completed = subprocess.run([str(binary), "emit"], check=True, cwd=ROOT, capture_output=True, text=True)
-    return completed.stdout
-
-
 class Lab07HostTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.serial = _emit()
+        cls.model_temp = tempfile.TemporaryDirectory(prefix="lab07-host-model-")
+        cls.binary = Path(cls.model_temp.name) / "model_test.exe"
+        compiler = shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")
+        subprocess.run([
+            compiler, "-std=c++14", "-Wall", "-Wextra", "-Werror", "-pedantic",
+            "-I", str(LAB / "components/lab07_session/include"),
+            str(LAB / "components/lab07_session/session.cpp"),
+            str(LAB / "components/lab07_session/pin_session.cpp"),
+            str(LAB / "components/lab07_session/scoped_session.cpp"),
+            str(LAB / "components/lab07_session/pollers.cpp"),
+            str(LAB / "tests/model_test.cpp"),
+            "-o", str(cls.binary),
+        ], check=True, cwd=ROOT)
+        completed = subprocess.run([str(cls.binary), "emit"], check=True, cwd=ROOT,
+                                   capture_output=True, text=True)
+        cls.serial = completed.stdout
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.model_temp.cleanup()
+
+    def _apply_live_body(self, perform_ok: int, http_status: int, body: bytes) -> str:
+        directory = Path(self.model_temp.name)
+        body_path = directory / f"live-{perform_ok}-{http_status}-{len(body)}.bin"
+        body_path.write_bytes(body)
+        completed = subprocess.run(
+            [str(self.binary), "http-apply", str(perform_ok), str(http_status), str(body_path)],
+            check=False, cwd=ROOT, capture_output=True, text=True)
+        self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
+        line = next(item for item in completed.stdout.splitlines() if item.startswith("http_apply "))
+        self.assertIn("terminal=failure", line)
+        self.assertIn("selectable_cards=0", line)
+        self.assertIn("stage=connecting", line)
+        self.assertIn("held_response=0", line)
+        self.assertIn("terminal_count=1", line)
+        self.assertNotIn("terminal=success", line)
+        self.assertNotIn("terminal=timed_out", line)
+        self.assertNotIn("scenario=R-timeout-ui", line)
+        self.assertNotIn("operation_id=0", line)
+        return line
 
     def test_s02_manifest_fields(self):
         project = json.loads((LAB / "manifest.lab.json").read_text(encoding="utf-8"))
@@ -313,6 +339,119 @@ class Lab07HostTests(unittest.TestCase):
         self.assertIn("capacity is 4", readme)
         self.assertIn("L1 virtual-clock only", readme)
         self.assertIn("65536", readme)
+
+    def test_live_http_outcomes_use_session_classifier(self):
+        """Live fixture bytes, not a synthetic success body, drive the session result."""
+        reason = "configured-8767"
+        port = 8767
+        probe = socket.socket()
+        try:
+            probe.bind(("127.0.0.1", 8767))
+        except OSError:
+            probe.close()
+            probe = socket.socket()
+            probe.bind(("127.0.0.1", 0))
+            port = probe.getsockname()[1]
+            reason = "ephemeral-because-8767-busy"
+        finally:
+            probe.close()
+        server_script = ROOT / "server/labs/lab-07-readiness-roster/server.py"
+        proc = subprocess.Popen(
+            [sys.executable, str(server_script), "--bind", "127.0.0.1", "--port", str(port),
+             "--run-id", "lab07-host-http", "--delay-ms", "0"],
+            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        try:
+            health = None
+            for _ in range(50):
+                try:
+                    with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=0.5) as response:
+                        health = json.loads(response.read().decode("utf-8"))
+                        break
+                except (urllib.error.URLError, TimeoutError, ConnectionError):
+                    time.sleep(0.05)
+            self.assertIsNotNone(health, f"fixture server did not answer on port {port} ({reason})")
+            self.assertEqual(health["fixture_version"], "lab07-health-roster/v1")
+            print(f"LAB07_HOST_HTTP port={port} bind={reason}")
+            cases = (
+                ("unavailable", f"http://127.0.0.1:{port}/roster?script=missing-script", 404),
+                ("invalid", f"http://127.0.0.1:{port}/roster?script=invalid-200", 200),
+                ("malformed", f"http://127.0.0.1:{port}/roster?script=malformed", 200),
+            )
+            eight = (FIXTURES / "roster-eight.json").read_bytes()
+            for name, url, expect_status in cases:
+                try:
+                    with urllib.request.urlopen(url, timeout=2) as response:
+                        status = response.status
+                        body = response.read()
+                except urllib.error.HTTPError as exc:
+                    status = exc.code
+                    body = exc.read()
+                self.assertEqual(status, expect_status, name)
+                self.assertNotEqual(body, eight)
+                if name == "invalid":
+                    parsed = json.loads(body.decode("utf-8"))
+                    self.assertEqual(parsed["valid"], 0)
+                if name == "malformed":
+                    with self.assertRaises(json.JSONDecodeError):
+                        json.loads(body.decode("utf-8"))
+                line = self._apply_live_body(1, status, body)
+                self.assertIn(f"http_status={status}", line, name)
+                if name == "invalid":
+                    self.assertIn("valid=0", line)
+            closed = socket.socket()
+            closed.bind(("127.0.0.1", 0))
+            closed_port = closed.getsockname()[1]
+            closed.close()
+            with self.assertRaises(urllib.error.URLError):
+                urllib.request.urlopen(f"http://127.0.0.1:{closed_port}/roster", timeout=2)
+            line = self._apply_live_body(0, 0, b"")
+            self.assertIn("http_status=0", line)
+            self.assertNotIn(eight.decode("utf-8"), line)
+            traced = self.serial + (
+                "LAB07_TRACE schema=lab07-trace/v1 event=device_http seq=1 monotonic_us=1 "
+                "session_id=s-boot operation_id=4 generation=1 http_status=0 perform_ok=0 "
+                "terminal=failure terminal_count=1 stage=connecting selectable_cards=0 valid=0 "
+                "parse_ok=0 held_response=0 elapsed_ms=1000\n"
+                "LAB07_TRACE schema=lab07-trace/v1 event=virtual_clock seq=1 monotonic_us=2 "
+                "session_id=s-boot operation_id=0 held_response=0 catalog=complete\n"
+            )
+            parsed = parser.parse(traced, "run-live-http")
+            elapsed = parsed["lab_metrics"]["measurements"]["elapsed_ms"]
+            self.assertEqual(elapsed["sample_count"], 0)
+            self.assertNotEqual(elapsed["provenance"], "hardware")
+            self.assertEqual(parsed["lab_metrics"]["experiment_verdict"], "PASS")
+            self.assertEqual(parsed["lab_metrics"]["performance_verdict"], "UNMEASURED")
+        finally:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=5)
+            if proc.stdout is not None:
+                proc.stdout.close()
+
+    def test_trace_loss_and_ui_tick_samples(self):
+        absent = parser.parse(self.serial, "run-absent")
+        self.assertEqual(absent["evidence"]["trace_loss"], "UNKNOWN")
+        self.assertIsNone(absent["evidence"]["firmware_trace_loss"]["dropped_events"])
+        extra = (
+            "LAB07_TRACE schema=lab07-trace/v1 event=trace_loss "
+            "dropped_events=0 oversized_events=0 malformed_rows=0\n"
+            "LAB07_TRACE schema=lab07-trace/v1 event=ui_tick elapsed_us=80\n"
+            "LAB07_TRACE schema=lab07-trace/v1 event=touch_gap elapsed_us=120\n"
+            "LAB07_TRACE schema=lab07-trace/v1 event=resource_sample seq=1 monotonic_us=10 "
+            "internal_largest_free_block_bytes=4 psram_largest_free_block_bytes=5 "
+            "lvgl_largest_free_block_bytes=6 live_widget_count=8\n"
+        )
+        parsed = parser.parse(self.serial + extra, "run-zero",
+                              capture_context={"kind": "device_serial_capture"})
+        self.assertEqual(parsed["evidence"]["trace_loss"], "NONE")
+        self.assertEqual(parsed["lab_metrics"]["performance_verdict"], "UNMEASURED")
+        self.assertEqual(parsed["lab_metrics"]["measurements"]["ui_tick_us"]["p50"], 80)
+        self.assertEqual(parsed["lab_metrics"]["measurements"]["touch_gap_us"]["max"], 120)
+        self.assertEqual(parsed["lab_metrics"]["measurements"]["live_widget_count"]["max"], 8)
+        self.assertEqual(parsed["lab_metrics"]["experiment_verdict"], absent["lab_metrics"]["experiment_verdict"])
 
     def test_fixture_valid_flag_is_not_a_product_schema(self):
         body = json.loads((FIXTURES / "roster-invalid.json").read_text(encoding="utf-8"))

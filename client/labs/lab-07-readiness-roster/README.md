@@ -8,6 +8,19 @@ LAB-07/v1 = firmware lab07-fw-v1-manual / lab07-fw-v1-scripted + server lab07-se
 
 stage_owner=lab07-local
 
+## Operator
+
+Manual mode shows one step at a time. The cue says "Tap each once". Tap the large button once and wait until its name advances. Mute turns the display off, cancels roster work that is still in flight, and leaves the Unmute stand-in. Unmute starts a new readiness check. A result that was already queued keeps the request it belonged to. After mute, then unmute, that old result does not finish the new check.
+
+Scripted mode is L1 virtual-clock only. It keeps the 60-second roster refresh, the 10-minute idle threshold, and the 5-minute idle period on a virtual clock. It does not wait those out on the wall clock. The scripted harness reads representative fixture responses and feeds each completion, with the request id captured at submission, into the same session writer. An unavailable fixture, a malformed or invalid response, and a connection failure are not readiness. A connection failure that takes about a second is not a completed held-response test.
+
+Two correction rules:
+
+1. The request id is captured when the work is submitted and stored on the result when that result is queued. Drain does not assign the current or next request id. A result that has no id is not given the in-flight id or the next id, including after unmute, and is not applied.
+2. Unavailable, invalid, malformed, and connection-failure responses do not select cards and do not complete the held-response scenario.
+
+Status text ends at y=48. The stage starts at y=48. The cue sentence stays inside the scrollable guide. Mute does not mean the server rolled back a side effect. Health updates do not change the user stage.
+
 One session writer in `components/lab07_session` applies stage transitions. Roster and health pollers only enqueue. Health results do not change the user stage. Stage tokens live in `components/lab07_session/include/stages.hpp`: `wifi_unavailable`, `connecting`, `roster`, `empty_hangout`, `muted`.
 
 Boot marker:
@@ -22,9 +35,9 @@ Trace prefix `LAB07_TRACE` with monotonic time, `session_id`, `user_id` where re
 
 Fixture schema `lab07-health-roster/v1`. Port 8767. Synthetic users `su-01` through `su-08` only.
 
-Roster result queue capacity is 4, a provisional lab probe. Overflow emits one terminal, preserves the count, does not silently drop, and does not clear focus.
+Roster result queue capacity is 4, a provisional lab probe. An identified result that does not fit records one failure for that request id and is not applied. An unidentified result that does not fit is counted as rejected and is not given a new id.
 
-The 10-minute idle and 5-minute cadence are L1 virtual-clock only unless a run actually waits. Do not sleep 10 minutes on device or in host tests. Scripted mode runs the decided scenarios without taps, including one real 1-second request timeout, one heartbeat, and one roster refresh. Manual controls that change session state print each new terminal once as a `LAB07_TRACE` line when the control is handled. The hold prints its terminal when the real 1-second device timeout completes. Idle clock and stale beats advance the lab virtual clock inside the capture window. They are lab controls, not a real 10-minute wait and not product copy approval. Skipping a control leaves the experiment INCOMPLETE. `R-wire` and `R-stale-clock` stay exploratory and are not decided inputs. `CONFIG_LV_MEM_SIZE=65536` is the compile default, not a threshold. Do not declare a performance PASS.
+The 60-second roster refresh, the 10-minute idle threshold, and the 5-minute idle period stay on the virtual clock. Do not sleep those intervals on device or in host tests. Scripted mode runs that catalog without taps, then reads representative fixture responses: an unavailable fixture, an invalid response, a malformed body, and a connection failure. Those outcomes are not readiness and are not a completed held-response test. Manual controls that change session state print each new terminal once as a `LAB07_TRACE` line when the control is handled. The manual hold prints its terminal when the on-device 1-second hold timer completes. Idle clock and stale beats advance the lab virtual clock inside the capture window. They are lab controls, not a real 10-minute wait and not product copy approval. Skipping a control leaves the experiment INCOMPLETE. `R-wire` and `R-stale-clock` stay exploratory and are not decided inputs. `CONFIG_LV_MEM_SIZE=65536` is the compile default, not a threshold. Do not declare a performance PASS.
 
 ResourceBudget
   max_live_nodes: 32

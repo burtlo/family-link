@@ -18,7 +18,8 @@ from project_config import ProjectConfig, ProjectConfigError
 
 ROOT = Path(__file__).resolve().parent.parent
 _WINDOWS_INTERFACE_IPV4_RE = re.compile(
-    r"^\s*(?:IPv4 Address|IPv4-Adresse)[^:]*:\s*([0-9.]+)", re.IGNORECASE
+    r"^\s*(?:IPv4 Address|IPv4-Adresse)[^:]*:\s*([0-9.]+)",
+    re.IGNORECASE | re.MULTILINE,
 )
 _FIXTURE_SIZES = {8, 16, 64, 256}
 _SCENARIOS = {

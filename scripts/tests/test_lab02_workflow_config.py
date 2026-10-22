@@ -71,14 +71,24 @@ class Lab02WorkflowConfigTests(unittest.TestCase):
             self.assertEqual(enumerate_interface_ipv4(), ("192.168.8.236",))
 
         windows_ipconfig = """
-        IPv4 Address. . . . . . . . . . . : 192.168.8.199 (Preferred)
-        Default Gateway . . . . . . . . . : 192.168.8.1
-        DNS Servers . . . . . . . . . . . : 192.168.8.1
+Windows IP Configuration
+
+Ethernet adapter vEthernet:
+
+   IPv4 Address. . . . . . . . . . . : 172.18.208.1(Preferred)
+
+Wireless LAN adapter Wi-Fi:
+
+   IPv4 Address. . . . . . . . . . . : 192.168.8.199(Preferred)
+   Default Gateway . . . . . . . . . : 192.168.8.1
+   DNS Servers . . . . . . . . . . . : 192.168.8.1
         """
         with patch("lab02_workflow_config.platform.system", return_value="Windows"), patch(
             "lab02_workflow_config._command_output", return_value=windows_ipconfig
         ):
-            self.assertEqual(enumerate_interface_ipv4(), ("192.168.8.199",))
+            self.assertEqual(
+                enumerate_interface_ipv4(), ("172.18.208.1", "192.168.8.199")
+            )
 
     def test_ambiguous_interfaces_fail(self):
         with self.assertRaisesRegex(Lab02WorkflowConfigError, "ambiguous"):

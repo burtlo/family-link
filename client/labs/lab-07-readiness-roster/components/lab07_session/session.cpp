@@ -1,3 +1,5 @@
+#include "catalog.hpp"
+#include "roster_http.hpp"
 #include "session.hpp"
 
 #include <inttypes.h>
@@ -35,13 +37,19 @@ const char *scenario_class(const char *scenario)
 {
     static const char *kDecided[] = {
         "R-wifi-absent", "R-invalid-200", "R-empty", "R-eight", "R-retry",
-        "R-retry-fail", "R-idle", "R-stale-beat", "R-mute", "R-timeout-ui"
+        "R-retry-fail", "R-idle", "R-stale-beat", "R-mute", "R-timeout-ui",
+        "K-ok", "K-wrong", "K-five", "K-switch-user", "K-timeouts",
+        "K-lost", "K-mute-local", "K-boot", "K-idle",
+        "I-mute", "I-signout", "I-switch", "I-push", "I-expire-client"
     };
     int i;
-    if (text_eq(scenario, "R-wire") || text_eq(scenario, "R-stale-clock")) {
+    if (text_eq(scenario, "R-wire") || text_eq(scenario, "R-stale-clock") ||
+        text_eq(scenario, "K-concurrent") || text_eq(scenario, "K-mismatch") ||
+        text_eq(scenario, "K-mute-server") || text_eq(scenario, "I-confused") ||
+        text_eq(scenario, "I-revoke-branches") || text_eq(scenario, "I-expire-http")) {
         return "exploratory";
     }
-    for (i = 0; i < 10; ++i) {
+    for (i = 0; i < 24; ++i) {
         if (text_eq(scenario, kDecided[i])) {
             return "decided";
         }
@@ -58,6 +66,155 @@ RosterResult users_from(const char *const *ids, int count, int valid)
     result.parse_ok = 1;
     fill_users(&result, ids, count);
     return result;
+}
+
+bool is_ws(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
+bool fixture_json_ok(const char *body, int body_len)
+{
+    int i = 0;
+    int brace = 0;
+    int bracket = 0;
+    bool in_string = false;
+    bool escape = false;
+    if (body == 0 || body_len <= 0) {
+        return false;
+    }
+    while (i < body_len && is_ws(body[i])) {
+        i += 1;
+    }
+    if (i >= body_len || body[i] != '{') {
+        return false;
+    }
+    for (; i < body_len; ++i) {
+        char c = body[i];
+        if (in_string) {
+            if (escape) {
+                escape = false;
+                continue;
+            }
+            if (c == '\\') {
+                escape = true;
+                continue;
+            }
+            if (c == '"') {
+                in_string = false;
+            }
+            continue;
+        }
+        if (c == '"') {
+            in_string = true;
+            continue;
+        }
+        if (c == '{') {
+            brace += 1;
+        } else if (c == '}') {
+            brace -= 1;
+            if (brace < 0) {
+                return false;
+            }
+            if (brace == 0 && bracket == 0) {
+                i += 1;
+                break;
+            }
+        } else if (c == '[') {
+            bracket += 1;
+        } else if (c == ']') {
+            bracket -= 1;
+            if (bracket < 0) {
+                return false;
+            }
+        }
+    }
+    if (in_string || escape || brace != 0 || bracket != 0) {
+        return false;
+    }
+    while (i < body_len && is_ws(body[i])) {
+        i += 1;
+    }
+    return i == body_len;
+}
+
+int find_key(const char *body, int len, const char *key)
+{
+    int key_len = (int)strlen(key);
+    int i;
+    if (key_len <= 0 || len < key_len) {
+        return -1;
+    }
+    for (i = 0; i + key_len <= len; ++i) {
+        int j;
+        bool match = true;
+        for (j = 0; j < key_len; ++j) {
+            if (body[i + j] != key[j]) {
+                match = false;
+                break;
+            }
+        }
+        if (match) {
+            return i + key_len;
+        }
+    }
+    return -1;
+}
+
+bool read_json_int_after(const char *body, int len, int pos, int *value)
+{
+    int number = 0;
+    while (pos < len && is_ws(body[pos])) {
+        pos += 1;
+    }
+    if (pos >= len || body[pos] != ':') {
+        return false;
+    }
+    pos += 1;
+    while (pos < len && is_ws(body[pos])) {
+        pos += 1;
+    }
+    if (pos >= len || body[pos] < '0' || body[pos] > '9') {
+        return false;
+    }
+    while (pos < len && body[pos] >= '0' && body[pos] <= '9') {
+        number = number * 10 + (body[pos] - '0');
+        pos += 1;
+    }
+    *value = number;
+    return true;
+}
+
+int read_json_string_after(const char *body, int len, int pos, char *dst, int cap)
+{
+    int n = 0;
+    while (pos < len && is_ws(body[pos])) {
+        pos += 1;
+    }
+    if (pos >= len || body[pos] != ':') {
+        return -1;
+    }
+    pos += 1;
+    while (pos < len && is_ws(body[pos])) {
+        pos += 1;
+    }
+    if (pos >= len || body[pos] != '"') {
+        return -1;
+    }
+    pos += 1;
+    while (pos < len && body[pos] != '"') {
+        if (body[pos] == '\\' || n >= cap - 1) {
+            return -1;
+        }
+        dst[n] = body[pos];
+        n += 1;
+        pos += 1;
+    }
+    if (pos >= len || body[pos] != '"') {
+        return -1;
+    }
+    dst[n] = 0;
+    return pos + 1;
 }
 
 } /* namespace */
@@ -130,6 +287,8 @@ void SessionWriter::reset_runtime()
     trigger_count_ = 0;
     memset(users_, 0, sizeof(users_));
     memset(queue_, 0, sizeof(queue_));
+    reset_pin();
+    reset_scoped();
 }
 
 void SessionWriter::apply_stage(int stage, const char *trigger)
@@ -143,6 +302,7 @@ void SessionWriter::apply_stage(int stage, const char *trigger)
     }
     stage_ = stage;
     generation_ += 1;
+    last_update_level_ = 2;
 }
 
 void SessionWriter::fill_snapshot(TerminalRecord *record) const
@@ -164,10 +324,28 @@ void SessionWriter::fill_snapshot(TerminalRecord *record) const
     copy_text(record->session_id, 16, session_id_);
     record->monotonic_us = now_ms_ * 1000;
     record->generation = generation_;
+    record->session_generation = generation_;
     record->queue_count = queue_count_;
     record->grace_ms = 0;
     record->clear_stale = 0;
     copy_text(record->parsed_keys, 80, "none");
+    record->digit_len = pin_digit_len_;
+    record->display_power = stage_ == kStageMuted ? 0 : 1;
+    record->wrong_count = wrong_count_;
+    record->cooldown_remaining_ms = cooldown_remaining_ms();
+    record->side_effects = pin_side_effects_;
+    record->delay_ms_0 = delay_ms_[0];
+    record->delay_ms_1 = delay_ms_[1];
+    record->delay_ms_2 = delay_ms_[2];
+    record->attempts_used = pin_attempt_;
+    record->boot_zero = boot_zero_;
+    record->boot_partial = boot_partial_;
+    record->boot_full = boot_full_;
+    record->update_level = last_update_level_;
+    record->key_generation = pin_key_generation_;
+    copy_text(record->pin_copy, 16, pin_copy_token_[0] ? pin_copy_token_ : "none");
+    copy_text(record->reason, 16, pin_reason_[0] ? pin_reason_ : "none");
+    copy_text(record->key_fingerprint, 68, pin_fingerprint_[0] ? pin_fingerprint_ : "none");
 }
 
 bool SessionWriter::record_terminal(uint64_t operation_id, uint32_t attempt, const char *kind,
@@ -193,11 +371,22 @@ bool SessionWriter::record_terminal(uint64_t operation_id, uint32_t attempt, con
     record.stage_unchanged = (stage_ == stage_at_roster_start_) ? 1 : 0;
     copy_text(record.kind, 16, kind);
     copy_text(record.terminal, 16, terminal);
-    copy_text(record.scenario, 32, armed_scenario_[0] ? armed_scenario_ : "lab-step");
+    if (strcmp(kind, "pin") == 0 && pin_frozen_user_[0] != 0) {
+        copy_text(record.user_id, kMaxId, pin_frozen_user_);
+    }
+    if (strcmp(kind, "pin") == 0 && pin_scenario_[0] != 0) {
+        copy_text(record.scenario, 32, pin_scenario_);
+        pin_scenario_[0] = 0;
+    } else {
+        copy_text(record.scenario, 32, armed_scenario_[0] ? armed_scenario_ : "lab-step");
+        armed_scenario_[0] = 0;
+    }
+    if (scoped_kind_name(kind)) {
+        stamp_scoped(&record, kind);
+    }
     copy_text(record.cls, 16, scenario_class(record.scenario));
     events_[event_count_] = record;
     event_count_ += 1;
-    armed_scenario_[0] = 0;
     return true;
 }
 
@@ -304,13 +493,13 @@ void SessionWriter::set_wifi(bool up, int64_t now_ms)
             clear_roster_inflight();
         }
         roster_timer_armed_ = false;
-        if (stage_ != kStageMuted) {
+        if (stage_ != kStageMuted && !pin_holds_input()) {
             apply_stage(kStageWifiUnavailable, "station_down");
             selectable_cards_ = 0;
         }
         return;
     }
-    if (stage_ != kStageMuted) {
+    if (stage_ != kStageMuted && !pin_holds_input()) {
         apply_stage(kStageConnecting, "station_up");
         selectable_cards_ = 0;
         begin_roster(now_ms, false, false);
@@ -321,14 +510,38 @@ void SessionWriter::mute(int64_t now_ms)
 {
     uint64_t operation_id = roster_operation_id_;
     uint32_t attempt = roster_attempt_;
+    uint64_t pin_id = 0;
+    uint32_t pin_attempt = 1;
+    uint64_t scoped_id = 0;
+    uint32_t scoped_gen = 0;
+    char scoped_kind[16];
     bool had_roster = roster_inflight_;
+    bool had_pin;
+    bool had_scoped;
+    scoped_kind[0] = 0;
     now_ms_ = now_ms;
+    had_pin = take_pin_for_mute(&pin_id, &pin_attempt);
+    had_scoped = take_scoped_for_mute(&scoped_id, &scoped_gen, scoped_kind, (int)sizeof(scoped_kind));
     if (had_roster) {
         clear_roster_inflight();
     }
     roster_timer_armed_ = false;
     apply_stage(kStageMuted, "mute");
     selectable_cards_ = 0;
+    if (had_pin) {
+        copy_text(pin_reason_, 16, "mute");
+        record_terminal(pin_id, pin_attempt, "pin", "cancelled");
+    }
+    if (had_scoped) {
+        scoped_applied_ = 0;
+        scoped_trace_generation_ = scoped_gen;
+        scoped_trace_applied_ = 0;
+        scoped_trace_image_bytes_ = 0;
+        scoped_trace_cards_ = 0;
+        scoped_trace_dupes_ = 0;
+        copy_text(scoped_reason_, 16, "mute");
+        record_terminal(scoped_id, 1, scoped_kind, "stale");
+    }
     if (had_roster) {
         record_terminal(operation_id, attempt, "roster", "stale");
     }
@@ -364,6 +577,17 @@ void SessionWriter::request_roster(int64_t now_ms)
     begin_roster(now_ms, false, false);
 }
 
+uint64_t SessionWriter::begin_roster_request(int64_t now_ms)
+{
+    bool was_inflight = roster_inflight_;
+    uint64_t previous = roster_operation_id_;
+    request_roster(now_ms);
+    if (!roster_inflight_ || was_inflight || roster_operation_id_ == previous) {
+        return 0;
+    }
+    return roster_operation_id_;
+}
+
 void SessionWriter::note_touch_during_wait()
 {
     if (roster_inflight_) {
@@ -387,7 +611,7 @@ void SessionWriter::note_transport_failure()
     operation_id = roster_operation_id_;
     attempt = roster_attempt_;
     clear_roster_inflight();
-    if (stage_ != kStageMuted && stage_ != kStageWifiUnavailable) {
+    if (stage_ != kStageMuted && stage_ != kStageWifiUnavailable && !pin_holds_input()) {
         apply_stage(kStageConnecting, "transport_failed");
         selectable_cards_ = 0;
     }
@@ -407,15 +631,22 @@ bool SessionWriter::enqueue_roster(const RosterResult &result)
 {
     if (queue_count_ >= kRosterResultQueueCapacity) {
         rejected_results_ += 1;
-        if (overflow_terminals_ == 0) {
-            overflow_operation_id_ = next_operation_id_;
-            next_operation_id_ += 1;
-            if (record_terminal(overflow_operation_id_, 1, "roster", "failure")) {
-                overflow_terminals_ = 1;
+        /* A full queue rejects this completion. Do not mint an id and do not
+           apply the body onto the active request. An identified result still
+           gets one failure terminal. */
+        if (result.operation_id != 0) {
+            if (roster_inflight_ && result.operation_id == roster_operation_id_) {
+                clear_roster_inflight();
+            }
+            overflow_operation_id_ = result.operation_id;
+            if (record_terminal(result.operation_id, 1, "roster", "failure")) {
+                overflow_terminals_ += 1;
             }
         }
         return false;
     }
+    /* The id on the result is the submission id. An unidentified result stays
+       unidentified, including one queued while a request is in flight. */
     queue_[queue_count_] = result;
     queue_count_ += 1;
     return true;
@@ -496,10 +727,37 @@ void SessionWriter::preserve_focus(const RosterResult &result)
     }
 }
 
+void SessionWriter::apply_roster_while_pin(const RosterResult &result)
+{
+    uint64_t operation_id = result.operation_id;
+    uint32_t attempt = roster_attempt_;
+    valid_ = result.valid;
+    if (!result.parse_ok || result.http_status != 200 || result.valid == 0) {
+        clear_roster_inflight();
+        record_terminal(operation_id, attempt, "roster", "failure");
+        return;
+    }
+    if (result.user_count > 0) {
+        preserve_focus(result);
+        remember_users(result);
+        selectable_cards_ = user_count_;
+    }
+    clear_roster_inflight();
+    if (stage_ == kStageRoster || stage_ == kStageEmptyHangout) {
+        next_roster_due_ms_ = now_ms_ + roster_period_ms();
+        roster_timer_armed_ = true;
+    }
+    record_terminal(operation_id, attempt, "roster", "success");
+}
+
 void SessionWriter::apply_roster_body(const RosterResult &result)
 {
     bool unchanged;
-    uint64_t operation_id = roster_operation_id_;
+    uint64_t operation_id = result.operation_id;
+    if (pin_holds_input()) {
+        apply_roster_while_pin(result);
+        return;
+    }
     uint32_t attempt = roster_attempt_;
     valid_ = result.valid;
     if (!result.parse_ok || result.http_status != 200 || result.valid == 0) {
@@ -556,15 +814,12 @@ void SessionWriter::drain()
     queue_count_ = 0;
     for (i = 0; i < count; ++i) {
         RosterResult result = pending[i];
-        if (!roster_inflight_) {
-            record_terminal(result.operation_id ? result.operation_id : next_operation_id_, 1,
-                            "roster", "stale");
-            if (result.operation_id == 0) {
-                next_operation_id_ += 1;
-            }
+        /* Identity was fixed when the result was queued. Do not assign the
+           current or next request id here. */
+        if (result.operation_id == 0) {
             continue;
         }
-        if (result.operation_id != 0 && result.operation_id != roster_operation_id_) {
+        if (!roster_inflight_ || result.operation_id != roster_operation_id_) {
             record_terminal(result.operation_id, 1, "roster", "stale");
             continue;
         }
@@ -579,6 +834,79 @@ void SessionWriter::submit_roster(const RosterResult &result, int64_t now_ms)
         return;
     }
     drain();
+}
+
+void SessionWriter::deliver_roster_completion(const RosterResult &result, int64_t now_ms)
+{
+    submit_roster(result, now_ms);
+}
+
+RosterResult classify_roster_http(uint64_t operation_id, int perform_ok, int http_status,
+                                  const char *body, int body_len)
+{
+    RosterResult result;
+    int valid_at;
+    int valid = 0;
+    int cursor = 0;
+    memset(&result, 0, sizeof(result));
+    result.operation_id = operation_id;
+    if (!perform_ok) {
+        result.http_status = 0;
+        result.parse_ok = 0;
+        result.valid = 0;
+        return result;
+    }
+    result.http_status = http_status;
+    if (!fixture_json_ok(body, body_len)) {
+        result.parse_ok = 0;
+        result.valid = 0;
+        return result;
+    }
+    result.parse_ok = 1;
+    valid_at = find_key(body, body_len, "\"valid\"");
+    if (valid_at >= 0) {
+        if (!read_json_int_after(body, body_len, valid_at, &valid)) {
+            result.parse_ok = 0;
+            result.valid = 0;
+            result.user_count = 0;
+            return result;
+        }
+    }
+    result.valid = valid;
+    while (cursor < body_len && result.user_count < kMaxUsers) {
+        int id_at = find_key(body + cursor, body_len - cursor, "\"id\"");
+        char id[kMaxId];
+        int next;
+        if (id_at < 0) {
+            break;
+        }
+        next = read_json_string_after(body + cursor, body_len - cursor, id_at, id, kMaxId);
+        if (next < 0) {
+            result.parse_ok = 0;
+            result.valid = 0;
+            result.user_count = 0;
+            return result;
+        }
+        set_user(&result.users[result.user_count], id);
+        result.user_count += 1;
+        cursor += next;
+    }
+    if (cursor < body_len && find_key(body + cursor, body_len - cursor, "\"id\"") >= 0) {
+        result.parse_ok = 0;
+        result.valid = 0;
+        result.user_count = 0;
+    }
+    return result;
+}
+
+RosterResult deliver_classified_roster(SessionWriter *session, uint64_t operation_id, int perform_ok,
+                                       int http_status, const char *body, int body_len, int64_t now_ms)
+{
+    RosterResult result = classify_roster_http(operation_id, perform_ok, http_status, body, body_len);
+    if (session != 0) {
+        session->deliver_roster_completion(result, now_ms);
+    }
+    return result;
 }
 
 void SessionWriter::on_roster_timeout()
@@ -598,7 +926,7 @@ void SessionWriter::on_roster_timeout()
     attempt = roster_attempt_;
     hold = roster_hold_;
     clear_roster_inflight();
-    if (!hold && stage_ != kStageMuted && stage_ != kStageWifiUnavailable &&
+    if (!hold && stage_ != kStageMuted && stage_ != kStageWifiUnavailable && !pin_holds_input() &&
         (stage_ == kStageRoster || stage_ == kStageEmptyHangout)) {
         apply_stage(kStageConnecting, "roster_timeout");
         selectable_cards_ = 0;
@@ -631,6 +959,7 @@ void SessionWriter::advance_to(int64_t target_ms)
         int64_t heart_at = heartbeat_armed_ ? next_heartbeat_due_ms_ : 0x7fffffffffffffffLL;
         int64_t roster_at = (roster_timer_armed_ && !roster_inflight_) ? next_roster_due_ms_
                                                                         : 0x7fffffffffffffffLL;
+        int64_t pin_at = pin_next_event_ms();
         int64_t next = timeout_at;
         if (heart_at < next) {
             next = heart_at;
@@ -638,11 +967,18 @@ void SessionWriter::advance_to(int64_t target_ms)
         if (roster_at < next) {
             next = roster_at;
         }
+        if (pin_at < next) {
+            next = pin_at;
+        }
         if (next > target_ms) {
             now_ms_ = target_ms;
+            note_pin_presented_time();
             break;
         }
         now_ms_ = next;
+        if (pin_at == next) {
+            on_pin_clock();
+        }
         if (timeout_at == next) {
             on_roster_timeout();
         }
@@ -652,6 +988,7 @@ void SessionWriter::advance_to(int64_t target_ms)
         if (roster_at == next && !roster_inflight_) {
             on_roster_due();
         }
+        note_pin_presented_time();
     }
 }
 
@@ -709,7 +1046,7 @@ int64_t SessionWriter::now_ms() const { return now_ms_; }
 int64_t SessionWriter::next_roster_due_ms() const { return next_roster_due_ms_; }
 int64_t SessionWriter::next_heartbeat_due_ms() const { return next_heartbeat_due_ms_; }
 int SessionWriter::heartbeat_period_ms() const { return kHeartbeatPeriodMs; }
-bool SessionWriter::has_wrong_pin() const { return false; }
+bool SessionWriter::has_wrong_pin() const { return pin_phase_ == kPinPhaseWrong; }
 uint32_t SessionWriter::generation() const { return generation_; }
 const char *SessionWriter::session_id() const { return session_id_; }
 int SessionWriter::event_count() const { return event_count_; }
@@ -773,6 +1110,18 @@ int format_trace_line(const TerminalRecord &record, char *buffer, int capacity)
         record.parsed_keys[0] ? record.parsed_keys : "none", record.grace_ms, record.clear_stale);
 }
 
+/* Catalog and on-screen controls complete a request they just started.
+   They copy that submission id onto the synthetic body. enqueue, drain,
+   submit_roster, and deliver_roster_completion do not fill a missing id. */
+static void submit_for_inflight(SessionWriter *session, const RosterResult &result, int64_t now_ms)
+{
+    RosterResult identified = result;
+    if (session->roster_inflight() && identified.operation_id == 0) {
+        identified.operation_id = session->roster_operation_id();
+    }
+    session->submit_roster(identified, now_ms);
+}
+
 void run_scripted_catalog(SessionWriter *session)
 {
     static const char *kEight[] = {"su-01", "su-02", "su-03", "su-04",
@@ -790,28 +1139,28 @@ void run_scripted_catalog(SessionWriter *session)
 
     session->boot(0, true);
     session->arm_scenario("R-invalid-200");
-    session->submit_roster(invalid, 0);
+    submit_for_inflight(session, invalid, 0);
 
     session->boot(0, true);
     session->arm_scenario("R-empty");
-    session->submit_roster(empty, 0);
+    submit_for_inflight(session, empty, 0);
 
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     session->request_roster(0);
     session->arm_scenario("R-eight");
-    session->submit_roster(reorder, 0);
+    submit_for_inflight(session, reorder, 0);
 
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     session->ack_health();
     session->advance_to(kActiveRosterPeriodMs);
     session->note_transport_failure();
     session->arm_scenario("R-retry");
-    session->submit_roster(eight, session->now_ms());
+    submit_for_inflight(session, eight, session->now_ms());
 
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     session->ack_health();
     session->advance_to(kActiveRosterPeriodMs);
     session->note_transport_failure();
@@ -819,32 +1168,32 @@ void run_scripted_catalog(SessionWriter *session)
     session->note_transport_failure();
 
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     session->ack_health();
     for (step = 1; step <= 10; ++step) {
         session->advance_to((int64_t)step * kActiveRosterPeriodMs);
         session->ack_health();
-        session->submit_roster(eight, session->now_ms());
+        submit_for_inflight(session, eight, session->now_ms());
     }
     session->publish("R-idle", "success");
 
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     for (step = 1; step <= 3; ++step) {
         session->advance_to((int64_t)step * kHeartbeatPeriodMs);
-        session->submit_roster(eight, session->now_ms());
+        submit_for_inflight(session, eight, session->now_ms());
     }
     session->publish("R-stale-beat", "failure");
 
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     session->ack_health();
     session->advance_to(kActiveRosterPeriodMs);
     session->arm_scenario("R-mute");
     session->mute(session->now_ms());
 
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     session->ack_health();
     session->begin_hold_probe(100);
     session->note_touch_during_wait();
@@ -876,7 +1225,7 @@ void submit_plain(SessionWriter *session, const char *const *ids, int count, int
     if (!session->roster_inflight()) {
         session->request_roster(session->now_ms());
     }
-    session->submit_roster(result, session->now_ms());
+    submit_for_inflight(session, result, session->now_ms());
 }
 
 void submit_armed(SessionWriter *session, const char *const *ids, int count, int valid,
@@ -893,7 +1242,7 @@ void submit_armed(SessionWriter *session, const char *const *ids, int count, int
         session->request_roster(session->now_ms());
     }
     session->arm_scenario(scenario);
-    session->submit_roster(result, session->now_ms());
+    submit_for_inflight(session, result, session->now_ms());
 }
 
 void show_roster(SessionWriter *session)
@@ -931,7 +1280,7 @@ void fail_checks(SessionWriter *session, bool twice)
         return;
     }
     session->arm_scenario("R-retry");
-    session->submit_roster(users_from(kControlEight, 8, 1), session->now_ms());
+    submit_for_inflight(session, users_from(kControlEight, 8, 1), session->now_ms());
 }
 
 void apply_mute(SessionWriter *session)
@@ -956,12 +1305,12 @@ void apply_idle(SessionWriter *session)
     int step;
     RosterResult eight = users_from(kControlEight, 8, 1);
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     session->ack_health();
     for (step = 1; step <= 10; ++step) {
         session->advance_to((int64_t)step * kActiveRosterPeriodMs);
         session->ack_health();
-        session->submit_roster(eight, session->now_ms());
+        submit_for_inflight(session, eight, session->now_ms());
     }
     session->publish("R-idle", "success");
 }
@@ -971,10 +1320,10 @@ void apply_stale_beats(SessionWriter *session)
     int step;
     RosterResult eight = users_from(kControlEight, 8, 1);
     session->boot(0, true);
-    session->submit_roster(eight, 0);
+    submit_for_inflight(session, eight, 0);
     for (step = 1; step <= 3; ++step) {
         session->advance_to((int64_t)step * kHeartbeatPeriodMs);
-        session->submit_roster(eight, session->now_ms());
+        submit_for_inflight(session, eight, session->now_ms());
     }
     session->publish("R-stale-beat", "failure");
 }
@@ -1012,7 +1361,7 @@ int64_t apply_manual_control(SessionWriter *session, int action)
         session->publish("R-wifi-absent", "success");
     } else if (action == kManualWifiReturn) {
         session->set_wifi(true, session->now_ms());
-        session->submit_roster(users_from(kControlEight, 8, 1), session->now_ms());
+        submit_for_inflight(session, users_from(kControlEight, 8, 1), session->now_ms());
     } else if (action == kManualEmpty) {
         submit_armed(session, kControlEight, 0, 1, "R-empty");
     } else if (action == kManualOne) {
@@ -1041,7 +1390,7 @@ int64_t apply_manual_control(SessionWriter *session, int action)
     } else if (action == kManualUnmute) {
         session->unmute(session->now_ms());
         if (session->roster_inflight()) {
-            session->submit_roster(users_from(kControlEight, 8, 1), session->now_ms());
+            submit_for_inflight(session, users_from(kControlEight, 8, 1), session->now_ms());
         }
     } else if (action == kManualIdleClock) {
         apply_idle(session);
