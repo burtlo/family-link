@@ -12,6 +12,8 @@ LAB = ROOT / "client/labs/lab-07-readiness-roster"
 INCLUDE = LAB / "components/lab07_session/include"
 SOURCES = [
     LAB / "components/lab07_session/session.cpp",
+    LAB / "components/lab07_session/pin_session.cpp",
+    LAB / "components/lab07_session/scoped_session.cpp",
     LAB / "components/lab07_session/pollers.cpp",
     LAB / "tests/model_test.cpp",
 ]
@@ -58,6 +60,9 @@ class Lab07ModelTests(unittest.TestCase):
     def test_lab07_invalid_not_ready(self):
         self._run("invalid")
         self._run("invalid-json")
+
+    def test_lab07_request_identity(self):
+        self._run("identity")
 
     def test_lab07_mute_stale(self):
         self._run("mute-stale")

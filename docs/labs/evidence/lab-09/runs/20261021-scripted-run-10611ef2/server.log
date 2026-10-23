@@ -1,0 +1,22 @@
+[stdout] health status=200
+[stdout] health status=200
+[stdout] sign-in status=200 user=user-a
+[stdout] op status=200 kind=inbox actor=user-a
+[stdout] op status=200 kind=media actor=user-a bytes=28800
+[stdout] op status=200 kind=playback actor=user-a
+[stdout] op status=200 kind=profile actor=user-a
+[stdout] op status=200 kind=profile actor=user-a
+[stdout] sign-in status=200 user=user-a
+[stdout] op status=200 kind=media actor=user-a bytes=28800
+[stdout] sign-in status=200 user=user-b
+[stdout] sign-in status=200 user=user-a
+[stdout] op status=200 kind=inbox actor=user-a
+[stdout] op status=200 kind=profile actor=user-a
+[stdout] observe status=200
+[stdout] expire status=401
+[stdout] sign-in status=200 user=user-a
+[stdout] mute status=400
+[stdout] op status=200 kind=inbox actor=user-a
+[stdout] sign-in status=200 user=user-a
+[stdout] mute status=400
+[stdout] op status=200 kind=inbox actor=user-a

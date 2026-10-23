@@ -1,0 +1,78 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-09/runs/20261021-scripted-run-10611ef2/events.jsonl",
+    "metrics": "docs/labs/evidence/lab-09/runs/20261021-scripted-run-10611ef2/metrics.json",
+    "serial_log": "logs/device/labs/lab-09/20261021-scripted-run-10611ef2/serial.txt",
+    "server_log": "docs/labs/evidence/lab-09/runs/20261021-scripted-run-10611ef2/server.log"
+  },
+  "build": {
+    "status": "passed"
+  },
+  "capture": {
+    "mode": "scripted",
+    "post_reset": true,
+    "seconds": 90,
+    "stages": {},
+    "status": "captured",
+    "variant": "scripted"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-21T12:11:16.494467Z",
+  "event_loss": {
+    "firmware_trace": {
+      "dropped_events": null,
+      "status": "UNKNOWN"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-09",
+  "experiment_verdict": "PASS",
+  "firmware": {
+    "binary_sha256": null,
+    "build_fingerprint": null,
+    "build_id": null,
+    "build_stamp": null,
+    "cmake_options": {},
+    "idf_version": null,
+    "project_path": "client\\labs\\lab-09-session-isolation",
+    "sdkconfig_sha256": null,
+    "source_revision": null,
+    "source_sha256": null
+  },
+  "fixture": {
+    "file": null,
+    "revision": "lab09-fixture/v1",
+    "schema": "lab09-session/v1",
+    "sha256": "6bdf3dd1db127d890d0bb322bf11d8153e4b6cf2ba3e70a50a0665ff0ae8514b"
+  },
+  "hardware": {
+    "board": null,
+    "kit_nickname": "box-a"
+  },
+  "lab_id": "LAB-09",
+  "lab_revision": "v1",
+  "lab_version_string": null,
+  "operator": null,
+  "run_id": "20261021-scripted-run-10611ef2",
+  "scenarios": [],
+  "server": {
+    "path": "server/labs/lab-09-session-isolation",
+    "revision": "lab09-server/v1",
+    "source_sha256": "5629252975b4cbcb7d3312eec111db03600869b241b0dbd0c18e057c6c24dde7"
+  },
+  "source": {
+    "dirty": null,
+    "files": {},
+    "revision": null
+  },
+  "started_at_utc": "2026-10-21T12:08:37.408285Z",
+  "terminal_reason": "post_reset_capture_parsed",
+  "terminal_reason_truncated": false,
+  "verification_levels": {},
+  "workflow_status": "PASS"
+}

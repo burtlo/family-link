@@ -1,0 +1,11 @@
+{
+  "document": "lab08-trace/v1",
+  "schema": "lab08-trace/v1",
+  "prefix": "LAB08_TRACE",
+  "required": ["schema", "event"],
+  "events": ["scenario_terminal", "resource_sample", "input_callback", "trace_loss"],
+  "scenario_terminal": {
+    "required": ["monotonic_us", "session_id", "operation_id", "generation", "scenario", "terminal", "terminal_count"]
+  },
+  "notes": "No PIN, PIN hash, credential, or URL secret. key_fingerprint is a hash of the operation key material, never of the four-digit PIN."
+}

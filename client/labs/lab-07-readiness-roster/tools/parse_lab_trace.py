@@ -32,9 +32,12 @@ _INTS = {
     "user_count", "selectable_cards", "focus_stable", "stale", "missed_beats",
     "inflight_requests", "touch_during_wait", "queue_count", "roster_period_ms",
     "heartbeat_period_ms", "valid", "stage_unchanged", "grace_ms", "clear_stale",
-    "elapsed_ms", "request_timeout_ms", "lvgl_high_water_bytes",
+    "elapsed_ms", "request_timeout_ms", "elapsed_us", "lvgl_high_water_bytes",
     "lvgl_largest_free_block_bytes", "pixel_high_water_bytes", "pixel_largest_free_block_bytes",
+    "internal_largest_free_block_bytes", "psram_largest_free_block_bytes", "live_widget_count",
+    "dropped_events", "oversized_events", "malformed_rows",
 }
+_LOSS_FIELDS = {"schema", "event", "dropped_events", "oversized_events", "malformed_rows"}
 
 
 class ParseError(ValueError):
@@ -170,6 +173,28 @@ def evaluate_experiment(scenarios: dict[str, Any], experiment_inputs: list[str])
     return "PASS"
 
 
+def _firmware_trace_loss(row: dict[str, Any] | None) -> tuple[str, dict[str, Any]]:
+    if row is None:
+        return "UNKNOWN", {
+            "status": "UNKNOWN",
+            "dropped_events": None,
+            "oversized_events": None,
+            "malformed_rows": None,
+        }
+    if set(row) != _LOSS_FIELDS:
+        raise ParseError("malformed firmware trace loss row")
+    dropped = row["dropped_events"]
+    oversized = row["oversized_events"]
+    malformed = row["malformed_rows"]
+    status = "NONE" if dropped == oversized == malformed == 0 else "OBSERVED"
+    return status, {
+        "status": status,
+        "dropped_events": dropped,
+        "oversized_events": oversized,
+        "malformed_rows": malformed,
+    }
+
+
 def _observation(row: dict[str, Any]) -> dict[str, Any]:
     observation = {
         "terminal": row.get("terminal"),
@@ -200,6 +225,12 @@ def parse(serial: str, run_id: str, mode: str = "scripted", variant: str | None 
     lvgl_high: list[float] = []
     pixel_free: list[float] = []
     pixel_high: list[float] = []
+    internal_free: list[float] = []
+    psram_free: list[float] = []
+    ui_ticks: list[float] = []
+    touch_gaps: list[float] = []
+    widget_counts: list[float] = []
+    loss_row: dict[str, Any] | None = None
     for line in serial.splitlines():
         if not line.startswith("LAB07_TRACE "):
             continue
@@ -208,15 +239,29 @@ def parse(serial: str, run_id: str, mode: str = "scripted", variant: str | None 
         if fields.get("schema") != TRACE_SCHEMA:
             raise ParseError("wrong trace schema")
         event = fields.get("event")
+        if event == "trace_loss":
+            if loss_row is not None:
+                raise ParseError("duplicate firmware trace loss row")
+            loss_row = fields
+            continue
         if event == "resource_sample":
             for key, bucket in (
                 ("lvgl_largest_free_block_bytes", lvgl_free),
                 ("lvgl_high_water_bytes", lvgl_high),
                 ("pixel_largest_free_block_bytes", pixel_free),
                 ("pixel_high_water_bytes", pixel_high),
+                ("internal_largest_free_block_bytes", internal_free),
+                ("psram_largest_free_block_bytes", psram_free),
+                ("live_widget_count", widget_counts),
             ):
                 if key in fields:
                     bucket.append(fields[key])
+            continue
+        if event == "ui_tick" and "elapsed_us" in fields:
+            ui_ticks.append(fields["elapsed_us"])
+            continue
+        if event == "touch_gap" and "elapsed_us" in fields:
+            touch_gaps.append(fields["elapsed_us"])
             continue
         if event == "device_timeout" and "elapsed_ms" in fields:
             elapsed.append(fields["elapsed_ms"])
@@ -246,12 +291,20 @@ def parse(serial: str, run_id: str, mode: str = "scripted", variant: str | None 
     else:
         experiment_inputs = list(experiment_inputs)
     verdict = evaluate_experiment(scenarios, experiment_inputs)
+    trace_loss, firmware_loss = _firmware_trace_loss(loss_row)
     measurements = {
         "elapsed_ms": _series(elapsed, "ms", provenance if elapsed else "unmeasured/blocked"),
+        "ui_tick_us": _series(ui_ticks, "us", provenance if ui_ticks else "unmeasured/blocked"),
+        "touch_gap_us": _series(touch_gaps, "us", provenance if touch_gaps else "unmeasured/blocked"),
         "lvgl_largest_free_block_bytes": _series(lvgl_free, "bytes", provenance if lvgl_free else "unmeasured/blocked"),
         "lvgl_high_water_bytes": _series(lvgl_high, "bytes", provenance if lvgl_high else "unmeasured/blocked"),
         "pixel_largest_free_block_bytes": _series(pixel_free, "bytes", provenance if pixel_free else "unmeasured/blocked"),
         "pixel_high_water_bytes": _series(pixel_high, "bytes", provenance if pixel_high else "unmeasured/blocked"),
+        "internal_largest_free_block_bytes": _series(
+            internal_free, "bytes", provenance if internal_free else "unmeasured/blocked"),
+        "psram_largest_free_block_bytes": _series(
+            psram_free, "bytes", provenance if psram_free else "unmeasured/blocked"),
+        "live_widget_count": _series(widget_counts, "count", provenance if widget_counts else "unmeasured/blocked"),
     }
     return {
         "document": PARSER_DOCUMENT,
@@ -262,8 +315,8 @@ def parse(serial: str, run_id: str, mode: str = "scripted", variant: str | None 
         "evidence_provenance": provenance if provenance == "hardware" else "host",
         "evidence": {
             "status": "COMPLETE" if verdict == "PASS" else "INCOMPLETE",
-            "trace_loss": "UNKNOWN",
-            "firmware_trace_loss": {"status": "UNKNOWN", "dropped_events": None},
+            "trace_loss": trace_loss,
+            "firmware_trace_loss": firmware_loss,
             "missing": [] if verdict == "PASS" else ["decided_scenario"],
         },
         "lab_metrics": {

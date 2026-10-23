@@ -2,12 +2,17 @@
 #include "esp_http_client.h"
 #include "esp_netif.h"
 #include "esp_event.h"
+#include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "lvgl.h"
+#include "catalog.hpp"
+#include "desk_station.hpp"
+#include "roster_http.hpp"
 #include "session.hpp"
+#include "esp_err.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -84,20 +89,60 @@ bool s_hold_active = false;
 int64_t s_hold_deadline_us = 0;
 int64_t s_hold_model_ms = 0;
 int s_trace_cursor = 0;
-uint8_t s_pixel_ledger[320 * 16];
-uint32_t s_pixel_used = 0;
-uint32_t s_pixel_high_water = 0;
+int s_shown_stage = -1;
+
+struct TraceAccount {
+    uint32_t dropped;
+    uint32_t oversized;
+    uint32_t malformed;
+};
+
+TraceAccount s_loss;
+
+void write_accounted(const char *line, int formatted, int capacity)
+{
+    int written;
+    if (line == nullptr || formatted < 0) {
+        s_loss.malformed += 1;
+        return;
+    }
+    if (formatted >= capacity) {
+        s_loss.oversized += 1;
+        return;
+    }
+    written = printf("%s\n", line);
+    if (written < formatted + 1) {
+        s_loss.dropped += 1;
+    }
+}
 
 void print_new_traces()
 {
     int i;
     for (i = s_trace_cursor; i < s_session.event_count(); ++i) {
         char line[1024];
-        lab07::format_trace_line(s_session.event_at(i), line, (int)sizeof(line));
-        printf("%s\n", line);
+        int formatted = lab07::format_trace_line(s_session.event_at(i), line, (int)sizeof(line));
+        write_accounted(line, formatted, (int)sizeof(line));
     }
     s_trace_cursor = s_session.event_count();
 }
+
+void note_touch_gap(int64_t started)
+{
+    char line[192];
+    int formatted = snprintf(line, sizeof(line),
+                             "LAB07_TRACE schema=lab07-trace/v1 event=touch_gap seq=1 monotonic_us=%lld "
+                             "elapsed_us=%lld",
+                             (long long)esp_timer_get_time(),
+                             (long long)(esp_timer_get_time() - started));
+    write_accounted(line, formatted, (int)sizeof(line));
+}
+
+#ifdef CONFIG_LAB07_SCRIPTED
+int s_http_seq = 0;
+uint8_t s_pixel_ledger[320 * 16];
+uint32_t s_pixel_used = 0;
+uint32_t s_pixel_high_water = 0;
 
 void note_pixel(uint32_t used)
 {
@@ -110,18 +155,58 @@ void note_pixel(uint32_t used)
 void sample_ledgers()
 {
     lv_mem_monitor_t monitor;
+    char line[480];
     uint32_t largest_free;
+    uint32_t widgets = 0;
+    int formatted;
     note_pixel(sizeof(s_pixel_ledger) / 2);
     lv_mem_monitor(&monitor);
+    if (s_stage != nullptr) {
+        widgets = (uint32_t)lv_obj_get_child_count(s_stage);
+    }
     largest_free = (uint32_t)sizeof(s_pixel_ledger) - s_pixel_used;
-    printf("LAB07_TRACE schema=lab07-trace/v1 event=resource_sample seq=1 monotonic_us=%lld "
-           "session_id=%s operation_id=0 generation=%" PRIu32 " lvgl_high_water_bytes=%u "
-           "lvgl_largest_free_block_bytes=%u pixel_high_water_bytes=%" PRIu32 " "
-           "pixel_largest_free_block_bytes=%" PRIu32 "\n",
-           (long long)esp_timer_get_time(), s_session.session_id(), s_session.generation(),
-           (unsigned)monitor.max_used, (unsigned)monitor.free_biggest_size, s_pixel_high_water,
-           largest_free);
+    formatted = snprintf(line, sizeof(line),
+                         "LAB07_TRACE schema=lab07-trace/v1 event=resource_sample seq=1 monotonic_us=%lld "
+                         "session_id=%s operation_id=0 generation=%" PRIu32 " lvgl_high_water_bytes=%u "
+                         "lvgl_largest_free_block_bytes=%u pixel_high_water_bytes=%" PRIu32 " "
+                         "pixel_largest_free_block_bytes=%" PRIu32 " internal_largest_free_block_bytes=%u "
+                         "psram_largest_free_block_bytes=%u live_widget_count=%" PRIu32,
+                         (long long)esp_timer_get_time(), s_session.session_id(), s_session.generation(),
+                         (unsigned)monitor.max_used, (unsigned)monitor.free_biggest_size, s_pixel_high_water,
+                         largest_free, (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+                         (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM), widgets);
+    write_accounted(line, formatted, (int)sizeof(line));
 }
+
+void sample_ui_ticks(int count)
+{
+    int i;
+    for (i = 0; i < count; ++i) {
+        char line[160];
+        int64_t started = esp_timer_get_time();
+        int formatted;
+        if (bsp_display_lock(20)) {
+            lv_timer_handler();
+            bsp_display_unlock();
+        }
+        formatted = snprintf(line, sizeof(line),
+                             "LAB07_TRACE schema=lab07-trace/v1 event=ui_tick seq=%d monotonic_us=%lld "
+                             "elapsed_us=%lld",
+                             i, (long long)esp_timer_get_time(),
+                             (long long)(esp_timer_get_time() - started));
+        write_accounted(line, formatted, (int)sizeof(line));
+    }
+}
+
+void finish_harness(const char *status)
+{
+    sample_ui_ticks(8);
+    printf("LAB07_TRACE schema=lab07-trace/v1 event=trace_loss dropped_events=%u "
+           "oversized_events=%u malformed_rows=%u\n",
+           (unsigned)s_loss.dropped, (unsigned)s_loss.oversized, (unsigned)s_loss.malformed);
+    printf("LAB07_HARNESS_DONE status=%s\n", status);
+}
+#endif
 
 void render_status()
 {
@@ -147,9 +232,11 @@ void clear_stage()
 
 void on_roster_touch(lv_event_t *event)
 {
+    int64_t started = esp_timer_get_time();
     (void)event;
     s_session.note_touch_during_wait();
     render_status();
+    note_touch_gap(started);
 }
 
 void render_cards()
@@ -306,10 +393,22 @@ void render_stage()
 
 void render()
 {
+    int stage;
     if (!bsp_display_lock(0)) {
         return;
     }
-    render_stage();
+    stage = s_session.stage();
+    if (stage != s_shown_stage) {
+        render_stage();
+        s_shown_stage = stage;
+    } else {
+        /* Data and status stay on the existing stage. Do not rebuild the guide. */
+        render_status();
+        if (stage == lab07::kStageRoster) {
+            clear_stage();
+            render_cards();
+        }
+    }
     bsp_display_unlock();
 }
 
@@ -331,6 +430,7 @@ void begin_hold_from_finger(bool from_press)
     s_session.note_touch_during_wait();
     render();
     print_new_traces();
+    note_touch_gap(s_last_step_us);
 }
 
 void on_step_pressed(lv_event_t *event)
@@ -435,37 +535,140 @@ void animate_connecting(lv_timer_t *timer)
     }
 }
 
-int http_once(const char *url, bool pad_to_timeout)
+#ifdef CONFIG_LAB07_SCRIPTED
+constexpr int kHttpBodyCap = 2048;
+
+struct HttpExchange {
+    int perform_ok;
+    int http_status;
+    int elapsed_ms;
+    int body_len;
+    char body[kHttpBodyCap];
+};
+
+/* Main-task HTTP for the scripted harness only. LVGL button and timer callbacks do not call this. */
+void perform_http(const char *url, HttpExchange *out)
 {
     int64_t started = esp_timer_get_time();
-    int64_t elapsed;
     esp_http_client_config_t config = {};
     esp_http_client_handle_t client;
+    int status;
+    memset(out, 0, sizeof(*out));
     config.url = url;
     config.timeout_ms = lab07::kRequestTimeoutMs;
     config.method = HTTP_METHOD_GET;
     client = esp_http_client_init(&config);
-    if (client != nullptr) {
-        esp_http_client_perform(client);
+    if (client == nullptr) {
+        out->elapsed_ms = (int)((esp_timer_get_time() - started) / 1000);
+        return;
+    }
+    if (esp_http_client_open(client, 0) != ESP_OK) {
         esp_http_client_cleanup(client);
+        out->elapsed_ms = (int)((esp_timer_get_time() - started) / 1000);
+        return;
     }
-    elapsed = (esp_timer_get_time() - started) / 1000;
-    if (pad_to_timeout && elapsed < lab07::kRequestTimeoutMs) {
-        vTaskDelay(pdMS_TO_TICKS((int)(lab07::kRequestTimeoutMs - elapsed)));
-        elapsed = (esp_timer_get_time() - started) / 1000;
+    esp_http_client_fetch_headers(client);
+    status = esp_http_client_get_status_code(client);
+    if (status <= 0) {
+        esp_http_client_close(client);
+        esp_http_client_cleanup(client);
+        out->elapsed_ms = (int)((esp_timer_get_time() - started) / 1000);
+        return;
     }
-    return (int)elapsed;
+    out->perform_ok = 1;
+    out->http_status = status;
+    while (out->body_len < kHttpBodyCap - 1) {
+        int n = esp_http_client_read(client, out->body + out->body_len, kHttpBodyCap - 1 - out->body_len);
+        if (n <= 0) {
+            break;
+        }
+        out->body_len += n;
+    }
+    out->body[out->body_len] = 0;
+    esp_http_client_close(client);
+    esp_http_client_cleanup(client);
+    out->elapsed_ms = (int)((esp_timer_get_time() - started) / 1000);
+}
+
+bool url_with_script(const char *roster_url, const char *script, char *out, int cap)
+{
+    int i = 0;
+    int n = 0;
+    const char *prefix = "?script=";
+    int p;
+    if (roster_url == 0 || script == 0 || cap < 24) {
+        return false;
+    }
+    for (; roster_url[i] != 0 && roster_url[i] != '?'; ++i) {
+        if (n >= cap - 1) {
+            return false;
+        }
+        out[n] = roster_url[i];
+        n += 1;
+    }
+    for (p = 0; prefix[p] != 0; ++p) {
+        if (n >= cap - 1) {
+            return false;
+        }
+        out[n] = prefix[p];
+        n += 1;
+    }
+    for (p = 0; script[p] != 0; ++p) {
+        if (n >= cap - 1) {
+            return false;
+        }
+        out[n] = script[p];
+        n += 1;
+    }
+    out[n] = 0;
+    return true;
+}
+
+/* Capture the submission id, read the live exchange, and deliver that completion.
+   A failure leaves selectable cards at 0 and does not mark the held-response scenario. */
+bool deliver_live_roster(const char *url)
+{
+    HttpExchange exchange;
+    lab07::RosterResult result;
+    uint64_t operation_id;
+    const char *terminal;
+    int selectable;
+    s_session.boot(s_session.now_ms(), true);
+    operation_id = s_session.roster_operation_id();
+    perform_http(url, &exchange);
+    result = lab07::deliver_classified_roster(&s_session, operation_id, exchange.perform_ok,
+                                             exchange.http_status, exchange.body, exchange.body_len,
+                                             s_session.now_ms());
+    terminal = s_session.terminal_for(operation_id);
+    selectable = s_session.selectable_cards();
+    s_http_seq += 1;
+    printf("LAB07_TRACE schema=lab07-trace/v1 event=device_http seq=%d monotonic_us=%lld "
+           "session_id=%s operation_id=%llu generation=%" PRIu32 " http_status=%d perform_ok=%d "
+           "terminal=%s terminal_count=%d stage=%s selectable_cards=%d valid=%d parse_ok=%d "
+           "held_response=0 elapsed_ms=%d\n",
+           s_http_seq, (long long)esp_timer_get_time(), s_session.session_id(),
+           (unsigned long long)operation_id, s_session.generation(), result.http_status,
+           exchange.perform_ok, terminal[0] ? terminal : "none",
+           s_session.terminal_count_for(operation_id), s_session.stage_name(), selectable, result.valid,
+           result.parse_ok, exchange.elapsed_ms);
+    render();
+    return operation_id != 0 && strcmp(terminal, "failure") == 0 &&
+           s_session.terminal_count_for(operation_id) == 1 && selectable == 0 &&
+           s_session.stage() == lab07::kStageConnecting && strcmp(terminal, "timed_out") != 0;
 }
 
 void scripted_harness()
 {
     int i;
-    int hold_ms;
-    int health_ms;
-    int roster_ms;
+    bool representative_ok = true;
+    char unavailable[160];
+    char invalid[160];
+    char malformed[160];
     nvs_flash_init();
     esp_netif_init();
     esp_event_loop_create_default();
+    /* Long schedules stay on the virtual clock inside the catalog. Those lines are
+       model terminals. They are not live HTTP readiness. */
     lab07::run_scripted_catalog(&s_session);
     render();
     for (i = 0; i < s_session.event_count(); ++i) {
@@ -475,30 +678,36 @@ void scripted_harness()
             strcmp(record.scenario, "R-stale-clock") != 0) {
             continue;
         }
-        lab07::format_trace_line(record, line, (int)sizeof(line));
-        printf("%s\n", line);
+        write_accounted(line, lab07::format_trace_line(record, line, (int)sizeof(line)), (int)sizeof(line));
     }
+    printf("LAB07_TRACE schema=lab07-trace/v1 event=virtual_clock seq=1 monotonic_us=%lld "
+           "session_id=%s operation_id=0 held_response=0 catalog=complete\n",
+           (long long)esp_timer_get_time(), s_session.session_id());
     s_trace_cursor = s_session.event_count();
     sample_ledgers();
-    hold_ms = http_once(CONFIG_LAB07_HOLD_URL, true);
-    printf("LAB07_TRACE schema=lab07-trace/v1 event=device_timeout seq=1 monotonic_us=%lld "
-           "session_id=%s operation_id=0 generation=%" PRIu32 " elapsed_ms=%d request_timeout_ms=%d\n",
-           (long long)esp_timer_get_time(), s_session.session_id(), s_session.generation(), hold_ms,
-           lab07::kRequestTimeoutMs);
-    health_ms = http_once(CONFIG_LAB07_HEALTH_URL, false);
-    printf("LAB07_TRACE schema=lab07-trace/v1 event=device_http seq=2 monotonic_us=%lld "
-           "session_id=%s operation_id=0 generation=%" PRIu32 " kind=health elapsed_ms=%d "
-           "request_timeout_ms=%d\n",
-           (long long)esp_timer_get_time(), s_session.session_id(), s_session.generation(), health_ms,
-           lab07::kRequestTimeoutMs);
-    roster_ms = http_once(CONFIG_LAB07_ROSTER_URL, false);
-    printf("LAB07_TRACE schema=lab07-trace/v1 event=device_http seq=3 monotonic_us=%lld "
-           "session_id=%s operation_id=0 generation=%" PRIu32 " kind=roster elapsed_ms=%d "
-           "request_timeout_ms=%d\n",
-           (long long)esp_timer_get_time(), s_session.session_id(), s_session.generation(), roster_ms,
-           lab07::kRequestTimeoutMs);
-    printf("LAB07_HARNESS_DONE status=complete\n");
+    if (!url_with_script(CONFIG_LAB07_ROSTER_URL, "missing-script", unavailable, (int)sizeof(unavailable)) ||
+        !url_with_script(CONFIG_LAB07_ROSTER_URL, "invalid-200", invalid, (int)sizeof(invalid)) ||
+        !url_with_script(CONFIG_LAB07_ROSTER_URL, "malformed", malformed, (int)sizeof(malformed))) {
+        finish_harness("url_rejected");
+        return;
+    }
+    /* Representative fixture responses decide readiness after the virtual-clock catalog. */
+    if (!join_desk_wifi(CONFIG_LAB07_WIFI_SSID, CONFIG_LAB07_WIFI_PASSWORD)) {
+        finish_harness("representative_not_ready");
+        return;
+    }
+    representative_ok = deliver_live_roster(unavailable) && representative_ok;
+    representative_ok = deliver_live_roster(invalid) && representative_ok;
+    representative_ok = deliver_live_roster(malformed) && representative_ok;
+    representative_ok = deliver_live_roster("http://127.0.0.1:1/roster") && representative_ok;
+    s_trace_cursor = s_session.event_count();
+    if (!representative_ok || s_session.selectable_cards() != 0) {
+        finish_harness("representative_not_ready");
+        return;
+    }
+    finish_harness("complete");
 }
+#endif
 
 bool build_screen()
 {
@@ -517,7 +726,7 @@ bool build_screen()
     }
     lv_label_set_long_mode(s_status, LV_LABEL_LONG_MODE_WRAP);
     lv_obj_set_pos(s_status, 2, kStatusY);
-    lv_obj_set_width(s_status, kScreenW - 4);
+    lv_obj_set_size(s_status, kScreenW - 4, kStatusH);
     lv_obj_set_pos(s_stage, 0, kStageY);
     lv_obj_set_size(s_stage, kScreenW, kStageH);
     lv_obj_set_style_pad_all(s_stage, 0, 0);
@@ -527,15 +736,26 @@ bool build_screen()
     lv_obj_set_scroll_dir(s_controls, LV_DIR_NONE);
     lv_obj_clear_flag(s_controls, LV_OBJ_FLAG_SCROLLABLE);
     {
-        s_cue = lv_label_create(s_controls);
-        lv_obj_t *cue = s_cue;
+        lv_obj_t *guide = lv_obj_create(s_controls);
         lv_obj_t *button;
-        if (cue == nullptr) {
+        if (guide == nullptr) {
             return false;
         }
-        lv_obj_set_pos(cue, 8, 4);
-        lv_obj_set_width(cue, kScreenW - 16);
-        lv_label_set_text(cue, "Tap each once");
+        lv_obj_set_pos(guide, 0, 0);
+        lv_obj_set_size(guide, kScreenW, kCueH);
+        lv_obj_set_scroll_dir(guide, LV_DIR_VER);
+        lv_obj_set_scrollbar_mode(guide, LV_SCROLLBAR_MODE_AUTO);
+        lv_obj_set_style_border_width(guide, 0, 0);
+        lv_obj_set_style_pad_all(guide, 0, 0);
+        lv_obj_set_style_bg_opa(guide, LV_OPA_TRANSP, 0);
+        s_cue = lv_label_create(guide);
+        if (s_cue == nullptr) {
+            return false;
+        }
+        lv_obj_set_pos(s_cue, 8, 0);
+        lv_obj_set_width(s_cue, kScreenW - 16);
+        lv_label_set_long_mode(s_cue, LV_LABEL_LONG_MODE_WRAP);
+        lv_label_set_text(s_cue, "Tap each once");
         button = lv_button_create(s_controls);
         if (button == nullptr) {
             return false;
@@ -570,6 +790,7 @@ bool build_screen()
     }
     s_session.boot(0, true);
     render_stage();
+    s_shown_stage = s_session.stage();
     return true;
 }
 

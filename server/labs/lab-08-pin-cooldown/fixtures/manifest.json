@@ -1,0 +1,16 @@
+{
+  "fixture_schema": "lab08-pin/v1",
+  "fixture_version": "lab08-pin/v1",
+  "fixture_revision": "lab08-fixture/v1",
+  "server_version": "lab08-server/v1",
+  "files": {
+    "accounts.json": {
+      "bytes": 69,
+      "sha256": "05d48cbb45fe63a3713caa64c0754e2cf6427a2f24b9a19669d7df69cb65cd22"
+    },
+    "malformed.json": {
+      "bytes": 12,
+      "sha256": "5ca4014c768387b772fb6af9a8a0ad6b7ccc9dc91a0a9f0f0be0d9b55ae36516"
+    }
+  }
+}
