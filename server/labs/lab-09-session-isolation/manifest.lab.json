@@ -1,0 +1,8 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-09",
+  "lab_revision": "lab09-server/v1",
+  "fixture_schema": "lab09-session/v1",
+  "fixture_revision": "lab09-fixture/v1",
+  "protocol": "lab09-session/v1"
+}

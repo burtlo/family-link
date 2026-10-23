@@ -63,3 +63,60 @@
 
 <!-- orchestrate-build:end run_id=lab07-20261020-manual-traces -->
 
+<!-- orchestrate-build:begin run_id=login-session-20261020 -->
+# Orchestration progress
+
+- Run ID: login-session-20261020
+- Status: complete
+- Map: docs/labs/remaining-labs-implementation-plan.md
+- Specification: docs/product/experiences/endpoint-login.md; docs/product/communication-contracts/endpoint-health-and-login.md
+- Repository root: C:/Users/lynnv/src/family-link
+- Baseline revision: 4f1011e7b9736aedefbcb3bedb65131a629c478f (main, clean)
+- Baseline protected paths: none visible. Do not edit LAB-11 or LAB-12 paths, the plan, product specs, client/device, or the v1 archive. Do not merge or commit.
+- Execution override: one implementer per stage for the integrated MODEL/FW/HOST/QUAL candidate; one fresh read-only reviewer for standards review and verification. One grouped repair and one fresh recheck per stage. Lane budget normal 6, hard maximum 12. Subagents must not delegate.
+- Started: 2026-10-20T14:52-05:00
+- Updated: 2026-10-20T19:41-05:00
+- Agent invocations: 10 of 12. LAB-09 recheck generalPurpose 315b1915-1ab4-4e73-8f77-391885121ee7 verdict=pass. LAB09-F001 fixed. LAB09-F002 fixed. L09-MODEL, L09-FW, L09-HOST, and L09-QUAL pass at L0/L1. Device rows blocked. make test exit 0, 461 tests, 2 skipped. No firmware rebuild on recheck. No commit, merge, or flash.
+- Stage: software complete. L07-DEVICE, L08-DEVICE, and L09-DEVICE not selected.
+- Repair claim: a second delivery no longer copies A's payload into B or restores image bytes after mute. Scripted I-switch classifies the saved media body. Reported focused tests, six firmware builds, and make test exit 0 (461 tests, 2 skipped).
+- LAB09-F001: a second delivery of an already successful ticket copies A's inbox, image, playback, or profile into B, and can restore image bytes after mute. LAB09-F002: scripted I-switch reuses the HTTP exchange for sign-in and classifies a wiped buffer instead of A's saved media body.
+- Implementer claim: L09-MODEL/FW/HOST/QUAL pass at L0/L1. L09-08 and L09-09 passed. make test exit 0, 460 tests, 2 skipped. Six firmware builds exit 0. L09-04 and L09-05 blocked. No commit. scoped_session.cpp extends SessionWriter.
+- LAB-08 review: L08-MODEL, L08-FW, L08-HOST, and L08-QUAL pass at L0/L1. L08-07 and L08-08 blocked. make test exit 0, 445 tests, 2 skipped. Both LAB-07 variants were rebuilt after the owner change. No findings.
+- Implementer claim: L08-MODEL/FW/HOST/QUAL pass at L0/L1. L08-10 test_lab08_mute_release passed inside make test (445 tests, 2 skipped). L08-07 and L08-08 blocked. PIN methods were added to the LAB-07 SessionWriter in pin_session.cpp. No commit.
+- LAB-07 recheck: L07-F01 fixed, L07-F02 fixed. L07-MODEL, L07-FW, L07-HOST, and L07-QUAL pass at L0/L1. Device rows blocked. Performance UNMEASURED. make test exit 0, 423 tests, 2 skipped. Prerequisite for LAB-08: test_lab07_mute_stale and test_lab07_stage_enum are present and were in that passing model suite.
+- Repair claim: enqueue no longer stamps operation id 0. README again contains `L1 virtual-clock only`. Reported focused tests, both builds, and make test exit 0 (423 tests, 2 skipped). `submit_for_inflight` still copies the in-flight id for catalog and manual synthetic bodies. That path is in scope for the recheck.
+- Reviewer findings: L07-F01 enqueue stamps operation_id 0 with the current in-flight id, so an unidentified result enqueued after unmute completes the new request. L07-F02 README dropped the locked phrase `L1 virtual-clock only`, so test_s16_and_stage_owner_readme fails. LAB-02 `test_scripted_completion_requires_expected_build_and_step_count` also failed make test and is out of scope.
+- Implementer: generalPurpose 8c497177-dc18-47cd-b1e3-bf6a71f68c57 status=completed. commit_created=false. Reported make test exit 0, 423 tests. Changed paths stayed in the LAB-07 tree, its tests, the LAB-07 report, and the evidence index. orchestration-progress.md is orchestrator-owned.
+- Supplement: prove the firmware async path uses the session owner; capture identity at submission; real fixture outcomes determine results; cancellation across mute, unmute, user change, and a newer request; presentation callbacks stay non-blocking; smallest reusable owner/operation interface for LAB-13 stays in the lab tree. Pass the same supplement to the independent reviewer. Do not restart completed work without a demonstrated gap.
+
+| Package | Title | Dependencies | Implement | Verify | Repair attempts | State / evidence |
+|---|---|---|---|---|---:|---|
+| L07-MODEL | Drain identity and session-result contract | current LAB-07 source | completed | pass | 1 | recheck 46a7040d pass |
+| L07-FW | Identified HTTP outcomes on device harness | L07-MODEL | completed | pass | 1 | both variant builds reused; device confirmation pending |
+| L07-HOST | Real HTTP outcomes affect session results | L07-FW | completed | pass | 1 | live port 8767 outcomes are non-ready |
+| L07-QUAL | Corrected software qualification | L07-HOST | completed | pass | 1 | software qualified; device rows blocked |
+| L07-DEVICE | Target evidence | not selected | not_started | not_started | 0 | not selected; device confirmation pending |
+| L08-MODEL | PIN model | L07-05, L07-10 | completed | pass | 0 | reviewer 2debdbdf pass |
+| L08-FW | PIN firmware | L08-MODEL | completed | pass | 0 | both lab08 builds current; both lab07 variants rebuilt |
+| L08-HOST | PIN adapter | L08-FW | completed | pass | 0 | live port 8768 outcomes decide authentication |
+| L08-QUAL | PIN qualification | L08-HOST | completed | pass | 0 | L0/L1; L08-07 and L08-08 blocked |
+| L08-DEVICE | Target evidence | not selected | not_started | not_started | 0 | not selected |
+| L08-FW | PIN firmware | L08-MODEL | not_started | not_started | 0 | not started |
+| L08-HOST | PIN adapter | L08-FW | not_started | not_started | 0 | not started |
+| L08-QUAL | PIN qualification | L08-HOST | not_started | not_started | 0 | not started |
+| L08-DEVICE | Target evidence | not selected | not_started | not_started | 0 | not selected |
+| L09-MODEL | Session isolation | L08-10 | completed | pass | 1 | recheck 315b1915 pass; historical redelivery does not copy |
+| L09-FW | Isolation firmware | L09-MODEL | completed | pass | 1 | scripted switch classifies the saved media body |
+| L09-HOST | Isolation adapter | L09-FW | completed | pass | 0 | live port 8769 outcomes; exploratory rows excluded |
+| L09-QUAL | Isolation qualification | L09-HOST | completed | pass | 1 | L0/L1; L09-04 and L09-05 blocked |
+| L09-DEVICE | Target evidence | not selected | not_started | not_started | 0 | not selected |
+
+## Stage LAB-07 correction
+
+- Definition fingerprint: section 3.4 plus sections 1, 2, and 8 at 4f1011e7, plus the two confirmed defects in the user request
+- Confirmed defects still present: `SessionWriter::drain` lets `operation_id=0` skip the request-identity comparison (`session.cpp` around the drain loop). `scripted_harness` prints `run_scripted_catalog` terminals, then `http_once` discards HTTP status and body (`app_main.cpp`).
+- Do not redo the already passing cadence, mute-stale, stage-enum, or on-screen layout repairs except where these two defects invalidate them.
+- Commit/PR/publish actions: none
+
+<!-- orchestrate-build:end run_id=login-session-20261020 -->
+

@@ -1,0 +1,11 @@
+{
+  "fixture_version": "lab11-send/v1",
+  "fixture_revision": "lab11-send/v1",
+  "server_version": "lab11-server/v1",
+  "files": {
+    "restart-probe.json": {
+      "bytes": 61,
+      "sha256": "dce12a55e2b8b1d843591c1ec169e3935fd984e61bd03c8f301e853f3df50d6b"
+    }
+  }
+}

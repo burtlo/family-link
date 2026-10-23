@@ -1,0 +1,190 @@
+[stdout] "GET /health HTTP/1.1" 200 -
+[stdout] health status=200
+[stdout] "GET /health HTTP/1.1" 200 -
+[stdout] health status=200
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/complete HTTP/1.1" 200 -
+[stdout] complete message=m-one-a accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-one-a HTTP/1.1" 200 -
+[stdout] reconcile message=m-one-a accepted=1
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/complete HTTP/1.1" 200 -
+[stdout] complete message=m-one-p accepted=0
+[stdout] "POST /v1/publish HTTP/1.1" 200 -
+[stdout] publish message=m-one-p accepted=1 recipients=1
+[stdout] "GET /v1/reconcile?message_id=m-one-p HTTP/1.1" 200 -
+[stdout] reconcile message=m-one-p accepted=1
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/complete HTTP/1.1" 200 -
+[stdout] complete message=m-one-b accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-one-b HTTP/1.1" 200 -
+[stdout] reconcile message=m-one-b accepted=1
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 204 -
+[stdout] part dropped_ack sequence=0
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/parts HTTP/1.1" 409 -
+[stdout] part identity_conflict sequence=0
+[stdout] "POST /v1/complete HTTP/1.1" 200 -
+[stdout] complete message=m-ack accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-ack HTTP/1.1" 200 -
+[stdout] reconcile message=m-ack accepted=1
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/complete HTTP/1.1" 204 -
+[stdout] complete dropped_receipt message=m-rcpt
+[stdout] "GET /v1/receipts/m-rcpt HTTP/1.1" 200 -
+[stdout] receipt message=m-rcpt accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-rcpt HTTP/1.1" 200 -
+[stdout] reconcile message=m-rcpt accepted=1
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 507 -
+[stdout] part storage sequence=0
+[stdout] "GET /v1/reconcile?message_id=m-full HTTP/1.1" 200 -
+[stdout] reconcile message=m-full accepted=0
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "GET /v1/reconcile?message_id=m-c0 HTTP/1.1" 200 -
+[stdout] reconcile message=m-c0 accepted=0
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "GET /v1/reconcile?message_id=m-c1 HTTP/1.1" 200 -
+[stdout] reconcile message=m-c1 accepted=0
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/complete HTTP/1.1" 200 -
+[stdout] complete message=m-c2 accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-c2 HTTP/1.1" 200 -
+[stdout] reconcile message=m-c2 accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-c2 HTTP/1.1" 200 -
+[stdout] reconcile message=m-c2 accepted=1
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/complete HTTP/1.1" 204 -
+[stdout] complete dropped_receipt message=m-c3
+[stdout] "GET /v1/receipts/m-c3 HTTP/1.1" 200 -
+[stdout] receipt message=m-c3 accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-c3 HTTP/1.1" 200 -
+[stdout] reconcile message=m-c3 accepted=1
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/complete HTTP/1.1" 200 -
+[stdout] complete message=m-many accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-many HTTP/1.1" 200 -
+[stdout] reconcile message=m-many accepted=1
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/complete HTTP/1.1" 200 -
+[stdout] complete invalid message=m-inv
+[stdout] "GET /v1/reconcile?message_id=m-inv HTTP/1.1" 200 -
+[stdout] reconcile message=m-inv accepted=0
+[stdout] "POST /v1/control HTTP/1.1" 200 -
+[stdout] control status=200
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=0 durable=1
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=1 durable=2
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=2 durable=3
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=3 durable=4
+[stdout] "POST /v1/parts HTTP/1.1" 200 -
+[stdout] part acked sequence=4 durable=5
+[stdout] "POST /v1/complete HTTP/1.1" 200 -
+[stdout] complete message=m-push accepted=1
+[stdout] "POST /v1/push HTTP/1.1" 200 -
+[stdout] push message=m-push result=failed accepted=1
+[stdout] "GET /v1/reconcile?message_id=m-push HTTP/1.1" 200 -
+[stdout] reconcile message=m-push accepted=1
+[stdout] "GET /v1/status HTTP/1.1" 200 -
+[stdout] status status=200

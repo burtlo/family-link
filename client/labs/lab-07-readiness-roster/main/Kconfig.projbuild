@@ -23,4 +23,12 @@ config LAB07_HOLD_URL
     string "Synthetic held-response URL"
     default "http://127.0.0.1:8767/roster?script=delayed"
 
+config LAB07_WIFI_SSID
+    string "Desk Wi-Fi SSID for a kit build"
+    default ""
+
+config LAB07_WIFI_PASSWORD
+    string "Desk Wi-Fi password for a kit build"
+    default ""
+
 endmenu

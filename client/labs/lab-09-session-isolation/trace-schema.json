@@ -1,0 +1,11 @@
+{
+  "document": "lab09-trace/v1",
+  "schema": "lab09-trace/v1",
+  "prefix": "LAB09_TRACE",
+  "required": ["schema", "event"],
+  "events": ["scenario_terminal", "observation", "resource_sample", "cancel_sample", "trace_loss"],
+  "scenario_terminal": {
+    "required": ["monotonic_us", "session_id", "operation_id", "generation", "scenario", "terminal", "terminal_count"]
+  },
+  "notes": "No credential, handle, or raw media payload. image_bytes is a length, not the image."
+}

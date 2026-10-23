@@ -270,6 +270,77 @@ labs:
         The 10-minute idle and 5-minute cadence are virtual-clock checks unless a run waits.
         Capture default is 90 seconds. Flash follows flash_by_default unless FLASH=0.
 
+  lab08:
+    adapter: lab08
+    lab_id: LAB-08
+    evidence_slug: lab-08
+    project_dir: client/labs/lab-08-pin-cooldown
+    target: esp32s3
+    description: PIN entry, cooldown, and idempotent login fixture
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-08-pin-cooldown-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-08-pin-cooldown-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    trace_parser: client/labs/lab-08-pin-cooldown/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 90
+      flash_by_default: true
+      instructions: |
+        Scroll the operator guide. The stage band does not cover it.
+        Digits show as stars. After four digits the copy is checking...
+        A wrong PIN shows wrong pin for 2 seconds. Five wrong PINs for one user
+        show Too many attempts. Try again in the remaining seconds.
+        The failure count belongs to the selected user.
+        BOOT with no digits returns to the roster. BOOT with 1 to 3 digits clears them.
+        After four digits BOOT is ignored.
+        Mute during checking turns the display off. A late success does not undo mute.
+        Each button names the action you are about to take.
+        Scripted mode runs the decided scenarios without taps.
+        The retry delays, wrong-pin copy, cooldown, and partial-entry return stay on the virtual clock.
+        Capture default is 90 seconds. Flash follows flash_by_default unless FLASH=0.
+
+  lab09:
+    adapter: lab09
+    lab_id: LAB-09
+    evidence_slug: lab-09
+    project_dir: client/labs/lab-09-session-isolation
+    target: esp32s3
+    description: Signed-in session isolation for late inbox, media, playback, and profile results
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-09-session-isolation-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-09-session-isolation-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    trace_parser: client/labs/lab-09-session-isolation/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 90
+      flash_by_default: true
+      instructions: |
+        Scroll the operator guide. The stage band ends where the guide begins.
+        This is a signed-in probe, not a product inbox.
+        Fetch inbox, fetch media, write playback state, or update profile.
+        Each operation keeps the id and session generation from submission.
+        The screen shows whose session is active and whether a result was applied.
+        Mute, then a late result stays stale or cancelled, hides user A's bytes, and leaves the display off.
+        Sign out before the result and the stage stays signed out.
+        Sign in as user B before user A's result. B's generation differs and A's bytes are not applied.
+        Each button names the action you are about to take.
+        Scripted mode runs the decided scenarios without taps.
+        Capture default is 90 seconds. Flash follows flash_by_default unless FLASH=0.
+
   lab06:
     adapter: lab06
     lab_id: LAB-06
@@ -302,6 +373,38 @@ labs:
         not establish target visual or performance claims. Do not set BACKEND; LAB-06 has
         no service backend and rejects non-default backend values before target I/O.
       instructions_doc: client/labs/lab-06-stage-shell/README.md
+
+  lab11:
+    adapter: lab11
+    lab_id: LAB-11
+    evidence_slug: lab-11
+    project_dir: client/labs/lab-11-send-receipt
+    target: esp32s3
+    description: Frozen-capture send, receipt lookup, and failure probes
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-11-send-receipt-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-11-send-receipt-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    trace_parser: client/labs/lab-11-send-receipt/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 90
+      flash_by_default: true
+      instructions: |
+        Manual: the static scene shows fixture lab11-send/v1, the frozen capture
+        identity, the active acceptance condition, the expected result, the chunk
+        probe, and part queue capacity 8. Next, Run, Chunk, and Cancel return
+        without waiting for upload. Scripted: make lab.lab11.scripted runs every
+        decided and exploratory scenario against the lab server on port 8770.
+        Success phase text is condition met only after the active condition.
+        Sent is not an outcome. Capture default is 90 seconds.
+      instructions_doc: client/labs/lab-11-send-receipt/README.md
 
   lab12:
     adapter: lab12

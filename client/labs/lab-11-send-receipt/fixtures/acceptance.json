@@ -1,0 +1,5 @@
+{
+  "fixture": "lab11-send/v1",
+  "condition": "accept-on-archive-commit",
+  "conditions_compared": ["accept-on-archive-commit", "accept-on-recipient-publish"]
+}

@@ -11,7 +11,9 @@ enum Stage {
     kStageConnecting = 2,
     kStageRoster = 3,
     kStageEmptyHangout = 4,
-    kStageMuted = 5
+    kStageMuted = 5,
+    kStageSignedIn = 6,
+    kStageSignedOut = 7
 };
 
 constexpr char kTokenWifiUnavailable[] = "wifi_unavailable";
@@ -19,6 +21,8 @@ constexpr char kTokenConnecting[] = "connecting";
 constexpr char kTokenRoster[] = "roster";
 constexpr char kTokenEmptyHangout[] = "empty_hangout";
 constexpr char kTokenMuted[] = "muted";
+constexpr char kTokenSignedIn[] = "signed_in";
+constexpr char kTokenSignedOut[] = "signed_out";
 
 inline const char *stage_token(int stage)
 {
@@ -33,6 +37,10 @@ inline const char *stage_token(int stage)
         return kTokenEmptyHangout;
     case kStageMuted:
         return kTokenMuted;
+    case kStageSignedIn:
+        return kTokenSignedIn;
+    case kStageSignedOut:
+        return kTokenSignedOut;
     default:
         return "";
     }

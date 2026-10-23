@@ -1,0 +1,25 @@
+menu "LAB-09 session isolation"
+
+config LAB09_SCRIPTED
+    bool "Run decided session scenarios automatically"
+    default n
+    help
+        Run the decided signed-in scenarios without taps.
+
+config LAB09_BUILD_ID
+    string "Firmware build identity"
+    default "lab09-fw-v1-manual"
+
+config LAB09_BASE_URL
+    string "Synthetic fixture base URL"
+    default "http://127.0.0.1:8769"
+
+config LAB09_WIFI_SSID
+    string "Desk Wi-Fi SSID for a kit build"
+    default ""
+
+config LAB09_WIFI_PASSWORD
+    string "Desk Wi-Fi password for a kit build"
+    default ""
+
+endmenu

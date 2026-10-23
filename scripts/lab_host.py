@@ -292,7 +292,9 @@ def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Non
     for sidecar in deployment_defaults_sidecars(build_dir):
         sidecar.unlink(missing_ok=True)
     for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
-                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256"):
+                    build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256",
+                    build_dir.parent / f"{build_dir.name}.lab11.defaults",
+                    build_dir.parent / f"{build_dir.name}.lab11.defaults.sha256"):
         sidecar.unlink(missing_ok=True)
     print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
 
@@ -311,11 +313,24 @@ def _defaults_files_for_lab_build(
     frozen_build_id: str = "",
 ) -> list[Path]:
     defaults_files = _sdkconfig_defaults_files(spec.project_dir, var.sdkconfig_defaults)
+    if spec.lab_id in {"LAB-07", "LAB-08", "LAB-09"}:
+        if not kit.strip():
+            return defaults_files
+        from lab_login_reachability import write_login_lab_overlay
+        deployment = target.deployment if target is not None else load_active_deployment(config)
+        resolved = target.kit if target is not None else kit_for(deployment, kit)
+        overlay = write_login_lab_overlay(build_dir, spec.lab_id, resolved, deployment, config)
+        return defaults_files + [overlay]
     if spec.lab_id == "LAB-03":
         import lab03_build
         overlay, _fingerprint, _private = lab03_build.prepare(
             sys.modules[__name__], config, spec, var, build_dir, kit=kit, target=target)
         return defaults_files + [overlay]
+    if spec.lab_id == "LAB-11":
+        import lab11_build
+        overlay = lab11_build.prepare(
+            sys.modules[__name__], config, spec, var, build_dir, kit=kit, target=target)
+        return defaults_files + ([overlay] if overlay is not None else [])
     if not _variant_uses_deployment_kit_secrets(var.name):
         if spec.lab_id == "LAB-02" and var.name in {"recycle", "scripted", "eager"}:
             try:

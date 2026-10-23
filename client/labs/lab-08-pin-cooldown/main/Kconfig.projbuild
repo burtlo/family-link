@@ -1,0 +1,34 @@
+menu "LAB-08 PIN cooldown"
+
+config LAB08_SCRIPTED
+    bool "Run decided PIN scenarios automatically"
+    default n
+    help
+        Run the decided PIN scenarios without taps.
+        The retry delays, wrong-PIN copy, cooldown, and partial-entry return stay on the virtual clock.
+
+config LAB08_BUILD_ID
+    string "Firmware build identity"
+    default "lab08-fw-v1-manual"
+
+config LAB08_PIN_URL
+    string "Synthetic PIN URL"
+    default "http://127.0.0.1:8768/pin"
+
+config LAB08_OBSERVE_URL
+    string "Synthetic observation URL"
+    default "http://127.0.0.1:8768/observe"
+
+config LAB08_MALFORMED_URL
+    string "Synthetic malformed URL"
+    default "http://127.0.0.1:8768/malformed"
+
+config LAB08_WIFI_SSID
+    string "Desk Wi-Fi SSID for a kit build"
+    default ""
+
+config LAB08_WIFI_PASSWORD
+    string "Desk Wi-Fi password for a kit build"
+    default ""
+
+endmenu
