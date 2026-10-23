@@ -1,8 +1,20 @@
 {
   "lab_id": "LAB-16",
-  "lab_revision": "v2",
+  "lab_revision": "v3",
   "firmware_project": "lab16_attached_storage",
-  "fixture_revision": "lab16-sd/v2",
+  "fixture_revision": "lab16-sd/v3-v5",
   "criteria": "provisional",
-  "description": "Scripted SENSOR microSD probe plus 210s mic PCM stream to raw sectors"
+  "description": "SD-buffered mic capture and h22 diary upload; variants cover offline server, overlap record/upload, and live stream with SD failover",
+  "desk_results": {
+    "kit": "lynn-kit",
+    "port": "COM5",
+    "date": "2026-10-23",
+    "runs": {
+      "upload": "20261023-upload-run-b193b616",
+      "server-offline-during-record": "20261023-server-offline-during-record-run-d9566b03",
+      "overlap-record-during-upload": "20261023-overlap-record-during-upload-run-8d644d2f",
+      "live-stream-failover-during-record": "20261023-live-stream-failover-during-record-run-77755e4a"
+    },
+    "verdict": "PASS"
+  }
 }

@@ -43,4 +43,8 @@ menu "LAB-16 attached storage smoke"
         bool "Record a second message on SD while the first is still uploading"
         default n
 
+    config LAB16_LIVE_STREAM_FAILOVER
+        bool "Stream 1 s diary chunks during recording; buffer to SD on upload failure"
+        default n
+
 endmenu

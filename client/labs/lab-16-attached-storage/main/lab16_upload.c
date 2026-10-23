@@ -43,6 +43,8 @@ static void wav_header(uint8_t *p, uint32_t pcm_bytes)
 
 static uint8_t s_read_buf[64 * SECTOR_BYTES] DMA_ATTR __attribute__((aligned(4)));
 
+static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, int timeout_ms);
+
 static esp_err_t sd_read_locked(const sdmmc_card_t *card, SemaphoreHandle_t sd_mu, void *dst, size_t lba,
                                 size_t sectors)
 {
@@ -72,7 +74,43 @@ static esp_err_t read_pcm_chunk(const sdmmc_card_t *card, SemaphoreHandle_t sd_m
     return ESP_OK;
 }
 
-static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq)
+esp_err_t lab16_read_pcm_seq(const sdmmc_card_t *card, uint64_t start_lba, uint32_t seq, uint8_t *pcm_out,
+                             SemaphoreHandle_t sd_mu)
+{
+    const uint64_t pcm_start_lba = start_lba + 1;
+    return read_pcm_chunk(card, sd_mu, pcm_start_lba, seq, pcm_out);
+}
+
+int lab16_upload_pcm_chunk(int session_id, int seq, const uint8_t *pcm, size_t pcm_bytes, int max_attempts,
+                           int timeout_ms)
+{
+    if (pcm == NULL || pcm_bytes == 0 || max_attempts < 1) {
+        return -1;
+    }
+    if (timeout_ms < 1000) {
+        timeout_ms = 1000;
+    }
+    uint8_t *wav = heap_caps_malloc(WAV_HEADER_BYTES + CHUNK_PCM_BYTES, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (wav == NULL) {
+        return -1;
+    }
+    wav_header(wav, (uint32_t)pcm_bytes);
+    memcpy(wav + WAV_HEADER_BYTES, pcm, pcm_bytes);
+    int status = -1;
+    for (int attempt = 0; attempt < max_attempts; attempt++) {
+        status = post_chunk(wav, WAV_HEADER_BYTES + (int)pcm_bytes, session_id, seq, timeout_ms);
+        if (status == 200) {
+            break;
+        }
+        if (attempt + 1 < max_attempts) {
+            vTaskDelay(pdMS_TO_TICKS(400));
+        }
+    }
+    free(wav);
+    return status;
+}
+
+static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, int timeout_ms)
 {
     char url[160];
     snprintf(url, sizeof(url), "http://%s:%d/v1/diary", CONFIG_LAB16_SERVER_HOST, CONFIG_LAB16_SERVER_PORT);
@@ -93,7 +131,7 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq)
     esp_http_client_config_t cfg = {
         .url = url,
         .method = HTTP_METHOD_POST,
-        .timeout_ms = 20000,
+        .timeout_ms = timeout_ms,
     };
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
     char auth[128];
@@ -153,7 +191,7 @@ esp_err_t lab16_upload_pcm_from_sd(const sdmmc_card_t *card, uint64_t start_lba,
         memcpy(wav + WAV_HEADER_BYTES, pcm, CHUNK_PCM_BYTES);
         int status = -1;
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-            status = post_chunk(wav, WAV_HEADER_BYTES + CHUNK_PCM_BYTES, session_id, seq);
+            status = post_chunk(wav, WAV_HEADER_BYTES + CHUNK_PCM_BYTES, session_id, seq, 20000);
             if (status == 200) {
                 uploaded++;
                 if (seq % 30 == 0) {

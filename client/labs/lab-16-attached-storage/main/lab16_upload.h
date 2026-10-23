@@ -27,3 +27,9 @@ typedef struct {
 
 esp_err_t lab16_upload_job_start(lab16_upload_job_t *job);
 esp_err_t lab16_upload_job_wait(lab16_upload_job_t *job, uint32_t wait_bits, TickType_t timeout_ticks);
+
+esp_err_t lab16_read_pcm_seq(const sdmmc_card_t *card, uint64_t start_lba, uint32_t seq, uint8_t *pcm_out,
+                             SemaphoreHandle_t sd_mu);
+
+int lab16_upload_pcm_chunk(int session_id, int seq, const uint8_t *pcm, size_t pcm_bytes, int max_attempts,
+                           int timeout_ms);

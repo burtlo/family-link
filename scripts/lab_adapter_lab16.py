@@ -28,7 +28,11 @@ MAX_SERIAL_BYTES = 8 * 1024 * 1024
 VERIFY = Path("client/labs/lab-16-attached-storage/tools/verify_capture.py")
 VERIFY_OVERLAP = Path("client/labs/lab-16-attached-storage/tools/verify_overlap_capture.py")
 OVERLAP_VARIANT = "overlap-record-during-upload"
+LIVE_FAILOVER_VARIANT = "live-stream-failover-during-record"
 OVERLAP_CHUNKS_PER_SESSION = 180
+LIVE_STREAM_CHUNKS = 180
+LIVE_STREAM_MARKER = "LAB16_LIVE status=streaming"
+VERIFY_LIVE = Path("client/labs/lab-16-attached-storage/tools/verify_live_stream_capture.py")
 
 
 class OwnedServer:
@@ -115,10 +119,23 @@ class OwnedServer:
         return True
 
 
+def server_set_accepting(port: int, accepting: bool) -> None:
+    body = json.dumps({"accepting": accepting}).encode("utf-8")
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}/v1/control",
+        data=body,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=5) as response:
+        if response.status != 200:
+            raise RuntimeError(f"server control returned {response.status}")
+
+
 def capture_serial(device: str, path: Path, seconds: int, server: OwnedServer | None, repo_root: Path,
                    run_id: str, log_path: Path, device_token: str,
-                   delay_server_until_stream: bool, max_serial_seconds: int = MAX_SERIAL_SECONDS) -> tuple[
-    str, OwnedServer | None]:
+                   delay_server_until_stream: bool, max_serial_seconds: int = MAX_SERIAL_SECONDS,
+                   simulate_server_outage: bool = False) -> tuple[str, OwnedServer | None]:
     try:
         import serial
     except ImportError as exc:
@@ -141,6 +158,11 @@ def capture_serial(device: str, path: Path, seconds: int, server: OwnedServer | 
         ready_at = None
         harness = False
         cap_seconds = min(seconds, max_serial_seconds)
+        outage_off_at = None
+        outage_on_at = None
+        outage_armed = False
+        outage_server_down = False
+        outage_server_up = False
         with path.open("w", encoding="utf-8", newline="\n") as log:
             while True:
                 chunk = connection.read(2048)
@@ -161,6 +183,29 @@ def capture_serial(device: str, path: Path, seconds: int, server: OwnedServer | 
                         server.start(repo_root, run_id, log_path, device_token, PORT, bind="0.0.0.0",
                                      expected_chunks=None)
                         server_started = True
+                    if simulate_server_outage and server_started and LIVE_STREAM_MARKER in text and not outage_armed:
+                        outage_off_at = now + 30.0
+                        outage_on_at = now + 75.0
+                        outage_armed = True
+                    if (
+                        outage_armed
+                        and not outage_server_down
+                        and outage_off_at is not None
+                        and now >= outage_off_at
+                    ):
+                        server_set_accepting(PORT, False)
+                        print("LAB-16 host server accepting=false (simulated outage)", flush=True)
+                        outage_server_down = True
+                    if (
+                        outage_armed
+                        and outage_server_down
+                        and not outage_server_up
+                        and outage_on_at is not None
+                        and now >= outage_on_at
+                    ):
+                        server_set_accepting(PORT, True)
+                        print("LAB-16 host server accepting=true (outage ended)", flush=True)
+                        outage_server_up = True
                     if HARNESS_COMPLETE in text:
                         harness = True
                 if ready_at is None and now >= started + BOOT_TIMEOUT_SECONDS:
@@ -175,7 +220,7 @@ def capture_serial(device: str, path: Path, seconds: int, server: OwnedServer | 
             connection.close()
 
 
-def verify_overlap_server(port: int, device_token: str) -> list[str]:
+def verify_server_session(port: int, device_token: str, session: str, need: int) -> list[str]:
     errors: list[str] = []
     try:
         req = urllib.request.Request(
@@ -186,30 +231,39 @@ def verify_overlap_server(port: int, device_token: str) -> list[str]:
             payload = json.loads(response.read().decode("utf-8"))
     except Exception as exc:
         return [f"server diary GET failed: {exc}"]
-    by_session: dict[str, set[int]] = {}
+    seqs: set[int] = set()
     for row in payload.get("chunks") or []:
-        sess = str(row.get("session") or "")
+        if str(row.get("session") or "") != session:
+            continue
         try:
-            seq = int(row.get("seq"))
+            seqs.add(int(row.get("seq")))
         except (TypeError, ValueError):
             continue
-        by_session.setdefault(sess, set()).add(seq)
-    for sess in ("1", "2"):
-        seqs = by_session.get(sess, set())
-        need = OVERLAP_CHUNKS_PER_SESSION
-        if len(seqs) != need:
-            errors.append(f"server session {sess}: expected {need} chunks, got {len(seqs)}")
-        missing = [i for i in range(need) if i not in seqs]
-        if missing and len(missing) <= 5:
-            errors.append(f"server session {sess}: missing seq {missing}")
-        elif missing:
-            errors.append(f"server session {sess}: missing {len(missing)} seq values")
+    if len(seqs) != need:
+        errors.append(f"server session {session}: expected {need} chunks, got {len(seqs)}")
+    missing = [i for i in range(need) if i not in seqs]
+    if missing and len(missing) <= 5:
+        errors.append(f"server session {session}: missing seq {missing}")
+    elif missing:
+        errors.append(f"server session {session}: missing {len(missing)} seq values")
+    return errors
+
+
+def verify_overlap_server(port: int, device_token: str) -> list[str]:
+    errors: list[str] = []
+    errors.extend(verify_server_session(port, device_token, "1", OVERLAP_CHUNKS_PER_SESSION))
+    errors.extend(verify_server_session(port, device_token, "2", OVERLAP_CHUNKS_PER_SESSION))
     return errors
 
 
 def classify_capture(post_reset: str, cleanup_ok: bool, repo_root: Path, serial_path: Path, *,
                      variant: str = "upload", server_errors: list[str] | None = None) -> dict:
-    verify_path = VERIFY_OVERLAP if variant == OVERLAP_VARIANT else VERIFY
+    if variant == OVERLAP_VARIANT:
+        verify_path = VERIFY_OVERLAP
+    elif variant == LIVE_FAILOVER_VARIANT:
+        verify_path = VERIFY_LIVE
+    else:
+        verify_path = VERIFY
     proc = subprocess.run(
         [sys.executable, str(repo_root / verify_path), str(serial_path)],
         capture_output=True,
@@ -278,8 +332,11 @@ class Adapter:
         seconds = args.seconds if getattr(args, "seconds", None) is not None else spec.capture_seconds_default
         delay_server = selected == "server-offline-during-record"
         overlap = selected == OVERLAP_VARIANT
+        live_failover = selected == LIVE_FAILOVER_VARIANT
         if overlap:
             seconds = max(seconds, 900)
+        if live_failover:
+            seconds = max(seconds, 600)
 
         def execute(context, evidence):
             identity = server_identity(host.ROOT)
@@ -294,7 +351,12 @@ class Adapter:
                 device_token = lab16_build._token_for_kit(target.deployment, target.kit)
                 log_path = evidence.run_dir / "server.log"
                 serial_path = host.ROOT / "logs/device/labs/lab-16" / context.run_id / "serial.txt"
-                expected_chunks = OVERLAP_CHUNKS_PER_SESSION * 2 if overlap else None
+                if overlap:
+                    expected_chunks = OVERLAP_CHUNKS_PER_SESSION * 2
+                elif live_failover:
+                    expected_chunks = LIVE_STREAM_CHUNKS
+                else:
+                    expected_chunks = None
                 if not delay_server:
                     server.start(host.ROOT, context.run_id, log_path, device_token, PORT, bind="0.0.0.0",
                                  expected_chunks=expected_chunks)
@@ -308,7 +370,12 @@ class Adapter:
                     host.flash_lab_build(config, build_dir, port)
                     time.sleep(1.0)
                 print(f"LAB-16 capture up to {seconds}s variant={selected}", flush=True)
-                cap_limit = MAX_SERIAL_SECONDS_OVERLAP if overlap else MAX_SERIAL_SECONDS
+                if overlap:
+                    cap_limit = MAX_SERIAL_SECONDS_OVERLAP
+                elif live_failover:
+                    cap_limit = 900
+                else:
+                    cap_limit = MAX_SERIAL_SECONDS
                 post_reset, delayed = capture_serial(
                     target.device,
                     serial_path,
@@ -320,13 +387,17 @@ class Adapter:
                     device_token,
                     delay_server,
                     cap_limit,
+                    simulate_server_outage=live_failover,
                 )
                 if delayed is not None:
                     server = delayed
                 captured = True
                 server_errors: list[str] = []
-                if overlap and server.proc is not None and server.proc.poll() is None:
-                    server_errors = verify_overlap_server(PORT, device_token)
+                if server.proc is not None and server.proc.poll() is None:
+                    if overlap:
+                        server_errors = verify_overlap_server(PORT, device_token)
+                    elif live_failover:
+                        server_errors = verify_server_session(PORT, device_token, "1", LIVE_STREAM_CHUNKS)
                 cleanup_ok = server.stop() if server.proc is not None else True
             except KeyboardInterrupt:
                 failure = "KeyboardInterrupt"
@@ -349,7 +420,7 @@ class Adapter:
                     host.ROOT,
                     serial_path,
                     variant=selected,
-                    server_errors=server_errors if overlap else None,
+                    server_errors=server_errors if (overlap or live_failover) else None,
                 )
                 if failure == "KeyboardInterrupt":
                     result["workflow_status"] = "INCOMPLETE"

@@ -517,6 +517,208 @@ static esp_err_t validate_written_pcm(lab16_sd_session_t *session, uint64_t star
     return silent ? ESP_ERR_INVALID_STATE : ESP_OK;
 }
 
+#ifdef CONFIG_LAB16_LIVE_STREAM_FAILOVER
+enum {
+    LIVE_CHUNK_BYTES = SAMPLE_RATE * 2,
+    LIVE_UPLOAD_ATTEMPTS = 2,
+    LIVE_DRAIN_ATTEMPTS = 6,
+    LIVE_HTTP_TIMEOUT_MS = 5000,
+    LIVE_DRAIN_TIMEOUT_MS = 20000,
+};
+
+static bool run_live_failover_harness(lab16_sd_session_t *session, const lab16_sd_probe_t *probe)
+{
+    const uint32_t stream_seconds = (uint32_t)CONFIG_LAB16_STREAM_SECONDS;
+    const uint64_t start_lba = (uint64_t)CONFIG_LAB16_PCM_START_LBA;
+    const uint64_t target_pcm_bytes = pcm_bytes_for_seconds(stream_seconds);
+    const uint64_t pcm_sectors = (target_pcm_bytes + SECTOR_BYTES - 1) / SECTOR_BYTES;
+    const uint64_t end_lba = start_lba + 1 + pcm_sectors;
+
+    if (end_lba > probe->sectors) {
+        printf("LAB16_LIVE status=failed reason=capacity\n");
+        return false;
+    }
+    if (hardware_mute_engaged()) {
+        printf("LAB16_LIVE status=failed reason=hardware_mute_engaged\n");
+        return false;
+    }
+    if (!lab16_station_join()) {
+        printf("LAB16_LIVE status=failed reason=wifi_join\n");
+        return false;
+    }
+
+    esp_codec_dev_handle_t mic = bsp_audio_codec_microphone_init();
+    if (mic == NULL) {
+        printf("LAB16_LIVE status=failed reason=mic_init\n");
+        return false;
+    }
+    esp_codec_dev_sample_info_t fs = {
+        .sample_rate = SAMPLE_RATE,
+        .channel = PCM_CHANNELS,
+        .bits_per_sample = PCM_BITS,
+    };
+    if (esp_codec_dev_open(mic, &fs) != ESP_OK) {
+        printf("LAB16_LIVE status=failed reason=mic_open\n");
+        return false;
+    }
+    (void)esp_codec_dev_set_in_mute(mic, false);
+    (void)esp_codec_dev_set_in_gain(mic, 42.0f);
+
+    lab16_pcm_header_t hdr;
+    memset(&hdr, 0, sizeof(hdr));
+    memcpy(hdr.magic, "LAB16PCM", 8);
+    hdr.version = 1;
+    hdr.sample_rate = SAMPLE_RATE;
+    hdr.channels = PCM_CHANNELS;
+    hdr.bits = PCM_BITS;
+    hdr.pcm_bytes = (uint32_t)target_pcm_bytes;
+    hdr.start_lba = (uint32_t)start_lba;
+
+    lab16_sd_writer_t writer;
+    writer_init(&writer, start_lba);
+    if (writer_write_header_sector(session, &writer, &hdr, NULL) != ESP_OK) {
+        (void)esp_codec_dev_close(mic);
+        printf("LAB16_LIVE status=failed reason=header_write\n");
+        return false;
+    }
+
+    printf("LAB16_LIVE status=streaming session=1 seconds=%" PRIu32 " start_lba=%" PRIu32 "\n", stream_seconds,
+           (uint32_t)start_lba);
+    fflush(stdout);
+
+    bool uploaded_live[CONFIG_LAB16_STREAM_SECONDS];
+    memset(uploaded_live, 0, sizeof(uploaded_live));
+    int failover_events = 0;
+    int live_ok = 0;
+    uint8_t *sec_pcm = heap_caps_malloc(LIVE_CHUNK_BYTES, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (sec_pcm == NULL) {
+        (void)esp_codec_dev_close(mic);
+        printf("LAB16_LIVE status=failed reason=no_mem\n");
+        return false;
+    }
+
+    const int64_t start_us = esp_timer_get_time();
+    int last_progress_s = 0;
+    esp_err_t err = ESP_OK;
+
+    for (uint32_t seq = 0; seq < stream_seconds && err == ESP_OK; seq++) {
+        size_t filled = 0;
+        while (filled < LIVE_CHUNK_BYTES) {
+            size_t want = MIC_CHUNK_BYTES;
+            if (want > LIVE_CHUNK_BYTES - filled) {
+                want = LIVE_CHUNK_BYTES - filled;
+            }
+            if (esp_codec_dev_read(mic, mic_chunk, want) != ESP_CODEC_DEV_OK) {
+                err = ESP_FAIL;
+                break;
+            }
+            err = writer_append(session, &writer, mic_chunk, want, NULL);
+            if (err != ESP_OK) {
+                break;
+            }
+            memcpy(sec_pcm + filled, mic_chunk, want);
+            filled += want;
+        }
+        if (err != ESP_OK) {
+            break;
+        }
+
+        int http = lab16_upload_pcm_chunk(1, (int)seq, sec_pcm, LIVE_CHUNK_BYTES, LIVE_UPLOAD_ATTEMPTS,
+                                          LIVE_HTTP_TIMEOUT_MS);
+        if (http == 200) {
+            uploaded_live[seq] = true;
+            live_ok++;
+        } else {
+            failover_events++;
+            printf("LAB16_FAILOVER seq=%" PRIu32 " reason=http_%d\n", seq, http);
+            fflush(stdout);
+        }
+
+        int64_t now_us = esp_timer_get_time();
+        int elapsed_s = (int)((now_us - start_us) / 1000000LL);
+        if (elapsed_s >= last_progress_s + PROGRESS_INTERVAL_S) {
+            last_progress_s = elapsed_s - (elapsed_s % PROGRESS_INTERVAL_S);
+            printf("LAB16_LIVE progress elapsed_s=%d seq=%" PRIu32 " live_ok=%d failover=%d\n", elapsed_s, seq,
+                   live_ok, failover_events);
+            fflush(stdout);
+        }
+    }
+
+    (void)esp_codec_dev_close(mic);
+    free(sec_pcm);
+
+    if (err == ESP_OK) {
+        err = writer_flush_full(session, &writer, NULL);
+    }
+    const int64_t elapsed_ms = (esp_timer_get_time() - start_us) / 1000LL;
+    if (err != ESP_OK || writer.pcm_bytes < target_pcm_bytes) {
+        printf("LAB16_LIVE status=failed error=%d pcm_bytes=%" PRIu64 "\n", (int)err, writer.pcm_bytes);
+        return false;
+    }
+
+    printf("LAB16_STREAM status=complete elapsed_ms=%" PRId64 " pcm_bytes=%" PRIu64
+           " sectors_written=%" PRIu32 " driver_writes=%" PRIu32 " start_lba=%" PRIu32
+           " sample_rate=%d\n",
+           elapsed_ms, writer.pcm_bytes, (uint32_t)(1 + pcm_sectors), writer.driver_writes, (uint32_t)start_lba,
+           SAMPLE_RATE);
+    fflush(stdout);
+
+    if (validate_written_pcm(session, start_lba, target_pcm_bytes) != ESP_OK) {
+        return false;
+    }
+
+    int drain_ok = 0;
+    int drain_fail = 0;
+    for (uint32_t seq = 0; seq < stream_seconds; seq++) {
+        if (uploaded_live[seq]) {
+            continue;
+        }
+        uint8_t *pcm = heap_caps_malloc(LIVE_CHUNK_BYTES, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (pcm == NULL) {
+            drain_fail++;
+            continue;
+        }
+        if (lab16_read_pcm_seq(&session->card, start_lba, seq, pcm, NULL) != ESP_OK) {
+            free(pcm);
+            drain_fail++;
+            continue;
+        }
+        int http = lab16_upload_pcm_chunk(1, (int)seq, pcm, LIVE_CHUNK_BYTES, LIVE_DRAIN_ATTEMPTS,
+                                          LIVE_DRAIN_TIMEOUT_MS);
+        free(pcm);
+        if (http == 200) {
+            uploaded_live[seq] = true;
+            drain_ok++;
+        } else {
+            drain_fail++;
+        }
+    }
+
+    printf("LAB16_LIVE status=drain complete recovered=%d failed=%d failover_events=%d\n", drain_ok, drain_fail,
+           failover_events);
+    fflush(stdout);
+
+    int total_uploaded = 0;
+    for (uint32_t seq = 0; seq < stream_seconds; seq++) {
+        if (uploaded_live[seq]) {
+            total_uploaded++;
+        }
+    }
+
+    if (drain_fail != 0 || total_uploaded != (int)stream_seconds) {
+        printf("LAB16_UPLOAD session=1 status=failed uploaded=%d failed=%d expected=%" PRIu32 "\n", total_uploaded,
+               drain_fail, stream_seconds);
+        return false;
+    }
+
+    printf("LAB16_UPLOAD session=1 status=complete uploaded=%d failed=0\n", total_uploaded);
+    printf("LAB16_LIVE status=complete live_uploaded=%d drained=%d failover_events=%d\n", live_ok, drain_ok,
+           failover_events);
+    fflush(stdout);
+    return true;
+}
+#endif
+
 #ifdef CONFIG_LAB16_OVERLAP_RECORD_DURING_UPLOAD
 static bool run_overlap_harness(lab16_sd_session_t *session, const lab16_sd_probe_t *probe)
 {
@@ -613,6 +815,8 @@ void app_main(void)
 {
 #ifdef CONFIG_LAB16_OVERLAP_RECORD_DURING_UPLOAD
     printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v4 harness=1\n", CONFIG_LAB16_BUILD_ID);
+#elif defined(CONFIG_LAB16_LIVE_STREAM_FAILOVER)
+    printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v5 harness=1\n", CONFIG_LAB16_BUILD_ID);
 #else
     printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v3 harness=1\n", CONFIG_LAB16_BUILD_ID);
 #endif
@@ -638,6 +842,8 @@ void app_main(void)
     if (probe.err == ESP_OK && probe.read_lba0_ok) {
 #ifdef CONFIG_LAB16_OVERLAP_RECORD_DURING_UPLOAD
         harness_ok = run_overlap_harness(&session, &probe);
+#elif defined(CONFIG_LAB16_LIVE_STREAM_FAILOVER)
+        harness_ok = run_live_failover_harness(&session, &probe);
 #else
         bool stream_ok = false;
         bool audio_ok = false;

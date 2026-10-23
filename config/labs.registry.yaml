@@ -501,6 +501,11 @@ labs:
         sdkconfig_defaults:
           - sdkconfig.defaults
           - sdkconfig.defaults.overlap
+      live-stream-failover-during-record:
+        build_dir: build/labs/lab-16-attached-storage-livestream
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.livestream
     run:
       capture_seconds_default: 720
       flash_by_default: true
@@ -509,6 +514,7 @@ labs:
         Device records 210 s PCM to SD, then uploads 210 x 1 s WAV chunks to /v1/diary.
         server-offline-during-record: server stays down until LAB16_STREAM completes, then starts for upload.
         overlap-record-during-upload: two 180 s messages; upload session 1 while recording message 2 on SD.
+        live-stream-failover-during-record: 180 s live diary chunks; host drops accepting mid-record; SD drain after.
         Success: LAB16_UPLOAD status=complete uploaded=210 and LAB16_HARNESS_DONE status=complete.
         Overlap success: both sessions 180 chunks on server; verify_overlap_capture.py.
         Verify: python client/labs/lab-16-attached-storage/tools/verify_capture.py <log>
