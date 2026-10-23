@@ -61,7 +61,7 @@ _SETTING_SPECS: dict[str, dict[str, object]] = {
 _COMMAND_SECTION_KEYS: dict[str, dict[str, object]] = {
     "argv": {"type": "json_string_array", "required": True},
     "cwd": {"type": "repo_relative_path", "required": False, "default": "."},
-    "timeout_seconds": {"type": "integer", "required": False, "default": 900, "minimum": 1},
+    "timeout_seconds": {"type": "integer", "required": False, "default": 900, "minimum": 0},
 }
 
 _FLOW_SECTION_KEYS: dict[str, dict[str, object]] = {
@@ -315,7 +315,7 @@ class ProjectConfig:
         timeout = self.integer(
             f"{section}.timeout_seconds",
             default=900,
-            minimum=1,
+            minimum=0,
         )
         return Command(name, tuple(argv_value), cwd, timeout)
 
@@ -360,11 +360,16 @@ class ProjectConfig:
             return self.boolean(qualified_name)
         if kind == "integer":
             default = 900 if qualified_name.endswith(".timeout_seconds") else None
-            minimum = 1 if (
+            if qualified_name.startswith("command.") and qualified_name.endswith(".timeout_seconds"):
+                minimum = 0
+            elif (
                 qualified_name.endswith(".timeout_seconds")
                 or qualified_name == "project.config_version"
                 or qualified_name == "firmware.boot_seconds"
-            ) else None
+            ):
+                minimum = 1
+            else:
+                minimum = None
             return self.integer(qualified_name, default=default, minimum=minimum)
         if kind == "version":
             return ".".join(str(part) for part in self.version_tuple(qualified_name))

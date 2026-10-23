@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 import socket
 import subprocess
 import tempfile
@@ -31,7 +32,7 @@ class Lab11ModelTests(unittest.TestCase):
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory(prefix="lab11-model-")
         cls.binary = Path(cls.temp.name) / "lab11_model_test.exe"
-        subprocess.run([
+        compile_cmd = [
             _compiler(), "-std=c11", "-Wall", "-Wextra", "-Werror", "-pedantic",
             "-I", str(LAB / "components/lab11_capture/include"),
             "-I", str(LAB / "components/lab11_send/include"),
@@ -39,12 +40,16 @@ class Lab11ModelTests(unittest.TestCase):
             str(LAB / "components/lab11_capture/lab11_sha256.c"),
             str(LAB / "components/lab11_send/lab11_send.c"),
             str(LAB / "tests/model_test.c"),
-            "-o", str(cls.binary), "-lws2_32",
-        ], check=True, cwd=ROOT)
+            "-o", str(cls.binary),
+        ]
+        if sys.platform == "win32":
+            compile_cmd.append("-lws2_32")
+        subprocess.run(compile_cmd, check=True, cwd=ROOT)
         import importlib.util
         spec = importlib.util.spec_from_file_location(
             "lab11_fixture_server_model", ROOT / "server/labs/lab-11-send-receipt/server.py")
         cls.server = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = cls.server
         spec.loader.exec_module(cls.server)
         probe = socket.socket()
         probe.bind(("127.0.0.1", 0))

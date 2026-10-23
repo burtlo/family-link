@@ -421,7 +421,8 @@ class Lab09HostTests(unittest.TestCase):
             parser.parse(zero + zero, "run-duplicate")
 
     def test_registry_help(self):
-        python = ROOT / ".venv/Scripts/python.exe"
+        venv_python = ROOT / ".venv" / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
+        python = venv_python if venv_python.is_file() else Path(sys.executable)
         validate = subprocess.run([str(python), "scripts/lab_registry.py", "validate"], cwd=ROOT,
                                   capture_output=True, text=True)
         self.assertEqual(validate.returncode, 0, validate.stderr)

@@ -99,6 +99,11 @@ class ProjectConfigTests(unittest.TestCase):
         self.assertEqual(REPO, command.cwd)
         self.assertGreater(command.timeout_seconds, 0)
 
+    def test_server_command_allows_zero_timeout(self) -> None:
+        config = ProjectConfig(environ={})
+        self.assertEqual(0, config.command("server").timeout_seconds)
+        config.validate()
+
     def test_unknown_flow_command_fails_validation(self) -> None:
         with tempfile.TemporaryDirectory() as raw_dir:
             path = Path(raw_dir) / "invalid.ini"

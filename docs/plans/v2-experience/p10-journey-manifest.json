@@ -1,0 +1,97 @@
+{
+  "package_id": "P10",
+  "fixture": "p1-core-journey/v1",
+  "server": "server/device",
+  "resource_peaks": "unmeasured",
+  "l2_waiver": false,
+  "regression_battery": "python3 -m unittest scripts.tests.test_product_journey_host scripts.tests.test_product_login_host scripts.tests.test_product_session_host scripts.tests.test_product_inbox_host scripts.tests.test_product_send_host scripts.tests.test_product_volume_model",
+  "scenarios": [
+    {
+      "id": "boot-mute-unmute",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "client/shared/product_journey/journey.cpp",
+      "scenario_key": "boot-volume-mute"
+    },
+    {
+      "id": "roster-ready",
+      "lab13_overlap": true,
+      "evidence": "L2",
+      "driver": "scripts/tests/test_product_journey_host.py::test_p10_l2_roster_pin_on_p1"
+    },
+    {
+      "id": "pin-login",
+      "lab13_overlap": true,
+      "evidence": "L2",
+      "driver": "scripts/tests/test_product_journey_host.py::test_p10_l2_roster_pin_on_p1"
+    },
+    {
+      "id": "inbox-play-prefix",
+      "lab13_overlap": true,
+      "evidence": "L2",
+      "driver": "scripts/tests/test_product_journey_host.py::test_p10_l2_inbox_play_prefix_on_p1"
+    },
+    {
+      "id": "record-send-receipt",
+      "lab13_overlap": true,
+      "evidence": "L2",
+      "notes": "Record capture remains P7 model/scripted; send+receipt exercised on P1 wire in journey host test.",
+      "driver": "scripts/tests/test_product_journey_host.py::test_p10_l2_send_and_receipt_on_p1"
+    },
+    {
+      "id": "volume-boot-roundtrip",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "boot-volume-mute"
+    },
+    {
+      "id": "mute-from-volume",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "boot-volume-mute"
+    },
+    {
+      "id": "roster-during-pin",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "roster-during-pin"
+    },
+    {
+      "id": "inbox-snapshot-during-playback",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "inbox-snapshot-during-playback"
+    },
+    {
+      "id": "refresh-during-record-volume",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "refresh-during-record-volume"
+    },
+    {
+      "id": "boot-during-pending-send",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "boot-during-pending-send"
+    },
+    {
+      "id": "send-while-inbox-changes",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "send-while-inbox-changes"
+    },
+    {
+      "id": "mute-during-media-fetch",
+      "lab13_overlap": true,
+      "evidence": "L1",
+      "driver": "mute-during-media-fetch"
+    },
+    {
+      "id": "shell-stage-router",
+      "lab13_overlap": false,
+      "evidence": "L0",
+      "notes": "Device stage glue only; no kit capture in P10 brief.",
+      "driver": "client/device/main/product_stage_router.cpp"
+    }
+  ]
+}

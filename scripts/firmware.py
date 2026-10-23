@@ -75,12 +75,37 @@ def publish(staging, artifacts, build_id):
     return destination
 
 
-def build(config):
+def _invalidate_stale_sdkconfig(defaults_path: Path, build_dir: Path) -> None:
+    """Drop generated sdkconfig when sdkconfig.defaults changes (new Kconfig options)."""
+    sdkconfig = build_dir / "sdkconfig"
+    meta = build_dir / "sdkconfig.defaults.sha256"
+    if not defaults_path.is_file():
+        return
+    digest = hashlib.sha256(defaults_path.read_bytes()).hexdigest()
+    if sdkconfig.is_file() and (not meta.is_file() or meta.read_text(encoding="utf-8").strip() != digest):
+        print(f"Removing stale {sdkconfig} (sdkconfig.defaults changed)")
+        sdkconfig.unlink()
+        old = build_dir / "sdkconfig.old"
+        if old.is_file():
+            old.unlink()
+    meta.write_text(digest + "\n", encoding="utf-8")
+
+
+def build(config, product_kit: str = ""):
     if config.text("idf.target", required=True) != "esp32s3":
         raise ProjectConfigError("Bootstrap currently supports esp32s3 only")
     env, idf = idf_environment(config)
     source = config.path_value("firmware.source")
     output = config.path_value("firmware.build")
+    _invalidate_stale_sdkconfig(source / "sdkconfig.defaults", output)
+    if product_kit.strip():
+        from product_device_sdkconfig import apply_product_kit_build
+
+        defaults_files = apply_product_kit_build(config, product_kit.strip())
+        env = {
+            **env,
+            "SDKCONFIG_DEFAULTS": ";".join(str(path) for path in defaults_files),
+        }
     artifacts = config.path_value("firmware.artifacts")
     output.mkdir(parents=True, exist_ok=True)
     artifacts.mkdir(parents=True, exist_ok=True)

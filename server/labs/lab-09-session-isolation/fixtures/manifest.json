@@ -5,16 +5,16 @@
   "server_version": "lab09-server/v1",
   "files": {
     "users.json": {
-      "bytes": 84,
-      "sha256": "f5b361010036d4f0d3a9474238ca1f683e040f42409faabc09fcdbd01a1a2442"
+      "bytes": 83,
+      "sha256": "47a89fcdf06af9b6e2bb56533167153140add55e5bcbfb3d6ceb7cac2eb1e52e"
     },
     "inbox.json": {
-      "bytes": 109,
-      "sha256": "3ff9ac3154a8b70117d67bb6f5d2474770994d4d56f8139b03c4986317abf6d1"
+      "bytes": 108,
+      "sha256": "2df2247978e2a2d50a80e3fa6b883204671d6d23999ee570310e192501706fcc"
     },
     "malformed.json": {
-      "bytes": 13,
-      "sha256": "ff0f8e4fa08521bda30b2af423b9c4f6cf682cce2a722d0cf2c9f2e3ebfc3bdf"
+      "bytes": 12,
+      "sha256": "3cd7408dae33b7e207810b87be3bcf40b8f7b5d555e61344b7143ab8ea952aa0"
     }
   }
 }

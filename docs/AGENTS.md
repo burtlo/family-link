@@ -8,8 +8,9 @@
 |------|------|
 | [`docs/`](README.md) | Active product documentation, standards, v1 assessments, experience-spec workflow |
 | [`client/device/`](../client/device/) | Product v2 firmware (bootstrap today) |
-| [`client/labs/`](../client/labs/) | **Projected** per-lab ESP-IDF projects — see [`docs/labs/repository-layout.md`](labs/repository-layout.md) |
-| [`server/labs/`](../server/labs/) | **Projected** lab fixture servers |
+| [`client/labs/`](../client/labs/) | Per-lab ESP-IDF projects — see [`docs/labs/repository-layout.md`](labs/repository-layout.md) |
+| [`server/device/`](../server/device/) | Product v2 desk wire server (`make server`) |
+| [`server/labs/`](../server/labs/) | Per-lab fixture servers |
 | [`../config/host.defaults.ini`](../config/host.defaults.ini) | Host commands, flows, and toolchain defaults |
 | [`../config/deployment/`](../config/deployment/example.yaml) | Product roster (example + gitignored `local.yaml`) |
 | [`../config/labs.registry.yaml`](../config/labs.registry.yaml) | Device labs host registry (`make lab.<name>`) |
@@ -59,7 +60,7 @@ When sources conflict, state the conflict and required decision. Do not silently
 | Client/server exchange, identity, retry, and recovery contract | `docs/product/communication-contracts/<scope>.md` |
 | Product policy or authoring workflow | `docs/product/` |
 | Portable client rules | `docs/standards/` |
-| Product firmware | [`client/device/`](../client/device/) |
+| Product firmware / desk server | [`client/device/`](../client/device/) · [`server/device/`](../server/device/) |
 | Lab firmware / lab servers | [`client/labs/<slug>/`](../client/labs/) · [`server/labs/<slug>/`](../server/labs/) per [`labs/repository-layout.md`](labs/repository-layout.md) |
 | Lab evidence reports | [`docs/labs/evidence/`](labs/evidence/README.md) |
 | Other new implementation | Outside `poc-v1/` at repo root |

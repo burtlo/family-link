@@ -13,8 +13,10 @@ SOURCES = [
     LOGIN / "fl_product_login/session.cpp",
     LOGIN / "fl_product_login/pin_session.cpp",
     LOGIN / "fl_product_login/scoped_session.cpp",
+    LOGIN / "fl_product_login/credential_session.cpp",
     LOGIN / "fl_product_login/pollers.cpp",
     LOGIN / "fl_product_login/p1_wire.cpp",
+    LOGIN / "fl_product_login/workers.cpp",
     LOGIN / "tests/product_login_model_test.cpp",
 ]
 STAGE_DEFINITION = re.compile(

@@ -15,12 +15,13 @@ from contextlib import contextmanager
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-LAB_SERVER = ROOT / "server/labs/lab-p1-core-journey-wire"
-FIXTURES = LAB_SERVER / "fixtures"
-RUNTIME = LAB_SERVER / "runtime"
+DEVICE_SERVER = ROOT / "server/device"
+LAB_SERVER = DEVICE_SERVER  # legacy name for imports
+FIXTURES = DEVICE_SERVER / "fixtures"
+RUNTIME = DEVICE_SERVER / "runtime"
 
 _SERVER_SPEC = importlib.util.spec_from_file_location(
-    "p1_fixture_server", LAB_SERVER / "server.py")
+    "device_p1_server", DEVICE_SERVER / "main/server.py")
 server = importlib.util.module_from_spec(_SERVER_SPEC)
 import sys
 
@@ -103,8 +104,8 @@ class P1HostTests(unittest.TestCase):
             for child in RUNTIME.iterdir():
                 if child.name != ".gitignore":
                     child.unlink()
-        server.STORE.reset_runtime()
         server.STORE.accepted.clear()
+        server.STORE.reset_runtime()
 
     def _login(self, client: _Client) -> str:
         operation_id = str(uuid.uuid4())
@@ -125,7 +126,7 @@ class P1HostTests(unittest.TestCase):
         return body["session"]
 
     def test_manifest_and_contract_revisions(self):
-        manifest = json.loads((LAB_SERVER / "manifest.lab.json").read_text(encoding="utf-8"))
+        manifest = json.loads((DEVICE_SERVER / "manifest.device.json").read_text(encoding="utf-8"))
         fixture = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
         self.assertEqual(fixture["contracts"]["login"], "0.13")
         self.assertEqual(fixture["contracts"]["envelope"], "0.10")
@@ -250,7 +251,7 @@ class P1HostTests(unittest.TestCase):
                 "schema": "fl.message-create/2",
                 "client_message_id": client_id,
                 "recipient_user_ids": ["user-jordan"],
-                "audio": {"codec": "pcm_s16le", "sample_rate_hz": 16000, "channels": 1, "duration_ms": 1000},
+                "audio": {"codec": "pcm_s16le", "sample_rate_hz": 16000, "channels": 1, "duration_ms": 500},
             }
             status, open_body = client.json_request("POST", "/v2/outgoing", create, bearer=session)
             self.assertEqual(status, 200)
@@ -274,7 +275,7 @@ class P1HostTests(unittest.TestCase):
                     "parts": 1,
                     "byte_count": len(pcm),
                     "sha256": __import__("hashlib").sha256(pcm).hexdigest(),
-                    "duration_ms": 1000,
+                    "duration_ms": 500,
                 },
             }
             status, receipt = client.json_request(

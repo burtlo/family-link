@@ -61,7 +61,7 @@ class Lab11HostTests(unittest.TestCase):
         binary_dir = tempfile.TemporaryDirectory(prefix="lab11-host-")
         cls.temp = binary_dir
         binary = Path(binary_dir.name) / "lab11_model_test.exe"
-        subprocess.run([
+        compile_cmd = [
             _compiler(), "-std=c11", "-Wall", "-Wextra", "-Werror", "-pedantic",
             "-I", str(LAB / "components/lab11_capture/include"),
             "-I", str(LAB / "components/lab11_send/include"),
@@ -69,8 +69,11 @@ class Lab11HostTests(unittest.TestCase):
             str(LAB / "components/lab11_capture/lab11_sha256.c"),
             str(LAB / "components/lab11_send/lab11_send.c"),
             str(LAB / "tests/model_test.c"),
-            "-o", str(binary), "-lws2_32",
-        ], check=True, cwd=ROOT)
+            "-o", str(binary),
+        ]
+        if sys.platform == "win32":
+            compile_cmd.append("-lws2_32")
+        subprocess.run(compile_cmd, check=True, cwd=ROOT)
         probe = socket.socket()
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]

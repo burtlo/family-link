@@ -23,8 +23,9 @@ family-link/
 │       ├── kconfig/                 # Shared lab_common.projbuild (e.g. LAB_AUTO_HARNESS)
 │       └── <lab-folder>/          # One ESP-IDF project per row in lab registry
 ├── server/
+│   ├── device/                    # Product desk wire server (`make server`; mirrors client/device)
 │   └── labs/
-│       └── <lab-folder>/          # Python (or other) fixture servers; isolated test data
+│       └── <lab-folder>/          # Per-lab fixture servers; isolated test data
 ├── build/
 │   ├── device/                    # Product build (host firmware.build)
 │   └── labs/

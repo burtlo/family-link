@@ -40,6 +40,15 @@ echo "    make flash.<kit>   Flash a selected kit (for example, alpha or beta)."
 echo "    make flash.all     Preflight every roster kit, then flash sequentially."
 echo "    make device.bind KIT=<kit> PORT=<port>  Explicit one-time USB binding."
 echo
+echo "  PRODUCT SERVER"
+echo "    make server        P1 core-journey wire fixture (0.0.0.0:8777; alias: make lab.p1.server)."
+echo
+echo "  PRODUCT APP (same firmware tree; lab-style kit selection on flash)"
+echo "    make app           Build and flash (app:build then app:flash)."
+echo "    make app:build     Build client/device and publish a firmware package."
+echo "    make app:flash     Flash current package; auto-picks one kit or prompts if several."
+echo "                       Optional: KIT=<nickname> PORT=<port>"
+echo
 echo "\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////"
 echo
 echo "  DEVICE LABS (experiments under client/labs/)"

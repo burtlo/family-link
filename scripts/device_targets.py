@@ -51,6 +51,22 @@ def resolve_port(kit: Kit, available: list[Port]) -> Port:
     return matches[0]
 
 
+def connected_registered_kits(deployment: Deployment, available: list[Port]) -> list[Kit]:
+    """Roster kits whose bound USB serial is present on a connected port."""
+    validate_bindings(deployment)
+    return [
+        kit
+        for kit in deployment.kits
+        if kit.usb_serial
+        and any(p.serial and serial_key(p.serial) == serial_key(kit.usb_serial) for p in available)
+    ]
+
+
+def kit_nicknames(deployment: Deployment, kit: Kit) -> list[str]:
+    aliases = [alias for alias, endpoint in deployment.aliases.items() if endpoint == kit.endpoint_id]
+    return aliases if aliases else [kit.id]
+
+
 def select(deployment: Deployment, available: list[Port], name: str = "", all_kits: bool = False):
     validate_bindings(deployment)
     if all_kits:

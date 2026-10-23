@@ -1,7 +1,7 @@
 # P1 hardening notes
 
 - **Date:** 2026-10-23
-- **Package:** P1 (`lab-p1-core-journey-wire`)
+- **Package:** P1 product server (`server/device`)
 
 ## Verifier gaps addressed
 
