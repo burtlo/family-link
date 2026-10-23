@@ -239,7 +239,16 @@ class ProductSessionHostTests(unittest.TestCase):
     def test_p5_inbox_actor_from_bearer(self):
         with _running_server("p5-inbox-actor") as base:
             client = _Client(base)
-            maya_token = self._login(client, MAYA)
+            operation_id = str(uuid.uuid4())
+            login_status, login_body = client.json_request(
+                "POST", "/v2/session/login", {
+                    "schema": "fl.session-login/2",
+                    "operation_id": operation_id,
+                    "user_id": MAYA["user_id"],
+                    "pin": MAYA["pin"],
+                }, bearer=DESK)
+            self.assertEqual(login_status, 200)
+            maya_token = str(login_body["session"])
             status, maya_inbox = client.json_request("GET", "/v2/inbox", bearer=maya_token)
             self.assertEqual(status, 200)
             self.assertGreater(maya_inbox.get("total_count", 0), 0)
@@ -250,7 +259,7 @@ class ProductSessionHostTests(unittest.TestCase):
                 "/v2/session/invalidate",
                 {
                     "schema": "fl.session-invalidate/2",
-                    "operation_id": str(uuid.uuid4()),
+                    "operation_id": operation_id,
                     "session": maya_token,
                 },
                 bearer=DESK,

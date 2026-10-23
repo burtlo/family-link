@@ -7,6 +7,7 @@ import socket
 import struct
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -107,6 +108,12 @@ class P1HostTests(unittest.TestCase):
         server.STORE.accepted.clear()
         server.STORE.reset_runtime()
 
+    def tearDown(self):
+        # The production record is durable by design; remove this test fixture's
+        # record so later host fixtures do not inherit random login operations.
+        server._pin_operations_path().unlink(missing_ok=True)
+        server.STORE.pin_records.clear()
+
     def _login(self, client: _Client) -> str:
         operation_id = str(uuid.uuid4())
         status, body = client.json_request(
@@ -173,6 +180,92 @@ class P1HostTests(unittest.TestCase):
             self.assertEqual(lost_raw, b"")
             _, after = client.json_request("GET", "/internal/health-clock")
             self.assertGreater(after["last_successful_beat_at"], before["last_successful_beat_at"])
+
+    def test_health_rejects_non_contract_fields_without_advancing_clock(self):
+        invalid_bodies = [
+            {"schema": "fl.endpoint-health/2", "reason": "boot", "boot_id": 7, "muted": False},
+            {"schema": "fl.endpoint-health/2", "reason": "boot", "boot_id": "b", "muted": 0},
+            {"schema": "fl.endpoint-health/2", "reason": "presence", "boot_id": "b", "muted": False},
+            {"schema": "fl.endpoint-health/2", "reason": "boot", "boot_id": "b", "muted": False,
+             "user_id": "user-maya"},
+        ]
+        with _running_server("p1-health-strict") as base:
+            client = _Client(base)
+            for body in invalid_bodies:
+                status, response = client.json_request(
+                    "POST", "/v2/endpoint/health", body, bearer=DESK)
+                self.assertEqual(status, 400)
+                self.assertEqual(response["code"], "invalid_request")
+            _, clock = client.json_request("GET", "/internal/health-clock")
+            self.assertIsNone(clock["last_successful_beat_at"])
+
+    def test_login_requires_non_coercible_contract_types(self):
+        valid_operation = str(uuid.uuid4())
+        invalid_bodies = [
+            {"schema": "fl.session-login/2", "operation_id": 1,
+             "user_id": "user-maya", "pin": "1234"},
+            {"schema": "fl.session-login/2", "operation_id": str(uuid.uuid4()),
+             "user_id": 7, "pin": "1234"},
+            {"schema": "fl.session-login/2", "operation_id": str(uuid.uuid4()),
+             "user_id": "user-maya", "pin": 1234},
+            {"schema": "fl.session-login/2", "operation_id": str(uuid.uuid4()),
+             "user_id": "user-maya", "pin": "0123"},
+            {"schema": "fl.session-login/2", "operation_id": valid_operation,
+             "user_id": "user-maya", "pin": "123a"},
+        ]
+        with _running_server("p1-login-strict") as base:
+            client = _Client(base)
+            for body in invalid_bodies:
+                status, response = client.json_request(
+                    "POST", "/v2/session/login", body, bearer=DESK)
+                self.assertEqual(status, 400)
+                self.assertEqual(response["code"], "invalid_request")
+
+    def test_pin_replay_survives_process_store_reload(self):
+        operation_id = str(uuid.uuid4())
+        login_body = {
+            "schema": "fl.session-login/2",
+            "operation_id": operation_id,
+            "user_id": "user-maya",
+            "pin": ACCOUNTS["users"][0]["pin"],
+        }
+        with _running_server("p1-pin-durable-1") as base:
+            client = _Client(base)
+            status, first = client.json_request(
+                "POST", "/v2/session/login", login_body, bearer=DESK)
+            self.assertEqual(status, 200)
+            self.assertEqual(first["outcome"], "authenticated")
+
+        server.STORE = server.Store(server._load_tombstones())
+        with _running_server("p1-pin-durable-2") as base:
+            client = _Client(base)
+            status, replay = client.json_request(
+                "POST", "/v2/session/login", login_body, bearer=DESK)
+            self.assertEqual(status, 200)
+            self.assertEqual(replay, first)
+            status, conflict = client.json_request(
+                "POST", "/v2/session/login",
+                {**login_body, "user_id": "user-jordan"}, bearer=DESK)
+            self.assertEqual(status, 409)
+            self.assertEqual(conflict["code"], "identity_conflict")
+
+            key = server._pin_record_key(
+                server.Handler._endpoint_binding(DESK), operation_id)
+            server.STORE.pin_records[key].accepted_at -= server.PIN_RETENTION_S + 1
+            status, expired = client.json_request(
+                "POST", "/v2/session/login", login_body, bearer=DESK)
+            self.assertEqual(status, 410)
+            self.assertEqual(expired["code"], "operation_expired")
+
+            # A durable claim without its retained result is not a fresh login.
+            server.STORE.pin_records[key].accepted_at = time.time()
+            server.STORE.pin_records[key].body = None
+            server._save_pin_records(server.STORE.pin_records)
+            server.STORE = server.Store(server._load_tombstones())
+            status, missing = client.json_request(
+                "POST", "/v2/session/login", login_body, bearer=DESK)
+            self.assertEqual(status, 410)
+            self.assertEqual(missing["code"], "operation_expired")
 
     def test_get_hangout_roster_desk_bearer(self):
         roster_fixture = json.loads((FIXTURES / "roster.json").read_text(encoding="utf-8"))

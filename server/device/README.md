@@ -16,4 +16,24 @@ python3 server/device/main/server.py --run-id local-dev --port 8777
 
 Desk bearer and PIN values live in `fixtures/accounts.json`. They are redacted from server logs and must not appear in test output.
 
-For device bring-up, `make server` serves plain HTTP on the local network. Use only fixture credentials on an isolated development network. The v2 contract still requires authenticated HTTPS before product use. Ordinary HTTPS requires a server certificate and device trust of that server; it does not require a certificate on each device. Runtime receipts, delivered media, and last-viewed state are stored under `runtime/` and excluded from Git.
+For local device bring-up and host tests, `make server` serves plain HTTP. Use
+only fixture credentials on an isolated development network; plain HTTP is not
+production-ready and is not a supported product deployment mode.
+
+Production serving is an explicit TLS opt-in. Supply a PEM certificate and
+private key, and enable the production guard:
+
+```bash
+make server SERVER_TLS_CERT=/secure/server.crt \
+  SERVER_TLS_KEY=/secure/server.key SERVER_PRODUCTION=1
+# or
+python3 server/device/main/server.py --run-id production \
+  --bind 0.0.0.0 --port 8777 --production \
+  --tls-cert /secure/server.crt --tls-key /secure/server.key
+```
+
+The entrypoint requires certificate and key together, uses TLS 1.2 or newer,
+and refuses `--production` without TLS. The endpoint must trust the configured
+server certificate; client certificates are not required by this server.
+Runtime receipts, delivered media, last-viewed state, and retained PIN replay
+records are stored under `runtime/` and excluded from Git.

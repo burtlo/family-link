@@ -9,12 +9,14 @@ import json
 import os
 import re
 import secrets
+import shutil
+import ssl
 import struct
 import sys
 import tempfile
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -36,6 +38,9 @@ INBOX_MAX_BYTES = 262144
 PIN_RETENTION_S = 60
 LAST_VIEWED_RETENTION_S = 60
 SESSION_TTL_S = 180
+OPEN_UPLOAD_TTL_S = 24 * 60 * 60
+HEALTH_REASONS = frozenset({"boot", "periodic", "connectivity"})
+PIN_RE = re.compile(r"^[1-9]{4}$")
 UUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
     re.I,
@@ -95,6 +100,11 @@ TOMBSTONE_PATH = RUNTIME_DIR / "accepted-tombstones.json"
 LAST_VIEWED_PATH = RUNTIME_DIR / "last-viewed.json"
 
 
+def _pin_operations_path() -> Path:
+    """Resolve the path at use time so tests can isolate RUNTIME_DIR."""
+    return RUNTIME_DIR / "pin-operations.json"
+
+
 def _load_tombstones() -> list[dict]:
     if TOMBSTONE_PATH.is_file():
         return json.loads(TOMBSTONE_PATH.read_text(encoding="utf-8")).get("records", [])
@@ -117,6 +127,36 @@ def _atomic_write_json(path: Path, payload: dict) -> None:
             os.fsync(handle.fileno())
         os.replace(temporary, path)
         temporary = None
+        _fsync_directory(path.parent)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def _fsync_directory(directory: Path) -> None:
+    """Make an atomic rename durable when the local filesystem supports it."""
+    descriptor = os.open(directory, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _atomic_write_bytes(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb", dir=path.parent,
+            prefix=f".{path.name}.", suffix=".tmp", delete=False,
+        ) as handle:
+            temporary = Path(handle.name)
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        temporary = None
+        _fsync_directory(path.parent)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
@@ -143,11 +183,93 @@ def _save_last_viewed_state(values: dict[str, str], operations: dict[str, dict])
     })
 
 
+def _load_pin_records() -> dict[str, "PinRecord"]:
+    path = _pin_operations_path()
+    if not path.is_file():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema") != "p1-pin-operations/v1":
+        raise IdentityError("unknown pin operation state schema")
+    loaded: dict[str, PinRecord] = {}
+    for row in payload.get("records", []):
+        if not isinstance(row, dict):
+            raise IdentityError("invalid pin operation record")
+        endpoint_binding = row.get("endpoint_binding")
+        operation_id = row.get("operation_id")
+        fingerprint = row.get("fingerprint")
+        accepted_at = row.get("accepted_at")
+        if (
+            not isinstance(endpoint_binding, str)
+            or not isinstance(operation_id, str)
+            or not UUID_RE.fullmatch(operation_id)
+            or not isinstance(fingerprint, str)
+            or isinstance(accepted_at, bool)
+            or not isinstance(accepted_at, (int, float))
+        ):
+            raise IdentityError("invalid pin operation record")
+        body = row.get("body")
+        if body is not None and not isinstance(body, dict):
+            raise IdentityError("invalid pin operation result")
+        session_issued_at = row.get("session_issued_at")
+        session_last_refresh_at = row.get("session_last_refresh_at")
+        if any(
+            value is not None
+            and (isinstance(value, bool) or not isinstance(value, (int, float)))
+            for value in (session_issued_at, session_last_refresh_at)
+        ):
+            raise IdentityError("invalid pin operation session timestamps")
+        session_revoked = row.get("session_revoked", False)
+        if not isinstance(session_revoked, bool):
+            raise IdentityError("invalid pin operation session revocation")
+        loaded[_pin_record_key(endpoint_binding, operation_id)] = PinRecord(
+            operation_id=operation_id,
+            endpoint_binding=endpoint_binding,
+            fingerprint=fingerprint,
+            body=body,
+            accepted_at=float(accepted_at),
+            session_issued_at=(
+                None if session_issued_at is None else float(session_issued_at)
+            ),
+            session_last_refresh_at=(
+                None if session_last_refresh_at is None else float(session_last_refresh_at)
+            ),
+            session_revoked=session_revoked,
+        )
+    return loaded
+
+
+def _save_pin_records(records: dict[str, "PinRecord"]) -> None:
+    rows = []
+    for record in sorted(records.values(), key=lambda item: (item.endpoint_binding, item.accepted_at)):
+        rows.append({
+            "endpoint_binding": record.endpoint_binding,
+            "operation_id": record.operation_id,
+            "fingerprint": record.fingerprint,
+            "body": record.body,
+            "accepted_at": record.accepted_at,
+            "session_issued_at": record.session_issued_at,
+            "session_last_refresh_at": record.session_last_refresh_at,
+            "session_revoked": record.session_revoked,
+        })
+    _atomic_write_json(_pin_operations_path(), {
+        "schema": "p1-pin-operations/v1", "records": rows,
+    })
+
+
+def _pin_record_key(endpoint_binding: str, operation_id: str) -> str:
+    return f"{endpoint_binding}:{operation_id}"
+
+
 @dataclass
 class PinRecord:
+    operation_id: str
+    endpoint_binding: str
     fingerprint: str
-    body: dict
+    body: dict | None
     accepted_at: float
+    session_issued_at: float | None = None
+    session_last_refresh_at: float | None = None
+    session_revoked: bool = False
 
 
 @dataclass
@@ -156,9 +278,12 @@ class OpenUpload:
     message_id: str
     sender_user_id: str
     create_body: dict
-    audio_parts: dict[int, bytes] = field(default_factory=dict)
-    sketch_parts: dict[int, bytes] = field(default_factory=dict)
-    last_part_at: float = 0.0
+    create_fingerprint: str
+    frozen_recipient_user_ids: list[str]
+    created_at: float
+    last_acknowledged_at: float
+    audio_parts: dict[int, Path] = field(default_factory=dict)
+    sketch_parts: dict[int, Path] = field(default_factory=dict)
 
 
 @dataclass
@@ -177,26 +302,228 @@ class AcceptedSend:
     complete_fingerprint: str | None = None
 
 
+def _open_metadata_path(client_message_id: str) -> Path:
+    return RUNTIME_DIR / f"open-upload-{client_message_id}.json"
+
+
+def _open_part_path(client_message_id: str, kind: str, sequence: int) -> Path:
+    return RUNTIME_DIR / f"open-upload-{client_message_id}.{kind}.{sequence:08d}.part"
+
+
+def _accepted_media_path(message_id: str, kind: str) -> Path:
+    return RUNTIME_DIR / f"accepted-media-{message_id}.{kind}.bin"
+
+
+def _part_manifest(parts: dict[int, Path]) -> list[dict[str, int]]:
+    manifest = []
+    for sequence, path in sorted(parts.items()):
+        try:
+            byte_count = path.stat().st_size
+        except OSError:
+            continue
+        manifest.append({"sequence": sequence, "byte_count": byte_count})
+    return manifest
+
+
+def _open_payload(upload: OpenUpload) -> dict:
+    return {
+        "schema": "p2-open-upload/v1",
+        "client_message_id": upload.client_message_id,
+        "message_id": upload.message_id,
+        "sender_user_id": upload.sender_user_id,
+        "create_body": upload.create_body,
+        "create_fingerprint": upload.create_fingerprint,
+        "frozen_recipient_user_ids": upload.frozen_recipient_user_ids,
+        "created_at": upload.created_at,
+        "last_acknowledged_at": upload.last_acknowledged_at,
+        "audio_parts": _part_manifest(upload.audio_parts),
+        "sketch_parts": _part_manifest(upload.sketch_parts),
+    }
+
+
+def _save_open_upload(upload: OpenUpload) -> None:
+    _atomic_write_json(_open_metadata_path(upload.client_message_id), _open_payload(upload))
+
+
+def _valid_part_manifest(row: Any) -> bool:
+    return (
+        isinstance(row, dict)
+        and isinstance(row.get("sequence"), int)
+        and not isinstance(row.get("sequence"), bool)
+        and row["sequence"] >= 0
+        and isinstance(row.get("byte_count"), int)
+        and not isinstance(row.get("byte_count"), bool)
+        and 1 <= row["byte_count"] <= PART_SIZE
+    )
+
+
+def _load_open_uploads() -> dict[str, OpenUpload]:
+    loaded: dict[str, OpenUpload] = {}
+    if not RUNTIME_DIR.is_dir():
+        return loaded
+    for metadata_path in sorted(RUNTIME_DIR.glob("open-upload-*.json")):
+        try:
+            payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+            client_id = payload["client_message_id"]
+            message_id = payload["message_id"]
+            sender_user_id = payload["sender_user_id"]
+            create_body = payload["create_body"]
+            create_fingerprint = payload["create_fingerprint"]
+            recipients = payload["frozen_recipient_user_ids"]
+            created_at = payload["created_at"]
+            last_acknowledged_at = payload["last_acknowledged_at"]
+            if (
+                not isinstance(client_id, str) or not UUID_RE.fullmatch(client_id)
+                or not isinstance(message_id, str) or not MESSAGE_ID_RE.fullmatch(message_id)
+                or not isinstance(sender_user_id, str) or not isinstance(create_body, dict)
+                or not isinstance(create_fingerprint, str) or not isinstance(recipients, list)
+                or any(not isinstance(item, str) for item in recipients)
+                or isinstance(created_at, bool) or not isinstance(created_at, (int, float))
+                or isinstance(last_acknowledged_at, bool)
+                or not isinstance(last_acknowledged_at, (int, float))
+                or create_fingerprint != _canonical_json(create_body)
+            ):
+                continue
+            if time.time() - float(last_acknowledged_at) > OPEN_UPLOAD_TTL_S:
+                _remove_open_files(client_id)
+                continue
+            upload = OpenUpload(
+                client_message_id=client_id,
+                message_id=message_id,
+                sender_user_id=sender_user_id,
+                create_body=create_body,
+                create_fingerprint=create_fingerprint,
+                frozen_recipient_user_ids=list(recipients),
+                created_at=float(created_at),
+                last_acknowledged_at=float(last_acknowledged_at),
+            )
+            for kind, target in (("audio", upload.audio_parts), ("sketch", upload.sketch_parts)):
+                seen: set[int] = set()
+                for row in payload.get(f"{kind}_parts", []):
+                    if not _valid_part_manifest(row) or row["sequence"] in seen:
+                        continue
+                    sequence = row["sequence"]
+                    part_path = _open_part_path(client_id, kind, sequence)
+                    try:
+                        if part_path.stat().st_size != row["byte_count"]:
+                            continue
+                    except OSError:
+                        continue
+                    seen.add(sequence)
+                    target[sequence] = part_path
+            loaded[client_id] = upload
+        except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+            # A torn or unknown open-upload record is not an accepted send.
+            # Leave it untouched for inspection; it cannot become source of truth.
+            continue
+    return loaded
+
+
+def _remove_open_files(client_message_id: str) -> None:
+    metadata_path = _open_metadata_path(client_message_id)
+    metadata_path.unlink(missing_ok=True)
+    for path in RUNTIME_DIR.glob(f"open-upload-{client_message_id}.*.part"):
+        path.unlink(missing_ok=True)
+
+
+def _expire_open_locked(client_id: str, upload: OpenUpload | None = None) -> bool:
+    if upload is None:
+        upload = STORE.opens.get(client_id)
+    if upload is None:
+        return False
+    if time.time() - upload.last_acknowledged_at <= OPEN_UPLOAD_TTL_S:
+        return False
+    STORE.opens.pop(client_id, None)
+    _remove_open_files(client_id)
+    return True
+
+
+def _accepted_from_row(row: dict) -> AcceptedSend:
+    """Load current rows and tolerate the P1 base64 fields during migration."""
+    return AcceptedSend(
+        client_message_id=row["client_message_id"],
+        message_id=row["message_id"],
+        sender_user_id=row["sender_user_id"],
+        accepted_at=row["accepted_at"],
+        recipient_user_ids=list(row.get("recipient_user_ids", [])),
+        delivery_item=row.get("delivery_item"),
+        audio_b64=row.get("audio_b64"),
+        sketch_b64=row.get("sketch_b64"),
+        create_fingerprint=row.get("create_fingerprint"),
+        complete_fingerprint=row.get("complete_fingerprint"),
+    )
+
+
+def _accepted_row_payload(accepted: AcceptedSend) -> dict:
+    """Persist receipt and delivery metadata, never accepted media bytes."""
+    return {
+        "client_message_id": accepted.client_message_id,
+        "message_id": accepted.message_id,
+        "sender_user_id": accepted.sender_user_id,
+        "accepted_at": accepted.accepted_at,
+        "recipient_user_ids": accepted.recipient_user_ids,
+        "delivery_item": accepted.delivery_item,
+        "create_fingerprint": accepted.create_fingerprint,
+        "complete_fingerprint": accepted.complete_fingerprint,
+    }
+
+
 class Store:
     def __init__(self, tombstones: list[dict] | None = None) -> None:
         self.lock = threading.Lock()
         self.last_successful_beat_at: float | None = None
         self.drop_next_health_ack = 0
         self.oversized_inbox_once = 0
-        self.pin_records: dict[str, PinRecord] = {}
-        self.invalidated_operations: set[str] = set()
+        self.pin_records: dict[str, PinRecord] = _load_pin_records()
+        self.invalidated_operations: set[tuple[str, str]] = set()
         self.sessions: dict[str, dict] = {}
-        self.opens: dict[str, OpenUpload] = {}
+        self.opens: dict[str, OpenUpload] = _load_open_uploads()
         self.accepted: dict[str, AcceptedSend] = {}
         # Runtime delivery state.  The fixture remains the seed inbox for Maya;
         # accepted sends are published into these per-user snapshots and media
         # stores instead of disappearing at complete time.
         self.inboxes: dict[str, dict] = {}
-        self.media: dict[str, dict[str, bytes]] = {}
+        # Durable files are the source of truth. This index contains paths only
+        # and is populated lazily from accepted metadata at startup.
+        self.media: dict[str, dict[str, Path]] = {}
         self.last_viewed, self.last_viewed_ops = _load_last_viewed_state()
         if tombstones:
             for row in tombstones:
-                self.accepted[row["client_message_id"]] = AcceptedSend(**row)
+                self.accepted[row["client_message_id"]] = _accepted_from_row(row)
+        self._restore_persisted_pin_sessions_locked()
+
+    def _restore_persisted_pin_sessions_locked(self) -> None:
+        """Restore only recently accepted sessions needed for login replay."""
+        # A replayed authenticated login must return a usable credential even
+        # when the request crossed a process restart. The credential remains
+        # subject to the normal three-minute lifetime and endpoint binding.
+        for record in self.pin_records.values():
+            if time.time() - record.accepted_at > PIN_RETENTION_S:
+                continue
+            if not record.body or record.body.get("outcome") != "authenticated":
+                continue
+            session = record.body.get("session")
+            user_id = record.body.get("user_id")
+            operation_id = record.body.get("operation_id")
+            if (
+                isinstance(session, str)
+                and isinstance(user_id, str)
+                and isinstance(operation_id, str)
+            ):
+                issued_at = record.session_issued_at
+                if issued_at is None:
+                    issued_at = record.accepted_at
+                last_refresh_at = record.session_last_refresh_at
+                if last_refresh_at is None:
+                    last_refresh_at = issued_at
+                self.sessions[session] = {
+                    "user_id": user_id,
+                    "operation_id": operation_id,
+                    "endpoint_binding": record.endpoint_binding,
+                    "issued_at": issued_at,
+                    "last_refresh_at": last_refresh_at,
+                    "revoked": record.session_revoked,
+                }
 
     def reset_runtime(self) -> None:
         with self.lock:
@@ -206,10 +533,15 @@ class Store:
             self.pin_records.clear()
             self.invalidated_operations.clear()
             self.sessions.clear()
-            self.opens.clear()
+            self.opens = _load_open_uploads()
+            self.pin_records = _load_pin_records()
+            self._restore_persisted_pin_sessions_locked()
             self.inboxes.clear()
             self.media.clear()
             self.last_viewed, self.last_viewed_ops = _load_last_viewed_state()
+            self.accepted.clear()
+            for row in _load_tombstones():
+                self.accepted[row["client_message_id"]] = _accepted_from_row(row)
             _restore_persisted_deliveries_locked()
             # Accepted receipts, delivered media, and last-viewed state survive.
 
@@ -284,8 +616,16 @@ def _validate_create_body(body: dict, sender_user_id: str) -> tuple[int, str] | 
     return None
 
 
+def _read_upload_parts(upload: OpenUpload, kind: str) -> bytes | None:
+    parts = upload.audio_parts if kind == "audio" else upload.sketch_parts
+    try:
+        return b"".join(parts[index].read_bytes() for index in sorted(parts))
+    except (OSError, KeyError):
+        return None
+
+
 def _build_accepted_send_locked(upload: OpenUpload, complete_body: dict,
-                                accepted_at: str) -> AcceptedSend | None:
+                                accepted_at: str) -> tuple[AcceptedSend, bytes, bytes | None] | None:
     """Build a complete delivery record without changing visible state."""
     recipients = upload.create_body.get("recipient_user_ids")
     if not isinstance(recipients, list) or not recipients or len(recipients) > 7:
@@ -296,9 +636,13 @@ def _build_accepted_send_locked(upload: OpenUpload, complete_body: dict,
         return None
 
     audio_meta = complete_body.get("audio") or {}
-    audio = b"".join(upload.audio_parts[index] for index in sorted(upload.audio_parts))
+    audio = _read_upload_parts(upload, "audio")
+    if audio is None:
+        return None
     sketch_present = bool(upload.create_body.get("sketch", {}).get("present"))
-    sketch = b"".join(upload.sketch_parts[index] for index in sorted(upload.sketch_parts))
+    sketch = _read_upload_parts(upload, "sketch") if sketch_present else None
+    if sketch_present and sketch is None:
+        return None
     accepted = AcceptedSend(
         client_message_id=upload.client_message_id,
         message_id=upload.message_id,
@@ -331,17 +675,25 @@ def _build_accepted_send_locked(upload: OpenUpload, complete_body: dict,
             "sha256": hashlib.sha256(sketch).hexdigest(),
         }
 
-    # Keep the accepted delivery alongside the durable receipt so a server
-    # restart does not turn a delivered message back into a receipt-only row.
     accepted.delivery_item = item
-    accepted.audio_b64 = base64.b64encode(audio).decode("ascii")
-    accepted.sketch_b64 = base64.b64encode(sketch).decode("ascii") if sketch_present else None
-
-    return accepted
+    return accepted, audio, sketch
 
 
 def _apply_accepted_delivery_locked(accepted: AcceptedSend) -> None:
-    if not accepted.delivery_item or not accepted.audio_b64:
+    if not accepted.delivery_item:
+        return
+    audio_path = _accepted_media_path(accepted.message_id, "audio")
+    sketch_path = _accepted_media_path(accepted.message_id, "sketch")
+    # P1 rows may still contain base64 media. Migrate those rows once, but all
+    # P2 rows use files and never retain media bytes in the accepted index.
+    if not audio_path.is_file() and accepted.audio_b64:
+        try:
+            _atomic_write_bytes(audio_path, base64.b64decode(accepted.audio_b64))
+            if accepted.sketch_b64:
+                _atomic_write_bytes(sketch_path, base64.b64decode(accepted.sketch_b64))
+        except (OSError, ValueError):
+            return
+    if not audio_path.is_file():
         return
     for recipient in accepted.recipient_user_ids:
         snapshot = _inbox_for_user_locked(str(recipient))
@@ -353,11 +705,9 @@ def _apply_accepted_delivery_locked(accepted: AcceptedSend) -> None:
         selected = STORE.last_viewed.get(str(recipient))
         if selected == accepted.message_id:
             snapshot["last_viewed_message_id"] = selected
-    STORE.media[accepted.message_id] = {
-        "audio": base64.b64decode(accepted.audio_b64),
-    }
-    if accepted.sketch_b64:
-        STORE.media[accepted.message_id]["sketch"] = base64.b64decode(accepted.sketch_b64)
+    STORE.media[accepted.message_id] = {"audio": audio_path}
+    if accepted.delivery_item.get("media", {}).get("sketch") and sketch_path.is_file():
+        STORE.media[accepted.message_id]["sketch"] = sketch_path
 
 
 def _restore_persisted_deliveries_locked() -> None:
@@ -376,7 +726,8 @@ _restore_persisted_deliveries()
 def reload_persisted_tombstones() -> None:
     with STORE.lock:
         for row in _load_tombstones():
-            STORE.accepted[row["client_message_id"]] = AcceptedSend(**row)
+            STORE.accepted[row["client_message_id"]] = _accepted_from_row(row)
+        STORE.opens = _load_open_uploads()
     _restore_persisted_deliveries()
 
 
@@ -384,10 +735,12 @@ class LabServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
 
-    def __init__(self, address, handler, run_id: str, log: BoundedRedactingLog | None):
+    def __init__(self, address, handler, run_id: str, log: BoundedRedactingLog | None,
+                 tls_enabled: bool = False):
         super().__init__(address, handler)
         self.run_id = run_id
         self.log = log
+        self.tls_enabled = tls_enabled
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -412,6 +765,8 @@ class Handler(BaseHTTPRequestHandler):
         if extra_headers:
             for key, value in extra_headers.items():
                 self.send_header(key, value)
+        if self.server.tls_enabled:
+            self.send_header("Strict-Transport-Security", "max-age=31536000")
         self.send_header("Connection", "close")
         self.end_headers()
         if body:
@@ -515,6 +870,11 @@ class Handler(BaseHTTPRequestHandler):
             return None
         return token
 
+    @staticmethod
+    def _endpoint_binding(token: str) -> str:
+        """Stable non-secret identity for the authenticated desk credential."""
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
     def _session_user(self) -> tuple[str | None, str]:
         header = self.headers.get("Authorization", "")
         if not header.startswith("Bearer "):
@@ -523,6 +883,8 @@ class Handler(BaseHTTPRequestHandler):
         with STORE.lock:
             record = STORE.sessions.get(token)
         if record is None:
+            return None, "missing"
+        if record.get("endpoint_binding") != self._endpoint_binding(ACCOUNTS["desk_token"]):
             return None, "missing"
         if record.get("revoked"):
             return None, "revoked"
@@ -540,22 +902,25 @@ class Handler(BaseHTTPRequestHandler):
     def _issue_session(self, user_id: str, operation_id: str) -> str:
         token = _b64url_token(secrets.token_bytes(32))
         now = time.time()
+        endpoint_binding = self._endpoint_binding(ACCOUNTS["desk_token"])
         with STORE.lock:
-            self._store_session_locked(token, user_id, operation_id, now)
+            self._store_session_locked(token, user_id, operation_id, endpoint_binding, now)
         return token
 
     @staticmethod
-    def _store_session_locked(token: str, user_id: str, operation_id: str, now: float) -> None:
+    def _store_session_locked(token: str, user_id: str, operation_id: str,
+                              endpoint_binding: str, now: float) -> None:
         STORE.sessions[token] = {
             "user_id": user_id,
             "operation_id": operation_id,
+            "endpoint_binding": endpoint_binding,
             "issued_at": now,
             "last_refresh_at": now,
             "revoked": False,
         }
 
     def _pin_fingerprint(self, body: dict) -> str:
-        return json.dumps(
+        canonical = json.dumps(
             {
                 "schema": body.get("schema"),
                 "operation_id": body.get("operation_id"),
@@ -564,6 +929,22 @@ class Handler(BaseHTTPRequestHandler):
             },
             sort_keys=True,
             separators=(",", ":"),
+        ).encode("utf-8")
+        # The durable replay record needs an equality key, not the PIN itself.
+        return hashlib.sha256(canonical).hexdigest()
+
+    @staticmethod
+    def _valid_login_body(body: dict) -> bool:
+        operation_id = body.get("operation_id")
+        user_id = body.get("user_id")
+        pin = body.get("pin")
+        return (
+            isinstance(operation_id, str)
+            and UUID_RE.fullmatch(operation_id) is not None
+            and isinstance(user_id, str)
+            and bool(user_id)
+            and isinstance(pin, str)
+            and PIN_RE.fullmatch(pin) is not None
         )
 
     def _expected_pin(self, user_id: str) -> str | None:
@@ -703,14 +1084,27 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {"result": "ok"})
             return
         if path == "/v2/endpoint/health":
-            if self._desk_token() is None:
+            desk_token = self._desk_token()
+            if desk_token is None:
                 self._error(401, "unauthenticated", False)
                 return
             payload = self._read_json(4096)
             if payload is None or payload.get("schema") != "fl.endpoint-health/2":
                 self._error(400, "unsupported_schema", False)
                 return
+            if (
+                set(payload) != {"schema", "reason", "boot_id", "muted"}
+                or not isinstance(payload.get("reason"), str)
+                or payload.get("reason") not in HEALTH_REASONS
+                or not isinstance(payload.get("boot_id"), str)
+                or not payload.get("boot_id")
+                or not isinstance(payload.get("muted"), bool)
+            ):
+                self._error(400, "invalid_request", False)
+                return
             with STORE.lock:
+                # Validation and endpoint authentication are complete before
+                # the server freshness clock can move.
                 STORE.last_successful_beat_at = time.time()
                 if STORE.drop_next_health_ack > 0:
                     STORE.drop_next_health_ack -= 1
@@ -727,21 +1121,25 @@ class Handler(BaseHTTPRequestHandler):
             self.log_message("health status=%s", "200")
             return
         if path == "/v2/session/login":
-            if self._desk_token() is None:
+            desk_token = self._desk_token()
+            if desk_token is None:
                 self._error(401, "unauthenticated", False)
                 return
             body = self._read_json(4096)
             if body is None or body.get("schema") != "fl.session-login/2":
                 self._error(400, "unsupported_schema", False)
                 return
-            operation_id = str(body.get("operation_id", ""))
-            if not UUID_RE.fullmatch(operation_id):
-                self._error(400, "invalid_request", False, operation_id)
+            operation_id = body.get("operation_id")
+            operation_id_for_error = operation_id if isinstance(operation_id, str) else ""
+            if not self._valid_login_body(body):
+                self._error(400, "invalid_request", False, operation_id_for_error)
                 return
+            endpoint_binding = self._endpoint_binding(desk_token)
+            operation_key = _pin_record_key(endpoint_binding, operation_id)
             fingerprint = self._pin_fingerprint(body)
             with STORE.lock:
                 now = time.time()
-                existing = STORE.pin_records.get(operation_id)
+                existing = STORE.pin_records.get(operation_key)
                 if existing is not None:
                     if existing.fingerprint != fingerprint:
                         self._error(409, "identity_conflict", False, operation_id)
@@ -749,18 +1147,21 @@ class Handler(BaseHTTPRequestHandler):
                     if now - existing.accepted_at > PIN_RETENTION_S:
                         self._error(410, "operation_expired", False, operation_id)
                         return
+                    if existing.body is None:
+                        self._error(410, "operation_expired", False, operation_id)
+                        return
                     self._json(200, existing.body)
                     self.log_message("pin status=%s mode=%s", "200", "replay")
                     return
-                if operation_id in STORE.invalidated_operations:
+                if (endpoint_binding, operation_id) in STORE.invalidated_operations:
                     result = {
                         "schema": "fl.session-login-result/2",
                         "operation_id": operation_id,
                         "outcome": "cancelled",
                     }
                 else:
-                    user_id = str(body.get("user_id", ""))
-                    pin = str(body.get("pin", ""))
+                    user_id = body["user_id"]
+                    pin = body["pin"]
                     expected = self._expected_pin(user_id)
                     if expected is None:
                         result = {
@@ -776,7 +1177,9 @@ class Handler(BaseHTTPRequestHandler):
                         }
                     else:
                         session = _b64url_token(secrets.token_bytes(32))
-                        self._store_session_locked(session, user_id, operation_id, now)
+                        self._store_session_locked(
+                            session, user_id, operation_id, endpoint_binding, now,
+                        )
                         result = {
                             "schema": "fl.session-login-result/2",
                             "operation_id": operation_id,
@@ -784,25 +1187,77 @@ class Handler(BaseHTTPRequestHandler):
                             "user_id": user_id,
                             "session": session,
                         }
-                STORE.pin_records[operation_id] = PinRecord(fingerprint, result, now)
+                next_pin_records = dict(STORE.pin_records)
+                next_pin_records[operation_key] = PinRecord(
+                    operation_id=operation_id,
+                    endpoint_binding=endpoint_binding,
+                    fingerprint=fingerprint,
+                    body=result,
+                    accepted_at=now,
+                    session_issued_at=now if result.get("outcome") == "authenticated" else None,
+                    session_last_refresh_at=now if result.get("outcome") == "authenticated" else None,
+                )
+                try:
+                    _save_pin_records(next_pin_records)
+                except OSError:
+                    if result.get("session"):
+                        STORE.sessions.pop(result["session"], None)
+                    self._error(500, "storage_unavailable", True, operation_id)
+                    return
+                STORE.pin_records = next_pin_records
             self._json(200, result)
             self.log_message("pin status=%s outcome=%s", "200", result["outcome"])
             return
         if path == "/v2/session/invalidate":
-            if self._desk_token() is None:
+            desk_token = self._desk_token()
+            if desk_token is None:
                 self._error(401, "unauthenticated", False)
                 return
             body = self._read_json(4096)
             if body is None or body.get("schema") != "fl.session-invalidate/2":
                 self._error(400, "unsupported_schema", False)
                 return
-            operation_id = str(body.get("operation_id", ""))
-            session_token = str(body.get("session", "") or "")
+            operation_id = body.get("operation_id")
+            session_token = body.get("session")
+            if not isinstance(operation_id, str) or not UUID_RE.fullmatch(operation_id):
+                self._error(400, "invalid_request", False,
+                            operation_id if isinstance(operation_id, str) else "")
+                return
+            if session_token is not None and (
+                not isinstance(session_token, str) or not session_token
+            ):
+                self._error(400, "invalid_request", False, operation_id)
+                return
+            endpoint_binding = self._endpoint_binding(desk_token)
             with STORE.lock:
-                if operation_id:
-                    STORE.invalidated_operations.add(operation_id)
+                if session_token:
+                    session_record = STORE.sessions.get(session_token)
+                    if session_record is not None and (
+                        session_record.get("endpoint_binding") != endpoint_binding
+                        or session_record.get("operation_id") != operation_id
+                    ):
+                        self._error(409, "identity_conflict", False, operation_id)
+                        return
+                existing = STORE.pin_records.get(
+                    _pin_record_key(endpoint_binding, operation_id)
+                )
+                if existing is not None and existing.body is not None:
+                    next_pin_records = dict(STORE.pin_records)
+                    next_pin_records[_pin_record_key(endpoint_binding, operation_id)] = replace(
+                        existing, session_revoked=True,
+                    )
+                    try:
+                        _save_pin_records(next_pin_records)
+                    except OSError:
+                        self._error(500, "storage_unavailable", True, operation_id)
+                        return
+                    STORE.pin_records = next_pin_records
+                STORE.invalidated_operations.add((endpoint_binding, operation_id))
                 for token, record in list(STORE.sessions.items()):
-                    if record.get("operation_id") == operation_id or (session_token and token == session_token):
+                    if (
+                        record.get("endpoint_binding") == endpoint_binding
+                        and record.get("operation_id") == operation_id
+                    ):
                         record["revoked"] = True
             self._json(200, {
                 "schema": "fl.session-invalidate-result/2",
@@ -831,7 +1286,23 @@ class Handler(BaseHTTPRequestHandler):
                 if time.time() - float(record.get("last_refresh_at", record.get("issued_at", 0.0))) > SESSION_TTL_S:
                     self._error(403, "session_expired", False)
                     return
-                record["last_refresh_at"] = time.time()
+                now = time.time()
+                operation_key = _pin_record_key(
+                    record["endpoint_binding"], record["operation_id"]
+                )
+                existing = STORE.pin_records.get(operation_key)
+                if existing is not None and existing.body is not None:
+                    next_pin_records = dict(STORE.pin_records)
+                    next_pin_records[operation_key] = replace(
+                        existing, session_last_refresh_at=now,
+                    )
+                    try:
+                        _save_pin_records(next_pin_records)
+                    except OSError:
+                        self._error(500, "storage_unavailable", True)
+                        return
+                    STORE.pin_records = next_pin_records
+                record["last_refresh_at"] = now
             self._empty_json(200)
             return
         if path == "/v2/outgoing":
@@ -1098,11 +1569,22 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def create_server(bind: str, port: int, run_id: str, log_path: str | None = None,
-                  reload_tombstones: bool = False) -> LabServer:
+                  reload_tombstones: bool = False, tls_cert: str | None = None,
+                  tls_key: str | None = None, production: bool = False) -> LabServer:
+    if bool(tls_cert) != bool(tls_key):
+        raise ValueError("--tls-cert and --tls-key must be supplied together")
+    if production and not (tls_cert and tls_key):
+        raise ValueError("production mode requires --tls-cert and --tls-key")
     if reload_tombstones:
         reload_persisted_tombstones()
     log = BoundedRedactingLog(log_path) if log_path else None
-    return LabServer((bind, port), Handler, run_id, log)
+    httpd = LabServer((bind, port), Handler, run_id, log, tls_enabled=bool(tls_cert))
+    if tls_cert and tls_key:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
+        context.load_cert_chain(certfile=tls_cert, keyfile=tls_key)
+        httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
+    return httpd
 
 
 def server_identity(root: Path) -> dict:
@@ -1140,10 +1622,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=int(MANIFEST.get("default_port", 8777)))
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--log", default="")
+    parser.add_argument("--tls-cert", default="",
+                        help="PEM server certificate; required with --tls-key")
+    parser.add_argument("--tls-key", default="",
+                        help="PEM private key; required with --tls-cert")
+    parser.add_argument("--production", action="store_true",
+                        help="require TLS before serving (for deployed production use)")
     args = parser.parse_args(argv)
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}", args.run_id):
         parser.error("unsafe run ID")
-    httpd = create_server(args.bind, args.port, args.run_id, args.log or None)
+    try:
+        httpd = create_server(
+            args.bind, args.port, args.run_id, args.log or None,
+            tls_cert=args.tls_cert or None, tls_key=args.tls_key or None,
+            production=args.production,
+        )
+    except (OSError, ValueError) as exc:
+        parser.error(str(exc))
     try:
         httpd.serve_forever(poll_interval=0.1)
     finally:
