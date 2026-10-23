@@ -68,7 +68,7 @@ define py_run
 	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind lab.help lab.lab02.server lab.lab03.server lab.lab07.server
+.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind avatars lab.help lab.lab02.server lab.lab03.server lab.lab07.server
 
 # Lab device firmware (registry: config/labs.registry.yaml). Optional: KIT PORT SECONDS FLASH RUN_ID
 # Prefer the explicit .scripted profile over VARIANT= for operator workflows.
@@ -95,6 +95,10 @@ config.labs:
 install:
 	$(call step_msg,Installing venv host tools and ESP-IDF if needed)
 	$(call py_host_run,scripts/install.py)
+
+avatars:
+	$(call step_msg,Packing profile avatars for firmware)
+	$(call py_run,scripts/pack_profile_avatars.py)
 
 test:
 	$(call step_msg,Testing project configuration)

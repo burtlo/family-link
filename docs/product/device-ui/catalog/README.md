@@ -44,7 +44,7 @@ missing.
 
 Use **`CAT-NN`** when talking about a visual on the device. The catalog index
 prefixes every row with this ID, and a corner badge repeats it on the mounted
-scene. Do not reuse a number; the next unused ID is `CAT-20`.
+scene. Do not reuse a number; the next unused ID is `CAT-21`.
 
 | ID | Index title | Screen |
 |---|---|---|
@@ -67,6 +67,7 @@ scene. Do not reuse a number; the next unused ID is `CAT-20`.
 | `CAT-17` | Record sketch | `SCR-RECORD-SKETCH` |
 | `CAT-18` | Record sketch, black selected | `SCR-RECORD-SKETCH` |
 | `CAT-19` | Record sketch, gold selected | `SCR-RECORD-SKETCH` |
+| `CAT-20` | Portrait roster (*N*) | `SCR-SIGN-IN-ROSTER` — [`COMP-USER-CARD-BUST`](../components/COMP-USER-CARD-BUST.md); **auto-generated** by `make avatars` (one card per packed portrait) |
 
 The badge is catalog chrome for review, not a product component.
 

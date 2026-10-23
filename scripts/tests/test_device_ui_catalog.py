@@ -15,12 +15,23 @@ class DeviceUiCatalogTests(unittest.TestCase):
         validate_catalog(packed)
         ids = [scene["id"] for scene in packed["scenes"]]
         self.assertEqual(packed["document"], "family-link.device-ui-catalog/v1")
-        self.assertGreaterEqual(len(ids), 19)
+        self.assertGreaterEqual(len(ids), 20)
         self.assertIn("CAT-01", ids)
         self.assertIn("CAT-14", ids)
         self.assertIn("CAT-15", ids)
         self.assertIn("CAT-17", ids)
-        self.assertEqual(ids, [f"CAT-{i:02d}" for i in range(1, 20)])
+        self.assertIn("CAT-20", ids)
+        bust = next(scene for scene in packed["scenes"] if scene["id"] == "CAT-20")
+        self.assertEqual(bust["slots"]["lower"]["props"]["card_style"], "bust")
+        manifest_path = DEFAULT_CATALOG.parent.parent / "avatars" / "avatars.json"
+        if manifest_path.is_file():
+            import json
+
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            users = bust["slots"]["lower"]["props"]["users"]
+            self.assertEqual(len(users), len(manifest.get("portraits", {})))
+            for user in users:
+                self.assertIn(user.get("portrait"), manifest["portraits"])
         sketch = next(scene for scene in packed["scenes"] if scene["id"] == "CAT-17")
         self.assertEqual(sketch["layout"], "LAYOUT-SPLIT-PANE-FOCUSED-SIDE")
         self.assertEqual(sketch["slots"]["focused"]["panel"], "PANEL-FOCUSED-DRAWING")

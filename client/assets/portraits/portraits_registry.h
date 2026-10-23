@@ -1,0 +1,43 @@
+#pragma once
+#include "lvgl.h"
+
+const lv_image_dsc_t *fl_portrait_lookup(const char *portrait_id);
+
+extern const lv_image_dsc_t portrait_avatar_an01_candidate;
+extern const lv_image_dsc_t portrait_avatar_an02_candidate;
+extern const lv_image_dsc_t portrait_avatar_an03_candidate;
+extern const lv_image_dsc_t portrait_avatar_an04_candidate;
+extern const lv_image_dsc_t portrait_avatar_an05_candidate;
+extern const lv_image_dsc_t portrait_avatar_an06_candidate;
+extern const lv_image_dsc_t portrait_avatar_an07_candidate;
+extern const lv_image_dsc_t portrait_avatar_an08_candidate;
+extern const lv_image_dsc_t portrait_avatar_an09_candidate;
+extern const lv_image_dsc_t portrait_avatar_an10_candidate;
+extern const lv_image_dsc_t portrait_avatar_an11_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa01_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa02_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa03_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa04_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa05_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa06_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa07_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa08_candidate;
+extern const lv_image_dsc_t portrait_avatar_fa09_candidate;
+extern const lv_image_dsc_t portrait_avatar_fd01_candidate;
+extern const lv_image_dsc_t portrait_avatar_fd02_candidate;
+extern const lv_image_dsc_t portrait_avatar_fd03_candidate;
+extern const lv_image_dsc_t portrait_avatar_fd04_candidate;
+extern const lv_image_dsc_t portrait_avatar_fd05_candidate;
+extern const lv_image_dsc_t portrait_avatar_fd06_candidate;
+extern const lv_image_dsc_t portrait_avatar_mk01_candidate;
+extern const lv_image_dsc_t portrait_avatar_rb01_candidate;
+extern const lv_image_dsc_t portrait_avatar_rb02_candidate;
+extern const lv_image_dsc_t portrait_avatar_rb03_candidate;
+extern const lv_image_dsc_t portrait_avatar_rb04_candidate;
+extern const lv_image_dsc_t portrait_avatar_rb05_candidate;
+extern const lv_image_dsc_t portrait_avatar_sp01_candidate;
+extern const lv_image_dsc_t portrait_avatar_we01_candidate;
+extern const lv_image_dsc_t portrait_avatar_we02_candidate;
+extern const lv_image_dsc_t portrait_avatar_we03_candidate;
+extern const lv_image_dsc_t portrait_avatar_we04_candidate;
+extern const lv_image_dsc_t portrait_avatar_we05_candidate;

@@ -153,6 +153,7 @@ layout. Planned entries are not requirements until authored and reviewed.
 | ID | Document | Role |
 |---|---|---|
 | `COMP-USER-CARD` | [User card](components/COMP-USER-CARD.md) | Roster/inbox card geometry and states |
+| `COMP-USER-CARD-BUST` | [User card — bust portrait](components/COMP-USER-CARD-BUST.md) | Proposed larger transparent bust treatment; owner review pending |
 | `COMP-PIN-KEYPAD` | [PIN keypad](components/COMP-PIN-KEYPAD.md) | 3×3 grid for digits 1–9; v1 h03 key sizing and spacing |
 | `COMP-STATUS-MESSAGE` | [Status message](components/COMP-STATUS-MESSAGE.md) | Centered lower-slot copy; login uses `connecting` and `no Wi-Fi` |
 | `COMP-RECORD-CANVAS` | [Record canvas](components/COMP-RECORD-CANVAS.md) | 240 × 240 black drawing surface, 8 px corners |

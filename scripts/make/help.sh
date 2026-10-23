@@ -28,6 +28,10 @@ echo
 echo "  TEST"
 echo "    make test        Runs the active repository unit tests."
 echo
+echo "  ASSETS"
+echo "    make avatars     Pack top-level images in docs/product/device-ui/avatars/"
+echo "                     into client/assets/portraits/ (RGB565A8, updates avatars.json)."
+echo
 echo "  DEVICE BOOTSTRAP"
 echo "    make build         Build and package fresh v2 bootstrap firmware; no USB needed."
 echo "    make devices       Show nicknames, USB bindings and detected ports."

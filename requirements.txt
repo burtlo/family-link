@@ -4,3 +4,6 @@ esptool>=5.0,<6
 pyserial>=3.5
 PyYAML>=6.0,<7
 jsonschema>=4.23,<5
+Pillow>=10,<12
+pypng>=0.20220715.0,<1
+lz4>=4.3,<5

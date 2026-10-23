@@ -21,6 +21,7 @@ Read [`AGENTS.md`](AGENTS.md) before inventing product behavior or touching code
 | [`product/communication-contracts/message-delivery.md`](product/communication-contracts/message-delivery.md) | Draft v2 send exchange; atomic frozen-set, keep/resume, recipients-only publication, and refusal-vs-wait classes recorded; remaining work is engineering wire |
 | [`product/communication-contracts/inbox-and-media.md`](product/communication-contracts/inbox-and-media.md) | V1 inbox/media capture and proposed v2 sync, fetch, and playback-state schemas |
 | [`product/communication-contracts/user-profile.md`](product/communication-contracts/user-profile.md) | V1 icon/color capture and proposed v2 profile schemas |
+| [`plans/`](plans/README.md) | Feature plan bundles. The [V2 core-journey map](plans/v2-experience/implementation.md) is a preview, not orchestration-ready |
 
 Historical v1 product docs (vision, requirements, plans, features) remain in the **v1 POC archive** until migrated into `docs/product/`.
 

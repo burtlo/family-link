@@ -1,6 +1,9 @@
 #include "lab14_ui.h"
+#include "portraits_registry.h"
 
 #include "esp_heap_caps.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -213,7 +216,8 @@ static void initials_from_name(const char *name, char *out, size_t n)
     out[i] = '\0';
 }
 
-static void mount_user_card(lv_obj_t *parent, cJSON *user, int x, int y, int w, int h, bool focused, bool touch, int index)
+static void mount_user_card(lv_obj_t *parent, cJSON *user, int x, int y, int w, int h, bool focused, bool touch, int index,
+                            bool bust_style)
 {
     const lab14_tokens_t *t = &g_catalog->tokens;
     const char *name = lab14_json_str(user, "name", "");
@@ -225,35 +229,59 @@ static void mount_user_card(lv_obj_t *parent, cJSON *user, int x, int y, int w, 
     lv_obj_set_scrollable(card, false);
     lv_obj_set_style_pad_all(card, 0, 0);
     lv_obj_set_style_border_width(card, 0, 0);
-    lv_obj_set_style_radius(card, t->card_radius, 0);
+    lv_obj_set_style_radius(card, t->card_radius * w / t->card_w, 0);
     lv_obj_set_style_bg_opa(card, LV_OPA_COVER, 0);
     lv_obj_set_style_bg_color(card, lv_color_hex(bg), 0);
     lv_obj_set_style_bg_grad_color(card, lv_color_hex(darker(bg)), 0);
     lv_obj_set_style_bg_grad_dir(card, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_opa(card, focused ? LV_OPA_COVER : (lv_opa_t)t->unfocused_opa, 0);
 
-    int avatar = t->avatar * w / t->card_w;
-    lv_obj_t *face = lv_obj_create(card);
-    lv_obj_set_size(face, avatar, avatar);
-    lv_obj_set_style_radius(face, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_border_width(face, 0, 0);
-    lv_obj_set_style_bg_color(face, lv_color_hex(0xF4F4F4), 0);
-    lv_obj_set_style_pad_all(face, 0, 0);
-    lv_obj_set_scrollable(face, false);
-    lv_obj_align(face, LV_ALIGN_TOP_MID, 0, 12 * w / t->card_w);
-    char initials[4];
-    initials_from_name(name, initials, sizeof(initials));
-    lv_obj_t *initials_label = lv_label_create(face);
-    lv_label_set_text(initials_label, initials);
-    lv_obj_center(initials_label);
-    style_label(initials_label, 0x101418, t->type16);
+    const lv_image_dsc_t *bust = bust_style ? fl_portrait_lookup(lab14_json_str(user, "portrait", NULL)) : NULL;
+    if (bust != NULL) {
+        /* COMP-USER-CARD-BUST: inset bust from top so peek/side cards keep hair inside radius clip. */
+        const int bust_y_design = 8;
+        const int bust_h_design = 102;
+        int bust_x = (11 * w) / t->card_w;
+        int bust_y = (bust_y_design * h) / t->card_h;
+        int bust_w = (110 * w) / t->card_w;
+        int bust_h = (bust_h_design * h) / t->card_h;
+        int img_w = (bust->header.w * w) / t->card_w;
+        int img_h = (bust->header.h * h) / t->card_h;
+        lv_obj_t *portrait = lv_image_create(card);
+        lv_image_set_src(portrait, bust);
+        lv_obj_set_size(portrait, img_w, img_h);
+        lv_obj_set_pos(portrait, bust_x + (bust_w - img_w) / 2, bust_y + (bust_h - img_h) / 2);
+        lv_obj_set_style_pad_all(portrait, 0, 0);
+        lv_obj_set_style_border_width(portrait, 0, 0);
+        lv_obj_clear_flag(portrait, LV_OBJ_FLAG_SCROLLABLE);
+    } else {
+        int avatar = t->avatar * w / t->card_w;
+        lv_obj_t *face = lv_obj_create(card);
+        lv_obj_set_size(face, avatar, avatar);
+        lv_obj_set_style_radius(face, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_border_width(face, 0, 0);
+        lv_obj_set_style_bg_color(face, lv_color_hex(0xF4F4F4), 0);
+        lv_obj_set_style_pad_all(face, 0, 0);
+        lv_obj_clear_flag(face, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_align(face, LV_ALIGN_TOP_MID, 0, 12 * w / t->card_w);
+        char initials[4];
+        initials_from_name(name, initials, sizeof(initials));
+        lv_obj_t *initials_label = lv_label_create(face);
+        lv_label_set_text(initials_label, initials);
+        lv_obj_center(initials_label);
+        style_label(initials_label, 0x101418, t->type16);
+    }
 
     lv_obj_t *name_label = lv_label_create(card);
     lv_label_set_text(name_label, name);
-    lv_obj_set_width(name_label, w - 8);
+    lv_obj_set_width(name_label, bust != NULL ? (120 * w) / t->card_w : w - 8);
     lv_label_set_long_mode(name_label, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(name_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_align(name_label, LV_ALIGN_BOTTOM_MID, 0, -8);
+    if (bust != NULL) {
+        lv_obj_align(name_label, LV_ALIGN_TOP_MID, 0, (112 * h) / t->card_h);
+    } else {
+        lv_obj_align(name_label, LV_ALIGN_BOTTOM_MID, 0, -8);
+    }
     style_label(name_label, text, t->type16);
 
     if (touch) {
@@ -374,6 +402,7 @@ static void panel_roster(lv_obj_t *slot, cJSON *props)
     int count = cJSON_GetArraySize(users);
     int focused = lab14_json_int(props, "focused", 0);
     bool touch = lab14_json_int(props, "touch", 1) != 0;
+    bool bust_style = strcmp(lab14_json_str(props, "card_style", ""), "bust") == 0;
     if (count < 1) {
         return;
     }
@@ -392,7 +421,7 @@ static void panel_roster(lv_obj_t *slot, cJSON *props)
         int center = t->canvas_w / 2;
         int x = center - (w / 2) + ((i - focused) * (t->card_w + t->card_gap));
         int y = (t->canvas_h - t->split_y - h) / 2;
-        mount_user_card(slot, cJSON_GetArrayItem(users, i), x, y, w, h, is_focused, touch, i);
+        mount_user_card(slot, cJSON_GetArrayItem(users, i), x, y, w, h, is_focused, touch, i, bust_style);
     }
 }
 
@@ -958,11 +987,37 @@ bool lab14_ui_handle_line(const char *raw)
     return false;
 }
 
+static void harness_walk_bust_roster(void)
+{
+    cJSON *props = lab14_slot_props(g_scene, "lower");
+    if (props == NULL || strcmp(lab14_json_str(props, "card_style", ""), "bust") != 0) {
+        return;
+    }
+    cJSON *users = cJSON_GetObjectItemCaseSensitive(props, "users");
+    if (!cJSON_IsArray(users)) {
+        return;
+    }
+    int count = cJSON_GetArraySize(users);
+    for (int i = 0; i < count; i++) {
+        set_json_int(props, "focused", i);
+        remount_current();
+        cJSON *user = cJSON_GetArrayItem(users, i);
+        const char *portrait = lab14_json_str(user, "portrait", NULL);
+        if (portrait == NULL) {
+            portrait = lab14_json_str(user, "id", "?");
+        }
+        printf("LAB14_ROSTER_FOCUS scene=%s index=%d count=%d portrait=%s\n", g_current_id, i, count,
+               portrait);
+        vTaskDelay(pdMS_TO_TICKS(40));
+    }
+}
+
 void lab14_run_harness(void)
 {
     for (int i = 0; i < g_catalog->scene_count; i++) {
         if (lab14_ui_show_scene(g_catalog->scenes[i].id)) {
             emit_scene_trace(&g_catalog->scenes[i]);
+            harness_walk_bust_roster();
         }
     }
     lab14_ui_show_index();
