@@ -1,0 +1,77 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-16/runs/20261023-overlap-record-during-upload-run-8d644d2f/events.jsonl",
+    "metrics": null,
+    "serial_log": null,
+    "server_log": null
+  },
+  "build": {
+    "status": "not_started"
+  },
+  "capture": {
+    "mode": "scripted",
+    "seconds": 900,
+    "stages": {},
+    "status": "not_started",
+    "variant": "overlap-record-during-upload"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-23T06:22:02.027734Z",
+  "event_loss": {
+    "firmware_trace": {
+      "dropped_events": null,
+      "status": "UNKNOWN"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-16",
+  "experiment_verdict": "PASS",
+  "firmware": {
+    "binary_sha256": null,
+    "build_fingerprint": null,
+    "build_id": null,
+    "build_stamp": null,
+    "cmake_options": {},
+    "idf_version": null,
+    "project_path": null,
+    "sdkconfig_sha256": null,
+    "source_revision": null,
+    "source_sha256": null
+  },
+  "fixture": {
+    "file": null,
+    "revision": null,
+    "schema": null,
+    "sha256": null
+  },
+  "hardware": {
+    "board": null,
+    "kit_nickname": "lynn-kit"
+  },
+  "lab_id": "LAB-16",
+  "lab_revision": null,
+  "lab_version_string": null,
+  "operator": null,
+  "run_id": "20261023-overlap-record-during-upload-run-8d644d2f",
+  "scenarios": [],
+  "server": {
+    "path": null,
+    "revision": null,
+    "source_sha256": null
+  },
+  "source": {
+    "dirty": null,
+    "files": {},
+    "revision": null
+  },
+  "started_at_utc": "2026-10-23T06:15:00.446797Z",
+  "terminal_reason": "harness_and_upload_verified",
+  "terminal_reason_truncated": false,
+  "verification_levels": {},
+  "workflow_status": "PASS"
+}
