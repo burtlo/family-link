@@ -1,0 +1,4 @@
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 212
+[stdout]     global ACTIVE_TOKEN, EXPECTED_CHUNKS
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout] SyntaxError: name 'EXPECTED_CHUNKS' is used prior to global declaration

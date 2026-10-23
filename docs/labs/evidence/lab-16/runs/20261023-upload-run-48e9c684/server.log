@@ -1,0 +1,974 @@
+[stdout] LAB-16 diary server 0.0.0.0:8776 run_id=20261023-upload-run-48e9c684
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59615)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59616)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59617)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59618)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59619)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59620)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59621)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59622)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59623)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59624)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59625)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59626)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59627)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59628)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59629)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59630)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59631)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59633)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59635)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59636)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59637)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59638)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[stdout]     self.finish_request(request, client_address)
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 362, in finish_request
+[stdout]     self.RequestHandlerClass(request, client_address, self)
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 766, in __init__
+[stdout]     self.handle()
+[stdout]     ~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 447, in handle
+[stdout]     self.handle_one_request()
+[stdout]     ~~~~~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 435, in handle_one_request
+[stdout]     method()
+[stdout]     ~~~~~~^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 109, in do_GET
+[stdout]     self._json(
+[stdout]     ~~~~~~~~~~^
+[stdout]         200,
+[stdout]         ^^^^
+[stdout]     ...<7 lines>...
+[stdout]         },
+[stdout]         ^^
+[stdout]     )
+[stdout]     ^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 97, in _json
+[stdout]     self.send_response(code)
+[stdout]     ~~~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 512, in send_response
+[stdout]     self.log_request(code)
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\http\server.py", line 564, in log_request
+[stdout]     self.log_message('"%s" %s %s',
+[stdout]     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+[stdout]                      self.requestline, str(code), str(size))
+[stdout]                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[stdout]   File "C:\Users\lynnv\src\family-link\server\labs\lab-16-attached-storage\server.py", line 93, in log_message
+[stdout]     self.server.log.write(redact_line((fmt % args).encode("utf-8", errors="replace")))
+[stdout]     ^^^^^^^^^^^^^^^^^^^^^
+[stdout] AttributeError: 'NoneType' object has no attribute 'write'
+[stdout] ----------------------------------------
+[stdout] ----------------------------------------
+[stdout] Exception occurred during processing of request from ('127.0.0.1', 59639)
+[stdout] Traceback (most recent call last):
+[stdout]   File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.3824.0_x64__qbz5n2kfra8p0\Lib\socketserver.py", line 697, in process_request_thread
+[server log truncated]

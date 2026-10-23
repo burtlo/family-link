@@ -1,0 +1,46 @@
+menu "LAB-16 attached storage smoke"
+
+    config LAB16_BUILD_ID
+        string "LAB-16 firmware build identity"
+        default "lab16-fw-v2"
+
+    config LAB16_BOOT_SETTLE_MS
+        int "Delay after LAB16_READY before SD probe and mic capture (post-flash settle)"
+        default 500
+        range 0 5000
+
+    config LAB16_STREAM_SECONDS
+        int "Mic PCM stream duration (seconds)"
+        default 210
+        range 5 600
+
+    config LAB16_PCM_START_LBA
+        int "First sector for LAB16 PCM header (raw writes follow)"
+        default 2048
+        range 1 1000000
+
+    config LAB16_WIFI_SSID
+        string "Wi-Fi SSID for diary upload"
+        default ""
+
+    config LAB16_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default ""
+
+    config LAB16_SERVER_HOST
+        string "h22-style diary server host"
+        default "127.0.0.1"
+
+    config LAB16_SERVER_PORT
+        int "Diary server port"
+        default 8776
+
+    config LAB16_DEVICE_TOKEN
+        string "Bearer token for /v1/diary"
+        default "lab16-desk-token-v1"
+
+    config LAB16_OVERLAP_RECORD_DURING_UPLOAD
+        bool "Record a second message on SD while the first is still uploading"
+        default n
+
+endmenu

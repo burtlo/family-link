@@ -1,0 +1,7 @@
+{
+  "lab_id": "LAB-16",
+  "lab_revision": "v3",
+  "fixture_revision": "lab16-diary/v1",
+  "fixture_schema": "lab16-diary-fixture-v1",
+  "description": "h22-style diary chunk receiver for LAB-16 SD-buffered upload"
+}

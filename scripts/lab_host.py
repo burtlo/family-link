@@ -294,7 +294,9 @@ def clean_lab(config: ProjectConfig, make_name: str, variant: str | None) -> Non
     for sidecar in (build_dir.parent / f"{build_dir.name}.experiment.defaults",
                     build_dir.parent / f"{build_dir.name}.experiment.defaults.sha256",
                     build_dir.parent / f"{build_dir.name}.lab11.defaults",
-                    build_dir.parent / f"{build_dir.name}.lab11.defaults.sha256"):
+                    build_dir.parent / f"{build_dir.name}.lab11.defaults.sha256",
+                    build_dir.parent / f"{build_dir.name}.lab16.defaults",
+                    build_dir.parent / f"{build_dir.name}.lab16.defaults.sha256"):
         sidecar.unlink(missing_ok=True)
     print(f"Cleaned lab.{spec.make_name} variant={var.name} -> removed {_rel(build_dir)}")
 
@@ -329,6 +331,11 @@ def _defaults_files_for_lab_build(
     if spec.lab_id == "LAB-11":
         import lab11_build
         overlay = lab11_build.prepare(
+            sys.modules[__name__], config, spec, var, build_dir, kit=kit, target=target)
+        return defaults_files + ([overlay] if overlay is not None else [])
+    if spec.lab_id == "LAB-16":
+        import lab16_build
+        overlay = lab16_build.prepare(
             sys.modules[__name__], config, spec, var, build_dir, kit=kit, target=target)
         return defaults_files + ([overlay] if overlay is not None else [])
     if not _variant_uses_deployment_kit_secrets(var.name):
@@ -844,7 +851,17 @@ def main() -> int:
         spec = get_lab(args.lab)
         variant = args.variant or None
         if args.action == "build":
-            build_lab(config, args.lab, variant, kit=args.kit, port=args.port)
+            target = None
+            if args.kit or args.port:
+                target = resolve_run_target(config, args.kit, args.port)
+            build_lab(
+                config,
+                args.lab,
+                variant,
+                kit=target.kit_id if target else args.kit,
+                port=target.device if target else args.port,
+                target=target,
+            )
             return 0
         if args.action == "clean":
             clean_lab(config, args.lab, variant)

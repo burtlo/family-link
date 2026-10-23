@@ -448,6 +448,41 @@ labs:
         it was not saved. The sketch stroke swatch is separate. See the LAB-12
         report for exploratory policy observations and device evidence status.
 
+  lab16:
+    adapter: lab16
+    lab_id: LAB-16
+    evidence_slug: lab-16
+    project_dir: client/labs/lab-16-attached-storage
+    target: esp32s3
+    description: SD-buffered 210s mic capture then h22 diary chunk upload
+    variants:
+      default: upload
+      upload:
+        build_dir: build/labs/lab-16-attached-storage-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      server-offline-during-record:
+        build_dir: build/labs/lab-16-attached-storage-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      overlap-record-during-upload:
+        build_dir: build/labs/lab-16-attached-storage-overlap
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.overlap
+    run:
+      capture_seconds_default: 720
+      flash_by_default: true
+      instructions: |
+        Managed HTTP: host starts h22-style diary server on port 8776 before flash (upload variant).
+        Device records 210 s PCM to SD, then uploads 210 x 1 s WAV chunks to /v1/diary.
+        server-offline-during-record: server stays down until LAB16_STREAM completes, then starts for upload.
+        overlap-record-during-upload: two 180 s messages; upload session 1 while recording message 2 on SD.
+        Success: LAB16_UPLOAD status=complete uploaded=210 and LAB16_HARNESS_DONE status=complete.
+        Overlap success: both sessions 180 chunks on server; verify_overlap_capture.py.
+        Verify: python client/labs/lab-16-attached-storage/tools/verify_capture.py <log>
+      instructions_doc: client/labs/lab-16-attached-storage/README.md
+
   lab14:
     lab_id: LAB-14
     evidence_slug: lab-14

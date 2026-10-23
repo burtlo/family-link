@@ -1,0 +1,8 @@
+{
+  "lab_id": "LAB-16",
+  "lab_revision": "v2",
+  "firmware_project": "lab16_attached_storage",
+  "fixture_revision": "lab16-sd/v2",
+  "criteria": "provisional",
+  "description": "Scripted SENSOR microSD probe plus 210s mic PCM stream to raw sectors"
+}

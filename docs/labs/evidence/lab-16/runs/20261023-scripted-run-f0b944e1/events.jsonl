@@ -1,0 +1,10 @@
+{"kind":"stage","monotonic_ns":607133368610900,"outcome":"not_configured","source":"host","stage":"service"}
+{"kind":"stage","monotonic_ns":607133369083200,"outcome":"not_configured","source":"host","stage":"scenario"}
+{"kind":"stage","monotonic_ns":607133369476300,"outcome":"running","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":607133513363300,"outcome":"passed","source":"host","stage":"preflight"}
+{"kind":"stage","monotonic_ns":607133513879400,"outcome":"running","source":"host","stage":"build"}
+{"kind":"stage","monotonic_ns":607138115573600,"outcome":"passed","result":"C:\\Users\\lynnv\\src\\family-link\\build\\labs\\lab-16-attached-storage-scripted","source":"host","stage":"build"}
+{"kind":"stage","mode":"scripted","monotonic_ns":607138116233700,"outcome":"running","source":"host","stage":"activity"}
+{"kind":"stage","mode":"scripted","monotonic_ns":607194491479400,"outcome":"passed","source":"host","stage":"activity"}
+{"kind":"stage","monotonic_ns":607194491797200,"outcome":"passed","source":"host","stage":"cleanup"}
+{"experiment_verdict":"UNMEASURED","kind":"run_terminal","reason":"completed","source":"host","workflow_status":"PASS"}
