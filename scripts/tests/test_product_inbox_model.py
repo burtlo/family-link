@@ -67,6 +67,9 @@ class ProductInboxModelTests(unittest.TestCase):
     def test_p6_prefix_hash_pause(self):
         self._run("prefix-hash")
 
+    def test_p3_pause_for_record(self):
+        self._run("pause-for-record")
+
     def test_p6_sender_fallback(self):
         self._run("presentation")
 

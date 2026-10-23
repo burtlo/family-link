@@ -86,32 +86,80 @@ void compress(uint32_t state[8], const uint8_t block[64])
 
 } /* namespace */
 
+void sha256_stream_init(Sha256Stream *stream)
+{
+    if (stream == 0) {
+        return;
+    }
+    memset(stream, 0, sizeof(*stream));
+    stream->state[0] = 0x6a09e667u;
+    stream->state[1] = 0xbb67ae85u;
+    stream->state[2] = 0x3c6ef372u;
+    stream->state[3] = 0xa54ff53au;
+    stream->state[4] = 0x510e527fu;
+    stream->state[5] = 0x9b05688cu;
+    stream->state[6] = 0x1f83d9abu;
+    stream->state[7] = 0x5be0cd19u;
+}
+
+void sha256_stream_update(Sha256Stream *stream, const uint8_t *data, size_t length)
+{
+    if (stream == 0 || data == 0 || length == 0) {
+        return;
+    }
+    stream->total_len += (uint64_t)length;
+    while (length > 0) {
+        uint32_t room = 64u - stream->block_len;
+        uint32_t n = length < (size_t)room ? (uint32_t)length : room;
+        memcpy(stream->block + stream->block_len, data, n);
+        stream->block_len += n;
+        data += n;
+        length -= n;
+        if (stream->block_len == 64u) {
+            compress(stream->state, stream->block);
+            stream->block_len = 0;
+        }
+    }
+}
+
+void sha256_stream_final(Sha256Stream *stream, uint8_t out[32])
+{
+    uint64_t bits;
+    uint32_t i;
+    if (stream == 0 || out == 0) {
+        return;
+    }
+    bits = stream->total_len * 8u;
+    stream->block[stream->block_len] = 0x80u;
+    stream->block_len += 1u;
+    if (stream->block_len > 56u) {
+        while (stream->block_len < 64u) {
+            stream->block[stream->block_len] = 0;
+            stream->block_len += 1u;
+        }
+        compress(stream->state, stream->block);
+        stream->block_len = 0;
+    }
+    while (stream->block_len < 56u) {
+        stream->block[stream->block_len] = 0;
+        stream->block_len += 1u;
+    }
+    store_be(stream->block + 56, (uint32_t)(bits >> 32));
+    store_be(stream->block + 60, (uint32_t)bits);
+    compress(stream->state, stream->block);
+    for (i = 0; i < 8u; i++) {
+        store_be(out + (i * 4u), stream->state[i]);
+    }
+}
+
 void sha256_bytes(const uint8_t *data, size_t length, uint8_t out[32])
 {
-    uint32_t state[8] = {0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,
-                         0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
-    uint8_t block[64];
-    size_t offset = 0;
-    const uint64_t bits = (uint64_t)length * 8u;
-    while (length - offset >= 64u) {
-        compress(state, data + offset);
-        offset += 64u;
+    Sha256Stream stream;
+    sha256_stream_init(&stream);
+    if (data != 0 && length > 0) {
+        sha256_stream_update(&stream, data, length);
     }
-    memset(block, 0, sizeof(block));
-    if (length > offset) {
-        memcpy(block, data + offset, length - offset);
-    }
-    block[length - offset] = 0x80u;
-    if (length - offset >= 56u) {
-        compress(state, block);
-        memset(block, 0, sizeof(block));
-    }
-    store_be(block + 56, (uint32_t)(bits >> 32));
-    store_be(block + 60, (uint32_t)bits);
-    compress(state, block);
-    for (offset = 0; offset < 8; offset++) {
-        store_be(out + (offset * 4u), state[offset]);
-    }
+    sha256_stream_final(&stream, out);
 }
 
 void sha256_hex(const uint8_t digest[32], char out[65])

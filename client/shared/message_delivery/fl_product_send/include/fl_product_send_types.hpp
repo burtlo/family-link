@@ -62,6 +62,7 @@ enum SendWireStep {
 
 struct FrozenPayload {
     char client_message_id[kMaxClientMessageId];
+    char sender_user_id[kMaxUserId];
     char recipient_user_ids[kMaxRecipients][kMaxUserId];
     int recipient_count;
     uint32_t audio_byte_count;
@@ -76,6 +77,13 @@ struct HttpAction {
     const uint8_t *body;
     uint32_t body_len;
     int is_json;
+};
+
+/* kind 1 is audio and kind 2 is sketch. A read fills dest with at most
+ * kPartSizeBytes at offset within that stored object. */
+struct MediaPartReader {
+    void *ctx;
+    int (*read_at)(void *ctx, int kind, uint32_t offset, uint8_t *dest, uint32_t len, uint32_t *out_read);
 };
 
 } /* namespace fl_product_send */

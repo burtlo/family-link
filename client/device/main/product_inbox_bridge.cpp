@@ -1,4 +1,5 @@
 #include "product_inbox_fw.h"
+#include "product_shell_fw.h"
 #include "product_volume_fw.h"
 
 #include "esp_log.h"
@@ -17,12 +18,30 @@ lv_obj_t *s_transport_label = nullptr;
 lv_timer_t *s_timer = nullptr;
 bool s_attached = false;
 
+void hide_inbox_labels()
+{
+    if (s_upper_label != nullptr) {
+        lv_obj_add_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (s_lower_label != nullptr) {
+        lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (s_transport_label != nullptr) {
+        lv_obj_add_flag(s_transport_label, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
 void render_inbox()
 {
     const char *upper = "Messages";
     const char *lower = "";
     const char *transport = "";
     if (s_upper_label == nullptr) {
+        return;
+    }
+    /* Recording keeps the canvas. Connectivity copy stays off that surface. */
+    if (product_shell_stage() == FL_SHELL_STAGE_RECORD) {
+        hide_inbox_labels();
         return;
     }
     if (s_inbox.connectivity_slot() == fl_product_inbox::kSlotNoWifi) {
@@ -168,6 +187,10 @@ extern "C" int product_inbox_on_boot_pressed(void)
     }
     if (product_volume_active()) {
         return product_volume_on_boot_leave();
+    }
+    /* Picker, wipe, record, and receipt own Boot. Only the inbox opens volume. */
+    if (product_shell_stage() != FL_SHELL_STAGE_INBOX) {
+        return 0;
     }
     return product_volume_on_boot_from_inbox();
 }

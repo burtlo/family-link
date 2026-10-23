@@ -1,6 +1,7 @@
 #include "product_hardware_buttons.h"
 #include "product_stage_router.h"
 #include "product_login_fw.h"
+#include "product_send_fw.h"
 #include "product_login_http_worker.h"
 #include "product_inbox_fw.h"
 #include "product_record_fw.h"
@@ -551,6 +552,7 @@ static void apply_wifi_link(bool up)
     s_wifi_up = up;
     s_session.set_wifi(up, (int64_t)(esp_timer_get_time() / 1000LL));
     product_inbox_set_wifi(up);
+    product_send_set_wifi(up ? 1 : 0);
     product_volume_on_wifi(up);
     if (up) {
         ensure_http_worker();
@@ -720,6 +722,8 @@ void on_login_timer(lv_timer_t *timer)
 
 } /* namespace */
 
+fl_product_login::SessionWriter *product_login_session(void) { return &s_session; }
+
 extern "C" bool product_login_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
     if (upper_slot == nullptr || lower_slot == nullptr) {
@@ -735,6 +739,10 @@ extern "C" bool product_login_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     if (!product_inbox_attach(upper_slot, lower_slot)) {
         return false;
     }
+    if (!product_send_attach(upper_slot, lower_slot)) {
+        ESP_LOGW("product_login", "product_send_attach_failed");
+    }
+    product_send_set_wifi(s_wifi_up ? 1 : 0);
     if (!product_volume_attach(upper_slot, lower_slot)) {
         ESP_LOGW("product_login", "product_volume_attach_failed");
     }
@@ -778,6 +786,7 @@ extern "C" void product_login_on_mute_level(int latched)
     bool changed = false;
     if (latched) {
         if (s_session.stage() != fl_product_login::kStageMuted) {
+            product_stage_on_mute();
             if (!(product_volume_active() && product_volume_on_mute() != 0)) {
                 s_session.mute(now_ms);
                 product_inbox_on_mute();

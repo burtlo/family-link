@@ -165,6 +165,34 @@ int test_prefix_and_hash_pause()
     return g_failures;
 }
 
+int test_pause_for_record()
+{
+    fl_product_inbox::CarouselSession session;
+    uint8_t chunk[4096];
+    int play_head = 0;
+    g_failures = 0;
+    memset(chunk, 2, sizeof(chunk));
+    session.boot(0);
+    session.deliver_inbox_worker_result(0, 1, 200, kSnapshotA, (int)strlen(kSnapshotA), 0);
+    session.select_index(0, 0);
+    for (int i = 0; i < 8; ++i) {
+        session.deliver_audio_chunk(chunk, (int)sizeof(chunk), 0, 1, 0);
+    }
+    CHECK(session.prefix_play_ready() == 1);
+    session.toggle_transport(0);
+    CHECK(session.playback_phase() == fl_product_inbox::kPlaybackPlaying);
+    session.deliver_audio_chunk(chunk, (int)sizeof(chunk), 0, 1, 10);
+    play_head = session.play_head_ms();
+    CHECK(play_head > 0);
+    CHECK(strcmp(session.selected_message_id(), "msg-a") == 0);
+    session.pause_for_record(20);
+    CHECK(session.playback_phase() == fl_product_inbox::kPlaybackPaused);
+    CHECK(session.play_head_ms() == play_head);
+    CHECK(strcmp(session.selected_message_id(), "msg-a") == 0);
+    CHECK(session.settings_pause_active() == 0);
+    return g_failures;
+}
+
 int test_presentation_fallback()
 {
     fl_product_inbox::InboxMessage message;
@@ -343,6 +371,8 @@ int main(int argc, char **argv)
         failures = test_connectivity_no_play();
     } else if (strcmp(name, "prefix-hash") == 0) {
         failures = test_prefix_and_hash_pause();
+    } else if (strcmp(name, "pause-for-record") == 0) {
+        failures = test_pause_for_record();
     } else if (strcmp(name, "presentation") == 0) {
         failures = test_presentation_fallback();
     } else if (strcmp(name, "flsk2") == 0) {
@@ -368,6 +398,7 @@ int main(int argc, char **argv)
         failures += test_last_viewed_coalesce();
         failures += test_connectivity_no_play();
         failures += test_prefix_and_hash_pause();
+        failures += test_pause_for_record();
         failures += test_presentation_fallback();
         failures += test_flsk2_vectors();
         failures += test_recovery_fetch_connecting();

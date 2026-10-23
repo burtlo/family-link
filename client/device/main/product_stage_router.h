@@ -7,6 +7,11 @@ extern "C" {
 
 void product_stage_on_signed_in(void);
 int product_stage_on_red_record(void);
+int product_stage_on_boot(void);
+void product_stage_on_mute(void);
+int product_stage_on_wipe_complete(void);
+int product_stage_on_capture_failed(void);
+int product_stage_on_take_finished(void);
 
 #ifdef __cplusplus
 }

@@ -9,6 +9,49 @@
 #include <string.h>
 
 namespace fl_product_send {
+namespace {
+
+int hex_digit(char c)
+{
+    if (c >= '0' && c <= '9') {
+        return 1;
+    }
+    if (c >= 'a' && c <= 'f') {
+        return 1;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return 1;
+    }
+    return 0;
+}
+
+int client_message_id_is_uuid(const char *id)
+{
+    static const int groups[5] = {8, 4, 4, 4, 12};
+    int index = 0;
+    int group;
+    if (id == 0) {
+        return 0;
+    }
+    for (group = 0; group < 5; ++group) {
+        int count;
+        if (group > 0) {
+            if (id[index] != '-') {
+                return 0;
+            }
+            index += 1;
+        }
+        for (count = 0; count < groups[group]; ++count) {
+            if (!hex_digit(id[index])) {
+                return 0;
+            }
+            index += 1;
+        }
+    }
+    return id[index] == '\0';
+}
+
+} /* namespace */
 
 SendOutbox::SendOutbox() { reset(); }
 
@@ -28,15 +71,34 @@ void SendOutbox::set_upload_blocked(int blocked) { upload_blocked_ = blocked ? 1
 
 void SendOutbox::set_worker_generation(uint32_t generation) { worker_generation_ = generation; }
 
+void SendOutbox::set_signed_in_user(const char *user_id)
+{
+    memset(signed_in_user_id_, 0, sizeof(signed_in_user_id_));
+    if (user_id == 0 || user_id[0] == '\0') {
+        return;
+    }
+    strncpy(signed_in_user_id_, user_id, sizeof(signed_in_user_id_) - 1);
+}
+
+int SendOutbox::signed_in_matches_sender() const
+{
+    if (signed_in_user_id_[0] == '\0' || payload_.sender_user_id[0] == '\0') {
+        return 0;
+    }
+    return strcmp(signed_in_user_id_, payload_.sender_user_id) == 0 ? 1 : 0;
+}
+
 int SendOutbox::bind_payload(const FrozenPayload &payload, const uint8_t *audio, const uint8_t *sketch)
 {
     uint8_t digest[32];
-    if (payload.client_message_id[0] == '\0' || payload.recipient_count <= 0 || audio == 0) {
+    if (!client_message_id_is_uuid(payload.client_message_id) || payload.recipient_count <= 0 || audio == 0) {
         return 0;
     }
     payload_ = payload;
     audio_ = audio;
     sketch_ = sketch;
+    reader_.ctx = 0;
+    reader_.read_at = 0;
     audio_parts_total_ = (uint32_t)part_count_for_bytes(payload.audio_byte_count);
     sketch_parts_total_ =
         payload.sketch_present ? (uint32_t)part_count_for_bytes(payload.sketch_byte_count) : 0u;
@@ -51,13 +113,93 @@ int SendOutbox::bind_payload(const FrozenPayload &payload, const uint8_t *audio,
     return 1;
 }
 
+int SendOutbox::hash_stored(int kind, uint32_t total, char *hex_out)
+{
+    Sha256Stream stream;
+    uint32_t offset = 0;
+    uint8_t digest[32];
+    if (hex_out == 0 || reader_.read_at == 0 || total == 0) {
+        return 0;
+    }
+    sha256_stream_init(&stream);
+    while (offset < total) {
+        uint32_t want = total - offset;
+        uint32_t got = 0;
+        if (want > kPartSizeBytes) {
+            want = kPartSizeBytes;
+        }
+        if (!reader_.read_at(reader_.ctx, kind, offset, part_window_, want, &got) || got != want) {
+            return 0;
+        }
+        sha256_stream_update(&stream, part_window_, got);
+        offset += got;
+    }
+    sha256_stream_final(&stream, digest);
+    sha256_hex(digest, hex_out);
+    return 1;
+}
+
+int SendOutbox::bind_stored(const FrozenPayload &payload, const MediaPartReader &reader)
+{
+    if (!client_message_id_is_uuid(payload.client_message_id) || payload.recipient_count <= 0 ||
+        payload.audio_byte_count == 0 || reader.read_at == 0) {
+        return 0;
+    }
+    payload_ = payload;
+    audio_ = 0;
+    sketch_ = 0;
+    reader_ = reader;
+    audio_parts_total_ = (uint32_t)part_count_for_bytes(payload.audio_byte_count);
+    sketch_parts_total_ =
+        payload.sketch_present ? (uint32_t)part_count_for_bytes(payload.sketch_byte_count) : 0u;
+    if (!hash_stored(1, payload.audio_byte_count, audio_sha_)) {
+        payload_.client_message_id[0] = '\0';
+        reader_.read_at = 0;
+        return 0;
+    }
+    if (payload.sketch_present && payload.sketch_byte_count > 0) {
+        if (!hash_stored(2, payload.sketch_byte_count, sketch_sha_)) {
+            payload_.client_message_id[0] = '\0';
+            reader_.read_at = 0;
+            return 0;
+        }
+    } else {
+        sketch_sha_[0] = '\0';
+        sketch_parts_total_ = 0;
+    }
+    return 1;
+}
+
+int SendOutbox::fill_part_body(HttpAction *action, int kind, const uint8_t *fallback, uint32_t offset,
+                               uint32_t part_len)
+{
+    uint32_t got = 0;
+    if (action == 0 || part_len == 0 || part_len > kPartSizeBytes) {
+        return 0;
+    }
+    if (reader_.read_at != 0) {
+        if (!reader_.read_at(reader_.ctx, kind, offset, part_window_, part_len, &got) || got != part_len) {
+            return 0;
+        }
+        action->body = part_window_;
+        action->body_len = part_len;
+        return 1;
+    }
+    if (fallback == 0) {
+        return 0;
+    }
+    action->body = fallback + offset;
+    action->body_len = part_len;
+    return 1;
+}
+
 void SendOutbox::begin_submit(int64_t now_ms)
 {
     if (payload_.client_message_id[0] == '\0') {
         return;
     }
     terminal_ = kSendTerminalNone;
-    cancel_requested_ = 0;
+    left_wait_ = 0;
     complete_response_lost_ = 0;
     audio_parts_sent_ = 0;
     sketch_parts_sent_ = 0;
@@ -69,7 +211,14 @@ void SendOutbox::begin_submit(int64_t now_ms)
     part_retry_tier_ = 0;
 }
 
-void SendOutbox::request_cancel() { cancel_requested_ = 1; }
+void SendOutbox::request_cancel()
+{
+    /* A finished send is already in flight. Boot does not cancel that upload. */
+}
+
+void SendOutbox::leave_wait() { left_wait_ = 1; }
+
+int SendOutbox::left_wait() const { return left_wait_; }
 
 void SendOutbox::set_ui(SendUiPhase phase)
 {
@@ -84,9 +233,19 @@ void SendOutbox::finish_terminal(SendTerminal terminal, SendUiPhase ui, int64_t 
     terminal_ = terminal;
     step_ = kWireIdle;
     set_ui(ui);
-    if (ui == kSendUiSent) {
-        sent_until_ms_ = now_ms + kSentHoldMs;
+    if (ui == kSendUiSent || ui == kSendUiCouldntSend) {
+        hold_until_ms_ = now_ms + kSentHoldMs;
     }
+}
+
+void SendOutbox::note_accepted(int64_t now_ms)
+{
+    /* Signed out, or she already left this wait: do not flash sent. */
+    if (left_wait_ || upload_blocked_) {
+        finish_terminal(kSendTerminalAccepted, kSendUiHidden, now_ms);
+        return;
+    }
+    finish_terminal(kSendTerminalAccepted, kSendUiSent, now_ms);
 }
 
 void SendOutbox::apply_com013(Com013Class com, int64_t now_ms)
@@ -118,9 +277,20 @@ void SendOutbox::schedule_part_retry(int64_t now_ms)
     set_ui(kSendUiQueuedWait);
 }
 
-int SendOutbox::active() const { return step_ != kWireIdle || ui_ == kSendUiSent; }
+int SendOutbox::active() const
+{
+    return step_ != kWireIdle || ui_ == kSendUiSent || ui_ == kSendUiCouldntSend;
+}
 
 SendUiPhase SendOutbox::ui_phase() const { return ui_; }
+
+const char *SendOutbox::body_label() const
+{
+    if (ui_ == kSendUiQueuedWait) {
+        return connectivity_wait_label(wifi_up_, refresh_failed_);
+    }
+    return ui_phase_label(ui_);
+}
 
 SendTerminal SendOutbox::terminal() const { return terminal_; }
 
@@ -149,8 +319,15 @@ int SendOutbox::has_pending_http() const
 
 void SendOutbox::advance_to(int64_t now_ms)
 {
-    if (ui_ == kSendUiSent && now_ms >= sent_until_ms_) {
+    if (now_ms < hold_until_ms_) {
+        return;
+    }
+    if (ui_ == kSendUiSent) {
         finish_terminal(kSendTerminalAccepted, kSendUiHidden, now_ms);
+        return;
+    }
+    if (ui_ == kSendUiCouldntSend) {
+        finish_terminal(kSendTerminalDiscarded, kSendUiHidden, now_ms);
     }
 }
 
@@ -182,13 +359,17 @@ int SendOutbox::prepare_http_action(HttpAction *action, int64_t now_ms)
 {
     uint32_t part_len = 0;
     uint32_t offset = 0;
-    if (action == 0 || step_ == kWireIdle) {
+    if (action == 0 || step_ == kWireIdle || http_inflight_) {
         return 0;
     }
     if (now_ms < next_action_ms_) {
         return 0;
     }
     if (upload_blocked_) {
+        set_ui(kSendUiQueuedWait);
+        return 0;
+    }
+    if (!signed_in_matches_sender()) {
         set_ui(kSendUiQueuedWait);
         return 0;
     }
@@ -218,9 +399,10 @@ int SendOutbox::prepare_http_action(HttpAction *action, int64_t now_ms)
         if (!build_part_path(action->path, (int)sizeof(action->path), "audio", audio_parts_sent_)) {
             return 0;
         }
+        if (!fill_part_body(action, 1, audio_, offset, part_len)) {
+            return 0;
+        }
         snprintf(action->method, sizeof(action->method), "PUT");
-        action->body = audio_ + offset;
-        action->body_len = part_len;
         set_ui(kSendUiSending);
         return 1;
     }
@@ -233,9 +415,10 @@ int SendOutbox::prepare_http_action(HttpAction *action, int64_t now_ms)
         if (!build_part_path(action->path, (int)sizeof(action->path), "sketch", sketch_parts_sent_)) {
             return 0;
         }
+        if (!fill_part_body(action, 2, sketch_, offset, part_len)) {
+            return 0;
+        }
         snprintf(action->method, sizeof(action->method), "PUT");
-        action->body = sketch_ + offset;
-        action->body_len = part_len;
         set_ui(kSendUiSending);
         return 1;
     }
@@ -262,6 +445,32 @@ int SendOutbox::prepare_http_action(HttpAction *action, int64_t now_ms)
     return 0;
 }
 
+void SendOutbox::note_http_sent(uint32_t *seq_out)
+{
+    http_seq_ += 1u;
+    http_inflight_ = 1;
+    if (seq_out != 0) {
+        *seq_out = http_seq_;
+    }
+}
+
+void SendOutbox::cancel_http_sent() { http_inflight_ = 0; }
+
+int SendOutbox::http_inflight() const { return http_inflight_; }
+
+int SendOutbox::apply_http_result(const char *client_message_id, uint32_t seq, const HttpAction &action,
+                                  const SendTransportResult &result, int64_t now_ms)
+{
+    if (seq != http_seq_ || http_inflight_ == 0) {
+        return 0;
+    }
+    http_inflight_ = 0;
+    if (client_message_id == 0 || strcmp(client_message_id, payload_.client_message_id) != 0) {
+        return 0;
+    }
+    return apply_transport_result(action, result, now_ms);
+}
+
 int SendOutbox::apply_transport_result(const HttpAction &action, const SendTransportResult &result,
                                        int64_t now_ms)
 {
@@ -269,10 +478,6 @@ int SendOutbox::apply_transport_result(const HttpAction &action, const SendTrans
     (void)action;
     if (step_ == kWireIdle) {
         return 0;
-    }
-    if (cancel_requested_ && step_ == kWireLookup) {
-        finish_terminal(kSendTerminalCancelled, kSendUiHidden, now_ms);
-        return 1;
     }
     if (!result.transport_ok || result.response_lost) {
         if (step_ == kWireComplete) {
@@ -315,15 +520,7 @@ int SendOutbox::apply_transport_result(const HttpAction &action, const SendTrans
         return 1;
     }
     if (strcmp(parsed.schema, "fl.send-receipt/2") == 0 && strcmp(parsed.state, "accepted") == 0) {
-        finish_terminal(kSendTerminalAccepted, kSendUiSent, now_ms);
-        return 1;
-    }
-    if (step_ == kWireLookup && strcmp(parsed.schema, "fl.send-receipt/2") == 0) {
-        finish_terminal(kSendTerminalAccepted, kSendUiSent, now_ms);
-        return 1;
-    }
-    if (step_ == kWireComplete && strcmp(parsed.schema, "fl.send-receipt/2") == 0) {
-        finish_terminal(kSendTerminalAccepted, kSendUiSent, now_ms);
+        note_accepted(now_ms);
         return 1;
     }
     if (strcmp(parsed.schema, "fl.send-open/2") == 0) {

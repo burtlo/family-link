@@ -24,6 +24,7 @@ public:
     void on_mute(int64_t now_ms);
     void note_refresh_success(int64_t now_ms);
     void pause_for_settings(int64_t now_ms);
+    void pause_for_record(int64_t now_ms);
 
     int message_count() const;
     int selected_index() const;

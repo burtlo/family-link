@@ -39,7 +39,7 @@ Com013Class classify_http_result(int wifi_up, int transport_ok, int http_status,
     if (http_status == 409) {
         return kCom013Discard;
     }
-    if (http_status == 413 || http_status == 422) {
+    if (http_status == 413 || http_status == 415 || http_status == 422) {
         return kCom013Discard;
     }
     if (http_status >= 500 && http_status <= 599) {

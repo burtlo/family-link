@@ -367,6 +367,15 @@ void CarouselSession::pause_for_settings(int64_t now_ms)
     (void)now_ms;
 }
 
+void CarouselSession::pause_for_record(int64_t now_ms)
+{
+    if (playback_ == kPlaybackPlaying) {
+        playback_ = kPlaybackPaused;
+        update_transport_for_playback();
+    }
+    (void)now_ms;
+}
+
 void CarouselSession::note_refresh_success(int64_t now_ms)
 {
     if (connecting_) {

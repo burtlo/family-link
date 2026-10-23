@@ -4,6 +4,7 @@ idf_component_register(
     SRCS
         "session.cpp"
         "storage.cpp"
+        "media_file.cpp"
         "flsk2.cpp"
         "${PROMOTED_ROOT}/lab10_ui/lab10_ui.c"
         "${PROMOTED_ROOT}/lab10_capture/lab10_capture.c"

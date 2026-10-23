@@ -19,6 +19,8 @@ int product_login_is_signed_in(void);
 
 #ifdef __cplusplus
 }
+#include "fl_product_login_session.hpp"
+fl_product_login::SessionWriter *product_login_session(void);
 #endif
 
 #endif

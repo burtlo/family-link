@@ -144,7 +144,7 @@ static uint32_t count_live_shell_timer_objects(void)
 static const char *stage_name(fl_shell_stage_t stage)
 {
     static const char *const names[FL_SHELL_STAGE_COUNT] = {
-        "roster", "pin", "hangout", "inbox", "volume", "record", "receipt"};
+        "roster", "pin", "hangout", "inbox", "volume", "record", "receipt", "picker"};
     return (unsigned)stage < FL_SHELL_STAGE_COUNT ? names[stage] : "invalid";
 }
 
@@ -364,7 +364,7 @@ static const char *panel_description(fl_shell_stage_t stage)
         "Synthetic roster · rev 0", "PIN entry mock · no verification",
         "Hangout is empty", "Inbox placeholder · exploratory",
         "Desk volume · no numeric readout", "Record placeholder · no capture",
-        "Receipt placeholder · exploratory"};
+        "Receipt placeholder · exploratory", "Recipient selection · split pane"};
     return (unsigned)stage < FL_SHELL_STAGE_COUNT ? descriptions[stage] : "Invalid stage";
 }
 

@@ -2,7 +2,6 @@
 
 #include "product_inbox_fw.h"
 #include "product_login_fw.h"
-#include "product_shell_fw.h"
 #include "product_stage_router.h"
 #include "product_volume_fw.h"
 
@@ -102,18 +101,20 @@ int product_hardware_buttons_mute_latched(void)
 void product_hardware_buttons_poll(void)
 {
     if (atomic_exchange_explicit(&s_boot_pressed, false, memory_order_acq_rel)) {
-        if (product_login_is_signed_in()) {
+        if (!product_login_is_signed_in()) {
+            product_login_on_boot_pressed();
+        } else if (product_volume_active()) {
             (void)product_inbox_on_boot_pressed();
         } else {
-            product_login_on_boot_pressed();
+            (void)product_stage_on_boot();
         }
     }
     /* Mute is a latch. The press edge is not the level. */
     (void)atomic_exchange_explicit(&s_mute_pressed, false, memory_order_acq_rel);
     product_login_on_mute_level(product_hardware_buttons_mute_latched());
     if (atomic_exchange_explicit(&s_red_pressed, false, memory_order_acq_rel)) {
-        if (product_volume_on_red_record() != 0 && product_login_is_signed_in() &&
-            product_shell_stage() == FL_SHELL_STAGE_INBOX) {
+        /* Volume owns red while its screen is up. Signed-out red stays on login. */
+        if (product_login_is_signed_in() && product_volume_on_red_record() != 0) {
             (void)product_stage_on_red_record();
         }
     }

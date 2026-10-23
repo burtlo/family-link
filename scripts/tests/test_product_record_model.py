@@ -17,6 +17,7 @@ INCLUDE = [
 SOURCES = [
     RECORD / "fl_product_record/session.cpp",
     RECORD / "fl_product_record/storage.cpp",
+    RECORD / "fl_product_record/media_file.cpp",
     RECORD / "fl_product_record/flsk2.cpp",
     PROMOTED / "lab10_ui/lab10_ui.c",
     PROMOTED / "lab10_capture/lab10_capture.c",
@@ -95,8 +96,14 @@ class ProductRecordModelTests(unittest.TestCase):
     def test_p7_session_storage(self):
         self._run("session")
 
+    def test_p7_media_stream(self):
+        self._run("media")
+
     def test_p7_ink_overflow(self):
         self._run("overflow")
+
+    def test_p5_wipe_and_capture(self):
+        self._run("wipe")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 #ifndef FL_PRODUCT_RECORD_STORAGE_HPP
 #define FL_PRODUCT_RECORD_STORAGE_HPP
 
+#include "fl_product_record_media.hpp"
 #include "fl_product_record_types.hpp"
 
 #include <stddef.h>
@@ -8,11 +9,18 @@
 
 namespace fl_product_record {
 
-struct StoredPayload {
+enum MediaKind {
+    kMediaAudio = 1,
+    kMediaSketch = 2
+};
+
+/* Metadata only. Audio and sketch bytes live in the attached MediaBackend. */
+struct StoredObject {
     char client_message_id[kMaxClientMessageId];
-    uint32_t audio_bytes_reserved;
+    uint32_t audio_bytes;
     uint32_t sketch_bytes;
-    uint8_t sketch[kMaxFlsk2Bytes];
+    uint64_t audio_offset;
+    uint64_t sketch_offset;
     int uploading;
     int valid;
 };
@@ -21,23 +29,56 @@ class AttachedStorage {
 public:
     AttachedStorage();
 
+    void attach_media(MediaBackend *backend);
+
     bool has_in_progress() const;
     bool begin_in_progress(const char *client_message_id, uint32_t audio_budget_bytes);
+    bool append_in_progress_audio(const uint8_t *data, size_t len);
     bool write_in_progress_sketch(const uint8_t *sketch, size_t sketch_len);
     bool commit_in_progress_to_finished();
     void discard_in_progress();
 
+    /* Later send phase: stream one finished object in part-sized reads.
+     * `offset` is within that object, not a media-file offset.
+     * A short read sets *out_read below len at the end of the object.
+     */
+    bool read_finished(const char *client_message_id, MediaKind kind, uint32_t offset, uint8_t *dest,
+                       size_t len, size_t *out_read);
+
     bool can_start_second_recording() const;
     int finished_count() const;
-    const StoredPayload *finished_slot(int index) const;
+    const StoredObject *finished_slot(int index) const;
     bool mark_finished_uploading(const char *client_message_id);
     void clear_finished_upload(const char *client_message_id);
 
     uint32_t in_progress_audio_budget() const;
+    uint32_t in_progress_audio_bytes() const;
+    uint32_t in_progress_sketch_bytes() const;
 
 private:
-    StoredPayload in_progress_;
-    StoredPayload finished_[kAttachedFinishedSlots];
+    enum {
+        kWriteWindowBytes = 4096,
+        kMediaDataOrigin = 4096,
+        kDirectoryBytes = 320,
+        kDirectoryHeaderBytes = 64,
+        kSlotBytes = 128
+    };
+
+    bool id_ok(const char *client_message_id) const;
+    int find_finished(const char *client_message_id) const;
+    uint64_t committed_end() const;
+    bool write_span(uint64_t offset, const uint8_t *data, size_t len);
+    bool load_directory();
+    bool store_directory();
+    void format_empty_directory();
+
+    MediaBackend *media_;
+    uint64_t next_offset_;
+    uint32_t in_progress_budget_;
+    int sketch_open_;
+    uint8_t window_[kWriteWindowBytes];
+    StoredObject in_progress_;
+    StoredObject finished_[kAttachedFinishedSlots];
 };
 
 } /* namespace fl_product_record */

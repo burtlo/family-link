@@ -268,6 +268,7 @@ public:
     const char *user_display_name_at(int index) const;
     const char *user_card_background_at(int index) const;
     int user_uses_initials_fallback_at(int index) const;
+    const char *user_avatar_id_at(int index) const;
     int selectable_cards() const;
     int stale() const;
     int missed_beats() const;

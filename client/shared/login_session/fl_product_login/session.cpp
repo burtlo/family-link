@@ -1018,6 +1018,14 @@ int SessionWriter::user_uses_initials_fallback_at(int index) const
     return 0;
 }
 
+const char *SessionWriter::user_avatar_id_at(int index) const
+{
+    if (index < 0 || index >= user_count_) {
+        return "";
+    }
+    return users_[index].avatar_id;
+}
+
 int SessionWriter::connecting_backoff_index() const { return connecting_backoff_index_; }
 bool SessionWriter::health_ack_pending() const { return health_unacked_; }
 uint64_t SessionWriter::health_operation_id() const { return health_operation_id_; }
