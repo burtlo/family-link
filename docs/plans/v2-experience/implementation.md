@@ -4,14 +4,16 @@ Status: **preview** (published 2026-10-22; lab inventory refreshed 2026-10-22 fo
 
 Canonical map for this bundle. Core-journey wire **decisions** are recorded in the contract revisions below. That acceptance does not finish **P1**. P1 still owes a fixture, manifest, and conformance tests. The map is not ready for orchestration until that fixture is verified. Lab fixtures are not that fixture.
 
+On 2026-10-23 the owner amended capture and send. A recording is stored on attached storage and streams only after it finishes. One finished message streams at a time, and another recording may be stored during that stream. Inbox refresh, playback reads, and that stream may run together. `LAB-16` is the evidence for the storage overlap. Its diary route is not the product protocol.
+
 Accepted decision revisions, not fixture delivery:
 
 | Contract | Revision | What is accepted |
 |----------|----------|------------------|
 | [Endpoint health and login](../../product/communication-contracts/endpoint-health-and-login.md) | 0.13 | Five login routes, 32-byte session token, HTTP map, 180-second server stale clock on request acceptance, 60-second refresh, invalidate spacing |
 | [User-scoped envelope](../../product/communication-contracts/user-scoped-envelope.md) | 0.10 | Schema literals, empty refresh success, empty part acknowledgement |
-| [Inbox and media](../../product/communication-contracts/inbox-and-media.md) | 0.8 | One 262144-byte snapshot, ordinary and recovery fetches, sender presentation fields, prefix playback |
-| [Message delivery](../../product/communication-contracts/message-delivery.md) | 0.11 | PCM limits, `flsk2` pixel replay, 16384-byte parts, open and accepted bodies, durable accepted-ID record |
+| [Inbox and media](../../product/communication-contracts/inbox-and-media.md) | 0.9 | One 262144-byte snapshot, ordinary and recovery fetches, sender presentation fields, prefix playback. Inbox refresh runs during a finished-message stream |
+| [Message delivery](../../product/communication-contracts/message-delivery.md) | 0.12 | PCM limits, `flsk2` pixel replay, 16384-byte parts, open and accepted bodies, durable accepted-ID record. Attached storage; one finished stream at a time; a new recording may be stored during that stream |
 | [User profile](../../product/communication-contracts/user-profile.md) | 0.9 | Core cards read the roster and inbox projections. Profile editing routes stay outside this slice |
 
 Slice for this pass:
@@ -75,8 +77,8 @@ Experience IDs reuse `EXP-001`. The experience prefix is required.
 | Carousel `EXP-044` `EXP-045` | Refresh failure stays on the inbox and shows connecting. A missing or unknown sender avatar or card background uses initials and `card-bg-01`. | **P6**. Sender presentation comes from the inbox item, including a sender absent from the hangout roster. |
 | Carousel `EXP-025` `EXP-026` `EXP-036` `EXP-037` | Mute discards play heads. BOOT opens Volume and pauses audio. Red record starts send. | **P5** mute. **P9** BOOT handoff. **P8** red-record handoff. |
 | `EXP-SKETCH-RECORD-PLAYBACK` `SK-001`–`SK-009`, `EXP-SKP-001`–`EXP-SKP-009` | Geometry, rail, no eraser, hidden card chrome, and independent-pixel replay are decided. `SCR-RECORD-SKETCH` exists. `LAB-10` captures locally and does not send. `LAB-04` compares formats and does not pick one. | **P7** record path, including adjacent-pixel capture. **P6** card replay (`EXP-SKP-002`, `EXP-SKP-005`, `EXP-SKP-009`). **P1** fixture uses `flsk2`. |
-| `EXP-MESSAGE-RECORD-SEND` `EXP-001`–`EXP-014`, `EXP-016`–`EXP-043` | Recipient rules, capture, `preparing` / `sending` / `sent`, queue, refusal-versus-wait, and no sender self-copy are decided. No picker or send screen. No `EXP-015`. [`LAB-11`](../../../client/labs/lab-11-send-receipt/README.md) freezes a synthetic payload, uploads parts, and looks up a receipt. Success text is `condition met` under lab condition `accept-on-archive-commit`. Delivery routes and part size are accepted. Storage medium remains `COM-OPEN-003`. L0/L1 only; no kit capture. | **P2** picker and send screens. **P7** capture. **P8** send and queue, after **P6**. **P1** fixture for open, part, complete, and tombstone receipts. **P5** so a muted or switched user cannot upload. |
-| `EXP-MESSAGE-RECORD-SEND` `EXP-044` `EXP-045` `EXP-046` | Refresh failure stays on the send wait. Recipient cards use the catalog fallback. Inbox fetches stop from the start of recording through a pending finished send. | **P8**, using a capture-state signal from **P7**. **P6** must not fetch during that suspension. **P10** checks the suspension after Boot. |
+| `EXP-MESSAGE-RECORD-SEND` `EXP-001`–`EXP-014`, `EXP-016`–`EXP-043` | Recipient rules, capture, `preparing` / `sending` / `sent`, queue, refusal-versus-wait, and no sender self-copy are decided. No picker or send screen. No `EXP-015`. [`LAB-11`](../../../client/labs/lab-11-send-receipt/README.md) freezes a synthetic payload, uploads parts, and looks up a receipt. Success text is `condition met` under lab condition `accept-on-archive-commit`. Delivery routes and part size are accepted. Attached storage holds the recording and finished messages (`DEC-051`). | **P2** picker and send screens. **P7** capture to storage. **P8** one finished stream at a time, after **P6**. **P1** fixture for open, part, complete, and tombstone receipts. **P5** so a muted or switched user cannot upload. |
+| `EXP-MESSAGE-RECORD-SEND` `EXP-044` `EXP-045` `EXP-046` | Refresh failure stays on the send wait. Recipient cards use the catalog fallback. A finished message streams while another recording is stored. Inbox refresh on the carousel is not held for that stream (`DEC-051`). | **P8** streams from storage. **P7** stores the next recording. **P6** keeps fetching. **P10** checks Boot back to the inbox during a stream. |
 | `EXP-SETTINGS` `EXP-001`–`EXP-017` | Volume behavior is confirmed. No Volume screen. Hub and profile edit are excluded. | **P2** Volume screen. **P9** slider, desk persist, and inbox return. |
 
 ---
@@ -117,6 +119,7 @@ Product firmware is a bootstrap. Journey behavior lives in labs and in specifica
 | `LAB-12` | [lab-12-profile-settings](../../../client/labs/lab-12-profile-settings/README.md) and fixture server port 8771. | [REPORT-LAB-12-v1](../../labs/evidence/lab-12/REPORT-LAB-12-v1.md): visual software verdict FAIL. No passing target run. | Outside the slice. |
 | `LAB-13` | No firmware or server. | Roadmap scenario list only. | **P10** test list. |
 | `LAB-14` | [lab-14-device-ui-catalog](../../../client/labs/lab-14-device-ui-catalog/README.md). No server. | Runs may exist under `docs/labs/evidence/lab-14/runs/`. No qualification report. Visual review of catalog scenes, not a behavior experiment. | **P2**. |
+| `LAB-16` | [lab-16-attached-storage](../../../client/labs/lab-16-attached-storage/README.md) and a diary server on port 8776. | Owner-verified on 2026-10-23: record to the card, upload that recording, and record a second message while the first uploads. The diary path is not a product route. | **P7** storage and **P8** one finished stream beside a new recording. |
 
 ---
 
@@ -177,7 +180,7 @@ Product firmware is a bootstrap. Journey behavior lives in labs and in specifica
 
 ### Record and send
 
-**Present:** Send acceptance rows through `EXP-046` are decided, including frozen recipients, keep-versus-discard, catalog fallback, inbox-fetch suspension, and no sender copy. `SCR-RECORD-SKETCH` and `LAB-10` cover local capture. The [L10-09 report](../../labs/evidence/lab-10/REPORT-LAB-10-L10-09-20261018.md) records a scripted workflow PASS with experiment UNMEASURED, and it does not claim pixels, touch, or audio. Picker and send screens are not authored. [`LAB-11`](../../../client/labs/lab-11-send-receipt/README.md) has firmware, a fixture server on port 8770, and L0/L1 qualification. Both firmware variants build. There is no kit capture. The payload is a synthetic blob, not a `LAB-04` sketch. Phase text `condition met` is the lab outcome for `accept-on-archive-commit`. Delivery routes, PCM, `flsk2`, 16384-byte parts, and the accepted-ID record are in [message delivery](../../product/communication-contracts/message-delivery.md) revision 0.11. Storage medium remains `COM-OPEN-003`.
+**Present:** Send acceptance rows through `EXP-046` are decided, including frozen recipients, keep-versus-discard, catalog fallback, attached-storage capture, one finished stream beside a new recording, and no sender copy. Inbox refresh is not held for that stream (`DEC-051`). `SCR-RECORD-SKETCH` and `LAB-10` cover local capture. The [L10-09 report](../../labs/evidence/lab-10/REPORT-LAB-10-L10-09-20261018.md) records a scripted workflow PASS with experiment UNMEASURED, and it does not claim pixels, touch, or audio. Picker and send screens are not authored. [`LAB-11`](../../../client/labs/lab-11-send-receipt/README.md) has firmware, a fixture server on port 8770, and L0/L1 qualification. Both firmware variants build. There is no kit capture. The payload is a synthetic blob, not a `LAB-04` sketch. Phase text `condition met` is the lab outcome for `accept-on-archive-commit`. [`LAB-16`](../../../client/labs/lab-16-attached-storage/README.md) is the owner-verified storage overlap. Its diary server is not the product route. Delivery routes, PCM, `flsk2`, 16384-byte parts, and the accepted-ID record are in [message delivery](../../product/communication-contracts/message-delivery.md) revision 0.12.
 
 **Required:** Red from the inbox opens recipient selection. A valid selection opens the 240×240 canvas. Finish becomes one `preparing` → `sending` → `sent` sequence, or a queued wait, or `couldn't send`. One `client_message_id` does not create a second message.
 
@@ -191,7 +194,7 @@ Product firmware is a bootstrap. Journey behavior lives in labs and in specifica
 | [server/labs/lab-11-send-receipt/](../../../server/labs/lab-11-send-receipt/server.py) | Send fixture `lab11-send/v1` |
 | [REPORT-LAB-11-v1](../../labs/evidence/lab-11/REPORT-LAB-11-v1.md) | L0/L1. L2 blocked. Performance unmeasured |
 
-**Risks:** `LAB-10` screen outcomes (`Completed`, `Stopped`) and `LAB-11` text `condition met` are lab presentation, distinct from the product `preparing` / `sending` / `sent` copy. Power loss may drop a finished queue (send `EXP-035`); storage medium is still delivery `COM-OPEN-003`. `LAB-11` chunk sizes 1024 and 4096 are probes, not an accepted part size.
+**Risks:** `LAB-10` screen outcomes (`Completed`, `Stopped`) and `LAB-11` text `condition met` are lab presentation, distinct from the product `preparing` / `sending` / `sent` copy. `LAB-16` shows attached storage can hold a recording and upload a finished one while the next recording is stored. Its `/v1/diary` server is not the product send route. Power loss may still drop an unfinished capture, and a finished queue only if storage does not survive (send `EXP-035`). `LAB-11` chunk sizes 1024 and 4096 are probes, not an accepted part size.
 
 ### Volume
 
@@ -231,7 +234,7 @@ P7 may start once P3 exists. It does not wait for P4. P8 waits for P5, P6, and P
 
 - **Goal:** Deliver a fixture, manifest, and tests for the wire revisions in the status table. Do not reopen those choices, and do not mark this package complete because the contracts already name them.
 - **Deliverables:** A fixture server and fixture manifest that speak only those schemas. Tests cover ordinary success and the failure sequences in the P1 verifier: lost health acknowledgement, accepted-ID tombstone across restart, oversized inbox then recovery without a Wi-Fi drop, `fl.send-open/2`, empty part acknowledgement, `fl.send-receipt/2`, and the three sketch replay vectors.
-- **Out of scope:** Product copy, card colors, avatar art, profile editing, Volume stops, and any firmware in `client/device`. Choosing the queued-send storage medium (`COM-OPEN-003`) is still open and is not closed by this fixture.
+- **Out of scope:** Product copy, card colors, avatar art, profile editing, Volume stops, and any firmware in `client/device`.
 - **Touchpoints:** Login revision 0.13, envelope revision 0.10, inbox revision 0.8, delivery revision 0.11, profile revision 0.9. Lab servers stay on their own fixture ids. The `LAB-02` `fl.inbox-page/2` name is a lab subset.
 
 #### P2 — Author missing core screens
@@ -267,21 +270,21 @@ P7 may start once P3 exists. It does not wait for P4. P8 waits for P5, P6, and P
 - **Goal:** Signed-in message timeline and playback on the P2 inbox screen.
 - **Deliverables:** Snapshot apply by message id; oldest-left order; last-viewed writes that do not steal the live selection; Play/Pause in the header; independent-pixel sketch replay at 120×120 with portrait hidden while ink is visible; prefix playback; ordinary 60-second fetch and recovery fetch while connecting; sender face from `sender_avatar_id` and `sender_card_background_id`, with initials and `card-bg-01` as fallback (`EXP-045`); refresh failure stays on the inbox (`EXP-044`). Connectivity status replaces the lower slot and pauses audio. No cached play while unreachable. Level 1 updates add a card on the right and refresh sender name and card face. There is no unread badge.
 - **Out of scope:** Recipient picker, send upload, Volume slider, device-wide archive, and a product push channel.
-- **Touchpoints:** Carousel spec, inbox contract revision 0.8, `COMP-MESSAGE-CARD`, `LAB-02`, `LAB-03`, and `LAB-04` as reference. Do not wait for `LAB-01`. Do not promote a `LAB-04` comparison arm as the sketch encoding. Suspend fetches while **P7** reports recording or **P8** has a pending finished send.
+- **Touchpoints:** Carousel spec, inbox contract revision 0.9, `COMP-MESSAGE-CARD`, `LAB-02`, `LAB-03`, and `LAB-04` as reference. Do not wait for `LAB-01`. Do not promote a `LAB-04` comparison arm as the sketch encoding. Keep fetching while a finished message streams. The ordinary fetch still runs only while the carousel is showing.
 
 #### P7 — Record canvas in the product shell
 
 - **Goal:** Move decided capture geometry into the product shell without the lab’s terminal screen.
-- **Deliverables:** 240×240 canvas, 80×240 rail, logical 120×120 points with per-point color, adjacent-pixel capture, background color as the only erase, 3-minute cap, mic-failure and ink-overflow behavior from the send spec. No timer chrome. A capture-state signal that tells **P6** and **P8** when recording is in progress. Room for one finished PCM of 5,760,000 bytes plus that send’s sketch bytes, kept when storage survives. The storage medium stays `COM-OPEN-003`.
+- **Deliverables:** 240×240 canvas, 80×240 rail, logical 120×120 points with per-point color, adjacent-pixel capture, background color as the only erase, 3-minute cap, mic-failure and ink-overflow behavior from the send spec. No timer chrome. Attached storage holds the in-progress recording and finished messages that have not yet been accepted. Capture does not wait on the network. An unfinished recording is not uploaded. `LAB-16` is the evidence that a second recording can be stored while an earlier finished message uploads.
 - **Out of scope:** Recipient list, HTTP upload, `LAB-10` qualification strings as product copy.
 - **Touchpoints:** Sketch spec, `SCR-RECORD-SKETCH`, send `EXP-011`–`EXP-022` and `EXP-037`–`EXP-039`, [`LAB-10`](../../../client/labs/lab-10-record-canvas/README.md) and its [L10-09 report](../../labs/evidence/lab-10/REPORT-LAB-10-L10-09-20261018.md). That report’s workflow PASS is not a pixel or audio PASS.
 
 #### P8 — Send, receipt, and queue
 
 - **Goal:** One frozen capture reaches one truthful terminal result, then returns to the inbox selection **P6** was showing.
-- **Deliverables:** Picker with focus distinct from selection; no Everyone card; empty-recipient copy; recipient catalog fallback (`EXP-045`); automatic submit when ready; queue across `no Wi-Fi`, HTTP 5xx, and expired session; refresh failure stays on this wait (`EXP-044`); discard on definite refusal; 2-second `sent`; return to the previous inbox selection; sender inbox does not gain a card; mute during capture discards, mute after finish keeps the queue and does not upload until the same user is signed in again. Suspend inbox fetches from the start of recording until the finished send is accepted or discarded (`EXP-046`), using the **P7** capture-state signal and this package’s pending-send flag. An accepted-ID tombstone is the same `accepted` result.
+- **Deliverables:** Picker with focus distinct from selection; no Everyone card; empty-recipient copy; recipient catalog fallback (`EXP-045`); automatic submit when ready; queue across `no Wi-Fi`, HTTP 5xx, and expired session; refresh failure stays on this wait (`EXP-044`); discard on definite refusal; 2-second `sent`; return to the previous inbox selection; sender inbox does not gain a card; mute during capture discards, mute after finish keeps the stored message and does not upload until the same user is signed in again. One finished message streams at a time. Red from the inbox stores another recording while that stream continues. Boot during the stream returns to the inbox and keeps the stream. Inbox refresh is not held for the stream (`EXP-046`). Playback reads may be in flight with that stream and with inbox refresh. An accepted-ID tombstone is the same `accepted` result.
 - **Out of scope:** Changing refusal classes, profile editing, playback implementation.
-- **Touchpoints:** Send spec, delivery contract revision 0.11, P2 send screens, P6 selection, P7 capture buffer, [`LAB-11`](../../../client/labs/lab-11-send-receipt/README.md) as evidence for one frozen payload, part queue overflow, and receipt lookup. Product phase copy stays `preparing`, `sending`, and `sent`. Accepted part size is 16384 bytes.
+- **Touchpoints:** Send spec, delivery contract revision 0.12, P2 send screens, P6 selection, P7 attached storage, [`LAB-11`](../../../client/labs/lab-11-send-receipt/README.md) as evidence for one frozen payload, part queue overflow, and receipt lookup, and [`LAB-16`](../../../client/labs/lab-16-attached-storage/README.md) as evidence for storage and overlap. Product phase copy stays `preparing`, `sending`, and `sent`. Accepted part size is 16384 bytes. Do not adopt the `LAB-16` diary route.
 
 #### P9 — Volume
 
@@ -414,7 +417,7 @@ Device commands need a kit named in the labs registry, serial access, and the ES
 | Stale lab index sends an implementer to the wrong tree | Medium | Registry file is the host source of truth. |
 | Unmeasured LVGL budgets shipped as pass | Medium | P10 reports measured and unmeasured separately. `LAB-03`, `LAB-04`, `LAB-05`, `LAB-06`, and `LAB-10` performance claims stay unmeasured. |
 | Waiting on `LAB-01` or `LAB-13` firmware | Medium | Neither tree exists. P6 proceeds from `LAB-02` and `LAB-03`. P10 writes the composed image. |
-| Queued send stored where power loss drops it | Medium | The budget is one finished PCM of 5,760,000 bytes plus that send’s sketch. The medium remains delivery `COM-OPEN-003`. P7 reserves the bytes. P8 keeps the queue when storage survives. Send `EXP-035` already allows loss of an unfinished capture and of a finished queue on power loss. |
+| Queued send stored where power loss drops it | Medium | Attached storage holds the in-progress recording and finished messages waiting to stream. P7 writes there. P8 streams one finished message at a time. Send `EXP-035` still allows loss of an unfinished capture, and of a finished queue when storage does not survive. |
 
 ---
 

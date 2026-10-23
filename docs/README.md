@@ -46,7 +46,8 @@ Device bootstrap commands: [build and flash](standards/device-build-flash.md).
 | [`v1-assessments/operational-contract-shape.md`](v1-assessments/operational-contract-shape.md) | Stages, failures, retries, timeouts |
 | [`v1-assessments/resource-budget-envelope.md`](v1-assessments/resource-budget-envelope.md) | Limits and measurement |
 | [`v1-assessments/v2-implementation-practices.md`](v1-assessments/v2-implementation-practices.md) | Referenced synthesis of v1, demos, and x02 with v2 implementation gates |
-| [`labs/README.md`](labs/README.md) | Lab index (`LAB-01`–`LAB-13`), links to layout and assistant guide |
+| [`demos/README.md`](demos/README.md) | Island demo **execution** catalog (canonical proofs outside `LAB-*`; includes [Opus E2E h31](demos/opus-chunk-end-to-end-h31.md)) |
+| [`labs/README.md`](labs/README.md) | Lab index (`LAB-01`–`LAB-16`), links to layout and assistant guide |
 | [`labs/repository-layout.md`](labs/repository-layout.md) | Projected `client/labs/`, `server/labs/`, build, artifacts, and evidence paths |
 | [`labs/lab-02-implementation-outline.md`](labs/lab-02-implementation-outline.md) | LAB-02 tree, phases, verification scenarios, milestones |
 | [`labs/assistant-guide.md`](labs/assistant-guide.md) | Workflow for agents and humans implementing or running labs |

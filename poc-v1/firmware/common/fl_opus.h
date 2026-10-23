@@ -42,6 +42,9 @@ void fl_opus_deinit(fl_opus_codec_t *codec);
 
 int fl_opus_set_profile(fl_opus_codec_t *codec, fl_opus_profile_t profile);
 
+/** Clears decoder concealment state before playback of a new stream. */
+void fl_opus_reset_decoder(fl_opus_codec_t *codec);
+
 /** Returns encoded length in bytes, or negative Opus error code. */
 int fl_opus_encode_frame(fl_opus_codec_t *codec, const int16_t *pcm_320,
                          uint8_t *out, size_t out_cap);

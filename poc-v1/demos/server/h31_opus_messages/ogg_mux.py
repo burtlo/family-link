@@ -31,6 +31,9 @@ def _segments_for_payload(payload: bytes) -> bytes:
         off += n
     if not segs:
         segs = [0]
+    elif segs[-1] == 255:
+        # Ogg packet ends only on a segment < 255; otherwise the next page is a continuation.
+        segs.append(0)
     return bytes(segs)
 
 

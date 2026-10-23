@@ -88,7 +88,9 @@ This is an island demo. Do not modify X02 until product integration is explicitl
 
 **Deferred for product:** pause/resume/reconnect on device; true streaming without repeated Range GETs.
 
-**h31 playback (2026-10-23):** Early builds used a **single 16 KiB** Range response, so play stopped after a few seconds. Firmware now **loops Range GETs** with a small carry buffer until EOF (see `PLAY_RANGE_BYTES` in `h31_opus_chunks.c`).
+**h31 playback (2026-10-23):** Early builds used a **single 16 KiB** Range response, so play stopped after a few seconds. Firmware now **loops Range GETs** until EOF, then decodes (see `PLAY_STREAM_MAX` in `h31_opus_chunks.c`). Interleaved download+decode with **48 KiB** reads caused **~3 s silence every ~15 s** while HTTP blocked the speaker path; fix: **prefetch full Ogg** (up to ~704 KiB) before decode, with **256 KiB** Range steps. **Music / skips every ~2 s:** record loop used to **block on chunk PUT** (~100–500 ms with no mic reads) every `CHUNK_MS`; fix is **double chunk buffers + async upload** while capture continues. **Boot play** prefers a **local length-prefixed mirror** of the last take (same packets as encode) before server Ogg.
+
+**Out-of-order / missing phrases:** per-page Opus decode ignored Ogg **segment lacing** (packets split across pages when length is a multiple of 255); firmware now reassembles packets per page segments; host mux appends a **0** segment when needed.
 
 ## Phase 4 — Decision record
 

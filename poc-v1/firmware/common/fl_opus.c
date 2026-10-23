@@ -46,6 +46,14 @@ static void destroy_handles(fl_opus_codec_t *codec)
     }
 }
 
+void fl_opus_reset_decoder(fl_opus_codec_t *codec)
+{
+    if (codec == NULL || codec->dec == NULL) {
+        return;
+    }
+    (void)opus_decoder_ctl((OpusDecoder *)codec->dec, OPUS_RESET_STATE);
+}
+
 int fl_opus_set_profile(fl_opus_codec_t *codec, fl_opus_profile_t profile)
 {
     if (codec == NULL) {

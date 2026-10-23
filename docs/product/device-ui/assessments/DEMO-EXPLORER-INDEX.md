@@ -103,7 +103,7 @@ No missing demo IDs relative to the ledger. Promote any **ADOPT** / **ADAPT** ro
 | **h25** | Chipmunk playback effect | `board_status` only | `demo_pass("h25")` after playback | **SKIP** |
 | **h29** | Async voice ping-pong hold-to-send | Home clean once; status **Level 0** | `-- PASS h29` send or inbound play | **ADAPT** |
 | **h30** | Local Opus encode/decode soak | `board_status` only | `SOAK PASS h30` / `demo_pass("h30")` | **SKIP** |
-| **h31** | Opus chunk upload + range play | `board_status` only | `SOAK PASS h31` / `demo_pass("h31")` | **SKIP** |
+| **h31** | Opus chunk upload + range play; **only full Opus message E2E** — see [active proof doc](../../../demos/opus-chunk-end-to-end-h31.md) | `board_status` only | `SOAK PASS h31` / `demo_pass("h31")` | **SKIP** (streaming; owner-validated Oct 2026) |
 
 ---
 

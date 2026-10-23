@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | ID | `COM-MESSAGE-DELIVERY` |
-| Revision | 0.11 |
+| Revision | 0.12 |
 | Status | Interview draft; send behavior, routes, PCM limits, `flsk2` pixel replay, 16 KiB parts, the empty part acknowledgement, open and accepted success bodies, part retry, the 24-hour open upload, and the durable accepted-ID record are accepted engineering wire |
 | Owner | Product owner for behavior; engineering proposal needed for protocol |
 | Approval | Engineering wire for the send routes, success bodies, PCM limits, `flsk2` pixel replay, parts, and the durable accepted-ID record is recorded. No implementation authorization implied |
@@ -23,7 +23,7 @@ It does **not** run while muted or signed out (`DEC-033`). It does not interrupt
 
 | Source | Authority here |
 |---|---|
-| [`EXP-MESSAGE-RECORD-SEND`](../experiences/message-recording-and-sending.md) | Owner-decided send behavior, including truthful `sent`, keep/resume, atomic refusal, and one pending send |
+| [`EXP-MESSAGE-RECORD-SEND`](../experiences/message-recording-and-sending.md) | Owner-decided send behavior, including truthful `sent`, keep/resume, atomic refusal, and a new recording while one finished message streams |
 | [Client application coding standards](../../standards/client-application-coding-standards.md) §§4, 7, 9 | One terminal outcome, no false success, coalesced remote writes |
 | [Recording and send assessment](../../v1-assessments/recording-send.md) | V1 as-built evidence, not v2 policy |
 
@@ -190,7 +190,7 @@ Media bytes and per-recipient inbox copies may be removed once the message is go
 | `COM-007` | Keep finished work until `accepted` or a definite refusal, mute-unfinished discard, or storage loss. Connectivity wait auto-resumes the same id. | `DEC-029`–`DEC-031` |
 | `COM-008` | MUST NOT upload while muted or signed out. Resume only after that same user signs in. MUST NOT run as a different user. | `DEC-033`, `EXP-033` |
 | `COM-009` | A definite refusal discards this attempt, does not auto-retry, and MUST NOT show `sent`. | `DEC-034` |
-| `COM-010` | At most one pending finished send on this endpoint. A second recording MUST NOT start while it is queued. | `DEC-031` |
+| `COM-010` | A recording is stored locally and is not uploaded until it finishes. One finished message streams at a time. Further finished messages wait in storage. A new recording may be stored while an earlier finished message streams. Each send keeps its own `client_message_id`. | `DEC-050`, `DEC-051` |
 | `COM-011` | If `accepted` arrives after the person left the wait screen, skip `sent` and do not interrupt the inbox. | `EXP-031` |
 | `COM-012` | Publish only to frozen recipients. The sender's inbox MUST NOT receive a copy of this send. | `DEC-041`, `EXP-040` |
 | `COM-013` | Classify non-success results: no Wi-Fi, timeout, connection reset, and HTTP 5xx keep the send queued (`no Wi-Fi` / `connecting`). An expired or forbidden session keeps it queued. The endpoint refreshes per login `DEC-069` and stays on this wait if refresh cannot succeed. It MUST NOT upload until this same user has a valid session, MUST NOT ask for a PIN, and MUST NOT return to the roster. Unsupported or too-large media, and same `client_message_id` with different content, are definite refusals (`couldn't send`, discard, no auto-retry). A malformed or unknown-schema success body is a wait, never `sent`. Frozen-recipient hangout refusal remains `COM-006`. | `DEC-042`, `DEC-048`, `EXP-041`, `EXP-044` |
@@ -227,7 +227,7 @@ There is no product stuck-send deadline. An open upload that has not been accept
 | `COM-SCN-005` | Jordan left after freeze; Sam remains | Refuse all; `couldn't send`; nobody received it | COM-005–006, COM-009 |
 | `COM-SCN-006` | Mute after finish; Sam then uses the endpoint | Maya's queue does not upload as Sam | COM-008 |
 | `COM-SCN-007` | Boot from `no Wi-Fi` wait; later accept | Inbox not interrupted; skip `sent` | COM-011 |
-| `COM-SCN-008` | Inbox red while this send is queued | Return to wait; no second create | COM-010 |
+| `COM-SCN-008` | Inbox red while a finished message is streaming | The next recording starts into storage. The earlier stream continues. The same id is not created twice | COM-010 |
 | `COM-SCN-009` | Complete accepts Maya → Jordan | Jordan's inbox gains the message; Maya's does not | COM-012 |
 | `COM-SCN-010` | Complete times out or returns 5xx | Stay queued; `connecting`; not `sent` | COM-013 |
 | `COM-SCN-011` | Unsupported or too-large media | `couldn't send`; discard; nobody received it | COM-009, COM-013 |
@@ -261,7 +261,7 @@ Former `COM-OPEN-###` IDs are retained. `COM-OPEN-007` has **no remaining work**
 |---|---|---|---|
 | `COM-OPEN-001` | Closed / engineering implementation | Atomic frozen-set send is decided (`DEC-034`, `COM-005`–`COM-006`) | Commit implementation |
 | `COM-OPEN-002` | Accepted engineering wire | Audio is `pcm_s16le` at 16000 Hz, one channel, 1…180000 ms, at most 5,760,000 bytes. Sketch is `flsk2`. At most 7 recipients | None for those limits |
-| `COM-OPEN-003` | Closed / engineering implementation | Keep/resume, signed-out rules, and part-retry cadence are decided | Storage medium |
+| `COM-OPEN-003` | Accepted engineering wire | The recording and finished messages waiting to stream are kept on attached storage. One finished message streams at a time. A new recording may be stored during that stream | None for this journey |
 | `COM-OPEN-004` | Accepted engineering wire | An accepted id keeps a durable accepted-ID record after inbox copies and media are removed. The 24-hour limit applies only to an upload that was never accepted (`COM-014`) | None for that retention |
 | `COM-OPEN-005` | Accepted engineering wire | Parts are 16384 bytes, one at a time. A lost part retries once immediately, then after 1, 2, and 4 seconds, then every 30 seconds. A never-accepted upload lasts until acceptance or 24 hours after the last acknowledged part | None |
 | `COM-OPEN-006` | Accepted engineering wire | Refusal-versus-wait classes are decided (`DEC-042`, `COM-013`). HTTP numbers are login `COM-020` | None for status numbers |
@@ -306,3 +306,5 @@ Revision 0.9 (2026-10-22): `flsk2` points are stored in nondecreasing `t_ms` ord
 Revision 0.10 (2026-10-22): accepted one immediate part retry, then waits of 1, 2, and 4 seconds, then every 30 seconds, and a 24-hour limit on an open upload. No implementation authorization.
 
 Revision 0.11 (2026-10-22): specified `fl.send-open/2` and `fl.send-receipt/2` success bodies, exempted the empty part acknowledgement, kept a durable accepted-ID record after inbox deletion, and defined `flsk2` as independently painted pixels with capture interpolation. The 8000 ms complete example is 256000 bytes and sixteen parts. No implementation authorization.
+
+Revision 0.12 (2026-10-23): a finished message streams from attached storage while another recording is stored. Inbox refresh is not held for that stream. No implementation authorization.

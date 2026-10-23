@@ -48,11 +48,14 @@ static const char *TAG = "h31";
 #define PASS_HOLD_MS       2500
 #define CHUNK_BUF_CAP      (48 * 1024)
 /* One HTTP response buffer; play_ogg_stream loops Range GETs until EOF. */
-#define PLAY_RANGE_BYTES   (48 * 1024)
-#define PLAY_STREAM_MAX    (PLAY_RANGE_BYTES + 8192)
+/* One Range read was ~48 KiB (~15–20 s of audio); blocking HTTP mid-play caused ~3 s gaps. */
+#define PLAY_RANGE_BYTES   (256 * 1024)
+#define PLAY_STREAM_MAX    (704 * 1024)
+#define PLAY_MIRROR_CAP    (640 * 1024)
 #define PACKET_HDR         2
-#define SPK_VOLUME         90
-#define MIC_GAIN_DB        42.0f
+#define SPK_VOLUME         100
+#define MIC_GAIN_DB        38.0f
+#define PCM_PEAK_LIMIT     26000
 #define REC_TASK_STACK     28672
 #define UPLOAD_TASK_STACK  20480
 #define PLAY_TASK_STACK    12288
@@ -103,9 +106,17 @@ static volatile upload_cmd_t s_upload_cmd;
 static volatile bool s_upload_ok;
 static volatile fl_opus_profile_t s_profile = FL_OPUS_PROFILE_VOIP_16K;
 
-static uint8_t *s_chunk_buf;
-static size_t s_chunk_len;
-static uint32_t s_chunk_start_ms;
+static uint8_t *s_chunk_bufs[2];
+static size_t s_chunk_lens[2];
+static uint32_t s_chunk_starts[2];
+static int s_chunk_wi;
+static volatile bool s_upload_inflight;
+static volatile int s_flush_pi;
+static volatile uint32_t s_flush_start_ms;
+static volatile int s_flush_seq;
+static uint8_t *s_play_mirror;
+static size_t s_play_mirror_len;
+static char s_play_mirror_id[48];
 static uint32_t s_record_ms;
 static int s_seq;
 static char s_message_id[48];
@@ -262,15 +273,22 @@ static bool create_message(void)
     return true;
 }
 
-static bool flush_chunk(void)
+static void wait_upload_idle(void)
 {
-    if (s_chunk_len == 0 || s_message_id[0] == 0) {
+    while (s_upload_inflight) {
+        vTaskDelay(1);
+    }
+}
+
+static bool flush_chunk_buf(const uint8_t *data, size_t len, uint32_t start_ms, int seq)
+{
+    if (len == 0 || s_message_id[0] == 0) {
         return true;
     }
     char path[96];
-    snprintf(path, sizeof(path), "/v1/messages/%s/audio/%d", s_message_id, s_seq);
+    snprintf(path, sizeof(path), "/v1/messages/%s/audio/%d", s_message_id, seq);
     char sha[68];
-    sha256_hex(s_chunk_buf, s_chunk_len, sha, sizeof(sha));
+    sha256_hex(data, len, sha, sizeof(sha));
     char url[192];
     snprintf(url, sizeof(url), "http://%s:%d%s", DEMO_SERVER_HOST, DEMO_SERVER_PORT, path);
 
@@ -285,31 +303,54 @@ static bool flush_chunk(void)
     esp_http_client_set_header(client, "Authorization", auth);
     esp_http_client_set_header(client, "Content-Type", "application/octet-stream");
     char hdr[32];
-    snprintf(hdr, sizeof(hdr), "%u", (unsigned)s_chunk_start_ms);
+    snprintf(hdr, sizeof(hdr), "%u", (unsigned)start_ms);
     esp_http_client_set_header(client, "X-Chunk-Start-Ms", hdr);
     snprintf(hdr, sizeof(hdr), "%d", CHUNK_MS);
     esp_http_client_set_header(client, "X-Chunk-Duration-Ms", hdr);
-    snprintf(hdr, sizeof(hdr), "%u", (unsigned)s_chunk_len);
+    snprintf(hdr, sizeof(hdr), "%u", (unsigned)len);
     esp_http_client_set_header(client, "X-Chunk-Bytes", hdr);
     esp_http_client_set_header(client, "X-Chunk-SHA256", sha);
 
     int st = -1;
-    if (esp_http_client_open(client, (int)s_chunk_len) == ESP_OK) {
-        esp_http_client_write(client, (const char *)s_chunk_buf, (int)s_chunk_len);
+    if (esp_http_client_open(client, (int)len) == ESP_OK) {
+        esp_http_client_write(client, (const char *)data, (int)len);
         esp_http_client_fetch_headers(client);
         st = esp_http_client_get_status_code(client);
         esp_http_client_close(client);
     }
     esp_http_client_cleanup(client);
     if (st != 201 && st != 200) {
-        ESP_LOGE(TAG, "PUT seq=%d status=%d", s_seq, st);
+        ESP_LOGE(TAG, "PUT seq=%d status=%d", seq, st);
         return false;
     }
-    ESP_LOGI(TAG, "chunk %d bytes=%u start=%u", s_seq, (unsigned)s_chunk_len,
-             (unsigned)s_chunk_start_ms);
-    s_seq++;
-    s_chunk_len = 0;
-    s_chunk_start_ms = s_record_ms;
+    ESP_LOGI(TAG, "chunk %d bytes=%u start=%u", seq, (unsigned)len, (unsigned)start_ms);
+    return true;
+}
+
+static bool schedule_chunk_upload(void)
+{
+    int idx = s_chunk_wi;
+    size_t len = s_chunk_lens[idx];
+    if (len == 0) {
+        return true;
+    }
+    if (s_upload_inflight) {
+        ESP_LOGE(TAG, "chunk upload backlog (buf %d)", idx);
+        return false;
+    }
+    s_flush_pi = idx;
+    s_flush_start_ms = s_chunk_starts[idx];
+    s_flush_seq = s_seq++;
+    s_upload_inflight = true;
+    s_chunk_wi ^= 1;
+    s_chunk_lens[s_chunk_wi] = 0;
+    s_chunk_starts[s_chunk_wi] = s_record_ms;
+    s_upload_cmd = UPLOAD_CMD_FLUSH;
+    if (xSemaphoreGive(s_upload_go) != pdTRUE) {
+        s_upload_inflight = false;
+        s_seq--;
+        return false;
+    }
     return true;
 }
 
@@ -319,23 +360,24 @@ static bool append_packet(const uint8_t *pkt, int plen)
         return false;
     }
     size_t need = PACKET_HDR + (size_t)plen;
-    if (s_chunk_len + need > CHUNK_BUF_CAP) {
+    size_t *len = &s_chunk_lens[s_chunk_wi];
+    uint8_t *buf = s_chunk_bufs[s_chunk_wi];
+    if (*len + need > CHUNK_BUF_CAP) {
         return false;
     }
-    s_chunk_buf[s_chunk_len++] = (uint8_t)(plen & 0xff);
-    s_chunk_buf[s_chunk_len++] = (uint8_t)((plen >> 8) & 0xff);
-    memcpy(s_chunk_buf + s_chunk_len, pkt, (size_t)plen);
-    s_chunk_len += (size_t)plen;
+    buf[(*len)++] = (uint8_t)(plen & 0xff);
+    buf[(*len)++] = (uint8_t)((plen >> 8) & 0xff);
+    memcpy(buf + *len, pkt, (size_t)plen);
+    *len += (size_t)plen;
+    if (s_play_mirror != NULL && s_play_mirror_len + need <= PLAY_MIRROR_CAP) {
+        memcpy(s_play_mirror + s_play_mirror_len, buf + *len - need, need);
+        s_play_mirror_len += need;
+    }
     return true;
 }
 
 static bool complete_message(void)
 {
-    if (s_chunk_len > 0) {
-        if (!flush_chunk()) {
-            return false;
-        }
-    }
     if (s_seq <= 0) {
         return false;
     }
@@ -385,7 +427,10 @@ static void upload_task(void *arg)
             ok = create_message();
             break;
         case UPLOAD_CMD_FLUSH:
-            ok = flush_chunk();
+            ok = flush_chunk_buf(s_chunk_bufs[s_flush_pi], s_chunk_lens[s_flush_pi],
+                                 s_flush_start_ms, s_flush_seq);
+            s_chunk_lens[s_flush_pi] = 0;
+            s_upload_inflight = false;
             break;
         case UPLOAD_CMD_COMPLETE:
             ok = complete_message();
@@ -395,6 +440,42 @@ static void upload_task(void *arg)
         }
         s_upload_ok = ok;
         xSemaphoreGive(s_upload_done);
+    }
+}
+
+static void limit_pcm_peak(int16_t *pcm, size_t nsamples)
+{
+    int peak = 0;
+    for (size_t i = 0; i < nsamples; i++) {
+        int v = pcm[i];
+        int a = v < 0 ? -v : v;
+        if (a > peak) {
+            peak = a;
+        }
+    }
+    if (peak <= PCM_PEAK_LIMIT) {
+        return;
+    }
+    int32_t gain = ((int32_t)PCM_PEAK_LIMIT << 15) / peak;
+    for (size_t i = 0; i < nsamples; i++) {
+        pcm[i] = (int16_t)(((int32_t)pcm[i] * gain) >> 15);
+    }
+}
+
+static void speaker_drain_ms(int drain_ms)
+{
+    if (!s_spk_open) {
+        return;
+    }
+    uint8_t z[CHUNK_PCM_BYTES];
+    memset(z, 0, sizeof(z));
+    int left = SAMPLE_RATE * drain_ms / 1000 * (int)sizeof(int16_t);
+    while (left > 0) {
+        int n = left > (int)sizeof(z) ? (int)sizeof(z) : left;
+        if (esp_codec_dev_write(s_spk, z, n) != ESP_CODEC_DEV_OK) {
+            break;
+        }
+        left -= n;
     }
 }
 
@@ -418,14 +499,23 @@ static bool speaker_open_once(void)
 
 static bool record_session(void)
 {
+    wait_upload_idle();
+    fl_opus_reset_decoder(&s_codec);
     s_seq = 0;
     s_record_ms = 0;
-    s_chunk_len = 0;
-    s_chunk_start_ms = 0;
+    s_chunk_wi = 0;
+    s_chunk_lens[0] = 0;
+    s_chunk_lens[1] = 0;
+    s_chunk_starts[0] = 0;
+    s_chunk_starts[1] = 0;
+    s_upload_inflight = false;
+    s_play_mirror_len = 0;
+    s_play_mirror_id[0] = 0;
     s_message_id[0] = 0;
     if (!upload_run(UPLOAD_CMD_CREATE)) {
         return false;
     }
+    strncpy(s_play_mirror_id, s_message_id, sizeof(s_play_mirror_id) - 1);
 
     if (!speaker_open_once()) {
         return false;
@@ -445,6 +535,7 @@ static bool record_session(void)
         if (esp_codec_dev_read(s_mic, s_pcm_frame, CHUNK_PCM_BYTES) != ESP_CODEC_DEV_OK) {
             break;
         }
+        limit_pcm_peak(s_pcm_frame, FL_OPUS_FRAME_SAMPLES);
         int plen = fl_opus_encode_frame(&s_codec, s_pcm_frame, s_pkt_frame, sizeof(s_pkt_frame));
         if (plen < 0) {
             break;
@@ -457,8 +548,8 @@ static bool record_session(void)
                      (unsigned)(s_record_ms / 1000u), MAX_SECONDS);
             board_status_set(line);
         }
-        if (s_record_ms - s_chunk_start_ms >= (uint32_t)CHUNK_MS) {
-            if (!upload_run(UPLOAD_CMD_FLUSH)) {
+        if (!s_upload_inflight && s_record_ms - s_chunk_starts[s_chunk_wi] >= (uint32_t)CHUNK_MS) {
+            if (!schedule_chunk_upload()) {
                 break;
             }
         }
@@ -468,9 +559,15 @@ static bool record_session(void)
     s_recording = false;
     (void)esp_codec_dev_close(s_mic);
     (void)esp_codec_dev_set_out_mute(s_spk, false);
+    wait_upload_idle();
+    if (s_chunk_lens[s_chunk_wi] > 0 && !schedule_chunk_upload()) {
+        return false;
+    }
+    wait_upload_idle();
     uint32_t wall_ms = (uint32_t)((esp_timer_get_time() - t0) / 1000);
-    ESP_LOGI(TAG, "record %u ms audio_ms=%u seq=%d stack_hw=%u", (unsigned)wall_ms,
-             (unsigned)s_record_ms, s_seq, (unsigned)uxTaskGetStackHighWaterMark(NULL));
+    ESP_LOGI(TAG, "record %u ms audio_ms=%u seq=%d mirror=%u stack_hw=%u", (unsigned)wall_ms,
+             (unsigned)s_record_ms, s_seq, (unsigned)s_play_mirror_len,
+             (unsigned)uxTaskGetStackHighWaterMark(NULL));
     if (!upload_run(UPLOAD_CMD_COMPLETE)) {
         return false;
     }
@@ -508,27 +605,78 @@ static int http_get_range(const char *path, size_t range_start, body_buf_t *out)
     return status;
 }
 
-static bool decode_ogg_page_payload(const uint8_t *body, size_t body_len, int16_t *pcm_out)
+#define OGG_PKT_ACC_CAP  (FL_OPUS_MAX_PACKET_BYTES + 256)
+
+static int64_t s_play_deadline_us;
+
+static bool play_pcm_timed(const int16_t *pcm, int ns)
 {
-    if (body_len >= 8 && (memcmp(body, "OpusHead", 8) == 0 || memcmp(body, "OpusTags", 8) == 0)) {
+    if (ns <= 0) {
         return true;
     }
-    if (body_len == 0) {
-        return true;
+    int64_t now = esp_timer_get_time();
+    if (s_play_deadline_us == 0) {
+        s_play_deadline_us = now;
     }
-    if (fl_opus_decode_frame(&s_codec, body, (int)body_len, pcm_out) < 0) {
+    if (now < s_play_deadline_us) {
+        uint32_t wait_ms = (uint32_t)((s_play_deadline_us - now + 999) / 1000);
+        if (wait_ms > 0) {
+            vTaskDelay(pdMS_TO_TICKS(wait_ms));
+        }
+    }
+    if (esp_codec_dev_write(s_spk, pcm, (size_t)ns * sizeof(int16_t)) != ESP_CODEC_DEV_OK) {
         return false;
     }
+    s_play_deadline_us += (int64_t)ns * 1000000 / SAMPLE_RATE;
     return true;
 }
 
-static bool play_ogg_pages_in_buffer(const uint8_t *buf, size_t len, size_t *pos_io)
+static bool play_opus_packet(const uint8_t *pkt, size_t pkt_len)
 {
-    size_t pos = *pos_io;
+    if (pkt_len >= 8 && (memcmp(pkt, "OpusHead", 8) == 0 || memcmp(pkt, "OpusTags", 8) == 0)) {
+        return true;
+    }
+    if (pkt_len == 0) {
+        return true;
+    }
+    int16_t pcm[FL_OPUS_FRAME_SAMPLES];
+    int ns = fl_opus_decode_frame(&s_codec, pkt, (int)pkt_len, pcm);
+    if (ns < 0) {
+        return false;
+    }
+    return play_pcm_timed(pcm, ns);
+}
+
+static bool play_length_prefixed(const uint8_t *data, size_t len)
+{
+    size_t off = 0;
+    s_play_deadline_us = 0;
+    fl_opus_reset_decoder(&s_codec);
+    while (off + PACKET_HDR <= len) {
+        int plen = (int)data[off] | ((int)data[off + 1] << 8);
+        off += PACKET_HDR;
+        if (plen <= 0 || plen > FL_OPUS_MAX_PACKET_BYTES || off + (size_t)plen > len) {
+            ESP_LOGE(TAG, "mirror parse off=%u plen=%d", (unsigned)off, plen);
+            return false;
+        }
+        if (!play_opus_packet(data + off, (size_t)plen)) {
+            return false;
+        }
+        off += (size_t)plen;
+    }
+    return off == len;
+}
+
+static bool play_ogg_packets_in_buffer(const uint8_t *buf, size_t len)
+{
+    size_t pos = 0;
+    uint8_t acc[OGG_PKT_ACC_CAP];
+    size_t acc_len = 0;
+
     while (pos + 27 <= len) {
         if (memcmp(buf + pos, "OggS", 4) != 0) {
-            pos++;
-            continue;
+            ESP_LOGE(TAG, "ogg sync lost at %u", (unsigned)pos);
+            return false;
         }
         uint8_t seg_count = buf[pos + 26];
         size_t hdr_len = 27 + (size_t)seg_count;
@@ -542,18 +690,37 @@ static bool play_ogg_pages_in_buffer(const uint8_t *buf, size_t len, size_t *pos
         if (pos + hdr_len + body_len > len) {
             break;
         }
-        const uint8_t *page_body = buf + pos + hdr_len;
-        int16_t pcm[FL_OPUS_FRAME_SAMPLES];
-        if (!decode_ogg_page_payload(page_body, body_len, pcm)) {
-            return false;
-        }
-        if (body_len >= 8 && memcmp(page_body, "OpusHead", 8) != 0 &&
-            memcmp(page_body, "OpusTags", 8) != 0 && body_len > 0) {
-            (void)esp_codec_dev_write(s_spk, pcm, CHUNK_PCM_BYTES);
+        const uint8_t *body = buf + pos + hdr_len;
+        size_t body_off = 0;
+        for (size_t i = 0; i < seg_count; i++) {
+            uint8_t seg_len = buf[pos + 27 + i];
+            if (body_off + (size_t)seg_len > body_len) {
+                return false;
+            }
+            if (acc_len + (size_t)seg_len > sizeof(acc)) {
+                ESP_LOGE(TAG, "ogg packet too large (%u)", (unsigned)(acc_len + seg_len));
+                return false;
+            }
+            if (seg_len > 0) {
+                memcpy(acc + acc_len, body + body_off, seg_len);
+                acc_len += seg_len;
+                body_off += seg_len;
+            }
+            if (seg_len < 255) {
+                if (!play_opus_packet(acc, acc_len)) {
+                    return false;
+                }
+                acc_len = 0;
+            }
         }
         pos += hdr_len + body_len;
     }
-    *pos_io = pos;
+    if (acc_len != 0) {
+        ESP_LOGW(TAG, "trailing ogg packet bytes=%u", (unsigned)acc_len);
+    }
+    if (pos != len) {
+        ESP_LOGW(TAG, "ogg parse tail %u bytes", (unsigned)(len - pos));
+    }
     return true;
 }
 
@@ -577,32 +744,16 @@ static bool play_ogg_stream(size_t start_offset)
         return false;
     }
     (void)esp_codec_dev_set_out_mute(s_spk, false);
+    s_play_deadline_us = 0;
+    fl_opus_reset_decoder(&s_codec);
 
     size_t stream_len = 0;
-    size_t stream_pos = 0;
     size_t file_off = start_offset;
     bool eof = false;
     bool got_data = false;
 
-    while (true) {
-        if (!play_ogg_pages_in_buffer(stream, stream_len, &stream_pos)) {
-            free(stream);
-            return false;
-        }
-        if (stream_pos > 0) {
-            size_t remain = stream_len - stream_pos;
-            if (remain > 0) {
-                memmove(stream, stream + stream_pos, remain);
-            }
-            stream_len = remain;
-            stream_pos = 0;
-        }
-        if (eof && stream_len == 0) {
-            break;
-        }
-        if (eof) {
-            break;
-        }
+    /* Download the Ogg blob first so playback never blocks on Wi-Fi. */
+    while (!eof) {
         if (stream_len >= PLAY_STREAM_MAX - PLAY_RANGE_BYTES) {
             ESP_LOGE(TAG, "play stream buffer full (need larger PLAY_STREAM_MAX)");
             free(stream);
@@ -629,6 +780,11 @@ static bool play_ogg_stream(size_t start_offset)
         if (body.len < body.cap) {
             eof = true;
         }
+    }
+
+    if (!play_ogg_packets_in_buffer(stream, stream_len)) {
+        free(stream);
+        return false;
     }
     free(stream);
     return got_data;
@@ -735,13 +891,29 @@ static void record_worker(void *arg)
     }
 }
 
+static bool playback_last_message(void)
+{
+    if (!speaker_open_once()) {
+        return false;
+    }
+    (void)esp_codec_dev_set_out_mute(s_spk, false);
+    if (s_play_mirror != NULL && s_play_mirror_len > 0 &&
+        strncmp(s_message_id, s_play_mirror_id, sizeof(s_play_mirror_id)) == 0) {
+        ESP_LOGI(TAG, "play local mirror %u bytes", (unsigned)s_play_mirror_len);
+        return play_length_prefixed(s_play_mirror, s_play_mirror_len);
+    }
+    ESP_LOGI(TAG, "play server ogg (no mirror)");
+    return play_ogg_stream(0);
+}
+
 static void play_task(void *arg)
 {
     (void)arg;
     s_play_running = true;
     board_status_set("playing…");
-    if (play_ogg_stream(0)) {
+    if (playback_last_message()) {
         ESP_LOGI(TAG, "playback done");
+        speaker_drain_ms(80);
         status_idle_line();
     } else {
         board_status_set("play failed");
@@ -831,13 +1003,19 @@ void app_main(void)
         return;
     }
 
-    s_chunk_buf = heap_caps_malloc(CHUNK_BUF_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    if (s_chunk_buf == NULL) {
-        s_chunk_buf = malloc(CHUNK_BUF_CAP);
+    for (int i = 0; i < 2; i++) {
+        s_chunk_bufs[i] = heap_caps_malloc(CHUNK_BUF_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (s_chunk_bufs[i] == NULL) {
+            s_chunk_bufs[i] = malloc(CHUNK_BUF_CAP);
+        }
+        if (s_chunk_bufs[i] == NULL) {
+            demo_fail("h31", "chunk buf");
+            return;
+        }
     }
-    if (s_chunk_buf == NULL) {
-        demo_fail("h31", "chunk buf");
-        return;
+    s_play_mirror = heap_caps_malloc(PLAY_MIRROR_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    if (s_play_mirror == NULL) {
+        ESP_LOGW(TAG, "play mirror disabled (no PSRAM)");
     }
 
     s_circle_start = xSemaphoreCreateBinary();

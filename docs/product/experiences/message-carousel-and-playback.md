@@ -823,7 +823,7 @@ behavior. Do not interview the owner for them.
 | ID | Kind | Why it is not product OPEN | Where it lives now |
 |---|---|---|---|
 | OPEN-004 | Closed | Full current-inbox reach is decided | `DEC-037`, `EXP-035` |
-| OPEN-008 | Engineering wire | Last-viewed, offline-status playback, revision, snapshot size, coalesce, prefix playback, inbox polling, and media-after-deletion are recorded in the inbox contract. The inbox fetch also waits during recording and a pending finished send | None in this experience |
+| OPEN-008 | Engineering wire | Last-viewed, offline-status playback, revision, snapshot size, coalesce, prefix playback, inbox polling, and media-after-deletion are recorded in the inbox contract. Inbox refresh runs while a finished message streams | None in this experience |
 | OPEN-011 | Closed | Empty copy is decided | `DEC-036`, `EXP-034` |
 | OPEN-012 | Engineering measurement | Snap, start-to-audible, and sketch-reveal budgets | Engineering measures on target hardware and proposes budgets |
 | OPEN-013 | Closed | BOOT leaves for settings | `DEC-038`, `EXP-036` |

@@ -78,7 +78,7 @@ analysis. **SCAN** rows are static code review (grep + header intent) — fill
 | **h28** | SCAN | Short animated clip CPU-painted | Timer blit to `lv_image` | **320×240×2** | **ADAPT** | FPS / SPI stress — product is not video | — |
 | **h29** | SCAN | Async voice ping-pong | Home `lv_obj_clean` once; status **Level 0** | **~320 KiB** PCM blob | **ADAPT** | UX for hold-to-send; bound audio RAM in v2 | — |
 | **h30** | SCAN | Local Opus soak 3 min | `board_status` only | **~600 KiB** enc store | **SKIP** | Codec soak | — |
-| **h31** | SCAN | Opus chunk upload + range play | `board_status` only | 48 KiB chunk + 16 KiB play | **SKIP** | Streaming protocol | — |
+| **h31** | SCAN | Opus chunk upload + range play; canonical write-up [`docs/demos/opus-chunk-end-to-end-h31.md`](../../../demos/opus-chunk-end-to-end-h31.md) | `board_status` only | PSRAM mirror + async 2 s chunks; Ogg Range fallback | **SKIP** | Streaming protocol; desk-validated Oct 2026 | — |
 | **h32** | SCAN | On-chip FAT qualification | No LVGL | None | **SKIP** | Storage Stage A | — |
 | **h35** | SCAN | SDMMC discovery | No LVGL | None | **SKIP** | Storage Stage A | — |
 | **h37** | SCAN | SDMMC metadata read | No LVGL | None | **SKIP** | Storage Stage A | — |
