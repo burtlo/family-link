@@ -8,4 +8,12 @@ config FAMILY_DESK_TOKEN
     string "Desk bearer token (leave empty to read NVS stub family_link/desk_token)"
     default ""
 
+config FAMILY_WIFI_SSID
+    string "Desk Wi-Fi SSID (injected by make app KIT=<nickname>)"
+    default ""
+
+config FAMILY_WIFI_PASSWORD
+    string "Desk Wi-Fi password"
+    default ""
+
 endmenu

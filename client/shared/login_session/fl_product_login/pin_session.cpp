@@ -425,6 +425,18 @@ void SessionWriter::accept_pin_result(const PinResult &result)
     }
     if (result.outcome == kPinOutcomeSuccess && result.parse_ok == 1 && result.http_status == 200 &&
         stage_ != kStageMuted) {
+        const char *user = pin_frozen_user_[0] != 0 ? pin_frozen_user_ : result.user_id;
+        if (signed_in_ != 0 && signed_user_[0] != 0 && user[0] != 0 && !text_eq(signed_user_, user)) {
+            wipe_pin_secret();
+            pin_phase_ = kPinPhaseIdle;
+            refresh_pin_copy();
+            close_pin_operation("stale", "stale");
+            return;
+        }
+        if (result.session_token_valid != 1 || result.session_token[0] == 0) {
+            fail_pin_transport();
+            return;
+        }
         authenticated_ = 1;
         wrong_count_ = 0;
         cooldown_until_ms_ = 0;
@@ -432,6 +444,8 @@ void SessionWriter::accept_pin_result(const PinResult &result)
         wipe_pin_secret();
         pin_phase_ = kPinPhaseIdle;
         refresh_pin_copy();
+        issue_credential(user, result.session_token, pin_operation_id_, now_ms_);
+        sign_in(user, now_ms_);
         last_update_level_ = 0;
         property_seq_ += 1;
         close_pin_operation("success", "ok");

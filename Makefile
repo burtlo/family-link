@@ -68,7 +68,7 @@ define py_run
 	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind avatars lab.help lab.lab02.server lab.lab03.server lab.lab07.server lab.lab08.server lab.lab09.server lab.lab11.server
+.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind avatars app app\:build app\:flash server lab.help lab.p1.server lab.lab02.server lab.lab03.server lab.lab07.server lab.lab08.server lab.lab09.server lab.lab11.server
 
 # Lab device firmware (registry: config/labs.registry.yaml). Optional: KIT PORT SECONDS FLASH RUN_ID
 # Prefer the explicit .scripted profile over VARIANT= for operator workflows.
@@ -107,6 +107,19 @@ test:
 build:
 	$(call py_run,scripts/firmware.py build)
 
+app:
+	$(call step_msg,Building and flashing v2 product app (client/device))
+	$(call py_run,scripts/app_host.py build $(if $(KIT),--kit "$(KIT)",) $(if $(P1_HOST),--p1-host "$(P1_HOST)",))
+	$(call py_run,scripts/app_host.py flash $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+
+app\:build:
+	$(call step_msg,Building v2 product app firmware (client/device))
+	$(call py_run,scripts/app_host.py build $(if $(KIT),--kit "$(KIT)",) $(if $(P1_HOST),--p1-host "$(P1_HOST)",))
+
+app\:flash:
+	$(call step_msg,Flashing v2 product app to one registered kit)
+	$(call py_run,scripts/app_host.py flash $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+
 devices:
 	$(call py_run,scripts/firmware.py devices)
 
@@ -124,6 +137,10 @@ device.bind:
 
 lab.help:
 	$(call py_run,scripts/lab_host.py list)
+
+server lab.p1.server:
+	$(call step_msg,P1 core-journey wire server on 0.0.0.0:8777)
+	$(call py_host_run,server/device/main/server.py --bind 0.0.0.0 --port 8777 --run-id local-dev)
 
 lab.lab02.server:
 	$(call py_host_run,server/labs/lab-02-paging/server.py --port 8765)

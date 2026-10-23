@@ -864,6 +864,11 @@ fl_product_login::PinResult pin_body(fl_product_login::SessionWriter *session, i
     result.parse_ok = parse_ok;
     result.side_effects = side_effects;
     result.side_effects_valid = side_effects > 0 ? 1 : 0;
+    if (outcome == fl_product_login::kPinOutcomeSuccess) {
+        strncpy(result.session_token, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                sizeof(result.session_token) - 1);
+        result.session_token_valid = 1;
+    }
     return result;
 }
 

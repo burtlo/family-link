@@ -6,11 +6,11 @@
 static const char *panel_text(fl_shell_stage_t stage, fl_shell_slot_t slot)
 {
     static const char *const upper[FL_SHELL_STAGE_COUNT] = {
-        "Roster", "PIN", "Hangout", "Inbox", "Record", "Receipt"
+        "Roster", "PIN", "Hangout", "Inbox", "Volume", "Record", "Receipt"
     };
     static const char *const lower[FL_SHELL_STAGE_COUNT] = {
         "Choose a user", "Enter PIN", "No messages", "Synthetic inbox",
-        "Synthetic record", "Synthetic receipt"
+        "Desk volume slider", "Synthetic record", "Synthetic receipt"
     };
     if ((unsigned)stage >= FL_SHELL_STAGE_COUNT) return "Invalid";
     return slot == FL_SHELL_SLOT_UPPER ? upper[stage] : lower[stage];

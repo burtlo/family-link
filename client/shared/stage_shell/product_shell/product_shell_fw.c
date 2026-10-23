@@ -79,6 +79,7 @@ typedef struct {
     panel_handle_t staged_panels[2];
     panel_handle_t cover_panels[2];
     bool scripted;
+    bool product_runtime;
     bool initialized;
     bool transitioning;
     bool transition_reverse;
@@ -143,7 +144,7 @@ static uint32_t count_live_shell_timer_objects(void)
 static const char *stage_name(fl_shell_stage_t stage)
 {
     static const char *const names[FL_SHELL_STAGE_COUNT] = {
-        "roster", "pin", "hangout", "inbox", "record", "receipt"};
+        "roster", "pin", "hangout", "inbox", "volume", "record", "receipt"};
     return (unsigned)stage < FL_SHELL_STAGE_COUNT ? names[stage] : "invalid";
 }
 
@@ -362,7 +363,8 @@ static const char *panel_description(fl_shell_stage_t stage)
     static const char *const descriptions[FL_SHELL_STAGE_COUNT] = {
         "Synthetic roster · rev 0", "PIN entry mock · no verification",
         "Hangout is empty", "Inbox placeholder · exploratory",
-        "Record placeholder · no capture", "Receipt placeholder · exploratory"};
+        "Desk volume · no numeric readout", "Record placeholder · no capture",
+        "Receipt placeholder · exploratory"};
     return (unsigned)stage < FL_SHELL_STAGE_COUNT ? descriptions[stage] : "Invalid stage";
 }
 
@@ -820,6 +822,9 @@ static void process_stale_callback(void)
 static void timer_tick(lv_timer_t *timer)
 {
     (void)timer;
+    if (s_shell.product_runtime) {
+        return;
+    }
     s_shell.queue_overflow_count = atomic_load_explicit(&s_publisher_overflows,
                                                      memory_order_relaxed);
     ui_event_t event;
@@ -899,6 +904,19 @@ bool product_shell_slot_roots(lv_obj_t **upper_out, lv_obj_t **lower_out)
     return true;
 }
 
+fl_shell_stage_t product_shell_stage(void)
+{
+    return s_shell.initialized ? s_shell.session.stage : FL_SHELL_STAGE_ROSTER;
+}
+
+void product_shell_set_stage(fl_shell_stage_t stage)
+{
+    if (!s_shell.initialized || (unsigned)stage >= FL_SHELL_STAGE_COUNT) {
+        return;
+    }
+    s_shell.session.stage = stage;
+}
+
 bool product_shell_init(lv_obj_t *screen)
 {
     if (screen == NULL) return false;
@@ -930,6 +948,17 @@ bool product_shell_init(lv_obj_t *screen)
     lv_obj_set_style_border_width(s_shell.lower_slot, 0, 0);
     lv_obj_set_style_pad_all(s_shell.lower_slot, 0, 0);
     lv_obj_set_scrollable(s_shell.lower_slot, false);
+    if (strcmp(s_shell.mode, "product") == 0) {
+        s_shell.product_runtime = true;
+        lv_obj_set_style_bg_color(s_shell.upper_slot, lv_color_hex(0x18232B), 0);
+        lv_obj_set_style_bg_opa(s_shell.upper_slot, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(s_shell.lower_slot, lv_color_hex(0x202D36), 0);
+        lv_obj_set_style_bg_opa(s_shell.lower_slot, LV_OPA_COVER, 0);
+        s_shell.initialized = true;
+        s_shell.operation_stage_before = FL_SHELL_STAGE_ROSTER;
+        ESP_LOGI("product_shell", "V2_PRODUCT_SHELL_READY build=%s", FAMILY_BUILD_ID);
+        return true;
+    }
     if (!mount_stage(FL_SHELL_STAGE_ROSTER)) return false;
     s_shell.shell_timer = lv_timer_create(timer_tick, FL_SHELL_TIMER_PERIOD_MS, &s_shell);
     if (s_shell.shell_timer == NULL) return false;

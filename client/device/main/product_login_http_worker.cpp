@@ -1,5 +1,6 @@
 #include "product_login_http_worker.h"
 
+#include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -16,7 +17,9 @@
 
 namespace {
 
-constexpr int kHttpBodyCap = 8192;
+constexpr int kHttpBodyCap = 4096;
+constexpr int kHttpWorkerStack = 8192;
+constexpr int kHttpQueueDepth = 2;
 constexpr int kAuthCap = 256;
 constexpr int kUrlCap = 256;
 constexpr int kPinJsonCap = 320;
@@ -26,6 +29,8 @@ enum JobKind {
     kJobRoster = 1,
     kJobPin = 2,
     kJobHealth = 3,
+    kJobRefresh = 4,
+    kJobInvalidate = 5,
 };
 
 struct HttpJob {
@@ -35,6 +40,8 @@ struct HttpJob {
     char session_id[16];
     char user_id[fl_product_login::kMaxId];
     char pin[8];
+    char bearer[fl_product_login::kSessionTokenCap];
+    int invalidate_attempt;
 };
 
 struct HttpExchange {
@@ -50,6 +57,7 @@ struct HttpResult {
     uint32_t generation;
     char session_id[16];
     char user_id[fl_product_login::kMaxId];
+    int invalidate_attempt;
     HttpExchange exchange;
 };
 
@@ -62,6 +70,8 @@ char s_bearer[kAuthCap];
 uint64_t s_active_roster_id = 0;
 uint64_t s_active_pin_id = 0;
 bool s_active_health = false;
+uint64_t s_active_refresh_id = 0;
+bool s_active_invalidate = false;
 
 void wipe_buffer(char *buffer, int cap)
 {
@@ -118,53 +128,56 @@ bool join_url(const char *suffix, char *out, int cap)
     return true;
 }
 
-void perform_exchange(const char *url, esp_http_method_t method, const char *body, int body_len,
-                      HttpExchange *out)
+extern "C" esp_err_t product_login_http_event(esp_http_client_event_t *event)
+{
+    HttpExchange *out;
+    int room;
+    int count;
+    if (event == nullptr || event->user_data == nullptr) {
+        return ESP_OK;
+    }
+    out = static_cast<HttpExchange *>(event->user_data);
+    if (event->event_id != HTTP_EVENT_ON_DATA || event->data == nullptr || event->data_len <= 0) {
+        return ESP_OK;
+    }
+    room = kHttpBodyCap - 1 - out->body_len;
+    count = event->data_len < room ? event->data_len : room;
+    if (count > 0) {
+        memcpy(out->body + out->body_len, event->data, (size_t)count);
+        out->body_len += count;
+        out->body[out->body_len] = '\0';
+    }
+    return ESP_OK;
+}
+
+void perform_exchange(const char *url, esp_http_client_method_t method, const char *body, int body_len,
+                      const char *bearer_override, HttpExchange *out)
 {
     esp_http_client_config_t config = {};
     esp_http_client_handle_t client;
     char auth[kAuthCap + 16];
-    int status;
     memset(out, 0, sizeof(*out));
     config.url = url;
     config.timeout_ms = fl_product_login::kRequestTimeoutMs;
     config.method = method;
+    config.event_handler = product_login_http_event;
+    config.user_data = out;
     client = esp_http_client_init(&config);
     if (client == nullptr) {
         return;
     }
-    snprintf(auth, sizeof(auth), "Bearer %s", s_bearer);
+    snprintf(auth, sizeof(auth), "Bearer %s",
+             bearer_override != nullptr && bearer_override[0] != '\0' ? bearer_override : s_bearer);
     esp_http_client_set_header(client, "Authorization", auth);
     wipe_buffer(auth, (int)sizeof(auth));
     if (body != nullptr && body_len > 0) {
         esp_http_client_set_header(client, "Content-Type", "application/json");
         esp_http_client_set_post_field(client, body, body_len);
     }
-    if (esp_http_client_perform(client) != ESP_OK) {
-        esp_http_client_cleanup(client);
-        return;
+    if (esp_http_client_perform(client) == ESP_OK) {
+        out->perform_ok = 1;
+        out->http_status = esp_http_client_get_status_code(client);
     }
-    status = esp_http_client_get_status_code(client);
-    if (status <= 0) {
-        esp_http_client_cleanup(client);
-        return;
-    }
-    out->perform_ok = 1;
-    out->http_status = status;
-    out->body_len = esp_http_client_get_content_length(client);
-    if (out->body_len <= 0 || out->body_len >= kHttpBodyCap) {
-        out->body_len = 0;
-        while (out->body_len < kHttpBodyCap - 1) {
-            int n = esp_http_client_read(client, out->body + out->body_len, kHttpBodyCap - 1 - out->body_len);
-            if (n <= 0) {
-                break;
-            }
-            out->body_len += n;
-        }
-    } else {
-        esp_http_client_read(client, out->body, out->body_len);
-    }
-    out->body[out->body_len] = '\0';
     esp_http_client_cleanup(client);
 }
 
@@ -178,12 +191,16 @@ bool post_job(const HttpJob &job)
 
 void handle_roster_result(const HttpResult &result)
 {
+    fl_product_login::RosterResult classified;
     if (s_session == nullptr) {
         return;
     }
-    fl_product_login::deliver_classified_roster(s_session, result.operation_id, result.exchange.perform_ok,
-                                                result.exchange.http_status, result.exchange.body,
-                                                result.exchange.body_len, s_session->now_ms());
+    classified = fl_product_login::deliver_classified_roster(
+        s_session, result.operation_id, result.exchange.perform_ok, result.exchange.http_status,
+        result.exchange.body, result.exchange.body_len, s_session->now_ms());
+    ESP_LOGI(kTag, "roster op=%llu http=%d perform=%d parse=%d valid=%d users=%d",
+             (unsigned long long)result.operation_id, result.exchange.http_status, result.exchange.perform_ok,
+             classified.parse_ok, classified.valid, classified.user_count);
 }
 
 void handle_pin_result(const HttpResult &result)
@@ -201,16 +218,40 @@ void handle_health_result(const HttpResult &result)
     if (s_session == nullptr) {
         return;
     }
-    if (result.exchange.perform_ok && result.exchange.http_status == 200 &&
-        result.exchange.body_len > 0) {
-        s_session->ack_health();
+    s_session->deliver_health_completion(result.exchange.perform_ok, result.exchange.http_status,
+                                       result.exchange.body, result.exchange.body_len, s_session->now_ms());
+}
+
+void handle_refresh_result(const HttpResult &result)
+{
+    fl_product_login::RefreshResult refresh;
+    if (s_session == nullptr) {
+        return;
     }
+    memset(&refresh, 0, sizeof(refresh));
+    refresh.operation_id = result.operation_id;
+    refresh.perform_ok = result.exchange.perform_ok;
+    refresh.http_status = result.exchange.http_status;
+    refresh.parse_ok =
+        fl_product_login::classify_refresh_http(result.exchange.perform_ok, result.exchange.http_status,
+                                                result.exchange.body, result.exchange.body_len);
+    s_session->deliver_refresh_completion(refresh, s_session->now_ms());
+}
+
+void handle_invalidate_result(const HttpResult &result)
+{
+    if (s_session == nullptr) {
+        return;
+    }
+    s_session->deliver_invalidate_completion(
+        result.operation_id, result.invalidate_attempt, result.exchange.http_status, result.exchange.perform_ok,
+        s_session->now_ms());
 }
 
 void worker_task(void *arg)
 {
     HttpJob job;
-    HttpResult result;
+    static HttpResult result;
     char url[kUrlCap];
     char json[kPinJsonCap];
     char operation_text[40];
@@ -228,7 +269,7 @@ void worker_task(void *arg)
         switch (job.kind) {
         case kJobRoster:
             if (join_url("v2/hangout", url, (int)sizeof(url))) {
-                perform_exchange(url, HTTP_METHOD_GET, nullptr, 0, &result.exchange);
+                perform_exchange(url, HTTP_METHOD_GET, nullptr, 0, nullptr, &result.exchange);
             }
             break;
         case kJobHealth:
@@ -237,7 +278,7 @@ void worker_task(void *arg)
                          "{\"schema\":\"fl.endpoint-health/2\",\"reason\":\"periodic\",\"boot_id\":\"%s\","
                          "\"muted\":false}",
                          job.session_id[0] ? job.session_id : "boot");
-                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), &result.exchange);
+                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, &result.exchange);
                 wipe_buffer(json, (int)sizeof(json));
             }
             break;
@@ -249,9 +290,23 @@ void worker_task(void *arg)
                          "{\"schema\":\"fl.session-login/2\",\"operation_id\":\"%s\",\"user_id\":\"%s\","
                          "\"pin\":\"%s\"}",
                          operation_text, job.user_id, job.pin);
-                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), &result.exchange);
+                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, &result.exchange);
                 wipe_buffer(json, (int)sizeof(json));
                 wipe_buffer(job.pin, (int)sizeof(job.pin));
+            }
+            break;
+        case kJobRefresh:
+            if (join_url("v2/session/refresh", url, (int)sizeof(url))) {
+                perform_exchange(url, HTTP_METHOD_POST, "{}", 2, job.bearer, &result.exchange);
+            }
+            break;
+        case kJobInvalidate:
+            result.invalidate_attempt = job.invalidate_attempt;
+            if (join_url("v2/session/invalidate", url, (int)sizeof(url))) {
+                fl_product_login::format_invalidate_body(job.operation_id, job.bearer[0] != '\0' ? job.bearer : nullptr,
+                                                         json, (int)sizeof(json));
+                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, &result.exchange);
+                wipe_buffer(json, (int)sizeof(json));
             }
             break;
         default:
@@ -275,13 +330,16 @@ extern "C" bool product_login_http_worker_start(fl_product_login::SessionWriter 
         ESP_LOGW(kTag, "desk token missing; HTTP poller idle");
     }
     s_session = session;
-    s_jobs = xQueueCreate(4, sizeof(HttpJob));
-    s_results = xQueueCreate(4, sizeof(HttpResult));
+    s_jobs = xQueueCreate(kHttpQueueDepth, sizeof(HttpJob));
+    s_results = xQueueCreate(kHttpQueueDepth, sizeof(HttpResult));
     if (s_jobs == nullptr || s_results == nullptr) {
+        ESP_LOGE(kTag, "queue alloc failed jobs=%p results=%p free=%lu", (void *)s_jobs, (void *)s_results,
+                 (unsigned long)esp_get_free_heap_size());
         product_login_http_worker_stop();
         return false;
     }
-    if (xTaskCreate(worker_task, "login_http", 8192, nullptr, 5, &s_worker) != pdPASS) {
+    if (xTaskCreate(worker_task, "login_http", kHttpWorkerStack, nullptr, 5, &s_worker) != pdPASS) {
+        ESP_LOGE(kTag, "task create failed free=%lu", (unsigned long)esp_get_free_heap_size());
         product_login_http_worker_stop();
         return false;
     }
@@ -307,11 +365,15 @@ extern "C" void product_login_http_worker_stop(void)
     s_active_roster_id = 0;
     s_active_pin_id = 0;
     s_active_health = false;
+    s_active_refresh_id = 0;
+    s_active_invalidate = false;
 }
 
 extern "C" void product_login_http_service(fl_product_login::SessionWriter *session, int64_t now_ms)
 {
-    HttpResult result;
+    /* LVGL task stack is 7168 bytes. HttpResult carries a 4KB body; a local here
+     * overflows that stack inside the roster log and reboots on the first hangout. */
+    static HttpResult result;
     HttpJob job;
     char user[fl_product_login::kMaxId];
     char pin[8];
@@ -319,7 +381,7 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
     if (session == nullptr || s_worker == nullptr || s_bearer[0] == '\0') {
         return;
     }
-    (void)now_ms;
+    session->advance_to(now_ms);
     while (s_results != nullptr && xQueueReceive(s_results, &result, 0) == pdTRUE) {
         switch (result.kind) {
         case kJobRoster:
@@ -337,6 +399,16 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
         case kJobHealth:
             handle_health_result(result);
             s_active_health = false;
+            break;
+        case kJobRefresh:
+            handle_refresh_result(result);
+            if (result.operation_id == s_active_refresh_id) {
+                s_active_refresh_id = 0;
+            }
+            break;
+        case kJobInvalidate:
+            handle_invalidate_result(result);
+            s_active_invalidate = false;
             break;
         default:
             break;
@@ -371,6 +443,29 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
         strncpy(job.session_id, session->session_id(), sizeof(job.session_id) - 1);
         if (post_job(job)) {
             s_active_health = true;
+        }
+    }
+    if (session->refresh_inflight() && session->refresh_operation_id() != s_active_refresh_id &&
+        session->credential_active()) {
+        memset(&job, 0, sizeof(job));
+        job.kind = kJobRefresh;
+        job.operation_id = session->refresh_operation_id();
+        strncpy(job.bearer, session->credential_token(), sizeof(job.bearer) - 1);
+        if (post_job(job)) {
+            s_active_refresh_id = job.operation_id;
+        }
+    }
+    if (!s_active_invalidate) {
+        fl_product_login::InvalidateTicket ticket = session->take_invalidate_job(now_ms);
+        if (ticket.active) {
+            memset(&job, 0, sizeof(job));
+            job.kind = kJobInvalidate;
+            job.operation_id = ticket.pin_operation_id;
+            job.invalidate_attempt = ticket.attempt;
+            strncpy(job.bearer, ticket.session_token, sizeof(job.bearer) - 1);
+            if (post_job(job)) {
+                s_active_invalidate = true;
+            }
         }
     }
 }

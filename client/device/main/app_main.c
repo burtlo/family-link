@@ -6,7 +6,11 @@
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "lvgl.h"
+#include "nvs_flash.h"
+#include "product_display.h"
 #include "product_login_fw.h"
+#include "product_network.h"
 #include "product_shell_fw.h"
 
 void app_main(void)
@@ -14,6 +18,23 @@ void app_main(void)
     const esp_app_desc_t *app = esp_app_get_description();
     esp_chip_info_t chip;
     uint8_t mac[6];
+
+    /* Bring up LCD/backlight before NVS or Wi-Fi (GPIO 47 / LEDC on ESP-BOX-3). */
+    lv_display_t *display = product_display_start();
+    if (display == NULL) {
+        ESP_LOGE("bootstrap", "display_init_failed");
+        return;
+    }
+    (void)bsp_display_brightness_set(80);
+    (void)bsp_display_backlight_on();
+    ESP_LOGI("bootstrap", "V2_BOOTSTRAP_READY build=%s", FAMILY_BUILD_ID);
+
+    esp_err_t nvs = nvs_flash_init();
+    if (nvs == ESP_ERR_NVS_NO_FREE_PAGES || nvs == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        nvs = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(nvs);
     esp_chip_info(&chip);
     ESP_ERROR_CHECK(esp_read_mac(mac, ESP_MAC_WIFI_STA));
     ESP_LOGI("bootstrap", "version=%s idf=%s reset_reason=%d cores=%d revision=%d",
@@ -21,14 +42,6 @@ void app_main(void)
     ESP_LOGI("bootstrap", "hardware=%02x:%02x:%02x:%02x:%02x:%02x free_heap=%lu",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
              (unsigned long)esp_get_free_heap_size());
-    ESP_LOGI("bootstrap", "V2_BOOTSTRAP_READY build=%s", FAMILY_BUILD_ID);
-
-    lv_display_t *display = bsp_display_start();
-    if (display == NULL) {
-        ESP_LOGE("bootstrap", "display_init_failed");
-        return;
-    }
-    bsp_display_brightness_set(80);
     if (!bsp_display_lock(5000)) {
         ESP_LOGE("bootstrap", "lvgl_lock_failed");
         return;
@@ -36,15 +49,22 @@ void app_main(void)
     if (!product_shell_init(lv_screen_active())) {
         ESP_LOGE("bootstrap", "product_shell_init_failed");
         bsp_display_unlock();
-        return;
+        goto idle;
     }
     lv_obj_t *upper = NULL;
     lv_obj_t *lower = NULL;
-    if (product_shell_slot_roots(&upper, &lower) && !product_login_attach(upper, lower)) {
+    if (!product_shell_slot_roots(&upper, &lower) || !product_login_attach(upper, lower)) {
         ESP_LOGE("bootstrap", "product_login_attach_failed");
         bsp_display_unlock();
-        return;
+        goto idle;
     }
-    product_login_set_wifi(true);
+    lv_refr_now(lv_display_get_default());
     bsp_display_unlock();
+    (void)bsp_display_backlight_on();
+    ESP_LOGI("bootstrap", "product_ui_ready");
+    product_network_start();
+idle:
+    while (true) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }

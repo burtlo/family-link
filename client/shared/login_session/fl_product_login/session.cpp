@@ -143,6 +143,7 @@ void SessionWriter::reset_runtime()
     memset(queue_, 0, sizeof(queue_));
     reset_pin();
     reset_scoped();
+    reset_credential();
     connecting_retry_armed_ = false;
     connecting_backoff_index_ = 0;
     connecting_retry_due_ms_ = 0;
@@ -404,6 +405,11 @@ void SessionWriter::mute(int64_t now_ms)
     }
     if (had_roster) {
         record_terminal(operation_id, attempt, "roster", "stale");
+    }
+    if (credential_present_ || credential_pin_operation_id_ != 0) {
+        uint64_t revoke_op = had_pin ? pin_id : credential_pin_operation_id_;
+        arm_invalidate(revoke_op, now_ms);
+        clear_credential(now_ms);
     }
 }
 
@@ -686,17 +692,24 @@ void SessionWriter::apply_roster_body(const RosterResult &result)
 
 void SessionWriter::drain()
 {
-    int i;
     int count = queue_count_;
-    RosterResult pending[kRosterResultQueueCapacity];
-    for (i = 0; i < count; ++i) {
-        pending[i] = queue_[i];
-    }
-    queue_count_ = 0;
-    for (i = 0; i < count; ++i) {
-        RosterResult result = pending[i];
+    int n;
+    /* One result at a time. A four-deep snapshot here runs on the LVGL task
+       and overflows that stack as soon as a hangout roster is applied. */
+    for (n = 0; n < count; ++n) {
+        RosterResult result;
+        int i;
+        if (queue_count_ <= 0) {
+            break;
+        }
+        result = queue_[0];
+        for (i = 1; i < queue_count_; ++i) {
+            queue_[i - 1] = queue_[i];
+        }
+        queue_count_ -= 1;
         /* Identity was fixed when the result was queued. Do not assign the
-           current or next request id here. */
+           current or next request id here. Completions enqueued while this
+           result is applied stay at the tail and wait for a later drain. */
         if (result.operation_id == 0) {
             continue;
         }
@@ -786,6 +799,7 @@ void SessionWriter::advance_to(int64_t target_ms)
         int64_t pin_at = pin_next_event_ms();
         int64_t connect_at = (connecting_retry_armed_ && !roster_inflight_) ? connecting_retry_due_ms_
                                                                             : 0x7fffffffffffffffLL;
+        int64_t credential_at = credential_next_event_ms();
         int64_t next = timeout_at;
         if (heart_at < next) {
             next = heart_at;
@@ -798,6 +812,9 @@ void SessionWriter::advance_to(int64_t target_ms)
         }
         if (pin_at < next) {
             next = pin_at;
+        }
+        if (credential_at < next) {
+            next = credential_at;
         }
         if (next > target_ms) {
             now_ms_ = target_ms;
@@ -820,6 +837,9 @@ void SessionWriter::advance_to(int64_t target_ms)
         if (connect_at == next && connecting_retry_armed_ && !roster_inflight_) {
             connecting_retry_armed_ = false;
             begin_roster(now_ms_, false, false);
+        }
+        if (credential_at == next) {
+            on_credential_clock();
         }
         note_pin_presented_time();
     }

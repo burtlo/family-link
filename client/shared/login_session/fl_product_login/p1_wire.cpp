@@ -318,6 +318,16 @@ PinResult classify_pin_http(uint64_t operation_id, uint32_t generation, const ch
         return result;
     }
     if (strcmp(outcome, "authenticated") == 0) {
+        char session_token[kSessionTokenCap];
+        int session_at = find_key(body, body_len, "\"session\"");
+        session_token[0] = 0;
+        if (session_at >= 0) {
+            read_string(body, body_len, session_at, session_token, kSessionTokenCap);
+        }
+        if (session_token[0] != 0) {
+            copy_field(result.session_token, kSessionTokenCap, session_token);
+            result.session_token_valid = 1;
+        }
         result.outcome = kPinOutcomeSuccess;
         return result;
     }
@@ -355,6 +365,98 @@ PinResult deliver_classified_pin(SessionWriter *session, uint64_t operation_id, 
         session->deliver_pin_completion(result, now_ms);
     }
     return result;
+}
+
+int classify_refresh_http(int perform_ok, int http_status, const char *body, int body_len)
+{
+    if (!perform_ok || http_status != 200) {
+        return 0;
+    }
+    if (body == 0) {
+        return body_len == 0 ? 1 : 0;
+    }
+    if (body_len == 0) {
+        return 1;
+    }
+    return json_balanced(body, body_len) && body_len == 2 && body[0] == '{' && body[1] == '}';
+}
+
+bool json_bool_true(const char *body, int len, int key_pos)
+{
+    int i = key_pos;
+    while (i < len && is_ws(body[i])) {
+        i += 1;
+    }
+    if (i >= len || body[i] != ':') {
+        return false;
+    }
+    i += 1;
+    while (i < len && is_ws(body[i])) {
+        i += 1;
+    }
+    return i + 4 <= len && body[i] == 't' && body[i + 1] == 'r' && body[i + 2] == 'u' && body[i + 3] == 'e';
+}
+
+int classify_invalidate_http(int perform_ok, int http_status, const char *body, int body_len)
+{
+    if (!perform_ok || http_status != 200 || body == 0 || body_len <= 0) {
+        return 0;
+    }
+    if (!json_balanced(body, body_len) ||
+        !schema_is(body, body_len, "fl.session-invalidate-result/2")) {
+        return 0;
+    }
+    int revoked_at = find_key(body, body_len, "\"revoked\"");
+    if (revoked_at < 0 || !json_bool_true(body, body_len, revoked_at)) {
+        return 0;
+    }
+    return 1;
+}
+
+int classify_health_ack_http(int perform_ok, int http_status, const char *body, int body_len)
+{
+    if (!perform_ok || http_status != 200 || body == 0 || body_len <= 0) {
+        return 0;
+    }
+    if (!json_balanced(body, body_len) || !schema_is(body, body_len, "fl.endpoint-health-ack/2")) {
+        return 0;
+    }
+    int accepted_at = find_key(body, body_len, "\"accepted\"");
+    if (accepted_at < 0 || !json_bool_true(body, body_len, accepted_at)) {
+        return 0;
+    }
+    return 1;
+}
+
+int parse_health_server_time(const char *body, int body_len, char *out, int out_cap)
+{
+    int at;
+    if (body == 0 || body_len <= 0 || out == 0 || out_cap <= 0) {
+        return 0;
+    }
+    out[0] = 0;
+    at = find_key(body, body_len, "\"server_time\"");
+    if (at < 0 || !read_string(body, body_len, at, out, out_cap)) {
+        return 0;
+    }
+    return out[0] != 0 ? 1 : 0;
+}
+
+void format_invalidate_body(uint64_t pin_operation_id, const char *session_token, char *out, int out_cap)
+{
+    char operation_text[40];
+    if (out == 0 || out_cap < 32) {
+        return;
+    }
+    format_p1_operation_id(pin_operation_id, operation_text, (int)sizeof(operation_text));
+    if (session_token != 0 && session_token[0] != 0) {
+        snprintf(out, (size_t)out_cap,
+                 "{\"schema\":\"fl.session-invalidate/2\",\"operation_id\":\"%s\",\"session\":\"%s\"}",
+                 operation_text, session_token);
+    } else {
+        snprintf(out, (size_t)out_cap,
+                 "{\"schema\":\"fl.session-invalidate/2\",\"operation_id\":\"%s\"}", operation_text);
+    }
 }
 
 } /* namespace fl_product_login */

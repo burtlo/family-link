@@ -9,6 +9,11 @@
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#else
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #endif
 
 #define CHECK(cond) do { \
@@ -208,7 +213,6 @@ static int test_account(void)
     return 0;
 }
 
-#ifdef _WIN32
 typedef struct {
     int port;
 } socket_ctx_t;
@@ -216,7 +220,11 @@ typedef struct {
 static int socket_exchange(void *opaque, const lab11_request_t *request, lab11_response_t *response)
 {
     socket_ctx_t *ctx = (socket_ctx_t *)opaque;
+#ifdef _WIN32
     SOCKET sock;
+#else
+    int sock;
+#endif
     struct sockaddr_in addr;
     char header[768];
     char raw[4096];
@@ -224,7 +232,11 @@ static int socket_exchange(void *opaque, const lab11_request_t *request, lab11_r
     int received = 0;
     char *split;
     sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+#ifdef _WIN32
     if (sock == INVALID_SOCKET) {
+#else
+    if (sock < 0) {
+#endif
         response->transport_error = true;
         return -1;
     }
@@ -233,7 +245,11 @@ static int socket_exchange(void *opaque, const lab11_request_t *request, lab11_r
     addr.sin_port = htons((unsigned short)ctx->port);
     addr.sin_addr.s_addr = htonl(0x7f000001);
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+#ifdef _WIN32
         closesocket(sock);
+#else
+        close(sock);
+#endif
         response->transport_error = true;
         return -1;
     }
@@ -246,26 +262,38 @@ static int socket_exchange(void *opaque, const lab11_request_t *request, lab11_r
                      request->body_len, request->client_message_id, request->operation_id,
                      request->sequence, request->offset, request->chunk_bytes,
                      request->content_sha256_hex);
-    if (send(sock, header, wrote, 0) != wrote) {
+    if (send(sock, header, (size_t)wrote, 0) != wrote) {
+#ifdef _WIN32
         closesocket(sock);
+#else
+        close(sock);
+#endif
         response->transport_error = true;
         return -1;
     }
     if (request->body != NULL && request->body_len > 0) {
         if (send(sock, (const char *)request->body, (int)request->body_len, 0) != (int)request->body_len) {
+#ifdef _WIN32
             closesocket(sock);
+#else
+            close(sock);
+#endif
             response->transport_error = true;
             return -1;
         }
     }
     while (received < (int)sizeof(raw) - 1) {
-        int n = recv(sock, raw + received, (int)sizeof(raw) - 1 - received, 0);
+        int n = (int)recv(sock, raw + received, (int)sizeof(raw) - 1 - received, 0);
         if (n <= 0) {
             break;
         }
         received += n;
     }
+#ifdef _WIN32
     closesocket(sock);
+#else
+    close(sock);
+#endif
     raw[received] = '\0';
     split = strstr(raw, "\r\n\r\n");
     if (split == NULL || received < 12) {
@@ -299,9 +327,13 @@ static int test_scripted(void)
     lab11_transport_t transport;
     socket_ctx_t ctx;
     const char *port_text = getenv("LAB11_PORT");
+#ifdef _WIN32
     WSADATA wsa;
+#endif
     CHECK(port_text != NULL);
+#ifdef _WIN32
     CHECK(WSAStartup(MAKEWORD(2, 2), &wsa) == 0);
+#endif
     ctx.port = atoi(port_text);
     memset(&transport, 0, sizeof(transport));
     transport.exchange = socket_exchange;
@@ -325,10 +357,11 @@ static int test_scripted(void)
     CHECK(!lab11_checking_without_terminal(&session));
     CHECK(capture.borrows == 0u);
     CHECK(lab11_capture_free(&capture));
+#ifdef _WIN32
     WSACleanup();
+#endif
     return 0;
 }
-#endif
 
 int main(int argc, char **argv)
 {
@@ -359,11 +392,9 @@ int main(int argc, char **argv)
     if (strcmp(name, "account") == 0) {
         return test_account();
     }
-#ifdef _WIN32
     if (strcmp(name, "scripted") == 0) {
         return test_scripted();
     }
-#endif
     fprintf(stderr, "unknown case %s\n", name);
     return 2;
 }

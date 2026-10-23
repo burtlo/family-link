@@ -172,6 +172,10 @@ void SessionWriter::sign_in(const char *user_id, int64_t now_ms)
     if (!user_ok(user_id) || stage_ == kStageMuted) {
         return;
     }
+    if (pin_submitted_ && pin_operation_id_ != 0 && terminal_count_for(pin_operation_id_) == 0 &&
+        pin_frozen_user_[0] != 0 && !text_eq(pin_frozen_user_, user_id)) {
+        cancel_pin(now_ms);
+    }
     changed = signed_in_ == 0 || !text_eq(signed_user_, user_id);
     if (changed && scoped_inflight_) {
         had = take_scoped_for_mute(&previous_id, &previous_gen, previous_kind, (int)sizeof(previous_kind));

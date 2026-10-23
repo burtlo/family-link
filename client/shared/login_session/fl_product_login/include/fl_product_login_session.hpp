@@ -15,6 +15,12 @@ enum {
     kIdleQuietMs = 600000,
     kIdleRosterPeriodMs = 300000,
     kHeartbeatPeriodMs = 60000,
+    kSessionRefreshPeriodMs = 60000,
+    kSessionCredentialBoundMs = 180000,
+    kInvalidateRetryDelay0Ms = 0,
+    kInvalidateRetryDelay1Ms = 1000,
+    kInvalidateRetryDelay2Ms = 2000,
+    kSessionTokenCap = 48,
     kRequestTimeoutMs = 1000,
     kConnectingRequestTimeoutMs = 3000,
     kPinAttemptTimeoutMs = 1000,
@@ -76,6 +82,23 @@ struct PinResult {
     int outcome;
     int side_effects;
     int side_effects_valid;
+    char session_token[kSessionTokenCap];
+    int session_token_valid;
+};
+
+struct RefreshResult {
+    uint64_t operation_id;
+    int http_status;
+    int perform_ok;
+    int parse_ok;
+};
+
+struct InvalidateTicket {
+    int active;
+    uint64_t pin_operation_id;
+    char operation_id[40];
+    char session_token[kSessionTokenCap];
+    int attempt;
 };
 
 struct TerminalRecord {
@@ -214,6 +237,21 @@ public:
     void note_scoped_observation(int b_side_effects);
     void arm_pin_scenario(const char *scenario);
     void note_remote_observation(int side_effects, const char *reason);
+    /* Signed-in credential (P5). Issued on PIN success; cleared on mute. */
+    uint64_t begin_refresh_request(int64_t now_ms);
+    void deliver_refresh_completion(const RefreshResult &result, int64_t now_ms);
+    InvalidateTicket take_invalidate_job(int64_t now_ms);
+    void deliver_invalidate_completion(uint64_t operation_id, int attempt, int http_status, int perform_ok,
+                                       int64_t now_ms);
+    void deliver_health_completion(int perform_ok, int http_status, const char *body, int body_len, int64_t now_ms);
+    int credential_active() const;
+    int credential_expired() const;
+    const char *credential_token() const;
+    int64_t credential_bound_ms() const;
+    int64_t next_refresh_due_ms() const;
+    int refresh_inflight() const;
+    uint64_t refresh_operation_id() const;
+    int invalidate_attempts() const;
     /* Copies the frozen request for the worker. Returns false when none is submitted.
        Callers must not write the PIN into a trace or log. */
     bool copy_pin_request(char *user, int user_cap, char *pin, int pin_cap, char *key, int key_cap) const;
@@ -286,6 +324,8 @@ public:
     int scoped_overflow_terminals() const;
     int connecting_backoff_index() const;
     bool health_ack_pending() const;
+    int health_ack_count() const;
+    const char *health_server_time() const;
 
 private:
     void reset_runtime();
@@ -329,6 +369,12 @@ private:
     void close_scoped(const char *terminal, const char *reason);
     void accept_scoped_result(const ScopedResult &result);
     void drain_scoped();
+    void reset_credential();
+    void issue_credential(const char *user_id, const char *token, uint64_t pin_operation_id, int64_t now_ms);
+    void clear_credential(int64_t now_ms);
+    void arm_invalidate(uint64_t pin_operation_id, int64_t now_ms);
+    void on_credential_clock();
+    int64_t credential_next_event_ms() const;
 
     int stage_;
     bool wifi_up_;
@@ -432,6 +478,24 @@ private:
     int scoped_queue_count_;
     int scoped_overflow_terminals_;
     int scoped_rejected_;
+    bool credential_present_;
+    bool credential_expired_;
+    char credential_token_[kSessionTokenCap];
+    char credential_user_[kMaxId];
+    uint64_t credential_pin_operation_id_;
+    int64_t credential_bound_ms_;
+    bool refresh_timer_armed_;
+    int64_t next_refresh_due_ms_;
+    bool refresh_inflight_;
+    uint64_t refresh_operation_id_;
+    bool invalidate_armed_;
+    int invalidate_attempts_sent_;
+    int64_t next_invalidate_due_ms_;
+    char invalidate_operation_text_[40];
+    char invalidate_session_token_[kSessionTokenCap];
+    uint64_t invalidate_pin_operation_id_;
+    int health_ack_count_;
+    char health_server_time_[36];
     bool connecting_retry_armed_;
     int connecting_backoff_index_;
     int64_t connecting_retry_due_ms_;
