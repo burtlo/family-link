@@ -374,6 +374,38 @@ labs:
         no service backend and rejects non-default backend values before target I/O.
       instructions_doc: client/labs/lab-06-stage-shell/README.md
 
+  lab11:
+    adapter: lab11
+    lab_id: LAB-11
+    evidence_slug: lab-11
+    project_dir: client/labs/lab-11-send-receipt
+    target: esp32s3
+    description: Frozen-capture send, receipt lookup, and failure probes
+    variants:
+      default: manual
+      manual:
+        build_dir: build/labs/lab-11-send-receipt-manual
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+      scripted:
+        build_dir: build/labs/lab-11-send-receipt-scripted
+        sdkconfig_defaults:
+          - sdkconfig.defaults
+          - sdkconfig.defaults.scripted
+    trace_parser: client/labs/lab-11-send-receipt/tools/parse_lab_trace.py
+    run:
+      capture_seconds_default: 90
+      flash_by_default: true
+      instructions: |
+        Manual: the static scene shows fixture lab11-send/v1, the frozen capture
+        identity, the active acceptance condition, the expected result, the chunk
+        probe, and part queue capacity 8. Next, Run, Chunk, and Cancel return
+        without waiting for upload. Scripted: make lab.lab11.scripted runs every
+        decided and exploratory scenario against the lab server on port 8770.
+        Success phase text is condition met only after the active condition.
+        Sent is not an outcome. Capture default is 90 seconds.
+      instructions_doc: client/labs/lab-11-send-receipt/README.md
+
   lab12:
     adapter: lab12
     lab_id: LAB-12

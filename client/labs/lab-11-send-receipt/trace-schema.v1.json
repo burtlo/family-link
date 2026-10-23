@@ -1,0 +1,10 @@
+{
+  "$id": "lab11-trace/v1",
+  "schema": "lab11-trace/v1",
+  "description": "LAB-11 send, receipt, and recovery trace. No PIN, credential, URL secret, or raw media payload.",
+  "line_prefix": "LAB11_TRACE",
+  "required_event_fields": ["schema", "event", "monotonic_us", "session_id", "operation_id"],
+  "events": ["scenario_terminal", "part_overflow", "resource_account", "resource_ledger"],
+  "experiment_inputs": ["D-one", "D-drop-ack", "D-drop-receipt", "D-full", "D-cancel"],
+  "exploratory": ["D-many", "D-invalid-recipient", "D-offline", "D-push-fail", "D-restart"]
+}

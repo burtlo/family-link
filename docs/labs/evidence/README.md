@@ -73,6 +73,7 @@ Do not commit secrets or household data.
 | `LAB-07` | [LAB-07/v1 report](lab-07/REPORT-LAB-07-v1.md) — **software-qualified at L0/L1 for the identified session and HTTP path; device confirmation of that path pending; historical runs `20261020-scripted-run-5c448b64` and `20261020-manual-run-8658e29a` do not prove the corrected path; performance UNMEASURED; firmware trace loss UNKNOWN** |
 | `LAB-08` | [LAB-08/v1 report](lab-08/REPORT-LAB-08-v1.md) — **software-qualified at L0/L1; hardware pending; L08-07 and L08-08 blocked/UNMEASURED; performance UNMEASURED; firmware trace loss UNKNOWN** |
 | `LAB-09` | [LAB-09/v1 report](lab-09/REPORT-LAB-09-v1.md) — **software-qualified at L0/L1; scripted kit run `20261021-scripted-run-10611ef2` workflow PASS and experiment PASS; L09-05 and performance UNMEASURED; firmware trace loss UNKNOWN on that capture** |
+| `LAB-11` | [LAB-11/v1 report](lab-11/REPORT-LAB-11-v1.md) — **software-qualified, hardware pending** |
 | `LAB-12` | [LAB-12/v1 report](lab-12/REPORT-LAB-12-v1.md) — **L0/L1 software evidence; independent qualification OPEN; visual/shared device evidence pending; performance UNMEASURED; scripted-shared image leaves 29% app partition free** |
 | … | Add rows when reports land |
 

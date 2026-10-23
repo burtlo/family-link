@@ -1,0 +1,27 @@
+menu "LAB-11 send receipt"
+
+    config LAB11_SCRIPTED
+        bool "Run the scripted send harness"
+        default n
+
+    config LAB11_BUILD_ID
+        string "LAB-11 firmware build identity"
+        default "lab11-fw-manual-v1"
+
+    config LAB11_SERVER_HOST
+        string "LAB-11 fixture host"
+        default "127.0.0.1"
+
+    config LAB11_SERVER_PORT
+        int "LAB-11 fixture port"
+        default 8770
+
+    config LAB11_WIFI_SSID
+        string "LAB-11 station SSID"
+        default ""
+
+    config LAB11_WIFI_PASSWORD
+        string "LAB-11 station password"
+        default ""
+
+endmenu

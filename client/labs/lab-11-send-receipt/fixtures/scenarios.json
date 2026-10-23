@@ -1,0 +1,7 @@
+{
+  "fixture": "lab11-send/v1",
+  "experiment_inputs": ["D-one", "D-drop-ack", "D-drop-receipt", "D-full", "D-cancel"],
+  "exploratory": ["D-many", "D-invalid-recipient", "D-offline", "D-push-fail", "D-restart"],
+  "chunk_probes": [1024, 4096],
+  "part_queue_capacity": 8
+}

@@ -1,0 +1,78 @@
+{
+  "artifacts": {
+    "device_log": null,
+    "events": "docs/labs/evidence/lab-11/runs/20261021-scripted-run-070fca4e/events.jsonl",
+    "metrics": "docs/labs/evidence/lab-11/runs/20261021-scripted-run-070fca4e/metrics.json",
+    "serial_log": "logs/device/labs/lab-11/20261021-scripted-run-070fca4e/serial.txt",
+    "server_log": "docs/labs/evidence/lab-11/runs/20261021-scripted-run-070fca4e/server.log"
+  },
+  "build": {
+    "status": "passed"
+  },
+  "capture": {
+    "mode": "scripted",
+    "post_reset": true,
+    "seconds": 90,
+    "stages": {},
+    "status": "captured",
+    "variant": "scripted"
+  },
+  "comparison_run_id": null,
+  "document": "family-link.lab-run-manifest/v2",
+  "ended_at_utc": "2026-10-21T02:22:02.657356Z",
+  "event_loss": {
+    "firmware_trace": {
+      "dropped_events": null,
+      "status": "UNKNOWN"
+    },
+    "host_journal": {
+      "dropped_events": 0,
+      "status": "NONE"
+    }
+  },
+  "evidence_slug": "lab-11",
+  "experiment_verdict": "PASS",
+  "firmware": {
+    "binary_sha256": null,
+    "build_fingerprint": null,
+    "build_id": null,
+    "build_stamp": null,
+    "cmake_options": {},
+    "idf_version": null,
+    "project_path": "client\\labs\\lab-11-send-receipt",
+    "sdkconfig_sha256": null,
+    "source_revision": null,
+    "source_sha256": null
+  },
+  "fixture": {
+    "file": null,
+    "revision": "lab11-send/v1",
+    "schema": "lab11-send/v1",
+    "sha256": "d8f19e9785811b45ce5897cda3561b3fa47af0035e216160018f800ca892d298"
+  },
+  "hardware": {
+    "board": null,
+    "kit_nickname": "audrey-kit"
+  },
+  "lab_id": "LAB-11",
+  "lab_revision": "v1",
+  "lab_version_string": "LAB-11/v1 = firmware lab11-fw-scripted-v1 + server lab11-server/v1 + fixture lab11-send/v1",
+  "operator": null,
+  "run_id": "20261021-scripted-run-070fca4e",
+  "scenarios": [],
+  "server": {
+    "path": "server/labs/lab-11-send-receipt",
+    "revision": "lab11-server/v1",
+    "source_sha256": "56caf62ebd07f85d77e46b3785881944372c3ea3345c4cc9670278b0b73f35eb"
+  },
+  "source": {
+    "dirty": null,
+    "files": {},
+    "revision": null
+  },
+  "started_at_utc": "2026-10-21T02:21:38.177722Z",
+  "terminal_reason": "post_reset_capture_parsed",
+  "terminal_reason_truncated": false,
+  "verification_levels": {},
+  "workflow_status": "PASS"
+}
