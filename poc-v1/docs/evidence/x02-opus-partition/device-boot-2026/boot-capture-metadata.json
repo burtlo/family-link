@@ -1,0 +1,178 @@
+{
+  "schema": 1,
+  "exercise": "E2",
+  "device_fingerprint_sha256": "ec66fae0e2c0a26d38e3001b5e1ca073e1d5192b1599c25b40af72c5d981c23f",
+  "port": "/dev/cu.usbmodem101",
+  "git_commit": "e167664419c60c75c696d82806a275e414852c0a",
+  "partition_profile": "x02_2125",
+  "captures": [
+    {
+      "label": "post-2125-flash-pre-ip-fix",
+      "private_log_path": "~/family-link-private/x02-2125-e2-20261022/boot-capture.txt",
+      "duration_s": 50,
+      "raw_log_bytes": 25292,
+      "raw_log_sha256": "619f21be0379b9eacd67a43b7e01a0ebb89bff7d30660dd3ef90b98c1f8a09ce",
+      "rubric": {
+        "second_stage_bootloader": true,
+        "calling_app_main": true,
+        "project_family_link_demo": true,
+        "x02_identity_log": true,
+        "factory_slot_0x220000_accepted": true,
+        "guru_meditation_or_boot_loop": true,
+        "past_connecting": false,
+        "notes": "Baked server 192.168.8.143; Wi-Fi placeholder; LoadProhibited after join failed."
+      }
+    },
+    {
+      "label": "post-ip-fix-2125-image",
+      "private_log_path": "~/family-link-private/x02-2125-e2-20261022/boot-capture-after-ip-fix.txt",
+      "duration_s": 55,
+      "raw_log_bytes": 8893,
+      "raw_log_sha256": "a3565383059fd8996dd3f5e79c374a687ad91edcf0cb1676ff602cc3af384842",
+      "rubric": {
+        "second_stage_bootloader": true,
+        "calling_app_main": true,
+        "project_family_link_demo": true,
+        "x02_identity_log": true,
+        "factory_slot_0x220000_accepted": true,
+        "guru_meditation_or_boot_loop": false,
+        "past_connecting": true,
+        "notes": "DEMO_SERVER_HOST 192.168.8.236; hangout users + roster paint observed."
+      }
+    },
+    {
+      "label": "post-restore-pre-experiment-image",
+      "private_log_path": "~/family-link-private/x02-2125-e2-20261022/boot-capture-post-restore.txt",
+      "duration_s": 45,
+      "raw_log_bytes": 8910,
+      "raw_log_sha256": "2657c0abbe0f190d45d1b049703fe073b1ca40331972e4567748b7b676ff0d89",
+      "rubric": {
+        "second_stage_bootloader": true,
+        "calling_app_main": true,
+        "factory_slot_legacy_0x300000": true,
+        "guru_meditation_or_boot_loop": false,
+        "wifi_associated": true,
+        "notes": "Mandatory restore complete; not 2125 table — confirms kit returned to backup epoch."
+      }
+    }
+  ],
+  "flash_readback": {
+    "partition_table_match": true,
+    "partition_table_sha256": "ca85e18a7545259b1033b2045088f0d43b20871dc08c37a3a2b356b1af4851bc",
+    "app_who_bin_match": true,
+    "app_who_bin_sha256": "e11a383550860dee8744271291e10ccef714b38fc1a06c1178eda39e01e90ce4"
+  },
+  "restore": {
+    "restore_verified": true,
+    "full_backup_sha256": "5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44",
+    "readback_sha256": "5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44"
+  },
+  "network_session_2026-10-23": {
+    "demo_server_host": "192.168.8.236",
+    "demo_server_port": 8080,
+    "secrets_profile": "sunset",
+    "who_stamp": "mazi",
+    "v1_server_saw_device_traffic": true,
+    "device_lan_ip_observed": "192.168.8.106",
+    "server_log_markers": [
+      "GET /v1/hangout HTTP/1.1 200 OK",
+      "WebSocket /v1/ws accepted"
+    ]
+  },
+  "e2_verdict": "PASS",
+  "e3": {
+    "exercise": "E3",
+    "backup_dir_private": "~/family-link-private/x02-2125-e3-20261022",
+    "demo": "x02-opus-probe",
+    "app_bin_bytes_on_device": 1677568,
+    "captures": [
+      {
+        "label": "post-2125-probe-flash",
+        "private_log_path": "~/family-link-private/x02-2125-e3-20261022/boot-capture-2125-probe-full.txt",
+        "duration_s": 70,
+        "raw_log_bytes": 9613,
+        "raw_log_sha256": "529d54717dda70473c0be5688505dafd7c16f4c218f9e4c08acf106a536ff554",
+        "rubric": {
+          "second_stage_bootloader": true,
+          "calling_app_main": true,
+          "project_family_link_demo": true,
+          "probe_elf_sha_prefix": "529247194",
+          "fl_opus_linked": true,
+          "factory_slot_0x220000_accepted": true,
+          "guru_meditation_or_boot_loop": false,
+          "wifi_associated": true,
+          "past_connecting": false,
+          "notes": "Hangout GET 401 (v1 auth); x02 shell + WS to 192.168.8.236; stable idle loop."
+        }
+      },
+      {
+        "label": "post-restore-pre-experiment-image",
+        "private_log_path": "~/family-link-private/x02-2125-e3-20261022/boot-capture-post-restore.txt",
+        "duration_s": 45,
+        "raw_log_bytes": 8910,
+        "raw_log_sha256": "8575babc8dcb0139f48c32592a129a734f56cd4aeb36355fc702d1db9bb75ebd",
+        "rubric": {
+          "second_stage_bootloader": true,
+          "calling_app_main": true,
+          "factory_slot_legacy_0x300000": true,
+          "project_lab09_session_isolation": true,
+          "guru_meditation_or_boot_loop": false,
+          "notes": "Mandatory E3 restore complete."
+        }
+      }
+    ],
+    "flash_readback": {
+      "partition_table_match": true,
+      "partition_table_compare_note": "Compare built partition-table.bin (3072 B) to first 3072 B of 4 KiB sector @ 0x8000",
+      "partition_table_sha256": "ca85e18a7545259b1033b2045088f0d43b20871dc08c37a3a2b356b1af4851bc",
+      "app_who_bin_match": true,
+      "app_who_bin_sha256": "3bb4ebc1b68c6507118d8d224ecd7764d25f1eba96d557566293b61125df95db"
+    },
+    "restore": {
+      "restore_verified": true,
+      "full_backup_sha256": "5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44",
+      "readback_sha256": "5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44"
+    },
+    "network_session_2026-10-23": {
+      "demo_server_host": "192.168.8.236",
+      "demo_server_port": 8080,
+      "secrets_profile": "sunset",
+      "who_stamp": "mazi",
+      "device_lan_ip_observed": "192.168.8.106"
+    },
+    "e3_verdict": "PASS"
+  },
+  "e4": {
+    "exercise": "E4",
+    "backup_dir_private": "~/family-link-private/x02-2125-e4-20261023",
+    "demo": "x02",
+    "partition_profile": "x02_2125",
+    "captures": [
+      {
+        "label": "2125-x02-smoke",
+        "private_log_path": "~/family-link-private/x02-2125-e4-20261023/boot-capture-2125-smoke.txt",
+        "duration_s": 85,
+        "raw_log_bytes": 11007,
+        "raw_log_sha256": "9ecf914ea0cd3b3a6d095a94be8be95c4e4890ee1b8bcf15cd633690d9a930de",
+        "smoke_checklist": {
+          "wifi_association": true,
+          "pin_to_screen": true,
+          "carousel_at_least_one_card": true,
+          "record_entry": true
+        },
+        "rubric": {
+          "elf_sha_prefix": "8952dc90a",
+          "ws_hello_ok": true,
+          "hangout_users": true,
+          "guru_meditation_or_boot_loop": false
+        }
+      }
+    ],
+    "restore": {
+      "restore_verified": true,
+      "full_backup_sha256": "5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44",
+      "readback_sha256": "5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44"
+    },
+    "e4_verdict": "PASS"
+  }
+}

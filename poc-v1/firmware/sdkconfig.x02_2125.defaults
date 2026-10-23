@@ -1,0 +1,6 @@
+# x02 2.125 MiB single-factory overlay — merged after sdkconfig.defaults + sdkconfig.defaults.v1.
+# Does not select production partition layout until device boot proof (E2) passes.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions/x02_single_factory_2125.csv"
+# CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE is not set
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y

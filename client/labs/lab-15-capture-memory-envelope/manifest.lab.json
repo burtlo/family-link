@@ -1,0 +1,47 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "LAB-15",
+  "lab_revision": "v1",
+  "firmware_path": "client/labs/lab-15-capture-memory-envelope",
+  "server_path": "none",
+  "fixture_schema": "lab15-envelope/v1",
+  "fixture_revision": "lab15-envelope/v1",
+  "protocol": "local capture only; memory envelope probe",
+  "trace_schema": "lab15-envelope-trace/v1",
+  "trace_schema_path": "client/labs/lab-15-capture-memory-envelope/trace-schema.v1.json",
+  "criteria": "provisional lab probe; not product budgets",
+  "registry": {
+    "make_name": "lab15",
+    "registered": true,
+    "adapter_identity": "lab15",
+    "parser_path": "client/labs/lab-15-capture-memory-envelope/tools/parse_lab_trace.py"
+  },
+  "runner": {
+    "readiness_marker": "LAB15_READY build=<id> arm=<ui>_<audio>_<opus>_<sdmmc> harness=<0|1>",
+    "scripted_completion_marker": "LAB15_HARNESS_DONE status=complete",
+    "resolved_commands": {
+      "build_manual": "make lab.lab15.build",
+      "build_scripted": "make lab.lab15.scripted.build",
+      "scripted": "make lab.lab15.scripted KIT=<kit>"
+    }
+  },
+  "resource_budget": {
+    "label": "provisional lab probe",
+    "max_live_nodes": 128,
+    "max_transient_bytes": 6500000,
+    "max_persistent_bytes": 250000,
+    "max_concurrent_operations": 2,
+    "max_stack_or_call_depth": 12,
+    "maximum_input_size": 4096,
+    "pcm_ring_bytes": 5760000,
+    "sketch_bytes_max": 32768,
+    "canvas_bytes_per_buffer": 115200,
+    "canvas_buffer_count": 2
+  },
+  "experiment_inputs": [
+    "E-baseline-ui",
+    "E-catalog-ui",
+    "E-catalog-peak-only",
+    "E-chunk-fragmentation"
+  ]
+}

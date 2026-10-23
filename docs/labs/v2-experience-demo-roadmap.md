@@ -31,8 +31,11 @@ Labs may compare proposed behavior and reveal feasibility. A lab result does **n
 | `LAB-11` | Send, receipt, and recovery | Can one frozen capture reach a truthful terminal result through failure and lost responses? | Required: versioned send/receipt server fixture | `LAB-10`; recipient/atomicity/outbox choices OPEN |
 | `LAB-12` | Profile/settings propagation (deferred from core V2) | Future profile-editing flow and cross-endpoint reconciliation | Only for a later profile/settings delivery; not a core V2 prerequisite | Profile editing and settings hub are deferred; core card rendering is decided in the profile contract |
 | `LAB-13` | Full v2 journey composition | Do the components retain their guarantees when run together? | Required: one versioned integrated fixture compatible with all included operations | Focused labs and applicable product/contract decisions |
+| `LAB-15` | Capture memory envelope | Can catalog/LVGL + full 180 s PCM retention fit without silent OOM? | None | [LAB-15 plan](lab-15-capture-memory-envelope.md); LAB-10 + LAB-14 reuse; **spec only** |
 
 `LAB-02`–`LAB-05` in the [companion plan](inbox-carousel-playback-evaluation.md) cover large inboxes, card reuse, audio/sketch switching, format choices, and transition peak. Their results feed `LAB-13`; do not repeat their microbenchmarks as an opaque end-to-end PASS.
+
+`LAB-15` answers the allocation gap called out for P7/P8 (full `pcm_s16le` buffer vs fonts/LVGL). It is independent of `LAB-13` and should complete before claiming a product capture path.
 
 ## LAB-06 — stage shell and panel lifecycle
 
@@ -91,6 +94,14 @@ Labs may compare proposed behavior and reveal feasibility. A lab result does **n
 **Capture:** Preview versus server-acknowledged state, field-level request/revision, duplicate operation handling, convergence and refetch result, asset fallback, focus and overlay lifetime, local/remote copy, and confirmation that a profile hint updates canonical profile/card-background data without painting `profile_accent` onto core V2 cards.
 
 **Result sought:** A failed save is not presented as saved; one endpoint cannot silently overwrite another's edit; visual updates preserve focus and do not rebuild the whole inbox. Re-evaluate if optimistic color persists after rejection, old profile responses overwrite new revisions, a missing avatar breaks layout, or profile accent and sketch stroke color are conflated. The profile contract's remaining appearance/catalog details and wire transport/retention are follow-on work; the settings hub stays deferred until specified.
+
+## LAB-15 — capture memory envelope
+
+**Create/run:** See [lab-15-capture-memory-envelope.md](lab-15-capture-memory-envelope.md). Compose LAB-10 capture limits with a LAB-14-weight UI montage. Scripted runs use a fake clock to `duration_cap` and a deterministic PCM fill. Optional Kconfig arms link Opus (flash size + runtime) or SDMMC spill (exploratory).
+
+**Capture:** `resource_sample` and `allocation_attempt` rows at UI mount, after 5,760,000-byte PCM reserve, and at duration cap; internal, PSRAM, and LVGL largest-free blocks.
+
+**Result sought:** Explicit `allocation_failure` terminal if the desk cannot reserve the owner wire maximum—not undefined behavior. A passing experiment records numbers for owner decision on storage medium and codec; it does not approve Opus on the delivery contract.
 
 ## LAB-13 — composed v2 journey
 

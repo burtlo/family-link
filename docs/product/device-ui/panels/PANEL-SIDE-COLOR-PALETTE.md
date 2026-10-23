@@ -124,7 +124,7 @@ canvas.
 
 | ID | Question | Blocks |
 |---|---|---|
-| `UI-OPEN-001` | Final RGB565 packing for each rail color (`OPEN-SKP-01`) | Wire/protocol, not this placement |
+| `UI-OPEN-001` | *(Resolved 2026-10-22)* Stored points use RGB565 inside `flsk2` (`OPEN-SKP-01`). Placement is unchanged | — |
 
 ## Readiness
 

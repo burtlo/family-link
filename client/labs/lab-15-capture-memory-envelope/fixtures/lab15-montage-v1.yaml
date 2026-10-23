@@ -1,0 +1,13 @@
+scene_id: lab15-montage-v1
+description: Catalog-heavy split pane with six-color rail and 240x240 canvas placeholder
+fonts:
+  - montserrat_16
+  - montserrat_32
+widgets:
+  - split_pane_header:
+      title_max_chars: 25
+      subtitle_max_chars: 25
+  - six_color_rail: true
+  - canvas_placeholder:
+      width: 240
+      height: 240

@@ -1,0 +1,52 @@
+# E2 restore proof (private backup outside repo)
+
+backup_dir_private=/Users/lynnfrank/family-link-private/x02-2125-e2-20261022
+full_backup_bytes=16777216
+full_backup_sha256=5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44
+device_fingerprint_sha256=ec66fae0e2c0a26d38e3001b5e1ca073e1d5192b1599c25b40af72c5d981c23f
+
+restore_attempts:
+- 2026-10-23 (early): write_flash aborted ~24% — chip black screen until full restore completed
+- 2026-10-23 (closure): h32_storage_qual.py restore — write_flash 16 MiB + readback verified
+
+restore_verified=yes
+readback_sha256=5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44
+readback_sha256_match=yes
+restore_proof_private_json=restore-proof-private.json (status=verified, same device fingerprint)
+
+post_restore_serial_private=~/family-link-private/x02-2125-e2-20261022/boot-capture-post-restore.txt
+post_restore_notes=Pre-experiment partition table (factory 0x300000); Calling app_main; Wi-Fi associated; no Guru in 45s capture
+
+# E3 restore proof (epoch x02-2125-e3-20261022)
+
+backup_dir_private=/Users/lynnfrank/family-link-private/x02-2125-e3-20261022
+full_backup_sha256=5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44
+device_fingerprint_sha256=ec66fae0e2c0a26d38e3001b5e1ca073e1d5192b1599c25b40af72c5d981c23f
+
+restore_verified=yes
+restore_attempts:
+- 2026-10-23: h32_storage_qual.py restore after x02-opus-probe @ x02_2125 — write_flash 16 MiB + readback verified
+
+readback_sha256=5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44
+readback_sha256_match=yes
+restore_proof_private_json=restore-proof-private.json (status=verified)
+
+post_restore_serial_private=~/family-link-private/x02-2125-e3-20261022/boot-capture-post-restore.txt
+post_restore_notes=lab09_session_isolation; factory 0x300000; Calling app_main; LAB09 scripted harness; no Guru in 45s capture
+
+# E4 restore proof (epoch x02-2125-e4-20261023)
+
+backup_dir_private=/Users/lynnfrank/family-link-private/x02-2125-e4-20261023
+full_backup_sha256=5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44
+device_fingerprint_sha256=ec66fae0e2c0a26d38e3001b5e1ca073e1d5192b1599c25b40af72c5d981c23f
+
+restore_verified=yes
+restore_attempts:
+- 2026-10-23 (attempt 1): h32_storage_qual.py restore — write_flash reached 100% then USB packet stall (exit 2); readback from parallel capture matched backup hash
+- 2026-10-23 (attempt 2): h32_storage_qual.py restore — write_flash 16 MiB + readback verified
+
+readback_sha256=5e5aaf3a3d29f30329038951008bc082c1f0358032d31443d2f52392084b2b44
+readback_sha256_match=yes
+restore_proof_private_json=restore-proof-private.json (status=verified)
+
+post_restore_notes=Pre-experiment partition table (factory 0x300000); same full-flash hash as E2/E3 epochs; kit on lab09 harness image

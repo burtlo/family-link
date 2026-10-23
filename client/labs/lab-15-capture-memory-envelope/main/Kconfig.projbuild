@@ -1,0 +1,61 @@
+menu "LAB-15 capture memory envelope"
+
+config LAB15_SCRIPTED
+    bool "Enable scripted memory harness (fake clock)"
+    default n
+
+config LAB15_BUILD_ID
+    string "LAB-15 firmware build identifier"
+    default "lab15-fw-manual-v1"
+
+config LAB15_PEAK_ALLOC_ONLY
+    bool "Peak allocation only (no clock advance to duration cap)"
+    depends on LAB15_SCRIPTED
+    default n
+
+choice LAB15_UI_MODE
+    prompt "UI load arm"
+    default LAB15_UI_NONE
+
+config LAB15_UI_NONE
+    bool "Capture-only baseline (no catalog montage)"
+
+config LAB15_UI_CATALOG
+    bool "Catalog montage (lab15-montage-v1)"
+endchoice
+
+choice LAB15_AUDIO_MODE
+    prompt "Audio retention arm"
+    default LAB15_AUDIO_PCM_RING
+
+config LAB15_AUDIO_PCM_RING
+    bool "Single PCM ring (5,760,000 bytes max)"
+
+config LAB15_AUDIO_PCM_CHUNK
+    bool "PCM chunks (fragmentation probe)"
+endchoice
+
+config LAB15_PCM_RING_BYTES
+    int "PCM ring reservation bytes"
+    depends on LAB15_AUDIO_PCM_RING
+    default 5760000
+
+config LAB15_PCM_CHUNK_COUNT
+    int "PCM chunk count"
+    depends on LAB15_AUDIO_PCM_CHUNK
+    default 8
+
+config LAB15_PCM_CHUNK_BYTES
+    int "Bytes per PCM chunk"
+    depends on LAB15_AUDIO_PCM_CHUNK
+    default 720000
+
+config LAB15_OPUS_LINK
+    bool "Link Opus encoder stub (exploratory flash budget)"
+    default n
+
+config LAB15_SDMMC_SPILL
+    bool "SDMMC spill stub (exploratory)"
+    default n
+
+endmenu

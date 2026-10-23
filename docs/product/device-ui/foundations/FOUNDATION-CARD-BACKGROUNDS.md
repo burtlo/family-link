@@ -2,7 +2,7 @@
 
 ID: `FOUNDATION-CARD-BACKGROUNDS`
 Type: Foundation
-Revision: 0.3
+Revision: 0.4
 Status: Draft — eight flat fills owner-selected; visual approval pending
 Owner: Product owner
 
@@ -42,14 +42,16 @@ without a catalog revision.
 | `card-bg-08` | Teal | `#4EC4C8` | `#101418` |
 
 `card_background_id` values in the proposed profile contract use these IDs.
-Unknown-ID behavior and migration from V1 profile colors remain in
-[`COM-USER-PROFILE`](../../communication-contracts/user-profile.md)
-`COM-OPEN-003` until the profile contract is finalized.
+A missing or unrecognized id displays as `card-bg-01` and does not hide the
+person or message ([`COM-USER-PROFILE`](../../communication-contracts/user-profile.md)
+`COM-010`). V1 color migration remains `COM-OPEN-003`.
 
 ## Rendering rules
 
 - Roster and message cards use the current profile's catalog entry; they do not
   freeze a background into each sent message.
+- A missing or unrecognized `card_background_id` uses `card-bg-01`. The card
+  stays visible.
 - The paired text color is used for display names and message-card metadata.
 - RGB565 output follows [`THEME-DARK`](../themes/THEME-DARK.md) quantization.
 - The selected background does not recolor avatar bitmap art. The temporary
@@ -71,6 +73,7 @@ Unknown-ID behavior and migration from V1 profile colors remain in
 
 ## Revision history
 
+- **0.4 — 2026-10-22:** A missing or unrecognized id displays as `card-bg-01`.
 - **0.3 — 2026-10-22:** Owner adopted the eight LAB-14 fixture colors as solid
   V2 card fills with `#101418` text.
 - **0.2 — 2026-10-21:** Recorded that the chosen catalog entry is server-owned,

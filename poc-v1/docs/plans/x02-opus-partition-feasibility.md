@@ -291,6 +291,10 @@ Sources: `firmware/demos/x02_opus_size_probe.c`, `firmware/demos/x02_opus_dep_on
 
 All raw reports: [`docs/evidence/x02-opus-partition/`](../evidence/x02-opus-partition/) — `phase1-summary.md` through `phase4-partition-strategies.md`, **`phase4-corrections.md`**, `toolchain.txt`, `partition-tables.txt`, `*-size*.txt`, `fixtures/partitions_*.csv`.
 
+### Related plans (open)
+
+Phases 1–5 did **not** run the optional **one-device boot proof** on the **2.125 MiB single-factory** table. Layout CSVs remain **tool-validated**, not **device-proven** for full **x02** or **x02-opus-probe** images. Follow-up exploration: [`x02-opus-2125-device-boot.md`](x02-opus-2125-device-boot.md) (**status:** `planned`).
+
 ## Non-goals
 
 - Implementing Opus recording or playback in X02

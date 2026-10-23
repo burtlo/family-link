@@ -420,7 +420,7 @@
     {
       "id": "CAT-20",
       "order": 20,
-      "title": "Portrait roster (38)",
+      "title": "Portrait roster (42)",
       "group": "Login",
       "screen": "SCR-SIGN-IN-ROSTER",
       "state": "roster-ready-bust",
@@ -430,13 +430,13 @@
         "upper": {
           "panel": "PANEL-HEADER-TITLE-LEFT",
           "props": {
-            "title": "Portrait roster (38)"
+            "title": "Portrait roster (42)"
           }
         },
         "lower": {
           "panel": "PANEL-BODY-ROSTER-CAROUSEL",
           "props": {
-            "focused": 19,
+            "focused": 21,
             "touch": true,
             "card_style": "bust",
             "users": [
@@ -623,86 +623,114 @@
                 "portrait": "avatar-fd06"
               },
               {
-                "id": "avatar-mk01",
-                "name": "MK01",
+                "id": "avatar-mm01",
+                "name": "MM01",
                 "background": "#E8C040",
                 "text": "#101418",
-                "portrait": "avatar-mk01"
+                "portrait": "avatar-mm01"
+              },
+              {
+                "id": "avatar-mm02",
+                "name": "MM02",
+                "background": "#D875A8",
+                "text": "#101418",
+                "portrait": "avatar-mm02"
+              },
+              {
+                "id": "avatar-mm03",
+                "name": "MM03",
+                "background": "#C070E8",
+                "text": "#101418",
+                "portrait": "avatar-mm03"
+              },
+              {
+                "id": "avatar-mm05",
+                "name": "MM05",
+                "background": "#4ECDC4",
+                "text": "#101418",
+                "portrait": "avatar-mm05"
+              },
+              {
+                "id": "avatar-mm06",
+                "name": "MM06",
+                "background": "#FF6B6B",
+                "text": "#101418",
+                "portrait": "avatar-mm06"
+              },
+              {
+                "id": "avatar-mm08",
+                "name": "MM08",
+                "background": "#7AD4E8",
+                "text": "#101418",
+                "portrait": "avatar-mm08"
               },
               {
                 "id": "avatar-rb01",
                 "name": "RB01",
-                "background": "#D875A8",
+                "background": "#5AA0E8",
                 "text": "#101418",
                 "portrait": "avatar-rb01"
               },
               {
                 "id": "avatar-rb02",
                 "name": "RB02",
-                "background": "#C070E8",
+                "background": "#67C587",
                 "text": "#101418",
                 "portrait": "avatar-rb02"
               },
               {
                 "id": "avatar-rb03",
                 "name": "RB03",
-                "background": "#4ECDC4",
+                "background": "#E8C040",
                 "text": "#101418",
                 "portrait": "avatar-rb03"
               },
               {
                 "id": "avatar-rb04",
                 "name": "RB04",
-                "background": "#FF6B6B",
+                "background": "#D875A8",
                 "text": "#101418",
                 "portrait": "avatar-rb04"
               },
               {
                 "id": "avatar-rb05",
                 "name": "RB05",
-                "background": "#7AD4E8",
+                "background": "#C070E8",
                 "text": "#101418",
                 "portrait": "avatar-rb05"
               },
               {
-                "id": "avatar-sp01",
-                "name": "SP01",
-                "background": "#5AA0E8",
-                "text": "#101418",
-                "portrait": "avatar-sp01"
-              },
-              {
                 "id": "avatar-we01",
                 "name": "WE01",
-                "background": "#67C587",
+                "background": "#4ECDC4",
                 "text": "#101418",
                 "portrait": "avatar-we01"
               },
               {
                 "id": "avatar-we02",
                 "name": "WE02",
-                "background": "#E8C040",
+                "background": "#FF6B6B",
                 "text": "#101418",
                 "portrait": "avatar-we02"
               },
               {
                 "id": "avatar-we03",
                 "name": "WE03",
-                "background": "#D875A8",
+                "background": "#7AD4E8",
                 "text": "#101418",
                 "portrait": "avatar-we03"
               },
               {
                 "id": "avatar-we04",
                 "name": "WE04",
-                "background": "#C070E8",
+                "background": "#5AA0E8",
                 "text": "#101418",
                 "portrait": "avatar-we04"
               },
               {
                 "id": "avatar-we05",
                 "name": "WE05",
-                "background": "#4ECDC4",
+                "background": "#67C587",
                 "text": "#101418",
                 "portrait": "avatar-we05"
               }

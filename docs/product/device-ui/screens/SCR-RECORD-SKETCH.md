@@ -88,7 +88,7 @@ None on this screen.
 | ID | Question | Blocks |
 |---|---|---|
 | `UI-OPEN-001` | *(Resolved 2026-10-21)* No timer or recording indicator (`EXP-SKP-008`, send `DEC-021`) | — |
-| `UI-OPEN-002` | RGB565 wire packing (`OPEN-SKP-01`) | Protocol, not placement |
+| `UI-OPEN-002` | *(Resolved 2026-10-22)* Stored points use RGB565 inside `flsk2` (`OPEN-SKP-01`). Placement is unchanged | — |
 
 ## Readiness
 

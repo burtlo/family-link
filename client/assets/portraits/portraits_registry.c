@@ -27,13 +27,17 @@ extern const lv_image_dsc_t portrait_avatar_fd03_candidate;
 extern const lv_image_dsc_t portrait_avatar_fd04_candidate;
 extern const lv_image_dsc_t portrait_avatar_fd05_candidate;
 extern const lv_image_dsc_t portrait_avatar_fd06_candidate;
-extern const lv_image_dsc_t portrait_avatar_mk01_candidate;
+extern const lv_image_dsc_t portrait_avatar_mm01_candidate;
+extern const lv_image_dsc_t portrait_avatar_mm02_candidate;
+extern const lv_image_dsc_t portrait_avatar_mm03_candidate;
+extern const lv_image_dsc_t portrait_avatar_mm05_candidate;
+extern const lv_image_dsc_t portrait_avatar_mm06_candidate;
+extern const lv_image_dsc_t portrait_avatar_mm08_candidate;
 extern const lv_image_dsc_t portrait_avatar_rb01_candidate;
 extern const lv_image_dsc_t portrait_avatar_rb02_candidate;
 extern const lv_image_dsc_t portrait_avatar_rb03_candidate;
 extern const lv_image_dsc_t portrait_avatar_rb04_candidate;
 extern const lv_image_dsc_t portrait_avatar_rb05_candidate;
-extern const lv_image_dsc_t portrait_avatar_sp01_candidate;
 extern const lv_image_dsc_t portrait_avatar_we01_candidate;
 extern const lv_image_dsc_t portrait_avatar_we02_candidate;
 extern const lv_image_dsc_t portrait_avatar_we03_candidate;
@@ -72,13 +76,17 @@ static const fl_portrait_entry_t s_portraits[] = {
     {"avatar-fd04", &portrait_avatar_fd04_candidate},
     {"avatar-fd05", &portrait_avatar_fd05_candidate},
     {"avatar-fd06", &portrait_avatar_fd06_candidate},
-    {"avatar-mk01", &portrait_avatar_mk01_candidate},
+    {"avatar-mm01", &portrait_avatar_mm01_candidate},
+    {"avatar-mm02", &portrait_avatar_mm02_candidate},
+    {"avatar-mm03", &portrait_avatar_mm03_candidate},
+    {"avatar-mm05", &portrait_avatar_mm05_candidate},
+    {"avatar-mm06", &portrait_avatar_mm06_candidate},
+    {"avatar-mm08", &portrait_avatar_mm08_candidate},
     {"avatar-rb01", &portrait_avatar_rb01_candidate},
     {"avatar-rb02", &portrait_avatar_rb02_candidate},
     {"avatar-rb03", &portrait_avatar_rb03_candidate},
     {"avatar-rb04", &portrait_avatar_rb04_candidate},
     {"avatar-rb05", &portrait_avatar_rb05_candidate},
-    {"avatar-sp01", &portrait_avatar_sp01_candidate},
     {"avatar-we01", &portrait_avatar_we01_candidate},
     {"avatar-we02", &portrait_avatar_we02_candidate},
     {"avatar-we03", &portrait_avatar_we03_candidate},

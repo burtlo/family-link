@@ -5,11 +5,11 @@ contract checkpoints confirmed 2026-10-21; sender-copy and refusal-vs-wait
 meanings, recipient-picker presentation, and sending-feedback treatment
 accepted 2026-10-21
 Experience ID: EXP-MESSAGE-RECORD-SEND
-Revision: 1.6
+Revision: 1.9
 Owner: Product owner
 Approval: Contract checkpoint confirmed 2026-10-21 for the recorded
-locked behavior. Sender-copy, refusal-vs-wait, recipient-picker, and
-sending-feedback decisions accepted 2026-10-21. No product-wide approval
+locked behavior. The 2026-10-22 session-refresh and recipient-card
+amendment was confirmed with login `DEC-072`. No product-wide approval
 claimed; no implementation authorization implied
 
 ## 1. Identity, scope, and authority
@@ -75,6 +75,8 @@ outlive a single screen paint).
 | SRC-OWNER-013 | Product owner, 2026-10-21 communication-contract interview | Recipients-only publication (no sender inbox copy); timeouts/5xx/expired session keep waiting; unsupported/too-large media and identity-conflict are `couldn't send` |
 | SRC-OWNER-014 | Product owner, 2026-10-21 recipient-picker follow-up | Selected cards use the 2 px accent outline alone; when selected names exceed the 25-character header limit, show the first name plus `+N`; an empty picker keeps the split pane with centered `No people to message` and no illustration or cards |
 | SRC-OWNER-015 | Product owner, 2026-10-21 send-feedback follow-up | When frozen names do not fit the sending subtitle, use first name plus `+N`; status presentation remains text-only without status icons |
+| SRC-OWNER-016 | Product owner, 2026-10-22 | A failed session refresh stays on the send wait. Recipient cards use the roster catalog fallback |
+| SRC-OWNER-017 | Product owner, 2026-10-22 | Inbox fetch is suspended during recording and while a finished send is pending. The finished upload runs before an inbox fetch. Capture stays on the desk until the recording finishes |
 | SRC-EXP-CAR-001 | Active experience draft; owner-decided for inbox | [`EXP-MESSAGE-CAROUSEL`](message-carousel-and-playback.md): red-button exit pauses playback and preserves audio position and sketch (`DEC-039`, `EXP-037`); same-session play heads survive this exit (`DEC-026`); return re-entry staging is delegated here |
 | SRC-EXP-LOGIN-001 | Active experience draft; owner-decided for login | [`EXP-LOGIN`](endpoint-login.md): mute signs out and blanks the display; lower-slot `connecting` / `no Wi-Fi` presentation; hangout roster is server-owned |
 | SRC-EXP-SKETCH-001 | Active experience; owner-decided canvas geometry | [`EXP-SKETCH-RECORD-PLAYBACK`](sketch-record-and-playback.md): 120×120 logical sketch; 240×240 record canvas and 80×240 color rail; audio is the sketch clock; audio-only messages have no sketch. This send experience closes the timer/indicator question for its record screen (`DEC-021`) |
@@ -139,6 +141,9 @@ outlive a single screen paint).
 | 1.4 | 2026-10-21 | Locked recipients-only publication and the refusal-vs-wait map. No implementation authorization. |
 | 1.5 | 2026-10-21 | Locked recipient-picker selected-card cue, long-name header treatment, and empty-state composition. |
 | 1.6 | 2026-10-21 | Locked sending-subtitle overflow and text-only status marks. |
+| 1.7 | 2026-10-22 | A failed session refresh stays on the send wait. Recipient cards use the roster catalog fallback (`DEC-048`, `DEC-049`). |
+| 1.8 | 2026-10-22 | Owner confirmed that amendment with login `DEC-072`. |
+| 1.9 | 2026-10-22 | Inbox fetch waits during recording and while a finished send is pending. Capture stays on the desk until finish (`DEC-050`). |
 
 ## 2. Scenario and intended experience
 
@@ -472,6 +477,9 @@ the microphone fails after recording has started, that finish is sent.
   Mute discards the unfinished message and signs out (`DEC-032`).
 - Never acceptable: a cancelled recording is uploaded; connectivity copy
   interrupts an active canvas; mute uploads an unfinished recording.
+  The recording stays on the desk until red, the 3-minute cap, or
+  microphone failure finishes it (`DEC-050`). The inbox fetch is
+  suspended for that whole capture.
 
 ### Preparing / sending / sent
 
@@ -516,8 +524,11 @@ do not require another red press. Body then returns to `sending`, then
 `sent` if she is still on this screen.
 
 Boot from `no Wi-Fi` / `connecting` wait returns to the inbox and does
-not discard. If acceptance happens after she left, skip the 2-second
-`sent` confirmation and do not interrupt the inbox.
+not discard. The finished send's upload still runs before any inbox
+fetch. The 60-second inbox fetch resumes only when she is on the inbox
+and this send has been accepted or discarded (`DEC-050`). If acceptance
+happens after she left, skip the 2-second `sent` confirmation and do not
+interrupt the inbox.
 
 Mute after finish keeps the queued send. Do not upload while signed out.
 When that same user signs in again, resume this send automatically. After
@@ -646,6 +657,10 @@ Inherited facts that this experience must not contradict:
 | SCN-050 | Hangout has no other members | Open recipient selection | Split pane remains; lower slot centers `No people to message` with no illustration or cards | EXP-010 |
 | SCN-051 | Frozen recipient names do not fit in the sending subtitle | Observe preparing/sending/sent | Subtitle shows the first recipient's first name and `+N` for the remaining recipients | EXP-042 |
 | SCN-052 | Observe preparing/sending/sent and refusal feedback | Status changes | Centered text appears without icons; only `preparing` and `sending` have progressive dots | EXP-020, EXP-043 |
+| SCN-053 | Maya is on the send wait; her credential cannot be refreshed | Stay on this wait. Body stays `connecting` or `no Wi-Fi`. Same send stays queued. No PIN prompt and no return to the roster | EXP-041, EXP-044 |
+| SCN-054 | Jordan is in the recipient carousel with no avatar id and an unknown card background | Jordan stays selectable, shows initials, and uses `card-bg-01` | EXP-045 |
+| SCN-055 | Maya is recording | Observe | No inbox fetch. The canvas stays up. Nothing from this recording is uploaded yet | EXP-046, EXP-027 |
+| SCN-056 | Maya finished; the body shows `connecting` | Press Boot | Inbox returns. The finished send keeps uploading. No inbox fetch until that send is accepted or discarded. Then the 60-second fetch resumes | EXP-031, EXP-046 |
 | SCN-007 | Recipient selection, any selection | Press Boot | Return to inbox; no message created | EXP-009 |
 | SCN-008 | Maya is the signed-in user | Open recipient selection | Maya's card is not in the carousel | EXP-004 |
 | SCN-009 | Hangout has no other members | Open recipient selection | Lower slot shows `No people to message`; red is ignored; Boot returns to inbox | EXP-010 |
@@ -808,6 +823,22 @@ refusal-versus-wait scenarios is in the table below.
   success body is a wait, never `sent`. Frozen-recipient hangout refusal
   remains EXP-034. (Owner-decided; HTTP status numbers remain in the
   delivery contract)
+- **EXP-044:** If the signed-in credential cannot be refreshed during a
+  finished send, stay on this wait. Do not ask for a PIN and do not return
+  to the roster. The body stays `connecting` or `no Wi-Fi`. This same send
+  stays queued. When refresh succeeds, continue this send. The record
+  canvas is not covered by that status (`EXP-027`). (Owner-decided; login
+  `DEC-069`)
+- **EXP-045:** A recipient card with a missing or unrecognized avatar id
+  shows initials. A missing or unrecognized card background uses
+  `card-bg-01`. That person stays selectable. (Owner-decided; login
+  `DEC-071`)
+- **EXP-046:** The 60-second inbox fetch is suspended from the start of
+  recording until this finished send is accepted or discarded. While the
+  send is pending, its upload runs before any inbox fetch, including after
+  Boot returns to the inbox. The fetch resumes when she is on the inbox
+  and no finished send is pending. The recording stays on the desk until
+  finish. An unfinished recording is not uploaded. (Owner-decided)
 - **EXP-042:** If frozen recipient names do not fit in the sending
   subtitle, show the first recipient's first name followed by `+N` for the
   remaining recipients. (Owner-decided)
@@ -833,6 +864,8 @@ refusal-versus-wait scenarios is in the table below.
 | SRC-OWNER-010 / DEC-035, DEC-036, DEC-037 | EXP-035–EXP-037 | Power-loss, recipient selection, recording | SCN-034–SCN-039 |
 | SRC-OWNER-011 / DEC-038, DEC-039 | EXP-038, EXP-039 | Recipient selection, recording | SCN-040–SCN-042 |
 | SRC-OWNER-013 / DEC-041, DEC-042 | EXP-040, EXP-041 | Preparing/sending/sent, inbox return | SCN-043–SCN-047 |
+| SRC-OWNER-016 / DEC-048, DEC-049 | EXP-044, EXP-045 | Sending wait, recipient selection | SCN-053, SCN-054 |
+| SRC-OWNER-017 / DEC-050 | EXP-046 | Recording, sending wait, inbox return | SCN-055, SCN-056 |
 | SRC-OWNER-014 / DEC-043–DEC-045 | EXP-006, EXP-007, EXP-010 | Recipient selection, empty recipients | SCN-048–SCN-050 |
 | SRC-OWNER-015 / DEC-046, DEC-047 | EXP-018, EXP-020, EXP-042, EXP-043 | Preparing/sending/sent | SCN-051, SCN-052 |
 
@@ -889,6 +922,9 @@ refusal-versus-wait scenarios is in the table below.
 | DEC-045 | With no other hangout members, retain the split pane and show centered `No people to message` in the lower slot, without cards or an illustration | Keep the established empty-state copy simple and in place | SRC-OWNER-014, 2026-10-21 | High | OWNER-DECIDED | EXP-010 |
 | DEC-046 | If frozen recipient names do not fit in the sending subtitle, show the first recipient's first name followed by `+N` for the remaining recipients | Keep the recipient summary compact while retaining the first name and multi-recipient count | SRC-OWNER-015, 2026-10-21 | High | OWNER-DECIDED | EXP-018, EXP-042 |
 | DEC-047 | Sending status remains centered text without status icons; progressive dots appear only for `preparing` and `sending` | Preserve the simple status treatment across progress and result | SRC-OWNER-015, 2026-10-21 | High | OWNER-DECIDED | EXP-020, EXP-043 |
+| DEC-048 | If the signed-in credential cannot be refreshed during a finished send, stay on this wait. Do not ask for a PIN or return to the roster. Keep this send queued under `connecting` or `no Wi-Fi`. Continue it when refresh succeeds | An aged-out session is a wait, same as other reachability waits | SRC-OWNER-016, 2026-10-22 | High | OWNER-DECIDED | EXP-044, EXP-041 |
+| DEC-049 | A recipient card with a missing or unrecognized avatar id shows initials. A missing or unrecognized card background uses `card-bg-01`. That person stays selectable | Same catalog fallback as the sign-in roster | SRC-OWNER-016 / login DEC-071, 2026-10-22 | High | OWNER-DECIDED | EXP-045 |
+| DEC-050 | Suspend the 60-second inbox fetch from the start of recording until this finished send is accepted or discarded. The finished upload runs before any inbox fetch, including after a return to the inbox. Resume the fetch on the inbox when no finished send is pending. The recording stays on the desk until finish | Outgoing work comes before inbox retrieval. An unfinished recording is not uploaded | SRC-OWNER-017, 2026-10-22 | High | OWNER-DECIDED | EXP-046 |
 
 ### Locked behavior
 
@@ -918,7 +954,10 @@ refusal-versus-wait scenarios is in the table below.
   collapse (`DEC-011`).
 - Mute still signs out (`DEC-012`). Unfinished capture is discarded
   (`DEC-032`). A finished send is kept and resumes after that user signs
-  in (`DEC-033`).
+  in (`DEC-033`). A failed session refresh stays on the send wait and
+  keeps that send (`DEC-048`).
+- A recipient with a missing or unrecognized avatar or card background
+  stays selectable, with initials and `card-bg-01` (`DEC-049`).
 - Sent content and sketching start when the wipe completes; wipe-period
   speech is discarded (`DEC-016`). Hardware may capture earlier only to
   clip startup noise (`DEC-017`).
@@ -1049,7 +1088,9 @@ Delegated choices are the list above.
 
 No blocking OPEN product items remain in this experience. Sender-copy and
 refusal-versus-wait classes were accepted after the original contract
-checkpoint (`SRC-OWNER-013`, `DEC-041`, `DEC-042`). Offline capture
+checkpoint (`SRC-OWNER-013`, `DEC-041`, `DEC-042`). On 2026-10-22 the
+owner confirmed the session-refresh and recipient-card amendment with
+login `DEC-072` (`DEC-048`, `DEC-049`). Offline capture
 feasibility is an engineering assumption: if it is not possible, return to
 the owner. Message-delivery routes, codecs, chunking, retention, and HTTP
 status numbers remain in the communication contract and do not change this
@@ -1058,6 +1099,11 @@ user-visible policy.
 This confirmation records what was reviewed. It is not product-wide
 approval and does not authorize implementation.
 
+On 2026-10-22 the owner suspended the inbox fetch during recording and
+while a finished send is still pending (`DEC-050`). Capture remains on
+the desk until the recording finishes. That choice does not switch
+recording to an upload-while-capturing policy.
+
 ### Readiness
 
 | Gate | Status |
@@ -1065,6 +1111,6 @@ approval and does not authorize implementation.
 | Reconstruction checkpoint | Confirmed 2026-10-21 |
 | Ordinary-flow checkpoint | Confirmed 2026-10-21 |
 | Exception checkpoint | Confirmed 2026-10-21 |
-| Contract checkpoint | Confirmed 2026-10-21 |
+| Contract checkpoint | Confirmed 2026-10-21. Amendment of 2026-10-22 confirmed with login `DEC-072` |
 | Analysis-ready | Yes |
 | Implementation-ready | Yes for this experience's user-visible behavior. Does not authorize firmware, server, or UI implementation. Wire schema is a separate communication contract. Offline storage feasibility must be verified; if it fails, return to the owner |

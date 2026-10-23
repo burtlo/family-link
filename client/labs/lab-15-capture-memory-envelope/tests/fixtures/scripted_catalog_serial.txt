@@ -1,0 +1,10 @@
+LAB15_READY build=lab15-fw-scripted-v1 arm=catalog_pcm_none_none harness=1
+LAB15_TRACE schema=lab15-envelope-trace/v1 event=resource_sample seq=1 t_us=0 arm=catalog_pcm_none_none phase=boot live_nodes=0 internal_free=100000 internal_largest_free=50000 internal_min_free=90000 psram_free=8000000 psram_largest_free=7000000 lvgl_used=12000 lvgl_largest_free=50000 dma_largest_free=40000
+LAB15_TRACE schema=lab15-envelope-trace/v1 event=resource_sample seq=2 t_us=1000 arm=catalog_pcm_none_none phase=ui_mounted live_nodes=24 internal_free=90000 internal_largest_free=45000 internal_min_free=85000 psram_free=7900000 psram_largest_free=6900000 lvgl_used=28000 lvgl_largest_free=48000 dma_largest_free=38000
+LAB15_TRACE schema=lab15-envelope-trace/v1 event=allocation_attempt seq=3 t_us=2000 arm=catalog_pcm_none_none kind=canvas bytes=230400 result=ok region=psram
+LAB15_TRACE schema=lab15-envelope-trace/v1 event=allocation_attempt seq=4 t_us=3000 arm=catalog_pcm_none_none kind=sketch bytes=32768 result=ok region=psram
+LAB15_TRACE schema=lab15-envelope-trace/v1 event=allocation_attempt seq=5 t_us=4000 arm=catalog_pcm_none_none kind=pcm_ring bytes=5760000 result=ok region=psram
+LAB15_TRACE schema=lab15-envelope-trace/v1 event=resource_sample seq=6 t_us=5000 arm=catalog_pcm_none_none phase=audio_reserved live_nodes=24 internal_free=80000 internal_largest_free=40000 internal_min_free=80000 psram_free=2000000 psram_largest_free=1500000 lvgl_used=30000 lvgl_largest_free=45000 dma_largest_free=35000
+LAB15_TRACE schema=lab15-envelope-trace/v1 event=resource_sample seq=7 t_us=180000000 arm=catalog_pcm_none_none phase=duration_cap live_nodes=24 internal_free=80000 internal_largest_free=40000 internal_min_free=80000 psram_free=2000000 psram_largest_free=1500000 lvgl_used=30000 lvgl_largest_free=45000 dma_largest_free=35000
+LAB15_TRACE schema=lab15-envelope-trace/v1 event=terminal seq=8 t_us=180000000 arm=catalog_pcm_none_none operation_id=1 outcome=duration_cap reason=duration_cap_ms_180000
+LAB15_HARNESS_DONE status=complete

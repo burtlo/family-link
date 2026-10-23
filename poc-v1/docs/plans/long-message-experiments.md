@@ -221,6 +221,7 @@ H37 Stage A has now completed bounded read-only classification for the identifie
 - Durable sketch chunks sharing the message outbox and retry lifecycle.
 - Playback synchronized to streaming audio, including pause, reconnect, restart, and seek.
 - Optional derived keyframe experiment for dense-seek performance.
+- Device boot on the tool-validated **2.125 MiB** single-factory layout (full **x02** and **x02-opus-probe**) is tracked separately in [`x02-opus-2125-device-boot.md`](x02-opus-2125-device-boot.md); host partition sizing alone does not satisfy this gate.
 
 **Acceptance**
 

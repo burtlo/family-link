@@ -38,13 +38,16 @@ Use these IDs in manifests, traces, and evidence paths. Folder names are **kebab
 | `LAB-12` | `lab-12-profile-settings` | `lab-12-profile-settings` | [Roadmap § LAB-12](v2-experience-demo-roadmap.md#lab-12--profile-and-settings-propagation) |
 | `LAB-13` | `lab-13-full-journey` | `lab-13-full-journey` | [Roadmap § LAB-13](v2-experience-demo-roadmap.md#lab-13--composed-v2-journey) |
 | `LAB-14` | `lab-14-device-ui-catalog` | `none` | Visual catalog of authored device-ui layouts, panels, and screens; YAML in [`docs/product/device-ui/catalog/`](../product/device-ui/catalog/README.md) |
+| `LAB-15` | `lab-15-capture-memory-envelope` | `none` | [Capture memory envelope](lab-15-capture-memory-envelope.md) — UI + full PCM reserve + optional Opus/SD arms |
 | `LAB-16` | `lab-16-attached-storage` | `none` | Fast read-only SENSOR microSD discovery + LBA0 read; [`client/labs/lab-16-attached-storage/README.md`](../../client/labs/lab-16-attached-storage/README.md) |
 
 `LAB-14` is a visual review image for the current device-ui specifications (`make lab.lab14`). It is not a login, performance, or contract experiment.
 
+`LAB-15` is registered as `make lab.lab15` / `make lab.lab15.scripted` for P7/P8 feasibility (5.76 MiB PCM + catalog/LVGL peak). L2 device capture still required for hardware `provenance`.
+
 `LAB-16` is a scripted desk smoke test: SD probe plus 210 s mic-to-card stream (`make lab.lab16`). It does not replace formal H35/H37/H38 qualification.
 
-`LAB-02`, `LAB-03`, `LAB-05`, `LAB-14`, and `LAB-16` have registered firmware projects. LAB-03 adds paired fixed media fixtures and a scripted sustained run; its criteria are provisional and its acoustic/LCD evidence remains incomplete. See [LAB-03 report](evidence/lab-03/REPORT-LAB-03-v2.md). The current LAB-05 manual and scripted integration proofs pass the workflow lifecycle with service and scenario stages `not_configured`; experiment verdicts remain `UNMEASURED`. The scripted capture lacks its `LAB05_HARNESS_DONE` marker, and these runs do not measure performance. See [evidence index](evidence/README.md#shared-run-evidence-examples). Other rows below describe planned experiments, not registered runnable labs.
+`LAB-02`, `LAB-03`, `LAB-05`, `LAB-14`, `LAB-15`, and `LAB-16` have registered firmware projects. LAB-03 adds paired fixed media fixtures and a scripted sustained run; its criteria are provisional and its acoustic/LCD evidence remains incomplete. See [LAB-03 report](evidence/lab-03/REPORT-LAB-03-v2.md). The current LAB-05 manual and scripted integration proofs pass the workflow lifecycle with service and scenario stages `not_configured`; experiment verdicts remain `UNMEASURED`. The scripted capture lacks its `LAB05_HARNESS_DONE` marker, and these runs do not measure performance. See [evidence index](evidence/README.md#shared-run-evidence-examples). Other rows below describe planned experiments, not registered runnable labs.
 
 **Run on hardware:** `make lab.lab02` runs managed HTTP with manual free traversal; `make lab.lab02.scripted` runs its harness. `make lab.lab05` and `make lab.lab05.scripted` exercise the no-server generic lifecycle. These target commands require the corresponding registered kit, serial access, and toolchain. Step-by-step for assistants: [assistant guide § Host commands and registering a lab](assistant-guide.md#host-commands-make-lab).
 

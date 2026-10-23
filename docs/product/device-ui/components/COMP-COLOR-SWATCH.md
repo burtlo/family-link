@@ -94,8 +94,7 @@ marks.
 
 ## OPEN items
 
-None for this chip. Rail packing of RGB565 remains `OPEN-SKP-01` on the
-experience, not a change to ring or outline.
+None for this chip. Stored points use RGB565 inside `flsk2` (`OPEN-SKP-01`). That packing does not change the ring or outline.
 
 ## Readiness
 

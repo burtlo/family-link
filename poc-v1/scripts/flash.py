@@ -315,7 +315,21 @@ for _tag in WHO_TAGS.values():
         raise RuntimeError(f"WHO_TAGS must be 31 chars, got {len(_tag)} for {_tag!r}")
 
 
-V1_PRODUCT_DEMOS = frozenset({"x01_product_shell", "x02_product_shell"})
+V1_PRODUCT_DEMOS = frozenset({
+    "x01_product_shell",
+    "x02_product_shell",
+    "x02_opus_size_probe",
+    "x02_opus_dep_only",
+})
+
+# Isolated 2.125 MiB factory slot (device-boot plan E1+). Enable via PARTITION_PROFILE=x02_2125
+# or FAMILY_PARTITION_PROFILE=x02_2125 (see Makefile).
+X02_2125_PROFILE = "x02_2125"
+X02_2125_DEMO_IDS = frozenset({"x02", "x02-opus-probe", "x02-opus-dep"})
+X02_2125_SDKCONFIG_CHAIN = (
+    "sdkconfig.defaults;sdkconfig.defaults.v1;sdkconfig.x02_2125.defaults"
+)
+X02_2125_SDKCONFIG_FRAGMENT = FIRMWARE / "sdkconfig.x02_2125.defaults"
 
 
 def resolve_who(
@@ -519,6 +533,41 @@ def pick_kit_port(device_id: str | None, port: str | None) -> tuple[str, str | N
     return picked.port, picked.serial
 
 
+def resolve_partition_profile(profile_arg: str | None) -> str | None:
+    for raw in (
+        profile_arg,
+        os.environ.get("FAMILY_PARTITION_PROFILE"),
+        os.environ.get("PARTITION_PROFILE"),
+    ):
+        if raw and str(raw).strip():
+            return str(raw).strip()
+    return None
+
+
+def demo_build_dir(demo: str, name: str, partition_profile: str | None) -> Path:
+    """One build tree per demo; x02_2125 uses a dedicated dir and sdkconfig chain."""
+    if partition_profile == X02_2125_PROFILE:
+        if demo not in X02_2125_DEMO_IDS:
+            raise FlashError(
+                f"PARTITION_PROFILE={X02_2125_PROFILE!r} applies only to "
+                f"{', '.join(sorted(X02_2125_DEMO_IDS))}, not {demo!r}."
+            )
+        if not X02_2125_SDKCONFIG_FRAGMENT.is_file():
+            raise FlashError(f"missing {X02_2125_SDKCONFIG_FRAGMENT.relative_to(ROOT)}")
+        return FIRMWARE / "build" / f"x02_2125_{name}"
+    return FIRMWARE / "build" / name
+
+
+def idf_demo_cmake_defs(build_dir: Path, partition_profile: str | None) -> str:
+    if partition_profile != X02_2125_PROFILE:
+        return ""
+    sdkconfig = build_dir / "sdkconfig"
+    return (
+        f' -D SDKCONFIG="{sdkconfig}"'
+        f" -D FAMILY_PARTITION_PROFILE={X02_2125_PROFILE}"
+    )
+
+
 def repair_esp_image(path: Path) -> None:
     """Rewrite the ESP32 XOR checksum and SHA-256 after in-place .bin edits.
 
@@ -712,6 +761,7 @@ def cmd_flash(
     build_only: bool,
     who: str | None = None,
     profile: str | None = None,
+    partition_profile: str | None = None,
 ) -> int:
     if demo == "h01":
         return cmd_flash_h01(monitor=monitor, port=port)
@@ -727,12 +777,21 @@ def cmd_flash(
     idf = find_idf()
     secrets_profile = resolve_secrets_profile(profile, identity[0])
     apply_secrets_profile(secrets_profile)
+    part_prof = resolve_partition_profile(partition_profile)
     # One build dir per demo, not per WHO. Second kit is stamp + flash only.
     # Different PROFILE= forces a rebuild (secrets.h content changes).
-    build_dir = FIRMWARE / "build" / name
+    build_dir = demo_build_dir(demo, name, part_prof)
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    opts = f'-D FAMILY_DEMO={name} -B "{build_dir}" -C "{FIRMWARE}"'
+    opts = (
+        f'-D FAMILY_DEMO={name} -B "{build_dir}" -C "{FIRMWARE}"'
+        f"{idf_demo_cmake_defs(build_dir, part_prof)}"
+    )
+    if part_prof == X02_2125_PROFILE:
+        print(
+            f"-> partition profile {X02_2125_PROFILE} ({X02_2125_SDKCONFIG_CHAIN})",
+            flush=True,
+        )
     print(
         f"-> identity {identity[2]} ({identity[0]}), peer {identity[3]}",
         flush=True,
@@ -862,6 +921,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Wi-Fi secrets profile: sunset / anamcara (firmware/secrets.<name>.h). "
         "Also PROFILE= or SECRETS_PROFILE=; else kits.local.yaml secrets_profile.",
     )
+    parser.add_argument(
+        "--partition-profile",
+        help="Partition layout profile (e.g. x02_2125 for 2.125 MiB factory). "
+        "Also PARTITION_PROFILE= or FAMILY_PARTITION_PROFILE=.",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -887,6 +951,7 @@ def main(argv: list[str] | None = None) -> int:
                 build_only=args.build_only,
                 who=args.who or os.environ.get("WHO") or os.environ.get("FAMILY_WHO"),
                 profile=args.profile,
+                partition_profile=args.partition_profile,
             )
         parser.print_help()
         print("\nDemos:\n" + known_demos())

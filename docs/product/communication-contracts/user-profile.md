@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | ID | `COM-USER-PROFILE` |
-| Revision | 0.6 |
+| Revision | 0.9 |
 | Status | Product meanings accepted 2026-10-21 and 2026-10-22; v2 schemas remain a labeled proposal |
 | Owner | Product owner for behavior; engineering proposal needed for protocol |
 | Approval | No approval claimed; no implementation authorization implied |
@@ -44,6 +44,7 @@
 - **COM-007:** A local icon or color change MAY preview immediately. The client MUST NOT claim saved without a successful acknowledgement. If the save does not succeed, revert to the last canonical profile. Do not queue the change for later. The person MUST set it again later if they still want it.
 - **COM-008:** Concurrent edits do not prompt and do not merge as a user-facing conflict. The later **accepted** write is canonical (last write wins). Two patches that name different fields may both stick; two patches that name the same field keep the later accepted value.
 - **COM-009:** Other signed-in endpoints of that user, and hangout members who can see that user, MUST converge on the canonical profile so avatar and card background stay current. The canonical `profile_accent` value also converges as profile data but has no core V2 card rendering. A missed hint MUST still converge on sign-in or reconnect. A profile hint is not an inbox revision.
+- **COM-010:** On roster, recipient, and inbox cards, a missing or unrecognized `avatar_id` shows initials, and a missing or unrecognized `card_background_id` shows `card-bg-01`. That person or message stays visible and selectable. These gaps are not a malformed roster (`DEC-071` in [endpoint login](../experiences/endpoint-login.md); login `COM-018`).
 
 ## 3. Proposed v2 schemas
 
@@ -70,14 +71,14 @@ Profile uses the **session** credential after PIN success. Mute invalidates it.
 | `schema` | Required literal `fl.user-profile/2` in this proposal. |
 | `user_id` | Required immutable user ID from the session, not a writable target. |
 | `revision` | Required server-owned integer ≥ 0. Increases on each accepted change. Orders last-write-wins. |
-| `avatar_id` | Required non-empty catalog id in the eventual profile schema. V2 artwork and IDs are deferred; until they arrive, device identity surfaces use the LAB-14 centered initials fallback in [`FOUNDATION-PROFILE-AVATARS`](../device-ui/foundations/FOUNDATION-PROFILE-AVATARS.md) (`COM-OPEN-003`). Do not carry V1 avatar art forward. |
+| `avatar_id` | Optional string in this proposal. Absent, empty, or not a known catalog id: identity surfaces show the LAB-14 centered initials fallback (`COM-010`). V2 artwork and IDs are still deferred (`COM-OPEN-003`). Do not carry V1 avatar art forward. |
 | `profile_accent` | Required canonical uppercase `#RRGGBB` in this proposal. Allowed palette versus arbitrary hex and future visual use are `COM-OPEN-003`. Core V2 inbox and roster cards do not render this field (`COM-005`). |
-| `card_background_id` | Required non-empty catalog id. Allowed values are `card-bg-01` through `card-bg-08` in [`FOUNDATION-CARD-BACKGROUNDS`](../device-ui/foundations/FOUNDATION-CARD-BACKGROUNDS.md). Unknown-ID fallback and V1 color migration remain `COM-OPEN-003`. |
+| `card_background_id` | Optional string. Known values are `card-bg-01` through `card-bg-08` in [`FOUNDATION-CARD-BACKGROUNDS`](../device-ui/foundations/FOUNDATION-CARD-BACKGROUNDS.md). Absent, empty, or unknown: cards show `card-bg-01` (`COM-010`). V1 color migration remains `COM-OPEN-003`. |
 | `updated_at` | Required RFC 3339 UTC. Diagnostics only; `revision` orders changes. |
 
 Do not include volume or `autoplay_new`.
 
-Hangout and inbox presentation MUST use the canonical avatar and `card_background_id`; core V2 cards do not render `profile_accent`. Whether hangout embeds a projection of these fields, or clients refetch profile, is engineering.
+Hangout and inbox presentation MUST use the canonical avatar and `card_background_id`; core V2 cards do not render `profile_accent`. For this journey the sign-in roster carries `avatar_id` and `card_background_id` on each member (login contract). Each inbox item carries optional `sender_avatar_id` and `sender_card_background_id` from the sender's current profile ([inbox and media](inbox-and-media.md) `COM-012`). That snapshot is the signed-in read path, including for a sender who is no longer on the hangout roster. `GET /v2/me/profile` and `PATCH /v2/me/profile` stay proposals for profile editing, which is outside the core journey. A profile change does not advance `inbox_revision` by itself. The next valid inbox snapshot applies the current sender face.
 
 ### 3.2 Partial update — `PATCH /v2/me/profile` (proposed)
 
@@ -122,7 +123,8 @@ This is a hint to refetch canonical profile or roster. It MUST NOT by itself pai
 | Save fails or never acknowledges | Revert to last canonical profile. Do not queue. Do not claim saved. Set again later if still wanted (`COM-007`) | Retry cadence of the in-flight request |
 | Response lost after the server committed | Retry same `operation_id`; replay first success; keep the preview that matches canonical (`COM-003`) | Result retention (`COM-OPEN-006`) |
 | Two endpoints patch at once | Later accepted write wins; no prompt (`COM-008`) | Hint delivery (`COM-OPEN-007`) |
-| Profile hint missed | Next sign-in or reconnect refetches; cards converge on current avatar and `card_background_id`; `profile_accent` remains canonical profile data with no core-card rendering (`COM-005`, `COM-009`) | Hint channel |
+| Profile hint missed | Next sign-in or reconnect refetches; cards converge on current avatar and `card_background_id`; `profile_accent` is not painted on core cards (`COM-005`, `COM-009`). A missing or unknown id uses initials and `card-bg-01` (`COM-010`) | Hint channel |
+| Unknown or missing card background or avatar on a card | Show the person or message. Initials and `card-bg-01` (`COM-010`) | Avatar artwork (`COM-OPEN-003`) |
 | Mute during an in-flight save | Session invalid; late success cannot keep a preview after sign-out. Next login loads canonical | Same as envelope mute |
 
 ## 5. Draft acceptance scenarios
@@ -135,6 +137,7 @@ This is a hint to refetch canonical profile or roster. It MUST NOT by itself pai
 | `COM-SCN-004` | First PATCH succeeds remotely; response is lost; retry reaches server | Same `operation_id` replays the first result; `revision` increments once | COM-003 |
 | `COM-SCN-005` | Jordan already has Maya’s message; Maya then changes `profile_accent` | The canonical profile updates and converges, but Jordan’s core V2 message card does not change from the accent update; its face follows Maya’s current `card_background_id`. The message body is not rewritten | COM-005, COM-009 |
 | `COM-SCN-006` | Maya changes color while muted or after mute | No durable preview. Next sign-in shows canonical server profile | COM-007, COM-009 |
+| `COM-SCN-007` | Jordan's profile has no `avatar_id` and `card_background_id` `card-bg-99` | Roster, recipient, and inbox cards still show Jordan. Face is initials. Fill is `card-bg-01` | COM-010 |
 
 ## 6. Traceability and follow-on
 
@@ -145,6 +148,7 @@ This is a hint to refetch canonical profile or roster. It MUST NOT by itself pai
 | Owner 2026-10-21 preview/revert | COM-007 | COM-SCN-002, COM-SCN-006 |
 | Owner 2026-10-21 last write wins | COM-008, COM-009 | COM-SCN-001, COM-SCN-003 |
 | Session authority | COM-001–003 | COM-SCN-001, COM-SCN-004 |
+| Owner 2026-10-22 catalog fallback | COM-010 | COM-SCN-007 |
 
 ### OPEN items
 
@@ -158,7 +162,7 @@ Former `COM-OPEN-###` IDs are retained. Do not interview the owner for these row
 |---|---|---|---|
 | `COM-OPEN-001` | Closed | `profile_accent` is server-owned profile data but is excluded from core V2 card rendering; cards use `card_background_id` (`COM-005`) | Final allowed accent values and any future visual use remain in `COM-OPEN-003`; wire field name is the proposed `profile_accent` |
 | `COM-OPEN-002` | Closed | Volume is local; avatar, accent, and card background are server profile (`COM-006`) | None for ownership |
-| `COM-OPEN-003` | Visual catalog and deferred avatar work | Card-background palette is owner-selected in [`FOUNDATION-CARD-BACKGROUNDS`](../device-ui/foundations/FOUNDATION-CARD-BACKGROUNDS.md). Owner is preparing new avatar artwork; LAB-14 initials are the interim display fallback. Do not reuse V1 avatar art. Core V2 card treatment of `profile_accent` is closed: it is not rendered. | New avatar art/IDs, final profile accent values and future use, unknown card-background fallback, default `avatar_id`, and V1 migration |
+| `COM-OPEN-003` | Visual catalog and deferred avatar work | Unknown or missing card background uses `card-bg-01`, and a missing or unrecognized avatar id uses initials (`COM-010`). Core V2 cards do not render `profile_accent`. | New avatar art and IDs, final profile accent values and future use, default `avatar_id` when a profile is created, and V1 migration |
 | `COM-OPEN-004` | Closed | Preview, then revert if unsaved; set again later (`COM-007`) | In-flight request timeout only |
 | `COM-OPEN-005` | Closed | Last write wins; hangout members and the user’s other endpoints converge (`COM-008`, `COM-009`) | Hint transport |
 | `COM-OPEN-006` | Engineering wire | Same `operation_id` must replay (`COM-003`) | How long the server retains that result |
@@ -168,7 +172,7 @@ Former `COM-OPEN-###` IDs are retained. Do not interview the owner for these row
 
 - **Analysis:** ready against locked appearance, save-failure, and last-write behavior.
 - **Owner review:** server-vs-local ownership, exclusion of `profile_accent` from core V2 card rendering, failed-save revert, and last-write-wins are recorded. The card-background palette is selected. Avatar art and remaining profile appearance details are deferred.
-- **Implementation:** blocked by unaccepted routes, unresolved profile appearance fields in `COM-OPEN-003`, and hint/retention follow-on. Icon and message-color **screens** remain the future settings hub, not this contract.
+- **Implementation:** profile editing routes remain unaccepted and outside the core journey. Core cards read presentation from the hangout roster and the inbox snapshot. Deferred avatar artwork stays in `COM-OPEN-003`. Unknown card-background fallback is decided (`COM-010`). Icon and message-color **screens** remain the future settings hub, not this contract.
 - **Verification:** scenarios planned; no v2 evidence claimed. No implementation authorization.
 
 Revision 0.1 (2026-10-11): captured v1 profile request/response and proposed revisioned partial updates while leaving product meaning and propagation decisions OPEN.
@@ -182,3 +186,9 @@ Revision 0.4 (2026-10-22): Linked `avatar_id` validation to [`FOUNDATION-PROFILE
 Revision 0.5 (2026-10-22): Adopted the eight card-background IDs and recorded that new avatar art is deferred; LAB-14 initials are the interim display fallback. V1 avatar art is not carried forward. No wire protocol is approved.
 
 Revision 0.6 (2026-10-22): Recorded that `profile_accent` stays server-owned profile data but is not rendered on core V2 roster or inbox cards; those cards use `card_background_id`. No wire protocol is approved.
+
+Revision 0.7 (2026-10-22): Recorded that a missing or unrecognized avatar shows initials and a missing or unrecognized card background shows `card-bg-01`, without hiding the person or message (`COM-010`). Avatar artwork remains deferred. No wire protocol is approved.
+
+Revision 0.8 (2026-10-22): owner confirmed that catalog fallback with login `DEC-072`. No wire protocol is approved.
+
+Revision 0.9 (2026-10-22): core-journey cards read the current avatar and card background from the hangout roster and the inbox snapshot. Profile edit routes stay proposed and outside that journey. No implementation authorization.

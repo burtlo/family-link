@@ -1,6 +1,6 @@
 {
   "schema": "family-link.profile-avatars-manifest/1",
-  "updated_at": "2026-10-23T01:33:18Z",
+  "updated_at": "2026-10-23T10:04:28Z",
   "palettes": {
     "mazi": [
       "#101C28",
@@ -384,19 +384,89 @@
       "raw_bytes": 30600,
       "converted_at": "2026-10-23T00:58:29Z"
     },
-    "avatar-mk01": {
-      "source": "avatar-mk01.png",
-      "source_sha256": "637d1de14664cd8b556e5513fd52c8ae5a2a8fbb872bd8d57b31e1d74c586d28",
-      "symbol": "portrait_avatar_mk01_candidate",
-      "c_asset": "portrait_avatar_mk01.c",
-      "binary_asset": "avatar-mk01.bin",
-      "width": 96,
+    "avatar-mm01": {
+      "source": "avatar-mm01.png",
+      "source_sha256": "6d4c974c5c1889e3ea538b13e78a6c5c64bdcb3c90285ee3f00956447e15b6ac",
+      "symbol": "portrait_avatar_mm01_candidate",
+      "c_asset": "portrait_avatar_mm01.c",
+      "binary_asset": "avatar-mm01.bin",
+      "width": 101,
       "height": 100,
       "format": "LV_COLOR_FORMAT_RGB565A8",
-      "partial_alpha_pixels": 388,
-      "partial_alpha_percent": 4.04,
-      "raw_bytes": 28800,
-      "converted_at": "2026-10-23T00:58:29Z"
+      "partial_alpha_pixels": 419,
+      "partial_alpha_percent": 4.15,
+      "raw_bytes": 30300,
+      "converted_at": "2026-10-23T10:04:08Z"
+    },
+    "avatar-mm02": {
+      "source": "avatar-mm02.png",
+      "source_sha256": "2dc6e86c4dedb2f377d01a6f5865fbc69c99632096b3fb753c7e86b9a7e21e8d",
+      "symbol": "portrait_avatar_mm02_candidate",
+      "c_asset": "portrait_avatar_mm02.c",
+      "binary_asset": "avatar-mm02.bin",
+      "width": 105,
+      "height": 100,
+      "format": "LV_COLOR_FORMAT_RGB565A8",
+      "partial_alpha_pixels": 522,
+      "partial_alpha_percent": 4.97,
+      "raw_bytes": 31500,
+      "converted_at": "2026-10-23T10:04:08Z"
+    },
+    "avatar-mm03": {
+      "source": "avatar-mm03.png",
+      "source_sha256": "afc1016f2408a3d68536b70198d134e4870dbf23e3caa55e86ff13d9bee73c2e",
+      "symbol": "portrait_avatar_mm03_candidate",
+      "c_asset": "portrait_avatar_mm03.c",
+      "binary_asset": "avatar-mm03.bin",
+      "width": 95,
+      "height": 100,
+      "format": "LV_COLOR_FORMAT_RGB565A8",
+      "partial_alpha_pixels": 461,
+      "partial_alpha_percent": 4.85,
+      "raw_bytes": 28500,
+      "converted_at": "2026-10-23T10:04:08Z"
+    },
+    "avatar-mm05": {
+      "source": "avatar-mm05.png",
+      "source_sha256": "d7dc902244ae961ac52940ccc27d263f2a3142dccd652320026f0da0c9ec7644",
+      "symbol": "portrait_avatar_mm05_candidate",
+      "c_asset": "portrait_avatar_mm05.c",
+      "binary_asset": "avatar-mm05.bin",
+      "width": 93,
+      "height": 100,
+      "format": "LV_COLOR_FORMAT_RGB565A8",
+      "partial_alpha_pixels": 369,
+      "partial_alpha_percent": 3.97,
+      "raw_bytes": 27900,
+      "converted_at": "2026-10-23T10:04:09Z"
+    },
+    "avatar-mm06": {
+      "source": "avatar-mm06.png",
+      "source_sha256": "6885abb96d80d03171eb2f38bb13d8d1e007b9b4cf6950d13b2286ee7f68086a",
+      "symbol": "portrait_avatar_mm06_candidate",
+      "c_asset": "portrait_avatar_mm06.c",
+      "binary_asset": "avatar-mm06.bin",
+      "width": 97,
+      "height": 100,
+      "format": "LV_COLOR_FORMAT_RGB565A8",
+      "partial_alpha_pixels": 471,
+      "partial_alpha_percent": 4.86,
+      "raw_bytes": 29100,
+      "converted_at": "2026-10-23T10:04:09Z"
+    },
+    "avatar-mm08": {
+      "source": "avatar-mm08.png",
+      "source_sha256": "232066be81698ea18633b67c793e287695c1be142e554d57be4f6bd9261fb6ea",
+      "symbol": "portrait_avatar_mm08_candidate",
+      "c_asset": "portrait_avatar_mm08.c",
+      "binary_asset": "avatar-mm08.bin",
+      "width": 98,
+      "height": 100,
+      "format": "LV_COLOR_FORMAT_RGB565A8",
+      "partial_alpha_pixels": 377,
+      "partial_alpha_percent": 3.85,
+      "raw_bytes": 29400,
+      "converted_at": "2026-10-23T10:04:09Z"
     },
     "avatar-rb01": {
       "source": "avatar-rb01.png",
@@ -467,20 +537,6 @@
       "partial_alpha_percent": 4.4,
       "raw_bytes": 25500,
       "converted_at": "2026-10-22T22:40:33Z"
-    },
-    "avatar-sp01": {
-      "source": "avatar-sp01.png",
-      "source_sha256": "92de2b6756005198165eb1eeeac651df4cf89378917e25eff37077a963531c1b",
-      "symbol": "portrait_avatar_sp01_candidate",
-      "c_asset": "portrait_avatar_sp01.c",
-      "binary_asset": "avatar-sp01.bin",
-      "width": 101,
-      "height": 100,
-      "format": "LV_COLOR_FORMAT_RGB565A8",
-      "partial_alpha_pixels": 389,
-      "partial_alpha_percent": 3.85,
-      "raw_bytes": 30300,
-      "converted_at": "2026-10-23T00:58:29Z"
     },
     "avatar-we01": {
       "source": "avatar-we01.png",

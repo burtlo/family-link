@@ -2,9 +2,9 @@
 
 Status: interview draft — reconstruction, ordinary-flow, exception, and contract checkpoints reviewed 2026-10-21; last-viewed, outage-playback, sketch-card chrome, header transport, and no-sketch card metadata accepted 2026-10-21
 Experience ID: EXP-MESSAGE-CAROUSEL
-Revision: 0.13
+Revision: 0.18
 Owner: Product owner
-Approval: Contract checkpoint confirmed 2026-10-21 for the recorded locked behavior. Last-viewed live-steal, offline cache play, last-viewed writes, header transport, and no-sketch card metadata accepted 2026-10-21. No product-wide approval claimed; no implementation authorization implied
+Approval: Contract checkpoint confirmed 2026-10-21 for the recorded locked behavior. The 2026-10-22 session-refresh and catalog-fallback amendment was confirmed with login `DEC-072`. No product-wide approval claimed; no implementation authorization implied
 
 ## 1. Identity, scope, and authority
 
@@ -44,6 +44,7 @@ policy unless the owner adopts a specific statement.
 | SRC-OWNER-010 | Product owner, 2026-10-21 | Hide card portrait and meta while a sketch is showing |
 | SRC-OWNER-011 | Product owner, 2026-10-21 inbox visual follow-up | Use a labeled Play/Pause button with no playback progress bar |
 | SRC-OWNER-012 | Product owner, 2026-10-21 message-card visual follow-up | No-sketch cards show a centered sender portrait, one-line sender name, and `m:ss` duration beneath; no unread dot is shown |
+| SRC-OWNER-013 | Product owner, 2026-10-22 | A signed-in credential that cannot refresh stays on this inbox and uses the existing connecting treatment. Message cards use the login catalog fallback |
 | SRC-EXP-LOGIN-001 | Active experience draft; owner-decided for login | [`EXP-LOGIN`](endpoint-login.md): successful authentication enters the signed-in message carousel (`DEC-010`, `EXP-012`); mute signs out and blanks the display; lower-slot `connecting` / `no Wi-Fi` presentation (`DEC-051`–`DEC-052`, `DEC-060`, `EXP-037`) |
 | SRC-EXP-SKETCH-001 | Active experience; owner-decided canvas geometry | [`EXP-SKETCH-RECORD-PLAYBACK`](sketch-record-and-playback.md): 120×120 logical sketch framed inside the message card; hide portrait/meta while sketch ink is showing (`SK-009`); audio is the sketch clock; audio-only messages have no sketch |
 | SRC-V1-CAR-001 | Active v1 assessment; implementation evidence only | [Carousel and playback assessment](../../v1-assessments/carousel-playback.md): browsing, snap, playback, inbox refresh; open v1 product decisions on failure copy, offline blobs, autoplay-new, and scrub |
@@ -94,6 +95,10 @@ policy unless the owner adopts a specific statement.
 | 0.12 | 2026-10-21 | Hide card portrait and meta while a sketch is showing (`DEC-044`). |
 | 0.13 | 2026-10-21 | Lock the labeled Play/Pause button and omit a playback progress bar. |
 | 0.14 | 2026-10-21 | Lock no-sketch message-card metadata and `m:ss` duration; confirm no unread marker. |
+| 0.15 | 2026-10-22 | Failed session refresh stays on the inbox and uses connecting. Message cards use initials and `card-bg-01` when those catalog ids are missing or unrecognized (`DEC-047`, `DEC-048`). |
+| 0.16 | 2026-10-22 | Owner confirmed that amendment with login `DEC-072`. |
+| 0.17 | 2026-10-22 | Point `OPEN-008` at the accepted inbox revision, snapshot ceiling, and last-viewed coalesce. Product screens are unchanged. |
+| 0.18 | 2026-10-22 | Point `OPEN-008` at the accepted inbox poll and media-after-deletion rules. Prefix playback stays open. Product screens are unchanged. |
 
 ## 2. Scenario and intended experience
 
@@ -522,6 +527,8 @@ These are draft scenario outlines, not completed verification.
 | SCN-036 | Unplayed sketch message is selected, then Play | Before Play, portrait and meta are visible. After Play, they stay hidden while sketch ink remains this session | EXP-041 |
 | SCN-037 | Inbox is showing a selected message | Observe the header during idle and playback | Header action is a labeled `Play` or `Pause` button; no progress bar appears | EXP-004, EXP-042 |
 | SCN-038 | An audio-only or unplayed message has no sketch visible | Observe the card | Centered portrait, one-line sender name, and `m:ss` duration appear beneath; no unread dot appears | EXP-043 |
+| SCN-039 | Maya is on the inbox and Ari is playing; session refresh cannot succeed | Stay on the inbox. Audio pauses. Lower slot shows `connecting`. Play is disabled. Cached audio does not play. No return to the roster | EXP-039, EXP-044 |
+| SCN-040 | Jordan's message has no avatar id and a card background the desk does not know | The card stays in the carousel, shows initials, and uses `card-bg-01` | EXP-045 |
 | SCN-012 | A peek card is tapped | That card becomes selected and centered; audio does not start | EXP-005, EXP-023 |
 | SCN-013 | The already-selected centered card is tapped | Selection is unchanged; playback does not start, pause, or resume | EXP-023 |
 | SCN-014 | A selected middle message is deleted | Selection moves to the nearest older (left) neighbor; that identity is reported; no autoplay | EXP-008 |
@@ -568,6 +575,8 @@ wire names. Evidence level is not yet planned against a v2 runtime/device.
 | SRC-OWNER-010 / DEC-044 | EXP-041 | Playing, Paused, Complete | SCN-006, SCN-036 |
 | SRC-OWNER-011 / DEC-045 | EXP-004, EXP-042 | Message carousel, Playing | SCN-037 |
 | SRC-OWNER-012 / DEC-046 | EXP-040, EXP-043 | Message carousel, Paused | SCN-038 |
+| SRC-OWNER-013 / DEC-047 | EXP-044, EXP-039 | Connecting, Playing | SCN-039 |
+| SRC-OWNER-013 / DEC-048 | EXP-045 | Message carousel | SCN-040 |
 | SRC-OWNER-006 / DEC-033–DEC-035 | EXP-031–EXP-033 | Playing, Paused, Message carousel | SCN-024–026 |
 
 ### Requirements
@@ -732,6 +741,16 @@ wire names. Evidence level is not yet planned against a v2 runtime/device.
   sender portrait centered, with the sender name on one line and duration
   in `m:ss` beneath it. Do not show an unread dot; this experience has no
   unread state (`EXP-040`). (Owner-decided)
+- **EXP-044:** If the signed-in credential cannot be refreshed, stay on
+  this inbox. Do not return to the roster and do not ask for a PIN. Show
+  `connecting` in the lower slot, pause audio, disable Play, and do not
+  play cached audio (`EXP-039`). Keep this session's selection and play
+  head. When refresh succeeds, restore the carousel paused, without
+  autoplay. (`DEC-047`; login `DEC-069`)
+- **EXP-045:** A message card whose sender has a missing or unrecognized
+  avatar id shows initials. A missing or unrecognized card background
+  uses `card-bg-01`. The message stays in the carousel. (Owner-decided;
+  login `DEC-071`)
 
 ## 9. Decisions, OPEN items, and readiness
 
@@ -785,6 +804,8 @@ wire names. Evidence level is not yet planned against a v2 runtime/device.
 | DEC-044 | While a sketch is visible on the inbox card, hide that card’s portrait and meta. Restore them when the card has no sketch ink. Header identity stays | Sketch is the card face during replay | SRC-OWNER-010 / SRC-EXP-SKETCH-001, 2026-10-21 | OWNER-DECIDED; closes sketch OPEN-SKP-02 | EXP-041 |
 | DEC-045 | Use a labeled `Play` / `Pause` button in the inbox header and no playback progress bar | Make the transport action explicit without adding progress chrome | SRC-OWNER-011, 2026-10-21 | OWNER-DECIDED | EXP-004, EXP-042 |
 | DEC-046 | A no-sketch card shows a centered sender portrait, one-line sender name, and `m:ss` duration beneath; do not show an unread dot | Give the card useful identity and length metadata without introducing read tracking | SRC-OWNER-012, 2026-10-21 | OWNER-DECIDED | EXP-040, EXP-043 |
+| DEC-047 | When the signed-in credential cannot be refreshed, stay on the inbox and use the existing connecting treatment. Do not return to the roster or ask for a PIN. Restore paused, without autoplay, when refresh succeeds | An aged-out session uses the same outage behavior as an unreachable server | SRC-OWNER-013, 2026-10-22 | OWNER-DECIDED | EXP-044, EXP-039 |
+| DEC-048 | A message card with a missing or unrecognized avatar id shows initials. A missing or unrecognized card background uses `card-bg-01`. The message stays in the carousel | Same catalog fallback as the sign-in roster | SRC-OWNER-013 / login DEC-071, 2026-10-22 | OWNER-DECIDED | EXP-045 |
 
 ### OPEN items
 
@@ -802,7 +823,7 @@ behavior. Do not interview the owner for them.
 | ID | Kind | Why it is not product OPEN | Where it lives now |
 |---|---|---|---|
 | OPEN-004 | Closed | Full current-inbox reach is decided | `DEC-037`, `EXP-035` |
-| OPEN-008 | Engineering wire | Last-viewed live-steal, offline cache play, and last-viewed write meanings are decided (`DEC-041`–`DEC-043`) | `COM-OPEN-001`–`005` in [inbox and media](../communication-contracts/inbox-and-media.md). Device paging, if any, must preserve `EXP-035` |
+| OPEN-008 | Engineering wire | Last-viewed, offline-status playback, revision, snapshot size, coalesce, prefix playback, inbox polling, and media-after-deletion are recorded in the inbox contract. The inbox fetch also waits during recording and a pending finished send | None in this experience |
 | OPEN-011 | Closed | Empty copy is decided | `DEC-036`, `EXP-034` |
 | OPEN-012 | Engineering measurement | Snap, start-to-audible, and sketch-reveal budgets | Engineering measures on target hardware and proposes budgets |
 | OPEN-013 | Closed | BOOT leaves for settings | `DEC-038`, `EXP-036` |
@@ -823,10 +844,12 @@ behavior. Do not interview the owner for them.
   failure, BOOT-to-settings exit, and red-button message-sending exit.
 - **Contract checkpoint:** reviewed and confirmed by the owner on
   2026-10-21 (`DEC-040`). Listed locked behaviors are accepted, including
-  the BOOT and red-button exits. Destination-experience internals, wire,
+  the BOOT and red-button exits. On 2026-10-22 the owner confirmed the
+  session-refresh and catalog-fallback amendment with login `DEC-072`
+  (`DEC-047`, `DEC-048`). Destination-experience internals, wire,
   and measured budgets stay delegated or OPEN. Confirmation is not
   implementation authorization.
-- **Locked behavior:** DEC-001–DEC-020 and DEC-022–DEC-044 within the
+- **Locked behavior:** DEC-001–DEC-020 and DEC-022–DEC-048 within the
   boundaries stated in the intent ledger. Wire names, measured performance, and
   destination-experience behavior are excluded.
 - **Bounded variation:** Connecting copy is the established login status.
@@ -912,3 +935,16 @@ behavior. Do not interview the owner for them.
 - 2026-10-21, revision 0.12: Owner accepted hide card portrait and meta
   while a sketch is showing (`DEC-044`, `EXP-041`). No implementation
   authorization is claimed.
+- 2026-10-22, revision 0.15: Owner accepted that a failed session refresh
+  stays on the inbox and uses connecting (`DEC-047`, `EXP-044`), and that
+  message cards use initials and `card-bg-01` when those catalog ids are
+  missing or unrecognized (`DEC-048`, `EXP-045`). No implementation
+  authorization is claimed.
+- 2026-10-22, revision 0.16: Owner confirmed that amendment with login
+  `DEC-072`. No implementation authorization is claimed.
+- 2026-10-22, revision 0.17: Recorded the accepted inbox revision, 262144-byte
+  snapshot, and 1-second last-viewed coalesce as engineering wire. Product
+  screens are unchanged. No implementation authorization is claimed.
+- 2026-10-22, revision 0.18: Recorded the accepted inbox poll and
+  media-after-deletion rules. Prefix playback stays open. Product screens
+  are unchanged. No implementation authorization is claimed.

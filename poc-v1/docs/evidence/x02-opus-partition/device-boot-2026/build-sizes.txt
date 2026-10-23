@@ -1,0 +1,58 @@
+# E1 host build matrix — x02_2125 partition profile
+# Generated: 2026-10-22 (implementor A1 attempt 1)
+
+git_commit=e167664419c60c75c696d82806a275e414852c0a
+esp_idf=ESP-IDF v5.4.2
+build_command=make build-firmware DEMO=<demo> PARTITION_PROFILE=x02_2125
+sdkconfig_chain=sdkconfig.defaults;sdkconfig.defaults.v1;sdkconfig.x02_2125.defaults
+sdkconfig_fragment_sha256=1ea8e5ed3beed362bc8f91ad9581e2dd0a7c838415187fb10d56c391c35953ad
+partition_csv_sha256=65100d070d19d7365e63b74228c2f4bf9d4e87945488eef1c73bc16b9667f153
+
+factory_slot_bytes=2228224
+factory_slot_hex=0x220000
+policy_margin_bytes=334234
+
+# Partition table (generated, all three builds — identical)
+partition_table_bin_sha256=ca85e18a7545259b1033b2045088f0d43b20871dc08c37a3a2b356b1af4851bc
+factory_row=factory,app,factory,0x10000,0x220000
+outbox_row=outbox,data,fat,0x230000,0xDD0000
+
+# --- x02 (x02_product_shell) ---
+build_dir=firmware/build/x02_2125_x02_product_shell
+family_link_demo_bin_bytes=1496384
+family_link_demo_bin_sha256=b571fba90630a7c2a908f4a10ed388d170b76826dff5a083128eb6e50119a4b9
+free_in_factory_slot_bytes=731840
+free_minus_policy_margin_bytes=397606
+idf_size_total_image_bytes=1496264
+iram_used_bytes=16383
+sdkconfig_sha256=6bab965d5281df9f65c5ff8b3fb9ff251a48b9b5822968fcc1973e6d2c9c0eea
+phase1_baseline_bytes=1484272
+delta_vs_phase1_bytes=+12112
+
+# --- x02-opus-probe (x02_opus_size_probe) ---
+build_dir=firmware/build/x02_2125_x02_opus_size_probe
+family_link_demo_bin_bytes=1677568
+family_link_demo_bin_sha256=dc97507151007334337e89a7e55c6fbad7b5a68b4cebcb558bcbbd1bf65a9e15
+free_in_factory_slot_bytes=550656
+free_minus_policy_margin_bytes=216422
+idf_size_total_image_bytes=1677456
+iram_used_bytes=16383
+sdkconfig_sha256=6bab965d5281df9f65c5ff8b3fb9ff251a48b9b5822968fcc1973e6d2c9c0eea
+phase1_baseline_bytes=1665808
+delta_vs_phase1_bytes=+11760
+
+# --- x02-opus-dep (x02_opus_dep_only, negative control) ---
+build_dir=firmware/build/x02_2125_x02_opus_dep_only
+family_link_demo_bin_bytes=1496384
+family_link_demo_bin_sha256=156b2789ea4cb0254d7d95a7cd2315f8d5400561464c207ddf090eb64f347e5e
+free_in_factory_slot_bytes=731840
+free_minus_policy_margin_bytes=397606
+idf_size_total_image_bytes=1496264
+iram_used_bytes=16383
+sdkconfig_sha256=6bab965d5281df9f65c5ff8b3fb9ff251a48b9b5822968fcc1973e6d2c9c0eea
+matches_x02_bin_size=yes
+
+# Notes
+# - All three variants linked; check_sizes.py reports factory 0x220000 with no overflow.
+# - x02 and x02-opus-dep .bin sizes match (dep control).
+# - Sizes grew vs 2026-10-04 Phase 1 table at same commit lineage; drift documented above.

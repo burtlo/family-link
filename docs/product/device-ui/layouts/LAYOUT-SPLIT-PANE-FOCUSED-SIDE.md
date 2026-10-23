@@ -142,7 +142,7 @@ Consumers:
 
 | ID | Question | Blocks |
 |---|---|---|
-| `UI-OPEN-001` | Whether a later owner decision restores a timer or record indicator on this shell (`OPEN-SKP-05`) | Adding chrome to either slot |
+| `UI-OPEN-001` | *(Resolved 2026-10-22)* No timer or recording indicator (`OPEN-SKP-05`, `EXP-SKP-008`) | — |
 
 ## Readiness
 

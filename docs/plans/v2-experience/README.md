@@ -1,10 +1,12 @@
 # V2 core journey
 
-Status: **preview — spec incomplete** (published 2026-10-22).
+Status: **preview** (published 2026-10-22; lab inventory refreshed the same day for `LAB-01` through `LAB-14`; contract reconciliation the same day).
+
+Firmware exists for `LAB-02` through `LAB-12` and `LAB-14`. `LAB-01` and `LAB-13` have no project trees. Those labs are evidence for the map. They are not the product client. `LAB-12` stays outside the slice.
 
 This bundle maps the core V2 journey: login, inbox and playback, record/send, and Volume. Profile editing and the settings hub are out of scope. Experience specifications under `docs/product/experiences/` are the behavior source. There is no `spec.md` or `retro.md` here.
 
-The map does not authorize firmware work and does not approve wire. It becomes ready for orchestration only after that preview is accepted and **P1** records an accepted wire revision.
+The map does not authorize firmware work. Core-journey wire decisions are recorded in the contracts. The map becomes ready for orchestration only after this preview is accepted and **P1** verifies a fixture for those revisions. Decision acceptance alone does not finish P1.
 
 ## Artifacts
 

@@ -1,0 +1,59 @@
+{
+  "document": "family-link.lab-trace-schema/v1",
+  "schema_id": "lab15-envelope-trace/v1",
+  "events": {
+    "resource_sample": {
+      "required": [
+        "schema",
+        "event",
+        "seq",
+        "t_us",
+        "arm",
+        "phase",
+        "live_nodes",
+        "internal_free",
+        "internal_largest_free",
+        "internal_min_free",
+        "psram_free",
+        "psram_largest_free",
+        "lvgl_used",
+        "lvgl_largest_free",
+        "dma_largest_free"
+      ]
+    },
+    "allocation_attempt": {
+      "required": [
+        "schema",
+        "event",
+        "seq",
+        "t_us",
+        "arm",
+        "kind",
+        "bytes",
+        "result",
+        "region"
+      ],
+      "kind_enum": ["pcm_ring", "pcm_chunk", "sketch", "canvas", "opus_state"],
+      "result_enum": ["ok", "fail"],
+      "region_enum": ["internal", "psram", "sdmmc"]
+    },
+    "terminal": {
+      "required": [
+        "schema",
+        "event",
+        "seq",
+        "t_us",
+        "arm",
+        "operation_id",
+        "outcome",
+        "reason"
+      ],
+      "outcome_enum": ["duration_cap", "allocation_failure", "cancelled", "peak_alloc_complete"]
+    }
+  },
+  "lifecycle_markers": {
+    "ready": "LAB15_READY build=<id> arm=<arm> harness=<0|1>",
+    "harness_done": "LAB15_HARNESS_DONE status=complete",
+    "init_failed": "LAB15_INIT_FAILED status=<reason>"
+  }
+}

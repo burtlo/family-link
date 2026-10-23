@@ -15,6 +15,11 @@ Portrait id is derived from the filename stem (e.g. `arlo.png` → `arlo`).
 make avatars
 ```
 
+Uses LVGL’s `LVGLImage.py` from LAB-14 **managed components** (not committed). On first pack,
+if that script is missing, `make avatars` runs a lightweight `idf.py reconfigure` for LAB-14 to
+download dependencies (requires `make install` / ESP-IDF on the host). You can also run
+`make lab.lab14.build` once beforehand.
+
 Writes RGB565A8 LVGL C assets to [`client/assets/portraits/`](../../../client/assets/portraits/README.md) and regenerates catalog scene **`CAT-20`** (one roster card per successful portrait).
 Failures are printed; failed sources are omitted from `avatars.json`.
 Also regenerates **`CAT-20`** YAML, repacks LAB-14 **`generated/catalog.json`**, and rewrites **`portrait_pack_sources.cmake`**.

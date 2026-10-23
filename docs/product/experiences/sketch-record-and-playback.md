@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Experience ID** | `EXP-SKETCH-RECORD-PLAYBACK` |
-| **Revision** | 4 |
+| **Revision** | 6 |
 | **Status** | **OWNER-DECIDED** intent (2026-10-03 interview); **record-screen layout** aligned to **island demo h19** showcase (palette + canvas stub, no capture chrome on screen) |
 | **Owner** | Lynn |
 | **Surfaces** | BOX-3 record screen; carousel message card playback |
@@ -25,6 +25,8 @@ Supporting v1 evidence (as-built baseline, not approval of future behavior): [re
 | 2 | 2026-10-10 | Record-screen geometry and color rail matched to h19 on-device showcase; timer and rec indicator removed from layout spec |
 | 3 | 2026-10-18 | Record LAB-10 terminal-screen presentation decision for manual duration cap and scripted qualification |
 | 4 | 2026-10-21 | Hide card portrait and meta while a sketch is showing (`SK-009`). Move non-product OPEN rows to follow-on work. |
+| 5 | 2026-10-22 | Recorded accepted engineering wire for stored points: `flsk2` with RGB565. Product geometry and per-point color are unchanged. |
+| 6 | 2026-10-22 | Replay paints each `flsk2` point as its own pixel. Capture interpolates a moving touch. Rail hex values are unchanged. |
 
 ---
 
@@ -89,7 +91,7 @@ Bottom swatch is index 0; stack grows upward. Default selection on entry: **whit
 
 Selection chrome: border `#B8BEC6`; selected outline `#E8C040`.
 
-RGB565 packing for protocol work remains **OPEN** where it must match the global accent table.
+Stored points use RGB565 from these 24-bit rail colors: the top 5 red bits, top 6 green bits, and top 5 blue bits, as [message delivery](../communication-contracts/message-delivery.md) specifies. The on-device swatches stay these hex values.
 
 ---
 
@@ -148,7 +150,7 @@ Only the **canvas** and **color rail** are visible on the record screen. There i
 | Recording timer | — | **Not shown** on h19 record screen |
 | Recording indicator | — | **Not shown** on h19 record screen |
 
-**Coordinate mapping (record, when capture ships):** display (0…239, 0…239) → logical (0…119, 0…119) by dividing by 2; store **logical** coordinates and **per-stroke color** in the sketch blob.
+**Coordinate mapping (record, when capture ships):** display (0…239, 0…239) → logical (0…119, 0…119) by dividing by 2; store **logical** coordinates and the **per-point** RGB565 color in the sketch blob.
 
 **Entry (h19 only, not normative for product):** inbox list uses a red FAB bloom or physical PTT ring wipe to reveal this screen; that transition chrome is separate from the steady-state record layout above.
 
@@ -172,7 +174,7 @@ Only the **canvas** and **color rail** are visible on the record screen. There i
 | EXP-SKP-002 | Playback MUST render the sketch at **120×120** inside the message card without non-uniform scaling of stroke coordinates. |
 | EXP-SKP-003 | The record screen MUST present a **240×240** paint surface and MUST map touches into logical space before append to the sketch buffer. |
 | EXP-SKP-004 | The record screen MUST provide a **color rail** (80×240) with six swatches: black, white, gold, green, red, and blue, in the h19 order and geometry unless a later owner decision changes SK-007. |
-| EXP-SKP-005 | Each stored point (or stroke segment policy TBD in protocol work) MUST carry **color** sufficient to replay accurately. |
+| EXP-SKP-005 | Each stored point MUST carry its own RGB565 color inside `flsk2`. Replay MUST paint each point as one logical pixel and MUST NOT draw a line between points. Capture MUST emit adjacent pixels along a moving touch, as the delivery contract specifies. |
 | EXP-SKP-006 | The product MUST NOT offer a separate eraser; choosing the **background color** MUST paint with the canvas background color. |
 | EXP-SKP-007 | Card chrome on record SHOULD match inbox card language (e.g. **8 px** corner radius on the canvas) so send and receive feel related. |
 | EXP-SKP-008 | The steady-state record screen layout documented here MUST NOT require a on-screen recording timer or recording indicator. Send `DEC-021` already closed that question; do not reintroduce the chrome. |
@@ -182,7 +184,7 @@ Only the **canvas** and **color rail** are visible on the record screen. There i
 
 ## 7. Protocol and implementation notes (non-normative)
 
-- Legacy **FLSK v1** points use an 8-byte record without color; this experience **requires a format revision** (e.g. FLSK2 point flags, or a new field) before multi-color sketches can ship.
+- Stored points are `flsk2` in the delivery contract: logical `x`, `y`, RGB565, and `t_ms`. Replay paints those pixels independently. Capture interpolates a moving touch so a lifted finger does not grow a line across the gap. Rail swatches stay 24-bit hex on the device.
 - Audio timing remains the sketch clock when capture exists; color does not change capture start/stop rules.
 - Island demo **h19** is a **UI stub**: palette selection updates chrome only; no stroke buffer or audio on the record surface.
 - Web twin parity: color rail and 240×240 card canvas SHOULD mirror firmware when a twin exists.
@@ -201,6 +203,9 @@ Only the **canvas** and **color rail** are visible on the record screen. There i
 | ACC-SKP-06 | LAB-10 manual capture reaches the natural 180-second duration cap; also exercise red-button stop, cancel, point cap, queue overflow, and fault terminals | Screen shows Completed for duration cap, Stopped for early stop, Cancelled for cancel, and Failed for point cap, overflow, or faults; the underlying capture terminal kinds remain unchanged |
 | ACC-SKP-07 | LAB-10 scripted capture reaches duration cap before scheduler qualification, then resolves accepted or rejected | Presentation stays pending before resolution; accepted qualification shows Completed, while rejected or unresolved qualification never shows Completed |
 | ACC-SKP-08 | Unplayed sketch message on the inbox; then Play | Before Play, portrait and meta are visible. After Play starts, they are hidden for as long as sketch ink remains this session |
+| ACC-SKP-09 | Sender draws two separate strokes in the same color, with a gap between them | Replay shows both strokes and does not add a line across the gap |
+| ACC-SKP-10 | Sender taps once without moving | Replay shows one pixel in the selected color |
+| ACC-SKP-11 | Sender draws a fast diagonal | Capture stores adjacent logical pixels along that path. Replay shows a continuous diagonal and no dotted gaps |
 
 ---
 
@@ -216,9 +221,9 @@ Former `OPEN-SKP-*` IDs are retained. These rows are **not** unresolved product 
 
 | ID | Kind | Why it is not product OPEN | Where it lives now |
 |---|---|---|---|
-| OPEN-SKP-01 | Engineering wire | Rail colors are decided as 24-bit showcase hex | RGB565 packing for the protocol; [`SCR-RECORD-SKETCH`](../device-ui/screens/SCR-RECORD-SKETCH.md) `UI-OPEN-002` |
+| OPEN-SKP-01 | Accepted engineering wire | Rail colors stay 24-bit showcase hex on the device. Stored points use RGB565 inside `flsk2` | [Message delivery](../communication-contracts/message-delivery.md) |
 | OPEN-SKP-02 | Closed | Hide card portrait and meta while a sketch is showing | `SK-009`, `EXP-SKP-009`; carousel `DEC-044` |
-| OPEN-SKP-03 | Engineering wire | Per-point color is required (`EXP-SKP-005`) | Sketch format and FLSK v1 compatibility in protocol work |
+| OPEN-SKP-03 | Accepted engineering wire | Per-point color is `flsk2`: x, y, RGB565, `t_ms` | [Message delivery](../communication-contracts/message-delivery.md) |
 | OPEN-SKP-04 | Process | Not a behavior rule. Capture and send are specified elsewhere | [`EXP-MESSAGE-RECORD-SEND`](message-recording-and-sending.md) |
 | OPEN-SKP-05 | Closed | No recording timer or indicator on the record screen | Send `DEC-021`; `EXP-SKP-008`. Do not reintroduce that chrome |
 

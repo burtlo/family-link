@@ -32,16 +32,10 @@ LAB14_CATALOG_JSON = (
 )
 PORTRAIT_CMAKE = OUT_DIR / "portrait_pack_sources.cmake"
 CARD_BACKGROUNDS = ("#5AA0E8", "#67C587", "#E8C040", "#D875A8", "#C070E8", "#4ECDC4", "#FF6B6B", "#7AD4E8")
-LVGL_IMAGE = (
-    REPO_ROOT
-    / "client"
-    / "labs"
-    / "lab-14-device-ui-catalog"
-    / "managed_components"
-    / "lvgl__lvgl"
-    / "scripts"
-    / "LVGLImage.py"
-)
+LAB14_PROJECT = REPO_ROOT / "client" / "labs" / "lab-14-device-ui-catalog"
+LVGL_IMAGE = LAB14_PROJECT / "managed_components" / "lvgl__lvgl" / "scripts" / "LVGLImage.py"
+LVGL_IMAGE_FETCH_BUILD = REPO_ROOT / "build" / "labs" / "lab-14-avatar-pack-deps"
+_lvgl_image_path: Path | None = None
 
 SCHEMA = "family-link.profile-avatars-manifest/1"
 SOURCE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
@@ -63,6 +57,69 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _discover_lvgl_image() -> Path | None:
+    if LVGL_IMAGE.is_file():
+        return LVGL_IMAGE
+    for path in sorted(REPO_ROOT.glob("client/labs/*/managed_components/lvgl__lvgl/scripts/LVGLImage.py")):
+        if path.is_file():
+            return path
+    return None
+
+
+def _fetch_lab14_managed_components() -> None:
+    from firmware import idf_environment, run
+    from project_config import ProjectConfig
+
+    config = ProjectConfig()
+    config.validate()
+    env, idf = idf_environment(config)
+    if config.text("idf.target", required=True) != "esp32s3":
+        raise FileNotFoundError("avatar pack requires idf.target=esp32s3 in host config")
+    LVGL_IMAGE_FETCH_BUILD.mkdir(parents=True, exist_ok=True)
+    sdkconfig = LVGL_IMAGE_FETCH_BUILD / "sdkconfig"
+    cmd = idf + [
+        "-C",
+        str(LAB14_PROJECT),
+        "-B",
+        str(LVGL_IMAGE_FETCH_BUILD),
+        "-DIDF_TARGET=esp32s3",
+        f"-DSDKCONFIG={sdkconfig}",
+        "reconfigure",
+    ]
+    timeout = config.integer("command.lab.build.timeout_seconds", default=1200, minimum=1)
+    print(
+        f"avatars: fetching LAB-14 managed components (LVGLImage.py) via idf.py reconfigure -> "
+        f"{LVGL_IMAGE_FETCH_BUILD.relative_to(REPO_ROOT)}",
+        file=sys.stderr,
+    )
+    run(cmd, env=env, timeout=timeout)
+
+
+def lvgl_image_path() -> Path:
+    global _lvgl_image_path
+    if _lvgl_image_path is not None and _lvgl_image_path.is_file():
+        return _lvgl_image_path
+    found = _discover_lvgl_image()
+    if found is not None:
+        _lvgl_image_path = found
+        return found
+    try:
+        _fetch_lab14_managed_components()
+    except (OSError, subprocess.CalledProcessError, ImportError) as exc:
+        raise FileNotFoundError(
+            f"LVGLImage.py not found under {LAB14_PROJECT / 'managed_components'}. "
+            "Run `make install`, then `make avatars` again (or `make lab.lab14.build` once). "
+            f"Underlying error: {exc}"
+        ) from exc
+    found = _discover_lvgl_image()
+    if found is None:
+        raise FileNotFoundError(
+            f"LVGLImage.py still missing after LAB-14 component fetch; expected {LVGL_IMAGE}"
+        )
+    _lvgl_image_path = found
+    return found
 
 
 def portrait_c_stem(portrait_id: str) -> str:
@@ -160,17 +217,14 @@ def preprocess_native_rgba(source: Path, portrait_id: str, palettes: dict[str, l
 
 
 def run_lvgl_convert(native_png: Path, portrait_id: str, out_dir: Path) -> Path:
-    if not LVGL_IMAGE.is_file():
-        raise FileNotFoundError(
-            f"LVGLImage.py not found at {LVGL_IMAGE}. Fetch LAB-14 managed components first."
-        )
+    lvgl_image = lvgl_image_path()
 
     symbol = portrait_lvgl_symbol(portrait_id)
     out_dir.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         [
             sys.executable,
-            str(LVGL_IMAGE),
+            str(lvgl_image),
             "--cf",
             "RGB565A8",
             "--ofmt",
@@ -349,7 +403,7 @@ def convert_one(
             subprocess.run(
                 [
                     sys.executable,
-                    str(LVGL_IMAGE),
+                    str(lvgl_image_path()),
                     "--cf",
                     "RGB565A8",
                     "--ofmt",
@@ -481,6 +535,7 @@ def pack(force: bool = False) -> int:
         import lz4  # noqa: F401
     except ImportError:
         print("warning: lz4 not installed; LVGLImage may fail. Run: pip install lz4", file=sys.stderr)
+    lvgl_image_path()
 
     doc = load_manifest()
     palettes: dict[str, list[str]] = doc.get("palettes", {})

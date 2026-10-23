@@ -2,7 +2,7 @@
 
 ID: `FOUNDATION-PROFILE-AVATARS`
 Type: Foundation
-Revision: 0.3
+Revision: 0.4
 Status: Draft — avatar artwork deferred; LAB-14 initials fallback approved for now
 Owner: Product owner
 Approval: No visual approval claimed for catalog artwork
@@ -94,7 +94,7 @@ avatars. Optional PNG copies for browser or server admin twins are host-only.
 | Flash budget (planning) | 66×66×2 ≈ **8.7 KiB** per entry; 48×48×2 ≈ **4.5 KiB**; total depends on the owner-selected catalog count |
 | RAM cache | Do **not** duplicate full RGB565 into RAM unless profiling shows benefit; avoid per-user decoded buffers |
 | Circular mask | Cards conceptually show a **circle**; applying a circular clip over solid card fills may still cost an extra compositing layer. Keep the LAB-14 circular initials fallback while the owner reviews bitmap clipping (`UI-OPEN-002`). |
-| Interim fallback | Use the `initials_from_name` behavior in LAB-14: first character, plus the character after the first space when present. Center it in the circle. Roster/message cards use a 66 px `#F4F4F4` face and dark `fl-type-16` initials; the PIN identity row uses a 28 px `#5AA0E8` face and dark initials. This is temporary until owner-authored artwork is ready. |
+| Interim fallback | Use the `initials_from_name` behavior in LAB-14: first character, plus the character after the first space when present. Center it in the circle. Roster/message cards use a 66 px `#F4F4F4` face and dark `fl-type-16` initials; the PIN identity row uses a 28 px `#5AA0E8` face and dark initials. A missing or unrecognized `avatar_id` uses this treatment, and that person stays selectable (`COM-010` in the profile contract). This is temporary until owner-authored artwork is ready. |
 
 Roster avatar changes are **Level 1** updates ([`PANEL-BODY-ROSTER-CAROUSEL`](../panels/PANEL-BODY-ROSTER-CAROUSEL.md)): swap image source or portrait widget, not a full-screen framebuffer.
 
@@ -124,6 +124,7 @@ Roster avatar changes are **Level 1** updates ([`PANEL-BODY-ROSTER-CAROUSEL`](..
 
 ## Revision history
 
+- **0.4 — 2026-10-22:** A missing or unrecognized `avatar_id` uses the initials fallback, and that person stays selectable.
 - **0.3 — 2026-10-22:** Clarified that avatar colors are independent of `profile_accent`, which is not rendered on core V2 cards.
 - **0.2 — 2026-10-22:** Owner deferred avatar artwork and rejected carrying the V1
   art forward for now; adopted LAB-14 centered initials as the interim fallback.
