@@ -1,0 +1,17 @@
+id: CAT-35
+order: 124
+title: Send wait connecting
+group: Send
+screen: SCR-SEND-FEEDBACK
+state: wait-connecting
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-SUBTITLE
+    props:
+      title: sending to ...
+      subtitle: Arlo and Lynn
+  lower:
+    panel: PANEL-SEND-FEEDBACK
+    props:
+      phase: connecting

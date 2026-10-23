@@ -216,8 +216,23 @@ static void initials_from_name(const char *name, char *out, size_t n)
     out[i] = '\0';
 }
 
+static bool index_selected(const cJSON *selected, int index)
+{
+    if (!cJSON_IsArray(selected)) {
+        return false;
+    }
+    int count = cJSON_GetArraySize(selected);
+    for (int i = 0; i < count; i++) {
+        const cJSON *item = cJSON_GetArrayItem(selected, i);
+        if (cJSON_IsNumber(item) && item->valueint == index) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void mount_user_card(lv_obj_t *parent, cJSON *user, int x, int y, int w, int h, bool focused, bool touch, int index,
-                            bool bust_style)
+                            bool bust_style, bool selected)
 {
     const lab14_tokens_t *t = &g_catalog->tokens;
     const char *name = lab14_json_str(user, "name", "");
@@ -235,6 +250,11 @@ static void mount_user_card(lv_obj_t *parent, cJSON *user, int x, int y, int w, 
     lv_obj_set_style_bg_grad_color(card, lv_color_hex(darker(bg)), 0);
     lv_obj_set_style_bg_grad_dir(card, LV_GRAD_DIR_VER, 0);
     lv_obj_set_style_opa(card, focused ? LV_OPA_COVER : (lv_opa_t)t->unfocused_opa, 0);
+    if (selected) {
+        lv_obj_set_style_border_width(card, 2, 0);
+        lv_obj_set_style_border_color(card, lv_color_hex(t->accent), 0);
+        lv_obj_set_style_border_opa(card, LV_OPA_COVER, 0);
+    }
 
     const lv_image_dsc_t *bust = bust_style ? fl_portrait_lookup(lab14_json_str(user, "portrait", NULL)) : NULL;
     if (bust != NULL) {
@@ -421,8 +441,255 @@ static void panel_roster(lv_obj_t *slot, cJSON *props)
         int center = t->canvas_w / 2;
         int x = center - (w / 2) + ((i - focused) * (t->card_w + t->card_gap));
         int y = (t->canvas_h - t->split_y - h) / 2;
-        mount_user_card(slot, cJSON_GetArrayItem(users, i), x, y, w, h, is_focused, touch, i, bust_style);
+        mount_user_card(slot, cJSON_GetArrayItem(users, i), x, y, w, h, is_focused, touch, i, bust_style, false);
     }
+}
+
+static void mount_message_card(lv_obj_t *parent, cJSON *message, int x, int y, int w, int h, bool focused, bool touch,
+                               int index)
+{
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    const int design_w = 132;
+    const int design_h = 134;
+    const int face = 120;
+    const char *sender = lab14_json_str(message, "sender", "");
+    const char *duration = lab14_json_str(message, "duration", "0:00");
+    bool sketch = lab14_json_int(message, "sketch", 0) != 0;
+    uint32_t bg = lab14_hex(lab14_json_str(message, "background", NULL), t->card_peek);
+    uint32_t text = lab14_hex(lab14_json_str(message, "text", NULL), t->text_primary);
+
+    lv_obj_t *card = lv_obj_create(parent);
+    lv_obj_set_pos(card, x, y);
+    lv_obj_set_size(card, w, h);
+    lv_obj_set_scrollable(card, false);
+    lv_obj_set_style_pad_all(card, 0, 0);
+    lv_obj_set_style_border_width(card, 0, 0);
+    lv_obj_set_style_radius(card, t->card_radius * w / design_w, 0);
+    lv_obj_set_style_bg_opa(card, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(card, lv_color_hex(bg), 0);
+    lv_obj_set_style_opa(card, focused ? LV_OPA_COVER : (lv_opa_t)t->unfocused_opa, 0);
+
+    int face_w = face * w / design_w;
+    int face_h = face * h / design_h;
+    int face_x = (w - face_w) / 2;
+    int face_y = (7 * h) / design_h;
+    lv_obj_t *face_obj = lv_obj_create(card);
+    lv_obj_set_pos(face_obj, face_x, face_y);
+    lv_obj_set_size(face_obj, face_w, face_h);
+    lv_obj_set_style_radius(face_obj, 4, 0);
+    lv_obj_set_style_border_width(face_obj, 0, 0);
+    lv_obj_set_style_pad_all(face_obj, 0, 0);
+    lv_obj_set_style_bg_color(face_obj, lv_color_hex(sketch ? 0x000000 : bg), 0);
+    lv_obj_set_scrollable(face_obj, false);
+
+    if (sketch) {
+        for (int i = 0; i < 5; i++) {
+            lv_obj_t *stroke = lv_obj_create(face_obj);
+            lv_obj_set_size(stroke, face_w / 2, 3);
+            lv_obj_set_pos(stroke, 8 + (i * 6), 16 + (i * 14));
+            lv_obj_set_style_radius(stroke, 1, 0);
+            lv_obj_set_style_border_width(stroke, 0, 0);
+            lv_obj_set_style_bg_color(stroke, lv_color_hex(t->accent), 0);
+        }
+    } else {
+        int avatar = t->avatar * w / design_w;
+        lv_obj_t *portrait = lv_obj_create(face_obj);
+        lv_obj_set_size(portrait, avatar, avatar);
+        lv_obj_set_style_radius(portrait, LV_RADIUS_CIRCLE, 0);
+        lv_obj_set_style_border_width(portrait, 0, 0);
+        lv_obj_set_style_bg_color(portrait, lv_color_hex(0xF4F4F4), 0);
+        lv_obj_align(portrait, LV_ALIGN_TOP_MID, 0, 8);
+        char initials[4];
+        initials_from_name(sender, initials, sizeof(initials));
+        lv_obj_t *initials_label = lv_label_create(portrait);
+        lv_label_set_text(initials_label, initials);
+        lv_obj_center(initials_label);
+        style_label(initials_label, 0x101418, t->type16);
+
+        lv_obj_t *name_label = lv_label_create(face_obj);
+        lv_label_set_text(name_label, sender);
+        lv_obj_set_width(name_label, face_w - 4);
+        lv_label_set_long_mode(name_label, LV_LABEL_LONG_DOT);
+        lv_obj_set_style_text_align(name_label, LV_TEXT_ALIGN_CENTER, 0);
+        style_label(name_label, text, t->type16);
+        lv_obj_align(name_label, LV_ALIGN_BOTTOM_MID, 0, -22);
+
+        lv_obj_t *dur_label = lv_label_create(face_obj);
+        lv_label_set_text(dur_label, duration);
+        style_label(dur_label, text, t->type16);
+        lv_obj_align(dur_label, LV_ALIGN_BOTTOM_MID, 0, -4);
+    }
+
+    if (touch) {
+        lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(card, focus_card, LV_EVENT_CLICKED, (void *)(intptr_t)index);
+    }
+}
+
+static void panel_header_message_sender(lv_obj_t *slot, cJSON *props)
+{
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    const char *sender = lab14_json_str(props, "sender", "");
+    const char *transport = lab14_json_str(props, "transport", "hidden");
+    char heading[72];
+    snprintf(heading, sizeof(heading), "From %s", sender);
+
+    lv_obj_t *label = lv_label_create(slot);
+    lv_label_set_text(label, heading);
+    lv_obj_set_width(label, t->act_x - t->margin);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
+    style_label(label, t->text_primary, t->type24);
+    lv_obj_align(label, LV_ALIGN_LEFT_MID, t->margin, 0);
+
+    if (strcmp(transport, "hidden") != 0) {
+        const char *btn_text = "Play";
+        if (strcmp(transport, "pause") == 0) {
+            btn_text = "Pause";
+        }
+        lv_obj_t *button = make_button(slot, btn_text, t->act_x, t->act_y, t->act_w, t->act_h, t->type16, tap_notice,
+                                       "transport");
+        if (strcmp(transport, "disabled") == 0) {
+            lv_obj_add_state(button, LV_STATE_DISABLED);
+            lv_obj_set_style_opa(button, LV_OPA_50, 0);
+        }
+    }
+}
+
+static void panel_inbox_carousel(lv_obj_t *slot, cJSON *props)
+{
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    const int msg_w = 132;
+    const int msg_h = 134;
+    const int gap = 12;
+    cJSON *messages = cJSON_GetObjectItemCaseSensitive(props, "messages");
+    if (!cJSON_IsArray(messages)) {
+        return;
+    }
+    int count = cJSON_GetArraySize(messages);
+    int focused = lab14_json_int(props, "focused", 0);
+    bool touch = lab14_json_int(props, "touch", 1) != 0;
+    if (count < 1) {
+        return;
+    }
+    if (focused < 0) {
+        focused = 0;
+    }
+    if (focused >= count) {
+        focused = count - 1;
+    }
+    for (int i = 0; i < count; i++) {
+        bool is_focused = i == focused;
+        int scale = is_focused ? 100 : t->unfocused_scale_pct;
+        int w = msg_w * scale / 100;
+        int h = msg_h * scale / 100;
+        int center = t->canvas_w / 2;
+        int x = center - (w / 2) + ((i - focused) * (msg_w + gap));
+        int y = (t->canvas_h - t->split_y - h) / 2;
+        mount_message_card(slot, cJSON_GetArrayItem(messages, i), x, y, w, h, is_focused, touch, i);
+    }
+}
+
+static void panel_recipient_carousel(lv_obj_t *slot, cJSON *props)
+{
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    cJSON *users = cJSON_GetObjectItemCaseSensitive(props, "users");
+    cJSON *selected = cJSON_GetObjectItemCaseSensitive(props, "selected");
+    if (!cJSON_IsArray(users)) {
+        return;
+    }
+    int count = cJSON_GetArraySize(users);
+    int focused = lab14_json_int(props, "focused", 0);
+    bool touch = lab14_json_int(props, "touch", 1) != 0;
+    if (count < 1) {
+        return;
+    }
+    if (focused < 0) {
+        focused = 0;
+    }
+    if (focused >= count) {
+        focused = count - 1;
+    }
+    for (int i = 0; i < count; i++) {
+        bool is_focused = i == focused;
+        int scale = is_focused ? 100 : t->unfocused_scale_pct;
+        int w = t->card_w * scale / 100;
+        int h = t->card_h * scale / 100;
+        int center = t->canvas_w / 2;
+        int x = center - (w / 2) + ((i - focused) * (t->card_w + t->card_gap));
+        int y = (t->canvas_h - t->split_y - h) / 2;
+        mount_user_card(slot, cJSON_GetArrayItem(users, i), x, y, w, h, is_focused, touch, i, false,
+                        index_selected(selected, i));
+    }
+}
+
+static void panel_send_feedback(lv_obj_t *slot, cJSON *props)
+{
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    const char *phase = lab14_json_str(props, "phase", "preparing");
+    const char *headline = phase;
+    bool dots = false;
+    if (strcmp(phase, "preparing") == 0 || strcmp(phase, "sending") == 0) {
+        dots = true;
+    } else if (strcmp(phase, "connecting") == 0) {
+        headline = "connecting";
+        dots = true;
+    } else if (strcmp(phase, "no-wifi") == 0) {
+        headline = "no Wi-Fi";
+    }
+
+    lv_obj_t *box = lv_obj_create(slot);
+    lv_obj_set_size(box, t->canvas_w - (2 * t->margin), t->canvas_h - t->split_y - (2 * t->margin));
+    lv_obj_align(box, LV_ALIGN_CENTER, 0, 0);
+    paint_plain(box, t->surface_lower);
+
+    lv_obj_t *line = lv_label_create(box);
+    lv_label_set_text(line, headline);
+    style_label(line, t->text_primary, t->type32);
+    lv_obj_align(line, LV_ALIGN_CENTER, 0, dots ? -16 : 0);
+
+    if (dots) {
+        g_dots_label = lv_label_create(box);
+        lv_label_set_text(g_dots_label, ".  ");
+        style_label(g_dots_label, t->text_secondary, t->type24);
+        lv_obj_align(g_dots_label, LV_ALIGN_CENTER, 0, 20);
+        g_dots_timer = lv_timer_create(dots_cb, 400, NULL);
+    }
+}
+
+static void panel_volume_slider(lv_obj_t *slot, cJSON *props)
+{
+    const lab14_tokens_t *t = &g_catalog->tokens;
+    const int track_w = 280;
+    const int track_h = 20;
+    const int track_y = 70;
+    const int thumb_w = 24;
+    const int thumb_h = 40;
+    int stop = lab14_json_int(props, "stop", 12);
+    if (stop < 0) {
+        stop = 0;
+    }
+    if (stop > 12) {
+        stop = 12;
+    }
+
+    int track_x = (t->canvas_w - track_w) / 2;
+    lv_obj_t *track = lv_obj_create(slot);
+    lv_obj_set_pos(track, track_x, track_y);
+    lv_obj_set_size(track, track_w, track_h);
+    lv_obj_set_style_radius(track, track_h / 2, 0);
+    lv_obj_set_style_bg_color(track, lv_color_hex(t->control), 0);
+    lv_obj_set_style_border_width(track, 0, 0);
+    lv_obj_set_scrollable(track, false);
+
+    int thumb_x = track_x + ((track_w - thumb_w) * stop) / 12;
+    int thumb_y = track_y - ((thumb_h - track_h) / 2);
+    lv_obj_t *thumb = lv_obj_create(slot);
+    lv_obj_set_pos(thumb, thumb_x, thumb_y);
+    lv_obj_set_size(thumb, thumb_w, thumb_h);
+    lv_obj_set_style_radius(thumb, 6, 0);
+    lv_obj_set_style_bg_color(thumb, lv_color_hex(t->accent), 0);
+    lv_obj_set_style_border_width(thumb, 0, 0);
+    lv_obj_set_scrollable(thumb, false);
 }
 
 static void panel_four_button(lv_obj_t *slot, cJSON *props)
@@ -724,6 +991,18 @@ static void mount_panel(lv_obj_t *slot, const char *panel, cJSON *props)
         panel_focused_drawing(slot, props);
     } else if (strcmp(panel, "PANEL-SIDE-COLOR-PALETTE") == 0) {
         panel_side_color_palette(slot, props);
+    } else if (strcmp(panel, "PANEL-HEADER-MESSAGE-SENDER") == 0) {
+        panel_header_message_sender(slot, props);
+    } else if (strcmp(panel, "PANEL-BODY-INBOX-CAROUSEL") == 0) {
+        panel_inbox_carousel(slot, props);
+    } else if (strcmp(panel, "PANEL-HEADER-RECIPIENT-PICKER") == 0) {
+        panel_header_title_left(slot, props);
+    } else if (strcmp(panel, "PANEL-BODY-RECIPIENT-CAROUSEL") == 0) {
+        panel_recipient_carousel(slot, props);
+    } else if (strcmp(panel, "PANEL-SEND-FEEDBACK") == 0) {
+        panel_send_feedback(slot, props);
+    } else if (strcmp(panel, "PANEL-BODY-VOLUME-SLIDER") == 0) {
+        panel_volume_slider(slot, props);
     }
 }
 

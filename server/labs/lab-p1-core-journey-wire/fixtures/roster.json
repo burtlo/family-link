@@ -1,0 +1,19 @@
+{
+  "schema": "fl.hangout-roster/2",
+  "hangout_id": "hangout-kitchen",
+  "revision": 3,
+  "users": [
+    {
+      "user_id": "user-maya",
+      "display_name": "Maya",
+      "avatar_id": "avatar-03",
+      "card_background_id": "card-bg-03"
+    },
+    {
+      "user_id": "user-jordan",
+      "display_name": "Jordan",
+      "avatar_id": "avatar-01",
+      "card_background_id": "card-bg-01"
+    }
+  ]
+}

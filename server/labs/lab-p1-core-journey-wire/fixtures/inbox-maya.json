@@ -1,0 +1,32 @@
+{
+  "schema": "fl.inbox-page/2",
+  "inbox_revision": 40,
+  "total_count": 1,
+  "last_viewed_message_id": "msg-p1-demo-001",
+  "items": [
+    {
+      "message_id": "msg-p1-demo-001",
+      "sender_user_id": "user-jordan",
+      "sender_name": "Jordan",
+      "sender_avatar_id": "avatar-01",
+      "sender_card_background_id": "card-bg-01",
+      "received_at": "2026-10-21T18:00:00Z",
+      "kind": "audio_sketch",
+      "duration_ms": 1000,
+      "media": {
+        "audio": {
+          "format_id": "pcm_s16le",
+          "byte_count": 32000,
+          "sha256": "d68bd61777b3560fc31a01182a8c385f71d15bfb87106dff61995c25286c48b1"
+        },
+        "sketch": {
+          "format_id": "flsk2",
+          "byte_count": 32,
+          "sha256": "c703fe627509efda35f183d480999f3f9f16106555939a7c2c0adaf7b0900f8b"
+        }
+      }
+    }
+  ],
+  "next_cursor": null,
+  "has_more": false
+}

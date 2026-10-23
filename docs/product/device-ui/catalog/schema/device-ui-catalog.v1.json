@@ -92,7 +92,13 @@
             "PANEL-BODY-PIN-GRID",
             "PANEL-STATUS-MESSAGE",
             "PANEL-FOCUSED-DRAWING",
-            "PANEL-SIDE-COLOR-PALETTE"
+            "PANEL-SIDE-COLOR-PALETTE",
+            "PANEL-HEADER-MESSAGE-SENDER",
+            "PANEL-BODY-INBOX-CAROUSEL",
+            "PANEL-HEADER-RECIPIENT-PICKER",
+            "PANEL-BODY-RECIPIENT-CAROUSEL",
+            "PANEL-SEND-FEEDBACK",
+            "PANEL-BODY-VOLUME-SLIDER"
           ]
         },
         "props": { "type": "object" }

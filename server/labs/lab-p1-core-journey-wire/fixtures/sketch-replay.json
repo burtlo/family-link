@@ -1,0 +1,20 @@
+{
+  "schema": "p1-sketch-replay-vectors/v1",
+  "vectors": [
+    {
+      "id": "two_strokes",
+      "point_count": 4,
+      "hex": "0a0a00f8000000000b0a00f80a000000323200f864000000333200f86e000000"
+    },
+    {
+      "id": "tap",
+      "point_count": 1,
+      "hex": "3c3c00f800000000"
+    },
+    {
+      "id": "diagonal",
+      "point_count": 6,
+      "hex": "000000f800000000010100f805000000020200f80a000000030300f80f000000040400f814000000050500f819000000"
+    }
+  ]
+}

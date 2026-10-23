@@ -1,0 +1,376 @@
+#include "product_login_http_worker.h"
+
+#include "esp_http_client.h"
+#include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+#include "freertos/task.h"
+#include "nvs.h"
+#include "sdkconfig.h"
+
+#include "fl_product_login_p1_wire.hpp"
+#include "fl_product_login_session.hpp"
+
+#include <stdio.h>
+#include <string.h>
+
+namespace {
+
+constexpr int kHttpBodyCap = 8192;
+constexpr int kAuthCap = 256;
+constexpr int kUrlCap = 256;
+constexpr int kPinJsonCap = 320;
+constexpr const char *kTag = "product_login_http";
+
+enum JobKind {
+    kJobRoster = 1,
+    kJobPin = 2,
+    kJobHealth = 3,
+};
+
+struct HttpJob {
+    JobKind kind;
+    uint64_t operation_id;
+    uint32_t generation;
+    char session_id[16];
+    char user_id[fl_product_login::kMaxId];
+    char pin[8];
+};
+
+struct HttpExchange {
+    int perform_ok;
+    int http_status;
+    int body_len;
+    char body[kHttpBodyCap];
+};
+
+struct HttpResult {
+    JobKind kind;
+    uint64_t operation_id;
+    uint32_t generation;
+    char session_id[16];
+    char user_id[fl_product_login::kMaxId];
+    HttpExchange exchange;
+};
+
+fl_product_login::SessionWriter *s_session = nullptr;
+QueueHandle_t s_jobs = nullptr;
+QueueHandle_t s_results = nullptr;
+TaskHandle_t s_worker = nullptr;
+char s_base_url[kUrlCap];
+char s_bearer[kAuthCap];
+uint64_t s_active_roster_id = 0;
+uint64_t s_active_pin_id = 0;
+bool s_active_health = false;
+
+void wipe_buffer(char *buffer, int cap)
+{
+    if (buffer != nullptr && cap > 0) {
+        memset(buffer, 0, (size_t)cap);
+    }
+}
+
+bool load_desk_token()
+{
+    if (CONFIG_FAMILY_DESK_TOKEN[0] != '\0') {
+        strncpy(s_bearer, CONFIG_FAMILY_DESK_TOKEN, sizeof(s_bearer) - 1);
+        return s_bearer[0] != '\0';
+    }
+    nvs_handle_t handle;
+    size_t length = sizeof(s_bearer);
+    if (nvs_open("family_link", NVS_READONLY, &handle) != ESP_OK) {
+        return false;
+    }
+    if (nvs_get_str(handle, "desk_token", s_bearer, &length) != ESP_OK) {
+        nvs_close(handle);
+        return false;
+    }
+    nvs_close(handle);
+    return s_bearer[0] != '\0';
+}
+
+bool join_url(const char *suffix, char *out, int cap)
+{
+    int base_len;
+    int suffix_len;
+    if (suffix == nullptr || out == nullptr || cap < 16) {
+        return false;
+    }
+    strncpy(out, s_base_url, (size_t)cap - 1);
+    out[cap - 1] = '\0';
+    base_len = (int)strlen(out);
+    suffix_len = (int)strlen(suffix);
+    if (base_len > 0 && out[base_len - 1] == '/' && suffix[0] == '/') {
+        suffix += 1;
+        suffix_len -= 1;
+    } else if (base_len > 0 && out[base_len - 1] != '/' && suffix[0] != '/') {
+        if (base_len + 1 >= cap) {
+            return false;
+        }
+        out[base_len] = '/';
+        base_len += 1;
+        out[base_len] = '\0';
+    }
+    if (base_len + suffix_len >= cap) {
+        return false;
+    }
+    strcat(out, suffix);
+    return true;
+}
+
+void perform_exchange(const char *url, esp_http_method_t method, const char *body, int body_len,
+                      HttpExchange *out)
+{
+    esp_http_client_config_t config = {};
+    esp_http_client_handle_t client;
+    char auth[kAuthCap + 16];
+    int status;
+    memset(out, 0, sizeof(*out));
+    config.url = url;
+    config.timeout_ms = fl_product_login::kRequestTimeoutMs;
+    config.method = method;
+    client = esp_http_client_init(&config);
+    if (client == nullptr) {
+        return;
+    }
+    snprintf(auth, sizeof(auth), "Bearer %s", s_bearer);
+    esp_http_client_set_header(client, "Authorization", auth);
+    wipe_buffer(auth, (int)sizeof(auth));
+    if (body != nullptr && body_len > 0) {
+        esp_http_client_set_header(client, "Content-Type", "application/json");
+        esp_http_client_set_post_field(client, body, body_len);
+    }
+    if (esp_http_client_perform(client) != ESP_OK) {
+        esp_http_client_cleanup(client);
+        return;
+    }
+    status = esp_http_client_get_status_code(client);
+    if (status <= 0) {
+        esp_http_client_cleanup(client);
+        return;
+    }
+    out->perform_ok = 1;
+    out->http_status = status;
+    out->body_len = esp_http_client_get_content_length(client);
+    if (out->body_len <= 0 || out->body_len >= kHttpBodyCap) {
+        out->body_len = 0;
+        while (out->body_len < kHttpBodyCap - 1) {
+            int n = esp_http_client_read(client, out->body + out->body_len, kHttpBodyCap - 1 - out->body_len);
+            if (n <= 0) {
+                break;
+            }
+            out->body_len += n;
+        }
+    } else {
+        esp_http_client_read(client, out->body, out->body_len);
+    }
+    out->body[out->body_len] = '\0';
+    esp_http_client_cleanup(client);
+}
+
+bool post_job(const HttpJob &job)
+{
+    if (s_jobs == nullptr) {
+        return false;
+    }
+    return xQueueSend(s_jobs, &job, 0) == pdTRUE;
+}
+
+void handle_roster_result(const HttpResult &result)
+{
+    if (s_session == nullptr) {
+        return;
+    }
+    fl_product_login::deliver_classified_roster(s_session, result.operation_id, result.exchange.perform_ok,
+                                                result.exchange.http_status, result.exchange.body,
+                                                result.exchange.body_len, s_session->now_ms());
+}
+
+void handle_pin_result(const HttpResult &result)
+{
+    if (s_session == nullptr) {
+        return;
+    }
+    fl_product_login::deliver_classified_pin(s_session, result.operation_id, result.generation, result.session_id,
+                                             result.user_id, result.exchange.perform_ok, result.exchange.http_status,
+                                             result.exchange.body, result.exchange.body_len, s_session->now_ms());
+}
+
+void handle_health_result(const HttpResult &result)
+{
+    if (s_session == nullptr) {
+        return;
+    }
+    if (result.exchange.perform_ok && result.exchange.http_status == 200 &&
+        result.exchange.body_len > 0) {
+        s_session->ack_health();
+    }
+}
+
+void worker_task(void *arg)
+{
+    HttpJob job;
+    HttpResult result;
+    char url[kUrlCap];
+    char json[kPinJsonCap];
+    char operation_text[40];
+    (void)arg;
+    while (true) {
+        if (xQueueReceive(s_jobs, &job, portMAX_DELAY) != pdTRUE) {
+            continue;
+        }
+        memset(&result, 0, sizeof(result));
+        result.kind = job.kind;
+        result.operation_id = job.operation_id;
+        result.generation = job.generation;
+        strncpy(result.session_id, job.session_id, sizeof(result.session_id) - 1);
+        strncpy(result.user_id, job.user_id, sizeof(result.user_id) - 1);
+        switch (job.kind) {
+        case kJobRoster:
+            if (join_url("v2/hangout", url, (int)sizeof(url))) {
+                perform_exchange(url, HTTP_METHOD_GET, nullptr, 0, &result.exchange);
+            }
+            break;
+        case kJobHealth:
+            if (join_url("v2/endpoint/health", url, (int)sizeof(url))) {
+                snprintf(json, sizeof(json),
+                         "{\"schema\":\"fl.endpoint-health/2\",\"reason\":\"periodic\",\"boot_id\":\"%s\","
+                         "\"muted\":false}",
+                         job.session_id[0] ? job.session_id : "boot");
+                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), &result.exchange);
+                wipe_buffer(json, (int)sizeof(json));
+            }
+            break;
+        case kJobPin:
+            if (join_url("v2/session/login", url, (int)sizeof(url))) {
+                fl_product_login::format_p1_operation_id(job.operation_id, operation_text,
+                                                       (int)sizeof(operation_text));
+                snprintf(json, sizeof(json),
+                         "{\"schema\":\"fl.session-login/2\",\"operation_id\":\"%s\",\"user_id\":\"%s\","
+                         "\"pin\":\"%s\"}",
+                         operation_text, job.user_id, job.pin);
+                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), &result.exchange);
+                wipe_buffer(json, (int)sizeof(json));
+                wipe_buffer(job.pin, (int)sizeof(job.pin));
+            }
+            break;
+        default:
+            break;
+        }
+        if (s_results != nullptr) {
+            xQueueSend(s_results, &result, portMAX_DELAY);
+        }
+    }
+}
+
+} /* namespace */
+
+extern "C" bool product_login_http_worker_start(fl_product_login::SessionWriter *session)
+{
+    if (session == nullptr || s_worker != nullptr) {
+        return false;
+    }
+    strncpy(s_base_url, CONFIG_FAMILY_P1_BASE_URL, sizeof(s_base_url) - 1);
+    if (!load_desk_token()) {
+        ESP_LOGW(kTag, "desk token missing; HTTP poller idle");
+    }
+    s_session = session;
+    s_jobs = xQueueCreate(4, sizeof(HttpJob));
+    s_results = xQueueCreate(4, sizeof(HttpResult));
+    if (s_jobs == nullptr || s_results == nullptr) {
+        product_login_http_worker_stop();
+        return false;
+    }
+    if (xTaskCreate(worker_task, "login_http", 8192, nullptr, 5, &s_worker) != pdPASS) {
+        product_login_http_worker_stop();
+        return false;
+    }
+    ESP_LOGI(kTag, "HTTP worker ready base=%s", s_base_url);
+    return true;
+}
+
+extern "C" void product_login_http_worker_stop(void)
+{
+    if (s_worker != nullptr) {
+        vTaskDelete(s_worker);
+        s_worker = nullptr;
+    }
+    if (s_jobs != nullptr) {
+        vQueueDelete(s_jobs);
+        s_jobs = nullptr;
+    }
+    if (s_results != nullptr) {
+        vQueueDelete(s_results);
+        s_results = nullptr;
+    }
+    s_session = nullptr;
+    s_active_roster_id = 0;
+    s_active_pin_id = 0;
+    s_active_health = false;
+}
+
+extern "C" void product_login_http_service(fl_product_login::SessionWriter *session, int64_t now_ms)
+{
+    HttpResult result;
+    HttpJob job;
+    char user[fl_product_login::kMaxId];
+    char pin[8];
+    char key[68];
+    if (session == nullptr || s_worker == nullptr || s_bearer[0] == '\0') {
+        return;
+    }
+    (void)now_ms;
+    while (s_results != nullptr && xQueueReceive(s_results, &result, 0) == pdTRUE) {
+        switch (result.kind) {
+        case kJobRoster:
+            handle_roster_result(result);
+            if (result.operation_id == s_active_roster_id) {
+                s_active_roster_id = 0;
+            }
+            break;
+        case kJobPin:
+            handle_pin_result(result);
+            if (result.operation_id == s_active_pin_id) {
+                s_active_pin_id = 0;
+            }
+            break;
+        case kJobHealth:
+            handle_health_result(result);
+            s_active_health = false;
+            break;
+        default:
+            break;
+        }
+    }
+    if (session->roster_inflight() && session->roster_operation_id() != s_active_roster_id) {
+        memset(&job, 0, sizeof(job));
+        job.kind = kJobRoster;
+        job.operation_id = session->roster_operation_id();
+        if (post_job(job)) {
+            s_active_roster_id = job.operation_id;
+        }
+    }
+    if (session->pin_submitted() && session->pin_operation_id() != s_active_pin_id &&
+        session->copy_pin_request(user, (int)sizeof(user), pin, (int)sizeof(pin), key, (int)sizeof(key))) {
+        memset(&job, 0, sizeof(job));
+        job.kind = kJobPin;
+        job.operation_id = session->pin_operation_id();
+        job.generation = session->pin_key_generation();
+        strncpy(job.session_id, session->session_id(), sizeof(job.session_id) - 1);
+        strncpy(job.user_id, user, sizeof(job.user_id) - 1);
+        strncpy(job.pin, pin, sizeof(job.pin) - 1);
+        wipe_buffer(pin, (int)sizeof(pin));
+        wipe_buffer(key, (int)sizeof(key));
+        if (post_job(job)) {
+            s_active_pin_id = job.operation_id;
+        }
+    }
+    if (session->health_ack_pending() && !s_active_health) {
+        memset(&job, 0, sizeof(job));
+        job.kind = kJobHealth;
+        strncpy(job.session_id, session->session_id(), sizeof(job.session_id) - 1);
+        if (post_job(job)) {
+            s_active_health = true;
+        }
+    }
+}

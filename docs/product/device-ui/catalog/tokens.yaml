@@ -93,3 +93,14 @@ pin_status:
   prefix: "Sign in as"
 full_canvas:
   message_type: fl-type-24
+message_card:
+  width: 132
+  height: 134
+  face: 120
+  gap: 12
+volume_slider:
+  track_w: 280
+  track_h: 20
+  track_y: 70
+  thumb_w: 24
+  thumb_h: 40

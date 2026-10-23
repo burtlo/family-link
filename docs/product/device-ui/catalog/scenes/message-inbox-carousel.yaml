@@ -1,0 +1,23 @@
+id: CAT-21
+order: 100
+title: From Arlo, Play
+group: Inbox
+screen: SCR-MESSAGE-INBOX
+state: carousel-ready
+layout: LAYOUT-SPLIT-PANE
+notes: Three messages; Arlo centered; Play transport
+slots:
+  upper:
+    panel: PANEL-HEADER-MESSAGE-SENDER
+    props:
+      sender: Arlo
+      transport: Play
+  lower:
+    panel: PANEL-BODY-INBOX-CAROUSEL
+    props:
+      focused: 0
+      touch: true
+      messages:
+        - {id: m1, sender: Arlo, duration: "0:42", background: "#67C587", text: "#101418"}
+        - {id: m2, sender: Lynn, duration: "1:08", background: "#5AA0E8", text: "#101418"}
+        - {id: m3, sender: Mazi, duration: "0:15", background: "#E8C040", text: "#101418"}

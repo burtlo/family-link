@@ -1,0 +1,22 @@
+id: CAT-29
+order: 112
+title: To Arlo +2
+group: Send
+screen: SCR-RECIPIENT-PICKER
+state: header-overflow
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-RECIPIENT-PICKER
+    props:
+      title: To Arlo +2
+  lower:
+    panel: PANEL-BODY-RECIPIENT-CAROUSEL
+    props:
+      focused: 1
+      touch: true
+      selected: [0, 1, 2]
+      users:
+        - {id: arlo, name: Arlo, background: "#67C587", text: "#101418"}
+        - {id: lynn, name: Lynn, background: "#5AA0E8", text: "#101418"}
+        - {id: mazi, name: Mazi, background: "#E8C040", text: "#101418"}

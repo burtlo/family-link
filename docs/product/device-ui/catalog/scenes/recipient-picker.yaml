@@ -1,0 +1,22 @@
+id: CAT-27
+order: 110
+title: Send a message to ...
+group: Send
+screen: SCR-RECIPIENT-PICKER
+state: none-selected
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-RECIPIENT-PICKER
+    props:
+      title: Send a message to ...
+  lower:
+    panel: PANEL-BODY-RECIPIENT-CAROUSEL
+    props:
+      focused: 0
+      touch: true
+      selected: []
+      users:
+        - {id: arlo, name: Arlo, background: "#67C587", text: "#101418"}
+        - {id: lynn, name: Lynn, background: "#5AA0E8", text: "#101418"}
+        - {id: mazi, name: Mazi, background: "#E8C040", text: "#101418"}

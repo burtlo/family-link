@@ -1,0 +1,17 @@
+id: CAT-34
+order: 123
+title: couldn't send
+group: Send
+screen: SCR-SEND-FEEDBACK
+state: refused
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-SUBTITLE
+    props:
+      title: sending to ...
+      subtitle: Arlo and Lynn
+  lower:
+    panel: PANEL-SEND-FEEDBACK
+    props:
+      phase: couldn't send

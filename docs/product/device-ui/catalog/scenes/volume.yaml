@@ -1,0 +1,16 @@
+id: CAT-37
+order: 130
+title: Volume
+group: Settings
+screen: SCR-VOLUME
+state: ready
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-LEFT
+    props:
+      title: Volume
+  lower:
+    panel: PANEL-BODY-VOLUME-SLIDER
+    props:
+      stop: 12

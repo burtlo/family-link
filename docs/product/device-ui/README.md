@@ -147,6 +147,12 @@ layout. Planned entries are not requirements until authored and reviewed.
 | `PANEL-STATUS-MESSAGE` | [Connection status body](panels/PANEL-STATUS-MESSAGE.md) | `lower` — `connecting` / `no Wi-Fi` |
 | `PANEL-FOCUSED-DRAWING` | [Focused drawing](panels/PANEL-FOCUSED-DRAWING.md) | `focused` — 240 × 240 record canvas |
 | `PANEL-SIDE-COLOR-PALETTE` | [Side color palette](panels/PANEL-SIDE-COLOR-PALETTE.md) | `side` — 80 × 240 six-swatch rail |
+| `PANEL-HEADER-MESSAGE-SENDER` | [Message sender header](panels/PANEL-HEADER-MESSAGE-SENDER.md) | `upper` — inbox identity + Play/Pause |
+| `PANEL-BODY-INBOX-CAROUSEL` | [Inbox carousel](panels/PANEL-BODY-INBOX-CAROUSEL.md) | `lower` — message cards |
+| `PANEL-HEADER-RECIPIENT-PICKER` | [Recipient picker header](panels/PANEL-HEADER-RECIPIENT-PICKER.md) | `upper` — `To` / send heading |
+| `PANEL-BODY-RECIPIENT-CAROUSEL` | [Recipient carousel](panels/PANEL-BODY-RECIPIENT-CAROUSEL.md) | `lower` — selectable roster cards |
+| `PANEL-SEND-FEEDBACK` | [Send feedback](panels/PANEL-SEND-FEEDBACK.md) | `lower` — preparing / sending / sent |
+| `PANEL-BODY-VOLUME-SLIDER` | [Volume slider](panels/PANEL-BODY-VOLUME-SLIDER.md) | `lower` — no numeric readout |
 
 ### Components
 
@@ -169,6 +175,10 @@ layout. Planned entries are not requirements until authored and reviewed.
 | `SCR-PIN-ENTRY` | [PIN entry](screens/SCR-PIN-ENTRY.md) | `EXP-LOGIN` | Draft — panel composition; checking dims keypad; 32 px digits |
 | `SCR-PIN-COOLDOWN` | [PIN cooldown](screens/SCR-PIN-COOLDOWN.md) | `EXP-LOGIN` | Draft — full-canvas lockout stays through connectivity loss |
 | `SCR-RECORD-SKETCH` | [Record sketch](screens/SCR-RECORD-SKETCH.md) | `EXP-SKETCH-RECORD-PLAYBACK` | Draft — left canvas + right palette |
+| `SCR-MESSAGE-INBOX` | [Message inbox](screens/SCR-MESSAGE-INBOX.md) | `EXP-MESSAGE-CAROUSEL` | Draft — carousel + transport |
+| `SCR-RECIPIENT-PICKER` | [Recipient picker](screens/SCR-RECIPIENT-PICKER.md) | `EXP-MESSAGE-RECORD-SEND` | Draft — tap-to-toggle selection |
+| `SCR-SEND-FEEDBACK` | [Send feedback](screens/SCR-SEND-FEEDBACK.md) | `EXP-MESSAGE-RECORD-SEND` | Draft — phase body under `sending to ...` |
+| `SCR-VOLUME` | [Volume](screens/SCR-VOLUME.md) | `EXP-SETTINGS` | Draft — slider only |
 
 ### On-device catalog
 

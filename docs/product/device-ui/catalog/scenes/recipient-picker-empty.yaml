@@ -1,0 +1,17 @@
+id: CAT-30
+order: 113
+title: No people to message
+group: Send
+screen: SCR-RECIPIENT-PICKER
+state: empty-roster
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-RECIPIENT-PICKER
+    props:
+      title: Send a message to ...
+  lower:
+    panel: PANEL-STATUS-MESSAGE
+    props:
+      variant: empty
+      headline: No people to message

@@ -1,0 +1,18 @@
+id: CAT-24
+order: 103
+title: Inbox + connecting
+group: Inbox
+screen: SCR-MESSAGE-INBOX
+state: connecting
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-MESSAGE-SENDER
+    props:
+      sender: Arlo
+      transport: disabled
+  lower:
+    panel: PANEL-STATUS-MESSAGE
+    props:
+      variant: waiting
+      headline: connecting

@@ -44,7 +44,7 @@ missing.
 
 Use **`CAT-NN`** when talking about a visual on the device. The catalog index
 prefixes every row with this ID, and a corner badge repeats it on the mounted
-scene. Do not reuse a number; the next unused ID is `CAT-21`.
+scene. Do not reuse a number; the next unused ID is `CAT-38`.
 
 | ID | Index title | Screen |
 |---|---|---|
@@ -68,8 +68,25 @@ scene. Do not reuse a number; the next unused ID is `CAT-21`.
 | `CAT-18` | Record sketch, black selected | `SCR-RECORD-SKETCH` |
 | `CAT-19` | Record sketch, gold selected | `SCR-RECORD-SKETCH` |
 | `CAT-20` | Portrait roster (*N*) | `SCR-SIGN-IN-ROSTER` — [`COMP-USER-CARD-BUST`](../components/COMP-USER-CARD-BUST.md); **auto-generated** by `make avatars` (one card per packed portrait) |
+| `CAT-21` | From Arlo, Play | `SCR-MESSAGE-INBOX` |
+| `CAT-22` | Sketch on card | `SCR-MESSAGE-INBOX` — portrait hidden while sketch ink shows |
+| `CAT-23` | No messages | `SCR-MESSAGE-INBOX` — empty |
+| `CAT-24` | Inbox + connecting | `SCR-MESSAGE-INBOX` |
+| `CAT-25` | Inbox + no Wi-Fi | `SCR-MESSAGE-INBOX` |
+| `CAT-26` | From Lynn, Pause | `SCR-MESSAGE-INBOX` |
+| `CAT-27` | Send a message to ... | `SCR-RECIPIENT-PICKER` |
+| `CAT-28` | To Arlo and Lynn | `SCR-RECIPIENT-PICKER` — multi-select |
+| `CAT-29` | To Arlo +2 | `SCR-RECIPIENT-PICKER` — header overflow |
+| `CAT-30` | No people to message | `SCR-RECIPIENT-PICKER` — empty |
+| `CAT-31` | preparing | `SCR-SEND-FEEDBACK` |
+| `CAT-32` | sending | `SCR-SEND-FEEDBACK` |
+| `CAT-33` | sent | `SCR-SEND-FEEDBACK` |
+| `CAT-34` | couldn't send | `SCR-SEND-FEEDBACK` |
+| `CAT-35` | Send wait connecting | `SCR-SEND-FEEDBACK` |
+| `CAT-36` | Send wait no Wi-Fi | `SCR-SEND-FEEDBACK` — subtitle `+N` |
+| `CAT-37` | Volume | `SCR-VOLUME` — slider, no numeric readout |
 
-The badge is catalog chrome for review, not a product component.
+The badge is catalog chrome for review, not a product component. The next unused ID is `CAT-38`.
 
 Host pack:
 

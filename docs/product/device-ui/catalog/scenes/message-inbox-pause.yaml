@@ -1,0 +1,22 @@
+id: CAT-26
+order: 105
+title: From Lynn, Pause
+group: Inbox
+screen: SCR-MESSAGE-INBOX
+state: paused
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-MESSAGE-SENDER
+    props:
+      sender: Lynn
+      transport: Pause
+  lower:
+    panel: PANEL-BODY-INBOX-CAROUSEL
+    props:
+      focused: 1
+      touch: true
+      messages:
+        - {id: m1, sender: Arlo, duration: "0:42", background: "#67C587", text: "#101418"}
+        - {id: m2, sender: Lynn, duration: "1:08", background: "#5AA0E8", text: "#101418"}
+        - {id: m3, sender: Mazi, duration: "0:15", background: "#E8C040", text: "#101418"}

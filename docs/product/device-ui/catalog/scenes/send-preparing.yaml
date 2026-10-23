@@ -1,0 +1,17 @@
+id: CAT-31
+order: 120
+title: preparing
+group: Send
+screen: SCR-SEND-FEEDBACK
+state: preparing
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-SUBTITLE
+    props:
+      title: sending to ...
+      subtitle: Arlo and Lynn
+  lower:
+    panel: PANEL-SEND-FEEDBACK
+    props:
+      phase: preparing

@@ -1,0 +1,18 @@
+id: CAT-25
+order: 104
+title: Inbox + no Wi-Fi
+group: Inbox
+screen: SCR-MESSAGE-INBOX
+state: no-wifi
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-MESSAGE-SENDER
+    props:
+      sender: Arlo
+      transport: disabled
+  lower:
+    panel: PANEL-STATUS-MESSAGE
+    props:
+      variant: offline
+      headline: no Wi-Fi

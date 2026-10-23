@@ -1,0 +1,17 @@
+id: CAT-36
+order: 125
+title: Send wait no Wi-Fi
+group: Send
+screen: SCR-SEND-FEEDBACK
+state: wait-no-wifi
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-SUBTITLE
+    props:
+      title: sending to ...
+      subtitle: Arlo +1
+  lower:
+    panel: PANEL-SEND-FEEDBACK
+    props:
+      phase: no-wifi

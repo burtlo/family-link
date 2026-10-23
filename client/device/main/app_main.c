@@ -1,3 +1,4 @@
+#include "bsp/esp-box-3.h"
 #include "esp_app_desc.h"
 #include "esp_chip_info.h"
 #include "esp_log.h"
@@ -5,6 +6,8 @@
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "product_login_fw.h"
+#include "product_shell_fw.h"
 
 void app_main(void)
 {
@@ -18,9 +21,30 @@ void app_main(void)
     ESP_LOGI("bootstrap", "hardware=%02x:%02x:%02x:%02x:%02x:%02x free_heap=%lu",
              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
              (unsigned long)esp_get_free_heap_size());
-    // Repeat a bounded diagnostic so a monitor opened after reset can verify this build.
-    for (;;) {
-        ESP_LOGI("bootstrap", "V2_BOOTSTRAP_READY build=%s", FAMILY_BUILD_ID);
-        vTaskDelay(pdMS_TO_TICKS(2000));
+    ESP_LOGI("bootstrap", "V2_BOOTSTRAP_READY build=%s", FAMILY_BUILD_ID);
+
+    lv_display_t *display = bsp_display_start();
+    if (display == NULL) {
+        ESP_LOGE("bootstrap", "display_init_failed");
+        return;
     }
+    bsp_display_brightness_set(80);
+    if (!bsp_display_lock(5000)) {
+        ESP_LOGE("bootstrap", "lvgl_lock_failed");
+        return;
+    }
+    if (!product_shell_init(lv_screen_active())) {
+        ESP_LOGE("bootstrap", "product_shell_init_failed");
+        bsp_display_unlock();
+        return;
+    }
+    lv_obj_t *upper = NULL;
+    lv_obj_t *lower = NULL;
+    if (product_shell_slot_roots(&upper, &lower) && !product_login_attach(upper, lower)) {
+        ESP_LOGE("bootstrap", "product_login_attach_failed");
+        bsp_display_unlock();
+        return;
+    }
+    product_login_set_wifi(true);
+    bsp_display_unlock();
 }

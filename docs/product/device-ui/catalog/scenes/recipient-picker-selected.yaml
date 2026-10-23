@@ -1,0 +1,22 @@
+id: CAT-28
+order: 111
+title: To Arlo and Lynn
+group: Send
+screen: SCR-RECIPIENT-PICKER
+state: multi-selected
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-RECIPIENT-PICKER
+    props:
+      title: To Arlo and Lynn
+  lower:
+    panel: PANEL-BODY-RECIPIENT-CAROUSEL
+    props:
+      focused: 0
+      touch: true
+      selected: [0, 1]
+      users:
+        - {id: arlo, name: Arlo, background: "#67C587", text: "#101418"}
+        - {id: lynn, name: Lynn, background: "#5AA0E8", text: "#101418"}
+        - {id: mazi, name: Mazi, background: "#E8C040", text: "#101418"}

@@ -1,0 +1,11 @@
+menu "Family Link product login"
+
+config FAMILY_P1_BASE_URL
+    string "P1 API base URL for desk/host tests"
+    default "http://127.0.0.1:8777"
+
+config FAMILY_DESK_TOKEN
+    string "Desk bearer token (leave empty to read NVS stub family_link/desk_token)"
+    default ""
+
+endmenu

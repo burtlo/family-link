@@ -1,0 +1,18 @@
+id: CAT-23
+order: 102
+title: No messages
+group: Inbox
+screen: SCR-MESSAGE-INBOX
+state: empty
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-MESSAGE-SENDER
+    props:
+      identity: Messages
+      transport: hidden
+  lower:
+    panel: PANEL-STATUS-MESSAGE
+    props:
+      variant: empty
+      headline: No messages

@@ -1,0 +1,17 @@
+id: CAT-33
+order: 122
+title: sent
+group: Send
+screen: SCR-SEND-FEEDBACK
+state: sent
+layout: LAYOUT-SPLIT-PANE
+slots:
+  upper:
+    panel: PANEL-HEADER-TITLE-SUBTITLE
+    props:
+      title: sending to ...
+      subtitle: Arlo and Lynn
+  lower:
+    panel: PANEL-SEND-FEEDBACK
+    props:
+      phase: sent

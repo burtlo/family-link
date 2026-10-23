@@ -135,6 +135,19 @@
     },
     "full_canvas": {
       "message_type": "fl-type-24"
+    },
+    "message_card": {
+      "width": 132,
+      "height": 134,
+      "face": 120,
+      "gap": 12
+    },
+    "volume_slider": {
+      "track_w": 280,
+      "track_h": 20,
+      "track_y": 70,
+      "thumb_w": 24,
+      "thumb_h": 40
     }
   },
   "scenes": [
@@ -1025,6 +1038,561 @@
           "panel": "PANEL-SIDE-COLOR-PALETTE",
           "props": {
             "selected": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-21",
+      "order": 100,
+      "title": "From Arlo, Play",
+      "group": "Inbox",
+      "screen": "SCR-MESSAGE-INBOX",
+      "state": "carousel-ready",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "Three messages; Arlo centered; Play transport",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-MESSAGE-SENDER",
+          "props": {
+            "sender": "Arlo",
+            "transport": "Play"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-INBOX-CAROUSEL",
+          "props": {
+            "focused": 0,
+            "touch": true,
+            "messages": [
+              {
+                "id": "m1",
+                "sender": "Arlo",
+                "duration": "0:42",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "m2",
+                "sender": "Lynn",
+                "duration": "1:08",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              },
+              {
+                "id": "m3",
+                "sender": "Mazi",
+                "duration": "0:15",
+                "background": "#E8C040",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-22",
+      "order": 101,
+      "title": "Sketch on card",
+      "group": "Inbox",
+      "screen": "SCR-MESSAGE-INBOX",
+      "state": "sketch-visible",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "notes": "Portrait hidden while sketch ink shows (DEC-044)",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-MESSAGE-SENDER",
+          "props": {
+            "sender": "Lynn",
+            "transport": "Pause"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-INBOX-CAROUSEL",
+          "props": {
+            "focused": 1,
+            "touch": true,
+            "messages": [
+              {
+                "id": "m1",
+                "sender": "Arlo",
+                "duration": "0:42",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "m2",
+                "sender": "Lynn",
+                "duration": "1:08",
+                "background": "#5AA0E8",
+                "text": "#101418",
+                "sketch": true
+              },
+              {
+                "id": "m3",
+                "sender": "Mazi",
+                "duration": "0:15",
+                "background": "#E8C040",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-23",
+      "order": 102,
+      "title": "No messages",
+      "group": "Inbox",
+      "screen": "SCR-MESSAGE-INBOX",
+      "state": "empty",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-MESSAGE-SENDER",
+          "props": {
+            "identity": "Messages",
+            "transport": "hidden"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-STATUS-MESSAGE",
+          "props": {
+            "variant": "empty",
+            "headline": "No messages"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-24",
+      "order": 103,
+      "title": "Inbox + connecting",
+      "group": "Inbox",
+      "screen": "SCR-MESSAGE-INBOX",
+      "state": "connecting",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-MESSAGE-SENDER",
+          "props": {
+            "sender": "Arlo",
+            "transport": "disabled"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-STATUS-MESSAGE",
+          "props": {
+            "variant": "waiting",
+            "headline": "connecting"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-25",
+      "order": 104,
+      "title": "Inbox + no Wi-Fi",
+      "group": "Inbox",
+      "screen": "SCR-MESSAGE-INBOX",
+      "state": "no-wifi",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-MESSAGE-SENDER",
+          "props": {
+            "sender": "Arlo",
+            "transport": "disabled"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-STATUS-MESSAGE",
+          "props": {
+            "variant": "offline",
+            "headline": "no Wi-Fi"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-26",
+      "order": 105,
+      "title": "From Lynn, Pause",
+      "group": "Inbox",
+      "screen": "SCR-MESSAGE-INBOX",
+      "state": "paused",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-MESSAGE-SENDER",
+          "props": {
+            "sender": "Lynn",
+            "transport": "Pause"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-INBOX-CAROUSEL",
+          "props": {
+            "focused": 1,
+            "touch": true,
+            "messages": [
+              {
+                "id": "m1",
+                "sender": "Arlo",
+                "duration": "0:42",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "m2",
+                "sender": "Lynn",
+                "duration": "1:08",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              },
+              {
+                "id": "m3",
+                "sender": "Mazi",
+                "duration": "0:15",
+                "background": "#E8C040",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-27",
+      "order": 110,
+      "title": "Send a message to ...",
+      "group": "Send",
+      "screen": "SCR-RECIPIENT-PICKER",
+      "state": "none-selected",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-RECIPIENT-PICKER",
+          "props": {
+            "title": "Send a message to ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-RECIPIENT-CAROUSEL",
+          "props": {
+            "focused": 0,
+            "touch": true,
+            "selected": [],
+            "users": [
+              {
+                "id": "arlo",
+                "name": "Arlo",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "lynn",
+                "name": "Lynn",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              },
+              {
+                "id": "mazi",
+                "name": "Mazi",
+                "background": "#E8C040",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-28",
+      "order": 111,
+      "title": "To Arlo and Lynn",
+      "group": "Send",
+      "screen": "SCR-RECIPIENT-PICKER",
+      "state": "multi-selected",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-RECIPIENT-PICKER",
+          "props": {
+            "title": "To Arlo and Lynn"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-RECIPIENT-CAROUSEL",
+          "props": {
+            "focused": 0,
+            "touch": true,
+            "selected": [
+              0,
+              1
+            ],
+            "users": [
+              {
+                "id": "arlo",
+                "name": "Arlo",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "lynn",
+                "name": "Lynn",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              },
+              {
+                "id": "mazi",
+                "name": "Mazi",
+                "background": "#E8C040",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-29",
+      "order": 112,
+      "title": "To Arlo +2",
+      "group": "Send",
+      "screen": "SCR-RECIPIENT-PICKER",
+      "state": "header-overflow",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-RECIPIENT-PICKER",
+          "props": {
+            "title": "To Arlo +2"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-RECIPIENT-CAROUSEL",
+          "props": {
+            "focused": 1,
+            "touch": true,
+            "selected": [
+              0,
+              1,
+              2
+            ],
+            "users": [
+              {
+                "id": "arlo",
+                "name": "Arlo",
+                "background": "#67C587",
+                "text": "#101418"
+              },
+              {
+                "id": "lynn",
+                "name": "Lynn",
+                "background": "#5AA0E8",
+                "text": "#101418"
+              },
+              {
+                "id": "mazi",
+                "name": "Mazi",
+                "background": "#E8C040",
+                "text": "#101418"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-30",
+      "order": 113,
+      "title": "No people to message",
+      "group": "Send",
+      "screen": "SCR-RECIPIENT-PICKER",
+      "state": "empty-roster",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-RECIPIENT-PICKER",
+          "props": {
+            "title": "Send a message to ..."
+          }
+        },
+        "lower": {
+          "panel": "PANEL-STATUS-MESSAGE",
+          "props": {
+            "variant": "empty",
+            "headline": "No people to message"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-31",
+      "order": 120,
+      "title": "preparing",
+      "group": "Send",
+      "screen": "SCR-SEND-FEEDBACK",
+      "state": "preparing",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-SUBTITLE",
+          "props": {
+            "title": "sending to ...",
+            "subtitle": "Arlo and Lynn"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-SEND-FEEDBACK",
+          "props": {
+            "phase": "preparing"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-32",
+      "order": 121,
+      "title": "sending",
+      "group": "Send",
+      "screen": "SCR-SEND-FEEDBACK",
+      "state": "sending",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-SUBTITLE",
+          "props": {
+            "title": "sending to ...",
+            "subtitle": "Arlo and Lynn"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-SEND-FEEDBACK",
+          "props": {
+            "phase": "sending"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-33",
+      "order": 122,
+      "title": "sent",
+      "group": "Send",
+      "screen": "SCR-SEND-FEEDBACK",
+      "state": "sent",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-SUBTITLE",
+          "props": {
+            "title": "sending to ...",
+            "subtitle": "Arlo and Lynn"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-SEND-FEEDBACK",
+          "props": {
+            "phase": "sent"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-34",
+      "order": 123,
+      "title": "couldn't send",
+      "group": "Send",
+      "screen": "SCR-SEND-FEEDBACK",
+      "state": "refused",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-SUBTITLE",
+          "props": {
+            "title": "sending to ...",
+            "subtitle": "Arlo and Lynn"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-SEND-FEEDBACK",
+          "props": {
+            "phase": "couldn't send"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-35",
+      "order": 124,
+      "title": "Send wait connecting",
+      "group": "Send",
+      "screen": "SCR-SEND-FEEDBACK",
+      "state": "wait-connecting",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-SUBTITLE",
+          "props": {
+            "title": "sending to ...",
+            "subtitle": "Arlo and Lynn"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-SEND-FEEDBACK",
+          "props": {
+            "phase": "connecting"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-36",
+      "order": 125,
+      "title": "Send wait no Wi-Fi",
+      "group": "Send",
+      "screen": "SCR-SEND-FEEDBACK",
+      "state": "wait-no-wifi",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-SUBTITLE",
+          "props": {
+            "title": "sending to ...",
+            "subtitle": "Arlo +1"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-SEND-FEEDBACK",
+          "props": {
+            "phase": "no-wifi"
+          }
+        }
+      }
+    },
+    {
+      "id": "CAT-37",
+      "order": 130,
+      "title": "Volume",
+      "group": "Settings",
+      "screen": "SCR-VOLUME",
+      "state": "ready",
+      "layout": "LAYOUT-SPLIT-PANE",
+      "slots": {
+        "upper": {
+          "panel": "PANEL-HEADER-TITLE-LEFT",
+          "props": {
+            "title": "Volume"
+          }
+        },
+        "lower": {
+          "panel": "PANEL-BODY-VOLUME-SLIDER",
+          "props": {
+            "stop": 12
           }
         }
       }

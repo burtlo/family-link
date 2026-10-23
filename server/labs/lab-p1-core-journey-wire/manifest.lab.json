@@ -1,0 +1,9 @@
+{
+  "document": "family-link.lab-manifest/v1",
+  "lab_id": "P1-CORE-JOURNEY",
+  "lab_revision": "p1-core-journey-server/v1",
+  "fixture_schema": "p1-core-journey/v1",
+  "fixture_revision": "p1-core-journey/v1",
+  "protocol": "login-0.13;envelope-0.10;inbox-0.9;delivery-0.12;profile-0.9",
+  "default_port": 8777
+}
