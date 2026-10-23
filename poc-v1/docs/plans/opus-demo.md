@@ -86,7 +86,9 @@ This is an island demo. Do not modify X02 until product integration is explicitl
 - **Device:** `index.json` byte offsets + sequential Ogg page decode from Range start (no libogg). Full pause/reconnect/seek UI not productized on kit.
 - **CI:** Chunk idempotency, conflict, missing-seq finalize, out-of-order PUT — `client.py`.
 
-**Deferred for product:** 3 min hardware message, streaming playback without buffering full Ogg in one 16 KiB read, pause/resume/reconnect on device.
+**Deferred for product:** pause/resume/reconnect on device; true streaming without repeated Range GETs.
+
+**h31 playback (2026-10-23):** Early builds used a **single 16 KiB** Range response, so play stopped after a few seconds. Firmware now **loops Range GETs** with a small carry buffer until EOF (see `PLAY_RANGE_BYTES` in `h31_opus_chunks.c`).
 
 ## Phase 4 — Decision record
 
