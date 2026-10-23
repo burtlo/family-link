@@ -324,8 +324,18 @@ public:
     int scoped_overflow_terminals() const;
     int connecting_backoff_index() const;
     bool health_ack_pending() const;
+    uint64_t health_operation_id() const;
     int health_ack_count() const;
     const char *health_server_time() const;
+    const char *health_reason() const;
+    const char *boot_id() const;
+    /* True only when a PIN POST may leave now. False during the 1/2/4 s retry wait. */
+    bool pin_transport_ready() const;
+    /* Connection status occupies the PIN lower slot. Keypad, BOOT, and the idle timer wait. */
+    bool pin_lower_is_status() const;
+    int roster_request_timeout_ms() const;
+    int roster_updating() const;
+    int hangout_known() const;
 
 private:
     void reset_runtime();
@@ -336,7 +346,7 @@ private:
     void on_roster_timeout();
     void on_heartbeat_due();
     void on_roster_due();
-    void apply_roster_body(const RosterResult &result);
+    void apply_roster_body(RosterResult &result);
     bool same_membership(const RosterResult &result) const;
     void preserve_focus(const RosterResult &result);
     bool record_terminal(uint64_t operation_id, uint32_t attempt, const char *kind,
@@ -346,7 +356,7 @@ private:
     int64_t quiet_anchor_ms() const;
     void pull_roster_period_forward(int64_t now_ms);
     void reset_pin();
-    void apply_roster_while_pin(const RosterResult &result);
+    void apply_roster_while_pin(RosterResult &result);
     bool pin_holds_input() const;
     int64_t pin_next_event_ms() const;
     void on_pin_clock();
@@ -354,6 +364,11 @@ private:
     bool take_pin_for_mute(uint64_t *operation_id, uint32_t *attempt);
     void accept_pin_result(const PinResult &result);
     void drain_pin();
+    void finish_cooldown();
+    void sync_pin_idle_hold();
+    void arm_connecting_backoff();
+    void order_roster(RosterResult *result);
+    void remember_login(const char *user_id);
     void refresh_pin_copy();
     void mint_pin_key();
     void wipe_pin_secret();
@@ -441,6 +456,8 @@ private:
     int64_t cooldown_until_ms_;
     int64_t idle_until_ms_;
     bool idle_armed_;
+    bool idle_paused_;
+    int64_t idle_remaining_ms_;
     int wrong_count_;
     int authenticated_;
     int pin_side_effects_;
@@ -496,9 +513,17 @@ private:
     uint64_t invalidate_pin_operation_id_;
     int health_ack_count_;
     char health_server_time_[36];
+    char health_reason_[16];
+    char boot_id_[40];
     bool connecting_retry_armed_;
     int connecting_backoff_index_;
     int64_t connecting_retry_due_ms_;
+    int roster_timeout_ms_;
+    bool server_unavailable_;
+    bool roster_updating_;
+    bool hangout_known_;
+    char recent_ids_[kMaxUsers][kMaxId];
+    int recent_count_;
 };
 
 void set_user(UserId *user, const char *id);

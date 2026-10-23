@@ -13,6 +13,9 @@ bool product_login_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot);
 void product_login_schedule_wifi_link(bool up, int disconnect_reason);
 void product_login_schedule_wifi_driver_failed(void);
 void product_login_on_mute_pressed(void);
+void product_login_on_boot_pressed(void);
+void product_login_on_mute_level(int latched);
+int product_login_is_signed_in(void);
 
 #ifdef __cplusplus
 }

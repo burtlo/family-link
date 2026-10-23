@@ -246,6 +246,8 @@ void SessionWriter::reset_pin()
     cooldown_until_ms_ = 0;
     idle_until_ms_ = 0;
     idle_armed_ = false;
+    idle_paused_ = false;
+    idle_remaining_ms_ = 0;
     wrong_count_ = 0;
     authenticated_ = 0;
     pin_side_effects_ = 0;
@@ -319,6 +321,7 @@ void SessionWriter::release_pin_view()
     pin_deadline_armed_ = false;
     pin_wait_delay_ = false;
     idle_armed_ = false;
+    idle_paused_ = false;
 }
 
 void SessionWriter::close_pin_operation(const char *terminal, const char *reason)
@@ -441,6 +444,7 @@ void SessionWriter::accept_pin_result(const PinResult &result)
         wrong_count_ = 0;
         cooldown_until_ms_ = 0;
         shown_cooldown_second_ = 0;
+        remember_login(user);
         wipe_pin_secret();
         pin_phase_ = kPinPhaseIdle;
         refresh_pin_copy();
@@ -479,10 +483,31 @@ void SessionWriter::accept_pin_result(const PinResult &result)
         authenticated_ = 0;
         wipe_pin_secret();
         pin_phase_ = kPinPhaseIdle;
+        selected_user_[0] = 0;
         refresh_pin_copy();
+        roster_updating_ = true;
+        selectable_cards_ = 0;
         last_update_level_ = 0;
         property_seq_ += 1;
         close_pin_operation("failure", "unknown_user");
+        if (stage_ == kStageMuted) {
+            roster_updating_ = false;
+            return;
+        }
+        if (!wifi_up_) {
+            roster_updating_ = false;
+            apply_stage(kStageWifiUnavailable, "unknown_user");
+            selectable_cards_ = 0;
+            return;
+        }
+        if (roster_inflight_) {
+            record_terminal(roster_operation_id_, roster_attempt_, "roster", "cancelled");
+            clear_roster_inflight();
+        }
+        if (user_count_ > 0 && stage_ != kStageRoster) {
+            apply_stage(kStageRoster, "unknown_user");
+        }
+        begin_roster(now_ms_, false, false);
         return;
     }
     fail_pin_transport();
@@ -490,15 +515,21 @@ void SessionWriter::accept_pin_result(const PinResult &result)
 
 void SessionWriter::drain_pin()
 {
-    int i;
     int count = pin_queue_count_;
-    PinResult pending[kPinResultQueueCapacity];
-    for (i = 0; i < count; ++i) {
-        pending[i] = pin_queue_[i];
-    }
-    pin_queue_count_ = 0;
-    for (i = 0; i < count; ++i) {
-        accept_pin_result(pending[i]);
+    int n;
+    /* One result at a time, same as roster drain. The session owner is the only caller. */
+    for (n = 0; n < count; ++n) {
+        PinResult result;
+        int i;
+        if (pin_queue_count_ <= 0) {
+            break;
+        }
+        result = pin_queue_[0];
+        for (i = 1; i < pin_queue_count_; ++i) {
+            pin_queue_[i - 1] = pin_queue_[i];
+        }
+        pin_queue_count_ -= 1;
+        accept_pin_result(result);
     }
 }
 
@@ -618,6 +649,10 @@ bool SessionWriter::enter_pin_digit(char digit, int64_t now_ms)
         refresh_pin_copy();
         return false;
     }
+    if (pin_phase_ == kPinPhaseWrong) {
+        wrong_until_ms_ = 0;
+        pin_phase_ = kPinPhaseEntry;
+    }
     if (pin_phase_ != kPinPhaseIdle && pin_phase_ != kPinPhaseEntry) {
         return false;
     }
@@ -636,6 +671,7 @@ bool SessionWriter::enter_pin_digit(char digit, int64_t now_ms)
     pin_secret_[pin_digit_len_] = 0;
     pin_phase_ = kPinPhaseEntry;
     idle_until_ms_ = now_ms + kPartialPinIdleMs;
+    idle_paused_ = false;
     idle_armed_ = pin_digit_len_ < 4;
     refresh_pin_copy();
     last_update_level_ = 0;
@@ -651,6 +687,12 @@ void SessionWriter::press_boot(int64_t now_ms)
 {
     now_ms_ = now_ms;
     if (stage_ == kStageMuted) {
+        return;
+    }
+    if (pin_phase_ == kPinPhaseCooldown || cooldown_until_ms_ > now_ms_) {
+        return;
+    }
+    if (pin_lower_is_status()) {
         return;
     }
     if (pin_phase_ == kPinPhaseChecking || pin_submitted_) {
@@ -746,8 +788,8 @@ int64_t SessionWriter::pin_next_event_ms() const
     if (cooldown_until_ms_ > now_ms_ && cooldown_until_ms_ < next) {
         next = cooldown_until_ms_;
     }
-    if (idle_armed_ && pin_phase_ == kPinPhaseEntry && pin_digit_len_ > 0 && pin_digit_len_ < 4 &&
-        idle_until_ms_ < next) {
+    if (idle_armed_ && !idle_paused_ && pin_phase_ == kPinPhaseEntry && pin_digit_len_ > 0 &&
+        pin_digit_len_ < 4 && idle_until_ms_ < next) {
         next = idle_until_ms_;
     }
     if (next <= now_ms_) {
@@ -770,7 +812,8 @@ void SessionWriter::on_pin_clock()
     }
     if (pin_phase_ == kPinPhaseChecking && pin_submitted_ && pin_deadline_armed_ && !pin_wait_delay_ &&
         now_ms_ >= pin_deadline_ms_) {
-        PinResult result;
+        /* Session owner is the only caller. Keep this result off the LVGL stack. */
+        static PinResult result;
         pin_deadline_armed_ = false;
         memset(&result, 0, sizeof(result));
         result.operation_id = pin_operation_id_;
@@ -790,19 +833,11 @@ void SessionWriter::on_pin_clock()
         return;
     }
     if (cooldown_until_ms_ > 0 && now_ms_ >= cooldown_until_ms_) {
-        cooldown_until_ms_ = 0;
-        wrong_count_ = 0;
-        shown_cooldown_second_ = 0;
-        if (pin_phase_ == kPinPhaseCooldown) {
-            pin_phase_ = kPinPhaseEntry;
-        }
-        refresh_pin_copy();
-        last_update_level_ = 0;
-        property_seq_ += 1;
+        finish_cooldown();
         return;
     }
-    if (idle_armed_ && pin_phase_ == kPinPhaseEntry && pin_digit_len_ > 0 && pin_digit_len_ < 4 &&
-        now_ms_ >= idle_until_ms_) {
+    if (idle_armed_ && !idle_paused_ && pin_phase_ == kPinPhaseEntry && pin_digit_len_ > 0 &&
+        pin_digit_len_ < 4 && now_ms_ >= idle_until_ms_) {
         uint64_t operation_id = pin_operation_id_;
         idle_armed_ = false;
         wipe_pin_secret();
@@ -853,10 +888,90 @@ int SessionWriter::cooldown_remaining_ms() const
 bool SessionWriter::keypad_open() const
 {
     if (stage_ == kStageMuted || pin_submitted_ || pin_phase_ == kPinPhaseChecking ||
-        pin_phase_ == kPinPhaseWrong || pin_phase_ == kPinPhaseCooldown) {
+        pin_phase_ == kPinPhaseCooldown || pin_lower_is_status()) {
         return false;
     }
     return true;
+}
+
+bool SessionWriter::pin_transport_ready() const
+{
+    return pin_submitted_ && !pin_wait_delay_ && pin_deadline_armed_ && pin_operation_id_ != 0;
+}
+
+bool SessionWriter::pin_lower_is_status() const
+{
+    bool pin_surface;
+    if (stage_ == kStageMuted || pin_phase_ == kPinPhaseCooldown) {
+        return false;
+    }
+    pin_surface = pin_phase_ == kPinPhaseEntry || pin_phase_ == kPinPhaseChecking ||
+                  pin_phase_ == kPinPhaseWrong || pin_submitted_;
+    if (!pin_surface) {
+        return false;
+    }
+    if (!wifi_up_) {
+        return true;
+    }
+    if (server_unavailable_ || stage_ == kStageConnecting || stage_ == kStageWifiUnavailable) {
+        return true;
+    }
+    return false;
+}
+
+void SessionWriter::sync_pin_idle_hold()
+{
+    if (pin_lower_is_status()) {
+        if (idle_armed_ && !idle_paused_) {
+            idle_remaining_ms_ = idle_until_ms_ - now_ms_;
+            if (idle_remaining_ms_ < 0) {
+                idle_remaining_ms_ = 0;
+            }
+            idle_paused_ = true;
+        }
+        return;
+    }
+    if (idle_paused_) {
+        idle_until_ms_ = now_ms_ + idle_remaining_ms_;
+        idle_paused_ = false;
+    }
+}
+
+void SessionWriter::finish_cooldown()
+{
+    cooldown_until_ms_ = 0;
+    wrong_count_ = 0;
+    shown_cooldown_second_ = 0;
+    if (stage_ == kStageMuted) {
+        if (pin_phase_ == kPinPhaseCooldown) {
+            pin_phase_ = kPinPhaseIdle;
+        }
+        refresh_pin_copy();
+        last_update_level_ = 0;
+        property_seq_ += 1;
+        return;
+    }
+    pin_phase_ = kPinPhaseIdle;
+    selected_user_[0] = 0;
+    refresh_pin_copy();
+    if (!wifi_up_) {
+        apply_stage(kStageWifiUnavailable, "cooldown_done");
+        selectable_cards_ = 0;
+    } else if (hangout_known_ && user_count_ > 0) {
+        apply_stage(kStageRoster, "cooldown_done");
+        selectable_cards_ = user_count_;
+    } else if (hangout_known_ && !server_unavailable_) {
+        apply_stage(kStageEmptyHangout, "cooldown_done");
+        selectable_cards_ = 0;
+    } else {
+        apply_stage(kStageConnecting, "cooldown_done");
+        selectable_cards_ = 0;
+        if (!roster_inflight_) {
+            begin_roster(now_ms_, false, false);
+        }
+    }
+    last_update_level_ = 0;
+    property_seq_ += 1;
 }
 bool SessionWriter::pin_submitted() const { return pin_submitted_; }
 uint64_t SessionWriter::pin_operation_id() const { return pin_operation_id_; }

@@ -2,10 +2,12 @@
 
 #include "product_inbox_fw.h"
 #include "product_login_fw.h"
+#include "product_shell_fw.h"
 #include "product_stage_router.h"
 #include "product_volume_fw.h"
 
 #include "bsp/esp-box-3.h"
+#include "driver/gpio.h"
 #include "esp_log.h"
 #include "iot_button.h"
 
@@ -78,18 +80,40 @@ bool product_hardware_buttons_init(void)
     return true;
 }
 
+int product_hardware_buttons_mute_latched(void)
+{
+    gpio_config_t cfg = {
+        .pin_bit_mask = 1ULL << BSP_BUTTON_MUTE_IO,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    if (s_buttons[BSP_BUTTON_MUTE] != NULL) {
+        return iot_button_get_key_level(s_buttons[BSP_BUTTON_MUTE]) != 0 ? 1 : 0;
+    }
+    if (gpio_config(&cfg) != ESP_OK) {
+        return 0;
+    }
+    /* BSP mute is active low on GPIO 1. */
+    return gpio_get_level(BSP_BUTTON_MUTE_IO) == 0 ? 1 : 0;
+}
+
 void product_hardware_buttons_poll(void)
 {
     if (atomic_exchange_explicit(&s_boot_pressed, false, memory_order_acq_rel)) {
-        (void)product_inbox_on_boot_pressed();
-    }
-    if (atomic_exchange_explicit(&s_mute_pressed, false, memory_order_acq_rel)) {
-        if (product_volume_on_mute() == 0) {
-            product_login_on_mute_pressed();
+        if (product_login_is_signed_in()) {
+            (void)product_inbox_on_boot_pressed();
+        } else {
+            product_login_on_boot_pressed();
         }
     }
+    /* Mute is a latch. The press edge is not the level. */
+    (void)atomic_exchange_explicit(&s_mute_pressed, false, memory_order_acq_rel);
+    product_login_on_mute_level(product_hardware_buttons_mute_latched());
     if (atomic_exchange_explicit(&s_red_pressed, false, memory_order_acq_rel)) {
-        if (product_volume_on_red_record() != 0) {
+        if (product_volume_on_red_record() != 0 && product_login_is_signed_in() &&
+            product_shell_stage() == FL_SHELL_STAGE_INBOX) {
             (void)product_stage_on_red_record();
         }
     }

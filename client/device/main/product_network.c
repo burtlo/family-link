@@ -1,5 +1,6 @@
 #include "product_network.h"
 
+#include "product_hardware_buttons.h"
 #include "product_login_fw.h"
 
 #include "bsp/esp-box-3.h"
@@ -117,7 +118,9 @@ static bool join_configured_wifi(void)
         memset(&wcfg, 0, sizeof(wcfg));
         (void)esp_wifi_set_ps(WIFI_PS_NONE);
         s_wifi_started = true;
-        (void)bsp_display_backlight_on();
+        if (!product_hardware_buttons_mute_latched()) {
+            (void)bsp_display_backlight_on();
+        }
     }
     bits = xEventGroupWaitBits(s_wifi_events, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, pdMS_TO_TICKS(45000));
     if ((bits & WIFI_CONNECTED_BIT) == 0 && s_last_disconnect_reason != 0) {

@@ -7,7 +7,7 @@ idf_component_register(
     REQUIRES product_shell fl_product_login fl_product_inbox fl_product_record fl_product_send
              fl_product_volume
              esp-box-3 esp_system
-             esp_hw_support
+             esp_hw_support driver
              esp_app_format esp_timer
              esp_http_client esp_wifi esp_netif esp_event nvs_flash)
 if(NOT FAMILY_BUILD_ID)

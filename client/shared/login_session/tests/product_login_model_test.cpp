@@ -1039,6 +1039,195 @@ int test_emit()
     return g_failures;
 }
 
+int test_wrong_pin_keypad()
+{
+    fl_product_login::SessionWriter session;
+    fl_product_login::PinResult result;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    result = pin_body(&session, fl_product_login::kPinOutcomeWrong, 200, 1, 1);
+    session.deliver_pin_completion(result, session.now_ms());
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseWrong);
+    CHECK(session.keypad_open());
+    CHECK(strcmp(session.visible_copy(), "wrong pin") == 0);
+    CHECK(session.enter_pin_digit('5', session.now_ms()));
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseEntry);
+    CHECK(session.digit_len() == 1);
+    return g_failures;
+}
+
+int test_cooldown_exit_roster()
+{
+    fl_product_login::SessionWriter session;
+    fl_product_login::SessionWriter dark;
+    int i;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    for (i = 0; i < 5; ++i) {
+        submit_wrong_pin(&session);
+    }
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseCooldown);
+    session.advance_to(session.now_ms() + session.cooldown_remaining_ms());
+    CHECK(session.cooldown_remaining_ms() == 0);
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseIdle);
+    CHECK(session.stage() == fl_product_login::kStageRoster);
+    CHECK(session.digit_len() == 0);
+    establish(&dark);
+    dark.select_pin_user("su-01", dark.now_ms());
+    for (i = 0; i < 5; ++i) {
+        submit_wrong_pin(&dark);
+    }
+    dark.set_wifi(false, dark.now_ms());
+    dark.advance_to(dark.now_ms() + dark.cooldown_remaining_ms());
+    CHECK(dark.pin_phase() == fl_product_login::kPinPhaseIdle);
+    CHECK(dark.stage() == fl_product_login::kStageWifiUnavailable);
+    return g_failures;
+}
+
+int test_boot_ignored_during_status()
+{
+    fl_product_login::SessionWriter session;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.set_wifi(false, session.now_ms());
+    CHECK(session.pin_lower_is_status());
+    CHECK(session.digit_len() == 2);
+    session.press_boot(session.now_ms());
+    CHECK(session.digit_len() == 2);
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseEntry);
+    CHECK(session.keypad_open() == false);
+    return g_failures;
+}
+
+int test_pin_idle_pauses()
+{
+    fl_product_login::SessionWriter session;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('1', session.now_ms());
+    session.advance_to(session.now_ms() + 20000);
+    CHECK(session.digit_len() == 1);
+    session.set_wifi(false, session.now_ms());
+    session.advance_to(session.now_ms() + 50000);
+    CHECK(session.digit_len() == 1);
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseEntry);
+    session.set_wifi(true, session.now_ms());
+    CHECK(session.pin_lower_is_status());
+    complete_current(&session, roster(kEight, 8, 1, 200, 1), session.now_ms());
+    CHECK(session.pin_lower_is_status() == false);
+    CHECK(session.digit_len() == 1);
+    session.advance_to(session.now_ms() + 39000);
+    CHECK(session.digit_len() == 1);
+    session.advance_to(session.now_ms() + 2000);
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseIdle);
+    CHECK(session.digit_len() == 0);
+    return g_failures;
+}
+
+int test_login_recency()
+{
+    fl_product_login::SessionWriter session;
+    fl_product_login::PinResult result;
+    g_failures = 0;
+    establish(&session);
+    CHECK(strcmp(session.user_at(0), "su-01") == 0);
+    session.select_pin_user("su-08", session.now_ms());
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    result = pin_body(&session, fl_product_login::kPinOutcomeSuccess, 200, 1, 1);
+    session.deliver_pin_completion(result, session.now_ms());
+    CHECK(session.signed_in() == 1);
+    session.mute(session.now_ms());
+    session.unmute(session.now_ms());
+    complete_current(&session, roster(kEight, 8, 1, 200, 1), session.now_ms());
+    CHECK(strcmp(session.user_at(0), "su-08") == 0);
+    CHECK(strcmp(session.user_at(1), "su-01") == 0);
+    CHECK(strcmp(session.user_at(7), "su-07") == 0);
+    return g_failures;
+}
+
+int test_unknown_user_refresh()
+{
+    fl_product_login::SessionWriter session;
+    fl_product_login::PinResult result;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    result = pin_body(&session, fl_product_login::kPinOutcomeUnknownUser, 200, 1, 1);
+    session.deliver_pin_completion(result, session.now_ms());
+    CHECK(session.roster_updating() == 1);
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseIdle);
+    CHECK(session.selectable_cards() == 0);
+    CHECK(session.roster_inflight());
+    complete_current(&session, roster(kEight, 8, 1, 503, 1), session.now_ms());
+    CHECK(session.roster_updating() == 0);
+    CHECK(session.stage() == fl_product_login::kStageConnecting);
+    CHECK(session.connecting_backoff_index() >= 1);
+    return g_failures;
+}
+
+int test_failed_body_backoff()
+{
+    fl_product_login::SessionWriter session;
+    g_failures = 0;
+    session.boot(0, true);
+    CHECK(session.roster_inflight());
+    CHECK(session.roster_request_timeout_ms() == fl_product_login::kConnectingRequestTimeoutMs);
+    complete_current(&session, roster(kEight, 0, 0, 0, 0), session.now_ms());
+    CHECK(session.roster_inflight() == false);
+    CHECK(session.stage() == fl_product_login::kStageConnecting);
+    CHECK(session.connecting_backoff_index() == 1);
+    session.advance_to(session.now_ms() + 1000);
+    CHECK(session.roster_inflight());
+    CHECK(session.roster_request_timeout_ms() == fl_product_login::kConnectingRequestTimeoutMs);
+    return g_failures;
+}
+
+int test_pin_retry_wait()
+{
+    fl_product_login::SessionWriter session;
+    int64_t waited;
+    uint64_t operation_id;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    operation_id = session.pin_operation_id();
+    CHECK(session.pin_transport_ready());
+    session.advance_to(session.now_ms() + fl_product_login::kPinAttemptTimeoutMs);
+    CHECK(session.pin_operation_id() == operation_id);
+    CHECK(session.pin_submitted());
+    CHECK(session.pin_transport_ready() == false);
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseChecking);
+    CHECK(strcmp(session.visible_copy(), "checking...") == 0);
+    waited = session.now_ms();
+    session.advance_to(waited + fl_product_login::kPinRetryDelay0Ms - 1);
+    CHECK(session.pin_transport_ready() == false);
+    session.advance_to(waited + fl_product_login::kPinRetryDelay0Ms);
+    CHECK(session.pin_transport_ready());
+    CHECK(session.pin_attempt() == 2);
+    return g_failures;
+}
+
 } /* namespace */
 
 int main(int argc, char **argv)
@@ -1089,6 +1278,22 @@ int main(int argc, char **argv)
         failures = test_pin_apply(argv[2], argv[3]);
     } else if (strcmp(name, "card-fallback") == 0) {
         failures = test_card_fallback();
+    } else if (strcmp(name, "wrong-pin-keypad") == 0) {
+        failures = test_wrong_pin_keypad();
+    } else if (strcmp(name, "cooldown-exit") == 0) {
+        failures = test_cooldown_exit_roster();
+    } else if (strcmp(name, "boot-status") == 0) {
+        failures = test_boot_ignored_during_status();
+    } else if (strcmp(name, "pin-idle-pause") == 0) {
+        failures = test_pin_idle_pauses();
+    } else if (strcmp(name, "login-recency") == 0) {
+        failures = test_login_recency();
+    } else if (strcmp(name, "unknown-refresh") == 0) {
+        failures = test_unknown_user_refresh();
+    } else if (strcmp(name, "body-backoff") == 0) {
+        failures = test_failed_body_backoff();
+    } else if (strcmp(name, "pin-retry-wait") == 0) {
+        failures = test_pin_retry_wait();
     } else if (strcmp(name, "http-apply") == 0) {
         if (argc < 5) {
             fprintf(stderr, "usage: http-apply <perform_ok> <http_status> <body-file>\n");

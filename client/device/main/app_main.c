@@ -9,6 +9,7 @@
 #include "lvgl.h"
 #include "nvs_flash.h"
 #include "product_display.h"
+#include "product_hardware_buttons.h"
 #include "product_login_fw.h"
 #include "product_network.h"
 #include "product_shell_fw.h"
@@ -26,7 +27,9 @@ void app_main(void)
         return;
     }
     (void)bsp_display_brightness_set(80);
-    (void)bsp_display_backlight_on();
+    if (!product_hardware_buttons_mute_latched()) {
+        (void)bsp_display_backlight_on();
+    }
     ESP_LOGI("bootstrap", "V2_BOOTSTRAP_READY build=%s", FAMILY_BUILD_ID);
 
     esp_err_t nvs = nvs_flash_init();
@@ -60,7 +63,9 @@ void app_main(void)
     }
     lv_refr_now(lv_display_get_default());
     bsp_display_unlock();
-    (void)bsp_display_backlight_on();
+    if (!product_hardware_buttons_mute_latched()) {
+        (void)bsp_display_backlight_on();
+    }
     ESP_LOGI("bootstrap", "product_ui_ready");
     product_network_start();
 idle:

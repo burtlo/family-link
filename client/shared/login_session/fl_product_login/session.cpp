@@ -104,6 +104,7 @@ SessionWriter::SessionWriter()
     overflow_terminals_ = 0;
     rejected_results_ = 0;
     copy_text(session_id_, 16, "s-boot");
+    boot_id_[0] = 0;
     reset_runtime();
 }
 
@@ -147,6 +148,13 @@ void SessionWriter::reset_runtime()
     connecting_retry_armed_ = false;
     connecting_backoff_index_ = 0;
     connecting_retry_due_ms_ = 0;
+    roster_timeout_ms_ = kRequestTimeoutMs;
+    server_unavailable_ = false;
+    roster_updating_ = false;
+    hangout_known_ = false;
+    recent_count_ = 0;
+    copy_text(health_reason_, 16, "boot");
+    memset(recent_ids_, 0, sizeof(recent_ids_));
 }
 
 void SessionWriter::apply_stage(int stage, const char *trigger)
@@ -210,7 +218,9 @@ bool SessionWriter::record_terminal(uint64_t operation_id, uint32_t attempt, con
                                     const char *terminal)
 {
     int i;
-    TerminalRecord record;
+    TerminalRecord *record;
+    /* The session owner is the only caller (the LVGL task on device). Fill the
+       event slot in place so a TerminalRecord does not also sit on that stack. */
     if (operation_id == 0 || terminal == 0) {
         return false;
     }
@@ -222,28 +232,28 @@ bool SessionWriter::record_terminal(uint64_t operation_id, uint32_t attempt, con
     if (event_count_ >= kMaxEvents) {
         return false;
     }
-    fill_snapshot(&record);
-    record.operation_id = operation_id;
-    record.attempt = attempt;
-    record.terminal_count = 1;
-    record.stage_unchanged = (stage_ == stage_at_roster_start_) ? 1 : 0;
-    copy_text(record.kind, 16, kind);
-    copy_text(record.terminal, 16, terminal);
+    record = &events_[event_count_];
+    fill_snapshot(record);
+    record->operation_id = operation_id;
+    record->attempt = attempt;
+    record->terminal_count = 1;
+    record->stage_unchanged = (stage_ == stage_at_roster_start_) ? 1 : 0;
+    copy_text(record->kind, 16, kind);
+    copy_text(record->terminal, 16, terminal);
     if (strcmp(kind, "pin") == 0 && pin_frozen_user_[0] != 0) {
-        copy_text(record.user_id, kMaxId, pin_frozen_user_);
+        copy_text(record->user_id, kMaxId, pin_frozen_user_);
     }
     if (strcmp(kind, "pin") == 0 && pin_scenario_[0] != 0) {
-        copy_text(record.scenario, 32, pin_scenario_);
+        copy_text(record->scenario, 32, pin_scenario_);
         pin_scenario_[0] = 0;
     } else {
-        copy_text(record.scenario, 32, armed_scenario_[0] ? armed_scenario_ : "lab-step");
+        copy_text(record->scenario, 32, armed_scenario_[0] ? armed_scenario_ : "lab-step");
         armed_scenario_[0] = 0;
     }
     if (scoped_kind_name(kind)) {
-        stamp_scoped(&record, kind);
+        stamp_scoped(record, kind);
     }
-    copy_text(record.cls, 16, scenario_class(record.scenario));
-    events_[event_count_] = record;
+    copy_text(record->cls, 16, scenario_class(record->scenario));
     event_count_ += 1;
     return true;
 }
@@ -260,8 +270,10 @@ void SessionWriter::begin_roster(int64_t now_ms, bool periodic, bool hold)
     roster_operation_id_ = next_operation_id_;
     next_operation_id_ += 1;
     roster_attempt_ = 1;
-    roster_deadline_ms_ = now_ms + (stage_ == kStageConnecting ? kConnectingRequestTimeoutMs
-                                                               : kRequestTimeoutMs);
+    roster_timeout_ms_ = (stage_ == kStageConnecting || (server_unavailable_ && pin_holds_input() && wifi_up_))
+                             ? kConnectingRequestTimeoutMs
+                             : kRequestTimeoutMs;
+    roster_deadline_ms_ = now_ms + roster_timeout_ms_;
     stage_at_roster_start_ = stage_;
     roster_touch_ = 0;
     roster_timer_armed_ = false;
@@ -269,8 +281,14 @@ void SessionWriter::begin_roster(int64_t now_ms, bool periodic, bool hold)
 
 void SessionWriter::begin_health(int64_t now_ms, const char *trigger)
 {
-    (void)trigger;
     now_ms_ = now_ms;
+    if (trigger != 0 &&
+        (strcmp(trigger, "boot") == 0 || strcmp(trigger, "periodic") == 0 ||
+         strcmp(trigger, "connectivity") == 0)) {
+        copy_text(health_reason_, 16, trigger);
+    } else {
+        copy_text(health_reason_, 16, "periodic");
+    }
     if (health_unacked_) {
         missed_beats_ += 1;
         if (missed_beats_ >= kStaleAfterMissedBeats) {
@@ -294,7 +312,10 @@ void SessionWriter::clear_roster_inflight()
 
 void SessionWriter::boot(int64_t now_ms, bool wifi_up)
 {
+    static uint32_t boot_serial = 1;
     reset_runtime();
+    snprintf(boot_id_, sizeof(boot_id_), "boot-%08lx", (unsigned long)boot_serial);
+    boot_serial += 1;
     now_ms_ = now_ms;
     wifi_up_ = wifi_up;
     last_user_activity_ms_ = now_ms;
@@ -354,10 +375,20 @@ void SessionWriter::set_wifi(bool up, int64_t now_ms)
             clear_roster_inflight();
         }
         roster_timer_armed_ = false;
+        server_unavailable_ = false;
         if (stage_ != kStageMuted && !pin_holds_input()) {
             apply_stage(kStageWifiUnavailable, "station_down");
             selectable_cards_ = 0;
         }
+        sync_pin_idle_hold();
+        return;
+    }
+    if (stage_ != kStageMuted && pin_holds_input()) {
+        server_unavailable_ = true;
+        if (!roster_inflight_) {
+            begin_roster(now_ms, false, false);
+        }
+        sync_pin_idle_hold();
         return;
     }
     if (stage_ != kStageMuted && !pin_holds_input()) {
@@ -468,34 +499,48 @@ void SessionWriter::note_touch_during_wait()
     note_user_activity(now_ms_);
 }
 
+void SessionWriter::arm_connecting_backoff()
+{
+    static const int kWaitMs[] = {1000, 2000, 4000, 30000};
+    int idx = connecting_backoff_index_;
+    if (idx > 3) {
+        idx = 3;
+    }
+    connecting_retry_due_ms_ = now_ms_ + kWaitMs[idx];
+    connecting_retry_armed_ = true;
+    connecting_backoff_index_ = idx < 3 ? idx + 1 : 3;
+}
+
 void SessionWriter::note_transport_failure()
 {
     uint64_t operation_id;
     uint32_t attempt;
+    bool hold;
     if (!roster_inflight_) {
         return;
     }
-    if (roster_periodic_ && roster_attempt_ == 1 && !roster_hold_) {
+    if (roster_periodic_ && roster_attempt_ == 1 && !roster_hold_ && !pin_holds_input()) {
         roster_attempt_ = 2;
+        roster_timeout_ms_ = kRequestTimeoutMs;
         roster_deadline_ms_ = now_ms_ + kRequestTimeoutMs;
         return;
     }
     operation_id = roster_operation_id_;
     attempt = roster_attempt_;
+    hold = roster_hold_;
     clear_roster_inflight();
-    if (stage_ != kStageMuted && stage_ != kStageWifiUnavailable && !pin_holds_input()) {
+    if (pin_holds_input() && wifi_up_ && stage_ != kStageMuted) {
+        server_unavailable_ = true;
+        roster_updating_ = false;
+        if (!hold) {
+            arm_connecting_backoff();
+        }
+        sync_pin_idle_hold();
+    } else if (!hold && stage_ != kStageMuted && stage_ != kStageWifiUnavailable && !pin_holds_input()) {
         apply_stage(kStageConnecting, "transport_failed");
         selectable_cards_ = 0;
-        if (!roster_periodic_) {
-            static const int kWaitMs[] = {1000, 2000, 4000, 30000};
-            int idx = connecting_backoff_index_;
-            if (idx > 3) {
-                idx = 3;
-            }
-            connecting_retry_due_ms_ = now_ms_ + kWaitMs[idx];
-            connecting_retry_armed_ = true;
-            connecting_backoff_index_ = idx < 3 ? idx + 1 : 3;
-        }
+        roster_updating_ = false;
+        arm_connecting_backoff();
     }
     record_terminal(operation_id, attempt, "roster", "failure");
 }
@@ -612,30 +657,49 @@ void SessionWriter::preserve_focus(const RosterResult &result)
     }
 }
 
-void SessionWriter::apply_roster_while_pin(const RosterResult &result)
+void SessionWriter::apply_roster_while_pin(RosterResult &result)
 {
     uint64_t operation_id = result.operation_id;
     uint32_t attempt = roster_attempt_;
+    bool hold = roster_hold_;
     valid_ = result.valid;
     if (!result.parse_ok || result.http_status != 200 || result.valid == 0) {
         clear_roster_inflight();
+        if (wifi_up_ && stage_ != kStageMuted) {
+            server_unavailable_ = true;
+            if (!hold) {
+                arm_connecting_backoff();
+            }
+        }
+        sync_pin_idle_hold();
         record_terminal(operation_id, attempt, "roster", "failure");
         return;
     }
+    order_roster(&result);
+    server_unavailable_ = false;
+    hangout_known_ = true;
+    roster_updating_ = false;
+    connecting_backoff_index_ = 0;
+    connecting_retry_armed_ = false;
     if (result.user_count > 0) {
         preserve_focus(result);
         remember_users(result);
-        selectable_cards_ = user_count_;
+        if (pin_phase_ != kPinPhaseCooldown) {
+            selectable_cards_ = user_count_;
+        }
+    } else {
+        user_count_ = 0;
     }
     clear_roster_inflight();
     if (stage_ == kStageRoster || stage_ == kStageEmptyHangout) {
         next_roster_due_ms_ = now_ms_ + roster_period_ms();
         roster_timer_armed_ = true;
     }
+    sync_pin_idle_hold();
     record_terminal(operation_id, attempt, "roster", "success");
 }
 
-void SessionWriter::apply_roster_body(const RosterResult &result)
+void SessionWriter::apply_roster_body(RosterResult &result)
 {
     bool unchanged;
     uint64_t operation_id = result.operation_id;
@@ -644,8 +708,16 @@ void SessionWriter::apply_roster_body(const RosterResult &result)
         return;
     }
     uint32_t attempt = roster_attempt_;
+    bool hold = roster_hold_;
     valid_ = result.valid;
     if (!result.parse_ok || result.http_status != 200 || result.valid == 0) {
+        bool transportish = result.http_status != 200 || result.parse_ok == 0;
+        if (roster_periodic_ && roster_attempt_ == 1 && !hold && transportish) {
+            roster_attempt_ = 2;
+            roster_timeout_ms_ = kRequestTimeoutMs;
+            roster_deadline_ms_ = now_ms_ + kRequestTimeoutMs;
+            return;
+        }
         clear_roster_inflight();
         if (result.valid == 0 && result.http_status == 200 && result.parse_ok) {
             if (stage_ != kStageMuted && stage_ != kStageWifiUnavailable) {
@@ -655,9 +727,18 @@ void SessionWriter::apply_roster_body(const RosterResult &result)
         } else if (stage_ == kStageConnecting) {
             selectable_cards_ = 0;
         }
+        if (roster_updating_ && stage_ != kStageMuted && stage_ != kStageWifiUnavailable) {
+            roster_updating_ = false;
+            apply_stage(kStageConnecting, "unknown_refresh_failed");
+            selectable_cards_ = 0;
+        }
+        if (!hold && stage_ == kStageConnecting && stage_ != kStageMuted && stage_ != kStageWifiUnavailable) {
+            arm_connecting_backoff();
+        }
         record_terminal(operation_id, attempt, "roster", "failure");
         return;
     }
+    order_roster(&result);
     unchanged = same_membership(result);
     if (result.user_count <= 0) {
         apply_stage(kStageEmptyHangout, "empty_roster");
@@ -680,6 +761,9 @@ void SessionWriter::apply_roster_body(const RosterResult &result)
     if (!unchanged) {
         last_roster_change_ms_ = now_ms_;
     }
+    hangout_known_ = true;
+    server_unavailable_ = false;
+    roster_updating_ = false;
     clear_roster_inflight();
     connecting_backoff_index_ = 0;
     connecting_retry_armed_ = false;
@@ -743,8 +827,9 @@ void SessionWriter::on_roster_timeout()
     if (!roster_inflight_ || now_ms_ < roster_deadline_ms_) {
         return;
     }
-    if (roster_periodic_ && roster_attempt_ == 1 && !roster_hold_) {
+    if (roster_periodic_ && roster_attempt_ == 1 && !roster_hold_ && !pin_holds_input()) {
         roster_attempt_ = 2;
+        roster_timeout_ms_ = kRequestTimeoutMs;
         roster_deadline_ms_ = now_ms_ + kRequestTimeoutMs;
         return;
     }
@@ -752,20 +837,20 @@ void SessionWriter::on_roster_timeout()
     attempt = roster_attempt_;
     hold = roster_hold_;
     clear_roster_inflight();
-    if (!hold && stage_ != kStageMuted && stage_ != kStageWifiUnavailable && !pin_holds_input()) {
+    if (pin_holds_input() && wifi_up_ && stage_ != kStageMuted) {
+        server_unavailable_ = true;
+        if (!hold) {
+            arm_connecting_backoff();
+        }
+        sync_pin_idle_hold();
+    } else if (!hold && stage_ != kStageMuted && stage_ != kStageWifiUnavailable && !pin_holds_input()) {
         if (stage_ == kStageRoster || stage_ == kStageEmptyHangout) {
             apply_stage(kStageConnecting, "roster_timeout");
             selectable_cards_ = 0;
         }
-        if (stage_ == kStageConnecting && !roster_periodic_) {
-            static const int kWaitMs[] = {1000, 2000, 4000, 30000};
-            int idx = connecting_backoff_index_;
-            if (idx > 3) {
-                idx = 3;
-            }
-            connecting_retry_due_ms_ = now_ms_ + kWaitMs[idx];
-            connecting_retry_armed_ = true;
-            connecting_backoff_index_ = idx < 3 ? idx + 1 : 3;
+        if (stage_ == kStageConnecting) {
+            roster_updating_ = false;
+            arm_connecting_backoff();
         }
     }
     record_terminal(operation_id, attempt, "roster", "timed_out");
@@ -935,6 +1020,121 @@ int SessionWriter::user_uses_initials_fallback_at(int index) const
 
 int SessionWriter::connecting_backoff_index() const { return connecting_backoff_index_; }
 bool SessionWriter::health_ack_pending() const { return health_unacked_; }
+uint64_t SessionWriter::health_operation_id() const { return health_operation_id_; }
+const char *SessionWriter::health_reason() const { return health_reason_; }
+const char *SessionWriter::boot_id() const { return boot_id_; }
+int SessionWriter::roster_request_timeout_ms() const
+{
+    return roster_timeout_ms_ > 0 ? roster_timeout_ms_ : kRequestTimeoutMs;
+}
+int SessionWriter::roster_updating() const { return roster_updating_ ? 1 : 0; }
+int SessionWriter::hangout_known() const { return hangout_known_ ? 1 : 0; }
+
+void SessionWriter::order_roster(RosterResult *result)
+{
+    int order[kMaxUsers];
+    int used[kMaxUsers];
+    int count;
+    int n = 0;
+    int i;
+    int r;
+    int w = 0;
+    if (result == 0) {
+        return;
+    }
+    count = result->user_count;
+    if (count > kMaxUsers) {
+        count = kMaxUsers;
+    }
+    if (count < 0) {
+        count = 0;
+    }
+    for (i = 0; i < count; ++i) {
+        used[i] = 0;
+    }
+    for (r = 0; r < recent_count_; ++r) {
+        for (i = 0; i < count; ++i) {
+            if (!used[i] && text_eq(result->users[i].id, recent_ids_[r])) {
+                order[n] = i;
+                n += 1;
+                used[i] = 1;
+                break;
+            }
+        }
+    }
+    for (i = 0; i < count; ++i) {
+        if (!used[i]) {
+            order[n] = i;
+            n += 1;
+        }
+    }
+    for (r = 0; r < recent_count_; ++r) {
+        int present = 0;
+        for (i = 0; i < count; ++i) {
+            if (text_eq(result->users[i].id, recent_ids_[r])) {
+                present = 1;
+            }
+        }
+        if (present) {
+            if (w != r) {
+                copy_text(recent_ids_[w], kMaxId, recent_ids_[r]);
+            }
+            w += 1;
+        }
+    }
+    recent_count_ = w;
+    for (i = 0; i < n; ++i) {
+        int want = order[i];
+        int j;
+        UserId tmp;
+        if (want == i) {
+            continue;
+        }
+        tmp = result->users[i];
+        result->users[i] = result->users[want];
+        result->users[want] = tmp;
+        for (j = i + 1; j < n; ++j) {
+            if (order[j] == i) {
+                order[j] = want;
+                break;
+            }
+        }
+    }
+}
+
+void SessionWriter::remember_login(const char *user_id)
+{
+    int i;
+    int found = -1;
+    char saved[kMaxId];
+    if (user_id == 0 || user_id[0] == 0) {
+        return;
+    }
+    for (i = 0; i < recent_count_; ++i) {
+        if (text_eq(recent_ids_[i], user_id)) {
+            found = i;
+            break;
+        }
+    }
+    if (found == 0) {
+        return;
+    }
+    if (found > 0) {
+        copy_text(saved, kMaxId, recent_ids_[found]);
+        for (i = found; i > 0; --i) {
+            copy_text(recent_ids_[i], kMaxId, recent_ids_[i - 1]);
+        }
+        copy_text(recent_ids_[0], kMaxId, saved);
+        return;
+    }
+    if (recent_count_ < kMaxUsers) {
+        recent_count_ += 1;
+    }
+    for (i = recent_count_ - 1; i > 0; --i) {
+        copy_text(recent_ids_[i], kMaxId, recent_ids_[i - 1]);
+    }
+    copy_text(recent_ids_[0], kMaxId, user_id);
+}
 
 int SessionWriter::selectable_cards() const { return selectable_cards_; }
 int SessionWriter::stale() const { return stale_; }

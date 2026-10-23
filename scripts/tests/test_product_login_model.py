@@ -103,6 +103,30 @@ class ProductLoginModelTests(unittest.TestCase):
     def test_p4_card_background_fallback(self):
         self._run("card-fallback")
 
+    def test_p4_wrong_pin_keypad_reopens(self):
+        self._run("wrong-pin-keypad")
+
+    def test_p4_cooldown_returns_to_roster(self):
+        self._run("cooldown-exit")
+
+    def test_p4_boot_ignored_during_status(self):
+        self._run("boot-status")
+
+    def test_p4_partial_pin_idle_pauses(self):
+        self._run("pin-idle-pause")
+
+    def test_p4_login_recency_order(self):
+        self._run("login-recency")
+
+    def test_p4_unknown_user_refresh(self):
+        self._run("unknown-refresh")
+
+    def test_p4_failed_body_arms_backoff(self):
+        self._run("body-backoff")
+
+    def test_p4_pin_retry_honors_delay(self):
+        self._run("pin-retry-wait")
+
 
 if __name__ == "__main__":
     unittest.main()
