@@ -109,6 +109,21 @@ class ProductLoginModelTests(unittest.TestCase):
     def test_p4_wrong_pin_wire_json(self):
         self._run("wrong-pin-wire")
 
+    def test_p4_wrong_pin_twice_no_connecting(self):
+        self._run("wrong-pin-twice")
+
+    def test_p4_wrong_pin_then_success_same_user(self):
+        self._run("wrong-pin-then-success")
+
+    def test_p4_wrong_pin_stale_refused_no_roster_eject(self):
+        self._run("wrong-pin-stale-refused")
+
+    def test_p4_pin_refused_after_wrong_pin_stays_on_pin(self):
+        self._run("pin-refused-after-wrong")
+
+    def test_p4_pin_refused_remaps_once_then_wrong_pin(self):
+        self._run("pin-refused-remap-wrong")
+
     def test_p4_pin_refused_recovery_without_mute(self):
         self._run("pin-refused-recovery")
 

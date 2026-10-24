@@ -1089,6 +1089,204 @@ int test_wrong_pin_wire_json()
     return g_failures;
 }
 
+int test_wrong_pin_twice_no_connecting()
+{
+    fl_product_login::SessionWriter session;
+    uint64_t first_id;
+    uint64_t second_id;
+    fl_product_login::PinResult wrong1;
+    fl_product_login::PinResult wrong2;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    first_id = session.pin_operation_id();
+    CHECK(session.pin_http_epoch() == 1);
+    wrong1 = pin_body(&session, fl_product_login::kPinOutcomeWrong, 200, 1, 1);
+    wrong1.operation_id = first_id;
+    session.deliver_pin_completion(wrong1, session.now_ms());
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseWrong);
+    CHECK(session.wrong_count() == 1);
+    CHECK(session.pin_operation_id() == 0);
+    session.advance_to(session.now_ms() + fl_product_login::kWrongPinCopyMs);
+    session.enter_pin_digit('8', session.now_ms());
+    session.enter_pin_digit('8', session.now_ms());
+    session.enter_pin_digit('8', session.now_ms());
+    session.enter_pin_digit('8', session.now_ms());
+    second_id = session.pin_operation_id();
+    CHECK(second_id != first_id);
+    CHECK(session.pin_http_epoch() == 2);
+    CHECK(session.pin_submitted());
+    CHECK(session.pin_lower_is_status() == false);
+    wrong2 = pin_body(&session, fl_product_login::kPinOutcomeWrong, 200, 1, 1);
+    wrong2.operation_id = second_id;
+    session.deliver_pin_completion(wrong2, session.now_ms());
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseWrong);
+    CHECK(strcmp(session.visible_copy(), "wrong pin") == 0);
+    CHECK(session.wrong_count() == 2);
+    CHECK(session.stage() == fl_product_login::kStageRoster);
+    CHECK(session.roster_inflight() == false);
+    return g_failures;
+}
+
+int test_wrong_pin_then_success()
+{
+    fl_product_login::SessionWriter session;
+    uint64_t first_id;
+    uint64_t second_id;
+    fl_product_login::PinResult wrong;
+    fl_product_login::PinResult ok;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    first_id = session.pin_operation_id();
+    wrong = pin_body(&session, fl_product_login::kPinOutcomeWrong, 200, 1, 1);
+    wrong.operation_id = first_id;
+    session.deliver_pin_completion(wrong, session.now_ms());
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseWrong);
+    CHECK(strcmp(session.visible_copy(), "wrong pin") == 0);
+    CHECK(session.pin_operation_id() == 0);
+    CHECK(session.wrong_count() == 1);
+    session.advance_to(session.now_ms() + fl_product_login::kWrongPinCopyMs);
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    second_id = session.pin_operation_id();
+    CHECK(second_id != 0);
+    CHECK(second_id != first_id);
+    CHECK(session.pin_submitted());
+    CHECK(session.stage() == fl_product_login::kStageRoster);
+    ok = pin_body(&session, fl_product_login::kPinOutcomeSuccess, 200, 1, 1);
+    ok.operation_id = second_id;
+    session.deliver_pin_completion(ok, session.now_ms());
+    CHECK(session.signed_in() != 0);
+    CHECK(session.stage() == fl_product_login::kStageSignedIn);
+    CHECK(session.authenticated() == 1);
+    CHECK(strcmp(session.terminal_for(second_id), "success") == 0);
+    CHECK(session.roster_inflight() == false);
+    return g_failures;
+}
+
+int test_wrong_pin_then_stale_refused_no_roster_eject()
+{
+    fl_product_login::SessionWriter session;
+    uint64_t first_id;
+    uint64_t second_id;
+    const char *conflict =
+        "{\"schema\":\"fl.error/2\",\"code\":\"identity_conflict\",\"message\":\"identity_conflict\","
+        "\"retryable\":false}";
+    fl_product_login::PinResult wrong;
+    fl_product_login::PinResult refused;
+    fl_product_login::PinResult ok;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    first_id = session.pin_operation_id();
+    wrong = pin_body(&session, fl_product_login::kPinOutcomeWrong, 200, 1, 1);
+    wrong.operation_id = first_id;
+    session.deliver_pin_completion(wrong, session.now_ms());
+    session.advance_to(session.now_ms() + fl_product_login::kWrongPinCopyMs);
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    second_id = session.pin_operation_id();
+    CHECK(second_id != first_id);
+    refused = fl_product_login::deliver_classified_pin(
+        &session, first_id, session.pin_key_generation(), session.session_id(), "su-01", 1, 409, conflict,
+        (int)strlen(conflict), session.now_ms());
+    CHECK(refused.outcome == fl_product_login::kPinOutcomeRefused);
+    CHECK(strcmp(session.terminal_for(first_id), "failure") == 0);
+    CHECK(session.pin_submitted());
+    CHECK(session.pin_operation_id() == second_id);
+    CHECK(session.roster_inflight() == false);
+    CHECK(strcmp(session.focus_id(), "su-01") == 0);
+    ok = pin_body(&session, fl_product_login::kPinOutcomeSuccess, 200, 1, 1);
+    ok.operation_id = second_id;
+    session.deliver_pin_completion(ok, session.now_ms());
+    CHECK(session.stage() == fl_product_login::kStageSignedIn);
+    return g_failures;
+}
+
+int test_pin_refused_after_wrong_pin_stays_on_pin()
+{
+    fl_product_login::SessionWriter session;
+    uint64_t second_id;
+    const char *conflict =
+        "{\"schema\":\"fl.error/2\",\"code\":\"identity_conflict\",\"message\":\"identity_conflict\","
+        "\"retryable\":false}";
+    fl_product_login::PinResult classified;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    submit_wrong_pin(&session);
+    session.advance_to(session.now_ms() + fl_product_login::kWrongPinCopyMs);
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    second_id = session.pin_operation_id();
+    classified = fl_product_login::deliver_classified_pin(
+        &session, second_id, session.pin_key_generation(), session.session_id(), "su-01", 1, 409, conflict,
+        (int)strlen(conflict), session.now_ms());
+    CHECK(classified.outcome == fl_product_login::kPinOutcomeRefused);
+    CHECK(session.roster_inflight() == false);
+    CHECK(session.pin_lower_is_status());
+    CHECK(strcmp(session.focus_id(), "su-01") == 0);
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseEntry);
+    return g_failures;
+}
+
+int test_pin_refused_remaps_once_then_wrong_pin()
+{
+    fl_product_login::SessionWriter session;
+    uint64_t first_id;
+    uint64_t second_id;
+    const char *conflict =
+        "{\"schema\":\"fl.error/2\",\"code\":\"identity_conflict\",\"message\":\"identity_conflict\","
+        "\"retryable\":false}";
+    fl_product_login::PinResult refused;
+    fl_product_login::PinResult wrong;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    session.enter_pin_digit('9', session.now_ms());
+    first_id = session.pin_operation_id();
+    refused = fl_product_login::deliver_classified_pin(
+        &session, first_id, session.pin_key_generation(), session.session_id(), "su-01", 1, 409, conflict,
+        (int)strlen(conflict), session.now_ms());
+    CHECK(refused.outcome == fl_product_login::kPinOutcomeRefused);
+    CHECK(session.pin_submitted());
+    second_id = session.pin_operation_id();
+    CHECK(second_id != 0);
+    CHECK(second_id != first_id);
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseChecking);
+    CHECK(session.stage() == fl_product_login::kStageRoster);
+    CHECK(session.roster_inflight() == false);
+    wrong = pin_body(&session, fl_product_login::kPinOutcomeWrong, 200, 1, 1);
+    wrong.operation_id = second_id;
+    session.deliver_pin_completion(wrong, session.now_ms());
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseWrong);
+    CHECK(strcmp(session.visible_copy(), "wrong pin") == 0);
+    CHECK(session.wrong_count() == 1);
+    return g_failures;
+}
+
 int test_pin_refused_terminal_and_new_key()
 {
     fl_product_login::SessionWriter session;
@@ -1112,17 +1310,12 @@ int test_pin_refused_terminal_and_new_key()
         &session, first_id, session.pin_key_generation(), session.session_id(), "su-01", 1, 409, conflict,
         (int)strlen(conflict), session.now_ms());
     CHECK(classified.outcome == fl_product_login::kPinOutcomeRefused);
-    CHECK(session.pin_submitted() == false);
-    CHECK(session.pin_operation_id() == 0);
-    CHECK(session.stage() == fl_product_login::kStageRoster);
-    CHECK(session.roster_inflight());
+    CHECK(session.pin_submitted());
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseChecking);
+    CHECK(session.roster_inflight() == false);
     CHECK(session.pin_attempt() == 1);
     CHECK(strcmp(session.terminal_for(first_id), "failure") == 0);
     CHECK(strcmp(session.focus_id(), "su-01") == 0);
-    CHECK(session.enter_pin_digit('5', session.now_ms()));
-    CHECK(session.enter_pin_digit('6', session.now_ms()));
-    CHECK(session.enter_pin_digit('7', session.now_ms()));
-    CHECK(session.enter_pin_digit('8', session.now_ms()));
     second_id = session.pin_operation_id();
     CHECK(second_id != 0);
     CHECK(second_id != first_id);
@@ -1410,6 +1603,16 @@ int main(int argc, char **argv)
         failures = test_wrong_pin_keypad();
     } else if (strcmp(name, "wrong-pin-wire") == 0) {
         failures = test_wrong_pin_wire_json();
+    } else if (strcmp(name, "wrong-pin-twice") == 0) {
+        failures = test_wrong_pin_twice_no_connecting();
+    } else if (strcmp(name, "wrong-pin-then-success") == 0) {
+        failures = test_wrong_pin_then_success();
+    } else if (strcmp(name, "wrong-pin-stale-refused") == 0) {
+        failures = test_wrong_pin_then_stale_refused_no_roster_eject();
+    } else if (strcmp(name, "pin-refused-after-wrong") == 0) {
+        failures = test_pin_refused_after_wrong_pin_stays_on_pin();
+    } else if (strcmp(name, "pin-refused-remap-wrong") == 0) {
+        failures = test_pin_refused_remaps_once_then_wrong_pin();
     } else if (strcmp(name, "pin-refused-recovery") == 0) {
         failures = test_pin_refused_terminal_and_new_key();
     } else if (strcmp(name, "pin-partial-boot-key") == 0) {

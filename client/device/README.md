@@ -28,7 +28,8 @@ Boot markers (distinct claims):
 Mechanical checks (host):
 
 ```text
-make test
+make app:test    # client/device + shared libraries (config/app-test-suite.yaml)
+make test        # full repository suite
 ```
 
 Implementation lives under `scripts/device_guardrails/` (presentation timer path,

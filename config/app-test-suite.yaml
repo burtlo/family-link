@@ -1,0 +1,44 @@
+# Host test scope for the v2 product app (client/device firmware + shared libraries).
+# `make app:test` discovers modules under scripts/tests/ using these rules.
+#
+# Growth:
+# - New tests that reference a source_root path are picked up automatically.
+# - New tests that import a host_module listed here are picked up automatically.
+# - New product-area tests named test_product_* or test_device_* are included
+#   (except test_exclude_globs).
+# - Edge cases: add a stem to include_stems, or put `app-test-suite: include`
+#   in the test module docstring; use `app-test-suite: exclude` to opt out.
+
+document: family-link.app-test-suite/v1
+
+# Repo-relative path prefixes (forward slashes). Matched as substrings in test source.
+source_roots:
+  - client/device
+  - client/shared
+  - client/assets/portraits
+
+# Basenames under scripts/tests/ (fnmatch), applied before excludes.
+test_include_globs:
+  - test_product_*.py
+  - test_device_*.py
+  - test_app_host.py
+
+test_exclude_globs:
+  - test_product_server_*.py
+
+# Python import roots under scripts/ (no .py suffix).
+host_modules:
+  - app_host
+  - device_guardrails
+  - device_ui_catalog
+  - pack_profile_avatars
+  - product_device_sdkconfig
+  - product_journey
+  - app_test_suite
+
+# Extra test modules (stem without .py) not caught by the rules above.
+include_stems:
+  - test_firmware
+
+# Force-remove even when other rules match (stem without .py).
+exclude_stems: []

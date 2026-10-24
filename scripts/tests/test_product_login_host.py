@@ -106,6 +106,40 @@ class ProductLoginHostTests(unittest.TestCase):
         )
         self.assertNotIn(pin, completed.stdout)
 
+    def test_p1_two_wrong_pins_distinct_operation_ids(self):
+        user = ACCOUNTS["users"][0]
+        with _running_server("p4-two-wrong-pins") as base:
+            client = _Client(base)
+            first_id = str(uuid.uuid4())
+            second_id = str(uuid.uuid4())
+            status1, body1 = client.json_request(
+                "POST",
+                "/v2/session/login",
+                {
+                    "schema": "fl.session-login/2",
+                    "operation_id": first_id,
+                    "user_id": user["user_id"],
+                    "pin": "9999",
+                },
+                bearer=DESK,
+            )
+            status2, body2 = client.json_request(
+                "POST",
+                "/v2/session/login",
+                {
+                    "schema": "fl.session-login/2",
+                    "operation_id": second_id,
+                    "user_id": user["user_id"],
+                    "pin": "8888",
+                },
+                bearer=DESK,
+            )
+            self.assertEqual(status1, 200)
+            self.assertEqual(status2, 200)
+            self.assertEqual(body1["outcome"], "wrong_pin")
+            self.assertEqual(body2["outcome"], "wrong_pin")
+            self.assertNotEqual(first_id, second_id)
+
     def test_p1_pin_submit_operation_id_replay(self):
         operation_id = str(uuid.uuid4())
         login_body = {

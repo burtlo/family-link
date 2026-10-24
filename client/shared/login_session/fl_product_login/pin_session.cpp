@@ -5,6 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(ESP_PLATFORM)
+#include "esp_random.h"
+#endif
+
 namespace fl_product_login {
 namespace {
 
@@ -246,8 +250,10 @@ void SessionWriter::reset_pin()
     copy_text(pin_reason_, 16, "none");
     pin_scenario_[0] = 0;
     pin_operation_id_ = 0;
+    pin_http_epoch_ = 0;
     pin_frozen_generation_ = 0;
     pin_key_generation_ = 0;
+    clear_pin_submitted_secret();
     pin_frozen_session_[0] = 0;
     pin_frozen_user_[0] = 0;
     pin_submitted_ = false;
@@ -263,6 +269,7 @@ void SessionWriter::reset_pin()
     idle_paused_ = false;
     idle_remaining_ms_ = 0;
     wrong_count_ = 0;
+    pin_identity_remaps_ = 0;
     authenticated_ = 0;
     pin_side_effects_ = 0;
     delay_ms_[0] = 0;
@@ -317,16 +324,27 @@ void SessionWriter::wipe_pin_secret()
     pin_mask_[0] = 0;
 }
 
+void SessionWriter::clear_pin_submitted_secret()
+{
+    memset(pin_submitted_secret_, 0, sizeof(pin_submitted_secret_));
+}
+
 void SessionWriter::mint_pin_operation_id()
 {
-    char material[128];
+    char material[192];
     char digest_hex[68];
     uint64_t seq;
+    uint32_t noise;
     int i;
     seq = next_operation_id_++;
-    snprintf(material, sizeof(material), "pin-op-v1|%s|%s|%llu|%" PRIu32,
-             boot_id_[0] != 0 ? boot_id_ : "boot", session_id_, (unsigned long long)seq,
-             generation_);
+#if defined(ESP_PLATFORM)
+    noise = esp_random();
+#else
+    noise = (uint32_t)(now_ms_ ^ (seq * 2654435761ULL));
+#endif
+    snprintf(material, sizeof(material), "pin-op-v2|%s|%s|%llu|%" PRIu32 "|%" PRIu64 "|%" PRIu32 "|%" PRIu32,
+             boot_id_[0] != 0 ? boot_id_ : "boot", session_id_, (unsigned long long)seq, generation_,
+             (unsigned long long)now_ms_, property_seq_, noise);
     sha256_hex(material, digest_hex, (int)sizeof(digest_hex));
     pin_operation_id_ = 0;
     for (i = 0; i < 12; ++i) {
@@ -366,6 +384,7 @@ void SessionWriter::close_pin_operation(const char *terminal, const char *reason
     copy_text(pin_reason_, 16, reason);
     release_pin_view();
     pin_operation_id_ = 0;
+    clear_pin_submitted_secret();
     if (operation_id != 0) {
         record_terminal(operation_id, attempt, "pin", terminal);
     }
@@ -405,15 +424,48 @@ void SessionWriter::fail_pin_transport()
     close_pin_operation("timed_out", "transport");
 }
 
+void SessionWriter::remint_pin_operation_after_conflict()
+{
+    uint64_t previous_id = pin_operation_id_;
+    uint32_t attempt = pin_attempt_ > 0 ? (uint32_t)pin_attempt_ : 1;
+    if (previous_id != 0) {
+        record_terminal(previous_id, attempt, "pin", "failure");
+    }
+    pin_http_epoch_ += 1;
+    mint_pin_operation_id();
+    pin_attempt_ = 1;
+    delay_ms_[0] = 0;
+    delay_ms_[1] = 0;
+    delay_ms_[2] = 0;
+    pin_wait_delay_ = false;
+    pin_deadline_armed_ = true;
+    pin_deadline_ms_ = now_ms_ + kPinAttemptTimeoutMs;
+    pin_phase_ = kPinPhaseChecking;
+    pin_submitted_ = true;
+    mint_pin_key();
+    refresh_pin_copy();
+    last_update_level_ = 0;
+    property_seq_ += 1;
+}
+
 void SessionWriter::fail_pin_operation_refused()
 {
+    bool stay_on_pin_surface = wrong_count_ > 0 && selected_user_[0] != 0;
     authenticated_ = 0;
     wipe_pin_secret();
     pin_phase_ = kPinPhaseIdle;
     refresh_pin_copy();
     if (stage_ != kStageMuted && stage_ != kStageWifiUnavailable) {
         server_unavailable_ = false;
-        if (hangout_known_) {
+        if (stay_on_pin_surface) {
+            server_unavailable_ = true;
+            if (stage_ != kStageRoster) {
+                apply_stage(kStageRoster, "pin_refused");
+                selectable_cards_ = 0;
+            }
+            pin_phase_ = kPinPhaseEntry;
+            refresh_pin_copy();
+        } else if (hangout_known_) {
             apply_stage(kStageRoster, "pin_refused");
             selectable_cards_ = 0;
             begin_roster(now_ms_, false, false);
@@ -428,10 +480,14 @@ void SessionWriter::fail_pin_operation_refused()
 
 void SessionWriter::start_pin_submission(int64_t now_ms)
 {
+    int i;
     now_ms_ = now_ms;
-    if (pin_operation_id_ == 0) {
-        mint_pin_operation_id();
+    pin_http_epoch_ += 1;
+    mint_pin_operation_id();
+    for (i = 0; i < 4; ++i) {
+        pin_submitted_secret_[i] = pin_secret_[i];
     }
+    pin_submitted_secret_[4] = 0;
     pin_phase_ = kPinPhaseChecking;
     pin_submitted_ = true;
     pin_attempt_ = 1;
@@ -517,6 +573,7 @@ void SessionWriter::accept_pin_result(const PinResult &result)
     if (result.outcome == kPinOutcomeWrong) {
         authenticated_ = 0;
         wrong_count_ += 1;
+        pin_identity_remaps_ = 0;
         wipe_pin_secret();
         release_pin_view();
         if (wrong_count_ >= kPinWrongLimit) {
@@ -566,6 +623,11 @@ void SessionWriter::accept_pin_result(const PinResult &result)
         return;
     }
     if (result.outcome == kPinOutcomeRefused) {
+        if (wrong_count_ == 0 && pin_attempt_ == 1 && pin_identity_remaps_ < 1) {
+            pin_identity_remaps_ += 1;
+            remint_pin_operation_after_conflict();
+            return;
+        }
         fail_pin_operation_refused();
         return;
     }
@@ -686,6 +748,7 @@ void SessionWriter::select_pin_user(const char *user_id, int64_t now_ms)
         cancel_pin(now_ms);
     }
     wrong_count_ = 0;
+    pin_identity_remaps_ = 0;
     cooldown_until_ms_ = 0;
     shown_cooldown_second_ = 0;
     wipe_pin_secret();
@@ -824,9 +887,9 @@ bool SessionWriter::copy_pin_request(char *user, int user_cap, char *pin, int pi
         return false;
     }
     copy_text(user, user_cap, pin_frozen_user_);
-    copy_text(pin, pin_cap, pin_secret_);
+    copy_text(pin, pin_cap, pin_submitted_secret_);
     copy_text(key, key_cap, pin_fingerprint_);
-    return pin_secret_[0] != 0 && pin_fingerprint_[0] != 0;
+    return pin_submitted_secret_[0] != 0 && pin_fingerprint_[0] != 0;
 }
 
 int64_t SessionWriter::pin_next_event_ms() const
@@ -1032,6 +1095,7 @@ void SessionWriter::finish_cooldown()
 bool SessionWriter::pin_submitted() const { return pin_submitted_; }
 uint64_t SessionWriter::pin_operation_id() const { return pin_operation_id_; }
 uint32_t SessionWriter::pin_key_generation() const { return pin_key_generation_; }
+uint32_t SessionWriter::pin_http_epoch() const { return pin_http_epoch_; }
 const char *SessionWriter::pin_key_fingerprint() const { return pin_fingerprint_; }
 int SessionWriter::pin_attempt() const { return pin_attempt_; }
 int SessionWriter::pin_delay_ms(int index) const

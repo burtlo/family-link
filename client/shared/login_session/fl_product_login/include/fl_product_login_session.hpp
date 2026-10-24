@@ -299,6 +299,7 @@ public:
     bool pin_submitted() const;
     uint64_t pin_operation_id() const;
     uint32_t pin_key_generation() const;
+    uint32_t pin_http_epoch() const;
     const char *pin_key_fingerprint() const;
     int pin_attempt() const;
     int pin_delay_ms(int index) const;
@@ -375,12 +376,14 @@ private:
     void mint_pin_key();
     void mint_pin_operation_id();
     void wipe_pin_secret();
+    void clear_pin_submitted_secret();
     void release_pin_view();
     void start_pin_submission(int64_t now_ms);
     void close_pin_operation(const char *terminal, const char *reason);
     void schedule_pin_retry();
     void fail_pin_transport();
     void fail_pin_operation_refused();
+    void remint_pin_operation_after_conflict();
     void reset_scoped();
     void clear_scoped_inflight();
     bool take_scoped_for_mute(uint64_t *operation_id, uint32_t *generation, char *kind, int kind_cap);
@@ -438,6 +441,7 @@ private:
     int pin_phase_;
     int pin_digit_len_;
     char pin_secret_[8];
+    char pin_submitted_secret_[8];
     char pin_mask_[8];
     char visible_copy_[72];
     char pin_copy_token_[16];
@@ -446,6 +450,7 @@ private:
     char pin_reason_[16];
     char pin_scenario_[32];
     uint64_t pin_operation_id_;
+    uint32_t pin_http_epoch_;
     uint32_t pin_frozen_generation_;
     uint32_t pin_key_generation_;
     char pin_frozen_session_[16];
@@ -463,6 +468,7 @@ private:
     bool idle_paused_;
     int64_t idle_remaining_ms_;
     int wrong_count_;
+    int pin_identity_remaps_;
     int authenticated_;
     int pin_side_effects_;
     int delay_ms_[3];

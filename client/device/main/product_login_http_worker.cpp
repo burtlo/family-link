@@ -15,6 +15,7 @@
 #include "fl_product_login_p1_wire.hpp"
 #include "fl_product_login_session.hpp"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -40,6 +41,7 @@ struct HttpJob {
     JobKind kind;
     uint64_t operation_id;
     uint32_t generation;
+    uint32_t pin_epoch;
     char session_id[16];
     char user_id[fl_product_login::kMaxId];
     char pin[8];
@@ -76,6 +78,7 @@ char s_base_url[kUrlCap];
 char s_bearer[kAuthCap];
 uint64_t s_active_roster_id = 0;
 uint64_t s_active_pin_id = 0;
+uint32_t s_active_pin_epoch = 0;
 bool s_active_health = false;
 uint64_t s_health_skip_id = 0;
 uint64_t s_active_refresh_id = 0;
@@ -197,6 +200,32 @@ bool post_job(const HttpJob &job)
     return xQueueSend(s_jobs, &job, 0) == pdTRUE;
 }
 
+void drain_stale_pin_jobs(fl_product_login::SessionWriter *session)
+{
+    HttpJob pending;
+    HttpJob keep[kHttpQueueDepth];
+    int keep_count = 0;
+    int i;
+    if (s_jobs == nullptr || session == nullptr) {
+        return;
+    }
+    while (xQueueReceive(s_jobs, &pending, 0) == pdTRUE) {
+        if (pending.kind == kJobPin &&
+            (pending.pin_epoch != session->pin_http_epoch() ||
+             pending.operation_id != session->pin_operation_id())) {
+            ESP_LOGW(kTag, "drop queued stale pin job op=%llu epoch=%" PRIu32,
+                     (unsigned long long)pending.operation_id, pending.pin_epoch);
+            continue;
+        }
+        if (keep_count < kHttpQueueDepth) {
+            keep[keep_count++] = pending;
+        }
+    }
+    for (i = 0; i < keep_count; ++i) {
+        (void)xQueueSend(s_jobs, &keep[i], 0);
+    }
+}
+
 void handle_roster_result(const HttpResult &result)
 {
     fl_product_login::RosterResult classified;
@@ -300,15 +329,27 @@ void worker_task(void *arg)
             }
             break;
         case kJobPin:
-            if (join_url("v2/session/login", url, (int)sizeof(url))) {
+            if (s_session != nullptr &&
+                (job.pin_epoch != s_session->pin_http_epoch() ||
+                 job.operation_id != s_session->pin_operation_id() || !s_session->pin_submitted())) {
+                ESP_LOGW(kTag, "skip stale pin job op=%llu epoch=%" PRIu32 " live=%" PRIu32 " submitted=%d",
+                         (unsigned long long)job.operation_id, job.pin_epoch, s_session->pin_http_epoch(),
+                         s_session->pin_submitted() ? 1 : 0);
+                result.exchange.perform_ok = 0;
+                result.exchange.http_status = 0;
+                result.exchange.body_len = 0;
+            } else if (join_url("v2/session/login", url, (int)sizeof(url))) {
                 fl_product_login::format_p1_operation_id(job.operation_id, operation_text,
                                                        (int)sizeof(operation_text));
                 snprintf(json, sizeof(json),
                          "{\"schema\":\"fl.session-login/2\",\"operation_id\":\"%s\",\"user_id\":\"%s\","
                          "\"pin\":\"%s\"}",
                          operation_text, job.user_id, job.pin);
+                ESP_LOGI(kTag, "pin_login POST op=%s user=%s", operation_text, job.user_id);
                 perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, job.timeout_ms,
                                  &result.exchange);
+                ESP_LOGI(kTag, "pin_login op=%s http=%d perform=%d", operation_text,
+                         result.exchange.http_status, result.exchange.perform_ok);
                 wipe_buffer(json, (int)sizeof(json));
                 wipe_buffer(job.pin, (int)sizeof(job.pin));
             }
@@ -386,6 +427,7 @@ extern "C" void product_login_http_worker_stop(void)
     s_session = nullptr;
     s_active_roster_id = 0;
     s_active_pin_id = 0;
+    s_active_pin_epoch = 0;
     s_active_health = false;
     s_health_skip_id = 0;
     s_active_refresh_id = 0;
@@ -405,6 +447,7 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
         return;
     }
     session->advance_to(now_ms);
+    drain_stale_pin_jobs(session);
     while (s_results != nullptr && xQueueReceive(s_results, &result, 0) == pdTRUE) {
         switch (result.kind) {
         case kJobRoster:
@@ -417,6 +460,7 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
             handle_pin_result(result);
             if (result.operation_id == s_active_pin_id) {
                 s_active_pin_id = 0;
+                s_active_pin_epoch = 0;
             }
             break;
         case kJobHealth:
@@ -451,20 +495,28 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
             s_active_roster_id = job.operation_id;
         }
     }
-    if (session->pin_transport_ready() && session->pin_operation_id() != s_active_pin_id &&
-        session->copy_pin_request(user, (int)sizeof(user), pin, (int)sizeof(pin), key, (int)sizeof(key))) {
-        memset(&job, 0, sizeof(job));
-        job.kind = kJobPin;
-        job.timeout_ms = fl_product_login::kPinAttemptTimeoutMs;
-        job.operation_id = session->pin_operation_id();
-        job.generation = session->pin_key_generation();
-        strncpy(job.session_id, session->session_id(), sizeof(job.session_id) - 1);
-        strncpy(job.user_id, user, sizeof(job.user_id) - 1);
-        strncpy(job.pin, pin, sizeof(job.pin) - 1);
-        wipe_buffer(pin, (int)sizeof(pin));
-        wipe_buffer(key, (int)sizeof(key));
-        if (post_job(job)) {
-            s_active_pin_id = job.operation_id;
+    if (session->pin_transport_ready() && session->copy_pin_request(user, (int)sizeof(user), pin, (int)sizeof(pin),
+                                                                    key, (int)sizeof(key))) {
+        const uint64_t pin_op = session->pin_operation_id();
+        const uint32_t pin_epoch = session->pin_http_epoch();
+        const bool pin_inflight =
+            s_active_pin_id != 0 && s_active_pin_id == pin_op && s_active_pin_epoch == pin_epoch;
+        if (!pin_inflight) {
+            memset(&job, 0, sizeof(job));
+            job.kind = kJobPin;
+            job.timeout_ms = fl_product_login::kPinAttemptTimeoutMs;
+            job.operation_id = pin_op;
+            job.pin_epoch = pin_epoch;
+            job.generation = session->pin_key_generation();
+            strncpy(job.session_id, session->session_id(), sizeof(job.session_id) - 1);
+            strncpy(job.user_id, user, sizeof(job.user_id) - 1);
+            strncpy(job.pin, pin, sizeof(job.pin) - 1);
+            wipe_buffer(pin, (int)sizeof(pin));
+            wipe_buffer(key, (int)sizeof(key));
+            if (post_job(job)) {
+                s_active_pin_id = job.operation_id;
+                s_active_pin_epoch = pin_epoch;
+            }
         }
     }
     if (session->health_ack_pending() && !s_active_health &&

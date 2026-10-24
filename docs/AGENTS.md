@@ -40,6 +40,7 @@ For v1 build/flash commands and archive-local indexes, humans working inside the
 | Embedded target invariants + desk claim classes | [`standards/device-target-invariants.md`](standards/device-target-invariants.md) |
 | Product device build, flash, markers | [`standards/device-build-flash.md`](standards/device-build-flash.md) |
 | Client review orchestration (review → dependency plan → sequential fix → independent verify) | [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) · skill: [`.cursor/skills/client-code-review/SKILL.md`](../.cursor/skills/client-code-review/SKILL.md) |
+| Desk FAIL notes → repair-agent prompt (standards, contracts, L3 exit) | skill: [`.cursor/skills/author-desk-repair-brief/SKILL.md`](../.cursor/skills/author-desk-repair-brief/SKILL.md) · then **client-code-review** on the fix chat |
 | v1 evidence assessments | [`v1-assessments/`](v1-assessments/carousel-playback.md) (historical evidence, not normative architecture) |
 | Device labs (v2) | [`labs/README.md`](labs/README.md) · [`labs/assistant-guide.md`](labs/assistant-guide.md) · [`standards/labs-configuration.md`](standards/labs-configuration.md) |
 | Deep retrospective method | [`.cursor/skills/deep-implementation-retrospective/SKILL.md`](../.cursor/skills/deep-implementation-retrospective/SKILL.md) |

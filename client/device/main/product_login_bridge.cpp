@@ -286,8 +286,16 @@ static void on_pin_key_clicked(lv_event_t *event)
     if (event == nullptr || !s_session.keypad_open()) {
         return;
     }
+    int64_t now_ms;
     digit = (char)(intptr_t)lv_event_get_user_data(event);
-    (void)s_session.enter_pin_digit(digit, (int64_t)(esp_timer_get_time() / 1000LL));
+    now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
+    if (!s_session.enter_pin_digit(digit, now_ms)) {
+        return;
+    }
+    if (s_session.pin_submitted()) {
+        ensure_http_worker();
+        product_login_http_service(&s_session, now_ms);
+    }
 }
 
 static void ensure_pin_pad(void)
