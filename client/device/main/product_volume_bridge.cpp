@@ -98,7 +98,9 @@ void layout_volume(bool visible)
     } else {
         lv_obj_add_flag(s_upper_root, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(s_lower_root, LV_OBJ_FLAG_HIDDEN);
-        product_inbox_set_ui_visible(1);
+        if (s_login != nullptr && s_login->signed_in() != 0) {
+            product_inbox_set_ui_visible(1);
+        }
     }
 }
 
@@ -155,6 +157,8 @@ extern "C" bool product_volume_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot
     lv_obj_set_style_bg_opa(s_lower_root, LV_OPA_TRANSP, 0);
     lv_obj_add_flag(s_upper_root, LV_OBJ_FLAG_HIDDEN);
     lv_obj_add_flag(s_lower_root, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
     lv_label_set_text(s_title_label, "Volume");
     lv_obj_align(s_title_label, LV_ALIGN_LEFT_MID, 8, 0);
     lv_slider_set_range(s_slider, 0, fl_product_volume::kVolumeStopCount - 1);
@@ -245,5 +249,20 @@ extern "C" void product_volume_on_wifi(bool up)
 {
     if (!up) {
         s_journey.note_connectivity_lost();
+    }
+}
+
+extern "C" void product_volume_push_under_login(void)
+{
+    if (!s_attached) {
+        return;
+    }
+    if (s_upper_root != nullptr) {
+        lv_obj_move_background(s_upper_root);
+        lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
+    }
+    if (s_lower_root != nullptr) {
+        lv_obj_move_background(s_lower_root);
+        lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
     }
 }

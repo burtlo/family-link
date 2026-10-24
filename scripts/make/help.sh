@@ -48,6 +48,7 @@ echo "  PRODUCT APP (same firmware tree; lab-style kit selection on flash)"
 echo "    make app           Build and flash (app:build then app:flash)."
 echo "    make app:build     Build client/device and publish a firmware package."
 echo "    make app:flash     Flash current package; auto-picks one kit or prompts if several."
+echo "    make app:monitor   idf.py monitor on client/device (KIT= PORT= FILTER=)."
 echo "    make app:test      Host tests for product firmware and shared libraries."
 echo "                       Optional: KIT=<nickname> PORT=<port>"
 echo

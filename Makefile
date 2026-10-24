@@ -68,7 +68,7 @@ define py_run
 	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind avatars app app\:build app\:flash app\:test server lab.help lab.p1.server lab.lab02.server lab.lab03.server lab.lab07.server lab.lab08.server lab.lab09.server lab.lab11.server
+.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind avatars app app\:build app\:flash app\:monitor app\:test server lab.help lab.p1.server lab.lab02.server lab.lab03.server lab.lab07.server lab.lab08.server lab.lab09.server lab.lab11.server
 
 # Lab device firmware (registry: config/labs.registry.yaml). Optional: KIT PORT SECONDS FLASH RUN_ID
 # Prefer the explicit .scripted profile over VARIANT= for operator workflows.
@@ -119,6 +119,10 @@ app\:build:
 app\:flash:
 	$(call step_msg,Flashing v2 product app to one registered kit)
 	$(call py_run,scripts/app_host.py flash $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
+
+app\:monitor:
+	$(call step_msg,Serial monitor for v2 product app (client/device))
+	$(call py_run,scripts/app_host.py monitor $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",) $(if $(FILTER),--print-filter "$(FILTER)",))
 
 app\:test:
 	$(call step_msg,Running v2 product app host tests (see config/app-test-suite.yaml))

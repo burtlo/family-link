@@ -15,6 +15,7 @@ int product_volume_on_boot_leave(void);
 int product_volume_on_mute(void);
 int product_volume_on_red_record(void);
 void product_volume_on_wifi(bool up);
+void product_volume_push_under_login(void);
 
 #ifdef __cplusplus
 }

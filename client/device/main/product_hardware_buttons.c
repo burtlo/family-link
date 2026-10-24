@@ -18,6 +18,7 @@ static button_handle_t s_buttons[BSP_BUTTON_NUM];
 static atomic_bool s_boot_pressed;
 static atomic_bool s_mute_pressed;
 static atomic_bool s_red_pressed;
+static bool s_mute_gpio_ready;
 
 static void on_boot_press(void *button, void *context)
 {
@@ -60,6 +61,16 @@ bool product_hardware_buttons_init(void)
         ESP_LOGW(kTag, "BOOT button handle missing");
     }
     if (s_buttons[BSP_BUTTON_MUTE] != NULL) {
+        gpio_config_t mute_cfg = {
+            .pin_bit_mask = 1ULL << BSP_BUTTON_MUTE_IO,
+            .mode = GPIO_MODE_INPUT,
+            .pull_up_en = GPIO_PULLUP_ENABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        if (gpio_config(&mute_cfg) == ESP_OK) {
+            s_mute_gpio_ready = true;
+        }
         if (iot_button_register_cb(s_buttons[BSP_BUTTON_MUTE], BUTTON_PRESS_DOWN, NULL,
                                    on_mute_press, NULL) != ESP_OK) {
             ESP_LOGW(kTag, "mute callback registration failed");
@@ -79,23 +90,37 @@ bool product_hardware_buttons_init(void)
     return true;
 }
 
+int product_hardware_buttons_mute_gpio_ready(void)
+{
+    return s_mute_gpio_ready ? 1 : 0;
+}
+
+int product_hardware_buttons_mute_gpio_level(void)
+{
+    if (!s_mute_gpio_ready) {
+        return -1;
+    }
+    return gpio_get_level(BSP_BUTTON_MUTE_IO);
+}
+
+int product_hardware_buttons_mute_button_level(void)
+{
+    if (s_buttons[BSP_BUTTON_MUTE] == NULL) {
+        return -1;
+    }
+    return iot_button_get_key_level(s_buttons[BSP_BUTTON_MUTE]);
+}
+
 int product_hardware_buttons_mute_latched(void)
 {
-    gpio_config_t cfg = {
-        .pin_bit_mask = 1ULL << BSP_BUTTON_MUTE_IO,
-        .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_ENABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE,
-    };
+    /* GPIO tracks the physical latch on BOX-3; iot_button is momentary-press oriented. */
+    if (s_mute_gpio_ready) {
+        return gpio_get_level(BSP_BUTTON_MUTE_IO) == 0 ? 1 : 0;
+    }
     if (s_buttons[BSP_BUTTON_MUTE] != NULL) {
         return iot_button_get_key_level(s_buttons[BSP_BUTTON_MUTE]) != 0 ? 1 : 0;
     }
-    if (gpio_config(&cfg) != ESP_OK) {
-        return 0;
-    }
-    /* BSP mute is active low on GPIO 1. */
-    return gpio_get_level(BSP_BUTTON_MUTE_IO) == 0 ? 1 : 0;
+    return 0;
 }
 
 void product_hardware_buttons_poll(void)

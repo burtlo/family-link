@@ -24,4 +24,12 @@ config FAMILY_DEVICE_MEM_DIAGNOSTIC
         display init, then that block plus lv_mem_monitor after display init.
         Log only. There is no numeric boot assert and no CI gate.
 
+config FAMILY_DEVICE_MUTE_TRACE
+    bool "Verbose mute latch and display diagnostics (serial)"
+    default n
+    help
+        Logs V2_MUTE_EDGE on every latch transition and V2_MUTE_TICK every
+        2 s while the login backlight is marked dark. Filter serial on tag
+        product_mute. Latch edges are also logged when this is off.
+
 endmenu

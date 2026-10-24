@@ -23,12 +23,45 @@ static int apply_send_stage(const product_send_stage_result_t *result)
     if (result->show_record_canvas) {
         (void)product_record_ensure(lv_screen_active());
     }
-    product_record_set_visible(result->show_record_canvas);
     product_shell_set_stage((fl_shell_stage_t)result->shell_stage);
-    product_inbox_set_ui_visible(result->show_split_pane);
-    product_send_sync_stage();
     ESP_LOGI(kTag, "place=%d shell=%d", result->place, result->shell_stage);
-    return result->ignored ? 0 : 1;
+    return 1;
+}
+
+extern "C" product_screen_t product_stage_screen(void)
+{
+    if (!product_login_is_signed_in()) {
+        return PRODUCT_SCREEN_LOGIN;
+    }
+    switch (product_shell_stage()) {
+    case FL_SHELL_STAGE_VOLUME:
+        return PRODUCT_SCREEN_VOLUME;
+    case FL_SHELL_STAGE_RECORD:
+        return PRODUCT_SCREEN_RECORD;
+    case FL_SHELL_STAGE_PICKER:
+    case FL_SHELL_STAGE_RECEIPT:
+        return PRODUCT_SCREEN_SEND;
+    default:
+        return PRODUCT_SCREEN_INBOX;
+    }
+}
+
+/* Sole writer of module visibility. Each module hides or shows only its own
+ * widgets; LVGL skips hidden subtrees for both drawing and hit-testing, so
+ * no module reorders siblings to win touch. */
+extern "C" void product_stage_present(void)
+{
+    static product_screen_t s_shown = PRODUCT_SCREEN_COUNT;
+    const product_screen_t screen = product_stage_screen();
+    if (screen != s_shown) {
+        ESP_LOGI(kTag, "screen=%d from=%d", (int)screen, (int)s_shown);
+        s_shown = screen;
+    }
+    product_login_present(screen == PRODUCT_SCREEN_LOGIN);
+    product_inbox_set_ui_visible(screen == PRODUCT_SCREEN_INBOX);
+    product_volume_set_visible(screen == PRODUCT_SCREEN_VOLUME);
+    product_send_present(screen == PRODUCT_SCREEN_SEND);
+    product_record_set_visible(screen == PRODUCT_SCREEN_RECORD);
 }
 
 extern "C" void product_stage_on_signed_in(void)
@@ -38,8 +71,6 @@ extern "C" void product_stage_on_signed_in(void)
     product_send_note_inbox();
     product_send_on_signed_in(user);
     product_shell_set_stage(FL_SHELL_STAGE_INBOX);
-    product_inbox_set_ui_visible(1);
-    product_record_set_visible(0);
     ESP_LOGI(kTag, "stage=inbox");
 }
 
@@ -69,7 +100,6 @@ extern "C" int product_stage_on_boot(void)
 extern "C" void product_stage_on_mute(void)
 {
     (void)product_send_apply_intent(PRODUCT_SEND_INTENT_MUTE, product_login_is_signed_in());
-    product_record_set_visible(0);
 }
 
 extern "C" int product_stage_on_wipe_complete(void)

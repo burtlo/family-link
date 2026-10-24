@@ -91,6 +91,19 @@ void app_main(void)
     }
     lv_refr_now(lv_display_get_default());
     bsp_display_unlock();
+    if (!bsp_display_lock(5000)) {
+        ESP_LOGE("bootstrap", "lvgl_lock_failed_post_attach");
+    } else {
+        lv_indev_t *indev = NULL;
+        while ((indev = lv_indev_get_next(indev)) != NULL) {
+            if (lv_indev_get_type(indev) == LV_INDEV_TYPE_POINTER) {
+                lv_indev_enable(indev, true);
+                lv_indev_reset(indev, NULL);
+            }
+        }
+        lv_refr_now(lv_display_get_default());
+        bsp_display_unlock();
+    }
     if (!product_hardware_buttons_mute_latched()) {
         (void)bsp_display_backlight_on();
     }

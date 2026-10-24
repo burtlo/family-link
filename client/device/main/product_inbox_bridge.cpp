@@ -288,6 +288,22 @@ void apply_root_visibility(int shown)
 {
     set_hidden(s_upper_root, shown ? 0 : 1);
     set_hidden(s_lower_root, shown ? 0 : 1);
+    if (s_upper_root != nullptr) {
+        if (shown) {
+            lv_obj_move_foreground(s_upper_root);
+        } else {
+            lv_obj_move_background(s_upper_root);
+            lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
+        }
+    }
+    if (s_lower_root != nullptr) {
+        if (shown) {
+            lv_obj_move_foreground(s_lower_root);
+        } else {
+            lv_obj_move_background(s_lower_root);
+            lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
+        }
+    }
 }
 
 int find_card(const char *message_id)
@@ -952,6 +968,8 @@ extern "C" bool product_inbox_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     lv_obj_set_pos(s_lower_root, 0, 0);
     lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
     s_heading = lv_label_create(s_upper_root);
     s_play_button = lv_button_create(s_upper_root);
     s_row = lv_obj_create(s_lower_root);
@@ -1003,6 +1021,9 @@ extern "C" bool product_inbox_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     s_timer = lv_timer_create(on_inbox_timer, 50, nullptr);
     s_attached = s_timer != nullptr;
     if (s_attached) {
+        /* Login desk owns the shell until sign-in. A running inbox timer only
+         * reorders hidden chrome and can steal touches from the roster. */
+        lv_timer_pause(s_timer);
         ESP_LOGI(kTag, "V2_PRODUCT_INBOX_READY build=%s", FAMILY_BUILD_ID);
     }
     return s_attached;
@@ -1040,6 +1061,9 @@ extern "C" void product_inbox_on_signed_in(void)
     (void)product_inbox_http_worker_start();
     s_user_scrolling = 0;
     destroy_all_cards();
+    if (s_timer != nullptr) {
+        lv_timer_resume(s_timer);
+    }
     render_inbox();
 }
 
@@ -1073,7 +1097,17 @@ extern "C" void product_inbox_on_mute(void)
     s_wire.reset();
     s_inbox.on_mute((int64_t)(esp_timer_get_time() / 1000LL));
     s_user_scrolling = 0;
+    s_lower_fade_out = 0;
+    if (s_lower_root != nullptr) {
+        lv_anim_delete(s_lower_root, nullptr);
+        lv_obj_set_style_opa(s_lower_root, LV_OPA_COVER, 0);
+    }
     product_inbox_set_ui_visible(0);
+    product_inbox_push_under_login();
+    if (s_timer != nullptr) {
+        lv_timer_pause(s_timer);
+    }
+    product_login_touch_wake();
 }
 
 extern "C" void product_inbox_note_refresh(int64_t now_ms)
@@ -1114,6 +1148,21 @@ extern "C" void product_inbox_set_ui_visible(int visible)
         s_user_scrolling = 0;
     }
     render_inbox();
+}
+
+extern "C" void product_inbox_push_under_login(void)
+{
+    if (!s_attached) {
+        return;
+    }
+    if (s_upper_root != nullptr) {
+        lv_obj_move_background(s_upper_root);
+        lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
+    }
+    if (s_lower_root != nullptr) {
+        lv_obj_move_background(s_lower_root);
+        lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
+    }
 }
 
 fl_product_inbox::CarouselSession *product_inbox_session(void) { return &s_inbox; }

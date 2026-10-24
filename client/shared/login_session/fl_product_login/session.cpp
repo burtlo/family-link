@@ -418,8 +418,17 @@ void SessionWriter::mute(int64_t now_ms)
         clear_roster_inflight();
     }
     roster_timer_armed_ = false;
+    connecting_retry_armed_ = false;
     apply_stage(kStageMuted, "mute");
     selectable_cards_ = 0;
+    /* EXP-038: after unmute, treat roster as unknown until the next valid hangout read.
+     * Keep focus_id_ for recency and late-operation races (P5); UI must not show cards
+     * until hangout_known_ and a fresh roster land. */
+    hangout_known_ = false;
+    user_count_ = 0;
+    memset(users_, 0, sizeof(users_));
+    last_update_level_ = 0;
+    property_seq_ += 1;
     if (had_pin) {
         copy_text(pin_reason_, 16, "mute");
         record_terminal(pin_id, pin_attempt, "pin", "cancelled");
@@ -454,6 +463,12 @@ void SessionWriter::unmute(int64_t now_ms)
         apply_stage(kStageWifiUnavailable, "unmute");
         selectable_cards_ = 0;
         return;
+    }
+    connecting_retry_armed_ = false;
+    connecting_backoff_index_ = 0;
+    if (roster_inflight_) {
+        record_terminal(roster_operation_id_, roster_attempt_, "roster", "stale");
+        clear_roster_inflight();
     }
     apply_stage(kStageConnecting, "unmute");
     selectable_cards_ = 0;
@@ -877,6 +892,7 @@ void SessionWriter::advance_to(int64_t target_ms)
         return;
     }
     while (now_ms_ < target_ms) {
+        const int64_t step_from = now_ms_;
         int64_t timeout_at = roster_inflight_ ? roster_deadline_ms_ : 0x7fffffffffffffffLL;
         int64_t heart_at = heartbeat_armed_ ? next_heartbeat_due_ms_ : 0x7fffffffffffffffLL;
         int64_t roster_at = (roster_timer_armed_ && !roster_inflight_) ? next_roster_due_ms_
@@ -900,6 +916,9 @@ void SessionWriter::advance_to(int64_t target_ms)
         }
         if (credential_at < next) {
             next = credential_at;
+        }
+        if (next < step_from) {
+            next = step_from + 1;
         }
         if (next > target_ms) {
             now_ms_ = target_ms;
@@ -927,6 +946,14 @@ void SessionWriter::advance_to(int64_t target_ms)
             on_credential_clock();
         }
         note_pin_presented_time();
+        /* pin_next_event_ms() may return now_ms_ when a PIN timer is due; without a
+           forward step the LVGL login timer can spin here and trip the task WDT. */
+        if (now_ms_ <= step_from) {
+            now_ms_ = step_from + 1;
+            if (now_ms_ > target_ms) {
+                now_ms_ = target_ms;
+            }
+        }
     }
 }
 

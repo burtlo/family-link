@@ -28,6 +28,7 @@ typedef struct product_send_stage_result {
 bool product_send_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot);
 void product_send_detach(void);
 void product_send_sync_stage(void);
+void product_send_hide_for_login(void);
 void product_send_note_inbox(void);
 void product_send_set_wifi(int up);
 void product_send_set_refresh_failed(int failed);

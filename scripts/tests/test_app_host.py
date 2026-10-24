@@ -118,6 +118,34 @@ class AppMakeAliasTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('scripts/app_host.py flash --kit "alpha" --port "COM9"', result.stdout)
 
+    def test_app_monitor_forwards_port_and_filter(self):
+        import os
+        import subprocess
+
+        root = Path(__file__).resolve().parents[2]
+        env = os.environ.copy()
+        for name in ("KIT", "PORT", "FILTER"):
+            env.pop(name, None)
+        result = subprocess.run(
+            [
+                "make",
+                "--no-print-directory",
+                "-n",
+                "app:monitor",
+                "PORT=/dev/cu.usbmodem101",
+                "FILTER=product_mute:I",
+            ],
+            cwd=root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("scripts/app_host.py monitor", result.stdout)
+        self.assertIn('--port "/dev/cu.usbmodem101"', result.stdout)
+        self.assertIn('--print-filter "product_mute:I"', result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

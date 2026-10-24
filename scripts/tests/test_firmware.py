@@ -8,7 +8,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit
 from device_targets import Port, select, bind
-from firmware import digest, package_for, publish, build
+from firmware import digest, family_build_id_from_package, idf_product_cmake_args, package_for, publish, build
 from project_config import ProjectConfigError
 
 
@@ -53,6 +53,49 @@ class TargetTests(unittest.TestCase):
     def test_bind_rejects_other_kits_serial_before_writing(self):
         with self.assertRaises(ProjectConfigError):
             bind(roster(), "arlo", "COM1", [Port("COM1", "AA11")])
+
+
+class IdfCmakeArgsTests(unittest.TestCase):
+    def test_idf_product_cmake_args_includes_build_id(self):
+        class Config:
+            def path_value(self, key):
+                if key == "firmware.source":
+                    return Path("client/device")
+                if key == "firmware.build":
+                    return Path("build/device")
+                raise KeyError(key)
+
+        args = idf_product_cmake_args(Config(), "abc123")
+        self.assertIn("-DFAMILY_BUILD_ID=abc123", args)
+        self.assertIn("-B", args)
+
+    def test_family_build_id_from_package(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            pkg = root / "pkg"
+            pkg.mkdir()
+            (pkg / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "document": "family-link.firmware-package/v1",
+                        "build_id": "deadbeef",
+                        "target": "esp32s3",
+                        "idf_version": "v5.4.2",
+                        "images": [],
+                        "files": {},
+                    }
+                )
+            )
+            (root / "current.json").write_text('{"package":"pkg"}\n')
+
+            class Config:
+                def path_value(self, key):
+                    return root
+
+                def text(self, key):
+                    return "esp32s3" if key == "idf.target" else "v5.4.2"
+
+            self.assertEqual(family_build_id_from_package(Config()), "deadbeef")
 
 
 class PackageTests(unittest.TestCase):

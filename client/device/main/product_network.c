@@ -143,6 +143,14 @@ static void network_task(void *arg)
     }
 }
 
+int product_network_sta_up(void)
+{
+    if (s_wifi_events == NULL) {
+        return 0;
+    }
+    return (xEventGroupGetBits(s_wifi_events) & WIFI_CONNECTED_BIT) != 0 ? 1 : 0;
+}
+
 void product_network_start(void)
 {
     if (xTaskCreate(network_task, "product_net", 6144, NULL, 4, NULL) != pdPASS) {

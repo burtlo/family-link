@@ -75,6 +75,12 @@ class ProductLoginModelTests(unittest.TestCase):
     def test_p4_mute_release(self):
         self._run("mute-release")
 
+    def test_p4_mute_clears_roster_until_refresh(self):
+        self._run("mute-clears-roster")
+
+    def test_p4_advance_to_progresses_while_muted(self):
+        self._run("advance-mute")
+
     def test_p4_stage_enum(self):
         self._run("stage")
         header = (INCLUDE / "fl_product_login_stages.hpp").resolve()

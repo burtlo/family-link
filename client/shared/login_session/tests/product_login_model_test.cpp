@@ -212,6 +212,42 @@ int test_mute_stale()
     return g_failures;
 }
 
+int test_advance_to_progresses_while_muted()
+{
+    fl_product_login::SessionWriter session;
+    int64_t before;
+    g_failures = 0;
+    establish(&session);
+    session.advance_to(120000);
+    session.mute(session.now_ms());
+    before = session.now_ms();
+    session.advance_to(before + 5000);
+    CHECK(session.now_ms() > before);
+    CHECK(session.now_ms() <= before + 5000);
+    CHECK(session.stage() == fl_product_login::kStageMuted);
+    return g_failures;
+}
+
+int test_mute_clears_roster_until_refresh()
+{
+    fl_product_login::SessionWriter session;
+    g_failures = 0;
+    establish(&session);
+    CHECK(session.hangout_known() != 0);
+    CHECK(session.user_count() == 8);
+    session.mute(session.now_ms());
+    CHECK(session.hangout_known() == 0);
+    CHECK(session.user_count() == 0);
+    session.unmute(session.now_ms());
+    CHECK(session.stage() == fl_product_login::kStageConnecting);
+    CHECK(session.roster_inflight());
+    complete_current(&session, roster(kEight, 8, 1, 200, 1), session.now_ms());
+    CHECK(session.stage() == fl_product_login::kStageRoster);
+    CHECK(session.user_count() == 8);
+    CHECK(session.hangout_known() != 0);
+    return g_failures;
+}
+
 int test_mute_release()
 {
     fl_product_login::SessionWriter session;
@@ -619,7 +655,8 @@ int test_request_identity()
     CHECK(muted.roster_inflight());
     CHECK(muted.stage() == fl_product_login::kStageConnecting);
     CHECK(muted.selectable_cards() == 0);
-    CHECK(muted.user_count() == 8);
+    CHECK(muted.user_count() == 0);
+    CHECK(muted.hangout_known() == 0);
 
     {
         fl_product_login::SessionWriter ghosted;
@@ -654,7 +691,8 @@ int test_request_identity()
         CHECK(ghosted.stage() == fl_product_login::kStageConnecting);
         CHECK(ghosted.selectable_cards() == 0);
         CHECK(strcmp(ghosted.focus_id(), "su-01") == 0);
-        CHECK(ghosted.user_count() == 8);
+        CHECK(ghosted.user_count() == 0);
+        CHECK(ghosted.hangout_known() == 0);
         CHECK(strcmp(ghosted.terminal_for(active), "stale") == 0);
         CHECK(ghosted.terminal_count_for(active) == 1);
         check_one_terminal_each(&ghosted);
@@ -1571,6 +1609,10 @@ int main(int argc, char **argv)
         failures = test_mute_stale();
     } else if (strcmp(name, "mute-release") == 0) {
         failures = test_mute_release();
+    } else if (strcmp(name, "mute-clears-roster") == 0) {
+        failures = test_mute_clears_roster_until_refresh();
+    } else if (strcmp(name, "advance-mute") == 0) {
+        failures = test_advance_to_progresses_while_muted();
     } else if (strcmp(name, "stage") == 0) {
         failures = test_stage_enum();
     } else if (strcmp(name, "stale") == 0) {
@@ -1660,6 +1702,8 @@ int main(int argc, char **argv)
         failures += test_invalid_json_keeps_focus();
         failures += test_mute_stale();
         failures += test_mute_release();
+        failures += test_mute_clears_roster_until_refresh();
+        failures += test_advance_to_progresses_while_muted();
         failures += test_stage_enum();
         failures += test_stale_flag();
         failures += test_wifi_empty_eight_and_overflow();

@@ -1091,6 +1091,31 @@ extern "C" void product_send_on_signed_in(const char *user_id)
 
 extern "C" void product_send_sync_stage(void) { paint_for_stage(); }
 
+static void park_send_obj_for_login(lv_obj_t *obj)
+{
+    if (obj == nullptr) {
+        return;
+    }
+    lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_move_background(obj);
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+}
+
+extern "C" void product_send_hide_for_login(void)
+{
+    if (!s_attached) {
+        return;
+    }
+    hide_picker();
+    hide_receipt();
+    park_send_obj_for_login(s_upper_label);
+    park_send_obj_for_login(s_subtitle);
+    park_send_obj_for_login(s_lower_label);
+    park_send_obj_for_login(s_picker_header);
+    park_send_obj_for_login(s_roster_row);
+    park_send_obj_for_login(s_empty_label);
+}
+
 extern "C" product_send_stage_result_t product_send_apply_intent(int intent, int signed_in)
 {
     fl_product_send::SendStageHooks hooks;

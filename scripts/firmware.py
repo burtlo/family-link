@@ -111,8 +111,7 @@ def build(config, product_kit: str = ""):
     output.mkdir(parents=True, exist_ok=True)
     artifacts.mkdir(parents=True, exist_ok=True)
     build_id = uuid.uuid4().hex
-    args = idf + ["-C", str(source), "-B", str(output), "-DIDF_TARGET=esp32s3",
-                  f"-DSDKCONFIG={output / 'sdkconfig'}", f"-DFAMILY_BUILD_ID={build_id}"]
+    args = idf + idf_product_cmake_args(config, build_id)
     timeout = config.integer("command.build.timeout_seconds", default=900, minimum=1)
     run(args + ["build"], env=env, timeout=timeout)
     run(args + ["merge-bin", "-o", str(output / "firmware.bin")], env=env, timeout=timeout)
@@ -161,6 +160,25 @@ def build(config, product_kit: str = ""):
         (staging / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         package = publish(staging, artifacts, build_id)
     print(f"Built {package / 'firmware.bin'}\nBuild ID: {build_id}")
+
+
+def idf_product_cmake_args(config, build_id: str) -> list[str]:
+    source = config.path_value("firmware.source")
+    output = config.path_value("firmware.build")
+    return [
+        "-C",
+        str(source),
+        "-B",
+        str(output),
+        "-DIDF_TARGET=esp32s3",
+        f"-DSDKCONFIG={output / 'sdkconfig'}",
+        f"-DFAMILY_BUILD_ID={build_id}",
+    ]
+
+
+def family_build_id_from_package(config) -> str:
+    _, manifest = package_for(config)
+    return str(manifest["build_id"])
 
 
 def package_for(config):

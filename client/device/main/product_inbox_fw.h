@@ -17,6 +17,8 @@ void product_inbox_note_refresh(int64_t now_ms);
 void product_inbox_note_refresh_failure(int64_t now_ms);
 void product_inbox_set_wifi(bool up);
 void product_inbox_set_ui_visible(int visible);
+/* Signed-out login: keep inbox chrome under roster/PIN widgets for hit-testing. */
+void product_inbox_push_under_login(void);
 int product_inbox_on_boot_pressed(void);
 
 #ifdef __cplusplus

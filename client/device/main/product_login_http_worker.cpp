@@ -21,6 +21,19 @@
 
 namespace {
 
+int64_t capped_session_advance_target(const fl_product_login::SessionWriter *session, int64_t now_ms)
+{
+    const int64_t max_slice_ms = 250;
+    if (session == nullptr) {
+        return now_ms;
+    }
+    const int64_t session_now = session->now_ms();
+    if (now_ms > session_now + max_slice_ms) {
+        return session_now + max_slice_ms;
+    }
+    return now_ms;
+}
+
 constexpr int kHttpBodyCap = 4096;
 constexpr int kHttpWorkerStack = 16384;
 constexpr int kHttpQueueDepth = 2;
@@ -198,6 +211,35 @@ bool post_job(const HttpJob &job)
         return false;
     }
     return xQueueSend(s_jobs, &job, 0) == pdTRUE;
+}
+
+void drop_queued_roster_jobs(void)
+{
+    HttpJob pending;
+    HttpJob keep[kHttpQueueDepth];
+    int keep_count = 0;
+    int i;
+    if (s_jobs == nullptr) {
+        return;
+    }
+    while (xQueueReceive(s_jobs, &pending, 0) == pdTRUE) {
+        if (pending.kind == kJobRoster) {
+            ESP_LOGI(kTag, "drop queued roster job op=%llu", (unsigned long long)pending.operation_id);
+            continue;
+        }
+        if (keep_count < kHttpQueueDepth) {
+            keep[keep_count++] = pending;
+        }
+    }
+    for (i = 0; i < keep_count; ++i) {
+        (void)xQueueSend(s_jobs, &keep[i], 0);
+    }
+}
+
+extern "C" void product_login_http_on_mute(void)
+{
+    drop_queued_roster_jobs();
+    s_active_roster_id = 0;
 }
 
 void drain_stale_pin_jobs(fl_product_login::SessionWriter *session)
@@ -446,7 +488,7 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
     if (session == nullptr || s_worker == nullptr || s_bearer[0] == '\0') {
         return;
     }
-    session->advance_to(now_ms);
+    session->advance_to(capped_session_advance_target(session, now_ms));
     drain_stale_pin_jobs(session);
     while (s_results != nullptr && xQueueReceive(s_results, &result, 0) == pdTRUE) {
         switch (result.kind) {
@@ -493,6 +535,8 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
         job.timeout_ms = session->roster_request_timeout_ms();
         if (post_job(job)) {
             s_active_roster_id = job.operation_id;
+        } else {
+            ESP_LOGW(kTag, "roster job queue full op=%llu", (unsigned long long)job.operation_id);
         }
     }
     if (session->pin_transport_ready() && session->copy_pin_request(user, (int)sizeof(user), pin, (int)sizeof(pin),
