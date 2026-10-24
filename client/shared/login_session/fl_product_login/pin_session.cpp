@@ -370,6 +370,27 @@ void SessionWriter::fail_pin_transport()
     close_pin_operation("timed_out", "transport");
 }
 
+void SessionWriter::fail_pin_operation_refused()
+{
+    authenticated_ = 0;
+    wipe_pin_secret();
+    pin_phase_ = kPinPhaseIdle;
+    refresh_pin_copy();
+    if (stage_ != kStageMuted && stage_ != kStageWifiUnavailable) {
+        server_unavailable_ = false;
+        if (hangout_known_) {
+            apply_stage(kStageRoster, "pin_refused");
+            selectable_cards_ = 0;
+            begin_roster(now_ms_, false, false);
+        } else {
+            apply_stage(kStageConnecting, "pin_refused");
+            selectable_cards_ = 0;
+            arm_connecting_backoff();
+        }
+    }
+    close_pin_operation("failure", "refused");
+}
+
 void SessionWriter::start_pin_submission(int64_t now_ms)
 {
     now_ms_ = now_ms;
@@ -510,6 +531,10 @@ void SessionWriter::accept_pin_result(const PinResult &result)
         begin_roster(now_ms_, false, false);
         return;
     }
+    if (result.outcome == kPinOutcomeRefused) {
+        fail_pin_operation_refused();
+        return;
+    }
     fail_pin_transport();
 }
 
@@ -615,7 +640,7 @@ void SessionWriter::select_pin_user(const char *user_id, int64_t now_ms)
         return;
     }
     if (text_eq(selected_user_, user_id)) {
-        if (!pin_submitted_ && pin_phase_ == kPinPhaseIdle && stage_ == kStageRoster) {
+        if (!pin_submitted_ && pin_phase_ == kPinPhaseIdle) {
             pin_phase_ = kPinPhaseEntry;
             refresh_pin_copy();
             last_update_level_ = 0;
@@ -702,6 +727,10 @@ void SessionWriter::press_boot(int64_t now_ms)
     }
     if (pin_digit_len_ >= 1 && pin_digit_len_ <= 3) {
         boot_partial_ = 1;
+        if (pin_operation_id_ != 0 && !pin_submitted_) {
+            cancel_pin(now_ms);
+            return;
+        }
         wipe_pin_secret();
         idle_armed_ = false;
         pin_phase_ = kPinPhaseEntry;
@@ -711,6 +740,10 @@ void SessionWriter::press_boot(int64_t now_ms)
         return;
     }
     boot_zero_ = 1;
+    if (pin_operation_id_ != 0 && !pin_submitted_ && terminal_count_for(pin_operation_id_) == 0) {
+        cancel_pin(now_ms);
+    }
+    selected_user_[0] = 0;
     pin_phase_ = kPinPhaseIdle;
     refresh_pin_copy();
     last_update_level_ = 0;

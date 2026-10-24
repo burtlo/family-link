@@ -52,7 +52,8 @@ enum PinOutcome {
     kPinOutcomeSuccess = 2,
     kPinOutcomeWrong = 3,
     kPinOutcomeTimeout = 4,
-    kPinOutcomeUnknownUser = 5
+    kPinOutcomeUnknownUser = 5,
+    kPinOutcomeRefused = 6
 };
 
 struct UserId {
@@ -378,6 +379,7 @@ private:
     void close_pin_operation(const char *terminal, const char *reason);
     void schedule_pin_retry();
     void fail_pin_transport();
+    void fail_pin_operation_refused();
     void reset_scoped();
     void clear_scoped_inflight();
     bool take_scoped_for_mute(uint64_t *operation_id, uint32_t *generation, char *kind, int kind_cap);

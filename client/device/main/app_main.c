@@ -51,8 +51,11 @@ void app_main(void)
 #if CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC
     log_mem_diag("after_display", 1);
 #endif
-    (void)bsp_display_brightness_set(80);
-    if (!product_hardware_buttons_mute_latched()) {
+    /* Latched boot stays at post-init duty 0, including attach failure. */
+    if (product_hardware_buttons_mute_latched()) {
+        (void)bsp_display_backlight_off();
+    } else {
+        (void)bsp_display_brightness_set(80);
         (void)bsp_display_backlight_on();
     }
     ESP_LOGI("bootstrap", "V2_BOOTSTRAP_READY build=%s", FAMILY_BUILD_ID);

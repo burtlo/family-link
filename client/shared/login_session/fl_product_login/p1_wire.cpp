@@ -311,7 +311,28 @@ PinResult classify_pin_http(uint64_t operation_id, uint32_t generation, const ch
         return result;
     }
     result.http_status = http_status;
-    if (!json_balanced(body, body_len) || !schema_is(body, body_len, "fl.session-login-result/2")) {
+    if (!json_balanced(body, body_len)) {
+        result.parse_ok = 0;
+        return result;
+    }
+    if (http_status == 409 || http_status == 410) {
+        char code[32];
+        if (schema_is(body, body_len, "fl.error/2")) {
+            int code_at = find_key(body, body_len, "\"code\"");
+            code[0] = 0;
+            if (code_at >= 0) {
+                read_string(body, body_len, code_at, code, (int)sizeof(code));
+            }
+            if (strcmp(code, "identity_conflict") == 0 || strcmp(code, "operation_expired") == 0) {
+                result.parse_ok = 1;
+                result.outcome = kPinOutcomeRefused;
+                return result;
+            }
+        }
+        result.parse_ok = 0;
+        return result;
+    }
+    if (!schema_is(body, body_len, "fl.session-login-result/2")) {
         result.parse_ok = 0;
         return result;
     }

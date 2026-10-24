@@ -106,6 +106,15 @@ class ProductLoginModelTests(unittest.TestCase):
     def test_p4_wrong_pin_keypad_reopens(self):
         self._run("wrong-pin-keypad")
 
+    def test_p4_wrong_pin_wire_json(self):
+        self._run("wrong-pin-wire")
+
+    def test_p4_pin_refused_recovery_without_mute(self):
+        self._run("pin-refused-recovery")
+
+    def test_p4_pin_partial_boot_cancels_operation_key(self):
+        self._run("pin-partial-boot-key")
+
     def test_p4_cooldown_returns_to_roster(self):
         self._run("cooldown-exit")
 

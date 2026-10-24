@@ -57,6 +57,55 @@ class ProductServerHardeningTests(unittest.TestCase):
         self.assertEqual(body["outcome"], "authenticated")
         return operation_id, body["session"]
 
+    def test_wrong_pin_retries_and_new_operation_can_authenticate(self):
+        """A rejected PIN must not poison later independent login operations."""
+        user = ACCOUNTS["users"][0]
+        with _running_server("hardening-wrong-pin-retry") as base:
+            client = _Client(base)
+            for _ in range(5):
+                operation_id = str(uuid.uuid4())
+                status, result = client.json_request("POST", "/v2/session/login", {
+                    "schema": "fl.session-login/2",
+                    "operation_id": operation_id,
+                    "user_id": user["user_id"],
+                    "pin": "9999",
+                }, bearer=DESK)
+                self.assertEqual(status, 200)
+                self.assertEqual(result["schema"], "fl.session-login-result/2")
+                self.assertEqual(result["operation_id"], operation_id)
+                self.assertEqual(result["outcome"], "wrong_pin")
+                self.assertNotIn("session", result)
+
+            # Wrong PINs do not create or revoke a user session server-side.
+            self.assertEqual(server.STORE.sessions, {})
+
+            # Reusing a rejected operation key with a different PIN is an
+            # identity conflict by contract; a new submission must use a new
+            # operation key.
+            status, conflict = client.json_request("POST", "/v2/session/login", {
+                "schema": "fl.session-login/2",
+                "operation_id": operation_id,
+                "user_id": user["user_id"],
+                "pin": user["pin"],
+            }, bearer=DESK)
+            self.assertEqual(status, 409)
+            self.assertEqual(conflict["code"], "identity_conflict")
+
+            status, authenticated = client.json_request("POST", "/v2/session/login", {
+                "schema": "fl.session-login/2",
+                "operation_id": str(uuid.uuid4()),
+                "user_id": user["user_id"],
+                "pin": user["pin"],
+            }, bearer=DESK)
+            self.assertEqual(status, 200)
+            self.assertEqual(authenticated["outcome"], "authenticated")
+            self.assertEqual(authenticated["user_id"], user["user_id"])
+            self.assertIn("session", authenticated)
+
+            status, inbox = client.json_request("GET", "/v2/inbox", bearer=authenticated["session"])
+            self.assertEqual(status, 200)
+            self.assertEqual(inbox["schema"], "fl.inbox-page/2")
+
     def _open(self, client: _Client, session: str, duration_ms: int = 1000):
         client_id = str(uuid.uuid4())
         status, body = client.json_request("POST", "/v2/outgoing", {
