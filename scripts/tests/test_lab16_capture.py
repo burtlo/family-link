@@ -33,6 +33,39 @@ class Lab16CaptureTest(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
 
+    def test_complete_capture_with_guru_rejected(self):
+        sample = self._ok_sample() + "Guru Meditation Error: Core 0 panic'ed\n"
+        self.assertNotEqual(self._run(sample).returncode, 0)
+
+    def test_absurd_elapsed_rejected(self):
+        sample = self._ok_sample().replace("elapsed_ms=210012", "elapsed_ms=10")
+        proc = self._run(sample)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("duration contradicts", proc.stderr)
+
+    def _ok_sample(self) -> str:
+        return (
+            "LAB16_READY build=lab16-fw-v2 mode=scripted fixture=lab16-sd/v3 harness=1\n"
+            "LAB16_BOOT status=stable settle_ms=500\n"
+            "LAB16_SD status=detected sectors=61071360 sector_bytes=512 capacity_bytes=31268536320 "
+            "bus_width=4 real_freq_khz=20000 read_lba0=ok probe_writes=0\n"
+            "LAB16_STREAM status=recording seconds=210 target_pcm_bytes=6720000 start_lba=2048 sample_rate=16000\n"
+            "LAB16_STREAM status=complete elapsed_ms=210012 pcm_bytes=6720000 "
+            "sectors_written=13126 driver_writes=1641 start_lba=2048 sample_rate=16000\n"
+            "LAB16_UPLOAD status=complete uploaded=210 failed=0\n"
+            "LAB16_HARNESS_DONE status=complete\n"
+        )
+
+    def _run(self, sample: str):
+        path = self._tmpdir() / "cap.txt"
+        path.write_text(sample, encoding="utf-8")
+        return subprocess.run(
+            [sys.executable, str(VERIFY), str(path)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
     def _tmpdir(self) -> Path:
         import tempfile
 

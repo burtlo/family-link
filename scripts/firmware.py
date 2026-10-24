@@ -81,6 +81,7 @@ def _invalidate_stale_sdkconfig(defaults_path: Path, build_dir: Path) -> None:
     meta = build_dir / "sdkconfig.defaults.sha256"
     if not defaults_path.is_file():
         return
+    build_dir.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256(defaults_path.read_bytes()).hexdigest()
     if sdkconfig.is_file() and (not meta.is_file() or meta.read_text(encoding="utf-8").strip() != digest):
         print(f"Removing stale {sdkconfig} (sdkconfig.defaults changed)")
@@ -135,6 +136,23 @@ def build(config, product_kit: str = ""):
             shutil.copyfile(output / name, staging / name)
         shutil.copyfile(output / "family_link_bootstrap.elf", staging / "firmware.elf")
         shutil.copyfile(source / "partitions.csv", staging / "partitions.csv")
+        sdkconfig_path = staging / "sdkconfig"
+        sdkconfig_hash = digest(sdkconfig_path) if sdkconfig_path.is_file() else ""
+        elf_path = staging / "firmware.elf"
+        elf_size = elf_path.stat().st_size if elf_path.is_file() else 0
+        sdkconfig_text = sdkconfig_path.read_text(encoding="utf-8") if sdkconfig_path.is_file() else ""
+        defaults_text = (source / "sdkconfig.defaults").read_text(encoding="utf-8")
+        build_report = device_build_report(
+            build_id,
+            sdkconfig_text,
+            defaults_text,
+            elf_size,
+            product_kit,
+            sdkconfig_hash,
+        )
+        (staging / "device-build-report.json").write_text(
+            json.dumps(build_report, indent=2) + "\n", encoding="utf-8"
+        )
         manifest = {"document": "family-link.firmware-package/v1", "build_id": build_id,
                     "created_at": datetime.now(timezone.utc).isoformat(), "target": "esp32s3",
                     "idf_version": config.text("idf.version"), "images": images,
@@ -169,9 +187,36 @@ def package_for(config):
         raise ProjectConfigError("No valid firmware package; run make build") from exc
 
 
+def product_flash_log_ok(data, build_id):
+    """Product flash evidence needs both boot lines. Bootstrap alone is not UI boot."""
+    if isinstance(data, str):
+        data = data.encode()
+    bootstrap = f"V2_BOOTSTRAP_READY build={build_id}".encode()
+    return bootstrap in data and b"product_ui_ready" in data
+
+
+def device_build_report(
+    build_id, sdkconfig_text, defaults_text, elf_size, product_kit="", sdkconfig_sha256=""
+):
+    from device_guardrails.sdkconfig_baseline import REQUIRED, parse_defaults
+
+    defaults = parse_defaults(defaults_text)
+    built = parse_defaults(sdkconfig_text)
+    return {
+        "document": "family-link.device-build-report/v1",
+        "build_id": build_id,
+        "sdkconfig_sha256": sdkconfig_sha256,
+        "elf_size_bytes": elf_size,
+        "sdkconfig_baselines": {
+            key: built.get(key) or defaults.get(key, "") for key in REQUIRED
+        },
+        "product_kit_overlay": product_kit.strip() or None,
+        "claim_class": "compile",
+    }
+
+
 def capture(port, build_id, log_path, seconds):
     import serial
-    marker = f"V2_BOOTSTRAP_READY build={build_id}".encode()
     deadline = time.monotonic() + seconds
     data = bytearray()
     with serial.Serial(port, 115200, timeout=0.25) as connection, log_path.open("wb") as log:
@@ -181,7 +226,7 @@ def capture(port, build_id, log_path, seconds):
             chunk = connection.read(2048)
             log.write(chunk)
             data.extend(chunk)
-            if marker in data:
+            if product_flash_log_ok(data, build_id):
                 return True
             # Bound host memory even when the port is noisy; retain marker overlap.
             if len(data) > 8192:
@@ -228,8 +273,11 @@ def flash(config, name, all_kits):
             port = wait_for_kit(kit, config.integer("firmware.boot_seconds", default=12, minimum=1))
             if not capture(port.device, manifest["build_id"], logs / f"{kit.id}.log",
                            config.integer("firmware.boot_seconds", default=12, minimum=1)):
-                raise ProjectConfigError("Expected bootstrap build marker not observed")
-            print(f"PASS {kit.id}: written and boot confirmed")
+                raise ProjectConfigError(
+                    "Expected product boot markers not observed "
+                    "(V2_BOOTSTRAP_READY and product_ui_ready)"
+                )
+            print(f"PASS {kit.id}: written and product UI boot confirmed")
         except (ProjectConfigError, OSError, subprocess.SubprocessError) as exc:
             failed = True
             print(f"FAIL {kit.id}: {'written; boot unconfirmed' if written else 'write unconfirmed'}: {exc}", file=sys.stderr)

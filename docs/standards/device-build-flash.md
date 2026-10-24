@@ -1,88 +1,79 @@
-# Device bootstrap build and flash
+# Product device build and flash
 
-The first v2 image is a fresh ESP32-S3 bootstrap: USB diagnostics and a sleeping
-idle task. It has no display, network, media, user session or endpoint credentials.
-Kit nicknames select physical positions; anyone may later log into any endpoint.
+The v2 product firmware under `client/device/` is a full ESP32-S3 (ESP-BOX-3) image:
+display, LVGL shell, login, inbox, record/send, and volume. Kit nicknames select
+physical positions; endpoint credentials come from deployment overlays via
+`make app KIT=<nickname>`.
+
+A **legacy bootstrap path** still exists inside the same binary: early boot logs
+`V2_BOOTSTRAP_READY build=<build-id>` after display init. When the login shell
+attaches successfully, the firmware also logs `product_ui_ready`. Desk acceptance
+must treat those markers as **distinct** claims (see
+[device-target-invariants.md](device-target-invariants.md)).
 
 ## Daily commands
 
 ```text
-make build
+make build              # Bootstrap-style package (no deployment overlay)
+make app:build          # Product build; optional KIT= for Wi-Fi/P1 sdkconfig overlay
+make app:flash          # Flash current package (one connected kit or KIT=)
+make app                # app:build then app:flash
 make devices
-make flash.mazi
-make flash.arlo
-make flash.lynn
-make flash.audrey
-make flash.all
+make flash.mazi         # Named kit targets (deployment alias)
 ```
 
-`make build` requires the configured ESP-IDF version but no USB kit or roster.
-It builds `client/device`, records size data, and publishes an immutable package
-under `artifacts/device/bootstrap/<build-id>/`. A successful package atomically
-updates `current.json`; a failed build leaves the previous package selected.
-The merged `firmware.bin` contains bootloader, partition table and application;
-the package also retains component images, ELF, effective sdkconfig, partition
-layout, IDF flash metadata, size report and SHA-256 hashes.
-
-The component restriction is set before including ESP-IDF's project setup.
-Each package retains `size-components.json` from `idf.py size-components`, so
-linked component contributions can be inspected alongside the total size report.
+`make build` and `make app:build` require the configured ESP-IDF version but no
+USB kit for a plain build. Each successful build records an immutable package
+under `artifacts/device/bootstrap/<build-id>/` and updates `current.json`.
+The merged `firmware.bin` contains bootloader, partition table, and application;
+the package retains component images, ELF, effective sdkconfig, partition layout,
+IDF flash metadata, size report, SHA-256 hashes, and (after `make app:build`)
+`device-build-report.json`.
 
 ### Toolchain version pin
 
 `idf.path` (`IDF_PATH`) must point to a Git checkout for which
 `git describe --tags --exact-match` returns the configured `idf.version`
-(currently `v5.4.2`). The exact tag must be available locally. Detached HEAD at
-that tagged commit is supported; a shallow clone must include the tag. A fork
-can pass the same check if its HEAD resolves to the expected tag; commits beyond
-the tag are rejected even if `idf.py --version` reports the same release family.
-This checks tag identity, not remote provenance or uncommitted SDK changes.
-The check is intentionally strict; it does not fall back to a version string.
+(currently `v5.4.2`). See prior sections in this doc for fork/shallow-clone rules.
 
-`make flash` requires exactly one connected registered kit. Named targets resolve
-deployment alias -> endpoint -> physical kit -> USB serial -> current port.
-There is no remembered-port or first-device fallback. `make flash.all` preflights
-all kits in the active roster before any write, then processes them sequentially.
-Failures return nonzero with a result per kit. Connected-device discovery is
-passive and does not reset devices.
-
-Flashing uses the existing package and verifies its hashes and configured
-target/toolchain. It never builds, stamps identities, provisions credentials or
-automatically binds kits. It writes the component images at IDF-generated offsets
-rather than writing merged-image padding across data gaps. The partition table
-is replaced: migrating existing data or layout is outside this bootstrap contract.
-There is no automatic full-chip erase.
-
-Each write is followed by bounded serial capture looking for that package's
-`V2_BOOTSTRAP_READY build=<build-id>` marker. The firmware repeats the marker every
-two seconds to allow attachment after reset. Logs are retained under
-`logs/device/<run-id>/`. A confirmed write without a matching marker is reported
-as boot unconfirmed, not a successful runtime verification.
+`make flash` / `make app:flash` require exactly one connected registered kit
+unless `KIT=` is set. Flashing verifies package hashes; it does not rebuild.
+A missing kit fails flash. It does not fail `make app:build`.
+Product serial capture after flash requires both
+`V2_BOOTSTRAP_READY build=<build-id>` and `product_ui_ready`.
+The bootstrap line alone is not product UI boot
+(see `scripts/device_guardrails/` and `client/device/README.md`).
 
 ## Explicit USB binding
 
-Use a real local deployment roster (copy the example if needed):
-
 ```text
 make devices
-make device.bind KIT=arlo PORT=COM7
+make device.bind KIT=arlo PORT=/dev/cu.usbmodem…
 ```
 
-Binding updates only the selected kit's USB serial in the local YAML, validates
-before replacing the file, and refuses serials already assigned to another kit.
-On macOS use the current `/dev/cu.*` port instead. Confirm the physical kit before
-binding; USB serial identification does not establish a person's identity.
+Binding updates only the selected kit's USB serial in local deployment YAML.
 
-Settings use the existing host INI/environment resolution: `firmware.source`,
-`firmware.build`, `firmware.artifacts`, `firmware.logs`, `firmware.boot_seconds`
-and `idf.*`. Scripts activate ESP-IDF internally. `make install` remains the
-explicit setup step. Build/flash never install dependencies automatically.
+Settings use `config/host.defaults.ini` (`firmware.source`, `firmware.build`,
+`firmware.artifacts`, `firmware.logs`, `firmware.boot_seconds`, `idf.*`).
+`make install` remains the explicit setup step.
 
-`make test` covers selection and package failure boundaries. Build success is
-L0; matching serial boot evidence supports the bootstrap path on that target.
-Display, timing, media and application behavior remain unverified until added.
-Flash commands are excluded from automatic implementation/repair flows.
+## Verification ladder (product)
 
-Future presentation, single-writer session and worker components must follow
-[client coding standards](client-application-coding-standards.md). Endpoint
-credential provisioning remains a separate later implementation decision.
+| Level | Meaning for product |
+|-------|---------------------|
+| L0 | `make app:build` succeeds; sdkconfig baseline tests pass |
+| L1 | Host model/scripted tests for touched shared libraries |
+| L2 | Host fault-injection / serial checker on saved logs |
+| L3 | Operator-authorized desk run: flash, serial artifact, journey script |
+
+`make test` covers mechanical guardrails (presentation path, sdkconfig lock,
+serial negatives). It does **not** replace L3 desk evidence for user-visible fixes.
+Behavioral MUSTs remain in
+[client-application-coding-standards.md](client-application-coding-standards.md)
+(§§1–2, 4, 7–8, 11–13).
+
+### Stack usage (manual)
+
+Developers may run an IDF build with `-fstack-usage` and inspect `.su` files for
+`app_main`, the LVGL task, and the HTTP workers. That pass informs STK-PATH
+review. CI does not gate merges on stack-usage aggregation.

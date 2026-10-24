@@ -7,6 +7,10 @@ import re
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(ROOT / "scripts"))
+from device_guardrails.serial_common import serial_forbidden_errors, stream_duration_errors
+
 READY = re.compile(r"LAB16_READY build=\S+ mode=scripted fixture=lab16-sd/v3 harness=1")
 SD_OK = re.compile(
     r"LAB16_SD status=detected sectors=\d+ sector_bytes=512 capacity_bytes=\d+ "
@@ -21,7 +25,8 @@ HARNESS_OK = re.compile(r"LAB16_HARNESS_DONE status=complete")
 
 
 def verify(text: str) -> list[str]:
-    errors: list[str] = []
+    errors: list[str] = list(serial_forbidden_errors(text))
+    errors.extend(stream_duration_errors(text))
     if not READY.search(text):
         errors.append("missing LAB16_READY (v3 harness)")
     if not SD_OK.search(text):

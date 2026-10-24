@@ -27,11 +27,14 @@ Historical v1 product docs (vision, requirements, plans, features) remain in the
 
 ## Client engineering
 
-Device bootstrap commands: [build and flash](standards/device-build-flash.md).
+Product device build and flash: [device-build-flash](standards/device-build-flash.md)
+(bootstrap marker `V2_BOOTSTRAP_READY` vs product `product_ui_ready`).
 
 | Doc | Role |
 |-----|------|
 | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) | Portable rules for the next client generation |
+| [`standards/device-target-invariants.md`](standards/device-target-invariants.md) | Product `client/device/` invariants, claim classes, and mechanical guardrail map |
+| [`standards/device-build-flash.md`](standards/device-build-flash.md) | `make app:build` / flash, boot markers, verification ladder |
 | [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) | Orchestrated implementation review, dependency plan, sequential fixes, and independent verification (IDs are per-report); skill `client-code-review` |
 | [`standards/project-configuration.md`](standards/project-configuration.md) | `config.host` / `config.deployment` / `config.labs`, commands, flows, host INI |
 | [`standards/deployment-configuration.md`](standards/deployment-configuration.md) | Desk roster YAML schema and validation |

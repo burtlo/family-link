@@ -7,7 +7,7 @@
 | Area | Role |
 |------|------|
 | [`docs/`](README.md) | Active product documentation, standards, v1 assessments, experience-spec workflow |
-| [`client/device/`](../client/device/) | Product v2 firmware (bootstrap today) |
+| [`client/device/`](../client/device/) | Product v2 firmware (full UI shell; see [device-build-flash](standards/device-build-flash.md)) |
 | [`client/labs/`](../client/labs/) | Per-lab ESP-IDF projects — see [`docs/labs/repository-layout.md`](labs/repository-layout.md) |
 | [`server/device/`](../server/device/) | Product v2 desk wire server (`make server`) |
 | [`server/labs/`](../server/labs/) | Per-lab fixture servers |
@@ -37,6 +37,8 @@ For v1 build/flash commands and archive-local indexes, humans working inside the
 | Experience spec authoring | [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) · skill: [`.cursor/skills/author-experience-specification/SKILL.md`](../.cursor/skills/author-experience-specification/SKILL.md) |
 | Client/server contract authoring | [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) · skill: [`.cursor/skills/author-communication-contract/SKILL.md`](../.cursor/skills/author-communication-contract/SKILL.md) |
 | Client coding standards | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) |
+| Embedded target invariants + desk claim classes | [`standards/device-target-invariants.md`](standards/device-target-invariants.md) |
+| Product device build, flash, markers | [`standards/device-build-flash.md`](standards/device-build-flash.md) |
 | Client review orchestration (review → dependency plan → sequential fix → independent verify) | [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) · skill: [`.cursor/skills/client-code-review/SKILL.md`](../.cursor/skills/client-code-review/SKILL.md) |
 | v1 evidence assessments | [`v1-assessments/`](v1-assessments/carousel-playback.md) (historical evidence, not normative architecture) |
 | Device labs (v2) | [`labs/README.md`](labs/README.md) · [`labs/assistant-guide.md`](labs/assistant-guide.md) · [`standards/labs-configuration.md`](standards/labs-configuration.md) |

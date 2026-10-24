@@ -1,6 +1,7 @@
 #include "bsp/esp-box-3.h"
 #include "esp_app_desc.h"
 #include "esp_chip_info.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_system.h"
@@ -9,10 +10,28 @@
 #include "lvgl.h"
 #include "nvs_flash.h"
 #include "product_display.h"
+#include "sdkconfig.h"
 #include "product_hardware_buttons.h"
 #include "product_login_fw.h"
 #include "product_network.h"
 #include "product_shell_fw.h"
+
+#if CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC
+static void log_mem_diag(const char *phase, int with_lvgl)
+{
+    size_t dma_largest = heap_caps_get_largest_free_block(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+    if (with_lvgl) {
+        lv_mem_monitor_t mon;
+        lv_mem_monitor(&mon);
+        ESP_LOGI("bootstrap",
+                 "mem_diag phase=%s dma_largest_internal=%u lv_used_pct=%u lv_used_kb=%u",
+                 phase, (unsigned)dma_largest, (unsigned)mon.used_pct,
+                 (unsigned)(mon.cur_used / 1024U));
+        return;
+    }
+    ESP_LOGI("bootstrap", "mem_diag phase=%s dma_largest_internal=%u", phase, (unsigned)dma_largest);
+}
+#endif
 
 void app_main(void)
 {
@@ -20,12 +39,18 @@ void app_main(void)
     esp_chip_info_t chip;
     uint8_t mac[6];
 
+#if CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC
+    log_mem_diag("before_display", 0);
+#endif
     /* Bring up LCD/backlight before NVS or Wi-Fi (GPIO 47 / LEDC on ESP-BOX-3). */
     lv_display_t *display = product_display_start();
     if (display == NULL) {
         ESP_LOGE("bootstrap", "display_init_failed");
         return;
     }
+#if CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC
+    log_mem_diag("after_display", 1);
+#endif
     (void)bsp_display_brightness_set(80);
     if (!product_hardware_buttons_mute_latched()) {
         (void)bsp_display_backlight_on();

@@ -12,6 +12,7 @@ import unittest
 import urllib.error
 import urllib.request
 import uuid
+import atexit
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -20,6 +21,26 @@ DEVICE_SERVER = ROOT / "server/device"
 LAB_SERVER = DEVICE_SERVER  # legacy name for imports
 FIXTURES = DEVICE_SERVER / "fixtures"
 RUNTIME = DEVICE_SERVER / "runtime"
+_ISOLATED_RUNTIME = tempfile.TemporaryDirectory(prefix="family-link-p1-host-runtime-")
+atexit.register(_ISOLATED_RUNTIME.cleanup)
+
+
+def _use_isolated_runtime() -> None:
+    """Keep host tests away from the product server's durable runtime."""
+    isolated = Path(_ISOLATED_RUNTIME.name)
+    if Path(server.RUNTIME_DIR).resolve() == RUNTIME.resolve():
+        server.RUNTIME_DIR = isolated
+        server.TOMBSTONE_PATH = isolated / "accepted-tombstones.json"
+        server.LAST_VIEWED_PATH = isolated / "last-viewed.json"
+        server.STORE = server.Store([])
+
+
+def _clear_isolated_runtime() -> None:
+    _use_isolated_runtime()
+    for child in Path(server.RUNTIME_DIR).iterdir():
+        if child.name != ".gitignore" and child.is_file():
+            child.unlink()
+    server.STORE = server.Store([])
 
 _SERVER_SPEC = importlib.util.spec_from_file_location(
     "device_p1_server", DEVICE_SERVER / "main/server.py")
@@ -53,6 +74,7 @@ def _running_server(
     log_path: str | None = None,
     deployment_path: Path | str | None = None,
 ):
+    _use_isolated_runtime()
     port = _free_port()
     httpd = server.create_server(
         "127.0.0.1",
@@ -110,18 +132,10 @@ class _Client:
 
 class P1HostTests(unittest.TestCase):
     def setUp(self):
-        if RUNTIME.exists():
-            for child in RUNTIME.iterdir():
-                if child.name != ".gitignore":
-                    child.unlink()
-        server.STORE.accepted.clear()
-        server.STORE.reset_runtime()
+        _clear_isolated_runtime()
 
     def tearDown(self):
-        # The production record is durable by design; remove this test fixture's
-        # record so later host fixtures do not inherit random login operations.
-        server._pin_operations_path().unlink(missing_ok=True)
-        server.STORE.pin_records.clear()
+        _clear_isolated_runtime()
 
     def _login(self, client: _Client) -> str:
         operation_id = str(uuid.uuid4())
@@ -189,6 +203,23 @@ class P1HostTests(unittest.TestCase):
             self.assertEqual(lost_raw, b"")
             _, after = client.json_request("GET", "/internal/health-clock")
             self.assertGreater(after["last_successful_beat_at"], before["last_successful_beat_at"])
+
+    def test_health_is_liveness_and_ready_reports_recovery_degradation(self):
+        with _running_server("p1-readiness") as base:
+            client = _Client(base)
+            status, health = client.json_request("GET", "/health")
+            self.assertEqual(status, 200)
+            self.assertEqual(health["status"], "live")
+            self.assertTrue(health["ready"])
+            server.STORE.recovery_issues = ["accepted_media_missing"]
+            status, degraded_health = client.json_request("GET", "/health")
+            self.assertEqual(status, 200)
+            self.assertEqual(degraded_health["status"], "live")
+            self.assertFalse(degraded_health["ready"])
+            status, ready = client.json_request("GET", "/ready")
+            self.assertEqual(status, 503)
+            self.assertEqual(ready["status"], "degraded")
+            self.assertEqual(ready["issues"], ["accepted_media_missing"])
 
     def test_health_rejects_non_contract_fields_without_advancing_clock(self):
         invalid_bodies = [

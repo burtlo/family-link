@@ -63,6 +63,23 @@ server certificate; client certificates are not required by this server.
 Runtime receipts, delivered media, last-viewed state, and retained PIN replay
 records are stored under `runtime/` and excluded from Git.
 
+## Liveness, readiness, and shutdown
+
+`GET /health` is a listener liveness check. It returns HTTP 200 with
+`status: "live"`; its `ready` field reports whether persisted delivery
+restoration found a recovery issue, but a live response does not guarantee that
+all device functionality is available. `GET /ready` is the functional
+readiness check: it returns HTTP 200 with `status: "ready"` only when startup
+state has restored without a recorded issue, and HTTP 503 with non-sensitive
+`issues` when degraded. A valid empty hangout is still a successful response
+from `/v2/hangout` and is distinct from an unavailable server.
+
+Ctrl+C and SIGTERM close the listener and optional log before the entrypoint
+exits. The server enables same-address reuse so an owned process can be
+restarted immediately after shutdown. Tests may set `FAMILY_LINK_RUNTIME_DIR`
+to a private directory; normal deployments should keep the default runtime
+location and must not share it between independent server processes.
+
 ## Structured server telemetry
 
 When `--log <path>` is supplied, each request produces one bounded JSONL event

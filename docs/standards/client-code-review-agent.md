@@ -203,6 +203,9 @@ Requirement: <applicable standard/spec section or requirement ID and authority>
 Smallest fix: <one coherent change class; advisory, confirm against current code>
 Verify scenario: <original failure and relevant boundary case>
 Required evidence: <L0-L3 and reason>
+Failure class: <MEM-CAP, MEM-LEDGER, MEM-DELTA, STK-PATH, PRES-PATH, BOOT-MARK, CFG-FP, ACC-NEG, INT-WIRE, LIFE-QUIESCE, or CLAIM from device-target-invariants.md when client/device is touched; otherwise the coding-standards section>
+Max claim class: <tooling | compile | flash | boot-marker | behavior — do not exceed achieved proof>
+Artifact path or waiver: <serial/build id path, or explicit owner waiver + limitation>
 Dependencies: <IDs/decisions and satisfaction criteria, or none>
 Current source state and permitted edits: <state, WIP ownership, assigned boundary>
 ```

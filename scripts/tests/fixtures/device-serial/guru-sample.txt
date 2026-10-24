@@ -1,0 +1,2 @@
+LAB16_READY build=lab16-fw-v2 mode=scripted fixture=lab16-sd/v3 harness=1
+Guru Meditation Error: Core  0 panic'ed (LoadProhibited). Exception was unhandled.

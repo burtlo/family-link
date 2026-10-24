@@ -9,6 +9,7 @@ import json
 import os
 import re
 import secrets
+import signal
 import ssl
 import struct
 import sys
@@ -52,6 +53,9 @@ PIN_RETENTION_S = 60
 LAST_VIEWED_RETENTION_S = 60
 SESSION_TTL_S = 180
 OPEN_UPLOAD_TTL_S = 24 * 60 * 60
+# Maximum time a connected client may leave an HTTP request body incomplete.
+# This bounds handler lifetime during restart without changing normal requests.
+REQUEST_TIMEOUT_S = 5.0
 HEALTH_REASONS = frozenset({"boot", "periodic", "connectivity"})
 PIN_RE = re.compile(r"^[1-9]{4}$")
 UUID_RE = re.compile(
@@ -142,6 +146,8 @@ def _roster_member_for_telemetry(user_id: str) -> bool:
 def _telemetry_route(method: str, path: str) -> str:
     if path == "/health":
         return "/health"
+    if path == "/ready":
+        return "/ready"
     if path == "/internal/health-clock":
         return "/internal/health-clock"
     if path == "/v1/control":
@@ -172,6 +178,7 @@ def _telemetry_route(method: str, path: str) -> str:
 def _telemetry_event_name(method: str, route: str) -> str:
     names = {
         "/health": "health",
+        "/ready": "readiness",
         "/internal/health-clock": "health_clock",
         "/v1/control": "control",
         "/v2/endpoint/health": "endpoint_health",
@@ -204,6 +211,9 @@ INBOX_MAYA = json.loads((FIXTURE_DIR / "inbox-maya.json").read_text(encoding="ut
 MEDIA_AUDIO = (FIXTURE_DIR / "media-audio.pcm").read_bytes()
 MEDIA_SKETCH = (FIXTURE_DIR / "media-sketch.flsk2").read_bytes()
 RUNTIME_DIR = DEVICE_DIR / "runtime"
+_runtime_override = os.environ.get("FAMILY_LINK_RUNTIME_DIR", "").strip()
+if _runtime_override:
+    RUNTIME_DIR = Path(_runtime_override).expanduser().resolve()
 TOMBSTONE_PATH = RUNTIME_DIR / "accepted-tombstones.json"
 LAST_VIEWED_PATH = RUNTIME_DIR / "last-viewed.json"
 
@@ -379,6 +389,24 @@ def _load_tombstones() -> list[dict]:
         return []
     records = payload.get("records", []) if isinstance(payload, dict) else []
     return records if isinstance(records, list) else []
+
+
+def _tombstone_recovery_issues() -> list[str]:
+    """Report durable receipt corruption instead of treating it as empty state."""
+    if not TOMBSTONE_PATH.is_file():
+        return []
+    try:
+        payload = json.loads(TOMBSTONE_PATH.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return ["accepted_tombstone_unreadable"]
+    if not isinstance(payload, dict) or payload.get("schema") != "p1-accepted-tombstones/v1":
+        return ["accepted_tombstone_unreadable"]
+    records = payload.get("records")
+    if not isinstance(records, list):
+        return ["accepted_tombstone_unreadable"]
+    if any(_accepted_from_row(row) is None for row in records):
+        return ["accepted_tombstone_record_invalid"]
+    return []
 
 
 def _atomic_write_json(path: Path, payload: dict) -> None:
@@ -894,6 +922,7 @@ def _accepted_row_payload(accepted: AcceptedSend) -> dict:
 class Store:
     def __init__(self, tombstones: list[dict] | None = None) -> None:
         self.lock = threading.Lock()
+        self.recovery_issues: list[str] = []
         self.last_successful_beat_at: float | None = None
         self.drop_next_health_ack = 0
         self.oversized_inbox_once = 0
@@ -952,6 +981,7 @@ class Store:
 
     def reset_runtime(self) -> None:
         with self.lock:
+            self.recovery_issues = []
             self.last_successful_beat_at = None
             self.drop_next_health_ack = 0
             self.oversized_inbox_once = 0
@@ -978,6 +1008,15 @@ class Store:
                 "last_successful_beat_at": self.last_successful_beat_at,
                 "fixture": FIXTURE_NAME,
             }
+
+    def readiness(self) -> dict:
+        with self.lock:
+            issues = list(self.recovery_issues)
+        return {
+            "ready": not issues,
+            "issues": issues,
+            "fixture": FIXTURE_NAME,
+        }
 
 
 STORE = Store(_load_tombstones())
@@ -1278,8 +1317,15 @@ def _apply_accepted_delivery_locked(accepted: AcceptedSend) -> None:
 
 
 def _restore_persisted_deliveries_locked() -> None:
+    STORE.recovery_issues = _tombstone_recovery_issues()
     for accepted in STORE.accepted.values():
         _apply_accepted_delivery_locked(accepted)
+        if accepted.delivery_item:
+            audio_path = _accepted_media_path(accepted.message_id, "audio")
+            if not audio_path.is_file() and "accepted_media_missing" not in STORE.recovery_issues:
+                # The restore helper may have migrated legacy base64 media. Check
+                # the resulting durable file so failed migration is visible too.
+                STORE.recovery_issues.append("accepted_media_missing")
 
 
 def _restore_persisted_deliveries() -> None:
@@ -1302,7 +1348,7 @@ def reload_persisted_tombstones() -> None:
 
 class LabServer(ThreadingHTTPServer):
     daemon_threads = True
-    allow_reuse_address = False
+    allow_reuse_address = True
 
     def __init__(self, address, handler, run_id: str, log: BoundedRedactingLog | None,
                  tls_enabled: bool = False):
@@ -1318,6 +1364,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def setup(self):
         super().setup()
+        # Bound incomplete request bodies and stalled response reads so a client
+        # cannot keep an owned handler alive indefinitely during restart.
+        self.connection.settimeout(REQUEST_TIMEOUT_S)
         self._telemetry_started = time.monotonic()
         self._telemetry_emitted = False
         self._telemetry_status: int | None = None
@@ -1599,10 +1648,16 @@ class Handler(BaseHTTPRequestHandler):
         self._json(status, payload)
 
     def _read_json(self, max_len: int = 65536) -> dict | None:
-        length = int(self.headers.get("Content-Length", "0") or "0")
+        try:
+            length = int(self.headers.get("Content-Length", "0") or "0")
+        except ValueError:
+            return None
         if length < 0 or length > max_len:
             return None
-        raw = self.rfile.read(length) if length else b""
+        try:
+            raw = self.rfile.read(length) if length else b""
+        except (OSError, ValueError):
+            return None
         if not raw and length:
             return None
         try:
@@ -1718,13 +1773,27 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlsplit(self.path)
         path = parsed.path
         if path == "/health":
-            self._telemetry_outcome = "ready"
+            readiness = STORE.readiness()
+            self._telemetry_outcome = "live"
             self._json(200, {
+                "status": "live",
+                "ready": readiness["ready"],
                 "run_id": self.server.run_id,
                 "fixture_version": MANIFEST["fixture_version"],
                 "fixture_sha256": FIXTURE_SHA256,
                 "server_version": MANIFEST["server_version"],
                 "contracts": MANIFEST.get("contracts", {}),
+            })
+            return
+        if path == "/ready":
+            readiness = STORE.readiness()
+            status = 200 if readiness["ready"] else 503
+            self._telemetry_outcome = "ready" if readiness["ready"] else "degraded"
+            self._json(status, {
+                "status": "ready" if readiness["ready"] else "degraded",
+                "ready": readiness["ready"],
+                "issues": readiness["issues"],
+                "run_id": self.server.run_id,
             })
             return
         if path == "/internal/health-clock":
@@ -2586,8 +2655,27 @@ def main(argv: list[str] | None = None) -> int:
     except (DeploymentLoadError, OSError, ValueError) as exc:
         parser.error(str(exc))
     try:
+        previous_sigint = signal.getsignal(signal.SIGINT)
+        previous_sigterm = signal.getsignal(signal.SIGTERM)
+        # GNU Make may launch the recipe with SIGINT ignored. Restore Python's
+        # normal Ctrl+C handler so the child process participates in shutdown
+        # instead of surviving an interrupted `make server` wrapper.
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+
+        def _handle_sigterm(signum, frame):
+            # Route SIGTERM through the same finally block as Ctrl+C so the
+            # listening socket and log are closed deterministically.
+            raise KeyboardInterrupt
+
+        signal.signal(signal.SIGTERM, _handle_sigterm)
         httpd.serve_forever(poll_interval=0.1)
+    except KeyboardInterrupt:
+        # Ctrl+C is a normal operator shutdown, not a server failure.
+        return 0
     finally:
+        signal.signal(signal.SIGINT, previous_sigint)
+        signal.signal(signal.SIGTERM, previous_sigterm)
+        httpd.server_close()
         if httpd.log is not None:
             httpd.log.close()
     return 0

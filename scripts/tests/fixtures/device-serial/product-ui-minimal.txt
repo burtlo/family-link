@@ -1,0 +1,3 @@
+I (bootstrap) V2_BOOTSTRAP_READY build=abc123
+I (bootstrap) product_ui_ready
+I (product_login) V2_PRODUCT_LOGIN_READY build=abc123
