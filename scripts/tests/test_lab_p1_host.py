@@ -29,7 +29,11 @@ import sys
 sys.modules[_SERVER_SPEC.name] = server
 _SERVER_SPEC.loader.exec_module(server)
 
-ACCOUNTS = json.loads((FIXTURES / "accounts.json").read_text(encoding="utf-8"))
+# Keep host credentials and roster expectations aligned with the static YAML
+# deployment that create_server loads at startup. The legacy JSON fixtures are
+# retained for fixture-integrity tests only.
+server.load_server_deployment(server.DEFAULT_DEPLOYMENT_PATH)
+ACCOUNTS = server.ACCOUNTS
 DESK = ACCOUNTS["desk_token"]
 SKETCH_VECTORS = json.loads((FIXTURES / "sketch-replay.json").read_text(encoding="utf-8"))
 
@@ -47,6 +51,7 @@ def _running_server(
     run_id: str,
     reload_tombstones: bool = False,
     log_path: str | None = None,
+    deployment_path: Path | str | None = None,
 ):
     port = _free_port()
     httpd = server.create_server(
@@ -55,6 +60,7 @@ def _running_server(
         run_id,
         log_path=log_path,
         reload_tombstones=reload_tombstones,
+        deployment_path=deployment_path,
     )
     thread = threading.Thread(target=httpd.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True)
     thread.start()
@@ -88,7 +94,10 @@ class _Client:
             with urllib.request.urlopen(req, timeout=3) as response:
                 return response.status, response.read(), dict(response.headers)
         except urllib.error.HTTPError as exc:
-            return exc.code, exc.read(), dict(exc.headers)
+            try:
+                return exc.code, exc.read(), dict(exc.headers)
+            finally:
+                exc.close()
 
     def json_request(self, method: str, path: str, payload: dict | None = None,
                      bearer: str | None = None) -> tuple[int, dict]:
@@ -268,15 +277,16 @@ class P1HostTests(unittest.TestCase):
             self.assertEqual(missing["code"], "operation_expired")
 
     def test_get_hangout_roster_desk_bearer(self):
-        roster_fixture = json.loads((FIXTURES / "roster.json").read_text(encoding="utf-8"))
+        server.load_server_deployment(server.DEFAULT_DEPLOYMENT_PATH)
+        expected_roster = json.loads(json.dumps(server.ROSTER))
         with _running_server("p1-hangout") as base:
             client = _Client(base)
             status, body = client.json_request("GET", "/v2/hangout", bearer=DESK)
             self.assertEqual(status, 200)
             self.assertEqual(body["schema"], "fl.hangout-roster/2")
-            self.assertEqual(body["hangout_id"], roster_fixture["hangout_id"])
-            self.assertEqual(body["revision"], roster_fixture["revision"])
-            self.assertEqual(body["users"], roster_fixture["users"])
+            self.assertEqual(body["hangout_id"], expected_roster["hangout_id"])
+            self.assertEqual(body["revision"], expected_roster["revision"])
+            self.assertEqual(body["users"], expected_roster["users"])
 
     def test_pin_operation_id_replay_returns_same_session(self):
         operation_id = str(uuid.uuid4())

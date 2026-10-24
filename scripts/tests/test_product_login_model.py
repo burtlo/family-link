@@ -124,6 +124,9 @@ class ProductLoginModelTests(unittest.TestCase):
     def test_p4_failed_body_arms_backoff(self):
         self._run("body-backoff")
 
+    def test_p4_roster_accepts_uint32_revision(self):
+        self._run("roster-revision")
+
     def test_p4_pin_retry_honors_delay(self):
         self._run("pin-retry-wait")
 

@@ -27,11 +27,11 @@ const char kSnapshot[] =
     "\"items\":["
     "{\"message_id\":\"msg-a\",\"sender_user_id\":\"u1\",\"sender_name\":\"Ari\","
     "\"sender_avatar_id\":\"avatar-01\",\"sender_card_background_id\":\"card-bg-02\","
-    "\"duration_ms\":1000,\"media\":{\"audio\":{\"format_id\":\"pcm_s16le\",\"byte_count\":32000,"
+    "\"duration_ms\":1000,\"media\":{\"audio\":{\"format_id\":\"pcm_s16le\",\"byte_count\":131072,"
     "\"sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}},"
     "{\"message_id\":\"msg-b\",\"sender_user_id\":\"u2\",\"sender_name\":\"Sam\","
     "\"sender_avatar_id\":\"avatar-01\",\"sender_card_background_id\":\"card-bg-02\","
-    "\"duration_ms\":500,\"media\":{\"audio\":{\"format_id\":\"pcm_s16le\",\"byte_count\":16000,"
+    "\"duration_ms\":500,\"media\":{\"audio\":{\"format_id\":\"pcm_s16le\",\"byte_count\":64000,"
     "\"sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}}"
     "]}";
 
@@ -40,6 +40,7 @@ const char *kTokenA = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 int load_inbox(fl_product_inbox::CarouselSession &session)
 {
+    session.set_wifi(true, 0);
     session.set_session_generation(1);
     return session.deliver_inbox_worker_result(1, 1, 200, kSnapshot, (int)strlen(kSnapshot), 0) == 1;
 }
@@ -134,12 +135,18 @@ int test_playback_pause_flag()
     CHECK(load_inbox(inbox));
     inbox.select_index(1, 0);
     CHECK(inbox.toggle_transport(0) == 1);
+    const uint32_t playback_op = inbox.playback_operation_id();
     while (delivered < (int)fl_product_inbox::kAudioPrefixBytes) {
         const int step = (int)sizeof(chunk);
-        (void)inbox.deliver_audio_chunk(chunk, step, 0, 1, 0);
+        (void)inbox.deliver_audio_chunk(playback_op, inbox.selected_message_id(), chunk, step, 0, 1, 0);
         delivered += step;
+        if (inbox.playback_phase() == fl_product_inbox::kPlaybackPlaying && inbox.play_head_ms() > 0) {
+            break;
+        }
     }
     CHECK(inbox.playback_phase() == fl_product_inbox::kPlaybackPlaying);
+    CHECK(inbox.play_head_ms() > 0);
+    CHECK(inbox.play_head_ms() < (int)inbox.message_at(inbox.selected_index())->duration_ms);
     const int buffered = inbox.audio_bytes_buffered();
     CHECK(journey.enter_from_inbox(inbox, 0) == 1);
     CHECK(journey.playback_pause_armed() == 1);
@@ -207,19 +214,33 @@ int test_play_head_boot_roundtrip()
     CHECK(load_inbox(inbox));
     inbox.select_index(0, 0);
     CHECK(inbox.toggle_transport(0) == 1);
+    const uint32_t playback_op = inbox.playback_operation_id();
+    const int duration_ms = (int)inbox.message_at(0)->duration_ms;
+    const int byte_count = (int)inbox.message_at(0)->audio.byte_count;
     while (delivered < (int)fl_product_inbox::kAudioPrefixBytes + 4096) {
         const int step = (int)sizeof(chunk);
-        (void)inbox.deliver_audio_chunk(chunk, step, 0, 1, 0);
+        CHECK(inbox.deliver_audio_chunk(playback_op, inbox.selected_message_id(), chunk, step, 0, 1, 0) == 1);
         delivered += step;
     }
+    CHECK(byte_count > delivered);
+    CHECK(inbox.audio_bytes_buffered() < byte_count);
+    CHECK(inbox.playback_phase() == fl_product_inbox::kPlaybackPlaying);
     play_head_before = inbox.play_head_ms();
     CHECK(play_head_before > 0);
+    CHECK(play_head_before < duration_ms);
     CHECK(journey.enter_from_inbox(inbox, 0) == 1);
+    CHECK(inbox.settings_pause_active() == 1);
+    CHECK(inbox.playback_phase() == fl_product_inbox::kPlaybackPaused);
     CHECK(inbox.play_head_ms() == play_head_before);
+    CHECK(inbox.playback_operation_id() == 0);
     CHECK(journey.leave_to_inbox(inbox, 0) == 1);
+    CHECK(inbox.settings_pause_active() == 0);
     CHECK(inbox.selected_index() == 0);
     CHECK(strcmp(inbox.selected_message_id(), "msg-a") == 0);
+    CHECK(inbox.playback_phase() == fl_product_inbox::kPlaybackPaused);
     CHECK(inbox.play_head_ms() == play_head_before);
+    CHECK(inbox.play_head_ms() < duration_ms);
+    CHECK(inbox.playback_operation_id() == 0);
     return g_failures;
 }
 

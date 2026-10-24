@@ -88,7 +88,23 @@ struct PendingSend {
 PendingSend s_pending;
 char s_finished_sender[fl_product_send::kMaxUserId];
 
-int shell_for_place(int place);
+int shell_for_place(int place)
+{
+    switch (place) {
+    case fl_product_send::kSendPlacePicker:
+    case fl_product_send::kSendPlaceCouldntRecord:
+        return (int)FL_SHELL_STAGE_PICKER;
+    case fl_product_send::kSendPlaceWipe:
+    case fl_product_send::kSendPlaceRecording:
+    case fl_product_send::kSendPlaceReverse:
+    case fl_product_send::kSendPlaceFinishReverse:
+        return (int)FL_SHELL_STAGE_RECORD;
+    case fl_product_send::kSendPlaceReceipt:
+        return (int)FL_SHELL_STAGE_RECEIPT;
+    default:
+        return (int)FL_SHELL_STAGE_INBOX;
+    }
+}
 
 void remember_finished_sender(void)
 {
@@ -1031,24 +1047,6 @@ static void begin_finish_collapse_hook(void *capture, int64_t now_ms)
     (void)capture;
     remember_finished_sender();
     product_record_begin_finish_collapse(now_ms);
-}
-
-int shell_for_place(int place)
-{
-    switch (place) {
-    case fl_product_send::kSendPlacePicker:
-    case fl_product_send::kSendPlaceCouldntRecord:
-        return (int)FL_SHELL_STAGE_PICKER;
-    case fl_product_send::kSendPlaceWipe:
-    case fl_product_send::kSendPlaceRecording:
-    case fl_product_send::kSendPlaceReverse:
-    case fl_product_send::kSendPlaceFinishReverse:
-        return (int)FL_SHELL_STAGE_RECORD;
-    case fl_product_send::kSendPlaceReceipt:
-        return (int)FL_SHELL_STAGE_RECEIPT;
-    default:
-        return (int)FL_SHELL_STAGE_INBOX;
-    }
 }
 
 extern "C" void product_send_note_inbox(void) { s_stage.note_inbox(); }

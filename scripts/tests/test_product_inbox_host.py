@@ -29,6 +29,7 @@ SOURCES = [
     INBOX / "fl_product_inbox/p1_wire.cpp",
     INBOX / "fl_product_inbox/presentation.cpp",
     INBOX / "fl_product_inbox/flsk2.cpp",
+    INBOX / "fl_product_inbox/inbox_wire.cpp",
     INBOX / "tests/product_inbox_model_test.cpp",
 ]
 ACCOUNTS = json.loads((FIXTURES / "accounts.json").read_text(encoding="utf-8"))

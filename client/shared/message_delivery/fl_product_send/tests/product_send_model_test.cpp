@@ -1276,8 +1276,12 @@ int test_stage_buttons()
         CHECK(result.place != fl_product_send::kSendPlaceRecording);
         CHECK(blocked.place() == fl_product_send::kSendPlaceReceipt);
         CHECK(queued.ui_phase() == fl_product_send::kSendUiPreparing);
-        CHECK(full.paused == 0);
-        CHECK(full.playing == 1);
+        CHECK(result.paused == 1);
+        CHECK(result.remembered == 1);
+        CHECK(full.paused == 1);
+        CHECK(full.playing == 0);
+        CHECK(full.play_head_ms == 1280);
+        CHECK(strcmp(queued.remembered_inbox_selection(), "msg-jordan") == 0);
         CHECK(full.finishes == 0);
         CHECK(full.discards == 0);
         CHECK(strcmp(queued.outbox().client_message_id(), payload.client_message_id) == 0);

@@ -1,5 +1,6 @@
 #include "fl_product_login_p1_wire.hpp"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -122,10 +123,11 @@ bool read_string(const char *body, int len, int pos, char *dst, int cap)
     return n > 0 || cap > 0;
 }
 
-bool read_int(const char *body, int len, int pos, int *value)
+/* Hangout revision is the first 32 bits of a content hash, so it does not fit in a signed int. */
+bool read_u32(const char *body, int len, int pos, uint32_t *value)
 {
     int i = pos;
-    int number = 0;
+    uint32_t number = 0;
     bool digits = false;
     while (i < len && is_ws(body[i])) {
         i += 1;
@@ -138,8 +140,12 @@ bool read_int(const char *body, int len, int pos, int *value)
         i += 1;
     }
     while (i < len && body[i] >= '0' && body[i] <= '9') {
+        uint32_t digit = (uint32_t)(body[i] - '0');
+        if (number > (4294967295u - digit) / 10u) {
+            return false;
+        }
         digits = true;
-        number = number * 10 + (body[i] - '0');
+        number = number * 10u + digit;
         i += 1;
     }
     if (!digits) {
@@ -195,16 +201,17 @@ RosterResult classify_roster_http(uint64_t operation_id, int perform_ok, int htt
     result.parse_ok = 1;
     int hangout_at = find_key(body, body_len, "\"hangout_id\"");
     char hangout_id[48];
-    int revision = -1;
+    uint32_t revision = 0;
     if (hangout_at < 0 || !read_string(body, body_len, hangout_at, hangout_id, (int)sizeof(hangout_id))) {
         result.valid = 0;
         return result;
     }
     int rev_at = find_key(body, body_len, "\"revision\"");
-    if (rev_at < 0 || !read_int(body, body_len, rev_at, &revision) || revision < 0) {
+    if (rev_at < 0 || !read_u32(body, body_len, rev_at, &revision)) {
         result.valid = 0;
         return result;
     }
+    (void)revision;
     int users_at = find_key(body, body_len, "\"users\"");
     if (users_at < 0) {
         result.valid = 0;

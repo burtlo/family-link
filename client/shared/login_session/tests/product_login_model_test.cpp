@@ -1182,6 +1182,24 @@ int test_unknown_user_refresh()
     return g_failures;
 }
 
+int test_roster_uint32_revision()
+{
+    const char *body =
+        "{\"schema\":\"fl.hangout-roster/2\",\"hangout_id\":\"hangout-kitchen\","
+        "\"revision\":3207079020,"
+        "\"users\":[{\"user_id\":\"user-maya\",\"display_name\":\"Maya\","
+        "\"avatar_id\":null,\"card_background_id\":\"card-bg-01\"}]}";
+    fl_product_login::RosterResult result;
+    g_failures = 0;
+    result = fl_product_login::classify_roster_http(1, 1, 200, body, (int)strlen(body));
+    CHECK(result.parse_ok == 1);
+    CHECK(result.valid == 1);
+    CHECK(result.user_count == 1);
+    CHECK(strcmp(result.users[0].id, "user-maya") == 0);
+    CHECK(strcmp(result.users[0].display_name, "Maya") == 0);
+    return g_failures;
+}
+
 int test_failed_body_backoff()
 {
     fl_product_login::SessionWriter session;
@@ -1292,6 +1310,8 @@ int main(int argc, char **argv)
         failures = test_unknown_user_refresh();
     } else if (strcmp(name, "body-backoff") == 0) {
         failures = test_failed_body_backoff();
+    } else if (strcmp(name, "roster-revision") == 0) {
+        failures = test_roster_uint32_revision();
     } else if (strcmp(name, "pin-retry-wait") == 0) {
         failures = test_pin_retry_wait();
     } else if (strcmp(name, "http-apply") == 0) {

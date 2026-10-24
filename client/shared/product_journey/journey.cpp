@@ -102,6 +102,7 @@ void deliver_pin(HostJourney &journey)
 void load_inbox(HostJourney &journey)
 {
     fl_product_inbox::CarouselSession &inbox = journey.inbox();
+    inbox.set_wifi(true, 0);
     inbox.set_session_generation(1);
     CHECK(inbox.deliver_inbox_worker_result(1, 1, 200, kInboxSnapshot, (int)strlen(kInboxSnapshot), 0) == 1);
 }
@@ -153,15 +154,24 @@ int scenario_inbox_snapshot_during_playback(HostJourney &journey)
     load_inbox(journey);
     journey.inbox().select_index(0, 0);
     CHECK(journey.inbox().toggle_transport(0) == 1);
+    const uint32_t playback_op = journey.inbox().playback_operation_id();
     memset(chunk, 1, sizeof(chunk));
-    while (delivered < 8000) {
-        (void)journey.inbox().deliver_audio_chunk(chunk, (int)sizeof(chunk), 0, 1, 0);
+    while (delivered < (int)fl_product_inbox::kAudioPrefixBytes + (int)sizeof(chunk)) {
+        (void)journey.inbox().deliver_audio_chunk(playback_op, journey.inbox().selected_message_id(), chunk,
+                                                  (int)sizeof(chunk), 0, 1, 0);
         delivered += (int)sizeof(chunk);
     }
-    const int head_before = journey.inbox().play_head_ms();
+    const int duration_ms = (int)journey.inbox().message_at(0)->duration_ms;
+    const int byte_count = (int)journey.inbox().message_at(0)->audio.byte_count;
+    CHECK(journey.inbox().audio_bytes_buffered() >= byte_count);
+    CHECK(journey.inbox().play_head_ms() == duration_ms);
+    CHECK(journey.inbox().playback_phase() == fl_product_inbox::kPlaybackIdle);
+    CHECK(journey.inbox().transport_state() == fl_product_inbox::kTransportPlay);
     CHECK(journey.inbox().deliver_inbox_worker_result(1, 1, 200, kInboxRev2, (int)strlen(kInboxRev2), 0) == 1);
-    CHECK(journey.inbox().play_head_ms() == head_before);
-    printf("scenario=inbox-snapshot-during-playback play_head_ms=%d revision_ok=1\n", head_before);
+    CHECK(journey.inbox().play_head_ms() == duration_ms);
+    CHECK(journey.inbox().playback_phase() == fl_product_inbox::kPlaybackIdle);
+    CHECK(strcmp(journey.inbox().selected_message_id(), "msg-a") == 0);
+    printf("scenario=inbox-snapshot-during-playback play_head_ms=%d revision_ok=1\n", duration_ms);
     return g_failures;
 }
 

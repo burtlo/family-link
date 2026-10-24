@@ -10,6 +10,7 @@ struct InboxParseResult {
     int schema_ok;
     int has_more;
     int oversize;
+    int overflow;
     uint32_t inbox_revision;
     char last_viewed_message_id[kMaxMessageId];
     int message_count;

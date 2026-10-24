@@ -12,9 +12,34 @@ Run server:
 make server
 # or
 python3 server/device/main/server.py --run-id local-dev --port 8777
+# or use a private deployment/roster file
+python3 server/device/main/server.py --run-id local-dev --deployment /secure/pilot.yaml
 ```
 
-Desk bearer and PIN values live in `fixtures/accounts.json`. They are redacted from server logs and must not appear in test output.
+The process entrypoint loads the committed four-user pilot roster from
+`fixtures/deployment.yaml` before it starts listening. `--deployment` and its
+`--roster` alias select another YAML deployment using the shared deployment
+schema and loader. The endpoint token binds desk authentication; the endpoint's
+`hangout_id` supplies the hangout identity, and the four YAML users supply
+account PINs and roster display names. The committed token and PINs are fixture
+credentials only, not production secrets.
+
+The deployment is read once at startup and is intentionally not hot-reloaded.
+Editing the YAML has no effect on a running process; restart the server to
+apply a roster change. Dynamic roster administration and HTTP mutation routes
+are out of scope for the initial pilot. The JSON files under `fixtures/` remain
+isolated host-test fixtures and are not the production entrypoint's source of
+truth.
+
+YAML deployment validation and runtime loading require the repository host
+dependencies PyYAML and `jsonschema`. From the repository root, run `make
+install` first and use `.venv/bin/python` for direct server or validation
+commands. Startup fails closed if the YAML file is missing/invalid or those
+dependencies are unavailable; the server does not fall back to the legacy JSON
+fixtures.
+
+Desk bearer and PIN values are redacted from server logs and must not appear in
+test output.
 
 For local device bring-up and host tests, `make server` serves plain HTTP. Use
 only fixture credentials on an isolated development network; plain HTTP is not
@@ -37,3 +62,41 @@ and refuses `--production` without TLS. The endpoint must trust the configured
 server certificate; client certificates are not required by this server.
 Runtime receipts, delivered media, last-viewed state, and retained PIN replay
 records are stored under `runtime/` and excluded from Git.
+
+## Structured server telemetry
+
+When `--log <path>` is supplied, each request produces one bounded JSONL event
+with schema `family-link.server-telemetry/1`. Events include the normalized
+route, status, outcome/status class, elapsed milliseconds, attempt number, run
+ID, fixture context, and safe operation, send, user, range, or resource fields
+where applicable. Routes use placeholders for message and client IDs so query
+strings and arbitrary paths are not copied into diagnostics.
+
+The log is redacted and bounded by the existing log sink. PINs, bearer/session
+credentials, request bodies, boot identifiers, and media contents are never
+logged. `status_class` distinguishes `success`, `refusal`, `resource`,
+`storage`, and `retryable_failure` outcomes for deployment debugging.
+
+## Server deployment/qualification limits
+
+The following are server deployment and qualification limits for this fixture
+server. They bound resource use in the P3 implementation; they do not change
+the normative product contract.
+
+- Total media per open upload is capped at 6,022,144 bytes: 5,760,000 bytes
+  for the 180-second PCM audio limit plus 262,144 bytes for an optional sketch;
+  this bounds each upload's durable media reservation.
+- Parts are 16 KiB each; the corresponding caps are 352 audio parts and 16 sketch parts per upload. This keeps each request and part manifest bounded.
+- At most 4 concurrent open uploads are admitted, with an aggregate open-upload
+  byte budget of 24,088,576 bytes (four maximum-size uploads), bounding the
+  server's simultaneous disk reservation.
+- A sketch is capped at 32,768 `flsk2` points, or 262,144 bytes, bounding
+  sketch validation and storage.
+- Each serialized inbox snapshot is capped at 262,144 bytes. A send that would
+  exceed that deployment budget is rejected before publication, keeping inbox
+  responses within the qualification envelope.
+- Accepted media is retained on the server until later culling functionality
+  is available; this server does not perform media culling.
+
+These limits are qualification and deployment guardrails only. They are not
+new client-visible product behavior or a revision of the product contract.

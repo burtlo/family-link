@@ -1,8 +1,10 @@
 #include "product_send_http_worker.h"
 
+#include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/idf_additions.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "nvs.h"
@@ -204,7 +206,8 @@ extern "C" bool product_send_http_worker_start(void)
         product_send_http_worker_stop();
         return false;
     }
-    if (xTaskCreate(worker_task, "send_http", kHttpWorkerStack, nullptr, 5, &s_worker) != pdPASS) {
+    if (xTaskCreateWithCaps(worker_task, "send_http", kHttpWorkerStack, nullptr, 5, &s_worker,
+                            MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) != pdPASS) {
         ESP_LOGE(kTag, "task create failed");
         product_send_http_worker_stop();
         return false;
@@ -216,7 +219,7 @@ extern "C" bool product_send_http_worker_start(void)
 extern "C" void product_send_http_worker_stop(void)
 {
     if (s_worker != nullptr) {
-        vTaskDelete(s_worker);
+        vTaskDeleteWithCaps(s_worker);
         s_worker = nullptr;
     }
     if (s_jobs != nullptr) {

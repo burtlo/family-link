@@ -1,0 +1,40 @@
+# Static, non-secret four-user pilot deployment for the product desk server.
+# The endpoint token and PINs below are fixture credentials only. Use --deployment
+# with a private YAML file for any real deployment; this file is not hot-reloaded.
+$schema: config/deployment/deployment.schema.v1.json
+
+deployment:
+  id: hangout-kitchen
+  name: Four-user pilot hangout
+
+users:
+  - id: user-maya
+    name: Maya
+    pin: "1234"
+  - id: user-jordan
+    name: Jordan
+    pin: "5678"
+  - id: user-riley
+    name: Riley
+    pin: "2468"
+  - id: user-casey
+    name: Casey
+    pin: "1357"
+
+endpoints:
+  - id: endpoint-kitchen
+    name: Kitchen pilot server
+    # Fixture credential; never use this token for a real deployment.
+    token: fYwEAgUH2Z-s1OlvRzn1XC99a-2rHASO-s8DQdsTleo
+    hangout_id: hangout-kitchen
+
+secrets_profiles:
+  default:
+    wifi_ssid: ""
+    wifi_password: ""
+
+kits:
+  - id: kit-kitchen
+    endpoint_id: endpoint-kitchen
+    secrets_profile: default
+    usb_serial: ""

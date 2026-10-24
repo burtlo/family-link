@@ -1,0 +1,14 @@
+[stdout] LAB-16 diary server 0.0.0.0:8776 run_id=20261024-upload-run-c4c3662e
+[stdout] 127.0.0.1 - - [24/Oct/2026 10:13:09] "GET /health HTTP/1.1" 200 -
+[stdout] Traceback (most recent call last):
+[stdout]   File "/Users/lynnfrank/src/family-link/server/labs/lab-16-attached-storage/server.py", line 230, in <module>
+[stdout]     main()
+[stdout]     ~~~~^^
+[stdout]   File "/Users/lynnfrank/src/family-link/server/labs/lab-16-attached-storage/server.py", line 226, in main
+[stdout]     httpd.serve_forever()
+[stdout]     ~~~~~~~~~~~~~~~~~~~^^
+[stdout]   File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/socketserver.py", line 235, in serve_forever
+[stdout]     ready = selector.select(poll_interval)
+[stdout]   File "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/lib/python3.14/selectors.py", line 398, in select
+[stdout]     fd_event_list = self._selector.poll(timeout)
+[stdout] KeyboardInterrupt

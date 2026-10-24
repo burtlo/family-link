@@ -36,9 +36,11 @@ int DeskVolumeJourney::enter_from_inbox(fl_product_inbox::CarouselSession &inbox
 
 int DeskVolumeJourney::leave_to_inbox(fl_product_inbox::CarouselSession &inbox, int64_t now_ms)
 {
-    (void)inbox;
-    (void)now_ms;
-    return session_.leave_volume();
+    if (session_.leave_volume() != 1) {
+        return 0;
+    }
+    inbox.clear_settings_pause(now_ms);
+    return 1;
 }
 
 int DeskVolumeJourney::mute_from_volume(fl_product_inbox::CarouselSession &inbox,

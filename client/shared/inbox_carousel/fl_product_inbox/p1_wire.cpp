@@ -265,10 +265,16 @@ int parse_inbox_snapshot(const char *body, int body_len, int body_cap, InboxPars
     }
     obj_pos += 1;
     count = 0;
-    while (count < kMaxMessages && obj_pos < body_len) {
+    while (obj_pos < body_len) {
         int mid = find_key(body + obj_pos, body_len - obj_pos, "\"message_id\"");
         if (mid < 0) {
             break;
+        }
+        if (count >= kMaxMessages) {
+            out->overflow = 1;
+            out->parse_ok = 0;
+            out->message_count = 0;
+            return 0;
         }
         int scan = obj_pos + mid;
         int obj_start = scan - 1;

@@ -270,10 +270,12 @@ SendStageResult SendStageReducer::apply(SendIntent intent, SendJourney &journey,
     if (place_ == kSendPlaceInbox && intent == kSendIntentRed) {
         SendUiPhase ui = journey.ui_phase();
         /* SCN-028 / EXP-031: preparing and the connectivity wait are still
-         * this send. Red returns to the receipt. It does not open recipient
-         * selection, start a take, or cancel the outbox. */
+         * this send. Red pauses playback, remembers the inbox card, and
+         * returns to the receipt. It does not open recipient selection,
+         * start a take, or cancel the outbox. */
         if (ui == kSendUiPreparing || ui == kSendUiQueuedWait) {
             if (journey.outbox().signed_in_matches_sender()) {
+                pause_and_remember(journey, hooks, now_ms, &result);
                 enter(kSendPlaceReceipt, &result);
                 return result;
             }

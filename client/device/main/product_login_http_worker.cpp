@@ -1,10 +1,12 @@
 #include "product_login_http_worker.h"
+#include "product_inbox_fw.h"
 #include "product_send_fw.h"
 
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/idf_additions.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "nvs.h"
@@ -242,9 +244,13 @@ void handle_refresh_result(const HttpResult &result)
         fl_product_login::classify_refresh_http(result.exchange.perform_ok, result.exchange.http_status,
                                                 result.exchange.body, result.exchange.body_len);
     s_session->deliver_refresh_completion(refresh, s_session->now_ms());
-    product_send_set_refresh_failed(refresh.perform_ok == 1 && refresh.http_status == 200 && refresh.parse_ok == 1
-                                        ? 0
-                                        : 1);
+    if (refresh.perform_ok == 1 && refresh.http_status == 200 && refresh.parse_ok == 1) {
+        product_send_set_refresh_failed(0);
+        product_inbox_note_refresh(s_session->now_ms());
+    } else {
+        product_send_set_refresh_failed(1);
+        product_inbox_note_refresh_failure(s_session->now_ms());
+    }
 }
 
 void handle_invalidate_result(const HttpResult &result)
@@ -351,8 +357,11 @@ extern "C" bool product_login_http_worker_start(fl_product_login::SessionWriter 
         product_login_http_worker_stop();
         return false;
     }
-    if (xTaskCreate(worker_task, "login_http", kHttpWorkerStack, nullptr, 5, &s_worker) != pdPASS) {
-        ESP_LOGE(kTag, "task create failed free=%lu", (unsigned long)esp_get_free_heap_size());
+    if (xTaskCreateWithCaps(worker_task, "login_http", kHttpWorkerStack, nullptr, 5, &s_worker,
+                            MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) != pdPASS) {
+        ESP_LOGE(kTag, "task create failed free=%lu internal_largest=%u",
+                 (unsigned long)esp_get_free_heap_size(),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
         product_login_http_worker_stop();
         return false;
     }
@@ -363,7 +372,7 @@ extern "C" bool product_login_http_worker_start(fl_product_login::SessionWriter 
 extern "C" void product_login_http_worker_stop(void)
 {
     if (s_worker != nullptr) {
-        vTaskDelete(s_worker);
+        vTaskDeleteWithCaps(s_worker);
         s_worker = nullptr;
     }
     if (s_jobs != nullptr) {
