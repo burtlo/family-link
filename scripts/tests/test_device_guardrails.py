@@ -164,6 +164,27 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         """
         self.assertGreater(len(lab16_stack_job_errors(sample)), 0)
 
+    def test_signed_in_mute_does_not_stop_inbox_worker(self):
+        """Mute runs on the LVGL timer. Stopping the inbox task there can stall it."""
+        text = (ROOT / "client/device/main/product_inbox_bridge.cpp").read_text(encoding="utf-8")
+        start = text.find("void product_inbox_on_mute(void)")
+        end = text.find("void product_inbox_note_refresh", start)
+        self.assertGreater(start, 0)
+        self.assertGreater(end, start)
+        body = text[start:end]
+        self.assertNotIn("product_inbox_http_worker_stop", body)
+        self.assertNotIn("vTaskDelete", body)
+        login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(encoding="utf-8")
+        timer = login.find("void on_login_timer")
+        timer_end = login.find("fl_product_login::SessionWriter *product_login_session", timer)
+        tick = login[timer:timer_end]
+        poll = tick.find("product_hardware_buttons_poll")
+        http = tick.find("product_login_http_service")
+        self.assertGreaterEqual(poll, 0)
+        self.assertGreater(http, poll)
+        self.assertIn("product_inbox_discard_results()", tick)
+        self.assertLess(poll, tick.find("product_inbox_discard_results()"))
+
     def test_product_worker_stops_still_lack_ack(self):
         """LIFE-QUIESCE is open. This program does not rewrite the workers."""
         errors = product_stop_without_ack()

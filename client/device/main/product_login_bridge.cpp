@@ -711,6 +711,9 @@ void on_login_timer(lv_timer_t *timer)
         s_dot_ms = now_ms;
         s_dot_phase = (s_dot_phase + 1) % 3;
     }
+    /* Sample the latch before HTTP so mute can blank and sign out even when
+     * a later inbox drain is still retiring the previous session. */
+    product_hardware_buttons_poll();
     flush_wifi_schedule();
     ensure_http_worker();
     s_session.advance_to(now_ms);
@@ -719,12 +722,15 @@ void on_login_timer(lv_timer_t *timer)
     if (s_session.signed_in() != 0) {
         product_inbox_service(now_ms);
         product_volume_service(now_ms);
+    } else {
+        /* The inbox task stays up across mute. Drop finished results so its
+         * result queue cannot fill and block it. */
+        product_inbox_discard_results();
     }
     product_record_service(now_ms,
                           product_shell_stage() == FL_SHELL_STAGE_RECORD && !product_volume_active()
                               ? 1
                               : 0);
-    product_hardware_buttons_poll();
     render_login_copy();
 }
 
@@ -793,6 +799,11 @@ extern "C" void product_login_on_mute_level(int latched)
     const int64_t now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
     bool changed = false;
     if (latched) {
+        if (!s_backlight_dark) {
+            (void)bsp_display_backlight_off();
+            s_backlight_dark = true;
+            changed = true;
+        }
         if (s_session.stage() != fl_product_login::kStageMuted) {
             product_stage_on_mute();
             if (!(product_volume_active() && product_volume_on_mute() != 0)) {
@@ -802,26 +813,23 @@ extern "C" void product_login_on_mute_level(int latched)
             }
             changed = true;
         }
-        if (!s_backlight_dark) {
-            (void)bsp_display_backlight_off();
-            s_backlight_dark = true;
-            changed = true;
-        }
         if (changed) {
+            ESP_LOGI("product_login", "mute_latch latched=1 stage=%s", s_session.stage_name());
             render_login_copy();
         }
         return;
-    }
-    if (s_session.stage() == fl_product_login::kStageMuted) {
-        s_session.unmute(now_ms);
-        changed = true;
     }
     if (s_backlight_dark) {
         (void)bsp_display_backlight_on();
         s_backlight_dark = false;
         changed = true;
     }
+    if (s_session.stage() == fl_product_login::kStageMuted) {
+        s_session.unmute(now_ms);
+        changed = true;
+    }
     if (changed) {
+        ESP_LOGI("product_login", "mute_latch latched=0 stage=%s", s_session.stage_name());
         render_login_copy();
     }
 }

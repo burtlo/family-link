@@ -314,36 +314,6 @@ void apply_face(CardWidget *card, int portrait_hidden)
     set_hidden(card->canvas, hide_identity ? 0 : 1);
 }
 
-void release_card_canvas(CardWidget *card)
-{
-    if (card == nullptr || card->alive == 0) {
-        return;
-    }
-    if (card->canvas != nullptr) {
-        lv_obj_delete(card->canvas);
-        card->canvas = nullptr;
-    }
-    if (card->canvas_buf != nullptr) {
-        free(card->canvas_buf);
-        card->canvas_buf = nullptr;
-    }
-    card->has_ink = 0;
-    card->painted_len = -1;
-    card->painted_head = -1;
-    card->painted_done = 0;
-    apply_face(card, fl_product_inbox::card_face_portrait_hidden(0));
-}
-
-void release_all_canvases(void)
-{
-    int i;
-    for (i = 0; i < fl_product_inbox::kMaxMessages; ++i) {
-        if (s_cards[i].alive) {
-            release_card_canvas(&s_cards[i]);
-        }
-    }
-}
-
 void destroy_card(int slot)
 {
     CardWidget *card;
@@ -1073,16 +1043,35 @@ extern "C" void product_inbox_on_signed_in(void)
     render_inbox();
 }
 
+extern "C" void product_inbox_discard_results(void)
+{
+    const product_inbox_http_result_t *done;
+    if (!s_attached) {
+        return;
+    }
+    while ((done = product_inbox_http_poll()) != nullptr) {
+        if (done->parsed != nullptr) {
+            free(done->parsed);
+        }
+        if (done->data != nullptr) {
+            free(done->data);
+        }
+    }
+}
+
 extern "C" void product_inbox_on_mute(void)
 {
     if (!s_attached) {
         return;
     }
+    /* The LVGL timer samples the mute latch. Deleting the inbox HTTP task
+     * from this timer can stall it while that task holds the heap lock, and
+     * a later unmute then never turns the backlight back on. Leave the task
+     * running. Later ticks drain its results; on_mute retires the generation
+     * so those results cannot restore this session. */
     s_http_allowed = false;
-    product_inbox_http_worker_stop();
     s_wire.reset();
     s_inbox.on_mute((int64_t)(esp_timer_get_time() / 1000LL));
-    release_all_canvases();
     s_user_scrolling = 0;
     product_inbox_set_ui_visible(0);
 }

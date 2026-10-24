@@ -323,11 +323,82 @@ Provide a concise set of framework- and hardware-agnostic MUST/MUST NOT/SHOULD
 rules. Avoid duplicating rules already present in the repository; identify the
 existing standard and recommend a clarification when sufficient.
 
-### Guardrail plan
+### Shipped vs proposed guardrails
 
-Order deterministic checks, tests, review standards, navigation pointers, and
-information-access improvements by expected risk reduction and implementation
-cost.
+Separate **what already landed** in the repair from **what is only recommended**.
+Readers should not read the whole guardrail section as an open to-do list.
+
+For each item, state:
+
+- **Status:** `shipped` | `preserve` | `proposed` | `deferred`
+- **Artifact type:** code | automated test | CI wiring | docs | agent skill |
+  human procedure (desk/serial) | review habit
+- **Evidence:** commit hash, file path, test module name, or “not in repo”
+- **Owner:** user | agent (on request) | team policy | nobody unless chosen
+
+Use these status meanings:
+
+- **shipped** — merged or verified in tree as part of closing the incident
+  (fixes, new tests, logging, skills added during the repair).
+- **preserve** — already exists; risk is **regression** (deleting, skipping, or
+  unwiring). Ongoing action is “keep green in CI” or “run before merge,” not
+  “implement from scratch.”
+- **proposed** — not in repo yet; optional hardening (lint, doc table, extra
+  test). Say explicitly that the repair can be accepted without it.
+- **deferred** — worthwhile but explicitly out of scope; name what would trigger
+  picking it up.
+
+Present two tables (or two subsections), not one blended list:
+
+**Already shipped or in place** — fixes and guardrails delivered with the repair.
+
+**Optional follow-ups** — ordered by risk reduction vs cost; only items with
+status `proposed` or `deferred`.
+
+When classifying rows, use the types from §7 (Mechanical, Judgment, Navigation,
+Operational evidence). Do not label a CI test as “user behavior” or a desk
+checklist as “automated test.”
+
+### Guardrail plan (optional follow-ups only)
+
+List **only** `proposed` and `deferred` items here, ordered by expected risk
+reduction and implementation cost. Each row must include artifact type and a
+one-line “if implemented, it would …” effect.
+
+Do **not** repeat `shipped` or `preserve` items in this subsection except as a
+cross-reference (“see Shipped table, row …”).
+
+### Next actions
+
+End with a short, scannable block so the reader knows what to do **now**. Use
+plain language; tie each line to status from **Shipped vs proposed guardrails**.
+
+Structure:
+
+```text
+Closure
+  Is the incident accepted as fixed? (yes | partial | no) and on what evidence.
+
+No action required
+  Bullet list: outcomes already shipped; preserve-only items (tests to keep green).
+
+Your actions (human)
+  Only if applicable: desk/serial steps, sign-off bar, policy choices, or
+  evidence to capture once. Omit if nothing is required beyond “merged fix.”
+
+Ask the agent (optional)
+  Concrete requests if the user wants follow-up work, e.g. “add guardrail grep for
+  …”, “document COM-SCN ↔ test mapping”, “implement proposed host test …”.
+  One sentence per item; no implementation in this retrospective unless asked.
+
+Unresolved / separate track
+  Orthogonal debt or OPEN contract items not blocking this repair; name owner or
+  deferral trigger.
+```
+
+If everything is `shipped` or `preserve`, say so explicitly under **No action
+required** and keep **Ask the agent** to zero or “only if you want rows from
+Optional follow-ups.”
 
 ### Evidence gaps
 
@@ -347,4 +418,6 @@ The retrospective is incomplete if it:
 - presents framework-specific advice without a portable invariant;
 - claims root cause without primary evidence;
 - invents unspecified product behavior;
-- produces a long list without identifying the dominant causal structure.
+- produces a long list without identifying the dominant causal structure;
+- blends shipped fixes with proposed guardrails in one undifferentiated plan;
+- omits **Next actions** or leaves the reader unsure whether work remains.
