@@ -75,6 +75,10 @@ def _running_server(
     deployment_path: Path | str | None = None,
 ):
     _use_isolated_runtime()
+    if reload_tombstones:
+        server.STORE = server.Store(server._load_tombstones())
+    else:
+        server.STORE = server.Store([])
     port = _free_port()
     httpd = server.create_server(
         "127.0.0.1",

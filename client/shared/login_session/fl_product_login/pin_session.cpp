@@ -55,6 +55,20 @@ uint32_t rotr(uint32_t value, uint32_t bits)
     return (value >> bits) | (value << (32 - bits));
 }
 
+int hex_nibble(char c)
+{
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    return 0;
+}
+
 void sha256_hex(const char *text, char *out, int out_cap)
 {
     static const uint32_t kBits[64] = {
@@ -303,6 +317,27 @@ void SessionWriter::wipe_pin_secret()
     pin_mask_[0] = 0;
 }
 
+void SessionWriter::mint_pin_operation_id()
+{
+    char material[128];
+    char digest_hex[68];
+    uint64_t seq;
+    int i;
+    seq = next_operation_id_++;
+    snprintf(material, sizeof(material), "pin-op-v1|%s|%s|%llu|%" PRIu32,
+             boot_id_[0] != 0 ? boot_id_ : "boot", session_id_, (unsigned long long)seq,
+             generation_);
+    sha256_hex(material, digest_hex, (int)sizeof(digest_hex));
+    pin_operation_id_ = 0;
+    for (i = 0; i < 12; ++i) {
+        int byte = hex_nibble(digest_hex[i * 2]) * 16 + hex_nibble(digest_hex[i * 2 + 1]);
+        pin_operation_id_ = (pin_operation_id_ << 8) | (uint64_t)(byte & 0xff);
+    }
+    if (pin_operation_id_ == 0) {
+        pin_operation_id_ = seq != 0 ? seq : 1;
+    }
+}
+
 void SessionWriter::mint_pin_key()
 {
     char material[96];
@@ -395,8 +430,7 @@ void SessionWriter::start_pin_submission(int64_t now_ms)
 {
     now_ms_ = now_ms;
     if (pin_operation_id_ == 0) {
-        pin_operation_id_ = next_operation_id_;
-        next_operation_id_ += 1;
+        mint_pin_operation_id();
     }
     pin_phase_ = kPinPhaseChecking;
     pin_submitted_ = true;
@@ -684,13 +718,6 @@ bool SessionWriter::enter_pin_digit(char digit, int64_t now_ms)
     if (pin_digit_len_ >= 4) {
         return false;
     }
-    if (pin_digit_len_ == 0 && pin_operation_id_ == 0) {
-        pin_operation_id_ = next_operation_id_;
-        next_operation_id_ += 1;
-        pin_frozen_generation_ = generation_;
-        copy_text(pin_frozen_session_, 16, session_id_);
-        copy_text(pin_frozen_user_, kMaxId, selected_user_);
-    }
     pin_secret_[pin_digit_len_] = digit;
     pin_digit_len_ += 1;
     pin_secret_[pin_digit_len_] = 0;
@@ -775,10 +802,6 @@ uint64_t SessionWriter::begin_pin_request(const char *user_id, const char *pin, 
     }
     pin_secret_[4] = 0;
     pin_digit_len_ = 4;
-    if (pin_operation_id_ == 0) {
-        pin_operation_id_ = next_operation_id_;
-        next_operation_id_ += 1;
-    }
     start_pin_submission(now_ms);
     return pin_operation_id_;
 }

@@ -70,7 +70,9 @@ class ProductLoginHostTests(unittest.TestCase):
             out = completed.stdout
             self.assertNotIn(ACCOUNTS["users"][0]["pin"], out)
             self.assertIn("terminal=success", out)
-            self.assertIn("selectable_cards=2", out)
+            user_count = len(body["users"])
+            self.assertIn(f"selectable_cards={user_count}", out)
+            self.assertIn(f"user_count={user_count}", out)
             self.assertIn("stage=roster", out)
             self.assertEqual(body["schema"], roster_fixture["schema"])
 

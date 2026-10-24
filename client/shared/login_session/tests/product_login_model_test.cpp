@@ -1139,19 +1139,35 @@ int test_pin_partial_boot_cancels_operation_key()
 {
     fl_product_login::SessionWriter session;
     uint64_t first_id;
+    uint64_t second_id;
     g_failures = 0;
     establish(&session);
     session.select_pin_user("su-01", session.now_ms());
     session.enter_pin_digit('1', session.now_ms());
-    first_id = session.pin_operation_id();
-    CHECK(first_id != 0);
+    CHECK(session.pin_operation_id() == 0);
     session.press_boot(session.now_ms());
     CHECK(session.digit_len() == 0);
     CHECK(session.pin_operation_id() == 0);
-    CHECK(strcmp(session.terminal_for(first_id), "cancelled") == 0);
+    session.enter_pin_digit('1', session.now_ms());
     session.enter_pin_digit('2', session.now_ms());
-    CHECK(session.pin_operation_id() != 0);
-    CHECK(session.pin_operation_id() != first_id);
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    first_id = session.pin_operation_id();
+    CHECK(first_id != 0);
+    {
+        fl_product_login::PinResult result =
+            pin_body(&session, fl_product_login::kPinOutcomeWrong, 200, 1, 1);
+        session.deliver_pin_completion(result, session.now_ms());
+    }
+    CHECK(session.pin_phase() == fl_product_login::kPinPhaseWrong);
+    session.advance_to(session.now_ms() + fl_product_login::kWrongPinCopyMs);
+    session.enter_pin_digit('5', session.now_ms());
+    session.enter_pin_digit('6', session.now_ms());
+    session.enter_pin_digit('7', session.now_ms());
+    session.enter_pin_digit('8', session.now_ms());
+    second_id = session.pin_operation_id();
+    CHECK(second_id != 0);
+    CHECK(second_id != first_id);
     return g_failures;
 }
 

@@ -40,6 +40,7 @@ SEND_INCLUDE = SEND / "fl_product_send/include"
 SEND_SOURCES = [
     SEND / "fl_product_send/classify.cpp",
     SEND / "fl_product_send/journey.cpp",
+    SEND / "fl_product_send/send_stage.cpp",
     SEND / "fl_product_send/outbox.cpp",
     SEND / "fl_product_send/p1_wire.cpp",
     SEND / "fl_product_send/picker.cpp",

@@ -373,6 +373,7 @@ private:
     void remember_login(const char *user_id);
     void refresh_pin_copy();
     void mint_pin_key();
+    void mint_pin_operation_id();
     void wipe_pin_secret();
     void release_pin_view();
     void start_pin_submission(int64_t now_ms);

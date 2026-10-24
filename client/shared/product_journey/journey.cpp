@@ -66,9 +66,12 @@ void check(bool ok, const char *text, int line)
 void deliver_roster(HostJourney &journey)
 {
     fl_product_login::SessionWriter &login = journey.login();
-    const uint64_t op = login.roster_operation_id();
-    (void)fl_product_login::deliver_classified_roster(&login, op, 1, 200, kRosterBody, (int)strlen(kRosterBody), 0);
+    const int64_t now_ms = login.now_ms();
+    login.set_wifi(true, now_ms);
     login.ack_health();
+    const uint64_t op = login.roster_operation_id();
+    (void)fl_product_login::deliver_classified_roster(&login, op, 1, 200, kRosterBody, (int)strlen(kRosterBody),
+                                                      now_ms);
 }
 
 fl_product_login::PinResult pin_ok(fl_product_login::SessionWriter &login, uint64_t operation_id)
@@ -90,13 +93,9 @@ fl_product_login::PinResult pin_ok(fl_product_login::SessionWriter &login, uint6
 void deliver_pin(HostJourney &journey)
 {
     fl_product_login::SessionWriter &login = journey.login();
-    login.select_pin_user("user-maya", 0);
-    login.enter_pin_digit('1', 0);
-    login.enter_pin_digit('2', 0);
-    login.enter_pin_digit('3', 0);
-    login.enter_pin_digit('4', 0);
-    const uint64_t op = login.pin_operation_id();
-    login.deliver_pin_completion(pin_ok(login, op), 0);
+    const int64_t now_ms = login.now_ms();
+    const uint64_t op = login.begin_pin_request("user-maya", "1234", now_ms);
+    login.deliver_pin_completion(pin_ok(login, op), now_ms);
 }
 
 void load_inbox(HostJourney &journey)

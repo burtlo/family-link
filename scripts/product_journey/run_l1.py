@@ -46,6 +46,7 @@ SOURCES = [
     VOLUME / "storage.cpp",
     SEND / "classify.cpp",
     SEND / "journey.cpp",
+    SEND / "send_stage.cpp",
     SEND / "outbox.cpp",
     SEND / "p1_wire.cpp",
     SEND / "picker.cpp",
