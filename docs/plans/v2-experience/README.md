@@ -13,6 +13,7 @@ The map does not authorize firmware work. Core-journey wire decisions are record
 | File | Purpose |
 |------|---------|
 | [implementation.md](implementation.md) | **Canonical** — deltas, work packages (P1–P10), verifier hooks, build order |
+| [ui-memory-lifecycle-review-2026-10-25.md](ui-memory-lifecycle-review-2026-10-25.md) | Read-only review of memory ownership, LAB-16 measurement coverage, and scene lifecycle |
 
 ## Normative sources
 
