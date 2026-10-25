@@ -15,13 +15,19 @@ Telemetry: pin_login 409 identity_conflict on …000000000008 then roster 200.
 - **Not in scope:** Wave 2 PRES-PATH / INT-WIRE; unrelated `make test` failures.
 - **Desk tip:** Restart desk server if 409 on “first” submit; capture telemetry on **second** submit.
 
-## Repair prompt excerpt (skill output B)
+## Session plan excerpt (skill output B — in chat)
 
-See [prompt-template.md](prompt-template.md) filled with:
+See [session-plan.md](session-plan.md). Key fields:
 
-- Mode: Review, implement, and verify
-- Tasks: (1) host test wrong_pin then authenticated same user (2) cancel stale PIN HTTP jobs (3) refuse UX vs COM-015
-- Wave exit: wrong pin → retry → inbox without mute, three times
+- **Mode:** Review, implement, and verify
+- **Tasks:** (1) host test wrong_pin then authenticated same user (2) cancel stale PIN HTTP jobs (3) refuse UX vs COM-015
+- **Wave exit:** wrong pin → retry → inbox without mute, three times
+- **First action when you say go:** run named host model tests, then one desk repro with telemetry
 
-The full prompt from the live campaign is intentionally long; this skill’s job is
-to regenerate that shape from fresh notes each time.
+## Invitation (skill output C)
+
+> This is the scope and order I’ll follow. Say **go** when you want me to start
+> fixes in this chat.
+
+After **go**, the agent runs client-code-review discipline in the same session
+(no second chat required).

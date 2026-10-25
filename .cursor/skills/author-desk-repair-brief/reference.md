@@ -22,8 +22,35 @@
 | Operator sees | Invariant / standard | Typical proof |
 |---------------|----------------------|---------------|
 | White screen after Red | PRES-PATH, MEM-CAP | Timer path trace, canvas allocation |
+| Crash / hang at RED or ring reverse | Split: MEM-LEDGER vs PRES-PATH vs SD | Serial phase tags; mem_diag; not “pool” by default |
 | No audio | INT-WIRE | No `product_record_push_pcm` caller |
 | Host green, desk broken | CLAIM §11 | L1 vs behavior |
+
+## Record / send — concurrent resources (do not single-cause)
+
+At **RED finish**, overlapping work often includes:
+
+1. **`finish_capture`** — encode sketch, **SD write + flush** on presentation/button path
+2. **`arm_finish_collapse`** — ring reverse animation (`paint_motion`)
+3. **Upload** — after collapse hold: HTTP reads same SD object (worker task)
+4. **Wi‑Fi / inbox** — may still be active in parallel with UI
+
+| Symptom pattern | Favor investigating… |
+|-----------------|----------------------|
+| Guru / LVGL alloc during wipe/reverse | Ledger A pool / masks |
+| Long freeze on RED, then collapse | SD commit on UI thread |
+| Failure only with Wi‑Fi + send | HTTP + storage ordering |
+| Carousel sketch jank while scrolling | PSRAM canvas + invalidate; not `CONFIG_LV_MEM_SIZE` first |
+
+**Measurement gate:** `CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC`, saved serial through
+RED → receipt, `desk_record_send_check.py`. No `CONFIG_LV_MEM_SIZE` or factory
+partition growth without MEM-DELTA evidence or waiver.
+
+## Presentation path (quick)
+
+`on_login_timer` order: buttons → login → inbox → volume → **send** → **record**
+→ present. Blocking SD or long encode on RED competes with LVGL flush (internal
+DMA draw strip ~10 KiB — separate from 32 KiB object pool).
 
 ## Verification ladder (short)
 
@@ -43,15 +70,16 @@ missing symbols, stale host assertion counts (e.g. `selectable_cards=2` vs 4).
 
 | Role | Suggested model tier |
 |------|----------------------|
-| This skill (prompt author) | Strong — synthesis |
-| client-code-review orchestrator | Strong — scope + verify |
-| Narrow fixer with finding ID | Mid OK |
-| Independent verifier | Strong for timer path / L3 |
+| This skill (brief + investigate + fix) | Strong — synthesis + device loop |
+| Independent verifier subagent | Strong for timer path / L3 |
 
-## Anti-patterns in prompts
+## Anti-patterns in repair sessions
 
+- Jumping to 64 KiB LVGL pool or partition resize before phased measurement
+- Blaming “transition” only when RED + SD + Wi‑Fi overlap
 - Parallel implementers on one tree
-- poc-v1 / x02 “do not implement” essays instead of EXP + COM
+- poc-v1 / x02 essays instead of EXP + COM
 - Closing journey on host tests alone
-- Mixing guardrail program + Wave 2 in one prompt without ordering
+- Mixing guardrail program + Wave 2 without ordering
 - “Power cycle required” without retesting mute/BOOT recovery
+- Handing off a copy-paste prompt when the user wanted same-session fix
