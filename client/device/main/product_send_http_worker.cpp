@@ -195,6 +195,7 @@ extern "C" bool product_send_http_worker_start(void)
         return false;
     }
     ESP_LOGI(kTag, "send HTTP worker ready");
+    product_mem_probe_heap("send_http_worker_ready", 0);
     return true;
 }
 

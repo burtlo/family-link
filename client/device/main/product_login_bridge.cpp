@@ -730,6 +730,7 @@ static void ensure_http_worker(void)
         if (!s_session.roster_inflight() && s_session.stage() == fl_product_login::kStageConnecting) {
             (void)s_session.begin_roster_request(now_ms);
         }
+        product_mem_probe_heap("login_http_worker_ready", s_session.roster_inflight() ? 1 : 0);
         return;
     }
     static int64_t s_last_worker_warn_ms;

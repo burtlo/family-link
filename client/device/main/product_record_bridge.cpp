@@ -386,9 +386,11 @@ extern "C" void product_record_mount_storage(void)
     if (s_store_mu == nullptr) {
         s_store_mu = xSemaphoreCreateRecursiveMutexStatic(&s_store_mu_buf);
     }
+    product_mem_probe_heap("storage_mount_before", 0);
     const esp_err_t mounted = bsp_sdcard_mount();
     s_storage_mounted = mounted == ESP_OK || mounted == ESP_ERR_INVALID_STATE;
     ESP_LOGI(kTag, "sd mount err=%s mounted=%d", esp_err_to_name(mounted), s_storage_mounted ? 1 : 0);
+    product_mem_probe_heap("storage_mount_after", s_storage_mounted ? 1 : 0);
 }
 
 extern "C" bool product_record_attach(lv_obj_t *panel_root)

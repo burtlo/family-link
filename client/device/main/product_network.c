@@ -2,6 +2,7 @@
 
 #include "product_hardware_buttons.h"
 #include "product_login_fw.h"
+#include "product_mem_probe.h"
 
 #include "bsp/esp-box-3.h"
 #include "esp_event.h"
@@ -40,6 +41,7 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         xEventGroupSetBits(s_wifi_events, WIFI_CONNECTED_BIT);
         ESP_LOGI(kTag, "station got IP");
+        product_mem_probe_heap("wifi_got_ip", 0);
         product_login_schedule_wifi_link(true, 0);
     }
 }

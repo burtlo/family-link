@@ -73,6 +73,7 @@ void mic_task(void *arg)
             }
             open = true;
             fill = 0;
+            product_mem_probe_heap("mic_capture_open", 1);
         }
         if (esp_codec_dev_read(s_mic, s_chunk + fill, (int)kReadBytes) != ESP_CODEC_DEV_OK) {
             fail("read");
