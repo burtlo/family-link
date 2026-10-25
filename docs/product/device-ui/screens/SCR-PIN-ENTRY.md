@@ -82,6 +82,24 @@ four → ignore BOOT until verification completes. While
 [`PANEL-STATUS-MESSAGE`](../panels/PANEL-STATUS-MESSAGE.md) occupies the lower
 slot, ignore BOOT and pause the 60-second partial-PIN idle timer.
 
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_LOGIN`; `render_pin_screen()` inside `render_login_copy()`. |
+| Visible surfaces | Upper: heading (avatar, name, marks, `checking...`, `wrong pin`). Lower: PIN pad, or the status label while connecting / no Wi-Fi. |
+| Input | Key `LV_EVENT_PRESSED` → `enter_pin_digit` when `keypad_open()`. The fourth digit submits to the login HTTP worker from the callback. BOOT goes through the button poll to the session. |
+| Enters when | `pin_entry_open()` after a roster selection. Roster cards are deleted on the first PIN render. |
+| Leaves when | Success → signed in → `PRODUCT_SCREEN_INBOX` (login hidden by the compositor). BOOT with no digits → roster. Fifth failure → cooldown. Mute → blank, digits discarded. |
+| Background work | Login HTTP verify on the worker. The tick drains results; the render never does. |
+| Update levels | Level 1: heading and status text change-detected; key opacity changes only when `keypad_open` flips. Level 2: pad ↔ status label in one render. The pad is created once and hidden, never rebuilt per entry. |
+| Never | `lv_indev_reset`, display wake, or z-order calls in this render. Keypad live while `checking...` shows. A sign-in side effect inside render (that runs once from `note_sign_in_edge`). |
+| Open gaps | Cover-down transitions are not implemented (instant swap). |
+
 ## OPEN items
 
 | ID | Question |

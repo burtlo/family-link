@@ -74,6 +74,26 @@ def product_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str]:
         f"CONFIG_FAMILY_WIFI_SSID={sdkconfig_quoted_value(profile.wifi_ssid)}",
         f"CONFIG_FAMILY_WIFI_PASSWORD={sdkconfig_quoted_value(profile.wifi_password)}",
     ]
+    lines.extend(diagnostic_sdkconfig_lines())
+    return lines
+
+
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "y", "yes", "true")
+
+
+def diagnostic_sdkconfig_lines() -> list[str]:
+    """Desk-only diagnostics, opted in per build through the environment."""
+    if not _env_flag("FAMILY_DEVICE_MEM_DIAGNOSTIC"):
+        return []
+    lines = [
+        "CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC=y",
+        "CONFIG_LV_USE_LOG=y",
+        "CONFIG_LV_LOG_LEVEL_WARN=y",
+        "CONFIG_LV_LOG_PRINTF=y",
+    ]
+    if _env_flag("FAMILY_DEVICE_DIAG_SKIP_RING"):
+        lines.append("CONFIG_FAMILY_DEVICE_DIAG_SKIP_RING=y")
     return lines
 
 

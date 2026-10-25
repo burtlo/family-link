@@ -44,6 +44,10 @@ public:
     void notify_mic_failed();
     bool route_touch(int16_t x, int16_t y, uint8_t phase, uint8_t touch_id);
     void poll_capture();
+    /* Drives the hooks installed on renderer_handle(). UI task only. */
+    void render_update();
+    bool render_backlog(size_t *source_points, size_t *pending_points, size_t *drawn_last) const;
+    uint8_t selected_color() const;
     bool stop_recording();
     void cancel_recording();
 

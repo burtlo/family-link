@@ -170,6 +170,25 @@ upper content bounds.
 4. Panel and component docs listed above
 5. [`PANEL-STATUS-MESSAGE`](../panels/PANEL-STATUS-MESSAGE.md) in the lower slot while connecting or Wi-Fi is unavailable
 
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_LOGIN` (signed out). Shared with `SCR-EMPTY-HANGOUT`, `SCR-PIN-ENTRY`, `SCR-PIN-COOLDOWN`; the login session stage picks the panel. |
+| Owner | `product_login_bridge.cpp` → `render_login_copy()`, called only from `product_login_present(1)`. |
+| Visible surfaces | Upper: heading label. Lower: roster row of cards (`s_roster_row`). Status label hidden. PIN pad and cooldown hidden. |
+| Input | Card tap → `select_pin_user` (intent only). Horizontal drag scrolls the row; a tap that moved the carousel is ignored. Ignored while `roster_updating`. |
+| Enters when | Signed out, not muted, Wi-Fi up, stage `Roster`, `user_count > 0`, PIN phase idle. |
+| Leaves when | Card selected → PIN entry (cards deleted in the same render). Mute latched → display blank. Roster empties → empty hangout. Wi-Fi lost → status panel. |
+| Background work | Login HTTP roster refresh on the worker. Inbox results are discarded while signed out. |
+| Update levels | Level 1: heading text change-detected. Level 2: roster row ↔ status label in one render. Cards are rebuilt only when the roster content changes (`roster_cards_current`). |
+| Never | Roster visible with any inbox, volume, send, or record widget. Cards rebuilt every tick. A pointer reset outside display wake. |
+| Open gaps | Cover-down to PIN is not implemented (instant swap). |
+
 ## OPEN items
 
 | ID | Question | Blocks |

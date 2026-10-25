@@ -11,6 +11,11 @@ extern "C" {
 
 bool product_shell_init(lv_obj_t *screen);
 bool product_shell_slot_roots(lv_obj_t **upper_out, lv_obj_t **lower_out);
+/* Product runtime only. Deletes both split-pane slots and every child widget. */
+void product_shell_release_slots(void);
+/* Recreates empty slots after a release; a no-op while they are live. */
+bool product_shell_rebuild_slots(void);
+bool product_shell_slots_live(void);
 fl_shell_stage_t product_shell_stage(void);
 void product_shell_set_stage(fl_shell_stage_t stage);
 

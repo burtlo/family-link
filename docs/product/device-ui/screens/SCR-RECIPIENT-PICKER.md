@@ -34,3 +34,22 @@ SCR-RECIPIENT-PICKER
 ## Catalog scenes
 
 `CAT-27` through `CAT-30`.
+
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_SEND` with shell stage `PICKER`. |
+| Owner | `product_send_bridge.cpp` → `paint_for_stage()`; visibility only from `product_send_present`. |
+| Visible surfaces | Upper: `Send a message to ...` / `To ...` header. Lower: picker card row or `No people to message`. |
+| Input | Card tap → `toggle_selection`; row scroll → `set_focus`. Callbacks repaint picker widgets only. RED and BOOT arrive through the button poll and `product_stage_on_*`. |
+| Enters when | RED on the inbox (send stage `Picker`); the send module pauses playback and remembers the inbox card. |
+| Leaves when | RED with ≥1 selected → record (wipe). BOOT → inbox (picker reset). Mute → inbox place and login screen; capture discarded. |
+| Background work | `product_send_service`: stage clock, outbox HTTP. No painting in the service. |
+| Update levels | Level 1 header and card chrome; Level 3 enter/leave is the compositor's. |
+| Never | Picker cards and inbox carousel visible together. Send code showing or hiding the inbox. |
+

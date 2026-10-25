@@ -13,7 +13,9 @@
 #include "sdkconfig.h"
 #include "product_hardware_buttons.h"
 #include "product_login_fw.h"
+#include "product_mem_probe.h"
 #include "product_network.h"
+#include "product_record_fw.h"
 #include "product_shell_fw.h"
 
 #if CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC
@@ -26,7 +28,7 @@ static void log_mem_diag(const char *phase, int with_lvgl)
         ESP_LOGI("bootstrap",
                  "mem_diag phase=%s dma_largest_internal=%u lv_used_pct=%u lv_used_kb=%u",
                  phase, (unsigned)dma_largest, (unsigned)mon.used_pct,
-                 (unsigned)(mon.cur_used / 1024U));
+                 (unsigned)((mon.total_size - mon.free_size) / 1024U));
         return;
     }
     ESP_LOGI("bootstrap", "mem_diag phase=%s dma_largest_internal=%u", phase, (unsigned)dma_largest);
@@ -42,6 +44,7 @@ void app_main(void)
 #if CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC
     log_mem_diag("before_display", 0);
 #endif
+    product_record_mount_storage();
     /* Bring up LCD/backlight before NVS or Wi-Fi (GPIO 47 / LEDC on ESP-BOX-3). */
     lv_display_t *display = product_display_start();
     if (display == NULL) {
@@ -90,20 +93,8 @@ void app_main(void)
         goto idle;
     }
     lv_refr_now(lv_display_get_default());
+    product_mem_probe("ui_ready", 0);
     bsp_display_unlock();
-    if (!bsp_display_lock(5000)) {
-        ESP_LOGE("bootstrap", "lvgl_lock_failed_post_attach");
-    } else {
-        lv_indev_t *indev = NULL;
-        while ((indev = lv_indev_get_next(indev)) != NULL) {
-            if (lv_indev_get_type(indev) == LV_INDEV_TYPE_POINTER) {
-                lv_indev_enable(indev, true);
-                lv_indev_reset(indev, NULL);
-            }
-        }
-        lv_refr_now(lv_display_get_default());
-        bsp_display_unlock();
-    }
     if (!product_hardware_buttons_mute_latched()) {
         (void)bsp_display_backlight_on();
     }

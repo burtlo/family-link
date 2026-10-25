@@ -53,6 +53,25 @@ Empty inbox (`CAT-23`) mounts `PANEL-HEADER-MESSAGE-SENDER` in the upper slot
 with identity `Messages` and transport hidden—the same panel as carousel and
 connectivity variants, not `PANEL-HEADER-TITLE-LEFT`.
 
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_INBOX`: signed in and shell stage `INBOX` (or any stage not owned by volume, record, or send). |
+| Owner | `product_inbox_bridge.cpp` → `render_inbox()`. Visibility comes only from `product_inbox_set_ui_visible`, called by `product_stage_present`. |
+| Visible surfaces | Upper: sender header and transport button. Lower: carousel row, or a status / empty body. |
+| Input | Card tap → `select_index`. Row scroll end → snap and `select_index`. Play button → `toggle_transport`. Callbacks repaint inbox widgets only. |
+| Enters when | Sign-in edge (`note_sign_in_edge` → shell `INBOX`); BOOT back from volume; picker / receipt / couldn't-record exit. |
+| Leaves when | BOOT → volume. RED → picker (send stage). Mute → login screen, display blank. |
+| Background work | `product_inbox_service` queues due fetch jobs for the inbox worker and applies results. While signed out the tick discards results so the worker queue cannot fill. The worker is not stopped from the tick. `ui_visible == 0` pauses fetch and connecting retry inside the carousel model. |
+| Update levels | Level 1: header and transport labels use `set_label_if_changed`. Level 2: carousel ↔ status body fades the lower root. Level 3 (screen) is the compositor's. |
+| Never | Inbox roots visible on any other screen. Inbox code reading the shell stage to decide its own visibility, or calling another module's visibility setter. A per-tick re-layout of cards that did not change. |
+| Open gaps | Inbox → record and record → send flows are model-tested but not desk-verified after the 2026-10-24 refactor; see the desk matrix. |
+
 ## Readiness
 
 - **Owner review:** Copy and slot swaps match locked carousel rows.

@@ -17,12 +17,23 @@ config FAMILY_WIFI_PASSWORD
     default ""
 
 config FAMILY_DEVICE_MEM_DIAGNOSTIC
-    bool "Log DMA largest free block around display init"
+    bool "Log phase-tagged memory samples (DMA block, LVGL pool, task stack)"
     default n
     help
         When enabled, app_main logs the largest internal DMA block before
         display init, then that block plus lv_mem_monitor after display init.
-        Log only. There is no numeric boot assert and no CI gate.
+        Record/send phases log V2_MEM lines (tag product_mem) with the LVGL
+        pool, internal DMA largest block, PSRAM free, and the calling task's
+        stack high-water mark. Log only. There is no numeric assert and no CI gate.
+
+config FAMILY_DEVICE_DIAG_SKIP_RING
+    bool "Diagnostic only: do not draw the record ring arc"
+    depends on FAMILY_DEVICE_MEM_DIAGNOSTIC
+    default n
+    help
+        Keeps the ring arc hidden during wipe and collapse so a desk repro can
+        reach finish and upload while the arc's LVGL mask allocation is under
+        investigation. Never enable in a product build.
 
 config FAMILY_DEVICE_MUTE_TRACE
     bool "Verbose mute latch and display diagnostics (serial)"

@@ -122,8 +122,13 @@ void RecordSession::reset_runtime()
     if (renderer_ == 0 && capture_ != 0) {
         lab10_render_config_t rcfg;
         memset(&rcfg, 0, sizeof(rcfg));
-        rcfg.mode = LAB10_RENDER_MODE_SEGMENT;
+        /* SEGMENT mode caps every update at one point regardless of the budget below. */
+        rcfg.mode = LAB10_RENDER_MODE_BOUNDED_BATCH;
         rcfg.role = LAB10_RENDER_ROLE_CONTROL;
+        /* One update per 50 ms presentation tick; a fast finger crosses ~100 logical px. */
+        rcfg.max_points_per_update = 16;
+        rcfg.max_raster_ops_per_update = 128;
+        rcfg.max_publication_ops_per_update = 128;
         renderer_ = lab10_render_create(&rcfg);
     }
 }
@@ -255,6 +260,9 @@ bool RecordSession::open_kept_capture()
         begin_reverse(now_ms_);
         return false;
     }
+    if (renderer_ != 0) {
+        (void)lab10_render_begin(as_renderer(renderer_), session_id_);
+    }
     wiping_ = false;
     recording_ = true;
     start_ms_ = now_ms_;
@@ -287,6 +295,9 @@ void RecordSession::begin_reverse(int64_t now_ms)
     reverse_from_radius_ = ring_outer_radius();
     reverse_start_ms_ = now_ms_;
     if (recording_ && capture_ != 0 && session_id_ != 0) {
+        if (renderer_ != 0) {
+            (void)lab10_render_reset(as_renderer(renderer_), session_id_);
+        }
         (void)lab10_capture_cancel(as_capture(capture_), session_id_);
     }
     session_id_ = 0;
@@ -346,8 +357,19 @@ bool RecordSession::route_touch(int16_t x, int16_t y, uint8_t phase, uint8_t tou
     route = lab10_ui_route_touch(&s_ui_model, x, y);
     if (route == LAB10_ROUTE_PALETTE) {
         const int palette = lab10_palette_hit_test(x, y);
-        if (palette >= 0) {
+        if (palette >= 0 && ui_phase == LAB10_PHASE_DOWN) {
             (void)lab10_ui_handle_touch(&s_ui_model, LAB10_PHASE_PALETTE_CHANGE, x, y, touch_id);
+            /* Capture rejects canvas reports whose color differs from its own selection. */
+            memset(&report, 0, sizeof(report));
+            report.timestamp_us = clock_us_;
+            report.display_x = x;
+            report.display_y = y;
+            report.touch_id = touch_id;
+            report.phase = LAB10_PHASE_PALETTE_CHANGE;
+            report.route = route;
+            report.color_index = (uint8_t)palette;
+            (void)lab10_capture_submit(capture, session_id_, &report);
+            (void)lab10_capture_poll(capture, session_id_);
         }
         return true;
     }
@@ -373,11 +395,35 @@ bool RecordSession::route_touch(int16_t x, int16_t y, uint8_t phase, uint8_t tou
 
 void RecordSession::poll_capture() { advance_to(now_ms_); }
 
+void RecordSession::render_update()
+{
+    if (!recording_ || capture_ == 0 || renderer_ == 0 || session_id_ == 0) {
+        return;
+    }
+    (void)lab10_render_update(as_renderer(renderer_), as_capture(capture_), session_id_);
+}
+
+bool RecordSession::render_backlog(size_t *source_points, size_t *pending_points, size_t *drawn_last) const
+{
+    lab10_render_metrics_t metrics;
+    if (!recording_ || renderer_ == 0 || session_id_ == 0 ||
+        !lab10_render_get_metrics(as_renderer(renderer_), session_id_, &metrics)) {
+        return false;
+    }
+    *source_points = metrics.source_point_count;
+    *pending_points = metrics.pending_point_count;
+    *drawn_last = metrics.points_processed_last_update;
+    return true;
+}
+
+uint8_t RecordSession::selected_color() const { return lab10_ui_selected_color(&s_ui_model); }
+
 bool RecordSession::finish_capture(FinishReason reason)
 {
     lab10_capture_t *capture = as_capture(capture_);
     lab10_capture_snapshot_t snapshot;
-    uint8_t flsk2[kMaxFlsk2Bytes];
+    /* 32 KiB: never on the stack. This runs on the 12 KiB LVGL task. */
+    uint8_t *flsk2 = 0;
     size_t flsk2_len;
     if (!recording_ || capture == 0 || session_id_ == 0) {
         return false;
@@ -394,27 +440,33 @@ bool RecordSession::finish_capture(FinishReason reason)
         last_finish_ = reason;
         return false;
     }
+    flsk2_len = 0;
     if (snapshot.point_count > 0) {
-        CapturePointView *views = new CapturePointView[snapshot.point_count];
-        size_t i;
-        for (i = 0; i < snapshot.point_count; ++i) {
-            views[i].timestamp_us = snapshot.points[i].timestamp_us;
-            views[i].logical_x = snapshot.points[i].logical_x;
-            views[i].logical_y = snapshot.points[i].logical_y;
-            views[i].color_index = snapshot.points[i].color_index;
+        CapturePointView *views = new (std::nothrow) CapturePointView[snapshot.point_count];
+        flsk2 = new (std::nothrow) uint8_t[kMaxFlsk2Bytes];
+        if (views != 0 && flsk2 != 0) {
+            size_t i;
+            for (i = 0; i < snapshot.point_count; ++i) {
+                views[i].timestamp_us = snapshot.points[i].timestamp_us;
+                views[i].logical_x = snapshot.points[i].logical_x;
+                views[i].logical_y = snapshot.points[i].logical_y;
+                views[i].color_index = snapshot.points[i].color_index;
+            }
+            flsk2_len = encode_flsk2(views, snapshot.point_count, flsk2, kMaxFlsk2Bytes, 0);
         }
-        flsk2_len = encode_flsk2(views, snapshot.point_count, flsk2, sizeof(flsk2), 0);
         delete[] views;
-    } else {
-        flsk2_len = 0;
     }
     if (flsk2_len > 0) {
         (void)storage_.write_in_progress_sketch(flsk2, flsk2_len);
     }
+    delete[] flsk2;
     if (reason != kFinishCancelled) {
         (void)storage_.commit_in_progress_to_finished();
     } else {
         storage_.discard_in_progress();
+    }
+    if (renderer_ != 0) {
+        (void)lab10_render_reset(as_renderer(renderer_), session_id_);
     }
     (void)lab10_capture_release_result(capture, session_id_);
     recording_ = false;

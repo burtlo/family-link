@@ -26,7 +26,7 @@ from device_guardrails.quiescence_fault import (
     lab16_stack_job_errors,
     product_stop_without_ack,
 )
-from device_guardrails.mute_round_trip import scan_mute_round_trip
+from device_guardrails import presentation_invariants as pres
 from device_guardrails.sdkconfig_baseline import check_draw_lines, check_sdkconfig_defaults
 from firmware import device_build_report, product_flash_log_ok
 
@@ -70,19 +70,9 @@ class DeviceGuardrailsPhase0Tests(unittest.TestCase):
         errors = scan_snippet(sample)
         self.assertTrue(any("bsp_sdcard_mount" in item for item in errors))
 
-    def test_live_timer_path_reports_open_sd_mount_only(self):
-        """PRES-PATH is open on live firmware. The scan must keep seeing it.
-
-        Send repair owns moving bsp_sdcard_mount off this path. After that
-        move, this test should expect an empty list.
-        """
-        errors = scan_timer_path()
-        self.assertEqual(
-            [item for item in errors if "bsp_sdcard_mount" not in item],
-            [],
-            errors,
-        )
-        self.assertTrue(any("ensure_media" in item and "bsp_sdcard_mount" in item for item in errors))
+    def test_live_timer_path_has_no_forbidden_calls(self):
+        """PRES-PATH: the card is mounted at boot, never from on_login_timer."""
+        self.assertEqual(scan_timer_path(), [])
 
     def test_http_result_local_fixture_fails(self):
         sample = """
@@ -165,6 +155,36 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         """
         self.assertGreater(len(lab16_stack_job_errors(sample)), 0)
 
+    def test_record_entry_releases_split_pane_and_present_rebuilds_it(self):
+        """Second red frees the split pane before the record surface attaches; leaving RECORD rebuilds it."""
+        router = (ROOT / "client/device/main/product_stage_router.cpp").read_text(encoding="utf-8")
+        apply = router[router.find("static int apply_send_stage(") : router.find("extern \"C\" product_screen_t")]
+        self.assertLess(apply.find("product_split_pane_release();"), apply.find("product_record_ensure("))
+        self.assertGreater(apply.find("product_split_pane_release();"), 0)
+        start = router.find("extern \"C\" void product_stage_present(void)")
+        present = router[start : router.find("\n}\n", start)]
+        self.assertLess(present.find("product_split_pane_rebuild();"), present.find("product_login_present("))
+        self.assertIn("screen != PRODUCT_SCREEN_RECORD", present)
+
+    def test_sign_out_releases_signed_in_widgets_but_keeps_takes(self):
+        """Unmute rebuilds login from the same LVGL pool; a finished take must survive (DEC-033)."""
+        login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(encoding="utf-8")
+        start = login.find("static void enter_muted(")
+        body = login[start : login.find("\n}\n", start)]
+        self.assertGreater(start, 0)
+        self.assertIn("product_inbox_on_mute();", body)
+        self.assertIn("product_send_release_widgets();", body)
+        self.assertIn("product_record_release_surface();", body)
+        inbox = (ROOT / "client/device/main/product_inbox_bridge.cpp").read_text(encoding="utf-8")
+        mute = inbox[inbox.find("void product_inbox_on_mute(void)") : inbox.find("void product_inbox_note_refresh")]
+        self.assertIn("destroy_all_cards();", mute)
+        record = (ROOT / "client/device/main/product_record_bridge.cpp").read_text(encoding="utf-8")
+        start = record.find("void product_record_release_surface(void)")
+        release = record[start : record.find("\n}\n", start)]
+        self.assertGreater(start, 0)
+        self.assertNotIn("s_record", release)
+        self.assertNotIn("discard", release)
+
     def test_signed_in_mute_does_not_stop_inbox_worker(self):
         """Mute runs on the LVGL timer. Stopping the inbox task there can stall it."""
         text = (ROOT / "client/device/main/product_inbox_bridge.cpp").read_text(encoding="utf-8")
@@ -210,65 +230,14 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         self.assertIn("BSP_BUTTON_MUTE_IO", init_body)
 
     def test_mute_display_wake_and_blank_helpers(self):
-        """Unmute must restore backlight duty and LVGL without BSP exit_sleep (touch INT)."""
-        login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        wake = login.find("static void wake_login_display(void)")
-        wake_end = login.find("static void blank_login_display", wake)
-        self.assertGreater(wake, 0)
-        wake_body = login[wake:wake_end]
-        self.assertNotIn("bsp_display_exit_sleep", wake_body)
-        self.assertIn("bsp_display_brightness_set(80)", wake_body)
-        self.assertIn("BSP_LCD_TOUCH_INT", wake_body)
-        self.assertIn("lv_refr_now", wake_body)
-
-        blank = login.find("static void blank_login_display(void)")
-        blank_end = login.find("lv_obj_t *s_pin_pad", blank)
-        blank_body = login[blank:blank_end]
-        self.assertIn("bsp_display_backlight_off", blank_body)
-        self.assertIn("s_backlight_dark = true", blank_body)
-
-        mute_level = login.find("void product_login_on_mute_level(int latched)")
-        mute_end = login.find("void product_login_on_mute_pressed", mute_level)
-        mute_body = login[mute_level:mute_end]
-        self.assertIn("blank_login_display()", mute_body)
-        self.assertIn("wake_login_display()", mute_body)
-        self.assertNotIn("bsp_display_backlight_on()", mute_body)
-        self.assertIn("login_desk_restore_interactive()", mute_body)
-        clear = login.find("static void clear_roster_cards(void)")
-        clear_end = login.find("static bool roster_cards_current", clear)
-        self.assertIn("login_touch_wake()", login[clear:clear_end])
-
-    def test_inbox_lv_timer_paused_until_signed_in(self):
-        text = (ROOT / "client/device/main/product_inbox_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        attach = text.find("extern \"C\" bool product_inbox_attach")
-        attach_end = text.find("extern \"C\" void product_inbox_service", attach)
-        body = text[attach:attach_end]
-        create_at = body.rfind("lv_timer_create(on_inbox_timer")
-        pause_at = body.rfind("lv_timer_pause(s_timer)")
-        self.assertGreater(create_at, 0)
-        self.assertGreater(pause_at, create_at)
-
-    def test_inbox_lv_timer_paused_on_mute_resumed_on_sign_in(self):
-        text = (ROOT / "client/device/main/product_inbox_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        on_mute = text.find("void product_inbox_on_mute(void)")
-        on_mute_end = text.find("void product_inbox_note_refresh", on_mute)
-        self.assertGreater(on_mute, 0)
-        mute_body = text[on_mute:on_mute_end]
-        self.assertIn("lv_timer_pause(s_timer)", mute_body)
-        self.assertIn("product_inbox_push_under_login()", mute_body)
-        self.assertIn("product_login_touch_wake()", mute_body)
-
-        on_sign = text.find("void product_inbox_on_signed_in(void)")
-        on_sign_end = text.find("void product_inbox_discard_results", on_sign)
-        self.assertGreater(on_sign, 0)
-        sign_body = text[on_sign:on_sign_end]
-        self.assertIn("lv_timer_resume(s_timer)", sign_body)
+        """Wake restores duty without BSP exit_sleep (BOX-3 touch INT on GPIO 3)."""
+        login = pres.load_sources()[pres.LOGIN]
+        wake = pres.function_body(login, "wake_login_display")
+        self.assertIn("bsp_display_brightness_set(80)", wake)
+        self.assertIn("s_backlight_dark = false", wake)
+        blank = pres.function_body(login, "blank_login_display")
+        self.assertIn("bsp_display_backlight_off", blank)
+        self.assertIn("s_backlight_dark = true", blank)
 
     def test_mute_clears_hangout_until_next_roster(self):
         text = (ROOT / "client/shared/login_session/fl_product_login/session.cpp").read_text(
@@ -291,93 +260,17 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         self.assertIn("FAMILY_DEVICE_MUTE_TRACE", (ROOT / "client/device/main/Kconfig.projbuild").read_text())
 
     def test_unmute_resets_login_http_roster_fence(self):
-        login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
+        login = pres.load_sources()[pres.LOGIN]
         worker = (ROOT / "client/device/main/product_login_http_worker.cpp").read_text(
             encoding="utf-8"
         )
-        unmute = login.find("void product_login_on_mute_level(int latched)")
-        unmute_end = login.find("void product_login_on_mute_pressed", unmute)
-        body = login[unmute:unmute_end]
-        self.assertIn("product_login_http_on_mute()", body)
-        self.assertIn("product_login_http_service(&s_session", body)
-        self.assertIn("s_session.unmute(now_ms)", body)
-        self.assertIn("render_login_copy();", body.split("void product_login_on_mute_pressed")[0])
+        leave = pres.function_body(login, "leave_muted")
+        self.assertIn("product_login_http_on_mute()", leave)
+        self.assertLess(leave.find("product_login_http_on_mute()"), leave.find("s_session.unmute(now_ms)"))
+        self.assertIn("begin_roster_request", leave)
+        self.assertIn("product_login_http_service(&s_session", leave)
         self.assertIn("void product_login_http_on_mute(void)", worker)
         self.assertIn("s_active_roster_id = 0", worker)
-
-    def test_login_roster_parks_inbox_volume_overlays(self):
-        login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        inbox = (ROOT / "client/device/main/product_inbox_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        volume = (ROOT / "client/device/main/product_volume_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("product_inbox_push_under_login", login)
-        self.assertIn("product_volume_push_under_login", login)
-        self.assertIn("product_send_hide_for_login", login)
-        self.assertIn("void product_inbox_push_under_login(void)", inbox)
-        self.assertIn("lv_obj_move_background(s_lower_root)", inbox)
-        self.assertIn("void product_volume_push_under_login(void)", volume)
-
-    def test_login_desk_raise_keeps_roster_above_chrome(self):
-        login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("login_desk_raise_interactive", login)
-        self.assertIn("s_login_lower_layer", login)
-        attach = login.find("extern \"C\" bool product_login_attach")
-        attach_end = login.find("extern \"C\" int product_login_is_signed_in", attach)
-        attach_body = login[attach:attach_end]
-        self.assertIn("s_login_lower_layer = lv_obj_create(lower_slot)", attach_body)
-        self.assertIn("s_lower_slot = s_login_lower_layer", attach_body)
-        timer = login.find("void on_login_timer")
-        timer_end = login.find("fl_product_login::SessionWriter *product_login_session", timer)
-        self.assertNotIn("login_desk_raise_interactive();", login[timer:timer_end])
-        pin = login.find("static void render_pin_screen(void)")
-        pin_end = login.find("static void apply_wifi_link", pin)
-        self.assertIn("login_desk_raise_interactive()", login[pin:pin_end])
-        self.assertIn("on_roster_card_pressed", login)
-        self.assertIn("LV_EVENT_PRESSED", login)
-        self.assertIn("on_pin_key_activate", login)
-        self.assertNotIn("login_mount_foreground_layers", login)
-
-    def test_send_chrome_parked_for_login(self):
-        send = (ROOT / "client/device/main/product_send_bridge.cpp").read_text(encoding="utf-8")
-        self.assertIn("park_send_obj_for_login", send)
-        self.assertIn("lv_obj_move_background", send)
-        hide = send.find("extern \"C\" void product_send_hide_for_login(void)")
-        hide_end = send.find("extern \"C\" product_send_stage_result_t", hide)
-        body = send[hide:hide_end]
-        self.assertIn("park_send_obj_for_login(s_lower_label)", body)
-        self.assertIn("park_send_obj_for_login(s_roster_row)", body)
-
-    def test_login_foreground_layers_above_inbox_volume(self):
-        login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn("product_inbox_push_under_login", login)
-        self.assertIn("product_volume_push_under_login", login)
-        self.assertIn("login_touch_wake", login)
-
-    def test_login_timer_keeps_http_while_muted_blank(self):
-        login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(
-            encoding="utf-8"
-        )
-        timer = login.find("void on_login_timer")
-        timer_end = login.find("fl_product_login::SessionWriter *product_login_session", timer)
-        tick = login[timer:timer_end]
-        self.assertIn("muted_blank", tick)
-        self.assertIn("product_login_http_service", tick)
-        http_at = tick.find("product_login_http_service")
-        render_at = tick.find("render_login_copy()")
-        self.assertGreater(http_at, 0)
-        self.assertGreater(render_at, http_at)
-        self.assertIn("if (!muted_blank)", tick[http_at:render_at])
 
     def test_product_worker_stops_still_lack_ack(self):
         """LIFE-QUIESCE is open. This program does not rewrite the workers."""
@@ -592,43 +485,118 @@ def _unguarded_light_calls(body: str) -> list[str]:
     return found
 
 
-class DeviceGuardrailsMuteRoundTripTests(unittest.TestCase):
-    """Host guardrails for inbox + login desk mute (physical latch round-trip)."""
+_GOOD_TICK = """
+static void on_login_timer(lv_timer_t *timer) {
+    product_hardware_buttons_poll();
+    flush_wifi_schedule();
+    product_login_http_service(&s_session, now_ms);
+    note_sign_in_edge();
+    if (s_session.signed_in() != 0) {
+        product_inbox_service(now_ms);
+    } else {
+        product_inbox_discard_results();
+    }
+    product_send_service(now_ms);
+    product_record_service(now_ms);
+    product_stage_present();
+}
+"""
 
-    def test_mute_round_trip_scan_passes_on_live_firmware(self):
-        errors = scan_mute_round_trip(ROOT / "client/device/main")
-        self.assertEqual(errors, [])
 
-    def test_rejects_muted_timer_early_return_regression(self):
-        sample = """
-        void on_login_timer(lv_timer_t *timer) {
-            product_hardware_buttons_poll();
-            if (s_backlight_dark && s_session.stage() == fl_product_login::kStageMuted) {
-                product_inbox_discard_results();
-                return;
-            }
-            product_login_http_service(&s_session, now_ms);
-        }
-        """
-        from device_guardrails.mute_round_trip import scan_login_timer_mute_path
+class DeviceGuardrailsPresentationInvariantTests(unittest.TestCase):
+    """docs/standards/device-presentation-invariants.md, one test per invariant."""
 
-        errors = scan_login_timer_mute_path(sample)
-        self.assertTrue(any("return early while muted" in item for item in errors))
+    def test_presentation_invariants_pass_on_live_firmware(self):
+        self.assertEqual(pres.scan_presentation_invariants(), [])
 
-    def test_rejects_unconditional_open_latch_render(self):
-        sample = """
+    def test_presentation_single_timer(self):
+        good = {pres.LOGIN: "lv_timer_create(on_login_timer, 50, nullptr);"}
+        self.assertEqual(pres.scan_single_timer(good), [])
+        second = dict(good, **{"product_inbox_bridge.cpp": "s_timer = lv_timer_create(on_inbox_timer, 50, 0);"})
+        self.assertTrue(pres.scan_single_timer(second))
+
+    def test_presentation_tick_phase_order(self):
+        self.assertEqual(pres.scan_tick_phase_order(_GOOD_TICK), [])
+        early = _GOOD_TICK.replace(
+            "flush_wifi_schedule();", "if (s_backlight_dark) { return; }\n    flush_wifi_schedule();"
+        )
+        self.assertTrue(any("PRES-NORETURN" in e for e in pres.scan_tick_phase_order(early)))
+        late_poll = _GOOD_TICK.replace("    product_hardware_buttons_poll();\n", "").replace(
+            "product_stage_present();", "product_stage_present();\n    product_hardware_buttons_poll();"
+        )
+        self.assertTrue(pres.scan_tick_phase_order(late_poll))
+        render_after = _GOOD_TICK.replace(
+            "product_stage_present();", "product_stage_present();\n    render_login_copy();"
+        )
+        self.assertTrue(pres.scan_tick_phase_order(render_after))
+
+    def test_presentation_single_visibility_owner(self):
+        router = "extern \"C\" void product_stage_present(void) { product_inbox_set_ui_visible(1); }"
+        self.assertEqual(pres.scan_single_visibility_owner({pres.ROUTER: router}), [])
+        cross = {pres.ROUTER: router, "product_send_bridge.cpp": "static void show(void) { product_inbox_set_ui_visible(0); }"}
+        self.assertTrue(pres.scan_single_visibility_owner(cross))
+        stray = {pres.ROUTER: router + " void other(void) { product_volume_set_visible(0); }"}
+        self.assertTrue(pres.scan_single_visibility_owner(stray))
+
+    def test_presentation_no_z_order_games(self):
+        self.assertEqual(pres.scan_no_z_order({"a.cpp": "lv_obj_move_to_index(card, 0);"}), [])
+        self.assertTrue(pres.scan_no_z_order({"a.cpp": "lv_obj_move_foreground(s_roster_row);"}))
+        self.assertTrue(pres.scan_no_z_order({"a.cpp": "lv_obj_move_background(s_lower_root);"}))
+
+    def test_presentation_single_pointer_reset(self):
+        wake = "static void wake_login_display(void) { lv_indev_reset(indev, nullptr); }"
+        self.assertEqual(pres.scan_single_pointer_reset({pres.LOGIN: wake}), [])
+        per_tick = wake + " static void render_pin_screen(void) { lv_indev_reset(indev, nullptr); }"
+        self.assertTrue(pres.scan_single_pointer_reset({pres.LOGIN: per_tick}))
+
+    def test_presentation_display_power(self):
+        login = (
+            "static void wake_login_display(void) { (void)bsp_display_brightness_set(80); }\n"
+            "static void blank_login_display(void) { (void)bsp_display_backlight_off(); }\n"
+        )
+        self.assertEqual(pres.scan_display_power({pres.LOGIN: login}), [])
+        sleep = login + "static void x(void) { bsp_display_exit_sleep(); }"
+        self.assertTrue(pres.scan_display_power({pres.LOGIN: sleep}))
+        stray = login + "static void render_login_copy(void) { (void)bsp_display_brightness_set(80); }"
+        self.assertTrue(pres.scan_display_power({pres.LOGIN: stray}))
+
+    def test_presentation_mute_reconcile(self):
+        hw = "void product_hardware_buttons_poll(void) { product_login_on_mute_level(product_hardware_buttons_mute_latched()); }"
+        login = """
+        static void enter_muted(int64_t now_ms) { product_login_http_on_mute(); }
+        static void leave_muted(int64_t now_ms) { product_login_http_on_mute(); }
         extern "C" void product_login_on_mute_level(int latched) {
-            if (latched) {
-                return;
-            }
-            render_login_copy();
+            if (latched) { enter_muted(now_ms); } else { leave_muted(now_ms); }
         }
-        extern "C" void product_login_on_mute_pressed(void) {}
         """
-        from device_guardrails.mute_round_trip import scan_login_on_mute_level
+        self.assertEqual(pres.scan_mute_reconcile(login, hw), [])
+        renders = login.replace("leave_muted(now_ms); }\n", "leave_muted(now_ms); }\n render_login_copy();\n", 1)
+        self.assertTrue(any("must not call render_" in e for e in pres.scan_mute_reconcile(renders, hw)))
+        resets = login.replace(
+            "static void leave_muted(int64_t now_ms) {",
+            "static void leave_muted(int64_t now_ms) { lv_indev_reset(indev, nullptr);",
+        )
+        self.assertTrue(pres.scan_mute_reconcile(resets, hw))
+        edge_only = "void product_hardware_buttons_poll(void) { if (pressed) { product_login_on_mute_pressed(); } }"
+        self.assertTrue(pres.scan_mute_reconcile(login, edge_only))
 
-        errors = scan_login_on_mute_level(sample)
-        self.assertTrue(any("open-latch render_login_copy must run only when changed" in item for item in errors))
+    def test_presentation_render_is_pure(self):
+        login = (
+            "static void render_pin_screen(void) { set_label_text(s_upper_label, heading); }\n"
+            "static void render_login_copy(void) { render_pin_screen(); }\n" + _GOOD_TICK
+        )
+        self.assertEqual(pres.scan_render_is_pure(login), [])
+        transition = login.replace(
+            "{ render_pin_screen(); }", "{ product_shell_set_stage(FL_SHELL_STAGE_INBOX); render_pin_screen(); }"
+        )
+        self.assertTrue(pres.scan_render_is_pure(transition))
+        realign = login.replace(
+            "set_label_text(s_upper_label, heading);",
+            "set_label_text(s_upper_label, heading); lv_obj_align(s_upper_label, LV_ALIGN_LEFT_MID, 12, 0);",
+        )
+        self.assertTrue(pres.scan_render_is_pure(realign))
+        cross = login.replace("{ render_pin_screen(); }", "{ product_inbox_on_signed_in(); render_pin_screen(); }")
+        self.assertTrue(pres.scan_render_is_pure(cross))
 
 
 class DeviceGuardrailsMuteBootTests(unittest.TestCase):

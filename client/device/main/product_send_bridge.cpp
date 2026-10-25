@@ -2,6 +2,7 @@
 
 #include "product_inbox_fw.h"
 #include "product_login_fw.h"
+#include "product_mem_probe.h"
 #include "product_record_fw.h"
 #include "product_send_http_worker.h"
 #include "product_shell_fw.h"
@@ -64,8 +65,8 @@ lv_obj_t *s_picker_header = nullptr;
 lv_obj_t *s_empty_label = nullptr;
 lv_obj_t *s_roster_row = nullptr;
 lv_obj_t *s_cards[fl_product_send::kMaxRecipients];
-lv_timer_t *s_timer = nullptr;
 char s_card_sig[1024];
+int s_visible = 0;
 int s_picker_open = 0;
 int s_programmatic_scroll = 0;
 int s_scroll_gesture = 0;
@@ -139,7 +140,6 @@ void show_obj(lv_obj_t *obj)
 {
     if (obj != nullptr) {
         lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_move_foreground(obj);
     }
 }
 
@@ -582,7 +582,6 @@ void hide_receipt()
 
 void show_receipt()
 {
-    product_inbox_set_ui_visible(0);
     show_obj(s_upper_label);
     show_obj(s_subtitle);
     show_obj(s_lower_label);
@@ -591,7 +590,6 @@ void show_receipt()
 
 void show_couldnt_record()
 {
-    product_inbox_set_ui_visible(0);
     hide_obj(s_upper_label);
     hide_obj(s_subtitle);
     hide_obj(s_roster_row);
@@ -611,7 +609,10 @@ void paint_for_stage()
     if (!s_attached) {
         return;
     }
-    if (s_stage.place() == fl_product_send::kSendPlaceCouldntRecord) {
+    if (!s_visible) {
+        picker = 0;
+        receipt = 0;
+    } else if (s_stage.place() == fl_product_send::kSendPlaceCouldntRecord) {
         show_couldnt_record();
         return;
     }
@@ -628,8 +629,6 @@ void paint_for_stage()
         s_picker_open = 1;
         sync_cards();
         paint_header();
-        product_inbox_set_ui_visible(0);
-        hide_receipt();
         show_picker();
         return;
     }
@@ -640,19 +639,11 @@ void paint_for_stage()
 
 void present_stage_change(const fl_product_send::SendStageResult &advanced)
 {
-    int shell;
     if (advanced.changed == 0) {
         return;
     }
-    shell = shell_for_place(advanced.place);
-    product_shell_set_stage((fl_shell_stage_t)shell);
-    product_record_set_visible(advanced.show_record_canvas);
-    if (shell == (int)FL_SHELL_STAGE_PICKER || shell == (int)FL_SHELL_STAGE_RECORD ||
-        shell == (int)FL_SHELL_STAGE_RECEIPT) {
-        product_inbox_set_ui_visible(0);
-    } else {
-        product_inbox_set_ui_visible(advanced.show_split_pane);
-    }
+    product_shell_set_stage((fl_shell_stage_t)shell_for_place(advanced.place));
+    product_mem_probe("stage_service", advanced.place);
 }
 
 int read_stored_part(void *ctx, int kind, uint32_t offset, uint8_t *dest, uint32_t len, uint32_t *out_read)
@@ -687,6 +678,7 @@ int start_payload(const fl_product_send::FrozenPayload &payload, const char name
         return 0;
     }
     s_journey.outbox().begin_submit(now_ms);
+    product_mem_probe("upload_begin", (int32_t)payload.audio_byte_count);
     s_released_id[0] = '\0';
     return 1;
 }
@@ -837,6 +829,7 @@ void service_send_http(int64_t now_ms)
     sync_send_session();
     done = product_send_http_poll();
     if (done != nullptr) {
+        product_mem_probe("send_http_result", done->perform_ok ? done->http_status : -1);
         memset(&transport, 0, sizeof(transport));
         transport.transport_ok = done->perform_ok;
         transport.http_status = done->http_status;
@@ -887,12 +880,14 @@ void restore_inbox_selection(int64_t now_ms)
     }
 }
 
-void on_send_timer(lv_timer_t *timer)
+} /* namespace */
+
+extern "C" void product_send_service(int64_t now_ms)
 {
     fl_product_send::SendStageResult advanced;
-    int64_t now_ms;
-    (void)timer;
-    now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
+    if (!s_attached) {
+        return;
+    }
     if (now_ms - s_dot_ms >= 400) {
         s_dot_ms = now_ms;
         s_dot_phase = (s_dot_phase + 1) % 3;
@@ -906,14 +901,10 @@ void on_send_timer(lv_timer_t *timer)
         restore_inbox_selection(now_ms);
     }
     present_stage_change(advanced);
-    paint_for_stage();
 }
-
-} /* namespace */
 
 extern "C" bool product_send_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
-    int i;
     if (upper_slot == nullptr || lower_slot == nullptr) {
         return false;
     }
@@ -921,6 +912,40 @@ extern "C" bool product_send_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     s_stage.reset();
     s_finished_sender[0] = '\0';
     memset(&s_pending, 0, sizeof(s_pending));
+    if (!product_send_build_widgets(upper_slot, lower_slot)) {
+        return false;
+    }
+    s_dot_phase = 0;
+    s_dot_ms = (int64_t)(esp_timer_get_time() / 1000LL);
+    s_attached = true;
+    ESP_LOGI(kTag, "V2_PRODUCT_SEND_READY");
+    return true;
+}
+
+extern "C" void product_send_forget_widgets(void)
+{
+    int i;
+    s_upper_label = nullptr;
+    s_subtitle = nullptr;
+    s_lower_label = nullptr;
+    s_picker_header = nullptr;
+    s_empty_label = nullptr;
+    s_roster_row = nullptr;
+    s_lower_slot = nullptr;
+    for (i = 0; i < fl_product_send::kMaxRecipients; ++i) {
+        s_cards[i] = nullptr;
+    }
+    s_card_sig[0] = '\0';
+    s_picker_open = 0;
+    s_visible = 0;
+}
+
+extern "C" bool product_send_build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+{
+    int i;
+    if (upper_slot == nullptr || lower_slot == nullptr) {
+        return false;
+    }
     s_lower_slot = lower_slot;
     s_card_sig[0] = '\0';
     s_picker_open = 0;
@@ -970,12 +995,8 @@ extern "C" bool product_send_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     lv_obj_center(s_empty_label);
     hide_receipt();
     hide_picker();
-    s_dot_phase = 0;
-    s_dot_ms = (int64_t)(esp_timer_get_time() / 1000LL);
-    s_attached = true;
-    s_timer = lv_timer_create(on_send_timer, 50, nullptr);
-    ESP_LOGI(kTag, "V2_PRODUCT_SEND_READY");
-    return s_timer != nullptr;
+    s_visible = 0;
+    return true;
 }
 
 static void pause_for_record_hook(void *playback, int64_t now_ms)
@@ -1078,9 +1099,6 @@ extern "C" void product_send_set_refresh_failed(int failed)
     }
     restored = shell_for_place(place);
     product_shell_set_stage(static_cast<fl_shell_stage_t>(restored));
-    product_record_set_visible(restored == static_cast<int>(FL_SHELL_STAGE_RECORD) ? 1 : 0);
-    product_inbox_set_ui_visible(restored == static_cast<int>(FL_SHELL_STAGE_INBOX) ? 1 : 0);
-    paint_for_stage();
 }
 
 extern "C" void product_send_on_signed_in(const char *user_id)
@@ -1089,31 +1107,10 @@ extern "C" void product_send_on_signed_in(const char *user_id)
     s_journey.set_refresh_failed(0);
 }
 
-extern "C" void product_send_sync_stage(void) { paint_for_stage(); }
-
-static void park_send_obj_for_login(lv_obj_t *obj)
+extern "C" void product_send_present(int visible)
 {
-    if (obj == nullptr) {
-        return;
-    }
-    lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_move_background(obj);
-    lv_obj_remove_flag(obj, LV_OBJ_FLAG_CLICKABLE);
-}
-
-extern "C" void product_send_hide_for_login(void)
-{
-    if (!s_attached) {
-        return;
-    }
-    hide_picker();
-    hide_receipt();
-    park_send_obj_for_login(s_upper_label);
-    park_send_obj_for_login(s_subtitle);
-    park_send_obj_for_login(s_lower_label);
-    park_send_obj_for_login(s_picker_header);
-    park_send_obj_for_login(s_roster_row);
-    park_send_obj_for_login(s_empty_label);
+    s_visible = visible ? 1 : 0;
+    paint_for_stage();
 }
 
 extern "C" product_send_stage_result_t product_send_apply_intent(int intent, int signed_in)
@@ -1151,13 +1148,15 @@ extern "C" product_send_stage_result_t product_send_apply_intent(int intent, int
     return out;
 }
 
+extern "C" void product_send_release_widgets(void)
+{
+    clear_cards();
+    s_card_sig[0] = '\0';
+}
+
 extern "C" void product_send_detach(void)
 {
     int i;
-    if (s_timer != nullptr) {
-        lv_timer_del(s_timer);
-        s_timer = nullptr;
-    }
     product_send_http_worker_stop();
     s_http_started = 0;
     s_attached = false;

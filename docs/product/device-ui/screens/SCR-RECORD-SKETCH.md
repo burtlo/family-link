@@ -83,6 +83,25 @@ None on this screen.
 - [`COMP-RECORD-CANVAS`](../components/COMP-RECORD-CANVAS.md)
 - [`COMP-COLOR-SWATCH`](../components/COMP-COLOR-SWATCH.md)
 
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_RECORD`: signed in and shell stage `RECORD` (wipe, recording, reverse, finish-reverse). |
+| Owner | `product_record_bridge.cpp`. The surface is created by `product_record_ensure` when the send stage first needs it; visibility only from `product_record_set_visible`. |
+| Visible surfaces | Full-canvas drawing surface, ring, and side palette. |
+| Input | Pointer `PRESSED` / `PRESSING` / `RELEASED` / `PRESS_LOST` → `route_touch` while `capture_active()`. RED finishes the take; BOOT discards it. |
+| Enters when | RED in the picker with a recipient selected → wipe (`begin_wipe`). |
+| Leaves when | RED → finish collapse → receipt. BOOT → inbox (capture discarded). Capture failure → couldn't-record. Mute → capture discarded, login screen. |
+| Background work | `product_record_service` advances the record clock every tick (connectivity loss does not stop it) and paints motion only while the shell stage is `RECORD`. |
+| Update levels | Level 1 motion paint per tick while active. |
+| Never | Record surface visible or touchable on another screen. Blocking I/O on the tick. |
+| Open gaps | INT-WIRE: nothing calls `product_record_push_pcm`, so audio is not captured. Tracked in [device-target-invariants](../../../standards/device-target-invariants.md). |
+
 ## OPEN items
 
 | ID | Question | Blocks |

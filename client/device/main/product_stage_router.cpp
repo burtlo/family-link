@@ -2,6 +2,7 @@
 
 #include "product_inbox_fw.h"
 #include "product_login_fw.h"
+#include "product_mem_probe.h"
 #include "product_record_fw.h"
 #include "product_send_fw.h"
 #include "product_shell_fw.h"
@@ -21,10 +22,13 @@ static int apply_send_stage(const product_send_stage_result_t *result)
         return 0;
     }
     if (result->show_record_canvas) {
+        /* The record surface covers the display; the split pane returns on leaving it. */
+        product_split_pane_release();
         (void)product_record_ensure(lv_screen_active());
     }
     product_shell_set_stage((fl_shell_stage_t)result->shell_stage);
     ESP_LOGI(kTag, "place=%d shell=%d", result->place, result->shell_stage);
+    product_mem_probe("stage", result->place);
     return 1;
 }
 
@@ -56,6 +60,9 @@ extern "C" void product_stage_present(void)
     if (screen != s_shown) {
         ESP_LOGI(kTag, "screen=%d from=%d", (int)screen, (int)s_shown);
         s_shown = screen;
+    }
+    if (screen != PRODUCT_SCREEN_RECORD) {
+        product_split_pane_rebuild();
     }
     product_login_present(screen == PRODUCT_SCREEN_LOGIN);
     product_inbox_set_ui_visible(screen == PRODUCT_SCREEN_INBOX);

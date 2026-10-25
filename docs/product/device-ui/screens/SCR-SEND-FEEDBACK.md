@@ -37,3 +37,22 @@ Subtitle and body copy are text-only; no status icons (`EXP-043`).
 ## Catalog scenes
 
 `CAT-31` through `CAT-36`.
+
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_SEND` with shell stage `RECEIPT`. Couldn't-record is painted by the same module under shell stage `PICKER`. |
+| Owner | `product_send_bridge.cpp` → `paint_for_stage()`; visibility only from `product_send_present`. |
+| Visible surfaces | Upper: `sending to ...` and frozen recipients. Lower: phase body (`preparing`, `sending` + dots, `sent`, `couldn't send`, connectivity copy). |
+| Input | BOOT leaves when the session allows it (`receipt_boot_leaves`). RED is ignored. No touch targets. |
+| Enters when | RED finishes a take (finish collapse → receipt), or RED on the inbox during a pending own send. Couldn't-record: RED in the picker when capture cannot start. |
+| Leaves when | Stage clock returns to the inbox (`returned_inbox` → selection restored) or BOOT. Mute → login screen; a finished take stays stored and does not upload while signed out. |
+| Background work | Outbox upload and dot phase (400 ms) in `product_send_service`. |
+| Update levels | Level 1 body text and dots only. |
+| Never | Receipt visible with the inbox carousel. An upload while signed out. |
+

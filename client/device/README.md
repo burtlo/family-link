@@ -29,6 +29,14 @@ Boot markers (distinct claims):
   [device-target-invariants.md](../../docs/standards/device-target-invariants.md)
 - Behavioral MUSTs:
   [client-application-coding-standards.md](../../docs/standards/client-application-coding-standards.md)
+- Presentation integration (one tick, one visibility owner, touch, display
+  power, desk matrix). Read before changing any screen:
+  [device-presentation-invariants.md](../../docs/standards/device-presentation-invariants.md)
+
+The module map in one line: `on_login_timer` in `product_login_bridge.cpp` is
+the only LVGL timer. It polls buttons, advances login, services inbox, volume,
+send, and record, then calls `product_stage_present()` in
+`product_stage_router.cpp`, which shows exactly one module.
 
 Mechanical checks (host):
 
@@ -41,9 +49,23 @@ Implementation lives under `scripts/device_guardrails/` (presentation timer path
 sdkconfig baseline, serial negatives, desk scripts against **saved** logs only).
 
 `make test` is a tooling claim. It does not close record/send behavior.
-The live timer still reaches `bsp_sdcard_mount` through `ensure_media`
-(PRES-PATH), and nothing in this tree calls `product_record_push_pcm`
-(INT-WIRE). Those stay open for the send repair.
+The SD card is mounted once in `app_main` before the display starts
+(`product_record_mount_storage`); powering the card slot while the LCD runs
+leaves the BOX-3 panel white until power cycle. Nothing in this tree calls
+`product_record_push_pcm` (INT-WIRE), which stays open for the send repair.
+
+Ring frame rate (open, accepted for now): the ring-wipe and finish collapse
+show about 5–6 frames over 600 ms on the desk (2026-10-24). Frames advance only
+on the 50 ms presentation tick, and large-radius frames take 100–200 ms to
+redraw nearly the full screen through the 16-line DMA draw buffer. Measure
+render vs flush time per frame before changing buffers; internal RAM has about
+10 KiB free during recording.
+
+Naming gap (open): the record path is built on shared modules still named for
+the lab that produced them (`lab10_capture`, `lab10_render`, `lab10_ui`, and
+`LAB10_*` constants). They are v2 product code. A later pass renames them and
+every caller and test to `fl_sketch_*` / `FL_SKETCH_*`; new code should not add
+more lab-named identifiers.
 
 Desk flash and live serial capture are **operator-authorized**; CI does not
 require a connected kit. `CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC` logs DMA
@@ -55,7 +77,7 @@ Enable verbose ticks in menuconfig: **Family Link product login → Verbose mute
 latch and display diagnostics**, or set `CONFIG_FAMILY_DEVICE_MUTE_TRACE=y` in
 `sdkconfig` before `make app:build`.
 
-Serial filter: `make app:monitor FILTER='product_mute:I product_login:I'` (or plain
+Serial filter: `make app:monitor FILTER='product_mute:I product_login:I product_stage:I'` (or plain
 `idf.py monitor` from `client/device`). Tags: `product_mute`, `product_login`.
 
 | Log prefix | When |
@@ -76,8 +98,8 @@ Interpretation:
   wake**: firmware called `bsp_display_exit_sleep()` without a matching
   `enter_sleep()`; use brightness-only wake (BOX-3 touch INT is GPIO 3).
 - **`latch=0`, `wake` logged, `stage=muted`**: session unmute not running.
-- **`muted_blank=1` forever with `latch=0`**: timer thinks UI should stay off
-  despite open latch (stale `stage` or `dark` flag).
+- **`latch=0`, `dark=0`, but no `product_stage: screen=` line after unmute**:
+  the compositor did not change screens; check the session stage, not LVGL.
 
 Host check on a saved log (no device): grep `V2_MUTE_EDGE` and
 `V2_MUTE_DISPLAY` in the capture file.

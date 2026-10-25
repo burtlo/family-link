@@ -50,6 +50,23 @@ When roster becomes non-empty, transition forward to
 [`FOUNDATION-MOTION`](../foundations/FOUNDATION-MOTION.md) and
 [`TRANSITION-COVER-DOWN`](../patterns/TRANSITION-COVER-DOWN.md).
 
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_LOGIN`; same owner and presenter as `SCR-SIGN-IN-ROSTER`. |
+| Visible surfaces | Upper: heading label (`Loading hangout ...` before the roster is known, `Sign in as ...` once known-empty). Lower: centered status label. No cards. |
+| Input | None. |
+| Enters when | Signed out and not muted, with no non-empty roster yet, or a known-empty hangout. |
+| Leaves when | Roster gains members → roster. Mute → blank. |
+| Background work | Login HTTP roster requests only. |
+| Update levels | Level 1 text swaps through change-detected setters; alignment set once at attach. |
+| Never | Label text or alignment rewritten every tick. Roster cards visible with empty copy. |
+
 ## Revision history
 
 - **0.7 — 2026-10-21:** Known-empty header is `Sign in as ...` (`DEC-065`).

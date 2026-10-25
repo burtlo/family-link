@@ -38,9 +38,10 @@ For v1 build/flash commands and archive-local indexes, humans working inside the
 | Client/server contract authoring | [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) · skill: [`.cursor/skills/author-communication-contract/SKILL.md`](../.cursor/skills/author-communication-contract/SKILL.md) |
 | Client coding standards | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) |
 | Embedded target invariants + desk claim classes | [`standards/device-target-invariants.md`](standards/device-target-invariants.md) |
+| Device presentation (one tick, one screen owner, touch, display power) — read before any device UI fix | [`standards/device-presentation-invariants.md`](standards/device-presentation-invariants.md) |
 | Product device build, flash, markers | [`standards/device-build-flash.md`](standards/device-build-flash.md) |
 | Client review orchestration (review → dependency plan → sequential fix → independent verify) | [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) · skill: [`.cursor/skills/client-code-review/SKILL.md`](../.cursor/skills/client-code-review/SKILL.md) |
-| Desk FAIL notes → repair-agent prompt (standards, contracts, L3 exit) | skill: [`.cursor/skills/author-desk-repair-brief/SKILL.md`](../.cursor/skills/author-desk-repair-brief/SKILL.md) · then **client-code-review** on the fix chat |
+| Desk FAIL notes → session plan, measure, fix in same chat (standards, contracts, L3 exit) | skill: [`.cursor/skills/author-desk-repair-brief/SKILL.md`](../.cursor/skills/author-desk-repair-brief/SKILL.md) · uses **client-code-review** workflow while repairing |
 | v1 evidence assessments | [`v1-assessments/`](v1-assessments/carousel-playback.md) (historical evidence, not normative architecture) |
 | Device labs (v2) | [`labs/README.md`](labs/README.md) · [`labs/assistant-guide.md`](labs/assistant-guide.md) · [`standards/labs-configuration.md`](standards/labs-configuration.md) |
 | Deep retrospective method | [`.cursor/skills/deep-implementation-retrospective/SKILL.md`](../.cursor/skills/deep-implementation-retrospective/SKILL.md) |

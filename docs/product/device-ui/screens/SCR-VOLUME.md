@@ -34,6 +34,24 @@ SCR-VOLUME
 
 `CAT-37`.
 
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_VOLUME`: signed in and shell stage `VOLUME`. |
+| Owner | `product_volume_bridge.cpp` → `render_volume()`; visibility only from `product_volume_set_visible`. |
+| Visible surfaces | Upper: volume heading. Lower: slider. |
+| Input | Slider `VALUE_CHANGED` → `set_stop_index` (intent only). BOOT → `product_volume_on_boot_leave` via the button poll. RED leaves volume first, then routes to send. |
+| Enters when | BOOT on the inbox (`product_volume_on_boot_from_inbox` sets shell `VOLUME`). |
+| Leaves when | BOOT → inbox (shell `INBOX`). Mute → login screen; `enter_muted` runs the volume mute path. |
+| Background work | None beyond rendering while active; inbox fetch pauses because the inbox is not visible. |
+| Update levels | Level 1 slider value only. |
+| Never | Volume code hiding or showing the inbox. The slider visible after leaving the volume stage. |
+
 ## OPEN items
 
 | ID | Question |

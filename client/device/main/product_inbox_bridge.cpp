@@ -43,7 +43,6 @@ lv_obj_t *s_play_label = nullptr;
 lv_obj_t *s_lower_root = nullptr;
 lv_obj_t *s_row = nullptr;
 lv_obj_t *s_status = nullptr;
-lv_timer_t *s_timer = nullptr;
 bool s_attached = false;
 bool s_last_wifi_up = false;
 bool s_http_allowed = false;
@@ -273,37 +272,10 @@ void set_label_if_changed(lv_obj_t *label, char *cache, int cap, const char *tex
     cache[cap - 1] = '\0';
 }
 
-int inbox_shown(void)
-{
-    if (s_ui_visible == 0) {
-        return 0;
-    }
-    if (product_shell_stage() == FL_SHELL_STAGE_RECORD) {
-        return 0;
-    }
-    return 1;
-}
-
 void apply_root_visibility(int shown)
 {
     set_hidden(s_upper_root, shown ? 0 : 1);
     set_hidden(s_lower_root, shown ? 0 : 1);
-    if (s_upper_root != nullptr) {
-        if (shown) {
-            lv_obj_move_foreground(s_upper_root);
-        } else {
-            lv_obj_move_background(s_upper_root);
-            lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
-        }
-    }
-    if (s_lower_root != nullptr) {
-        if (shown) {
-            lv_obj_move_foreground(s_lower_root);
-        } else {
-            lv_obj_move_background(s_lower_root);
-            lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
-        }
-    }
 }
 
 int find_card(const char *message_id)
@@ -924,7 +896,7 @@ void render_inbox(void)
     if (s_upper_root == nullptr || s_lower_root == nullptr) {
         return;
     }
-    shown = inbox_shown();
+    shown = s_ui_visible;
     apply_root_visibility(shown);
     if (!shown) {
         return;
@@ -938,15 +910,6 @@ void render_inbox(void)
     show_lower_body(chrome, now_ms);
 }
 
-void on_inbox_timer(lv_timer_t *timer)
-{
-    (void)timer;
-    /* Heading, transport, connecting dots, and the selected sketch only.
-     * HTTP and inbox parsing stay on the service path. */
-    s_inbox.advance_to((int64_t)(esp_timer_get_time() / 1000LL));
-    render_inbox();
-}
-
 } /* namespace */
 
 extern "C" bool product_inbox_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
@@ -955,6 +918,46 @@ extern "C" bool product_inbox_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
         return false;
     }
     s_inbox.boot(0);
+    if (!product_inbox_build_widgets(upper_slot, lower_slot)) {
+        return false;
+    }
+    s_attached = true;
+    render_inbox();
+    ESP_LOGI(kTag, "V2_PRODUCT_INBOX_READY build=%s", FAMILY_BUILD_ID);
+    return true;
+}
+
+extern "C" void product_inbox_forget_widgets(void)
+{
+    int i;
+    for (i = 0; i < fl_product_inbox::kMaxMessages; ++i) {
+        if (s_cards[i].canvas_buf != nullptr) {
+            free(s_cards[i].canvas_buf);
+        }
+    }
+    memset(s_cards, 0, sizeof(s_cards));
+    s_card_order[0] = '\0';
+    s_upper_root = nullptr;
+    s_heading = nullptr;
+    s_play_button = nullptr;
+    s_play_label = nullptr;
+    s_lower_root = nullptr;
+    s_row = nullptr;
+    s_status = nullptr;
+    s_heading_shown[0] = '\0';
+    s_transport_shown[0] = '\0';
+    s_status_shown[0] = '\0';
+    s_ui_visible = 0;
+    s_lower_kind = -1;
+    s_lower_fade_out = 0;
+    s_user_scrolling = 0;
+}
+
+extern "C" bool product_inbox_build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+{
+    if (upper_slot == nullptr || lower_slot == nullptr) {
+        return false;
+    }
     s_upper_root = lv_obj_create(upper_slot);
     s_lower_root = lv_obj_create(lower_slot);
     if (s_upper_root == nullptr || s_lower_root == nullptr) {
@@ -1017,16 +1020,8 @@ extern "C" bool product_inbox_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     s_lower_kind = -1;
     s_lower_fade_out = 0;
     s_dot_ms = (int64_t)(esp_timer_get_time() / 1000LL);
-    render_inbox();
-    s_timer = lv_timer_create(on_inbox_timer, 50, nullptr);
-    s_attached = s_timer != nullptr;
-    if (s_attached) {
-        /* Login desk owns the shell until sign-in. A running inbox timer only
-         * reorders hidden chrome and can steal touches from the roster. */
-        lv_timer_pause(s_timer);
-        ESP_LOGI(kTag, "V2_PRODUCT_INBOX_READY build=%s", FAMILY_BUILD_ID);
-    }
-    return s_attached;
+    apply_root_visibility(0);
+    return true;
 }
 
 extern "C" void product_inbox_service(int64_t now_ms)
@@ -1061,9 +1056,6 @@ extern "C" void product_inbox_on_signed_in(void)
     (void)product_inbox_http_worker_start();
     s_user_scrolling = 0;
     destroy_all_cards();
-    if (s_timer != nullptr) {
-        lv_timer_resume(s_timer);
-    }
     render_inbox();
 }
 
@@ -1102,12 +1094,8 @@ extern "C" void product_inbox_on_mute(void)
         lv_anim_delete(s_lower_root, nullptr);
         lv_obj_set_style_opa(s_lower_root, LV_OPA_COVER, 0);
     }
-    product_inbox_set_ui_visible(0);
-    product_inbox_push_under_login();
-    if (s_timer != nullptr) {
-        lv_timer_pause(s_timer);
-    }
-    product_login_touch_wake();
+    /* Login rebuilds its roster from the same LVGL pool on unmute. */
+    destroy_all_cards();
 }
 
 extern "C" void product_inbox_note_refresh(int64_t now_ms)
@@ -1133,36 +1121,26 @@ extern "C" void product_inbox_set_wifi(bool up)
         return;
     }
     s_inbox.set_wifi(up, (int64_t)(esp_timer_get_time() / 1000LL));
-    product_volume_on_wifi(up);
     render_inbox();
 }
 
 extern "C" void product_inbox_set_ui_visible(int visible)
 {
+    const int shown = visible ? 1 : 0;
     if (!s_attached) {
         return;
     }
-    s_inbox.set_ui_visible(visible ? 1 : 0);
-    s_ui_visible = visible ? 1 : 0;
-    if (visible == 0) {
+    /* The carousel model gates fetch and connecting retry on this flag, and
+     * boot()/on_mute() may reset it, so the model is written every tick. */
+    s_inbox.set_ui_visible(shown);
+    if (shown == s_ui_visible) {
+        return;
+    }
+    s_ui_visible = shown;
+    if (shown == 0) {
         s_user_scrolling = 0;
     }
     render_inbox();
-}
-
-extern "C" void product_inbox_push_under_login(void)
-{
-    if (!s_attached) {
-        return;
-    }
-    if (s_upper_root != nullptr) {
-        lv_obj_move_background(s_upper_root);
-        lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
-    }
-    if (s_lower_root != nullptr) {
-        lv_obj_move_background(s_lower_root);
-        lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
-    }
 }
 
 fl_product_inbox::CarouselSession *product_inbox_session(void) { return &s_inbox; }

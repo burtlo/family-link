@@ -34,6 +34,7 @@ Product device build and flash: [device-build-flash](standards/device-build-flas
 |-----|------|
 | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) | Portable rules for the next client generation |
 | [`standards/device-target-invariants.md`](standards/device-target-invariants.md) | Product `client/device/` invariants, claim classes, and mechanical guardrail map |
+| [`standards/device-presentation-invariants.md`](standards/device-presentation-invariants.md) | Product `client/device/` tick order, single screen owner, touch and display-power rules, desk matrix |
 | [`standards/device-build-flash.md`](standards/device-build-flash.md) | `make app:build` / flash, boot markers, verification ladder |
 | [`standards/client-code-review-agent.md`](standards/client-code-review-agent.md) | Orchestrated implementation review, dependency plan, sequential fixes, and independent verification (IDs are per-report); skill `client-code-review` |
 | [`standards/project-configuration.md`](standards/project-configuration.md) | `config.host` / `config.deployment` / `config.labs`, commands, flows, host INI |

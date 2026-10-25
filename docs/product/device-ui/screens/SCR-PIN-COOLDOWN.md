@@ -48,6 +48,24 @@ Try again in <seconds>.
 - No keypad; no PIN dots.
 - Message centered in the content well unless owner specifies top-weighted layout.
 
+## Implementation invariants
+
+Firmware rules for `client/device/`. Behavior and copy stay in the sections
+above; cross-screen rules are in
+[device-presentation-invariants](../../../standards/device-presentation-invariants.md).
+
+| Aspect | Rule |
+|---|---|
+| Screen | `PRODUCT_SCREEN_LOGIN`; cooldown branch of `render_login_copy()`. |
+| Visible surfaces | Full-canvas cooldown labels only. Heading, status label, roster row, and PIN pad hidden. |
+| Input | None. |
+| Enters when | Session PIN phase `Cooldown`. |
+| Leaves when | Session ends the cooldown → roster or status per the session. Mute → blank; the session keeps the remaining countdown. |
+| Background work | Login HTTP only. The countdown is session time, not an LVGL timer. |
+| Update levels | Level 1: the countdown line uses a change-detected setter, so it redraws once per second, not per tick. |
+| Never | Keypad or roster visible or tappable during cooldown. |
+| Open gaps | Cover-down entry and exit are not implemented. |
+
 ## Revision history
 
 - **0.4 — 2026-10-21:** Two-line copy; prefer 24 px; type-fit delegated (`DEC-063`).

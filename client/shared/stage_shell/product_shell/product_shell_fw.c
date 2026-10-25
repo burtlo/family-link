@@ -917,6 +917,54 @@ void product_shell_set_stage(fl_shell_stage_t stage)
     s_shell.session.stage = stage;
 }
 
+static bool build_slots(void)
+{
+    s_shell.upper_slot = lv_obj_create(s_shell.screen);
+    s_shell.lower_slot = lv_obj_create(s_shell.screen);
+    if (s_shell.upper_slot == NULL || s_shell.lower_slot == NULL) return false;
+    lv_obj_set_size(s_shell.upper_slot, 320, 80);
+    lv_obj_set_pos(s_shell.upper_slot, 0, 0);
+    lv_obj_set_style_bg_opa(s_shell.upper_slot, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(s_shell.upper_slot, 0, 0);
+    lv_obj_set_style_pad_all(s_shell.upper_slot, 0, 0);
+    lv_obj_set_scrollable(s_shell.upper_slot, false);
+    lv_obj_set_size(s_shell.lower_slot, 320, 160);
+    lv_obj_set_pos(s_shell.lower_slot, 0, 80);
+    lv_obj_set_style_bg_opa(s_shell.lower_slot, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(s_shell.lower_slot, 0, 0);
+    lv_obj_set_style_pad_all(s_shell.lower_slot, 0, 0);
+    lv_obj_set_scrollable(s_shell.lower_slot, false);
+    if (strcmp(s_shell.mode, "product") == 0) {
+        lv_obj_set_style_bg_color(s_shell.upper_slot, lv_color_hex(0x18232B), 0);
+        lv_obj_set_style_bg_opa(s_shell.upper_slot, LV_OPA_COVER, 0);
+        lv_obj_set_style_bg_color(s_shell.lower_slot, lv_color_hex(0x202D36), 0);
+        lv_obj_set_style_bg_opa(s_shell.lower_slot, LV_OPA_COVER, 0);
+    }
+    return true;
+}
+
+void product_shell_release_slots(void)
+{
+    if (!s_shell.initialized || !s_shell.product_runtime) return;
+    if (s_shell.upper_slot != NULL) lv_obj_delete(s_shell.upper_slot);
+    if (s_shell.lower_slot != NULL) lv_obj_delete(s_shell.lower_slot);
+    s_shell.upper_slot = NULL;
+    s_shell.lower_slot = NULL;
+}
+
+bool product_shell_rebuild_slots(void)
+{
+    if (!s_shell.initialized || !s_shell.product_runtime) return false;
+    if (s_shell.upper_slot != NULL && s_shell.lower_slot != NULL) return true;
+    product_shell_release_slots();
+    return build_slots();
+}
+
+bool product_shell_slots_live(void)
+{
+    return s_shell.initialized && s_shell.upper_slot != NULL && s_shell.lower_slot != NULL;
+}
+
 bool product_shell_init(lv_obj_t *screen)
 {
     if (screen == NULL) return false;
@@ -933,27 +981,9 @@ bool product_shell_init(lv_obj_t *screen)
     s_shell.queue = xQueueCreate(FL_SHELL_QUEUE_CAPACITY, sizeof(ui_event_t));
     if (s_shell.queue == NULL) return false;
     fl_shell_session_init(&s_shell.session, 1U, FL_SHELL_STAGE_ROSTER);
-    s_shell.upper_slot = lv_obj_create(screen);
-    s_shell.lower_slot = lv_obj_create(screen);
-    if (s_shell.upper_slot == NULL || s_shell.lower_slot == NULL) return false;
-    lv_obj_set_size(s_shell.upper_slot, 320, 80);
-    lv_obj_set_pos(s_shell.upper_slot, 0, 0);
-    lv_obj_set_style_bg_opa(s_shell.upper_slot, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(s_shell.upper_slot, 0, 0);
-    lv_obj_set_style_pad_all(s_shell.upper_slot, 0, 0);
-    lv_obj_set_scrollable(s_shell.upper_slot, false);
-    lv_obj_set_size(s_shell.lower_slot, 320, 160);
-    lv_obj_set_pos(s_shell.lower_slot, 0, 80);
-    lv_obj_set_style_bg_opa(s_shell.lower_slot, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(s_shell.lower_slot, 0, 0);
-    lv_obj_set_style_pad_all(s_shell.lower_slot, 0, 0);
-    lv_obj_set_scrollable(s_shell.lower_slot, false);
+    if (!build_slots()) return false;
     if (strcmp(s_shell.mode, "product") == 0) {
         s_shell.product_runtime = true;
-        lv_obj_set_style_bg_color(s_shell.upper_slot, lv_color_hex(0x18232B), 0);
-        lv_obj_set_style_bg_opa(s_shell.upper_slot, LV_OPA_COVER, 0);
-        lv_obj_set_style_bg_color(s_shell.lower_slot, lv_color_hex(0x202D36), 0);
-        lv_obj_set_style_bg_opa(s_shell.lower_slot, LV_OPA_COVER, 0);
         s_shell.initialized = true;
         s_shell.operation_stage_before = FL_SHELL_STAGE_ROSTER;
         ESP_LOGI("product_shell", "V2_PRODUCT_SHELL_READY build=%s", FAMILY_BUILD_ID);

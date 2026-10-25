@@ -1,5 +1,7 @@
 #include "product_send_http_worker.h"
 
+#include "product_mem_probe.h"
+
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
@@ -174,7 +176,9 @@ void worker_task(void *arg)
         memset(&result, 0, sizeof(result));
         result.seq = job.seq;
         strncpy(result.client_message_id, job.client_message_id, sizeof(result.client_message_id) - 1);
+        product_mem_probe_heap("send_worker_begin", (int32_t)job.body_len);
         perform_exchange(job, &exchange);
+        product_mem_probe_heap("send_worker_end", exchange.perform_ok ? exchange.http_status : -1);
         result.perform_ok = exchange.perform_ok;
         result.http_status = exchange.http_status;
         result.body_len = exchange.body_len;

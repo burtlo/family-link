@@ -10,8 +10,13 @@
 extern "C" {
 #endif
 
+/* Boot only, before product_display_start(). Never from the LVGL timer. */
+void product_record_mount_storage(void);
 bool product_record_attach(lv_obj_t *panel_root);
 int product_record_ensure(lv_obj_t *panel_root);
+/* Sign-out: delete the record surface. The session and finished takes stay. */
+void product_record_release_surface(void);
+/* Called only by product_stage_present(). */
 void product_record_set_visible(int visible);
 int product_record_can_start_second(void);
 int product_record_capture_can_start(void);
@@ -28,7 +33,7 @@ void product_record_notify_mic_failed(void);
 void product_record_discard_in_progress(void);
 void product_record_cancel_recording(void);
 int product_record_finish_take(void);
-void product_record_service(int64_t now_ms, int record_stage_active);
+void product_record_service(int64_t now_ms);
 
 #ifdef __cplusplus
 }

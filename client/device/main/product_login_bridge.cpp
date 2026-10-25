@@ -5,6 +5,7 @@
 #include "product_send_fw.h"
 #include "product_login_http_worker.h"
 #include "product_inbox_fw.h"
+#include "product_mem_probe.h"
 #include "product_record_fw.h"
 #include "product_shell_fw.h"
 #include "product_volume_fw.h"
@@ -29,6 +30,10 @@ lv_obj_t *s_lower_label = nullptr;
 lv_obj_t *s_lower_slot = nullptr;
 lv_obj_t *s_login_lower_layer = nullptr;
 lv_obj_t *s_roster_row = nullptr;
+static constexpr int kRosterCardStride = 132 + 12;
+int s_roster_scroll_gesture = 0;
+int s_roster_press_scroll_x = 0;
+int s_roster_programmatic_scroll = 0;
 int s_roster_shown = -1;
 int s_roster_locked = -1;
 char s_roster_focus[fl_product_login::kMaxId];
@@ -39,33 +44,20 @@ int64_t s_fade_ms = -1000;
 int s_dot_phase = 0;
 int64_t s_dot_ms = 0;
 bool s_backlight_dark = false;
-
-static void login_touch_wake(void)
-{
-    lv_indev_t *indev = bsp_display_get_input_dev();
-    if (indev != nullptr) {
-        lv_indev_enable(indev, true);
-        lv_indev_reset(indev, nullptr);
-        return;
-    }
-    while ((indev = lv_indev_get_next(indev)) != nullptr) {
-        if (lv_indev_get_type(indev) != LV_INDEV_TYPE_POINTER) {
-            continue;
-        }
-        lv_indev_enable(indev, true);
-        lv_indev_reset(indev, nullptr);
-    }
-}
+bool s_signed_in_seen = false;
+int s_login_shown = -1;
 
 static void wake_login_display(void)
 {
     /* Blank uses backlight_off only (not bsp_display_enter_sleep). exit_sleep()
-     * reconfigures BSP_LCD_TOUCH_INT (GPIO 3) and leaves GT911/TT21100 dead. */
+     * reconfigures BSP_LCD_TOUCH_INT (GPIO 3) and leaves GT911/TT21100 dead.
+     * A press that began on the dark panel must not carry into the woken UI;
+     * this is the only pointer reset in the product firmware. */
+    lv_indev_t *indev = bsp_display_get_input_dev();
     (void)bsp_display_brightness_set(80);
-    login_touch_wake();
-    lv_display_t *display = lv_display_get_default();
-    if (display != nullptr) {
-        lv_refr_now(display);
+    s_backlight_dark = false;
+    if (indev != nullptr) {
+        lv_indev_reset(indev, nullptr);
     }
     ESP_LOGI("product_mute", "V2_MUTE_DISPLAY wake dark=0");
 }
@@ -91,41 +83,14 @@ volatile int s_wifi_scheduled_reason = 0;
 volatile bool s_wifi_driver_fail_pending = false;
 
 static void ensure_http_worker(void);
-static void render_login_copy(void);
 
-static void login_desk_raise_interactive(void)
+static void set_label_text(lv_obj_t *label, const char *text)
 {
-    product_inbox_push_under_login();
-    product_volume_push_under_login();
-    product_send_hide_for_login();
-    if (s_login_lower_layer != nullptr) {
-        lv_obj_move_foreground(s_login_lower_layer);
+    const char *current = lv_label_get_text(label);
+    if (current != nullptr && strcmp(current, text) == 0) {
+        return;
     }
-    if (s_upper_label != nullptr && !lv_obj_has_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN)) {
-        lv_obj_move_foreground(s_upper_label);
-    }
-    if (s_lower_label != nullptr && !lv_obj_has_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN)) {
-        lv_obj_move_foreground(s_lower_label);
-    }
-    if (s_roster_row != nullptr && !lv_obj_has_flag(s_roster_row, LV_OBJ_FLAG_HIDDEN)) {
-        lv_obj_move_foreground(s_roster_row);
-    }
-    if (s_pin_pad != nullptr && !lv_obj_has_flag(s_pin_pad, LV_OBJ_FLAG_HIDDEN)) {
-        lv_obj_move_foreground(s_pin_pad);
-    }
-    if (s_cooldown != nullptr && !lv_obj_has_flag(s_cooldown, LV_OBJ_FLAG_HIDDEN)) {
-        lv_obj_move_foreground(s_cooldown);
-    }
-}
-
-static void login_desk_restore_interactive(void)
-{
-    login_desk_raise_interactive();
-    login_touch_wake();
-    lv_display_t *display = lv_display_get_default();
-    if (display != nullptr) {
-        lv_refr_now(display);
-    }
+    lv_label_set_text(label, text);
 }
 
 static int64_t capped_session_advance_target(const fl_product_login::SessionWriter &session, int64_t now_ms)
@@ -142,16 +107,12 @@ static void mute_diag_snapshot(const char *reason, int latched)
 {
     ESP_LOGI("product_mute",
              "V2_MUTE_EDGE reason=%s latch=%d gpio=%d btn=%d gpio_ready=%d dark=%d stage=%s "
-             "signed_in=%d wifi=%d link=%d roster_inflight=%d shell=%d muted_blank=%d",
+             "signed_in=%d wifi=%d link=%d roster_inflight=%d screen=%d",
              reason != nullptr ? reason : "?", latched, product_hardware_buttons_mute_gpio_level(),
              product_hardware_buttons_mute_button_level(), product_hardware_buttons_mute_gpio_ready(),
              s_backlight_dark ? 1 : 0, s_session.stage_name(), s_session.signed_in() != 0 ? 1 : 0,
              s_wifi_up ? 1 : 0, product_network_sta_up(), s_session.roster_inflight() ? 1 : 0,
-             (int)product_shell_stage(), s_backlight_dark &&
-                                              s_session.stage() == fl_product_login::kStageMuted &&
-                                              latched != 0
-                                         ? 1
-                                         : 0);
+             (int)product_stage_screen());
 }
 
 struct CardFill {
@@ -207,7 +168,9 @@ static void on_roster_card_activate(int index)
         return;
     }
     if (s_roster_row != nullptr) {
-        lv_obj_scroll_to_x(s_roster_row, index * (132 + 12), LV_ANIM_OFF);
+        s_roster_programmatic_scroll = 1;
+        lv_obj_scroll_to_x(s_roster_row, index * kRosterCardStride, LV_ANIM_OFF);
+        s_roster_programmatic_scroll = 0;
     }
     user_id = s_session.user_at(index);
     s_session.select_pin_user(user_id, (int64_t)(esp_timer_get_time() / 1000LL));
@@ -215,10 +178,9 @@ static void on_roster_card_activate(int index)
 
 static void on_roster_card_pressed(lv_event_t *event)
 {
-    if (event == nullptr) {
-        return;
-    }
-    on_roster_card_activate((int)(intptr_t)lv_event_get_user_data(event));
+    (void)event;
+    s_roster_scroll_gesture = 0;
+    s_roster_press_scroll_x = s_roster_row != nullptr ? lv_obj_get_scroll_x(s_roster_row) : 0;
 }
 
 static void on_roster_card_clicked(lv_event_t *event)
@@ -226,7 +188,52 @@ static void on_roster_card_clicked(lv_event_t *event)
     if (event == nullptr) {
         return;
     }
+    if (s_roster_scroll_gesture != 0) {
+        s_roster_scroll_gesture = 0;
+        return;
+    }
     on_roster_card_activate((int)(intptr_t)lv_event_get_user_data(event));
+}
+
+static void on_roster_row_scroll(lv_event_t *event)
+{
+    lv_event_code_t code;
+    int count;
+    int index;
+    int scroll;
+    int target;
+    if (event == nullptr || s_roster_programmatic_scroll != 0 || s_roster_row == nullptr) {
+        return;
+    }
+    code = lv_event_get_code(event);
+    count = s_session.user_count();
+    if (count <= 0) {
+        return;
+    }
+    scroll = lv_obj_get_scroll_x(s_roster_row);
+    if (scroll < s_roster_press_scroll_x - 4 || scroll > s_roster_press_scroll_x + 4) {
+        s_roster_scroll_gesture = 1;
+    }
+    if (code == LV_EVENT_SCROLL) {
+        return;
+    }
+    if (code != LV_EVENT_SCROLL_END) {
+        return;
+    }
+    index = scroll;
+    if (index < 0) {
+        index = 0;
+    }
+    index = (index + (kRosterCardStride / 2)) / kRosterCardStride;
+    if (index >= count) {
+        index = count - 1;
+    }
+    target = index * kRosterCardStride;
+    s_roster_programmatic_scroll = 1;
+    if (lv_obj_get_scroll_x(s_roster_row) != target) {
+        lv_obj_scroll_to_x(s_roster_row, target, LV_ANIM_OFF);
+    }
+    s_roster_programmatic_scroll = 0;
 }
 
 static void clear_roster_cards(void)
@@ -234,8 +241,6 @@ static void clear_roster_cards(void)
     if (s_roster_row != nullptr) {
         lv_obj_delete(s_roster_row);
         s_roster_row = nullptr;
-        /* Mute/sign-out deletes widgets the pointer may still be tracking. */
-        login_touch_wake();
     }
     s_roster_shown = -1;
     s_roster_locked = -1;
@@ -268,10 +273,10 @@ static void show_roster_cards(void)
         if (s_lower_label != nullptr) {
             lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
         }
-        login_desk_raise_interactive();
         return;
     }
     clear_roster_cards();
+    product_mem_probe("roster_cleared", 0);
     count = s_session.user_count();
     if (count > fl_product_login::kMaxUsers) {
         count = fl_product_login::kMaxUsers;
@@ -298,6 +303,8 @@ static void show_roster_cards(void)
     lv_obj_set_scroll_dir(s_roster_row, LV_DIR_HOR);
     lv_obj_set_scrollbar_mode(s_roster_row, LV_SCROLLBAR_MODE_OFF);
     lv_obj_remove_flag(s_roster_row, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(s_roster_row, on_roster_row_scroll, LV_EVENT_SCROLL, nullptr);
+    lv_obj_add_event_cb(s_roster_row, on_roster_row_scroll, LV_EVENT_SCROLL_END, nullptr);
     for (i = 0; i < count; ++i) {
         const char *name = s_session.user_display_name_at(i);
         const bool focused = focus[0] != '\0' && strcmp(s_session.user_at(i), focus) == 0;
@@ -359,9 +366,8 @@ static void show_roster_cards(void)
     if (s_lower_label != nullptr) {
         lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
     }
-    lv_obj_move_foreground(s_roster_row);
-    login_desk_raise_interactive();
     ESP_LOGI("product_login", "roster cards=%d focus=%s", count, s_roster_focus[0] ? s_roster_focus : "none");
+    product_mem_probe("roster_built", count);
 }
 
 static bool pin_entry_open(void)
@@ -583,16 +589,14 @@ static void show_cooldown(void)
     }
     snprintf(line, sizeof(line), "Try again in %d.", seconds);
     if (s_cooldown_try != nullptr) {
-        lv_label_set_text(s_cooldown_try, line);
+        set_label_text(s_cooldown_try, line);
     }
     lv_obj_remove_flag(s_cooldown, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_move_foreground(s_cooldown);
 }
 
 static void render_pin_screen(void)
 {
     static char heading[72];
-    static char heading_shown[72];
     static char marks[24];
     static char status_line[40];
     static int open_shown = -1;
@@ -635,26 +639,19 @@ static void render_pin_screen(void)
     }
     if (s_upper_label != nullptr) {
         lv_obj_remove_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
-        if (strcmp(heading, heading_shown) != 0) {
-            lv_label_set_text(s_upper_label, heading);
-            strncpy(heading_shown, heading, sizeof(heading_shown) - 1);
-            heading_shown[sizeof(heading_shown) - 1] = '\0';
-        }
-        lv_obj_align(s_upper_label, LV_ALIGN_LEFT_MID, 12, 0);
+        set_label_text(s_upper_label, heading);
     }
     lower_status = s_session.pin_lower_is_status();
     if (lower_status) {
         hide_pin_pad();
         if (s_lower_label != nullptr) {
             if (!s_wifi_up || s_session.stage() == fl_product_login::kStageWifiUnavailable) {
-                lv_label_set_text(s_lower_label, "no Wi-Fi");
+                set_label_text(s_lower_label, "no Wi-Fi");
             } else {
                 format_connecting(status_line, (int)sizeof(status_line));
-                lv_label_set_text(s_lower_label, status_line);
+                set_label_text(s_lower_label, status_line);
             }
-            lv_obj_set_style_text_align(s_lower_label, LV_TEXT_ALIGN_CENTER, 0);
             lv_obj_remove_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_center(s_lower_label);
         }
         note_lower_kind(3);
     } else {
@@ -665,10 +662,6 @@ static void render_pin_screen(void)
             lv_obj_remove_flag(s_pin_pad, LV_OBJ_FLAG_HIDDEN);
         }
         note_lower_kind(2);
-        if (!s_pin_announced) {
-            login_desk_raise_interactive();
-            login_touch_wake();
-        }
     }
     open = s_session.keypad_open();
     if (open != (open_shown != 0)) {
@@ -682,7 +675,6 @@ static void render_pin_screen(void)
     }
     if (!s_pin_announced) {
         s_pin_announced = 1;
-        heading_shown[0] = '\0';
         open_shown = -1;
         ESP_LOGI("product_login", "pin screen user=%s", name);
     }
@@ -701,7 +693,6 @@ static void apply_wifi_link(bool up)
     if (up) {
         ensure_http_worker();
     }
-    render_login_copy();
 }
 
 static void flush_wifi_schedule(void)
@@ -712,7 +703,6 @@ static void flush_wifi_schedule(void)
         s_wifi_driver_fail_pending = false;
         s_wifi_driver_failed = true;
         ESP_LOGW("product_login", "wifi radio failed");
-        render_login_copy();
     }
     if (!s_wifi_schedule_pending) {
         return;
@@ -750,9 +740,10 @@ static void ensure_http_worker(void)
     }
 }
 
+/* Level 0/1 render of the signed-out screens from the session snapshot.
+ * Idempotent; never changes session, shell, or another module. */
 static void render_login_copy(void)
 {
-    static int signed_in_announced = 0;
     static char status_line[40];
     const char *upper = "Loading hangout ...";
     bool wifi_down;
@@ -760,30 +751,6 @@ static void render_login_copy(void)
     if (s_upper_label == nullptr || s_lower_label == nullptr) {
         return;
     }
-    if (s_session.signed_in() != 0) {
-        if (!signed_in_announced) {
-            if (s_backlight_dark) {
-                wake_login_display();
-                s_backlight_dark = false;
-            }
-            product_inbox_on_signed_in();
-            product_stage_on_signed_in();
-            signed_in_announced = 1;
-            ESP_LOGI("product_login", "V2_PRODUCT_SIGNED_IN");
-        }
-        hide_cooldown();
-        lv_obj_add_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
-        clear_roster_cards();
-        hide_pin_pad();
-        return;
-    }
-    signed_in_announced = 0;
-    product_send_sync_stage();
-    product_inbox_set_ui_visible(0);
-    product_inbox_push_under_login();
-    product_volume_push_under_login();
-    product_send_hide_for_login();
     if (s_session.stage() == fl_product_login::kStageMuted) {
         hide_cooldown();
         hide_pin_pad();
@@ -814,9 +781,7 @@ static void render_login_copy(void)
         upper = "Sign in as ...";
     }
     lv_obj_remove_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
-    lv_label_set_text(s_upper_label, upper);
-    lv_obj_align(s_upper_label, LV_ALIGN_LEFT_MID, 12, 0);
-    lv_obj_move_foreground(s_upper_label);
+    set_label_text(s_upper_label, upper);
     wifi_down = !s_wifi_up || s_session.stage() == fl_product_login::kStageWifiUnavailable;
     show_cards = !wifi_down && s_session.stage() == fl_product_login::kStageRoster &&
                  s_session.user_count() > 0 && s_session.pin_phase() == fl_product_login::kPinPhaseIdle;
@@ -828,25 +793,91 @@ static void render_login_copy(void)
     }
     clear_roster_cards();
     lv_obj_remove_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_set_style_text_align(s_lower_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_center(s_lower_label);
     if (wifi_down) {
-        lv_label_set_text(s_lower_label, "no Wi-Fi");
+        set_label_text(s_lower_label, "no Wi-Fi");
         note_lower_kind(3);
         return;
     }
     if (s_session.roster_updating() == 0 && s_session.hangout_known() != 0 && s_session.user_count() == 0 &&
         s_session.stage() != fl_product_login::kStageConnecting) {
-        lv_label_set_text(s_lower_label, "No people in this hangout");
+        set_label_text(s_lower_label, "No people in this hangout");
         note_lower_kind(4);
         return;
     }
     format_connecting(status_line, (int)sizeof(status_line));
-    lv_label_set_text(s_lower_label, status_line);
+    set_label_text(s_lower_label, status_line);
     note_lower_kind(3);
-    login_desk_raise_interactive();
 }
 
+static void note_sign_in_edge(void)
+{
+    const bool signed_in = s_session.signed_in() != 0;
+    if (signed_in == s_signed_in_seen) {
+        return;
+    }
+    s_signed_in_seen = signed_in;
+    if (!signed_in) {
+        return;
+    }
+    product_inbox_on_signed_in();
+    product_stage_on_signed_in();
+    ESP_LOGI("product_login", "V2_PRODUCT_SIGNED_IN");
+    product_mem_probe("signed_in", 0);
+}
+
+static void enter_muted(int64_t now_ms)
+{
+    if (!s_backlight_dark) {
+        blank_login_display();
+    }
+    if (s_session.stage() == fl_product_login::kStageMuted) {
+        return;
+    }
+    product_stage_on_mute();
+    if (product_volume_active()) {
+        /* The volume model signs the login session out itself. */
+        (void)product_volume_on_mute();
+    }
+    if (s_session.stage() != fl_product_login::kStageMuted) {
+        s_session.mute(now_ms);
+    }
+    product_inbox_on_mute();
+    product_send_release_widgets();
+    product_record_release_surface();
+    product_login_http_on_mute();
+    product_shell_set_stage(FL_SHELL_STAGE_ROSTER);
+    ESP_LOGI("product_login", "mute_latch latched=1 stage=%s", s_session.stage_name());
+    product_mem_probe("mute_latched", 0);
+}
+
+static void leave_muted(int64_t now_ms)
+{
+    bool link_up;
+    if (s_backlight_dark) {
+        wake_login_display();
+    }
+    if (s_session.stage() != fl_product_login::kStageMuted) {
+        return;
+    }
+    link_up = s_wifi_up && product_network_sta_up() != 0;
+    flush_wifi_schedule();
+    s_session.set_wifi(link_up, now_ms);
+    product_login_http_on_mute();
+    s_session.unmute(now_ms);
+    if (!s_session.roster_inflight()) {
+        (void)s_session.begin_roster_request(now_ms);
+    }
+    ensure_http_worker();
+    product_login_http_service(&s_session, now_ms);
+    ESP_LOGI("product_login", "mute_latch latched=0 stage=%s wifi=%d link=%d roster_inflight=%d",
+             s_session.stage_name(), s_wifi_up ? 1 : 0, product_network_sta_up(),
+             s_session.roster_inflight() ? 1 : 0);
+    product_mem_probe("mute_released", 0);
+}
+
+/* The one presentation tick (LVGL task). Phase order is normative; see
+ * docs/standards/device-presentation-invariants.md. No early return: the mute
+ * latch and worker results must be serviced on every tick. */
 void on_login_timer(lv_timer_t *timer)
 {
     int64_t now_ms;
@@ -856,17 +887,17 @@ void on_login_timer(lv_timer_t *timer)
         s_dot_ms = now_ms;
         s_dot_phase = (s_dot_phase + 1) % 3;
     }
-    /* Sample the latch before HTTP so mute can blank and sign out even when
-     * a later inbox drain is still retiring the previous session. */
+    /* 1. Input: buttons and mute latch (state transitions only). */
     product_hardware_buttons_poll();
-    const bool muted_blank =
-        s_backlight_dark && s_session.stage() == fl_product_login::kStageMuted &&
-        product_hardware_buttons_mute_latched() != 0;
+    /* 2. Connectivity from the network task. */
     flush_wifi_schedule();
+    /* 3. Login session and its worker. */
     ensure_http_worker();
     s_session.advance_to(capped_session_advance_target(s_session, now_ms));
     s_session.drain();
     product_login_http_service(&s_session, now_ms);
+    note_sign_in_edge();
+    /* 4. Feature services. */
     if (s_session.signed_in() != 0) {
         product_inbox_service(now_ms);
         product_volume_service(now_ms);
@@ -875,13 +906,10 @@ void on_login_timer(lv_timer_t *timer)
          * result queue cannot fill and block it. */
         product_inbox_discard_results();
     }
-    product_record_service(now_ms,
-                          product_shell_stage() == FL_SHELL_STAGE_RECORD && !product_volume_active()
-                              ? 1
-                              : 0);
-    if (!muted_blank) {
-        render_login_copy();
-    }
+    product_send_service(now_ms);
+    product_record_service(now_ms);
+    /* 5. Present: one owner decides which module is visible, then renders. */
+    product_stage_present();
 #if CONFIG_FAMILY_DEVICE_MUTE_TRACE
     if (s_backlight_dark) {
         static int64_t s_last_dark_trace_ms;
@@ -893,9 +921,40 @@ void on_login_timer(lv_timer_t *timer)
 #endif
 }
 
-extern "C" void product_login_touch_wake(void)
+bool build_login_upper(lv_obj_t *upper_slot)
 {
-    login_touch_wake();
+    s_upper_label = lv_label_create(upper_slot);
+    return s_upper_label != nullptr;
+}
+
+bool build_login_lower(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+{
+    s_login_lower_layer = lv_obj_create(lower_slot);
+    if (s_login_lower_layer == nullptr) {
+        return false;
+    }
+    lv_obj_set_size(s_login_lower_layer, 320, 160);
+    lv_obj_set_pos(s_login_lower_layer, 0, 0);
+    lv_obj_set_style_bg_opa(s_login_lower_layer, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(s_login_lower_layer, 0, 0);
+    lv_obj_set_style_pad_all(s_login_lower_layer, 0, 0);
+    lv_obj_remove_flag(s_login_lower_layer, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_remove_flag(s_login_lower_layer, LV_OBJ_FLAG_CLICKABLE);
+    s_lower_slot = s_login_lower_layer;
+    s_lower_label = lv_label_create(s_lower_slot);
+    if (s_lower_label == nullptr) {
+        return false;
+    }
+    lv_obj_remove_flag(upper_slot, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_flag(lower_slot, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_align(s_upper_label, LV_ALIGN_LEFT_MID, 12, 0);
+    lv_obj_center(s_lower_label);
+    lv_obj_set_style_text_color(s_upper_label, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_text_color(s_lower_label, lv_color_hex(0xB7CBD7), 0);
+    lv_obj_set_style_text_font(s_upper_label, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_font(s_lower_label, &lv_font_montserrat_16, 0);
+    lv_obj_set_style_text_align(s_lower_label, LV_TEXT_ALIGN_CENTER, 0);
+    return true;
 }
 
 } /* namespace */
@@ -908,8 +967,7 @@ extern "C" bool product_login_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
         return false;
     }
     s_session.boot(0, false);
-    s_upper_label = lv_label_create(upper_slot);
-    if (s_upper_label == nullptr) {
+    if (!build_login_upper(upper_slot)) {
         return false;
     }
     if (!product_inbox_attach(upper_slot, lower_slot)) {
@@ -923,48 +981,87 @@ extern "C" bool product_login_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
         ESP_LOGW("product_login", "product_volume_attach_failed");
     }
     product_volume_bind_models(product_inbox_session(), &s_session);
-    s_login_lower_layer = lv_obj_create(lower_slot);
-    if (s_login_lower_layer == nullptr) {
+    if (!build_login_lower(upper_slot, lower_slot)) {
         return false;
     }
-    lv_obj_set_size(s_login_lower_layer, 320, 160);
-    lv_obj_set_pos(s_login_lower_layer, 0, 0);
-    lv_obj_set_style_bg_opa(s_login_lower_layer, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_width(s_login_lower_layer, 0, 0);
-    lv_obj_set_style_pad_all(s_login_lower_layer, 0, 0);
-    lv_obj_remove_flag(s_login_lower_layer, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(s_login_lower_layer, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_move_foreground(s_login_lower_layer);
-    s_lower_slot = s_login_lower_layer;
-    s_lower_label = lv_label_create(s_lower_slot);
-    if (s_lower_label == nullptr) {
-        return false;
-    }
-    lv_obj_remove_flag(upper_slot, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(lower_slot, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_center(s_upper_label);
-    lv_obj_center(s_lower_label);
-    lv_obj_set_style_text_color(s_upper_label, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_set_style_text_color(s_lower_label, lv_color_hex(0xB7CBD7), 0);
-    lv_obj_set_style_text_font(s_upper_label, &lv_font_montserrat_16, 0);
-    lv_obj_set_style_text_font(s_lower_label, &lv_font_montserrat_16, 0);
-    lv_obj_set_style_text_align(s_lower_label, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_move_foreground(s_login_lower_layer);
-    lv_obj_move_foreground(s_upper_label);
-    lv_obj_move_foreground(s_lower_label);
     (void)product_hardware_buttons_init();
-    if (product_hardware_buttons_mute_latched()) {
-        product_login_on_mute_level(1);
-    } else {
-        render_login_copy();
-    }
-    login_touch_wake();
+    product_login_on_mute_level(product_hardware_buttons_mute_latched());
+    product_stage_present();
     s_login_timer = lv_timer_create(on_login_timer, 50, nullptr);
     if (s_login_timer == nullptr) {
         return false;
     }
-    ESP_LOGI("product_login", "V2_PRODUCT_LOGIN_READY desk=raise-v8 build=%s", FAMILY_BUILD_ID);
+    ESP_LOGI("product_login", "V2_PRODUCT_LOGIN_READY desk=present-v1 build=%s", FAMILY_BUILD_ID);
     return true;
+}
+
+extern "C" void product_split_pane_release(void)
+{
+    if (!product_shell_slots_live()) {
+        return;
+    }
+    product_shell_release_slots();
+    s_upper_label = nullptr;
+    s_lower_label = nullptr;
+    s_lower_slot = nullptr;
+    s_login_lower_layer = nullptr;
+    s_roster_row = nullptr;
+    s_roster_shown = -1;
+    s_roster_locked = -1;
+    s_roster_focus[0] = '\0';
+    s_pin_pad = nullptr;
+    memset(s_pin_keys, 0, sizeof(s_pin_keys));
+    s_pin_announced = 0;
+    s_lower_kind = -1;
+    s_login_shown = -1;
+    product_inbox_forget_widgets();
+    product_send_forget_widgets();
+    product_volume_forget_widgets();
+    product_mem_probe("split_pane_released", 0);
+}
+
+extern "C" void product_split_pane_rebuild(void)
+{
+    lv_obj_t *upper = nullptr;
+    lv_obj_t *lower = nullptr;
+    if (product_shell_slots_live()) {
+        return;
+    }
+    if (!product_shell_rebuild_slots() || !product_shell_slot_roots(&upper, &lower)) {
+        ESP_LOGE("product_login", "split_pane_rebuild_failed");
+        return;
+    }
+    if (!build_login_upper(upper) || !product_inbox_build_widgets(upper, lower) ||
+        !product_send_build_widgets(upper, lower) || !product_volume_build_widgets(upper, lower) ||
+        !build_login_lower(upper, lower)) {
+        ESP_LOGE("product_login", "split_pane_widgets_failed");
+    }
+    product_mem_probe("split_pane_rebuilt", 0);
+}
+
+
+extern "C" void product_login_present(int visible)
+{
+    if (s_upper_label == nullptr || s_login_lower_layer == nullptr) {
+        return;
+    }
+    if (visible) {
+        if (s_login_shown != 1) {
+            s_login_shown = 1;
+            lv_obj_remove_flag(s_login_lower_layer, LV_OBJ_FLAG_HIDDEN);
+        }
+        render_login_copy();
+        return;
+    }
+    if (s_login_shown == 0) {
+        return;
+    }
+    s_login_shown = 0;
+    hide_cooldown();
+    hide_pin_pad();
+    clear_roster_cards();
+    lv_obj_add_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(s_login_lower_layer, LV_OBJ_FLAG_HIDDEN);
 }
 
 extern "C" int product_login_is_signed_in(void)
@@ -977,77 +1074,21 @@ extern "C" void product_login_on_boot_pressed(void)
     s_session.press_boot((int64_t)(esp_timer_get_time() / 1000LL));
 }
 
+/* Sampled every tick. Reconciles display power and session to the latch level;
+ * a no-op when they already agree. Rendering belongs to the present phase. */
 extern "C" void product_login_on_mute_level(int latched)
 {
     const int64_t now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
     static int s_last_latched = -1;
-    bool changed = false;
     if (latched != s_last_latched) {
         mute_diag_snapshot("latch_edge", latched);
         s_last_latched = latched;
     }
     if (latched) {
-        if (!s_backlight_dark) {
-            blank_login_display();
-            changed = true;
-        }
-        if (s_session.stage() != fl_product_login::kStageMuted) {
-            product_stage_on_mute();
-            if (product_volume_active()) {
-                (void)product_volume_on_mute();
-            }
-            if (s_session.stage() != fl_product_login::kStageMuted) {
-                s_session.mute(now_ms);
-                product_inbox_on_mute();
-            }
-            product_login_http_on_mute();
-            product_shell_set_stage(FL_SHELL_STAGE_ROSTER);
-            changed = true;
-        }
-        if (changed) {
-            ESP_LOGI("product_login", "mute_latch latched=1 stage=%s", s_session.stage_name());
-            render_login_copy();
-            if (s_session.signed_in() == 0) {
-                login_desk_restore_interactive();
-            }
-        }
-        return;
+        enter_muted(now_ms);
+    } else {
+        leave_muted(now_ms);
     }
-    if (s_backlight_dark) {
-        wake_login_display();
-        s_backlight_dark = false;
-        changed = true;
-    }
-    if (s_session.stage() == fl_product_login::kStageMuted) {
-        clear_roster_cards();
-        const bool link_up = s_wifi_up && product_network_sta_up() != 0;
-        flush_wifi_schedule();
-        s_session.set_wifi(link_up, now_ms);
-        product_login_http_on_mute();
-        s_session.unmute(now_ms);
-        if (!s_session.roster_inflight()) {
-            (void)s_session.begin_roster_request(now_ms);
-        }
-        ensure_http_worker();
-        product_login_http_service(&s_session, now_ms);
-        changed = true;
-    }
-    if (changed) {
-        ESP_LOGI("product_login", "mute_latch latched=0 stage=%s wifi=%d link=%d roster_inflight=%d",
-                 s_session.stage_name(), s_wifi_up ? 1 : 0, product_network_sta_up(),
-                 s_session.roster_inflight() ? 1 : 0);
-        /* Steady open-latch UI is driven by on_login_timer. Repaint here only on
-         * latch/wake/unmute edges so we do not lv_indev_reset every poll. */
-        render_login_copy();
-        if (s_session.signed_in() == 0) {
-            login_desk_restore_interactive();
-        }
-    }
-}
-
-extern "C" void product_login_on_mute_pressed(void)
-{
-    product_login_on_mute_level(1);
 }
 
 extern "C" void product_login_schedule_wifi_link(bool up, int disconnect_reason)

@@ -11,10 +11,6 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 DEVICE_MAIN = REPO / "client/device/main"
-
-# Open until the send repair moves card mount off the LVGL timer.
-OPEN_PRES_PATH = "bsp_sdcard_mount"
-
 _KEYWORDS = {
     "if",
     "for",
