@@ -11,8 +11,8 @@ This report records:
 
 1. What the 32 KiB LVGL setting, the Record canvas, and DMA refer to.
 2. Whether one parent view owner and a shared, leased pixel buffer are feasible.
-3. What LAB-16 can measure and what it cannot tell us about the complete V2 product.
-4. What each current screen transition builds, hides, deletes, or keeps alive, and what a four-stage view lifecycle would require.
+3. What each current screen transition builds, hides, deletes, or keeps alive.
+4. What a four-stage view lifecycle would require.
 
 The code review was read-only. No build, test, flash, device measurement, commit, or push was performed. The device measurements quoted below come from the existing [2026-10-25 device memory snapshot](../../product/device-memory-snapshot-2026-10-25.md); that capture did not enter Record or exercise a successful send.
 
@@ -45,9 +45,9 @@ The inbox supports up to 64 messages. A 28,800-byte image for every one would be
 
 ### What the saved device readings say about an early internal canvas
 
-The saved capture reported:
+The saved capture reported allocator readings for **internal SRAM** and **external PSRAM** separately. Every DMA reading below is for **DMA-capable internal SRAM**, not PSRAM:
 
-| Startup phase | Internal free | DMA-capable internal free | Largest free DMA block |
+| Startup phase | Internal SRAM heap free | DMA-capable internal SRAM heap free | Largest contiguous free DMA-capable internal SRAM block |
 |---|---:|---:|---:|
 | After microphone initialization | 140,687 B | 132,927 B | 63,488 B |
 | UI ready | 112,283 B | 104,523 B | 63,488 B |
@@ -68,7 +68,7 @@ The 32 KiB LVGL pool does not make the 112.5 KiB pixel buffer, and deleting LVGL
 
 ### DMA and the sketch input path
 
-DMA describes memory/peripheral transfer capability, not an additional RAM chip. The displayed 243,547-byte internal DMA-capable total in the saved snapshot is a capability query over the internal heap. It is not the whole 512 KiB SRAM and is not a separate 243,547-byte pool that can be added to internal-free readings. A block may appear in both an internal-memory query and a DMA-capable internal-memory query.
+DMA describes memory/peripheral transfer capability, not an additional RAM chip. In this capture, `dma_total`, `dma_free`, and `dma_big` use `MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL`: they measure DMA-capable **internal SRAM heap**, never PSRAM. `int_total` and `int_free` use `MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT`, while `psram_total` and `psram_free` use `MALLOC_CAP_SPIRAM`. The displayed 243,547-byte DMA-capable internal SRAM total is not the whole 512 KiB physical SRAM and is not a separate pool that can be added to internal-SRAM-free readings. The DMA-capable values overlap the internal-SRAM heap values; PSRAM free is reported separately.
 
 The names and allocations in the current V2 source establish these separate paths:
 
@@ -133,52 +133,9 @@ Keep three owners distinct even if the parent controller coordinates them:
 
 The stage router can become the view host. The modules should expose separate “initialize service once” and “build/destroy this view” operations. Calling an existing attach function on every appearance is unsafe: several attach functions initialize or reset session state.
 
-## LAB-16 memory measurement proposal
+## LAB-16 and V2 test plan location
 
-### What LAB-16 already covers
-
-LAB-16 is useful for storage, microphone, Wi-Fi, and upload resource measurements, but it does not contain the complete V2 UI:
-
-- The standard upload scenario records to SD first and uploads afterward; those phases are sequential.
-- The overlap-record-during-upload variant starts an upload worker for a previous take while the main task records the next take to SD. This is the closest LAB-16 case to the accepted product behavior where one completed send may stream while a new recording is stored.
-- The live-stream-failover-during-record variant reads one second of microphone data, writes it to SD, then performs the HTTP post in the same main-task loop before reading the next second. It exercises buffering/failover but does not prove microphone collection continues concurrently while that post is blocked.
-- LAB-16 has no LVGL, product Record canvas, inbox, carousel, or product view lifecycle. Its existing tracked run evidence has no heap/DMA phase readings.
-
-Consequently, adding memory probes to LAB-16 would explain the service-heavy lab footprint, but it cannot answer “what is the full V2 device using while all product screens and modules are loaded?” The most representative measurement is an instrumented V2 product run. LAB-16 can complement it for its concurrent SD/upload workload.
-
-### Measurements to collect
-
-| Checkpoint | Device state | Purpose |
-|---|---|---|
-| stable boot / storage ready | Product or LAB-16 stable after storage initialization | Establish the storage baseline |
-| microphone initialized | Before and after codec/I2S initialization | Attribute the net change from the codec call |
-| Wi-Fi got IP | Connected before session/HTTP workers begin | Isolate the Wi-Fi startup change |
-| UI ready / Inbox ready | Product only | Measure LVGL pool, active screen and all product-created buffers |
-| recipients visible | Product only | Capture the inbox-to-picker scene transition and retained models |
-| Record attach before/after | Product only | Record whether the 115.2 KiB canvas landed in internal SRAM or PSRAM, plus exact allocation result |
-| recording active | Audio capture, sketch interaction, and SD writes active | Collect periodic samples and minimum free values during the actual high-load interval |
-| finished upload plus next recording | Prior take uploading while the next take is recorded to SD | Match LAB-16 overlap and the product DEC-051 scenario |
-| destination screen / worker still active | Return from Record or Send while upload continues | Check that deleting a view returns UI memory without stopping the background send |
-| worker quiesced | After upload and capture have ended | Confirm final cleanup and memory recovery |
-
-At each applicable checkpoint collect:
-
-- Total and largest free internal 8-bit block.
-- Free and largest DMA-capable internal block.
-- Free and largest PSRAM block.
-- LVGL used/free/largest-free block and live object count where the product build supports it.
-- Stack high-water for the UI, microphone, storage, and upload tasks.
-- Explicit byte counts and actual region for the Record canvas, sketch frames, and other large buffers.
-- A periodic sample or recorded low-water mark during long active phases, in addition to event snapshots. Event snapshots alone can miss short-lived peaks.
-
-Do not add internal-free and DMA-free columns together. Do not interpret the largest block as the total free amount: it answers whether one allocation of that size could fit contiguously.
-
-### Measurement recommendation
-
-1. Add or use the product memory probe for the product scenes, because it already knows about the LVGL pool and current module checkpoints. Add a canvas-region report and peak/low-water sampling during recording and upload.
-2. Add equivalent allocator snapshots to LAB-16’s real overlap variant if a separate service-only baseline is useful.
-3. Keep product UI and LAB-16 conclusions separate. LAB-16 does not mount the UI and cannot qualify its 32 KiB LVGL pool or carousel allocation plan.
-4. For any future physical capture, follow the repository’s scripted device selection and record serial output as soon as the device is stable after flashing. No such capture was done for this review.
+The detailed LAB-16 variant results, clean baseline, memory tables, and V2 communications scenarios have moved to the [LAB-16 and V2 device memory test plan](../../../client/labs/lab-16-attached-storage/README.md). This lifecycle review stays focused on V2 screens, UI allocations, and scene transitions.
 
 ## Current lifecycle and scene-by-scene review
 
@@ -241,7 +198,6 @@ Inbox card images and active sketch/playback frames deserve a separate allocatio
 3. **Record canvas region and DMA status are not recorded.** The allocator requests internal memory then PSRAM but does not request DMA or log which branch succeeded or whether the pointer is DMA-capable.
 4. **Send service and Send view lifetimes are coupled.** Current attach resets send journey state, and full release affects service/worker state. A new lifecycle must separate building/destroying UI from keeping a finished send alive.
 5. **The PIN lifecycle rule differs from the owner’s clarified direction.** The current PRES-LEVEL2 says PIN is hidden, not deleted, when returning to roster. The owner now explicitly accepts deleting it. Update the invariant as part of any implementation package.
-6. **LAB-16 evidence does not include heap or DMA snapshots, and LAB-16 has no product UI.** Existing functional runs do not answer product LVGL/scene memory questions.
 
 ### Supported risks
 
@@ -270,8 +226,8 @@ This is an ordering proposal, not an implementation authorization or approved re
 ## Review boundary and evidence
 
 - Source/config reviewed on main at a79b4fe0da605794a1caa74329c7515f1cdc3d6b, before this report was created.
-- Cross-checked against the client coding standards, device-target and presentation invariants, LVGL memory budget foundation, split-pane panel contract, relevant experience specifications, product memory snapshot, and LAB-16 source/evidence.
-- A separate read-only client reviewer confirmed the main memory, lifecycle, and LAB-16 conclusions.
+- Cross-checked against the client coding standards, device-target and presentation invariants, LVGL memory budget foundation, split-pane panel contract, relevant experience specifications, and product memory snapshot.
+- A separate read-only client reviewer confirmed the main memory and lifecycle conclusions.
 - No implementation files were edited. No build, test, flash, or new device memory capture was run.
 
 ## Main source references
@@ -286,6 +242,5 @@ This is an ordering proposal, not an implementation authorization or approved re
 - Send view/service lifecycle: client/device/main/product_send_bridge.cpp:919-954,1164+
 - Volume attach/build/visibility: client/device/main/product_volume_bridge.cpp:117-173,251-263
 - Product memory evidence: docs/product/device-memory-snapshot-2026-10-25.md
-- LAB-16 scenarios: client/labs/lab-16-attached-storage/README.md:19-20; client/labs/lab-16-attached-storage/main/app_main.c:529-645,722-789; client/labs/lab-16-attached-storage/main/lab16_upload.c:158-253
 - PIN lifecycle invariant: docs/standards/device-presentation-invariants.md
 - Resource measurement and scene-lifecycle guidance: docs/product/device-ui/foundations/FOUNDATION-LVGL-BUDGET.md; docs/product/device-ui/patterns/PANEL-MODULE-CONTRACT.md

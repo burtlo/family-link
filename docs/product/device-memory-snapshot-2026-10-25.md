@@ -6,19 +6,19 @@ Status: point-in-time evidence for the V2 product firmware. This is not a memory
 
 Build `80a3f355d76a40e88450691a3577cbb4` was flashed to the dynamically selected `lynn-kit` on COM5. Flash verification and both product boot markers passed. This run added the D M A total and free readings that were missing from the first capture. It supersedes the first-capture statements below about total D M A memory and post-Wi-Fi readings.
 
-The allocator reported **243,547 B (237.84 KiB) total internal D M A-capable heap**. This is the total managed D M A-capable heap for this firmware run, not the BOX-3's full 512 KiB physical S R A M.
+The allocator reported **243,547 B (237.84 KiB) total D M A-capable internal S R A M heap**. This is the managed D M A-capable portion of internal S R A M for this firmware run, not the BOX-3's full 512 KiB physical S R A M. The D M A readings do not include P S R A M; P S R A M is reported in its own columns below.
 
-Between send-worker-ready and Wi-Fi-up, free D M A fell by `99,231 - 28,723 = 70,508 B`; the largest available block fell by `63,488 - 27,648 = 35,840 B`. Between Wi-Fi-up and login-worker-ready, free D M A fell another `28,723 - 19,215 = 9,508 B`. These are changes across those startup intervals, not an exact per-component allocation ledger.
+Between send-worker-ready and Wi-Fi-up, free D M A-capable internal S R A M fell by `99,231 - 28,723 = 70,508 B`; the largest contiguous available block of D M A-capable internal S R A M fell by `63,488 - 27,648 = 35,840 B`. Between Wi-Fi-up and login-worker-ready, free D M A-capable internal S R A M fell another `28,723 - 19,215 = 9,508 B`. These are changes across those startup intervals, not an exact per-component allocation ledger.
 
 The device did **not** establish a confirmed connection to the requested server at `192.168.8.236:8777` in this run. The build's automatic workstation selection set its P1 URL to `192.168.8.199:8777`; no successful HTTP response was captured. The readings therefore show Wi-Fi and worker startup, not memory after a live-server response. Recording was not started.
 
-This note separates physical memory capacity, free-heap readings, and known allocations. The LVGL allocator pool is intentionally outside this snapshot; display DMA buffers are included because they use internal DMA-capable memory.
+This note separates physical memory capacity, free-heap readings, and known allocations. The LVGL allocator pool is intentionally outside this snapshot; display DMA buffers are included because they use DMA-capable internal S R A M.
 
 ## The short answer
 
 - The BOX-3 has **512 KiB (524,288 bytes) of internal S R A M** and **16 MiB (16,777,216 bytes) of P S R A M**. Those are physical capacities, not free memory.
-- This diagnostic build exposed **243,547 B (237.84 KiB) total internal D M A-capable heap**. At the latest captured phase, after Wi-Fi and login-worker startup, **19,215 B (18.8 KiB) were free**; the largest single free block was **18,432 B (18 KiB)**.
-- Before Wi-Fi came up, free D M A was **99,231 B (96.9 KiB)**. After Wi-Fi got an IP, it was **28,723 B (28.1 KiB)**. Thus the readings really do change during startup.
+- This diagnostic build exposed **243,547 B (237.84 KiB) total D M A-capable internal S R A M heap**. At the latest captured phase, after Wi-Fi and login-worker startup, **19,215 B (18.8 KiB) of that D M A-capable internal S R A M heap were free**; its largest single free block was **18,432 B (18 KiB)**.
+- Before Wi-Fi came up, free D M A-capable internal S R A M was **99,231 B (96.9 KiB)**. After Wi-Fi got an IP, it was **28,723 B (28.1 KiB)**. Thus the readings really do change during startup.
 - The microphone hardware was initialized, but active recording was not tested. No successful server response was captured.
 
 ## Which memory is which
@@ -27,16 +27,16 @@ This note separates physical memory capacity, free-heap readings, and known allo
 |---|---|---|
 | Internal S R A M | 512 KiB on the ESP32-S3 chip. It holds internal heap and buffers that must be on-chip. | At `login_http_worker_ready`, the internal heap reported 251,687 B total and 26,975 B free. |
 | P S R A M | 16 MiB of external working RAM. It is volatile RAM, not the S D card. | At `login_http_worker_ready`, the P S R A M heap reported 16,681,124 B total and 16,547,312 B free. |
-| D M A-capable memory | A capability of some memory blocks used for peripheral transfers; it is not a third RAM chip or a separate 512 KiB pool. This probe asks specifically for internal D M A-capable memory. | `dma_total=243,547 B`, `dma_free=19,215 B`, and `dma_big=18,432 B` at `login_http_worker_ready`. `dma_big` is the largest contiguous free block, not the total free amount. |
+| D M A-capable internal S R A M heap | A capability of internal S R A M blocks used for peripheral transfers; it is not a third RAM chip or a separate 512 KiB pool. The probe asks specifically for `MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL`, so these readings are not P S R A M. | `dma_total=243,547 B`, `dma_free=19,215 B`, and `dma_big=18,432 B` at `login_http_worker_ready`. `dma_big` is the largest contiguous free block of D M A-capable internal S R A M, not the total free amount. |
 | S D card / flash | Nonvolatile storage. The S D card is removable; flash stores firmware and settings. | The card mounted. Neither its capacity nor its mounted filesystem space is a RAM reading. |
 
 `KiB` means 1,024 bytes. For example, `63,488 ÷ 1,024 = 62 KiB`.
 
 ## Boot-phase readings from the successful diagnostic flash
 
-The table shows the logged startup phases, from before storage mount through Wi-Fi and login-worker startup. Values are bytes; `dma_total` was 243,547 B, `int_total` was 251,687 B, and `psram_total` was 16,681,124 B in each sample.
+The table shows the logged startup phases, from before storage mount through Wi-Fi and login-worker startup. Values are bytes. `dma_total` (243,547 B) and `int_total` (251,687 B) are two overlapping views of internal S R A M heap; `psram_total` (16,681,124 B) is the separate external P S R A M heap.
 
-| Boot phase | Time | D M A free (`dma_free`) | Largest D M A block (`dma_big`) | Internal free (`int_free`) | P S R A M free (`psram_free`) |
+| Boot phase | Time | D M A-capable internal S R A M free (`dma_free`) | Largest contiguous free D M A-capable internal S R A M block (`dma_big`) | Internal S R A M heap free (`int_free`) | External P S R A M heap free (`psram_free`) |
 |---|---:|---:|---:|---:|---:|
 | `storage_mount_before` | 19 ms | 140,999 | 63,488 | 148,759 | 16,678,572 |
 | `storage_mount_after` | 63 ms | 139,983 | 63,488 | 147,743 | 16,649,320 |
@@ -52,9 +52,9 @@ The table shows the logged startup phases, from before storage mount through Wi-
 Microphone initialization bracket:
 
 ```text
-internal free before - internal free after
+internal S R A M heap free before - internal S R A M heap free after
 = 147,743 B - 140,687 B
-= 7,056 B less internal free
+= 7,056 B less free internal S R A M heap
 
 P S R A M free before - P S R A M free after
 = 16,649,320 B - 16,646,112 B
@@ -63,7 +63,7 @@ P S R A M free before - P S R A M free after
 
 Those are changes across the whole BSP audio/codec initialization call, not an exact allocation ledger for the microphone alone. The `dma_big` reading stayed at 63,488 B across this bracket.
 
-Between `mic_init_after` and `ui_ready`, internal free heap fell by `140,687 - 112,283 = 28,404 B`. The product display's known draw buffer accounts for 10,240 B of configured storage; the other `28,404 - 10,240 = 18,164 B` is an unassigned net change across display-driver, UI-module, and other startup work. The logs do not split that remainder by component.
+Between `mic_init_after` and `ui_ready`, free internal S R A M heap fell by `140,687 - 112,283 = 28,404 B`. The product display's known draw buffer accounts for 10,240 B of configured storage; the other `28,404 - 10,240 = 18,164 B` is an unassigned net change across display-driver, UI-module, and other startup work. The logs do not split that remainder by component.
 
 For the first capture's `ui_ready` phase, the chip's 512 KiB spec could not be used as the denominator for `int_free`:
 
@@ -84,7 +84,7 @@ D M A-capable heap used  = 243,547 B - 19,215 B = 224,332 B
 internal outside heap    = 524,288 B - 251,687 B = 272,601 B
 ```
 
-The D M A-capable heap is a subset of internal S R A M, so its numbers must not be added to the internal-heap numbers. `internal outside heap` is a physical-capacity remainder, not “firmware used”; it can include code/data regions and memory not managed as this heap.
+The D M A-capable internal S R A M heap is a subset of internal S R A M heap, so its numbers must not be added to the internal-S-R-A-M-heap numbers. `internal outside heap` is a physical-capacity remainder, not “firmware used”; it can include code/data regions and memory not managed as this heap.
 
 Likewise, `147,743 - 63,488 = 84,255 B` is not “non-D M A memory.” One value is all free internal 8-bit heap; the other is the largest single D M A-capable block. A largest block cannot be subtracted from a total to recover the total D M A pool.
 
@@ -103,12 +103,12 @@ Likewise, `147,743 - 63,488 = 84,255 B` is not “non-D M A memory.” One value
 
 | Feature | State in this capture | Memory evidence |
 |---|---|---|
-| S D storage | `bsp_sdcard_mount()` returned `ESP_OK`; log says `mounted=1`. It mounts before display startup. | The latest run sampled around mount: internal and D M A free each fell by 1,016 B; P S R A M free fell by 29,252 B. This is the net change across the mount call, not a per-allocation ledger. |
-| Microphone hardware / I2S | Microphone codec initialization succeeded (`mic_init_after detail=1`). BSP code creates and enables I2S transmit and receive channels. | Internal free heap fell by 7,056 B and P S R A M free fell by 3,208 B across the initialization bracket. BSP defaults describe six DMA descriptors × 240 frames × 2 bytes per mono frame = 2,880 B of payload per direction, or about **5,760 B for both directions**, plus driver/descriptor overhead. This is configuration-derived, not a measured allocation total. |
+| S D storage | `bsp_sdcard_mount()` returned `ESP_OK`; log says `mounted=1`. It mounts before display startup. | The latest run sampled around mount: free internal S R A M heap and free D M A-capable internal S R A M each fell by 1,016 B; P S R A M free fell by 29,252 B. This is the net change across the mount call, not a per-allocation ledger. |
+| Microphone hardware / I2S | Microphone codec initialization succeeded (`mic_init_after detail=1`). BSP code creates and enables I2S transmit and receive channels. | Free internal S R A M heap fell by 7,056 B and P S R A M free fell by 3,208 B across the initialization bracket. BSP defaults describe six DMA descriptors × 240 frames × 2 bytes per mono frame = 2,880 B of payload per direction, or about **5,760 B for both directions**, plus driver/descriptor overhead. This is configuration-derived, not a measured allocation total. |
 | Active microphone capture | **Not active** in this boot-only capture. The stream opens and its task is created only after recording is armed. | Source configures a 6,144 B task stack and a 2,048 B PCM chunk in P S R A M when capture starts. Those allocations are not part of these idle-boot readings. |
 | Display transfer buffer | Display initialized and UI became ready. | The active product code uses 16 rows, one buffer, and requests D M A memory: `320 pixels × 16 rows × 2 bytes RGB565 = 10,240 B = 10 KiB`. This is an allocated buffer, **not** 10 KiB free. The product-specific 16-row setting overrides the BSP default used elsewhere. |
-| Wi-Fi | The latest serial capture logged `wifi_got_ip` at 4.294 s. | From `send_http_worker_ready` to `wifi_got_ip`, D M A free fell by 70,508 B, the largest D M A block by 35,840 B, internal free by 70,508 B, and P S R A M free by 65,444 B. These are phase deltas, not an exact Wi-Fi-driver-only allocation count. |
-| Login HTTP / roster attempt | The login HTTP worker reached its ready checkpoint at 4.304 s. | From `wifi_got_ip` to worker-ready, D M A and internal free each fell by 9,508 B; P S R A M free fell by 16,388 B. The worker requests a 16,384 B P S R A M stack, but the whole delta is not an exact allocation ledger. A successful server response was not verified. |
+| Wi-Fi | The latest serial capture logged `wifi_got_ip` at 4.294 s. | From `send_http_worker_ready` to `wifi_got_ip`, free D M A-capable internal S R A M fell by 70,508 B, its largest contiguous free block fell by 35,840 B, free internal S R A M heap fell by 70,508 B, and free P S R A M heap fell by 65,444 B. These are phase deltas, not an exact Wi-Fi-driver-only allocation count. |
+| Login HTTP / roster attempt | The login HTTP worker reached its ready checkpoint at 4.304 s. | From `wifi_got_ip` to worker-ready, free D M A-capable internal S R A M and free internal S R A M heap each fell by 9,508 B; free P S R A M heap fell by 16,388 B. The worker requests a 16,384 B P S R A M stack, but the whole delta is not an exact allocation ledger. A successful server response was not verified. |
 | Send HTTP worker | Serial reported `send HTTP worker ready` just after the `ui_ready` memory sample. | Worker requests a 16,384 B P S R A M stack, plus queues and HTTP state. The `ui_ready` number is just before that ready log, so it is not a post-worker memory sample. |
 | Shell, inbox, send, volume, buttons, login UI | Their ready/armed logs were present by `ui_ready`. | Their startup effects are included in the `ui_ready` heap reading as a combined result; the probe does not assign bytes to each module. Inbox media and record/playback data were not loaded in this signed-out boot. |
 
