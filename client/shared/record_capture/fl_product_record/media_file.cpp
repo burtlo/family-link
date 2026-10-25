@@ -1,6 +1,7 @@
 #include "fl_product_record_media.hpp"
 
 #include <stdio.h>
+#include <unistd.h>
 
 namespace fl_product_record {
 
@@ -104,7 +105,8 @@ bool FileMediaBackend::flush()
     if (file_ == 0) {
         return false;
     }
-    return fflush(file_) == 0;
+    /* fflush alone leaves the FAT directory entry at its old size until close. */
+    return fflush(file_) == 0 && fsync(fileno(file_)) == 0;
 }
 
 } /* namespace fl_product_record */

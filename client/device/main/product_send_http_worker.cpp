@@ -9,7 +9,6 @@
 #include "freertos/idf_additions.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
-#include "nvs.h"
 #include "sdkconfig.h"
 
 #include <stdio.h>
@@ -32,6 +31,7 @@ struct HttpJob {
     int is_json;
     uint32_t seq;
     char client_message_id[kIdCap];
+    char bearer[kAuthCap];
 };
 
 struct HttpExchange {
@@ -45,27 +45,7 @@ QueueHandle_t s_jobs = nullptr;
 QueueHandle_t s_results = nullptr;
 TaskHandle_t s_worker = nullptr;
 char s_base_url[kUrlCap];
-char s_bearer[kAuthCap];
 product_send_http_result_t s_polled;
-
-bool load_desk_token()
-{
-    if (CONFIG_FAMILY_DESK_TOKEN[0] != '\0') {
-        strncpy(s_bearer, CONFIG_FAMILY_DESK_TOKEN, sizeof(s_bearer) - 1);
-        return s_bearer[0] != '\0';
-    }
-    nvs_handle_t handle;
-    size_t length = sizeof(s_bearer);
-    if (nvs_open("family_link", NVS_READONLY, &handle) != ESP_OK) {
-        return false;
-    }
-    if (nvs_get_str(handle, "desk_token", s_bearer, &length) != ESP_OK) {
-        nvs_close(handle);
-        return false;
-    }
-    nvs_close(handle);
-    return s_bearer[0] != '\0';
-}
 
 bool join_url(const char *suffix, char *out, int cap)
 {
@@ -148,7 +128,7 @@ void perform_exchange(const HttpJob &job, HttpExchange *out)
     if (client == nullptr) {
         return;
     }
-    snprintf(auth, sizeof(auth), "Bearer %s", s_bearer);
+    snprintf(auth, sizeof(auth), "Bearer %s", job.bearer);
     esp_http_client_set_header(client, "Authorization", auth);
     memset(auth, 0, sizeof(auth));
     if (job.body != nullptr && job.body_len > 0) {
@@ -178,6 +158,7 @@ void worker_task(void *arg)
         strncpy(result.client_message_id, job.client_message_id, sizeof(result.client_message_id) - 1);
         product_mem_probe_heap("send_worker_begin", (int32_t)job.body_len);
         perform_exchange(job, &exchange);
+        memset(job.bearer, 0, sizeof(job.bearer));
         product_mem_probe_heap("send_worker_end", exchange.perform_ok ? exchange.http_status : -1);
         result.perform_ok = exchange.perform_ok;
         result.http_status = exchange.http_status;
@@ -200,9 +181,6 @@ extern "C" bool product_send_http_worker_start(void)
         return true;
     }
     strncpy(s_base_url, CONFIG_FAMILY_P1_BASE_URL, sizeof(s_base_url) - 1);
-    if (!load_desk_token()) {
-        ESP_LOGW(kTag, "desk token missing; send HTTP idle");
-    }
     s_jobs = xQueueCreate(1, sizeof(HttpJob));
     s_results = xQueueCreate(1, sizeof(product_send_http_result_t));
     if (s_jobs == nullptr || s_results == nullptr) {
@@ -237,10 +215,13 @@ extern "C" void product_send_http_worker_stop(void)
 }
 
 extern "C" bool product_send_http_submit(const char *method, const char *path, const uint8_t *body, uint32_t body_len,
-                                         int is_json, const char *client_message_id, uint32_t seq)
+                                         int is_json, const char *client_message_id, uint32_t seq,
+                                         const char *bearer)
 {
     HttpJob job;
-    if (s_jobs == nullptr || method == nullptr || path == nullptr || client_message_id == nullptr) {
+    bool queued;
+    if (s_jobs == nullptr || method == nullptr || path == nullptr || client_message_id == nullptr ||
+        bearer == nullptr || bearer[0] == '\0') {
         return false;
     }
     memset(&job, 0, sizeof(job));
@@ -251,7 +232,10 @@ extern "C" bool product_send_http_submit(const char *method, const char *path, c
     job.is_json = is_json;
     job.seq = seq;
     strncpy(job.client_message_id, client_message_id, sizeof(job.client_message_id) - 1);
-    return xQueueSend(s_jobs, &job, 0) == pdTRUE;
+    strncpy(job.bearer, bearer, sizeof(job.bearer) - 1);
+    queued = xQueueSend(s_jobs, &job, 0) == pdTRUE;
+    memset(job.bearer, 0, sizeof(job.bearer));
+    return queued;
 }
 
 extern "C" const product_send_http_result_t *product_send_http_poll(void)

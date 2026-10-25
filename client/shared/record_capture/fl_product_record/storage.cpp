@@ -143,7 +143,7 @@ bool AttachedStorage::write_span(uint64_t offset, const uint8_t *data, size_t le
         data += n;
         len -= n;
     }
-    return media_->flush();
+    return true;
 }
 
 bool AttachedStorage::load_directory()
@@ -362,7 +362,7 @@ bool AttachedStorage::commit_in_progress_to_finished()
     if (slot < 0) {
         return false;
     }
-    /* Payload bytes were flushed as they were appended. Commit publishes metadata. */
+    /* Payload bytes are unsynced until the directory flush below makes them durable. */
     saved_in_progress = in_progress_;
     saved_budget = in_progress_budget_;
     saved_sketch = sketch_open_;

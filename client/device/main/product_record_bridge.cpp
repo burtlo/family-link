@@ -7,7 +7,10 @@
 #include "fl_product_record_lab10.h"
 #include "fl_product_record_media.hpp"
 #include "fl_product_record_session.hpp"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "product_mem_probe.h"
+#include "product_mic_capture.h"
 #include "product_shell_fw.h"
 #include "product_stage_router.h"
 
@@ -39,6 +42,29 @@ lv_obj_t *s_swatches[LAB10_SWATCH_COUNT] = {};
 int s_outlined_swatch = -1;
 bool s_renderer_hooked = false;
 uint32_t s_touch_events = 0;
+/* The microphone task appends PCM while the tick commits, cancels, and reads finished takes. */
+StaticSemaphore_t s_store_mu_buf;
+SemaphoreHandle_t s_store_mu = nullptr;
+
+class StoreLock {
+public:
+    StoreLock()
+    {
+        if (s_store_mu != nullptr) {
+            (void)xSemaphoreTakeRecursive(s_store_mu, portMAX_DELAY);
+        }
+    }
+    ~StoreLock()
+    {
+        if (s_store_mu != nullptr) {
+            (void)xSemaphoreGiveRecursive(s_store_mu);
+        }
+    }
+
+private:
+    StoreLock(const StoreLock &);
+    StoreLock &operator=(const StoreLock &);
+};
 
 void log_ink_tick(int64_t now_ms)
 {
@@ -357,6 +383,9 @@ lv_obj_t *paint_swatch(lv_obj_t *parent, int center_x, int center_y, uint32_t rg
  * until power cycle, so the card is mounted once, before the display starts. */
 extern "C" void product_record_mount_storage(void)
 {
+    if (s_store_mu == nullptr) {
+        s_store_mu = xSemaphoreCreateRecursiveMutexStatic(&s_store_mu_buf);
+    }
     const esp_err_t mounted = bsp_sdcard_mount();
     s_storage_mounted = mounted == ESP_OK || mounted == ESP_ERR_INVALID_STATE;
     ESP_LOGI(kTag, "sd mount err=%s mounted=%d", esp_err_to_name(mounted), s_storage_mounted ? 1 : 0);
@@ -484,22 +513,40 @@ extern "C" void product_record_set_visible(int visible)
 
 extern "C" int product_record_can_start_second(void)
 {
+    StoreLock lock;
     if (s_record == nullptr) {
         return 1;
     }
     return s_record->storage().can_start_second_recording() ? 1 : 0;
 }
 
-extern "C" int product_record_capture_can_start(void) { return ensure_media() ? 1 : 0; }
+extern "C" int product_record_capture_can_start(void)
+{
+    StoreLock lock;
+    return ensure_media() ? 1 : 0;
+}
 
 extern "C" int product_record_begin_wipe(const char *client_message_id, int64_t now_ms)
 {
+    StoreLock lock;
     if (!ensure_media() || client_message_id == nullptr) {
         s_begin_failed = 1;
         return 0;
     }
     s_record->advance_to(now_ms);
     if (!s_record->try_start(client_message_id, fl_product_record::kMicReady)) {
+        int finished = 0;
+        int duplicate = 0;
+        for (int i = 0; i < fl_product_record::kAttachedFinishedSlots; ++i) {
+            const fl_product_record::StoredObject *slot = s_record->storage().finished_slot(i);
+            if (slot != nullptr) {
+                ++finished;
+                duplicate |= strcmp(slot->client_message_id, client_message_id) == 0 ? 1 : 0;
+            }
+        }
+        ESP_LOGW(kTag, "record_start_refused id=%s in_progress=%d finished=%d duplicate_id=%d busy=%d",
+                 client_message_id, s_record->storage().has_in_progress() ? 1 : 0, finished, duplicate,
+                 (s_record->wiping() || s_record->reversing() || s_record->capture_active()) ? 1 : 0);
         s_begin_failed = 1;
         product_mem_probe("wipe_begin", 0);
         return 0;
@@ -513,6 +560,7 @@ extern "C" int product_record_begin_wipe(const char *client_message_id, int64_t 
 
 extern "C" void product_record_begin_reverse(int64_t now_ms)
 {
+    StoreLock lock;
     if (!ensure_session()) {
         return;
     }
@@ -535,6 +583,7 @@ extern "C" int product_record_read_finished(const char *client_message_id, int k
 {
     size_t n = 0;
     fl_product_record::MediaKind media;
+    StoreLock lock;
     if (s_record == nullptr || client_message_id == nullptr || out_read == nullptr) {
         return 0;
     }
@@ -557,6 +606,7 @@ extern "C" int product_record_finished_info(const char *client_message_id, uint3
                                             uint32_t *sketch_bytes)
 {
     int i;
+    StoreLock lock;
     if (s_record == nullptr || client_message_id == nullptr) {
         return 0;
     }
@@ -578,6 +628,7 @@ extern "C" int product_record_finished_info(const char *client_message_id, uint3
 
 extern "C" int product_record_mark_uploading(const char *client_message_id)
 {
+    StoreLock lock;
     if (s_record == nullptr || client_message_id == nullptr) {
         return 0;
     }
@@ -586,6 +637,7 @@ extern "C" int product_record_mark_uploading(const char *client_message_id)
 
 extern "C" void product_record_clear_upload(const char *client_message_id)
 {
+    StoreLock lock;
     if (s_record == nullptr || client_message_id == nullptr) {
         return;
     }
@@ -594,6 +646,7 @@ extern "C" void product_record_clear_upload(const char *client_message_id)
 
 extern "C" int product_record_push_pcm(const uint8_t *pcm, size_t len)
 {
+    StoreLock lock;
     if (s_record == nullptr) {
         return 0;
     }
@@ -602,6 +655,7 @@ extern "C" int product_record_push_pcm(const uint8_t *pcm, size_t len)
 
 extern "C" void product_record_notify_mic_failed(void)
 {
+    StoreLock lock;
     if (s_record == nullptr) {
         return;
     }
@@ -610,6 +664,7 @@ extern "C" void product_record_notify_mic_failed(void)
 
 extern "C" void product_record_discard_in_progress(void)
 {
+    StoreLock lock;
     if (s_record == nullptr) {
         return;
     }
@@ -618,6 +673,7 @@ extern "C" void product_record_discard_in_progress(void)
 
 extern "C" void product_record_cancel_recording(void)
 {
+    StoreLock lock;
     if (s_record == nullptr) {
         return;
     }
@@ -628,6 +684,7 @@ extern "C" int product_record_finish_take(void)
 {
     int64_t started_us;
     int ok;
+    StoreLock lock;
     if (s_record == nullptr) {
         return 0;
     }
@@ -641,11 +698,19 @@ extern "C" int product_record_finish_take(void)
 
 extern "C" void product_record_service(int64_t now_ms)
 {
-    /* Connectivity loss does not stop this clock. */
-    if (s_record != nullptr) {
-        s_record->advance_to(now_ms);
+    {
+        StoreLock lock;
+        /* Connectivity loss does not stop this clock. */
+        if (s_record != nullptr) {
+            s_record->advance_to(now_ms);
+            if (product_mic_take_failure()) {
+                s_record->notify_mic_failed();
+            }
+        }
+        note_session_result();
     }
-    note_session_result();
+    /* The codec opens during the wipe so audio is flowing at wipe-complete. */
+    product_mic_set_armed(s_record != nullptr && (s_record->wiping() || s_record->capture_active()) ? 1 : 0);
     if (product_shell_stage() == FL_SHELL_STAGE_RECORD) {
         paint_motion();
         if (s_record != nullptr && s_record->capture_active()) {

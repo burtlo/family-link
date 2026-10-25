@@ -4,6 +4,7 @@ idf_component_register(
            "product_stage_router.cpp"
            "product_login_bridge.cpp" "product_login_http_worker.cpp" "product_inbox_bridge.cpp"
            "product_inbox_http_worker.cpp"
+           "product_mic_capture.cpp"
            "product_record_bridge.cpp" "product_send_bridge.cpp" "product_send_http_worker.cpp"
            "product_volume_bridge.cpp"
     INCLUDE_DIRS "."

@@ -23,6 +23,9 @@ public:
     void set_signed_in_user(const char *user_id);
     void on_same_user_signed_in(const char *user_id);
     void leave_wait();
+    /* Stored takes outlive a reboot, so each boot needs its own seed or
+     * the first new take repeats an id still on the card. */
+    void seed_capture_ids(uint32_t seed);
     /* Copy the current picker selection and a new UUID. Later roster
      * refreshes do not rewrite this set. */
     void freeze_capture_recipients();
@@ -65,6 +68,7 @@ private:
     int receipt_name_count_;
     char capture_client_message_id_[kMaxClientMessageId];
     uint32_t capture_id_seq_;
+    uint32_t capture_id_seed_;
 };
 
 } /* namespace fl_product_send */

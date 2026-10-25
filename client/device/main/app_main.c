@@ -14,6 +14,7 @@
 #include "product_hardware_buttons.h"
 #include "product_login_fw.h"
 #include "product_mem_probe.h"
+#include "product_mic_capture.h"
 #include "product_network.h"
 #include "product_record_fw.h"
 #include "product_shell_fw.h"
@@ -45,6 +46,7 @@ void app_main(void)
     log_mem_diag("before_display", 0);
 #endif
     product_record_mount_storage();
+    product_mic_init();
     /* Bring up LCD/backlight before NVS or Wi-Fi (GPIO 47 / LEDC on ESP-BOX-3). */
     lv_display_t *display = product_display_start();
     if (display == NULL) {

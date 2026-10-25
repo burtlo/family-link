@@ -15,6 +15,8 @@ REQUIRED = {
     "CONFIG_LV_MEM_SIZE": "32768",
     "CONFIG_BSP_LCD_DRAW_BUF_HEIGHT": "40",
     "CONFIG_BSP_LCD_DRAW_BUF_DOUBLE": "n",
+    # BSP init failures return errors (microphone -> `couldn't record`) instead of abort().
+    "CONFIG_BSP_ERROR_CHECK": "n",
 }
 
 

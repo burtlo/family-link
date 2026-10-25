@@ -8,6 +8,7 @@
 #include "product_shell_fw.h"
 
 #include "esp_log.h"
+#include "esp_random.h"
 #include "esp_timer.h"
 #include "lvgl.h"
 
@@ -73,6 +74,7 @@ int s_scroll_gesture = 0;
 int s_press_scroll_x = 0;
 bool s_attached = false;
 int s_wifi_up = 0;
+bool s_ids_seeded = false;
 int s_dot_phase = 0;
 int64_t s_dot_ms = 0;
 int s_http_started = 0;
@@ -812,6 +814,11 @@ void sync_send_session()
     }
     note_signed_in_user(user);
     s_journey.set_wifi(s_wifi_up);
+    /* esp_random() draws on RF noise only once Wi-Fi is running. */
+    if (!s_ids_seeded && s_wifi_up) {
+        s_journey.seed_capture_ids(esp_random());
+        s_ids_seeded = true;
+    }
     if (session != nullptr && session->signed_in() != 0 && session->credential_expired() != 0) {
         s_journey.set_refresh_failed(1);
     }
@@ -822,6 +829,8 @@ void service_send_http(int64_t now_ms)
     const product_send_http_result_t *done;
     fl_product_send::HttpAction action;
     fl_product_send::SendTransportResult transport;
+    fl_product_login::SessionWriter *session = product_login_session();
+    const char *bearer;
     uint32_t seq = 0;
     if (s_http_started == 0) {
         s_http_started = product_send_http_worker_start() ? 1 : 0;
@@ -846,12 +855,16 @@ void service_send_http(int64_t now_ms)
     if (s_journey.outbox().http_inflight() || s_http_started == 0) {
         return;
     }
+    bearer = session != nullptr ? session->credential_token() : nullptr;
+    if (bearer == nullptr || bearer[0] == '\0') {
+        return;
+    }
     if (!s_journey.outbox().prepare_http_action(&action, now_ms)) {
         return;
     }
     s_journey.outbox().note_http_sent(&seq);
     if (!product_send_http_submit(action.method, action.path, action.body, action.body_len, action.is_json,
-                                  s_journey.outbox().client_message_id(), seq)) {
+                                  s_journey.outbox().client_message_id(), seq, bearer)) {
         s_journey.outbox().cancel_http_sent();
     }
 }

@@ -51,8 +51,12 @@ sdkconfig baseline, serial negatives, desk scripts against **saved** logs only).
 `make test` is a tooling claim. It does not close record/send behavior.
 The SD card is mounted once in `app_main` before the display starts
 (`product_record_mount_storage`); powering the card slot while the LCD runs
-leaves the BOX-3 panel white until power cycle. Nothing in this tree calls
-`product_record_push_pcm` (INT-WIRE), which stays open for the send repair.
+leaves the BOX-3 panel white until power cycle. The microphone codec is set up
+in `app_main` before the display for the same reason (`product_mic_init`): its
+I2S DMA buffers take about 7 KiB of internal RAM, and no block that large is
+free once a recording starts. `product_mic_capture.cpp` reads 16 kHz mono PCM on
+its own task from wipe start until finish and appends it under the record
+store lock; storage only syncs the card when a take is committed.
 
 Ring frame rate (open, accepted for now): the ring-wipe and finish collapse
 show about 5–6 frames over 600 ms on the desk (2026-10-24). Frames advance only

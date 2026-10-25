@@ -79,11 +79,11 @@ void format_name_line(const char names[][kMaxName], int count, char *out, int ca
     append_text(out, cap, full);
 }
 
-void write_capture_uuid(char *out, int cap, uint32_t seq)
+void write_capture_uuid(char *out, int cap, uint32_t seq, uint32_t seed)
 {
-    uint32_t a = 0xA1000000u ^ (seq * 0x9E3779B9u);
-    uint32_t b = 0xB2000000u ^ (seq * 0x85EBCA6Bu);
-    uint32_t c = 0xC3000000u ^ (seq * 0xC2B2AE35u);
+    uint32_t a = 0xA1000000u ^ (seq * 0x9E3779B9u) ^ seed;
+    uint32_t b = 0xB2000000u ^ (seq * 0x85EBCA6Bu) ^ ((seed << 11) | (seed >> 21));
+    uint32_t c = 0xC3000000u ^ (seq * 0xC2B2AE35u) ^ (seed * 0x27D4EB2Fu);
     if (out == 0 || cap <= 0) {
         return;
     }
@@ -134,6 +134,8 @@ void SendJourney::on_mute_during_capture()
     clear_capture_freeze();
 }
 
+void SendJourney::seed_capture_ids(uint32_t seed) { capture_id_seed_ = seed; }
+
 void SendJourney::freeze_capture_recipients()
 {
     frozen_recipient_count_ =
@@ -143,7 +145,8 @@ void SendJourney::freeze_capture_recipients()
         return;
     }
     capture_id_seq_ += 1u;
-    write_capture_uuid(capture_client_message_id_, (int)sizeof(capture_client_message_id_), capture_id_seq_);
+    write_capture_uuid(capture_client_message_id_, (int)sizeof(capture_client_message_id_), capture_id_seq_,
+                       capture_id_seed_);
 }
 
 void SendJourney::clear_capture_freeze()
