@@ -1,0 +1,332 @@
+[stdout] LAB-16 diary server 0.0.0.0:8776 run_id=20261025-server-offline-memory-03
+[stdout] 127.0.0.1 - - [25/Oct/2026 19:46:07] "GET /health HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:08] diary session=1 seq=0 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=d5b0462848722d5f64bcb6bbc6720f7f6f053305d9727d03020b5a21794e5dff pcm_sha256=ff9cd5c6a0adf0efe7c5c47bf7984d75a1d820700921219530c4fbd144ea90b1
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:08] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:08] diary session=1 seq=1 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b63529a2a76b689719d881243d1569c9f83b57f9bdd03b558617599b6bcb1a13 pcm_sha256=29e1440b29bc35f0d4d962227e9916e3c29ee560819635cdb9e13973f8a74dec
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:08] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:08] diary session=1 seq=2 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=27dfe720150233f5284cdf76e91910053221985454f562fb513f188374453da8 pcm_sha256=da41db0f9d36e0e76b63d04520752f737c0b9b0e15a256425c4ef47429320720
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:08] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] diary session=1 seq=3 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=7c5fad99ba98cae7fdeb8dfb3ae616872a51ce2b38dc8ba8dc8ab5287798ff87 pcm_sha256=c5ad1817e45bce5093fd95670406960a8d20a10dbee502f5a6b1c370fb0d8acf
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] diary session=1 seq=4 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=47336b899bb640a5a9c8e2dc084099fac62f4de97056736d104775f44fce4f68 pcm_sha256=093eb0f6479557409af00422a63d25233bfd6ea22ed1a080bc5b0b254c111e00
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] diary session=1 seq=5 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c82f04950ce92dea7d7e97e74dd5ef18c26a8763c917d78a7f35abe173e68948 pcm_sha256=f1b00a91ef2184cba33ca55988e64fb545aa480da3d113d64bb4d89b976b9f83
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] diary session=1 seq=6 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=5b0938dd330fb8b6df697ecd171a41ccbbd4182804eff5a04a22f6b54456865f pcm_sha256=935feaf5affbdcccdfa0cbb65a28449ef99d022ecf2304b7886884da3550df3c
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] diary session=1 seq=7 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=0dc5f2d4178e72bc3af1d133d81684455d18ce3ece95d711f29c963bf3e1de6e pcm_sha256=aea9d875384ebde7a3acc8784b15b65ca514b31a8624c70745f9c4f585123077
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] diary session=1 seq=8 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=322ea6ddc3010f4bc10d2ee0a47c1268989371542317c543d058eaa14fc1c6dc pcm_sha256=aff743aa4d3ab53574a9d702732466f29f8ab1bbf77bf314726cbb47c5dc6cbc
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] diary session=1 seq=9 status=200 request_body_bytes=32336 response_bytes=445 wav_bytes=32044 pcm_bytes=32000 wav_sha256=94589ca104b84a81bcb32dd2ac466deeefa3c1eddc84e786149cd09adc0a9c6e pcm_sha256=c39c9afe75172ed7ad58f3f14d46a4c947f3cf24d5a41b33a651d96ba6927a99
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] diary session=1 seq=10 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=cafc944e50ce849863f6608f9c23d3983c08e8c9e371bdf6a91e2ba35a0f4515 pcm_sha256=2735238856fb9f488520df659d913eee1f50bd7058a931d3279350013a4c1112
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:09] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] diary session=1 seq=11 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=1bdc482e66d3b607e9dbebc6b5403bee673893c66e6b53833574fea38d721f95 pcm_sha256=b2c1feba8789ba99325f355d69aea4942a36a098fde2a9f5aad6fb14a2474f13
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] diary session=1 seq=12 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=0f9efdc1fb402a93b974c579f2aa8968a8ee91aa99383dcf874af1e862bf369d pcm_sha256=35f91a5811553ddde3564d0c41f2e8bbb6a544e7ad4377d7e63c0b24f4fa5d4d
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] diary session=1 seq=13 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=1caeda307e00f5e1bfc475e88790d3616228647646e9e9dc873923f61864d09c pcm_sha256=3aac937d6377080cbaaf1eefaf6afab78a4a66c15e9ede201822b7fc26079f3a
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] diary session=1 seq=14 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=931572966b7693fbe935f81372d32adcc985f3840e5f8f093e1ac974de118f49 pcm_sha256=35045b1be48d5c9d5b098bf2449e1526b2b8b5e1253103935272d24fcbd8dade
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] diary session=1 seq=15 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=3da47222141f159c2326fa248b146d338df1ee8123c306e93ba22ef99afe9818 pcm_sha256=c25b41f65f6f52ccb2e4abce002f8a4b7fb2fd4ebd2ace6048417167820fdbdc
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] diary session=1 seq=16 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=bbb9e3348347df6cfc4d36ceda72930836abaee94b11660ddc9a92c0ceeca671 pcm_sha256=535c1c99a4e9e26b4b360ca98008179d872787a496bc4149f01bd0441f8e1535
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] diary session=1 seq=17 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=89abe598aeffd9472fb1ad1f0f34033700a8f4b4dc6a28a782bac0055db26bf5 pcm_sha256=5d818c0c1e49860ebddf59576268a17b24b0874b9c3976c6cfbe5af366a15762
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] diary session=1 seq=18 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=3788041d5ad457d5888fa53e3c7adb98869ed9e572386569a1db64581c22b71c pcm_sha256=6a3539e213a7f0b0b891f4a4e8560d8cc7fc06d226b1fc9c7d36b5af0560ff13
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:10] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] diary session=1 seq=19 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=8b8c6f353e7923f59bb95bb2bad0898823135a508f78cc922808fab2b2a97641 pcm_sha256=48ac7fcadc70e04bf3e081072f56ef9a0efc5dccdb2dc9b75f7f7d08d2a3df9e
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] diary session=1 seq=20 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=98a0bc9c6e3646b9c4222614e887b27d39da09a991650bfed5b9b070c3593dbd pcm_sha256=278ecac65d4c64c7a7d1097d48938d54a82c3bd51511f3fff7d8b37061a8d642
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] diary session=1 seq=21 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=23fdfef51c2185cd46d588eee7044b8e6acfc9427ab6e34c3d8a7d1c39ff362e pcm_sha256=cdfecf1ffa9b450641fba40a5f99b5447aed30800bbb9f83959b4eebf2051442
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] diary session=1 seq=22 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c0f4b6ca0605692e0abe26f9a4bdbe297ea7f2133608feacb68c489b7e8a2b38 pcm_sha256=3cfc6e4a91a3485eae65b2c29940d42c2bc81063c7cc263d9810e13e157a6d66
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] diary session=1 seq=23 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=77f8914fa6b7c7cdeaa2b130179656a198820bd28c42db467983be0f0c66092c pcm_sha256=3d8fb6ed0cce0086660806e918705f94fd641cf16644afcf7aa20e64b0f55117
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] diary session=1 seq=24 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=48204729755d8d524edfd87a45ec652748fe8b788462da7c2c56a23800d5b060 pcm_sha256=68605495488d359a162579414b9af8d9e55d0f860807f3ded1d549020f5c88b8
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] diary session=1 seq=25 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=7f0b6ebc1d6f7fb59f7c43e924cb10db7815774e61022b0dcc56c129211e281e pcm_sha256=a70d4a69830f4fa9fb82bfcc2fd52762772a3bc373ca77624b7590c7b55a1719
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] diary session=1 seq=26 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=df93bcce82411dae3dc146caac50e9fe18633e285479b5c6a4c60c2629611b9d pcm_sha256=b47c495f1f2ef285f2dc9a8f445bdb7b5e9e0126dfe963966b4256ce37d26397
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:11] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] diary session=1 seq=27 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=9abd508de2bf21fa33279ec1022acb84428079c99bbbabfbc923f3c6cba15d6d pcm_sha256=27e065d0b950368fd8b4d6ae2e0614207b737080c559a5c5e08ae101e673e6f3
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] diary session=1 seq=28 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=85ee9d1d22e5f2611ad11b6a5d61420976f0430c0094324fe9d615593baff33f pcm_sha256=4bacab27ff09c1649a4cfda8f17e301ab1fabfcddf790302de6841fd691bceca
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] diary session=1 seq=29 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=fa1938907517bcd5c12c928920cdadafb6784818a6b83b39f3cc11f5759ce137 pcm_sha256=d79bda8fd3705e03516586742333ad8e4fd34e7516af6e4e20166e805f2243d0
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] diary session=1 seq=30 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=0114845f8aae1a1daf632748dc36a79c373a16d95ca534a40cc811f4a30bbe7a pcm_sha256=6558f1852dc1d4e75516ea300db41381e1431a83cc0c41a50625ca5883e3b7dc
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] diary session=1 seq=31 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=2ad80ef76f0c5b619abbcbcf7944f033076d5612752fab9cd8fad6462731b431 pcm_sha256=4a177a438844552b2a4f82f1e4d32513fc872cdadb5bdada16b8662b168b99d2
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] diary session=1 seq=32 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=5c55a74fafa929712bad56c6bef1f4fe1be2b5a5d2930434ea359333c1d80562 pcm_sha256=ea39e7c8841c00809c002d4ed5dd48bcfe7b3baba0b9c8abe2d810f192c17db8
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] diary session=1 seq=33 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=05e8a3753b138fe50a109b2e4293f870ac029cd950c9726448ee23611b860687 pcm_sha256=7754fe5781f97f5e45d8e6c79bba568a4d099f976818c4f46a5f7d6f8821a4f1
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] diary session=1 seq=34 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c9c142c6239c4a3e36e90a7e6287ddb04f37d2c7623a461951818f994224ae2c pcm_sha256=d995b45ba353669ecdb224509ee99eeadcf93c92e6372b25ca220dc6e1561615
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:12] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=35 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=7436000c3a66062dcba0c140bf7cafe9bc78ce496831bf36112e21c7a73d828c pcm_sha256=c625d0e4051ad0b81fa10b10219901e969c2e0cb879f3f1ad4e27fc07eff9325
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=36 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=29e9aa1afb1b369cb25c59a5694082b14ccafe8c54b47c3aae2c5baecaa4ddd1 pcm_sha256=0ca7972d398ea4a731ff2e5852bc6e9015ad7d10931e0d60af0b289c1e217d5f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=37 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=1d298ef3882802cf7eade73b6d3433cad71abd5d2d5bf46cf491c8d7c9cef6ae pcm_sha256=d9c46b5edc89dc5587f828665938149c4d96b504e96cf8f1bd89ee3b11c8e6fa
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=38 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=8d9969f13e70bfc5881826673744d787fa46cda2316597177c28a3e2dc1b667c pcm_sha256=409fce316198f3c8fd6433d8f24485a011d22130d923f9ae7287c2dee0d6b35f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=39 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=66449747c720ab13c4e116388b5fd75b78e84228f47061c25c1804eb800f689b pcm_sha256=18f96544a94097466534cf05a6a15503eafedf794eb2ec40f0152940434153b3
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=40 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=fe8d828126dbcf7161d36ee0ea08c7b7ccc9e18c9de9bb9aa53d4f633ab79432 pcm_sha256=94912def51ec6b7bea29d59a0e70e63febed46355aeb6637dc7f9f1cd8129933
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=41 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=baacfbbe74f3c433dc915c50f124eb8eadd1bc5d421a13fbfd1550d2f5aa55d9 pcm_sha256=fd92e94431ba62c23981d7a0401a98061724a089977aa9a822b309026effa434
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=42 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=9e625a4fb1eba6720abf54d9de36dc494bf8768ac01c68f5acf46ff635546754 pcm_sha256=3466342e818564ce139d355b23c883bad4c66156da46ccf47e20591940cedc05
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] diary session=1 seq=43 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=ba06ad7a1cfd2643c9102e087632ef54c5be9eadeb1fe5f330c2f101cdcc0352 pcm_sha256=157a94d588df06042093e3ea556d23cb8a36d0161bce2cf9ea7b76d302eb576e
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:13] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] diary session=1 seq=44 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=78da575b469652a4fcdef3f74a371f81bdf120c4a8ba401503208f3afd33d3cb pcm_sha256=b3864fb4351444293f0925237871bbf22191f74458b15a03bd81a95ce531bb9e
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] diary session=1 seq=45 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b5d400386395f6c3d2d459f3ba2edda10f48b42347b4b52075b68635dd7dc944 pcm_sha256=cdbb7ef8897075e676d8f418872e4abfeb6951c5bdb4db435a96863ae7b48e95
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] diary session=1 seq=46 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=d0e75c9e544349cf321fd36a0b9dc21d2d2604a0df0b315576da47b404ccf2d5 pcm_sha256=830b19bbded4ce70dfdfe3c27152d0121e2ecca2e8acd4cf0601f54dcd1c332a
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] diary session=1 seq=47 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=50d258196a241848e5935eb6ec991f59e0fa76cf90289c8b17a988c178d779e0 pcm_sha256=8ba213f9be147e0cf0fa9ed6ce5d8ec0e5d2132be0b2c018b493860398f11832
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] diary session=1 seq=48 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b795351021ee9173383e32c21015cf34e279c09f9fbb8bc7dec07d1382717ccd pcm_sha256=5fbca6200c13dc72d5778d2de42f7c1fe05f7ca8b4575f35106d45c33549e6f4
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] diary session=1 seq=49 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=bafc07fb6b3ecfb94c2ddca5da00f1633a4c8c25fb913c50ae2f73ec76b5616d pcm_sha256=c12920422764dc9e7c8b869d0137bb1a3a02b1f2445c7d16ef3f27242a268847
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] diary session=1 seq=50 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=2470ec67c5bf2401dbd9d1c86c0d8bf6df2a61ecdfcd064478f0e1ee2e239f93 pcm_sha256=e53a2056aef4e558320456a3a1d02c280fbf06dc27ef0a39643c1aa14b33b5fe
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] diary session=1 seq=51 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=dec8a9ea088008d79c66161e58e43b71363d3ce9693962babd58db6a2954df81 pcm_sha256=bd4c8f279bb47cc2348cc2aecc9a5b84e28fb067230ddcb0f52fb151f0650781
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:14] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] diary session=1 seq=52 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=97651f9a7df95a57bf6f0920db09c35d001690514d77acfaf61640aa6132d56f pcm_sha256=de7ec93d6fe2b772f7650829104d9089c8b8dcc5c883a1433f031257ae27e735
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] diary session=1 seq=53 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=12eaa58013eeb8a9afe3645188b29b829f227059a7bb0764833b7db5e54a17ad pcm_sha256=e0122e1500d4e0327150bd029909394ceb052cd2dc1d500f6b849dd9a4aacb17
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] diary session=1 seq=54 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=4cb3124936b3a7d5ee2ac9105f65b65d7cd84ea8d62993fbd5e33287b5267973 pcm_sha256=ea83bd6fe0d8228e64d22ff70601de2fdaeb2c4fced8f03d2d4de962f01588b8
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] diary session=1 seq=55 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=09d85f7b4297f911e03c93ed7cb7692bcc4aa580ea08d96ff380cfbcaea2077b pcm_sha256=db6d5d232bab08bb78bd4973f4ce517d36faca9d00a34220b189615e65dbe75f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] diary session=1 seq=56 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=8b1cc6a275e9c42afafe894a8534ebd09aa1cd89f75d4007f1400c13284fca91 pcm_sha256=f2f8045769696e789924305be4e64eab1886494b9b73d174a3449c411dbad19f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] diary session=1 seq=57 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=f98e24e527acad4ede02df8fc750994a8dbc2533e623d12e3826ca5f7c4a3cdb pcm_sha256=2187518fefdfbc274bea171db668280c97f986b61071b589bbd1fb216e42ba18
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] diary session=1 seq=58 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=68966b430eab9f9329ce2b434f1ed99cca8b8f558e74050e7351eb21e539134d pcm_sha256=4818dcb6783a9494035f95fbb10489128b17340e673ff76ddedf748094a9adcd
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] diary session=1 seq=59 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=5c974db08616b3b03b4d5656eace4d12a3ef4bc2317e877b67e0081851fdaf85 pcm_sha256=9a15acc890af43e4c8cd464d7b749cad07feea8c050af014688a9e6ba968a288
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:15] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=60 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=4243639503b79aec505f8caacee45698c518bd92dd26e354fe2b1f5f71004b10 pcm_sha256=3dc2d543b28271ea92447962dbe11712f31c5239fe762083ad53cef1705ae7cb
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=61 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=706bea8b4c50e4e9618a4a7d9322f71b587f26c65f8a2141f00e0b8ab9656d40 pcm_sha256=dc72a21c74078b51ca8f92a3878cc51caed69d071d4cf8a8fd673d8b362f3534
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=62 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=266407d64f2f25118863fc9e44af6d3b9f90fbdeb8697df143814232f637481f pcm_sha256=b3f7ec8b5eaaf4776600de40fafe45123f9cdf60dc02e971aa735db6263cbca2
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=63 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c07ea76241f685512d2650087d4e787d33e44d14d54f3f2a617bab385dcecbea pcm_sha256=31578dd261751403aeb1d7f99948606f2e1f45b5324b1f75e466a25972f00a94
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=64 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=792a4a1fc852f6582e46233e9f1d0e42526d8d0634c0cca8c80f03fab7fe99e6 pcm_sha256=0552c149fb3e3fe24b72e7c5fa4f01d0e41cdc03f888a3e39e1f5a7ae6ad3128
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=65 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=f4e9e56ca0304ebf6f4b82267516016b563042ba3a0c46b3175a95159e0c5cb5 pcm_sha256=fa29e9f419f975fbb4f995dd3789605ac825651b481ca1fb8cb0f2230b72f0ad
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=66 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=ac1b1802738fd5fbf676eaa3e9773a799f9ecb964c3eea45e6327d044ccf4b68 pcm_sha256=6b388ecf45f0755c050f75dc67f0e869f5dc2338e067524f1d0640ccc02d4df9
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=67 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=6bdefb0f04a69fca3d36d4eac42496d19634697d40b0ded1f4392348788e7842 pcm_sha256=60d307fd652feab21c832b591495a843a79959579233e0c74edcbf23af54a6fa
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] diary session=1 seq=68 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=fedb0fbd553613e6464d493dd6ad112d3507985611049b0b23fb003c4c78cbad pcm_sha256=1e199504d354704f704218e7d0b14902f07845ae2c2b66b6a616bc35e83514db
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:16] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] diary session=1 seq=69 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=d73698b672ccd3bf7511cdfcda5b35b7627a538d4aecd331227e9a80c5d7ce4d pcm_sha256=29133da13e51247928dabb202d5fe18977d1b09d385da6f600a1fc55dd904f41
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] diary session=1 seq=70 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=625035baafe5e256a5f32fcd5c0a067b5bf47ec1277b9d05cb16eb5c841e6480 pcm_sha256=a3508dab35147ea9dc471e3ca0d6f1f98176728d3bf521fb30ee958ab5a6f443
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] diary session=1 seq=71 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=cdf5b0c4341d7a3b2b29b2b9eafe6cf1f24edf44714e32ea8ca6d4eba49f781d pcm_sha256=92a939bc9fa7f4d0748a417b5ab8c4e883fd5981438d899629071547102b4815
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] diary session=1 seq=72 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=ea596376b77cb55eb20c97bb0fe8ec929fde10b0d9da879f7da5e4b45d6b2cdc pcm_sha256=c95d86faf47ebaf1c75b11fe6655548d493b1c9de710320fd8fcb377ffd28e3e
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] diary session=1 seq=73 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=5ba91ed752b45bc9515979c4d64a5192285602322dcae82934cb91aa9da77d5e pcm_sha256=927b852214203a3fa46309f0e4551a5d15d0ab20da9c8afc8f8b142faf1cf411
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] diary session=1 seq=74 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=ea6aeca230e14cbb45d98a97e6eefe7405cccf62bd850e8fef8fa8808a2a5677 pcm_sha256=0cf43ec5ee4cec16effd01bf2a3aa7c0c6750766249044b0b7f930ffaa604e72
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] diary session=1 seq=75 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=79d2aa91a9fd3d5c0bc7ea3ea636c45208a2deb38e87612498c7311e77ace939 pcm_sha256=f904d01561b5beeeff453a85096a3f8c231c773b92a8c7519c310ffa143a24b1
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] diary session=1 seq=76 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=6df79a7d1a597c86f11ad89876728836b91b69f88c603925fb7c5eea6332facc pcm_sha256=4fc4aeac71c9b0abe1579b43162c4f78df8301d336676eda11c3bffce43d04e5
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:17] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=77 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c0b08bfb6334f571ed2194a7105905975d045621b34c1428cd70460a04b97a3b pcm_sha256=0cf9be247b725f4e7ce6bb4e8d83c5e043fa5098de3d2b0f52157ee5f01ff594
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=78 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=46765a9814bc72bbd6902799eb4d5b64c65031f1a9d7d2a0a4a629f5bb6ffb95 pcm_sha256=e818e2a838166516999b9c2edd3263abb94c04e165725dd79df140b2bdafe39f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=79 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=e52f42786ea4358a7d7cb703dfc6ad39871add122dd87ee3c54124f418394337 pcm_sha256=8745d3125ba6d5ba9fb8f4f8e01e3e68a9a4eb30ef8024344b613272ace76f94
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=80 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=ef2a0df47d294b5ed356cd2bb3abbc6c354368b5cd68386def09c1992925ad28 pcm_sha256=b5c61a0807c29314ba7f4e903622871604a426748103c105621b9729b961f38e
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=81 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=e6357690ec528623f36805ca5ddb492d3afa26863413eb09ed369cee35be2395 pcm_sha256=fd946a1afe6167c840a116ef8610540c3dcbbde38b2868a23135f3044de4485f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=82 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=cb246f36d518b6098045f740caa7c4b8ceda749fa0377d70fe3ec9cbcee62348 pcm_sha256=2198373c9f08a65a9abebd5f95e90c0a179ca3d3154917356b6675fde72ab3bf
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=83 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=20e9826027a73824863bb9b646b453eca76ad87fa95342ee547bfb8934c013ab pcm_sha256=7b5e74bd76bec2f0f8115782e14730c654193b923b44eb78f22f5fb42563a784
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=84 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=16661a8815036bc2a09bda2804cbb31e6d8a9d2d0f9f7d515c4df5b6498800dc pcm_sha256=6aa1b48f20574b0f45c23f923d7060e10600d34ac2ede520bd73c64241e43377
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] diary session=1 seq=85 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=0ccafd4fd9a2fa2d759ffa2760ac8260e963a036adf5e878ed7e3f26553321bc pcm_sha256=17f2c462e13bdfae3358369c8a1c0b24a5393a796e90e5463aae62cdcf16ae6a
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:18] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] diary session=1 seq=86 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=f9af1a55e5aa173d45f977856bbdb2ed3ad12bdc1967e22fb4daddf0a5ce409a pcm_sha256=42ce0fb3aebf75565c9398b597c27df0a8c871b8c6671b63631771aee90673ee
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] diary session=1 seq=87 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=321a1251e40b2dd46b685c9b31d7febccdf50b771f5aaf1961ad2cde0d5a517c pcm_sha256=d60c83e3509d457d79256434330e71a4fb0747ac1ee676729cfe0d6c3f57d75b
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] diary session=1 seq=88 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=65ffc8a625783d86c500a93165175fa6a6c69ef88c6957f880dfc7e4d69b6312 pcm_sha256=d4dd51202d201e44ac709f011ab477faac72ee995388d0f09913306a90005114
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] diary session=1 seq=89 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=9be264c65a00fc236a58e6b508074d7aefdd61c43c3fa83d0b122957b8ccc222 pcm_sha256=5ef506fea094e8265e3194df705e6c69365e60217003989bde7928d79690364f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] diary session=1 seq=90 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=fc4eb231ddfbdf928b0c5b4673df80422a9ee7985ac7fe6a3b7faa5fe0969a0b pcm_sha256=c881d65c606cac3b078948963074797272a06dbf5c7a457594fa7caf9b0f5252
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] diary session=1 seq=91 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=657057e1c62f7677118ea7a700633d1bd4fc4aced5cb82642ad57cfcb78fdf71 pcm_sha256=3a80755728cc2ed3d418948dcfeb914963f5f75ce79da75906420daf522a9399
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] diary session=1 seq=92 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=fab5250c949c7f217d9be9b61205d3965586cdb70e43a3b19b9b3853d9d324c3 pcm_sha256=ad57e8b06d99d81c4bd241a7de17463ca078bf6e2f8df5b3bd63a147aec4065e
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:19] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=93 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=611b5a92b86d6e89095e9dcb98be4fa5f01aeda6f60c38a0d554e9307fdd3424 pcm_sha256=10b7458ecc62b520bf32eea7fff610b2d675af5a87ded8dca1f172527b36beab
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=94 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=e65e6c47d2c7aba23d0aefcb52c8f299b4efdedcdf55a3feab045d2ac3b79999 pcm_sha256=1be4264cff3e2419493683fbf938cec80a98465cf0c86268c5dc5c9305b64f1c
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=95 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b3a661d6ae627e8f2734cbe50d129476b0e0e8275deb3b79689fea0bfd57f34f pcm_sha256=5b77cd2ee44a33b0b47343000b52e98b0dfef8911148d6908c310e49cf1533c3
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=96 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=4a4b407c33b6482802525e70bed8243fe54ec58ee45da33dc95d1c7a876c2bf7 pcm_sha256=0a5dcf5eed0f12e98ddc77185a6e87dfce0e15ce0005d84436abb9a2c06992f1
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=97 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b4c25a8c87eac6c79a054bee41389be76faa4b86cd01898ee2f93343a6cbbc40 pcm_sha256=ce3cf92e0ab93c7b82ad1ed66302667f6abcb0a9b8395715f494431eb4618985
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=98 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c71b0d1c53dc377aa7dbea473ed515a68389f379e97ddd0c82d6af2bff442d12 pcm_sha256=7226c51bd37e53a0c0344bf7ce617c4a8b03cc756a72481372a0a94f1a52d7c0
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=99 status=200 request_body_bytes=32337 response_bytes=446 wav_bytes=32044 pcm_bytes=32000 wav_sha256=77fe99c587f5832a8fdedf9af0dd0293ae67e35d35c069fad66a9ce6f1e8788d pcm_sha256=3606be1032d0e89e319f28182dab6dfb5d3d486a478d82558e9cd797589fb372
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=100 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=408f9aabf5fcfc0ae33c6324da5b0fc4e2e20d352b94fbb15e3d575740171558 pcm_sha256=c93ef61085a3abaea30f288983acf84c226a4de290ed68f091411f996f05166b
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=101 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=af90fc113c0c50589df190517d0711286e53ab29e9b2e5cc4be41d5fe7c575c2 pcm_sha256=0c1d0be4eb45031f68d2cb99dab13b3b52accfed49884dfe969eb0f4756d8e56
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] diary session=1 seq=102 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b50878fe48a73f387b92821ccab73ab9d7ffdafb6221a00eac7bca8fd55024e8 pcm_sha256=a778c98634a30d7c5bc14eb10ada4df509c1b35d3a2b38434d95417dc40fc180
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:20] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=103 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=23365336b34f015b57539ac3f3f8a0b89314f229dc1db75de034c0c69b8a4289 pcm_sha256=6fcdae1dcde7d7a28bbf2f47de00d24b3a07d6f766905a686eb727c2d39b872f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=104 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=a5bed697512995d97593b422bad969f2a7115110841a236b29e71759b649d8c9 pcm_sha256=dd1bac08212714552943c09c750e0ba89aa673a0809fcde2a7e6ca1ea01cfc1c
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=105 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=95906f3288866e3abd99a41197a3383247b1595732fba8819b2e0105dadd229f pcm_sha256=15352284faebf3f8abbdf6a28a6cc5ef0f6263ca8930bcc5125c08a5a1e44b53
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=106 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=dbecf3720eaed5fa196a8dcbb086d4dc6e408573886ee6f398ff0ff47bbba5a5 pcm_sha256=a8badb325cbb58068c826f4b04749519728d461a5c105fe6e1cfebfa1c68f411
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=107 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=3c6e44805a72e79b5d93c0177811368d7eda8476f2d59bbc67286a318656ec84 pcm_sha256=c9f87f20efb63f8c802c4d827595d28288b76b8585af5c3a20444b4c5d9947fa
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=108 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=5c279b163e9b586aff83558ea3afd1f08950ea60570a944065e9f7f671e53a54 pcm_sha256=e0d7d28b721bc80904e552f182704cfa60c5ae2d8be6fcd659d1590133270020
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=109 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=5ea3c9f2e9d953c0306fe0bf36cd4b7054f467c82f4e597650bc57565b034929 pcm_sha256=0c8f2d0e41785d6898966ab0aec88183581713bd30f88d60ef32f0e21739d7eb
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=110 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c8fa58222830a866c2ff66c341b6569eaf80276195353ee1e41a7859f1def88f pcm_sha256=d35d20eedfa3a251b996f07f7414fc665281fc1a06af0565091be97a86d1b11b
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] diary session=1 seq=111 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=35c5aebdbd52de3811cb1c0ed0e553b2b9ab6956235fa45fa234ac009bbc5582 pcm_sha256=05e7e7e5ddc99df8f6f4eb39c22cd77524845d751c9a6e72c6a40061cd21b3f8
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:21] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] diary session=1 seq=112 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=17e67d3749ca1ad93438208e2043faa156f5dc4e5a729227c1b5964b07085f96 pcm_sha256=ee49650f0285ee0708fa3b8626a4c344f161aa6310126658f1b37a38122f6836
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] diary session=1 seq=113 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=74897a978d26775bc3c50886bb83fc9f86feef587081e76c7ffbfca92ee5f37f pcm_sha256=c9dcf605e8e62de2d408db0570b7785feebcaea81df1f99d05dadf8929de0671
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] diary session=1 seq=114 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=6eec52bc487bc9e18f9cf7ee4299433f5f3d8f31d971cce3b8e647b0787254ba pcm_sha256=117908a17ce5d9bafd274c05965b5a62f91bb09227a28e1d2629835b009b8036
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] diary session=1 seq=115 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=9a27aa2e6c03f9d2070dabc8681a4f29c195c6d0a96eb7c9120a938a0cec081e pcm_sha256=984ad6006ab3a87d630680b9bfb58ea438c3a360678c0806745af57be6531388
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] diary session=1 seq=116 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=7384758003f44a938e7965a756239dac31e73e8f824217ca25c9ad043b82c33e pcm_sha256=5e0defa9f71d99be817252add4253cf097263a9c5911fdb01ec4e7489defde2c
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] diary session=1 seq=117 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=f33fd6cc1b711464978205abc87edaab981a11bb146af3b58721c77a28329f50 pcm_sha256=3bcb7b05d1a3a53682fbf418c5c26a4a4daffe446540df11f2dc7649cc053f20
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] diary session=1 seq=118 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=618c6eaa462ea65e8f75bb92dddd94905c192ebdddd03216ae38a3ab4659a750 pcm_sha256=8309dd67c5cff181b03f961b63fa8342444c14248d3109efa3b7844692c18e4f
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] diary session=1 seq=119 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=e66f02a49191231555c552f0c57bdc6dff80c5d097bdb49858879d5ce7c38cbc pcm_sha256=9d6e9d3f9cddb17f6465837c6710e75ad1c8d0c8d193f6c0850adda456403ef4
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:22] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] diary session=1 seq=120 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=3aa40c859c9a331f22a58146894c6b3704b41ed7e2b6b8378d7358505a260689 pcm_sha256=d2671308631a05d58d784c27d2cc29b6ae34c665ba628e342346ffb096f9c3c0
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] diary session=1 seq=121 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=782a5939531a36c7519bf361d3f0c9cfa52ca3e654bfb53f018f46bf9dcd19df pcm_sha256=33da90e3777813abb84d6a202942e864d6a85c4e304d99bf032432f257527fae
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] diary session=1 seq=122 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=80cdd4fc1c0f4ae9bbfbf9162453e0040b7e6186c04c2d6d7ec25022e439aebf pcm_sha256=bdd0faf862045be132cdec256c568e8a3c18cd229b392275bf145ae50cadb3d5
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] diary session=1 seq=123 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=47945d0ddc936329af67191400fd9c49b65ba6ff729290a454d238b0ba893573 pcm_sha256=3d7d8bf3239a2639a2ef83777ad41b212553bc9b156bcf475aba6baee9636f38
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] diary session=1 seq=124 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=9c75e80c0a325a827a413a9632b540aa2c9d98e1151f61f44655a11b00e26bd2 pcm_sha256=afddd1ad2f60d03017542cf010b2abe6f20adb5f91588c0c5b817b296ca95ebe
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] diary session=1 seq=125 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b729145b54882dbb20955ce8d4aaa247ec0529dd1a154b6fcb763e0ced6c74cf pcm_sha256=b08ee354c0aa80a31ef5314ba5177081ed64d0252784647030f203c07821aa51
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] diary session=1 seq=126 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=f1a98f32adf82237bf3e9161d812498643691d867ee1c4bee8daaaf28b69e696 pcm_sha256=5cf9bdaa74fac7629f8996ce764704dc36bdf884ed493913ffaf527a8b306263
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] diary session=1 seq=127 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=91b87b47a0f8250ac9c0598d368978c78597db714ef887998136f446da22b561 pcm_sha256=e6d9f02e33b546b1d405d30756f66509aa8d25d3dc147b506b6aeda10b42353d
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:23] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=128 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=db702378573e1305cdd63c0a3f9540668d4e30906810b4a50edf3290492db291 pcm_sha256=bb4d80ff55548b524b3406217acc8df23487985518bc996825a9f679c6a12fce
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=129 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b75ade1ab328b8a4ea6440b5abf17b87aba51bbd26700811dba2700264793a40 pcm_sha256=717588b3ca6151459ede3abb4b5d5c4d8f372af7446d47e99132c9d06d4d5944
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=130 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=7759a110857ec8a2d9206600f58ab3b61b3d2186dc4af23837846e91db05b18c pcm_sha256=e26913be07c87dab3a797c4bc14fb83d7d4d500227ab8ec2a95420a949144e87
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=131 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=7ba1dc8465cc6c86179e57a67fa7e609def49c33443ba440abfb726df880d277 pcm_sha256=2ce6fa754e250673ca7a24c0a4ad2477fb8d99fac94459b76c144f57ec7a3e5d
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=132 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=58280c1258b99c34d48311c4c3a4272e5fc142cb21034fbab3778449eed17cfb pcm_sha256=0138b99d962cd2c53508d6fe665cb1ba1019330421b8ea9f02cd75e6fb445e15
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=133 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=f8157cf0ef00917041a57702d16d4a4e6d4a7fdd5d151387a8e687dd533f50d4 pcm_sha256=e0d7f395dd705988d3e68a852f12d007300b7151656ecff9c0b4e76ef3b45c55
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=134 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=8d8f4baee32910425f8d09557b28deb3f41038dddba8f41a0107cdb2b6e0e3a9 pcm_sha256=7effed4ed2738458fd5194850019e98920acc13b0bcdce7b65679659eceb7587
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=135 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=078d6a93f8a79b13f70193339d26df6474145521b725588c0b24a0150f7fe981 pcm_sha256=4b217bbcaccf51ff911ef262fbba57132fb23c86168e63474b86dbf618fd2596
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] diary session=1 seq=136 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=0480279ceb9d18fc7892edec876a14dcc8c786c5ad7a77be142e03127be8b9f6 pcm_sha256=04e3c80ee78b28092da0d1f68d65b9ba4839a9f2c9ca4bcfd84b11fe505f543e
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:24] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=137 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=1f41df6e02956ae5fbc21329063117e5d604193483ba1ade3724f38528c85f7a pcm_sha256=144e477886138deee9987019ffb169b639807dab0074b06a37ef3534a3acd4b8
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=138 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=145e41a19f708a7e6c61a6ed71d6f0395ea1411e1f49464f500c7f07ec99816e pcm_sha256=32b24410285d590520c7792349926dc37d620da0b27774a1c6ee87ec9d40bdee
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=139 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b82403c61ed2de994c7231a9cb251c4bc5b6dc176c6af3efd6f464b948aa1e2e pcm_sha256=3ac01167d030c275b0891dd4b7bc97065d623cfe9bb93d2afc91752b102905f5
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=140 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=cfb67047d4d3bebef09ea38c05d2ca5687c73fe00bd0e15ba515fc78c447d0f6 pcm_sha256=c9871793cde21d1626bf259f2c88713bc74e232e41ffc925e9653a4a07167c8b
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=141 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=657bb6ff3efb5243423f0e38fa97b3c835ba5a9c53a39d3ccbc42085fc1db23f pcm_sha256=01d054de0031be8bc2688965eb276402a1cebf89c1e1596f66ae43950c5b8d13
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=142 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=ff397a8d1a3875780825d0a1f1657192b862aea76e6a0252e428ce559bf34382 pcm_sha256=43e2a47fadadb146b2e3cbcbb36206f4915a43c9169ffcf9e21978fd00745942
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=143 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=9614ac68780d07a580adf19990213a5153561233c0daba6efdf8a24ab79666df pcm_sha256=533eddd38e23cd562c8c82c39ddf84c719501ca0ab1eff6598e286167aa0fba9
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=144 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=3f1cb2d3398c7d56d748f97d734e694ba7384ee71571e3eb1deb7812c9b189b6 pcm_sha256=54d5b7a77402e186e0c5580de88d02ffe657336455740db8b1e4557f0740e6af
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] diary session=1 seq=145 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=993eadaed6439700fb6af9d0facf31249dcfc1f1baa65bf66aa25f1ecde1b693 pcm_sha256=f0287d8b4150df2609dbdb8a9dff266c9ec0ca2e06d00fbf170132d45a489b50
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:25] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] diary session=1 seq=146 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c056a5fa2875fc2eb9729655526e3684f90d53da50c2168413f52e863e835d98 pcm_sha256=8b6af621fa5c9364bbfee512ea18887b27d649dc2bd74c515222b45acb054657
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] diary session=1 seq=147 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=504ff557bf7e20c60e28da6cfe8e415d902ebc9d44928748fa95939be7d977ae pcm_sha256=088853eba848bb63c49b0b7cf46f5eb2f7bf32c4d152fe32e41dc3fc4c6b1fb2
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] diary session=1 seq=148 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=0c3d047d3638ef2c159b6aeaff53a59ec47d66b0ea26d8ab96bda43d55fa2585 pcm_sha256=8379859278f2f7c3fa1a22bfedd9a84f17f36f4011d650f17763e6b13a648935
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] diary session=1 seq=149 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=4ddad2021ff900b291a95b1cc118233754f5c70472f9f834d2ac34fcc4f2eaf1 pcm_sha256=566fe018a379be65c8133c17d326e72ffcfcf0ccf111f7b7a67312eb19f56bd9
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] diary session=1 seq=150 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=b949904849aa433fbd726011a1580a5acee2f547765216226f267ed0f30e6bce pcm_sha256=9d1012a0ec00eaaa365c33817e47c0174382634df530b74e41dbc8360fd849e3
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] diary session=1 seq=151 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=1d47335201f1f53491453340e717536e23539b2e1e9abfe4571cefdfdf4df1d0 pcm_sha256=c917c7ddd864b87567b457cbb9bfbc2ce31955892914204c7d2505f7de4e2ead
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] diary session=1 seq=152 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=388401af2cb4c077e56294537a70b6111c6e021c4406133495008edf1fcf6c27 pcm_sha256=767a0d4110701f4a43eeb15c915fda4e62c5097dba51b9515b19da85da490992
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:26] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=153 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=d39862681c0e3fca95e8cd678c813addff937521f82d26366d497a504d3d1ff7 pcm_sha256=d641306d3ae54181b7ec922abb61861f9aa6f30a5d74b922b9e78e4ad53cdaf6
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=154 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=d24a4e5e96cc1fb816414b83a02a4d8ac5da400564f214537289e6706a5e85c6 pcm_sha256=03c76c333ad74957013eeb2ab0fe04190901783995e3d65fe0e28919652ea658
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=155 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=c2e3672a66706e78db997be54290a4aa1dafa1f730ae2911c29c34f070f996ff pcm_sha256=e2d51176b11f3d6c5d1ea454453b372eb2221fc0fa69ed51e1b954f5e25329ce
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=156 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=04f75247d39354486bae25ef158f80924725f0a8bcfb025bae4f8a27fdaf1870 pcm_sha256=edd1ba300a8bd3369892056f9fc76f73cb61db2ba9c7b83b405031f477d4744a
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=157 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=1b103d252c354fec415a565a8f349435c6a0aa887f8cdd26c6320e425e0ec180 pcm_sha256=76525f2211a2a81f2691fc3fe85338e3ea691505fe33725cb3e62f8f7c943595
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=158 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=3ee0869269907acac1b228346ce92012ea865e63c9db871cecc1d321ac817de7 pcm_sha256=7e2ce365ba72d3df7ff7477a009485fa852ac5ed5b67e4d24e80b5eefe17a19a
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=159 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=6c3427c5e3cf846ab679dc2636fb7b289cb46a3a03404320b268ce71d3ef118c pcm_sha256=a12fce2fe1e708622b5eda9e737048d68dba53396fc47c28b402427ba1498b52
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=160 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=a49661215fca9f1c2a7e94346bad56ccf6557072458cd96ee0b3ee5322c0d4ca pcm_sha256=c348116578dd17733d4d727ac5d4dcd27e82fe92c68961bbefe72f54083f3cb6
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] diary session=1 seq=161 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=e5407a6500e4f683a631c64971ae3e6a0f065ce7c356b196cc94d25d4e58bd5c pcm_sha256=6f4b59390101e232628b64c830295ba70b7863553b3b5d9430001d31bb566d46
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:27] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:28] diary session=1 seq=162 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=a8a1d8822078ef79d8deee901992088ed09e8ecac4968e70e1f2211f8e1ebddd pcm_sha256=2596a63896bfc797d33b3124c4e0c7b1f74a785ec4839308c906ad3984474a38
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:28] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:28] diary session=1 seq=163 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=276d83e2a3ce43f404eaf82ed544ba14ea8c9ee10662b2964a70a36dcd07fc28 pcm_sha256=236dc92c495132f4cb8948639ae295ed3141c108f0589f1572619bf189382ddb
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:28] "POST /v1/diary HTTP/1.1" 200 -
+[stdout] 192.168.8.160 - - [25/Oct/2026 19:46:28] diary session=1 seq=164 status=200 request_body_bytes=32338 response_bytes=447 wav_bytes=32044 pcm_bytes=32000 wav_sha256=4141f1ee966627f0b654d2928dfb507984a8e90781bf50f9e1aa1f56a375f67d pcm_sha256=d1d3d259657be14fe387fe2a043abea737a451047b9c0fb90efae58d34d2c9fb
+[server log truncated]

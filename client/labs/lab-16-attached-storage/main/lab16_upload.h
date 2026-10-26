@@ -19,6 +19,7 @@ typedef struct {
 
 void lab16_upload_capture_reset(void);
 void lab16_upload_capture_snapshot(lab16_upload_capture_stats_t *out);
+void lab16_upload_set_evidence_beat(const char *beat);
 
 #define LAB16_UPLOAD_EVT_STARTED (1U << 0)
 #define LAB16_UPLOAD_EVT_DONE (1U << 1)

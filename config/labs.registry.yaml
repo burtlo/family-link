@@ -497,6 +497,7 @@ labs:
         build_dir: build/labs/lab-16-attached-storage-scripted
         sdkconfig_defaults:
           - sdkconfig.defaults
+          - sdkconfig.defaults.server-offline
       overlap-record-during-upload:
         build_dir: build/labs/lab-16-attached-storage-overlap
         sdkconfig_defaults:

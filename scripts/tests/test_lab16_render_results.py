@@ -19,8 +19,9 @@ class Lab16RenderResultsTest(unittest.TestCase):
     def test_upload_summary_matches_manual_pair_baseline(self):
         metrics = render._load_metrics("20261025-upload-manual-01")
         table = render._summary_table(metrics, render.UPLOAD_SUMMARY_ROWS)
-        self.assertIn("260.65", table)
-        self.assertIn("329.10", table)
+        self.assertIn("260.65 (79%)", table)
+        self.assertIn("% of 329.10 KiB heap total", table)
+        self.assertNotIn("329.10 /", table)
         self.assertIn("Baseline before SD, microphone, and Wi-Fi", table)
 
     def test_render_all_writes_upload_doc(self):

@@ -52,6 +52,19 @@ static uint8_t s_read_buf[64 * SECTOR_BYTES] DMA_ATTR __attribute__((aligned(4))
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
 static lab16_upload_capture_stats_t s_capture_stats;
 static portMUX_TYPE s_capture_mux = portMUX_INITIALIZER_UNLOCKED;
+static const char *s_evidence_beat = "wifi_upload_active";
+
+void lab16_upload_set_evidence_beat(const char *beat)
+{
+    if (beat != NULL && beat[0] != '\0') {
+        s_evidence_beat = beat;
+    }
+}
+#else
+void lab16_upload_set_evidence_beat(const char *beat)
+{
+    (void)beat;
+}
 #endif
 
 void lab16_upload_capture_reset(void)
@@ -87,9 +100,9 @@ static void capture_buffer_alloc(const char *name, size_t requested, bool succes
     const size_t bytes = s_capture_stats.app_buffer_bytes;
     portEXIT_CRITICAL(&s_capture_mux);
     printf("LAB16_EVT schema=lab16-event/v1 event=buffer_alloc t_us=%" PRId64
-           " beat=wifi_upload_active name=%s requested_bytes=%zu caps=SPIRAM_8BIT region=psram success=%u"
+           " beat=%s name=%s requested_bytes=%zu caps=SPIRAM_8BIT region=psram success=%u"
            " outstanding_count=%" PRIu32 " outstanding_bytes=%zu queue_count=0\n",
-           esp_timer_get_time(), name, requested, success ? 1U : 0U, count, bytes);
+           esp_timer_get_time(), s_evidence_beat, name, requested, success ? 1U : 0U, count, bytes);
     fflush(stdout);
 #else
     (void)name; (void)requested; (void)success;
@@ -109,9 +122,9 @@ static void capture_buffer_free(const char *name, size_t requested, void *buffer
     const size_t bytes = s_capture_stats.app_buffer_bytes;
     portEXIT_CRITICAL(&s_capture_mux);
     printf("LAB16_EVT schema=lab16-event/v1 event=buffer_free t_us=%" PRId64
-           " beat=wifi_upload_active name=%s requested_bytes=%zu region=psram"
+           " beat=%s name=%s requested_bytes=%zu region=psram"
            " outstanding_count=%" PRIu32 " outstanding_bytes=%zu queue_count=0\n",
-           esp_timer_get_time(), name, requested, count, bytes);
+           esp_timer_get_time(), s_evidence_beat, name, requested, count, bytes);
     fflush(stdout);
 #else
     (void)name; (void)requested;
@@ -231,9 +244,10 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, 
     const int64_t request_start_us = esp_timer_get_time();
     capture_request_state(1, 0, 0, 0);
     printf("LAB16_EVT schema=lab16-event/v1 event=request_start t_us=%" PRId64
-           " beat=wifi_upload_active session=%d seq=%d attempt=%d pcm_bytes=%d wav_bytes=%d"
+           " beat=%s session=%d seq=%d attempt=%d pcm_bytes=%d wav_bytes=%d"
            " request_body_bytes=%d outstanding_requests=1\n",
-           request_start_us, session_id, seq, attempt, wav_len - WAV_HEADER_BYTES, wav_len, total);
+           request_start_us, s_evidence_beat, session_id, seq, attempt, wav_len - WAV_HEADER_BYTES, wav_len,
+           total);
     fflush(stdout);
 #endif
 
@@ -248,10 +262,10 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, 
         const int64_t ended_us = esp_timer_get_time();
         capture_request_state(-1, 0, 1, 0);
         printf("LAB16_EVT schema=lab16-event/v1 event=request_end t_us=%" PRId64
-               " beat=wifi_upload_active session=%d seq=%d attempt=%d status=-1 request_body_bytes=%d"
+               " beat=%s session=%d seq=%d attempt=%d status=-1 request_body_bytes=%d"
                " response_content_length=-1 response_body_bytes_received=0 response_body_read_complete=0"
                " latency_us=%" PRId64 " outstanding_requests=0\n",
-               ended_us, session_id, seq, attempt, total, ended_us - request_start_us);
+               ended_us, s_evidence_beat, session_id, seq, attempt, total, ended_us - request_start_us);
 #endif
         return -1;
     }
@@ -268,10 +282,10 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, 
         const int64_t ended_us = esp_timer_get_time();
         capture_request_state(-1, 0, 1, 0);
         printf("LAB16_EVT schema=lab16-event/v1 event=request_end t_us=%" PRId64
-               " beat=wifi_upload_active session=%d seq=%d attempt=%d status=-1 request_body_bytes=%d"
+               " beat=%s session=%d seq=%d attempt=%d status=-1 request_body_bytes=%d"
                " response_content_length=-1 response_body_bytes_received=0 response_body_read_complete=0"
                " latency_us=%" PRId64 " outstanding_requests=0\n",
-               ended_us, session_id, seq, attempt, total, ended_us - request_start_us);
+               ended_us, s_evidence_beat, session_id, seq, attempt, total, ended_us - request_start_us);
 #endif
         return -1;
     }
@@ -300,10 +314,11 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, 
     esp_http_client_cleanup(client);
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
     printf("LAB16_EVT schema=lab16-event/v1 event=request_end t_us=%" PRId64
-           " beat=wifi_upload_active session=%d seq=%d attempt=%d status=%d request_body_bytes=%d"
+           " beat=%s session=%d seq=%d attempt=%d status=%d request_body_bytes=%d"
            " response_content_length=%" PRId64 " response_body_bytes_received=%" PRId64
            " response_body_read_complete=%u latency_us=%" PRId64 " outstanding_requests=0\n",
-           esp_timer_get_time(), session_id, seq, attempt, status, total, response_content_length,
+           esp_timer_get_time(), s_evidence_beat, session_id, seq, attempt, status, total,
+           response_content_length,
            response_body_bytes_received, response_body_read_complete ? 1U : 0U,
            esp_timer_get_time() - request_start_us);
     fflush(stdout);
@@ -355,9 +370,9 @@ esp_err_t lab16_upload_pcm_from_sd(const sdmmc_card_t *card, uint64_t start_lba,
         char pcm_sha256[65];
         sha256_hex(pcm, CHUNK_PCM_BYTES, pcm_sha256);
         printf("LAB16_EVT schema=lab16-event/v1 event=chunk_source t_us=%" PRId64
-               " beat=wifi_upload_active session=%d seq=%d pcm_bytes=%d wav_bytes=%d pcm_sha256=%s\n",
-               esp_timer_get_time(), session_id, seq, CHUNK_PCM_BYTES, WAV_HEADER_BYTES + CHUNK_PCM_BYTES,
-               pcm_sha256[0] ? pcm_sha256 : "unavailable");
+               " beat=%s session=%d seq=%d pcm_bytes=%d wav_bytes=%d pcm_sha256=%s\n",
+               esp_timer_get_time(), s_evidence_beat, session_id, seq, CHUNK_PCM_BYTES,
+               WAV_HEADER_BYTES + CHUNK_PCM_BYTES, pcm_sha256[0] ? pcm_sha256 : "unavailable");
 #endif
         int status = -1;
         int attempts = 0;
@@ -368,9 +383,9 @@ esp_err_t lab16_upload_pcm_from_sd(const sdmmc_card_t *card, uint64_t start_lba,
                 uploaded++;
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
                 printf("LAB16_EVT schema=lab16-event/v1 event=chunk_terminal t_us=%" PRId64
-                       " beat=wifi_upload_active session=%d seq=%d attempts=%d accepted=1 failed=0"
+                       " beat=%s session=%d seq=%d attempts=%d accepted=1 failed=0"
                        " request_body_pcm_bytes=%d wav_bytes=%d pcm_sha256=%s\n",
-                       esp_timer_get_time(), session_id, seq, attempts, CHUNK_PCM_BYTES,
+                       esp_timer_get_time(), s_evidence_beat, session_id, seq, attempts, CHUNK_PCM_BYTES,
                        WAV_HEADER_BYTES + CHUNK_PCM_BYTES, pcm_sha256[0] ? pcm_sha256 : "unavailable");
                 fflush(stdout);
 #endif
@@ -391,9 +406,9 @@ esp_err_t lab16_upload_pcm_from_sd(const sdmmc_card_t *card, uint64_t start_lba,
             failed++;
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
             printf("LAB16_EVT schema=lab16-event/v1 event=chunk_terminal t_us=%" PRId64
-                   " beat=wifi_upload_active session=%d seq=%d attempts=%d accepted=0 failed=1"
+                   " beat=%s session=%d seq=%d attempts=%d accepted=0 failed=1"
                    " request_body_pcm_bytes=%d wav_bytes=%d pcm_sha256=%s\n",
-                   esp_timer_get_time(), session_id, seq, attempts, CHUNK_PCM_BYTES,
+                   esp_timer_get_time(), s_evidence_beat, session_id, seq, attempts, CHUNK_PCM_BYTES,
                    WAV_HEADER_BYTES + CHUNK_PCM_BYTES, pcm_sha256[0] ? pcm_sha256 : "unavailable");
 #endif
             printf("LAB16_UPLOAD session=%d chunk seq=%d status=http_%d\n", session_id, seq, status);

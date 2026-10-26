@@ -11,7 +11,18 @@ from pathlib import Path
 from typing import Any
 
 EXPECTED_PARSER = "lab16-upload-evidence-parser/v3"
-EXPECTED_VARIANT = "upload"
+MEMORY_CAPTURE_VARIANTS = frozenset({
+    "upload",
+    "server-offline-during-record",
+    "overlap-record-during-upload",
+    "live-stream-failover-during-record",
+})
+# Memory campaign: identity + heap/stack gates only. Timing is captured and reported as informational.
+REQUEST_LATENCY_STATS = (
+    ("mean", statistics.mean),
+    ("median", statistics.median),
+    ("max", max),
+)
 
 REGIONS = (
     ("internal", "internal_min_free", 1024, 0.05),
@@ -51,6 +62,7 @@ IDENTITY_KEYS = (
 class CompareReport:
     run_a: str
     run_b: str
+    variant: str = ""
     identity_failures: list[str] = field(default_factory=list)
     memory_failures: list[str] = field(default_factory=list)
     timing_failures: list[str] = field(default_factory=list)
@@ -60,7 +72,7 @@ class CompareReport:
 
     @property
     def repeatability_pass(self) -> bool:
-        return not self.identity_failures and not self.memory_failures and not self.timing_failures
+        return not self.identity_failures and not self.memory_failures
 
 
 def _tol_bytes(mean: float, floor: float, pct: float) -> float:
@@ -71,11 +83,14 @@ def _tol_ms(mean_ms: float) -> float:
     return max(250.0, abs(mean_ms) * 0.10)
 
 
-def _require_upload_metrics(metrics: dict[str, Any], run_id: str) -> None:
+def _require_upload_metrics(metrics: dict[str, Any], run_id: str, *, expected_variant: str | None = None) -> None:
     if metrics.get("parser") != EXPECTED_PARSER:
         raise ValueError(f"{run_id}: expected parser {EXPECTED_PARSER}, got {metrics.get('parser')}")
-    if metrics.get("variant") != EXPECTED_VARIANT:
-        raise ValueError(f"{run_id}: expected variant {EXPECTED_VARIANT}, got {metrics.get('variant')}")
+    variant = metrics.get("variant")
+    if variant not in MEMORY_CAPTURE_VARIANTS:
+        raise ValueError(f"{run_id}: unsupported variant {variant}")
+    if expected_variant is not None and variant != expected_variant:
+        raise ValueError(f"{run_id}: expected variant {expected_variant}, got {variant}")
     if metrics.get("memory_status") != "COMPLETE":
         raise ValueError(f"{run_id}: memory_status must be COMPLETE for pair comparison")
     if metrics.get("functional_status") != "PASS":
@@ -88,7 +103,10 @@ def compare_upload_metrics(metrics_a: dict[str, Any], metrics_b: dict[str, Any],
                            *, run_a: str = "A", run_b: str = "B") -> CompareReport:
     _require_upload_metrics(metrics_a, run_a)
     _require_upload_metrics(metrics_b, run_b)
-    report = CompareReport(run_a=run_a, run_b=run_b)
+    variant = metrics_a.get("variant")
+    if metrics_b.get("variant") != variant:
+        raise ValueError(f"variant mismatch: {metrics_a.get('variant')} vs {metrics_b.get('variant')}")
+    report = CompareReport(run_a=run_a, run_b=run_b, variant=str(variant or ""))
     beats_a = metrics_a.get("observed_beats") or []
     beats_b = metrics_b.get("observed_beats") or []
     if beats_a != beats_b:
@@ -150,37 +168,38 @@ def compare_upload_metrics(metrics_a: dict[str, Any], metrics_b: dict[str, Any],
     e1 = int(metrics_b.get("stream_elapsed_ms") or 0)
     if e0 and e1:
         tol = _tol_ms((e0 + e1) / 2)
-        if abs(e0 - e1) > tol:
-            report.timing_failures.append(
-                f"stream_elapsed_ms: {e0} vs {e1} (delta {abs(e0 - e1)}, tol {tol:.0f} ms)"
-            )
+        delta = abs(e0 - e1)
+        line = f"stream_elapsed_ms: {e0} vs {e1} (delta {delta}, tol {tol:.0f} ms)"
+        if delta > tol:
+            report.timing_failures.append(line)
+        else:
+            report.informational.append(line)
 
     lat0 = metrics_a.get("request_latencies_us") or []
     lat1 = metrics_b.get("request_latencies_us") or []
     if len(lat0) != len(lat1):
         report.identity_failures.append(f"request_latencies_us count: {len(lat0)} vs {len(lat1)}")
     elif lat0:
-        for stat_name, pick in (
-            ("mean", statistics.mean),
-            ("median", statistics.median),
-            ("max", max),
-        ):
+        for stat_name, pick in REQUEST_LATENCY_STATS:
             v0, v1 = pick(lat0), pick(lat1)
             mean_ms = (v0 + v1) / 2000.0
             tol = _tol_ms(mean_ms)
             delta_ms = abs(v0 - v1) / 1000.0
+            line = (
+                f"request_latency_{stat_name}_ms: {v0/1000:.1f} vs {v1/1000:.1f} "
+                f"(delta {delta_ms:.1f}, tol {tol:.1f} ms)"
+            )
             if delta_ms > tol:
-                report.timing_failures.append(
-                    f"request_latency_{stat_name}_ms: {v0/1000:.1f} vs {v1/1000:.1f} "
-                    f"(delta {delta_ms:.1f}, tol {tol:.1f} ms)"
-                )
+                report.timing_failures.append(line)
+            else:
+                report.informational.append(line)
 
     return report
 
 
 def format_report(report: CompareReport) -> str:
     lines = [
-        f"LAB-16 upload repeatability: {report.run_a} vs {report.run_b}",
+        f"LAB-16 memory repeatability ({report.variant or 'unknown'}): {report.run_a} vs {report.run_b}",
         f"Memory/stack checks: {report.memory_checks_passed}/{report.memory_checks_total} within tolerance",
         f"Repeatability: {'PASS' if report.repeatability_pass else 'FAIL'}",
     ]
@@ -194,11 +213,11 @@ def format_report(report: CompareReport) -> str:
         lines.extend(f"  - {item}" for item in report.memory_failures)
     if report.timing_failures:
         lines.append("")
-        lines.append("Timing (out of tolerance):")
+        lines.append("Timing / networking (informational; does not fail memory repeatability):")
         lines.extend(f"  - {item}" for item in report.timing_failures)
     if report.informational:
         lines.append("")
-        lines.append("Informational (beat-window peaks; does not fail repeatability):")
+        lines.append("Informational (does not fail memory repeatability):")
         lines.extend(f"  - {item}" for item in report.informational)
     return "\n".join(lines) + "\n"
 

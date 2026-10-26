@@ -91,6 +91,15 @@ class Lab16CompareRunsTest(unittest.TestCase):
         self.assertFalse(report.repeatability_pass)
         self.assertTrue(report.memory_failures)
 
+    def test_timing_mismatch_does_not_fail_memory_repeatability(self):
+        a = _metrics()
+        b = _metrics()
+        b["stream_elapsed_ms"] = 400_000
+        b["request_latencies_us"] = [5_000_000] * 210
+        report = compare.compare_upload_metrics(a, b, run_a="one", run_b="two")
+        self.assertTrue(report.repeatability_pass)
+        self.assertTrue(report.timing_failures)
+
     def test_manual_pair_integration(self):
         run_a = ROOT / "docs/labs/evidence/lab-16/runs/20261025-upload-manual-01/metrics.json"
         run_b = ROOT / "docs/labs/evidence/lab-16/runs/20261025-upload-manual-02/metrics.json"

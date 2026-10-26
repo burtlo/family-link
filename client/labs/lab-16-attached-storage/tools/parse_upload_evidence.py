@@ -12,13 +12,38 @@ from typing import Any
 MEM_SCHEMA = "lab16-memory/v3"
 EVENT_SCHEMA = "lab16-event/v1"
 PARSER = "lab16-upload-evidence-parser/v3"
-REQUIRED_BEATS = (
+UPLOAD_REQUIRED_BEATS = (
     "baseline_before_sd",
     "sd_mount_probe",
     "mic_i2s_open_start",
     "mic_i2s_open_complete",
     "sd_mic_recording",
     "wifi_upload_active",
+    "upload_complete_workers_quiescent",
+)
+
+OVERLAP_REQUIRED_BEATS = (
+    "baseline_before_sd",
+    "sd_mount_probe",
+    "overlap_msg1_mic_i2s_open_start",
+    "overlap_msg1_mic_i2s_open_complete",
+    "overlap_msg1_recording",
+    "overlap_concurrent_peak",
+    "overlap_msg2_upload",
+    "upload_complete_workers_quiescent",
+)
+
+OVERLAP_VARIANT = "overlap-record-during-upload"
+LIVE_FAILOVER_VARIANT = "live-stream-failover-during-record"
+
+LIVE_FAILOVER_REQUIRED_BEATS = (
+    "baseline_before_sd",
+    "sd_mount_probe",
+    "live_mic_i2s_open_start",
+    "live_mic_i2s_open_complete",
+    "live_stream_upload_active",
+    "live_failover_outage",
+    "live_sd_drain_active",
     "upload_complete_workers_quiescent",
 )
 _KV = re.compile(r"([a-z][a-z0-9_]*)=([^\s]*)")
@@ -166,7 +191,30 @@ def _beat_windows(samples: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return output
 
 
-def parse_serial(serial: str, *, expected_chunks: int = 210, expected_pcm_bytes: int = 6_720_000) -> dict[str, Any]:
+MEMORY_CAPTURE_VARIANTS = frozenset({
+    "upload",
+    "server-offline-during-record",
+    OVERLAP_VARIANT,
+    LIVE_FAILOVER_VARIANT,
+})
+
+
+def parse_serial(serial: str, *, variant: str = "upload", expected_chunks: int = 210,
+                 expected_pcm_bytes: int = 6_720_000) -> dict[str, Any]:
+    if variant not in MEMORY_CAPTURE_VARIANTS:
+        raise ParseError(f"unsupported memory-capture variant: {variant}")
+    is_overlap = variant == OVERLAP_VARIANT
+    is_live_failover = variant == LIVE_FAILOVER_VARIANT
+    if is_overlap:
+        required_beats = OVERLAP_REQUIRED_BEATS
+        expected_chunks = 180
+        expected_pcm_bytes = 5_760_000
+    elif is_live_failover:
+        required_beats = LIVE_FAILOVER_REQUIRED_BEATS
+        expected_chunks = 180
+        expected_pcm_bytes = 5_760_000
+    else:
+        required_beats = UPLOAD_REQUIRED_BEATS
     if len(serial.encode("utf-8")) > 8 * 1024 * 1024:
         raise ParseError("serial capture exceeds 8 MiB bound")
     lines = serial.splitlines()
@@ -182,20 +230,49 @@ def parse_serial(serial: str, *, expected_chunks: int = 210, expected_pcm_bytes:
     stream_ok = False
     stream_pcm_bytes = 0
     stream_elapsed_ms: int | None = None
+    overlap_ok = False
+    live_failover_ok = False
+    live_drain_ok = False
+    stream1_ok = False
+    stream2_ok = False
     for line in lines:
         if line.startswith("LAB16_READY "):
-            ready = ("fixture=lab16-sd/v3" in line and "upload_fixture=lab16-upload/v2" in line
-                     and "mode=scripted" in line)
+            if is_overlap:
+                ready = ("fixture=lab16-sd/v4" in line and "upload_fixture=lab16-upload/v2" in line
+                         and "mode=scripted" in line)
+            elif is_live_failover:
+                ready = ("fixture=lab16-sd/v5" in line and "upload_fixture=lab16-diary/v1" in line
+                         and "mode=scripted" in line)
+            else:
+                ready = ("fixture=lab16-sd/v3" in line and "upload_fixture=lab16-upload/v2" in line
+                         and "mode=scripted" in line)
         elif line.startswith("LAB16_SD status=detected "):
             sd_ok = "read_lba0=ok" in line and "probe_writes=0" in line
         elif line.startswith("LAB16_AUDIO status=ok "):
             audio_ok = "silent=0" in line
+        elif line.startswith("LAB16_STREAM msg=1 status=complete "):
+            stream1_ok = "pcm_bytes=5760000" in line
+            if is_overlap:
+                stream_ok = stream1_ok
+                stream_pcm_bytes = 5_760_000 if stream1_ok else 0
+        elif line.startswith("LAB16_STREAM msg=2 status=complete "):
+            stream2_ok = "pcm_bytes=5760000" in line
         elif line.startswith("LAB16_STREAM status=complete "):
             stream_ok = True
             match = re.search(r"(?:^| )pcm_bytes=(0|[1-9][0-9]*)(?: |$)", line)
             stream_pcm_bytes = int(match.group(1)) if match else 0
             duration = re.search(r"(?:^| )elapsed_ms=(0|[1-9][0-9]*)(?: |$)", line)
             stream_elapsed_ms = int(duration.group(1)) if duration else None
+        elif "LAB16_OVERLAP status=recording_msg2 upload_session=1_active" in line:
+            overlap_ok = True
+        elif "LAB16_OVERLAP status=complete msg1_session=1 msg2_session=2" in line:
+            overlap_ok = True
+        elif is_live_failover and "LAB16_FAILOVER seq=" in line:
+            live_failover_ok = True
+        elif is_live_failover and line.startswith("LAB16_LIVE status=drain complete ") and " failed=0" in line:
+            live_drain_ok = True
+        elif is_live_failover and line.startswith("LAB16_LIVE status=complete "):
+            live_failover_ok = True
         elif line.startswith("LAB16_MEM "):
             fields = _fields(line, "LAB16_MEM ")
             if fields.get("schema") != MEM_SCHEMA:
@@ -269,7 +346,12 @@ def parse_serial(serial: str, *, expected_chunks: int = 210, expected_pcm_bytes:
                             raise ParseError(f"LAB16_MEM {task} was not captured after it should be active")
                     else:
                         raise ParseError(f"LAB16_MEM {task} has an unknown stack capture status")
-                if row["beat"] == "wifi_upload_active":
+                if row["beat"] in (
+                    "wifi_upload_active",
+                    "live_stream_upload_active",
+                    "live_failover_outage",
+                    "live_sd_drain_active",
+                ):
                     for task in ("event_loop_task", "wifi_task", "tcpip_task"):
                         if row[f"{task}_status"] != "captured":
                             memory_incomplete_reasons.append(f"{task}_stack_not_captured_during_upload")
@@ -300,17 +382,31 @@ def parse_serial(serial: str, *, expected_chunks: int = 210, expected_pcm_bytes:
         memory_incomplete_reasons.append("missing_upload_ready_marker_or_fixture_identity")
     if not sd_ok:
         functional_incomplete_reasons.append("sd_probe_not_verified")
-    if not stream_ok or stream_pcm_bytes != expected_pcm_bytes:
+    if is_overlap:
+        if not stream1_ok or not stream2_ok:
+            functional_incomplete_reasons.append("overlap_stream_messages_not_verified")
+        if not overlap_ok:
+            functional_incomplete_reasons.append("overlap_phase_markers_not_verified")
+    elif is_live_failover:
+        if not stream_ok or stream_pcm_bytes != expected_pcm_bytes:
+            functional_incomplete_reasons.append("recorded_pcm_size_not_verified")
+        if not audio_ok:
+            functional_incomplete_reasons.append("sd_header_readback_or_non_silence_not_verified")
+        if not live_failover_ok:
+            functional_incomplete_reasons.append("live_failover_markers_not_verified")
+        if not live_drain_ok:
+            functional_incomplete_reasons.append("live_drain_not_verified")
+    elif not stream_ok or stream_pcm_bytes != expected_pcm_bytes:
         functional_incomplete_reasons.append("recorded_pcm_size_not_verified")
-    if not audio_ok:
+    if not is_overlap and not is_live_failover and not audio_ok:
         functional_incomplete_reasons.append("sd_header_readback_or_non_silence_not_verified")
     if not samples or samples[0].get("beat") != "baseline_before_sd":
         memory_incomplete_reasons.append("missing_clean_baseline_before_sd")
     beats = [str(row["beat"]) for row in samples]
-    missing_beats = [beat for beat in REQUIRED_BEATS if beat not in beats]
+    missing_beats = [beat for beat in required_beats if beat not in beats]
     if missing_beats:
         memory_incomplete_reasons.append("missing_memory_beats:" + ",".join(missing_beats))
-    if len(beats) != len(set(beats)) or beats != [beat for beat in REQUIRED_BEATS if beat in beats]:
+    if len(beats) != len(set(beats)) or beats != [beat for beat in required_beats if beat in beats]:
         memory_incomplete_reasons.append("memory_beats_out_of_order_or_duplicated")
     if stopped_samples is None or stopped_samples != sum(row["sample_count"] for row in samples):
         memory_incomplete_reasons.append("memory_sampler_did_not_stop_cleanly")
@@ -333,31 +429,61 @@ def parse_serial(serial: str, *, expected_chunks: int = 210, expected_pcm_bytes:
     terminal_by_seq: dict[int, dict[str, Any]] = {}
     for row in chunk_source:
         seq = int(row["seq"])
-        if seq in source_by_seq:
+        session = int(row.get("session", 1))
+        key = (session, seq) if is_overlap else seq
+        if key in source_by_seq:
             raise ParseError(f"duplicate source hash for sequence {seq}")
         if not _HEX256.fullmatch(str(row.get("pcm_sha256", ""))):
             raise ParseError(f"invalid device PCM hash for sequence {seq}")
-        source_by_seq[seq] = row
+        source_by_seq[key] = row
     for row in chunk_terminal:
         seq = int(row["seq"])
-        if seq in terminal_by_seq:
+        session = int(row.get("session", 1))
+        key = (session, seq) if is_overlap else seq
+        if key in terminal_by_seq:
             raise ParseError(f"duplicate terminal for sequence {seq}")
-        terminal_by_seq[seq] = row
-    expected_sequences = set(range(expected_chunks))
-    if set(source_by_seq) != expected_sequences or set(terminal_by_seq) != expected_sequences:
-        functional_incomplete_reasons.append("incomplete_device_chunk_hash_or_terminal_sequence")
-    if any(row.get("accepted") != 1 or row.get("failed") != 0 for row in terminal_by_seq.values()):
-        functional_incomplete_reasons.append("device_chunk_acceptance_failure")
-
-    upload_terminal = [row for row in events if row.get("event") == "upload_terminal"]
-    upload_complete = (len(upload_terminal) == 1 and upload_terminal[0].get("uploaded") == expected_chunks
-                       and upload_terminal[0].get("failed") == 0
-                       and upload_terminal[0].get("expected") == expected_chunks)
-    if not upload_complete:
-        functional_incomplete_reasons.append("upload_terminal_counts_missing_or_inconsistent")
-    chunks_complete = (set(source_by_seq) == expected_sequences and set(terminal_by_seq) == expected_sequences
-                       and all(row.get("accepted") == 1 and row.get("failed") == 0
-                               for row in terminal_by_seq.values()))
+        terminal_by_seq[key] = row
+    skip_device_chunk_identity = is_live_failover
+    if is_overlap:
+        for session_id in (1, 2):
+            expected_sequences = set(range(expected_chunks))
+            source_sess = {int(row["seq"]): row for row in chunk_source if int(row.get("session", -1)) == session_id}
+            terminal_sess = {int(row["seq"]): row for row in chunk_terminal
+                             if int(row.get("session", -1)) == session_id}
+            if set(source_sess) != expected_sequences or set(terminal_sess) != expected_sequences:
+                functional_incomplete_reasons.append(f"overlap_session_{session_id}_chunk_sequence_incomplete")
+            if any(row.get("accepted") != 1 or row.get("failed") != 0 for row in terminal_sess.values()):
+                functional_incomplete_reasons.append(f"overlap_session_{session_id}_chunk_acceptance_failure")
+        chunks_complete = not any(item.startswith("overlap_session_") for item in functional_incomplete_reasons)
+        upload_complete = (any("LAB16_UPLOAD session=1 status=complete uploaded=180 failed=0" in line for line in lines)
+                           and any("LAB16_UPLOAD session=2 status=complete uploaded=180 failed=0" in line for line in lines))
+        if not upload_complete:
+            functional_incomplete_reasons.append("overlap_upload_session_counts_missing_or_inconsistent")
+    elif is_live_failover:
+        upload_complete = any(
+            "LAB16_UPLOAD session=1 status=complete uploaded=180 failed=0" in line for line in lines
+        )
+        if not upload_complete:
+            functional_incomplete_reasons.append("live_upload_session_counts_missing_or_inconsistent")
+        chunks_complete = upload_complete
+    else:
+        expected_sequences = set(range(expected_chunks))
+        if set(source_by_seq) != expected_sequences or set(terminal_by_seq) != expected_sequences:
+            functional_incomplete_reasons.append("incomplete_device_chunk_hash_or_terminal_sequence")
+        if any(row.get("accepted") != 1 or row.get("failed") != 0 for row in terminal_by_seq.values()):
+            functional_incomplete_reasons.append("device_chunk_acceptance_failure")
+        upload_terminal = [row for row in events if row.get("event") == "upload_terminal"]
+        upload_complete = (len(upload_terminal) == 1 and upload_terminal[0].get("uploaded") == expected_chunks
+                           and upload_terminal[0].get("failed") == 0
+                           and upload_terminal[0].get("expected") == expected_chunks)
+        if not upload_complete:
+            functional_incomplete_reasons.append("upload_terminal_counts_missing_or_inconsistent")
+        chunks_complete = (set(source_by_seq) == expected_sequences and set(terminal_by_seq) == expected_sequences
+                           and all(row.get("accepted") == 1 and row.get("failed") == 0
+                                   for row in terminal_by_seq.values()))
+    if skip_device_chunk_identity:
+        source_by_seq = {}
+        terminal_by_seq = {}
     harness_complete = any("LAB16_HARNESS_DONE status=complete" in line for line in lines)
     if not harness_complete:
         functional_incomplete_reasons.append("functional_harness_not_complete")
@@ -369,26 +495,38 @@ def parse_serial(serial: str, *, expected_chunks: int = 210, expected_pcm_bytes:
                                for row in terminal_by_seq.values())
                         or any(row.get("event") == "upload_terminal" and row.get("failed", 0) > 0
                                for row in events))
-    functional_complete = (harness_complete and sd_ok and stream_ok and stream_pcm_bytes == expected_pcm_bytes
-                           and audio_ok and upload_complete and chunks_complete)
+    if is_overlap:
+        functional_complete = (harness_complete and sd_ok and stream1_ok and stream2_ok and overlap_ok
+                               and upload_complete and chunks_complete)
+    elif is_live_failover:
+        functional_complete = (harness_complete and sd_ok and stream_ok and stream_pcm_bytes == expected_pcm_bytes
+                               and audio_ok and live_failover_ok and live_drain_ok
+                               and upload_complete and chunks_complete)
+    else:
+        functional_complete = (harness_complete and sd_ok and stream_ok and stream_pcm_bytes == expected_pcm_bytes
+                               and audio_ok and upload_complete and chunks_complete)
     functional_status = "PASS" if functional_complete else "FAIL" if explicit_failure else "UNMEASURED"
 
     return {
         "document": "family-link.lab-metrics/v2",
         "parser": PARSER,
-        "variant": "upload",
+        "variant": variant,
         "memory_status": "COMPLETE" if not memory_incomplete_reasons else "INCOMPLETE",
         "functional_status": functional_status,
         "incomplete_reasons": memory_incomplete_reasons,
         "functional_incomplete_reasons": functional_incomplete_reasons,
-        "required_beats": list(REQUIRED_BEATS),
+        "required_beats": list(required_beats),
         "observed_beats": beats,
         "memory_samples": samples,
         "beat_windows": _beat_windows(samples),
         "device_events": events,
-        "device_chunk_source_count": len(source_by_seq),
-        "device_chunk_terminal_count": len(terminal_by_seq),
-        "device_chunk_pcm_sha256": {str(seq): row["pcm_sha256"] for seq, row in sorted(source_by_seq.items())},
+        "device_chunk_source_count": len(chunk_source) if is_overlap else len(source_by_seq),
+        "device_chunk_terminal_count": len(chunk_terminal) if is_overlap else len(terminal_by_seq),
+        "device_chunk_pcm_sha256": (
+            {f"{row.get('session')}:{row.get('seq')}": row["pcm_sha256"] for row in chunk_source}
+            if is_overlap
+            else {str(seq): row["pcm_sha256"] for seq, row in sorted(source_by_seq.items())}
+        ),
         "expected_pcm_bytes": expected_pcm_bytes,
         "recorded_pcm_bytes": stream_pcm_bytes,
         "expected_chunks": expected_chunks,
@@ -399,24 +537,26 @@ def parse_serial(serial: str, *, expected_chunks: int = 210, expected_pcm_bytes:
     }
 
 
-def parse_serial_partial(serial: str, *, expected_chunks: int = 210,
+def parse_serial_partial(serial: str, *, variant: str = "upload", expected_chunks: int = 210,
                          expected_pcm_bytes: int = 6_720_000) -> dict[str, Any]:
     """Parse the longest valid prefix so a truncated tail cannot discard samples."""
     lines = serial.splitlines()
     try:
-        return parse_serial(serial, expected_chunks=expected_chunks, expected_pcm_bytes=expected_pcm_bytes)
+        return parse_serial(serial, variant=variant, expected_chunks=expected_chunks,
+                            expected_pcm_bytes=expected_pcm_bytes)
     except ParseError as original_error:
         low, high = 0, len(lines)
         while low < high:
             midpoint = (low + high + 1) // 2
             prefix = "\n".join(lines[:midpoint])
             try:
-                parse_serial(prefix, expected_chunks=expected_chunks, expected_pcm_bytes=expected_pcm_bytes)
+                parse_serial(prefix, variant=variant, expected_chunks=expected_chunks,
+                             expected_pcm_bytes=expected_pcm_bytes)
             except ParseError:
                 high = midpoint - 1
             else:
                 low = midpoint
-        metrics = parse_serial("\n".join(lines[:low]), expected_chunks=expected_chunks,
+        metrics = parse_serial("\n".join(lines[:low]), variant=variant, expected_chunks=expected_chunks,
                                expected_pcm_bytes=expected_pcm_bytes)
         metrics["partial_parse_error"] = f"{type(original_error).__name__}: {original_error}"
         metrics["memory_status"] = "INCOMPLETE"

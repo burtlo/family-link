@@ -6,6 +6,8 @@ Source of truth for each `VARIANT=` on `make lab.lab16`: scenario beats, fixture
 
 **Implementers and agents:** [AGENTS.md](AGENTS.md).
 
+**Compare policy:** Accepted memory pairs gate on identity + heap/stack only. Timing and networking outliers are kept in `runs/` and summarized in [TIMING-AND-NETWORK-NOTES.md](../../../docs/labs/evidence/lab-16/TIMING-AND-NETWORK-NOTES.md); a separate lab should own latency repeatability later.
+
 ## Table of contents
 
 - [Agent and implementer guide](AGENTS.md)
@@ -13,7 +15,7 @@ Source of truth for each `VARIANT=` on `make lab.lab16`: scenario beats, fixture
 - [VARIANT `server-offline-during-record` — server offline during recording](#variant-server-offline-during-record)
 - [VARIANT `overlap-record-during-upload` — record message 2 while message 1 uploads](#variant-overlap-record-during-upload)
 - [VARIANT `live-stream-failover-during-record` — live outage, SD fallback, and drain](#variant-live-stream-failover-during-record)
-- [Published memory results (docs)](../../../docs/labs/evidence/lab-16/README.md)
+- [Published memory results — campaign index](../../../docs/labs/evidence/lab-16/README.md) · [all VARIANTs on one page](../../../docs/labs/evidence/lab-16/results/campaign-all-variants.md) · [run inventory](../../../docs/labs/evidence/lab-16/runs/README.md)
 
 
 **Same-boot baseline:** Add the capability probe to all four LAB-16 scenario builds and emit the initial sample after `LAB16_BOOT status=stable` but before `sd_session_open`, microphone/I2S initialization, or Wi-Fi. Do not substitute another firmware image or an earlier run as the baseline. Until each VARIANT captures that sample on the same boot as its scenario beats, mark the baseline NOT CAPTURED.
@@ -88,9 +90,9 @@ Sources: [variant control and device path](main/app_main.c), [LAB-16 diary serve
 
 **Run evidence:** [manifest](../../../docs/labs/evidence/lab-16/runs/20261023-server-offline-during-record-run-d9566b03/run-manifest.json) · [events](../../../docs/labs/evidence/lab-16/runs/20261023-server-offline-during-record-run-d9566b03/events.jsonl) · [serial](../../../logs/device/labs/lab-16/20261023-server-offline-during-record-run-d9566b03/serial.txt) · [server log](../../../docs/labs/evidence/lab-16/runs/20261023-server-offline-during-record-run-d9566b03/server.log).
 
-**Memory evidence:** NOT CAPTURED in this historical functional run. Rerun `server-offline-during-record` after adding same-boot baseline and phase/low-water probes.
+**Memory evidence:** CAPTURED. Pair [20261025-server-offline-memory-03](../../../docs/labs/evidence/lab-16/runs/20261025-server-offline-memory-03/run-manifest.json) and [20261025-server-offline-memory-04](../../../docs/labs/evidence/lab-16/runs/20261025-server-offline-memory-04/run-manifest.json) (`lab16-fw-v5-server-offline-memory`, fixture `lab16-upload/v2`). Repeatability compare: `make lab.lab16.compare RUN_A=20261025-server-offline-memory-03 RUN_B=20261025-server-offline-memory-04` → PASS (memory). Run [20261025-server-offline-memory-02](../../../docs/labs/evidence/lab-16/runs/20261025-server-offline-memory-02/run-manifest.json) is retained for [timing notes](../../../docs/labs/evidence/lab-16/TIMING-AND-NETWORK-NOTES.md).
 
-**Measurements (KiB):** [results/server-offline-during-record.md](../../../docs/labs/evidence/lab-16/results/server-offline-during-record.md) (placeholder until a memory run exists).
+**Measurements (KiB):** See [campaign summary table](../../../docs/labs/evidence/lab-16/results/server-offline-during-record.md#campaign-summary). Regenerate with `make lab.lab16.results` after new captures.
 
 <a id="variant-overlap-record-during-upload"></a>
 ## VARIANT `overlap-record-during-upload` — LAB-16 record message 2 while message 1 uploads
@@ -118,9 +120,9 @@ Sources: [overlap implementation](main/app_main.c), [chunk uploader](main/lab16_
 
 **Run evidence:** [manifest](../../../docs/labs/evidence/lab-16/runs/20261023-overlap-record-during-upload-run-8d644d2f/run-manifest.json) · [events](../../../docs/labs/evidence/lab-16/runs/20261023-overlap-record-during-upload-run-8d644d2f/events.jsonl) · [serial](../../../logs/device/labs/lab-16/20261023-overlap-record-during-upload-run-8d644d2f/serial.txt) · [server log](../../../docs/labs/evidence/lab-16/runs/20261023-overlap-record-during-upload-run-8d644d2f/server.log).
 
-**Memory evidence:** NOT CAPTURED in this historical functional run. Rerun `overlap-record-during-upload` after adding same-boot baseline and phase/low-water probes.
+**Memory evidence:** CAPTURED. Accepted pair [20261025-overlap-memory-03](../../../docs/labs/evidence/lab-16/runs/20261025-overlap-memory-03/run-manifest.json) and [20261025-overlap-memory-05](../../../docs/labs/evidence/lab-16/runs/20261025-overlap-memory-05/run-manifest.json) (`lab16-fw-v5-overlap-memory`). Repeatability: `make lab.lab16.compare RUN_A=20261025-overlap-memory-03 RUN_B=20261025-overlap-memory-05` → **PASS** on memory/stack and identity; HTTP latency is informational (see [TIMING-AND-NETWORK-NOTES.md](../../../docs/labs/evidence/lab-16/TIMING-AND-NETWORK-NOTES.md)). Additional runs `01`–`02`, `04`, and `06` remain under `runs/` for timing and fixture forensics.
 
-**Measurements (KiB):** [results/overlap-record-during-upload.md](../../../docs/labs/evidence/lab-16/results/overlap-record-during-upload.md) (placeholder until a memory run exists).
+**Measurements (KiB):** [results/overlap-record-during-upload.md](../../../docs/labs/evidence/lab-16/results/overlap-record-during-upload.md). Regenerate with `make lab.lab16.results`.
 
 <a id="variant-live-stream-failover-during-record"></a>
 ## VARIANT `live-stream-failover-during-record` — LAB-16 live upload with outage, SD fallback, and drain
@@ -148,19 +150,21 @@ Sources: [live failover device path](main/app_main.c), [LAB-16 diary protocol an
 
 **Run evidence:** [manifest](../../../docs/labs/evidence/lab-16/runs/20261023-live-stream-failover-during-record-run-77755e4a/run-manifest.json) · [events](../../../docs/labs/evidence/lab-16/runs/20261023-live-stream-failover-during-record-run-77755e4a/events.jsonl) · [serial](../../../logs/device/labs/lab-16/20261023-live-stream-failover-during-record-run-77755e4a/serial.txt) · [server log](../../../docs/labs/evidence/lab-16/runs/20261023-live-stream-failover-during-record-run-77755e4a/server.log).
 
-**Memory evidence:** NOT CAPTURED in this historical functional run. Rerun `live-stream-failover-during-record` after adding same-boot baseline and phase/low-water probes.
+**Memory evidence:** CAPTURED. Accepted pair [20261025-livestream-memory-03](../../../docs/labs/evidence/lab-16/runs/20261025-livestream-memory-03/run-manifest.json) and [20261025-livestream-memory-04](../../../docs/labs/evidence/lab-16/runs/20261025-livestream-memory-04/run-manifest.json) (`lab16-fw-v5-livestream-memory`). Repeatability: `make lab.lab16.compare RUN_A=20261025-livestream-memory-03 RUN_B=20261025-livestream-memory-04` → **PASS** on memory/stack and identity; timing is informational. Run [20261025-livestream-memory-02](../../../docs/labs/evidence/lab-16/runs/20261025-livestream-memory-02/run-manifest.json) retained (`server_chunk_count` journal quirk). [20261025-livestream-memory-01](../../../docs/labs/evidence/lab-16/runs/20261025-livestream-memory-01/run-manifest.json) failed before device capture (host port conflict).
 
 **Historical evidence qualification:** The four linked manifests preserve exact UTC run bounds and PASS verdicts, but their firmware/fixture identity and serial/server artifact fields are null. Their event journals contain only the terminal event, so phase timing must be read from the direct serial/server files. Those files exist and support the functional outcomes; these runs are not provenance-complete memory evidence. New runs must populate the build/source, SDK configuration, fixture revision/hash, per-beat events, metrics, and artifact references in the manifest.
 
 **Open server-payload integrity issue:** The intended WAV request body is 32,044 bytes, but historical `server.log` files include some stored chunk lengths of 32,043 bytes. The current [multipart parser](../../../server/labs/lab-16-attached-storage/server.py) strips trailing CR/LF bytes from the binary payload; those bytes can be part of PCM data. The old 210/180 chunk counts prove sequence receipt, not exact payload integrity. Before a new run claims payload integrity, preserve the multipart boundary separately, record exact received body lengths, and compare per-chunk bytes or hashes with the source/readback data. Keep this OPEN until the fixture and verifier prove it.
 
-**Measurements (KiB):** [results/live-stream-failover-during-record.md](../../../docs/labs/evidence/lab-16/results/live-stream-failover-during-record.md) (placeholder until a memory run exists).
+**Measurements (KiB):** [results/live-stream-failover-during-record.md](../../../docs/labs/evidence/lab-16/results/live-stream-failover-during-record.md). Regenerate with `make lab.lab16.results`.
 
 
 ## Current findings and what remains to run
 
 - VARIANT `upload` has an accepted memory pair; tables are in [docs/labs/evidence/lab-16/results/upload.md](../../../docs/labs/evidence/lab-16/results/upload.md).
-- The other three VARIANTs have functional pass evidence only; memory tables remain NOT CAPTURED until instrumented reruns.
+- VARIANT `server-offline-during-record` has an accepted memory pair; tables are in [docs/labs/evidence/lab-16/results/server-offline-during-record.md](../../../docs/labs/evidence/lab-16/results/server-offline-during-record.md).
+- VARIANT `overlap-record-during-upload` has an accepted memory pair; tables are in [docs/labs/evidence/lab-16/results/overlap-record-during-upload.md](../../../docs/labs/evidence/lab-16/results/overlap-record-during-upload.md).
+- VARIANT `live-stream-failover-during-record` has an accepted memory pair; tables are in [docs/labs/evidence/lab-16/results/live-stream-failover-during-record.md](../../../docs/labs/evidence/lab-16/results/live-stream-failover-during-record.md).
 - LAB-16 historical server chunk counts do not prove payload integrity until the multipart parser/verifier issue on VARIANT `live-stream-failover-during-record` is resolved (see that section).
 
 Implementation contract and orchestration: [AGENTS.md](AGENTS.md).

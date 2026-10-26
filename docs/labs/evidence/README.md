@@ -76,6 +76,7 @@ Do not commit secrets or household data.
 | `LAB-09` | [LAB-09/v1 report](lab-09/REPORT-LAB-09-v1.md) — **software-qualified at L0/L1; scripted kit run `20261021-scripted-run-10611ef2` workflow PASS and experiment PASS; L09-05 and performance UNMEASURED; firmware trace loss UNKNOWN on that capture** |
 | `LAB-11` | [LAB-11/v1 report](lab-11/REPORT-LAB-11-v1.md) — **software-qualified, hardware pending** |
 | `LAB-12` | [LAB-12/v1 report](lab-12/REPORT-LAB-12-v1.md) — **L0/L1 software evidence; independent qualification OPEN; visual/shared device evidence pending; performance UNMEASURED; scripted-shared image leaves 29% app partition free** |
+| `LAB-16` | [Memory campaign index](lab-16/README.md) — **all four VARIANTs CAPTURED** (accepted memory pairs + KiB tables under `lab-16/results/`); timing notes [TIMING-AND-NETWORK-NOTES.md](lab-16/TIMING-AND-NETWORK-NOTES.md) |
 | … | Add rows when reports land |
 
 Update this table when publishing a report.

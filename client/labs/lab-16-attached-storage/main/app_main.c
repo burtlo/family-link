@@ -730,9 +730,31 @@ static uint64_t message_disk_sectors(uint32_t stream_seconds)
     return 1 + pcm_flushes * (uint64_t)SD_WRITE_SECTORS;
 }
 
+static void memory_beats_for_stream(int msg_index, const char **open_start, const char **open_complete,
+                                    const char **recording)
+{
+#if defined(CONFIG_LAB16_OVERLAP_RECORD_DURING_UPLOAD) && CONFIG_LAB16_CAPTURE_EVIDENCE
+    if (msg_index == 1) {
+        *open_start = "overlap_msg1_mic_i2s_open_start";
+        *open_complete = "overlap_msg1_mic_i2s_open_complete";
+        *recording = "overlap_msg1_recording";
+        return;
+    }
+    if (msg_index == 2) {
+        *open_start = "overlap_msg2_mic_i2s_open_start";
+        *open_complete = "overlap_msg2_mic_i2s_open_complete";
+        *recording = "overlap_msg2_recording";
+        return;
+    }
+#endif
+    *open_start = "mic_i2s_open_start";
+    *open_complete = "mic_i2s_open_complete";
+    *recording = "sd_mic_recording";
+}
+
 static esp_err_t stream_mic_to_sd(lab16_sd_session_t *session, const lab16_sd_probe_t *probe, uint64_t start_lba,
                                   uint32_t stream_seconds, int msg_index, SemaphoreHandle_t sd_mu,
-                                  uint64_t *next_lba_out)
+                                  uint64_t *next_lba_out, bool advance_memory_beats)
 {
     const uint64_t target_pcm_bytes = pcm_bytes_for_seconds(stream_seconds);
     const uint64_t pcm_sectors = (target_pcm_bytes + SECTOR_BYTES - 1) / SECTOR_BYTES;
@@ -749,8 +771,14 @@ static esp_err_t stream_mic_to_sd(lab16_sd_session_t *session, const lab16_sd_pr
         return ESP_ERR_INVALID_STATE;
     }
 
+    const char *beat_open_start = "mic_i2s_open_start";
+    const char *beat_open_complete = "mic_i2s_open_complete";
+    const char *beat_recording = "sd_mic_recording";
+    memory_beats_for_stream(msg_index, &beat_open_start, &beat_open_complete, &beat_recording);
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
-    mem_begin_beat("mic_i2s_open_start");
+    if (advance_memory_beats) {
+        mem_begin_beat(beat_open_start);
+    }
 #endif
     esp_codec_dev_handle_t mic = bsp_audio_codec_microphone_init();
     if (mic == NULL) {
@@ -772,7 +800,9 @@ static esp_err_t stream_mic_to_sd(lab16_sd_session_t *session, const lab16_sd_pr
     (void)esp_codec_dev_set_in_mute(mic, false);
     (void)esp_codec_dev_set_in_gain(mic, 42.0f);
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
-    mem_begin_beat("mic_i2s_open_complete");
+    if (advance_memory_beats) {
+        mem_begin_beat(beat_open_complete);
+    }
 #endif
 
     lab16_pcm_header_t hdr;
@@ -788,7 +818,9 @@ static esp_err_t stream_mic_to_sd(lab16_sd_session_t *session, const lab16_sd_pr
     lab16_sd_writer_t writer;
     writer_init(&writer, start_lba);
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
-    mem_begin_beat("sd_mic_recording");
+    if (advance_memory_beats) {
+        mem_begin_beat(beat_recording);
+    }
 #endif
     err = writer_write_header_sector(session, &writer, &hdr, sd_mu);
     if (err != ESP_OK) {
@@ -1000,6 +1032,12 @@ static bool run_live_failover_harness(lab16_sd_session_t *session, const lab16_s
         printf("LAB16_LIVE status=failed reason=wifi_join\n");
         return false;
     }
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    printf("LAB16_EVT schema=lab16-event/v1 event=wifi_join t_us=%" PRId64
+           " beat=live_stream_upload_active status=connected\n", esp_timer_get_time());
+    lab16_upload_set_evidence_beat("live_stream_upload_active");
+    mem_begin_beat("live_mic_i2s_open_start");
+#endif
 
     esp_codec_dev_handle_t mic = bsp_audio_codec_microphone_init();
     if (mic == NULL) {
@@ -1017,6 +1055,9 @@ static bool run_live_failover_harness(lab16_sd_session_t *session, const lab16_s
     }
     (void)esp_codec_dev_set_in_mute(mic, false);
     (void)esp_codec_dev_set_in_gain(mic, 42.0f);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    mem_begin_beat("live_mic_i2s_open_complete");
+#endif
 
     lab16_pcm_header_t hdr;
     memset(&hdr, 0, sizeof(hdr));
@@ -1039,6 +1080,9 @@ static bool run_live_failover_harness(lab16_sd_session_t *session, const lab16_s
     printf("LAB16_LIVE status=streaming session=1 seconds=%" PRIu32 " start_lba=%" PRIu32 "\n", stream_seconds,
            (uint32_t)start_lba);
     fflush(stdout);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    mem_begin_beat("live_stream_upload_active");
+#endif
 
     bool uploaded_live[CONFIG_LAB16_STREAM_SECONDS];
     memset(uploaded_live, 0, sizeof(uploaded_live));
@@ -1054,6 +1098,9 @@ static bool run_live_failover_harness(lab16_sd_session_t *session, const lab16_s
     const int64_t start_us = esp_timer_get_time();
     int last_progress_s = 0;
     esp_err_t err = ESP_OK;
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    bool outage_beat_open = false;
+#endif
 
     for (uint32_t seq = 0; seq < stream_seconds && err == ESP_OK; seq++) {
         size_t filled = 0;
@@ -1086,6 +1133,13 @@ static bool run_live_failover_harness(lab16_sd_session_t *session, const lab16_s
             failover_events++;
             printf("LAB16_FAILOVER seq=%" PRIu32 " reason=http_%d\n", seq, http);
             fflush(stdout);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+            if (!outage_beat_open) {
+                mem_begin_beat("live_failover_outage");
+                lab16_upload_set_evidence_beat("live_failover_outage");
+                outage_beat_open = true;
+            }
+#endif
         }
 
         int64_t now_us = esp_timer_get_time();
@@ -1120,6 +1174,11 @@ static bool run_live_failover_harness(lab16_sd_session_t *session, const lab16_s
     if (validate_written_pcm(session, start_lba, target_pcm_bytes) != ESP_OK) {
         return false;
     }
+
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    lab16_upload_set_evidence_beat("live_sd_drain_active");
+    mem_begin_beat("live_sd_drain_active");
+#endif
 
     int drain_ok = 0;
     int drain_fail = 0;
@@ -1194,7 +1253,7 @@ static bool run_overlap_harness(lab16_sd_session_t *session, const lab16_sd_prob
     }
 
     bool ok = false;
-    if (stream_mic_to_sd(session, probe, lba_msg1, stream_seconds, 1, NULL, &lba_msg2) != ESP_OK) {
+    if (stream_mic_to_sd(session, probe, lba_msg1, stream_seconds, 1, NULL, &lba_msg2, true) != ESP_OK) {
         goto done;
     }
     if (validate_written_pcm(session, lba_msg1, pcm_bytes) != ESP_OK) {
@@ -1228,9 +1287,13 @@ static bool run_overlap_harness(lab16_sd_session_t *session, const lab16_sd_prob
         goto done;
     }
 
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    lab16_upload_set_evidence_beat("overlap_concurrent_peak");
+    mem_begin_beat("overlap_concurrent_peak");
+#endif
     printf("LAB16_OVERLAP status=recording_msg2 upload_session=1_active start_lba=%" PRIu64 "\n", lba_msg2);
     fflush(stdout);
-    if (stream_mic_to_sd(session, probe, lba_msg2, stream_seconds, 2, sd_mu, NULL) != ESP_OK) {
+    if (stream_mic_to_sd(session, probe, lba_msg2, stream_seconds, 2, sd_mu, NULL, false) != ESP_OK) {
         vEventGroupDelete(events);
         goto done;
     }
@@ -1246,6 +1309,10 @@ static bool run_overlap_harness(lab16_sd_session_t *session, const lab16_sd_prob
         goto done;
     }
 
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    lab16_upload_set_evidence_beat("overlap_msg2_upload");
+    mem_begin_beat("overlap_msg2_upload");
+#endif
     int uploaded2 = 0;
     int failed2 = 0;
     if (lab16_upload_pcm_from_sd(&session->card, lba_msg2, stream_seconds, 2, sd_mu, NULL, &uploaded2,
@@ -1267,7 +1334,13 @@ done:
 
 void app_main(void)
 {
-#if CONFIG_LAB16_CAPTURE_EVIDENCE
+#if CONFIG_LAB16_CAPTURE_EVIDENCE && defined(CONFIG_LAB16_OVERLAP_RECORD_DURING_UPLOAD)
+    printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v4 upload_fixture=lab16-upload/v2 harness=1\n",
+           CONFIG_LAB16_BUILD_ID);
+#elif CONFIG_LAB16_CAPTURE_EVIDENCE && defined(CONFIG_LAB16_LIVE_STREAM_FAILOVER)
+    printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v5 upload_fixture=lab16-diary/v1 harness=1\n",
+           CONFIG_LAB16_BUILD_ID);
+#elif CONFIG_LAB16_CAPTURE_EVIDENCE
     printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v3 upload_fixture=lab16-upload/v2 harness=1\n",
            CONFIG_LAB16_BUILD_ID);
 #elif defined(CONFIG_LAB16_OVERLAP_RECORD_DURING_UPLOAD)
@@ -1312,7 +1385,7 @@ void app_main(void)
         const uint64_t target_pcm_bytes = pcm_bytes_for_seconds((uint32_t)CONFIG_LAB16_STREAM_SECONDS);
         const uint64_t start_lba = (uint64_t)CONFIG_LAB16_PCM_START_LBA;
         stream_ok = (stream_mic_to_sd(&session, &probe, start_lba, (uint32_t)CONFIG_LAB16_STREAM_SECONDS, 0, NULL,
-                                      NULL) == ESP_OK);
+                                      NULL, true) == ESP_OK);
         if (stream_ok) {
             audio_ok = (validate_written_pcm(&session, start_lba, target_pcm_bytes) == ESP_OK);
 #if CONFIG_LAB16_CAPTURE_EVIDENCE

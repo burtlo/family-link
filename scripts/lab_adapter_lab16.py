@@ -38,6 +38,14 @@ VERIFY_LIVE = Path("client/labs/lab-16-attached-storage/tools/verify_live_stream
 UPLOAD_FIXTURE = Path("server/labs/lab-16-attached-storage/fixtures/upload/fixture.json")
 UPLOAD_PARSER = Path("client/labs/lab-16-attached-storage/tools/parse_upload_evidence.py")
 UPLOAD_VARIANT = "upload"
+SERVER_OFFLINE_VARIANT = "server-offline-during-record"
+MEMORY_CAPTURE_VARIANTS = frozenset({
+    UPLOAD_VARIANT,
+    SERVER_OFFLINE_VARIANT,
+    OVERLAP_VARIANT,
+    LIVE_FAILOVER_VARIANT,
+})
+UPLOAD_CHUNK_COUNT = 210
 
 
 class OwnedServer:
@@ -188,8 +196,16 @@ def capture_serial(device: str, path: Path, seconds: int, server: OwnedServer | 
                         ready_at = now
                     if delay_server_until_stream and not server_started and STREAM_COMPLETE in text:
                         server = OwnedServer()
-                        server.start(repo_root, run_id, log_path, device_token, PORT, bind="0.0.0.0",
-                                     expected_chunks=None)
+                        server.start(
+                            repo_root,
+                            run_id,
+                            log_path,
+                            device_token,
+                            PORT,
+                            bind="0.0.0.0",
+                            expected_chunks=UPLOAD_CHUNK_COUNT,
+                            fixture_file=repo_root / UPLOAD_FIXTURE,
+                        )
                         server_started = True
                     if simulate_server_outage and server_started and LIVE_STREAM_MARKER in text and not outage_armed:
                         outage_off_at = now + 30.0
@@ -276,9 +292,24 @@ def _experiment_verdict_from_upload_metrics(metrics: dict) -> str:
 
 
 def classify_upload_capture(post_reset: str, cleanup_ok: bool, serial_path: Path, upload_metrics: dict,
-                            server_errors: list[str] | None = None) -> dict:
-    """Upload variant: parser metrics are authoritative; serial verify is advisory."""
+                            server_errors: list[str] | None = None,
+                            capture_variant: str = UPLOAD_VARIANT) -> dict:
+    """Memory-capture variants: parser metrics are authoritative; serial verify is advisory."""
     from device_guardrails.lab16_serial import verify_lab16_upload_capture
+
+    def _serial_verify_errors(text: str) -> list[str]:
+        if capture_variant == OVERLAP_VARIANT:
+            repo_root = Path(__file__).resolve().parents[1]
+            proc = subprocess.run(
+                [sys.executable, str(repo_root / VERIFY_OVERLAP), str(serial_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode == 0:
+                return []
+            return [line for line in (proc.stderr or proc.stdout or "verify_failed").splitlines() if line.strip()]
+        return verify_lab16_upload_capture(text)
 
     experiment = _experiment_verdict_from_upload_metrics(upload_metrics)
     ready = READY_PREFIX in (post_reset or "")
@@ -302,8 +333,8 @@ def classify_upload_capture(post_reset: str, cleanup_ok: bool, serial_path: Path
     if not cleanup_ok:
         return _failure("FAIL", "cleanup_failed")
     if not device_finished:
-        verify_errors = verify_lab16_upload_capture(
-            serial_path.read_text(encoding="utf-8", errors="replace"))
+        serial_text = serial_path.read_text(encoding="utf-8", errors="replace")
+        verify_errors = _serial_verify_errors(serial_text)
         if functional == "FAIL":
             reason = "; ".join(upload_metrics.get("functional_verification_errors")
                                or upload_metrics.get("functional_incomplete_reasons")
@@ -376,7 +407,9 @@ def server_identity(repo_root: Path, variant: str = "upload") -> dict[str, str]:
     server_dir = repo_root / SERVER_DIR
     source = (server_dir / "server.py").read_bytes()
     manifest = json.loads((server_dir / "manifest.lab.json").read_text(encoding="utf-8"))
-    fixture_path = repo_root / (UPLOAD_FIXTURE if variant == UPLOAD_VARIANT else SERVER_DIR / "fixtures" / "device.json")
+    fixture_path = repo_root / (
+        UPLOAD_FIXTURE if variant in (UPLOAD_VARIANT, SERVER_OFFLINE_VARIANT) else SERVER_DIR / "fixtures" / "device.json"
+    )
     fixture = fixture_path.read_bytes()
     fixture_data = json.loads(fixture.decode("utf-8"))
     return {
@@ -419,6 +452,9 @@ def upload_build_source_identity(repo_root: Path, build_dir: Path) -> dict[str, 
         project / "partitions.csv",
         project / "sdkconfig.defaults",
         project / "sdkconfig.defaults.upload",
+        project / "sdkconfig.defaults.server-offline",
+        project / "sdkconfig.defaults.overlap",
+        project / "sdkconfig.defaults.livestream",
     }
     build_tool_keys = (
         "CMAKE_COMMAND", "CMAKE_MAKE_PROGRAM", "CMAKE_C_COMPILER", "CMAKE_CXX_COMPILER",
@@ -565,6 +601,7 @@ def upload_server_rows(port: int, device_token: str) -> list[dict]:
 
 def capture_upload_evidence(repo_root: Path, evidence, serial_path: Path, server: OwnedServer,
                             device_token: str, identity: dict[str, str], run_id: str, *,
+                            capture_variant: str = UPLOAD_VARIANT,
                             partial_capture: bool = False, verify_server: bool = True) -> tuple[dict, list[str]]:
     parser_spec = importlib.util.spec_from_file_location("lab16_upload_evidence_parser", repo_root / UPLOAD_PARSER)
     if parser_spec is None or parser_spec.loader is None:
@@ -575,13 +612,13 @@ def capture_upload_evidence(repo_root: Path, evidence, serial_path: Path, server
     try:
         serial_text = serial_path.read_text(encoding="utf-8", errors="replace")
         parse = parser_module.parse_serial_partial if partial_capture else parser_module.parse_serial
-        metrics = parse(serial_text)
+        metrics = parse(serial_text, variant=capture_variant)
     except Exception as exc:
         errors.append(f"upload serial evidence parse failed: {type(exc).__name__}: {exc}")
         metrics = {
             "document": "family-link.lab-metrics/v2",
             "parser": "lab16-upload-evidence-parser/v3",
-            "variant": UPLOAD_VARIANT,
+            "variant": capture_variant,
             "memory_status": "INCOMPLETE",
             "functional_status": "UNMEASURED",
             "incomplete_reasons": errors.copy(),
@@ -609,10 +646,13 @@ def capture_upload_evidence(repo_root: Path, evidence, serial_path: Path, server
                 health = json.loads(response.read().decode("utf-8"))
             if health.get("run_id") != run_id:
                 raise RuntimeError("health run ID does not match this evidence run")
-            if health.get("fixture_sha256") != identity["fixture_sha256"]:
-                raise RuntimeError("server fixture hash does not match versioned upload fixture")
-            rows = upload_server_rows(PORT, device_token)
-            errors.extend(parser_module.verify_server_rows(metrics, rows))
+            if capture_variant not in (UPLOAD_VARIANT, SERVER_OFFLINE_VARIANT):
+                rows = upload_server_rows(PORT, device_token)
+            else:
+                if health.get("fixture_sha256") != identity["fixture_sha256"]:
+                    raise RuntimeError("server fixture hash does not match versioned upload fixture")
+                rows = upload_server_rows(PORT, device_token)
+                errors.extend(parser_module.verify_server_rows(metrics, rows))
         except Exception as exc:
             errors.append(f"run-owned server evidence inspection failed: {type(exc).__name__}: {exc}")
     if errors:
@@ -632,6 +672,7 @@ def capture_upload_evidence(repo_root: Path, evidence, serial_path: Path, server
     }
     metrics["server_verification_errors"] = errors
     metrics["server_chunks"] = sorted(rows, key=lambda row: (str(row.get("session")), int(row.get("seq", -1))))
+    metrics["server_chunk_count"] = len(rows)
     metrics_path = evidence.run_dir / "metrics.json"
     metrics_sha256 = None
     write_metrics = not partial_capture or bool(metrics.get("memory_samples"))
@@ -671,8 +712,8 @@ def capture_upload_evidence(repo_root: Path, evidence, serial_path: Path, server
     })
     notes_path = evidence.run_dir / "notes.md"
     notes_path.write_text(
-        f"# LAB-16 upload run {run_id}\n\n"
-        f"Variant: `upload`\n\nFixture: `{identity['fixture_path']}` ({identity['fixture_revision']}, "
+        f"# LAB-16 memory run {run_id}\n\n"
+        f"Variant: `{capture_variant}`\n\nFixture: `{identity['fixture_path']}` ({identity['fixture_revision']}, "
         f"SHA-256 `{identity['fixture_sha256']}`; generator `{identity['generator_version']}`, "
         f"seed `{identity['seed']}`)\n\n"
         f"Memory status: {metrics.get('memory_status', 'INCOMPLETE')}\n\n"
@@ -695,9 +736,10 @@ def capture_serial_with_partial_upload_evidence(*, capture_args: tuple, capture_
     try:
         return capture_serial(*capture_args, **capture_kwargs)
     except (Exception, KeyboardInterrupt):
-        if selected_variant == UPLOAD_VARIANT and serial_path.is_file():
+        if selected_variant in MEMORY_CAPTURE_VARIANTS and serial_path.is_file():
             try:
                 capture_upload_evidence(repo_root, evidence, serial_path, server, device_token, identity, run_id,
+                                        capture_variant=selected_variant,
                                         partial_capture=True, verify_server=False)
             except Exception as exc:
                 evidence.event_sink({"source": "host", "kind": "partial_metrics_preservation",
@@ -724,9 +766,9 @@ class Adapter:
         overlap = selected == OVERLAP_VARIANT
         live_failover = selected == LIVE_FAILOVER_VARIANT
         if overlap:
-            seconds = max(seconds, 900)
+            seconds = max(seconds, 1200)
         if live_failover:
-            seconds = max(seconds, 600)
+            seconds = max(seconds, 1200)
 
         def execute(context, evidence):
             identity = server_identity(host.ROOT, selected)
@@ -757,7 +799,8 @@ class Adapter:
                 if not delay_server:
                     server.start(host.ROOT, context.run_id, log_path, device_token, PORT, bind="0.0.0.0",
                                  expected_chunks=expected_chunks,
-                                 fixture_file=(host.ROOT / identity["fixture_path"] if selected == UPLOAD_VARIANT else None))
+                                 fixture_file=(host.ROOT / identity["fixture_path"]
+                                               if selected in (UPLOAD_VARIANT, SERVER_OFFLINE_VARIANT) else None))
                     self.bound_ports.append(PORT)
                 evidence.update_context({
                     "hardware": {"kit_nickname": target.kit_id},
@@ -791,6 +834,9 @@ class Adapter:
                     Path("client/labs/lab-16-attached-storage/main/CMakeLists.txt"),
                     Path("client/labs/lab-16-attached-storage/sdkconfig.defaults"),
                     Path("client/labs/lab-16-attached-storage/sdkconfig.defaults.upload"),
+                    Path("client/labs/lab-16-attached-storage/sdkconfig.defaults.server-offline"),
+                    Path("client/labs/lab-16-attached-storage/sdkconfig.defaults.overlap"),
+                    Path("client/labs/lab-16-attached-storage/sdkconfig.defaults.livestream"),
                     Path("client/labs/lab-16-attached-storage/manifest.lab.json"),
                     Path("config/labs.registry.yaml"),
                     Path("scripts/lab_adapter_lab16.py"),
@@ -805,7 +851,13 @@ class Adapter:
                 sdkconfig_sha = hashlib.sha256(sdkconfig_path.read_bytes()).hexdigest() if sdkconfig_path.is_file() else None
                 binary_path = Path(build_dir) / "lab16_attached_storage.bin"
                 binary_sha = hashlib.sha256(binary_path.read_bytes()).hexdigest() if binary_path.is_file() else None
-                if selected == UPLOAD_VARIANT:
+                build_id = None
+                if sdkconfig_path.is_file():
+                    for line in sdkconfig_path.read_text(encoding="utf-8", errors="replace").splitlines():
+                        if line.startswith("CONFIG_LAB16_BUILD_ID="):
+                            build_id = line.split("=", 1)[1].strip().strip('"')
+                            break
+                if selected in MEMORY_CAPTURE_VARIANTS:
                     build_inputs = upload_build_source_identity(host.ROOT, Path(build_dir))
                     firmware_hashes.update(build_inputs["files"])
                     source_sha = hashlib.sha256(
@@ -815,7 +867,7 @@ class Adapter:
                     build_inputs = None
                     source_sha = hashlib.sha256("".join(firmware_hashes.values()).encode("ascii")).hexdigest()
                 evidence.update_context({
-                    "firmware": {"build_id": "lab16-fw-v5-upload-memory" if selected == UPLOAD_VARIANT else None,
+                    "firmware": {"build_id": build_id if selected in MEMORY_CAPTURE_VARIANTS else None,
                                  "project_path": str(spec.project_dir), "source_sha256": source_sha,
                                  "sdkconfig_sha256": sdkconfig_sha, "binary_sha256": binary_sha},
                     "source": {"identity_schema": "lab16-build-inputs/v2" if build_inputs else "lab16-source/v1",
@@ -830,10 +882,8 @@ class Adapter:
                     host.flash_lab_build(config, build_dir, port)
                     time.sleep(1.0)
                 print(f"LAB-16 capture up to {seconds}s variant={selected}", flush=True)
-                if overlap:
+                if overlap or live_failover:
                     cap_limit = MAX_SERIAL_SECONDS_OVERLAP
-                elif live_failover:
-                    cap_limit = 900
                 else:
                     cap_limit = MAX_SERIAL_SECONDS
                 evidence.update_context({
@@ -854,9 +904,10 @@ class Adapter:
                 if delayed is not None:
                     server = delayed
                 captured = True
-                if selected == UPLOAD_VARIANT:
+                if selected in MEMORY_CAPTURE_VARIANTS:
                     upload_metrics, upload_evidence_errors = capture_upload_evidence(
-                        host.ROOT, evidence, serial_path, server, device_token, identity, context.run_id)
+                        host.ROOT, evidence, serial_path, server, device_token, identity, context.run_id,
+                        capture_variant=selected)
                     server_errors = list(upload_evidence_errors)
                 if server.proc is not None and server.proc.poll() is None:
                     if overlap:
@@ -885,13 +936,14 @@ class Adapter:
                                          failure or "capture_not_started"),
                 }
             else:
-                if selected == UPLOAD_VARIANT and upload_metrics is not None:
+                if selected in MEMORY_CAPTURE_VARIANTS and upload_metrics is not None:
                     result = classify_upload_capture(
                         post_reset,
                         cleanup_ok,
                         serial_path,
                         upload_metrics,
                         server_errors=server_errors,
+                        capture_variant=selected,
                     )
                 else:
                     result = classify_capture(
@@ -918,6 +970,6 @@ class Adapter:
             project_path=str(spec.project_dir),
             firmware_target=spec.target,
             capture_seconds=seconds,
-            max_events=10000 if selected == UPLOAD_VARIANT else 2000,
+            max_events=10000 if selected in MEMORY_CAPTURE_VARIANTS else 2000,
             execute=execute,
         )
