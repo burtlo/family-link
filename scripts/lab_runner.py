@@ -55,6 +55,7 @@ def run_with_adapter(*, repo_root: Path, lab_id: str, evidence_slug: str,
                      hooks: RunHooks, project_path: str | None = None,
                      firmware_target: str | None = None,
                      capture_seconds: int | None = None,
+                     max_events: int = 2000,
                      execute: Callable[[RunContext, object], dict] | None = None) -> int:
     """Run shared preflight/build/capture stages and preserve a partial envelope."""
     # Generic runs own their evidence writer; they must remain executable when
@@ -72,7 +73,7 @@ def run_with_adapter(*, repo_root: Path, lab_id: str, evidence_slug: str,
         {"capture": {"mode": mode, "variant": variant, "seconds": capture_seconds,
                       "status": "not_started"},
          "build": {"status": "not_started"}},
-        lab_id=lab_id, evidence_slug=evidence_slug,
+        lab_id=lab_id, evidence_slug=evidence_slug, max_events=max_events,
     )
 
     def event(kind: str, outcome: str, **details: object) -> None:

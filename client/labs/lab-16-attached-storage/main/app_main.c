@@ -10,7 +10,9 @@
 #include "esp_attr.h"
 #include "esp_codec_dev.h"
 #include "esp_err.h"
+#include "esp_heap_caps.h"
 #include "esp_timer.h"
+#include "esp_task.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -30,6 +32,9 @@
 #endif
 #ifndef CONFIG_LAB16_PCM_START_LBA
 #define CONFIG_LAB16_PCM_START_LBA 2048
+#endif
+#ifndef CONFIG_LAB16_CAPTURE_EVIDENCE
+#define CONFIG_LAB16_CAPTURE_EVIDENCE 0
 #endif
 
 enum {
@@ -51,6 +56,443 @@ _Static_assert(BSP_SD_D0 == 9 && BSP_SD_D1 == 13 && BSP_SD_D2 == 42 && BSP_SD_D3
 static uint8_t sector0[SECTOR_BYTES] DMA_ATTR __attribute__((aligned(4)));
 static uint8_t sd_dma[SD_WRITE_BYTES] DMA_ATTR __attribute__((aligned(4)));
 static uint8_t mic_chunk[MIC_CHUNK_BYTES];
+
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+enum {
+    LAB16_MEM_SAMPLE_INTERVAL_MS = 50,
+    LAB16_MEM_SAMPLER_STACK_BYTES = 4096,
+};
+
+// ESP-IDF 5.4.2's bundled ESP32-S3 Wi-Fi driver calls
+// config_get_wifi_task_stack_size(): 3 KiB base, 6 KiB when WPA3-SAE is
+// enabled, plus TASK_EXTRA_STACK_SIZE unless newlib nano format is enabled.
+#if CONFIG_ESP_WIFI_ENABLE_WPA3_SAE
+#define LAB16_WIFI_TASK_STACK_BASE_BYTES 6144U
+#else
+#define LAB16_WIFI_TASK_STACK_BASE_BYTES 3072U
+#endif
+#if CONFIG_NEWLIB_NANO_FORMAT
+#define LAB16_WIFI_TASK_STACK_BYTES LAB16_WIFI_TASK_STACK_BASE_BYTES
+#else
+#define LAB16_WIFI_TASK_STACK_BYTES (LAB16_WIFI_TASK_STACK_BASE_BYTES + TASK_EXTRA_STACK_SIZE)
+#endif
+#if defined(CONFIG_LWIP_TCPIP_CORE_LOCKING) && CONFIG_LWIP_TCPIP_CORE_LOCKING
+#define LAB16_EVENT_LOOP_CORE_LOCKING_EXTRA_BYTES 2048U
+#else
+#define LAB16_EVENT_LOOP_CORE_LOCKING_EXTRA_BYTES 0U
+#endif
+
+typedef struct {
+    uint32_t hwm_sdk_units;
+    bool seen;
+} lab16_task_stack_window_t;
+
+typedef struct {
+    uint32_t sample_count;
+    int64_t start_t_us;
+    int64_t end_t_us;
+    size_t internal_total;
+    size_t internal_min_free;
+    int64_t internal_min_free_t_us;
+    size_t internal_min_largest;
+    int64_t internal_min_largest_t_us;
+    size_t internal_cumulative_min_free;
+    int64_t internal_cumulative_min_free_t_us;
+    size_t internal_current_free;
+    size_t internal_current_largest;
+    size_t dma_total;
+    size_t dma_min_free;
+    int64_t dma_min_free_t_us;
+    size_t dma_min_largest;
+    int64_t dma_min_largest_t_us;
+    size_t dma_cumulative_min_free;
+    int64_t dma_cumulative_min_free_t_us;
+    size_t dma_current_free;
+    size_t dma_current_largest;
+    size_t psram_total;
+    size_t psram_min_free;
+    int64_t psram_min_free_t_us;
+    size_t psram_min_largest;
+    int64_t psram_min_largest_t_us;
+    size_t psram_cumulative_min_free;
+    int64_t psram_cumulative_min_free_t_us;
+    size_t psram_current_free;
+    size_t psram_current_largest;
+    uint64_t pcm_bytes_max;
+    uint32_t sd_driver_writes_max;
+    uint32_t outstanding_buffer_count_max;
+    size_t outstanding_buffer_bytes_max;
+    uint32_t request_inflight_max;
+    uint32_t accepted_requests_max;
+    uint32_t failed_requests_max;
+    uint32_t retries_max;
+    uint32_t main_stack_hwm_sdk_units;
+    uint32_t sampler_stack_hwm_sdk_units;
+    lab16_task_stack_window_t event_loop_stack;
+    lab16_task_stack_window_t wifi_stack;
+    lab16_task_stack_window_t tcpip_stack;
+} lab16_mem_window_t;
+
+static const char *volatile s_mem_beat = "boot";
+static volatile uint64_t s_pcm_bytes_written;
+static volatile uint32_t s_sd_driver_writes;
+static volatile bool s_mem_sampler_running;
+static volatile bool s_mem_sampler_enabled;
+static volatile bool s_mem_sampler_stop;
+static TaskHandle_t s_mem_sampler_task;
+static TaskHandle_t s_main_task;
+static SemaphoreHandle_t s_mem_sample_mu;
+static uint32_t s_mem_sample_count;
+static uint32_t s_mem_window_seq;
+static size_t s_baseline_internal_cumulative_min_free;
+static size_t s_baseline_dma_cumulative_min_free;
+static size_t s_baseline_psram_cumulative_min_free;
+static bool s_mem_baseline_ready;
+static lab16_mem_window_t s_mem_window;
+static portMUX_TYPE s_mem_mux = portMUX_INITIALIZER_UNLOCKED;
+static void mem_begin_beat(const char *beat);
+
+static uint32_t mem_stack_hwm(TaskHandle_t task)
+{
+    return task == NULL ? 0U : (uint32_t)uxTaskGetStackHighWaterMark2(task);
+}
+
+static void mem_stack_window_sample(lab16_task_stack_window_t *window, TaskHandle_t task)
+{
+    if (task == NULL) return;
+    const uint32_t hwm = mem_stack_hwm(task);
+    if (!window->seen || hwm < window->hwm_sdk_units) window->hwm_sdk_units = hwm;
+    window->seen = true;
+}
+
+static const char *mem_stack_status(bool seen)
+{
+    return seen ? "captured" : "not_yet_started";
+}
+
+static void mem_reset_window(void)
+{
+    memset(&s_mem_window, 0, sizeof(s_mem_window));
+}
+
+// Caller holds s_mem_sample_mu.  Samples are aggregated in RAM; serial output is
+// emitted only when a named beat closes.
+static void mem_accumulate_sample(const char *beat)
+{
+    const uint32_t internal_caps = MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT;
+    const uint32_t dma_caps = MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA;
+    const uint32_t psram_caps = MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT;
+    const size_t internal_total = heap_caps_get_total_size(internal_caps);
+    const size_t internal_free = heap_caps_get_free_size(internal_caps);
+    const size_t internal_largest = heap_caps_get_largest_free_block(internal_caps);
+    const size_t internal_cumulative_min_free = heap_caps_get_minimum_free_size(internal_caps);
+    const size_t dma_total = heap_caps_get_total_size(dma_caps);
+    const size_t dma_free = heap_caps_get_free_size(dma_caps);
+    const size_t dma_largest = heap_caps_get_largest_free_block(dma_caps);
+    const size_t dma_cumulative_min_free = heap_caps_get_minimum_free_size(dma_caps);
+    const size_t psram_total = heap_caps_get_total_size(psram_caps);
+    const size_t psram_free = heap_caps_get_free_size(psram_caps);
+    const size_t psram_largest = heap_caps_get_largest_free_block(psram_caps);
+    const size_t psram_cumulative_min_free = heap_caps_get_minimum_free_size(psram_caps);
+    const int64_t t_us = esp_timer_get_time();
+    const uint32_t main_hwm = mem_stack_hwm(s_main_task);
+    const uint32_t sampler_hwm = mem_stack_hwm(s_mem_sampler_task);
+    TaskHandle_t event_loop_task = xTaskGetHandle("sys_evt");
+    TaskHandle_t wifi_task = xTaskGetHandle("wifi");
+    TaskHandle_t tcpip_task = xTaskGetHandle("tiT");
+
+    lab16_upload_capture_stats_t upload_stats = {0};
+    lab16_upload_capture_snapshot(&upload_stats);
+
+    portENTER_CRITICAL(&s_mem_mux);
+    lab16_mem_window_t *window = &s_mem_window;
+    if (window->sample_count == 0) {
+        window->start_t_us = t_us;
+        window->internal_total = internal_total;
+        window->internal_min_free = internal_free;
+        window->internal_min_free_t_us = t_us;
+        window->internal_min_largest = internal_largest;
+        window->internal_min_largest_t_us = t_us;
+        window->internal_cumulative_min_free = internal_cumulative_min_free;
+        window->internal_cumulative_min_free_t_us = t_us;
+        window->dma_total = dma_total;
+        window->dma_min_free = dma_free;
+        window->dma_min_free_t_us = t_us;
+        window->dma_min_largest = dma_largest;
+        window->dma_min_largest_t_us = t_us;
+        window->dma_cumulative_min_free = dma_cumulative_min_free;
+        window->dma_cumulative_min_free_t_us = t_us;
+        window->psram_total = psram_total;
+        window->psram_min_free = psram_free;
+        window->psram_min_free_t_us = t_us;
+        window->psram_min_largest = psram_largest;
+        window->psram_min_largest_t_us = t_us;
+        window->psram_cumulative_min_free = psram_cumulative_min_free;
+        window->psram_cumulative_min_free_t_us = t_us;
+    } else {
+        if (internal_free < window->internal_min_free) {
+            window->internal_min_free = internal_free;
+            window->internal_min_free_t_us = t_us;
+        }
+        if (internal_largest < window->internal_min_largest) {
+            window->internal_min_largest = internal_largest;
+            window->internal_min_largest_t_us = t_us;
+        }
+        if (internal_cumulative_min_free < window->internal_cumulative_min_free) {
+            window->internal_cumulative_min_free = internal_cumulative_min_free;
+            window->internal_cumulative_min_free_t_us = t_us;
+        }
+        if (dma_free < window->dma_min_free) {
+            window->dma_min_free = dma_free;
+            window->dma_min_free_t_us = t_us;
+        }
+        if (dma_largest < window->dma_min_largest) {
+            window->dma_min_largest = dma_largest;
+            window->dma_min_largest_t_us = t_us;
+        }
+        if (dma_cumulative_min_free < window->dma_cumulative_min_free) {
+            window->dma_cumulative_min_free = dma_cumulative_min_free;
+            window->dma_cumulative_min_free_t_us = t_us;
+        }
+        if (psram_free < window->psram_min_free) {
+            window->psram_min_free = psram_free;
+            window->psram_min_free_t_us = t_us;
+        }
+        if (psram_largest < window->psram_min_largest) {
+            window->psram_min_largest = psram_largest;
+            window->psram_min_largest_t_us = t_us;
+        }
+        if (psram_cumulative_min_free < window->psram_cumulative_min_free) {
+            window->psram_cumulative_min_free = psram_cumulative_min_free;
+            window->psram_cumulative_min_free_t_us = t_us;
+        }
+    }
+    window->end_t_us = t_us;
+    window->internal_current_free = internal_free;
+    window->internal_current_largest = internal_largest;
+    window->dma_current_free = dma_free;
+    window->dma_current_largest = dma_largest;
+    window->psram_current_free = psram_free;
+    window->psram_current_largest = psram_largest;
+    window->main_stack_hwm_sdk_units = main_hwm;
+    window->sampler_stack_hwm_sdk_units = sampler_hwm;
+    mem_stack_window_sample(&window->event_loop_stack, event_loop_task);
+    mem_stack_window_sample(&window->wifi_stack, wifi_task);
+    mem_stack_window_sample(&window->tcpip_stack, tcpip_task);
+    const uint64_t pcm_bytes = s_pcm_bytes_written;
+    const uint32_t driver_writes = s_sd_driver_writes;
+    if (pcm_bytes > window->pcm_bytes_max) window->pcm_bytes_max = pcm_bytes;
+    if (driver_writes > window->sd_driver_writes_max) window->sd_driver_writes_max = driver_writes;
+    if (upload_stats.app_buffer_count > window->outstanding_buffer_count_max) {
+        window->outstanding_buffer_count_max = upload_stats.app_buffer_count;
+    }
+    if (upload_stats.app_buffer_bytes > window->outstanding_buffer_bytes_max) {
+        window->outstanding_buffer_bytes_max = upload_stats.app_buffer_bytes;
+    }
+    if (upload_stats.request_inflight > window->request_inflight_max) {
+        window->request_inflight_max = upload_stats.request_inflight;
+    }
+    if (upload_stats.accepted_requests > window->accepted_requests_max) {
+        window->accepted_requests_max = upload_stats.accepted_requests;
+    }
+    if (upload_stats.failed_requests > window->failed_requests_max) {
+        window->failed_requests_max = upload_stats.failed_requests;
+    }
+    if (upload_stats.retries > window->retries_max) window->retries_max = upload_stats.retries;
+    window->sample_count++;
+    s_mem_sample_count++;
+    portEXIT_CRITICAL(&s_mem_mux);
+
+    if (!s_mem_baseline_ready && strcmp(beat, "baseline_before_sd") == 0) {
+        s_baseline_internal_cumulative_min_free = internal_cumulative_min_free;
+        s_baseline_dma_cumulative_min_free = dma_cumulative_min_free;
+        s_baseline_psram_cumulative_min_free = psram_cumulative_min_free;
+        s_mem_baseline_ready = true;
+    }
+}
+
+static int64_t mem_watermark_delta(size_t baseline, size_t observed)
+{
+    return (int64_t)baseline - (int64_t)observed;
+}
+
+static void mem_emit_window_locked(const char *beat)
+{
+    const lab16_mem_window_t *w = &s_mem_window;
+    if (w->sample_count == 0) return;
+    const uint32_t seq = ++s_mem_window_seq;
+    printf("LAB16_MEM schema=lab16-memory/v3 event=window seq=%" PRIu32
+           " sample_interval_ms=%d sample_count=%" PRIu32 " t_start_us=%" PRId64 " t_end_us=%" PRId64
+           " beat=%s internal_total=%zu internal_interval_min_free=%zu internal_interval_min_free_t_us=%" PRId64
+           " internal_interval_min_largest=%zu internal_interval_min_largest_t_us=%" PRId64
+           " internal_cumulative_min_free_since_heap_init=%zu internal_cumulative_min_free_t_us=%" PRId64
+           " internal_cumulative_min_free_delta_from_baseline=%" PRId64
+           " internal_current_free=%zu internal_current_largest=%zu"
+           " dma_total=%zu dma_interval_min_free=%zu dma_interval_min_free_t_us=%" PRId64
+           " dma_interval_min_largest=%zu dma_interval_min_largest_t_us=%" PRId64
+           " dma_cumulative_min_free_since_heap_init=%zu dma_cumulative_min_free_t_us=%" PRId64
+           " dma_cumulative_min_free_delta_from_baseline=%" PRId64
+           " dma_current_free=%zu dma_current_largest=%zu"
+           " psram_total=%zu psram_interval_min_free=%zu psram_interval_min_free_t_us=%" PRId64
+           " psram_interval_min_largest=%zu psram_interval_min_largest_t_us=%" PRId64
+           " psram_cumulative_min_free_since_heap_init=%zu psram_cumulative_min_free_t_us=%" PRId64
+           " psram_cumulative_min_free_delta_from_baseline=%" PRId64
+           " psram_current_free=%zu psram_current_largest=%zu"
+           " pcm_bytes_max=%" PRIu64 " sd_driver_writes_max=%" PRIu32
+           " outstanding_buffer_count_max=%" PRIu32 " outstanding_buffer_bytes_max=%zu"
+           " request_inflight_max=%" PRIu32 " accepted_requests_max=%" PRIu32
+           " failed_requests_max=%" PRIu32 " retries_max=%" PRIu32
+           " main_task_name=main main_task_configured_stack_bytes=%u main_task_allocated_stack_bytes=%u"
+           " main_task_status=captured main_task_stack_hwm_sdk_units=%" PRIu32
+           " main_task_stack_hwm_unit=StackType_t_items main_task_stack_type_bytes=%zu"
+           " sampler_task_name=lab16_mem sampler_task_configured_stack_bytes=%u"
+           " sampler_task_allocated_stack_bytes=%u sampler_task_status=captured"
+           " sampler_task_stack_hwm_sdk_units=%" PRIu32
+           " sampler_task_stack_hwm_unit=StackType_t_items sampler_task_stack_type_bytes=%zu"
+           " event_loop_task_name=sys_evt event_loop_task_configured_stack_bytes=%u"
+           " event_loop_task_allocated_stack_bytes=%u event_loop_task_status=%s"
+           " event_loop_task_stack_hwm_sdk_units=%" PRIu32
+           " event_loop_task_stack_hwm_unit=StackType_t_items event_loop_task_stack_type_bytes=%zu"
+           " wifi_task_name=wifi wifi_task_configured_stack_bytes=%u wifi_task_allocated_stack_bytes=%u"
+           " wifi_task_status=%s wifi_task_stack_hwm_sdk_units=%" PRIu32
+           " wifi_task_stack_hwm_unit=StackType_t_items wifi_task_stack_type_bytes=%zu"
+           " tcpip_task_name=tiT tcpip_task_configured_stack_bytes=%u tcpip_task_allocated_stack_bytes=%u"
+           " tcpip_task_status=%s tcpip_task_stack_hwm_sdk_units=%" PRIu32
+           " tcpip_task_stack_hwm_unit=StackType_t_items tcpip_task_stack_type_bytes=%zu\n",
+           seq, LAB16_MEM_SAMPLE_INTERVAL_MS, w->sample_count, w->start_t_us, w->end_t_us, beat,
+           w->internal_total, w->internal_min_free, w->internal_min_free_t_us,
+           w->internal_min_largest, w->internal_min_largest_t_us,
+           w->internal_cumulative_min_free, w->internal_cumulative_min_free_t_us,
+           mem_watermark_delta(s_baseline_internal_cumulative_min_free, w->internal_cumulative_min_free),
+           w->internal_current_free, w->internal_current_largest,
+           w->dma_total, w->dma_min_free, w->dma_min_free_t_us, w->dma_min_largest, w->dma_min_largest_t_us,
+           w->dma_cumulative_min_free, w->dma_cumulative_min_free_t_us,
+           mem_watermark_delta(s_baseline_dma_cumulative_min_free, w->dma_cumulative_min_free),
+           w->dma_current_free, w->dma_current_largest,
+           w->psram_total, w->psram_min_free, w->psram_min_free_t_us,
+           w->psram_min_largest, w->psram_min_largest_t_us,
+           w->psram_cumulative_min_free, w->psram_cumulative_min_free_t_us,
+           mem_watermark_delta(s_baseline_psram_cumulative_min_free, w->psram_cumulative_min_free),
+           w->psram_current_free, w->psram_current_largest,
+           w->pcm_bytes_max, w->sd_driver_writes_max, w->outstanding_buffer_count_max,
+           w->outstanding_buffer_bytes_max, w->request_inflight_max, w->accepted_requests_max,
+           w->failed_requests_max, w->retries_max,
+           (unsigned)CONFIG_ESP_MAIN_TASK_STACK_SIZE,
+           (unsigned)(CONFIG_ESP_MAIN_TASK_STACK_SIZE + TASK_EXTRA_STACK_SIZE),
+           w->main_stack_hwm_sdk_units, sizeof(StackType_t),
+           LAB16_MEM_SAMPLER_STACK_BYTES, LAB16_MEM_SAMPLER_STACK_BYTES,
+           w->sampler_stack_hwm_sdk_units, sizeof(StackType_t),
+           (unsigned)CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE,
+           (unsigned)(CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE + TASK_EXTRA_STACK_SIZE
+                      + LAB16_EVENT_LOOP_CORE_LOCKING_EXTRA_BYTES),
+           mem_stack_status(w->event_loop_stack.seen), w->event_loop_stack.hwm_sdk_units, sizeof(StackType_t),
+           (unsigned)LAB16_WIFI_TASK_STACK_BYTES, (unsigned)LAB16_WIFI_TASK_STACK_BYTES,
+           mem_stack_status(w->wifi_stack.seen), w->wifi_stack.hwm_sdk_units, sizeof(StackType_t),
+           (unsigned)CONFIG_LWIP_TCPIP_TASK_STACK_SIZE,
+           (unsigned)(CONFIG_LWIP_TCPIP_TASK_STACK_SIZE + TASK_EXTRA_STACK_SIZE),
+           mem_stack_status(w->tcpip_stack.seen), w->tcpip_stack.hwm_sdk_units, sizeof(StackType_t));
+}
+
+static void mem_sample_tick(void)
+{
+    if (s_mem_sample_mu == NULL) return;
+    xSemaphoreTake(s_mem_sample_mu, portMAX_DELAY);
+    if (!s_mem_sampler_stop) mem_accumulate_sample(s_mem_beat);
+    xSemaphoreGive(s_mem_sample_mu);
+}
+
+static void mem_sampler(void *arg)
+{
+    (void)arg;
+    s_mem_sampler_running = true;
+    TickType_t last_wake = xTaskGetTickCount();
+    while (!s_mem_sampler_stop) {
+        if (!s_mem_sampler_enabled) {
+            (void)ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+            continue;
+        }
+        vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(LAB16_MEM_SAMPLE_INTERVAL_MS));
+        if (!s_mem_sampler_stop && s_mem_sampler_enabled) mem_sample_tick();
+    }
+    s_mem_sampler_running = false;
+    s_mem_sampler_task = NULL;
+    vTaskDelete(NULL);
+}
+
+static bool mem_sampler_start(void)
+{
+    mem_reset_window();
+    s_mem_sample_count = 0;
+    s_mem_window_seq = 0;
+    s_mem_baseline_ready = false;
+    s_mem_sampler_running = false;
+    s_mem_sampler_enabled = false;
+    s_mem_beat = "baseline_before_sd";
+    s_mem_sampler_stop = false;
+    s_main_task = xTaskGetCurrentTaskHandle();
+
+    // Allocate the sampler task and its coordination mutex before the baseline
+    // so their persistent heap/stack cost is present in every measurement.
+    s_mem_sample_mu = xSemaphoreCreateMutex();
+    if (s_mem_sample_mu == NULL) {
+        printf("LAB16_MEM schema=lab16-memory/v3 event=monitor_start_failed reason=sample_mutex\n");
+        return false;
+    }
+    if (xTaskCreate(mem_sampler, "lab16_mem", LAB16_MEM_SAMPLER_STACK_BYTES, NULL, 3,
+                    &s_mem_sampler_task) != pdPASS) {
+        printf("LAB16_MEM schema=lab16-memory/v3 event=monitor_start_failed t_us=%" PRId64 "\n",
+               esp_timer_get_time());
+        return false;
+    }
+    while (!s_mem_sampler_running) vTaskDelay(1);
+    printf("LAB16_EVT schema=lab16-event/v1 event=beat t_us=%" PRId64 " beat=baseline_before_sd\n",
+           esp_timer_get_time());
+    xSemaphoreTake(s_mem_sample_mu, portMAX_DELAY);
+    mem_accumulate_sample("baseline_before_sd");
+    s_mem_sampler_enabled = true;
+    xTaskNotifyGive(s_mem_sampler_task);
+    xSemaphoreGive(s_mem_sample_mu);
+    mem_begin_beat("sd_mount_probe");
+    return true;
+}
+
+static void mem_begin_beat(const char *beat)
+{
+    if (s_mem_sample_mu == NULL) return;
+    xSemaphoreTake(s_mem_sample_mu, portMAX_DELAY);
+    mem_emit_window_locked(s_mem_beat);
+    mem_reset_window();
+    s_mem_beat = beat;
+    printf("LAB16_EVT schema=lab16-event/v1 event=beat t_us=%" PRId64 " beat=%s\n",
+           esp_timer_get_time(), beat);
+    mem_accumulate_sample(beat);
+    xSemaphoreGive(s_mem_sample_mu);
+    fflush(stdout);
+}
+
+static void mem_set_pcm_progress(uint64_t bytes, uint32_t writes)
+{
+    portENTER_CRITICAL(&s_mem_mux);
+    s_pcm_bytes_written = bytes;
+    s_sd_driver_writes = writes;
+    portEXIT_CRITICAL(&s_mem_mux);
+}
+
+static void mem_sampler_stop_and_wait(void)
+{
+    if (s_mem_sampler_task == NULL) return;
+    s_mem_sampler_stop = true;
+    xTaskNotifyGive(s_mem_sampler_task);
+    while (s_mem_sampler_task != NULL) vTaskDelay(1);
+    xSemaphoreTake(s_mem_sample_mu, portMAX_DELAY);
+    mem_emit_window_locked(s_mem_beat);
+    printf("LAB16_MEM schema=lab16-memory/v3 event=monitor_stopped t_us=%" PRId64
+           " samples=%" PRIu32 " windows=%" PRIu32 "\n",
+           esp_timer_get_time(), s_mem_sample_count, s_mem_window_seq);
+    xSemaphoreGive(s_mem_sample_mu);
+    fflush(stdout);
+}
+#endif
 
 typedef struct {
     esp_err_t err;
@@ -307,6 +749,9 @@ static esp_err_t stream_mic_to_sd(lab16_sd_session_t *session, const lab16_sd_pr
         return ESP_ERR_INVALID_STATE;
     }
 
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    mem_begin_beat("mic_i2s_open_start");
+#endif
     esp_codec_dev_handle_t mic = bsp_audio_codec_microphone_init();
     if (mic == NULL) {
         printf("LAB16_STREAM status=failed error=%d reason=mic_init\n", (int)ESP_FAIL);
@@ -326,6 +771,9 @@ static esp_err_t stream_mic_to_sd(lab16_sd_session_t *session, const lab16_sd_pr
     }
     (void)esp_codec_dev_set_in_mute(mic, false);
     (void)esp_codec_dev_set_in_gain(mic, 42.0f);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    mem_begin_beat("mic_i2s_open_complete");
+#endif
 
     lab16_pcm_header_t hdr;
     memset(&hdr, 0, sizeof(hdr));
@@ -339,6 +787,9 @@ static esp_err_t stream_mic_to_sd(lab16_sd_session_t *session, const lab16_sd_pr
 
     lab16_sd_writer_t writer;
     writer_init(&writer, start_lba);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    mem_begin_beat("sd_mic_recording");
+#endif
     err = writer_write_header_sector(session, &writer, &hdr, sd_mu);
     if (err != ESP_OK) {
         (void)esp_codec_dev_close(mic);
@@ -386,6 +837,9 @@ static esp_err_t stream_mic_to_sd(lab16_sd_session_t *session, const lab16_sd_pr
         if (err != ESP_OK) {
             break;
         }
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+        mem_set_pcm_progress(writer.pcm_bytes, writer.driver_writes);
+#endif
 
         int elapsed_s = (int)((now_us - start_us) / 1000000LL);
         if (elapsed_s >= last_progress_s + PROGRESS_INTERVAL_S) {
@@ -813,7 +1267,10 @@ done:
 
 void app_main(void)
 {
-#ifdef CONFIG_LAB16_OVERLAP_RECORD_DURING_UPLOAD
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v3 upload_fixture=lab16-upload/v2 harness=1\n",
+           CONFIG_LAB16_BUILD_ID);
+#elif defined(CONFIG_LAB16_OVERLAP_RECORD_DURING_UPLOAD)
     printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v4 harness=1\n", CONFIG_LAB16_BUILD_ID);
 #elif defined(CONFIG_LAB16_LIVE_STREAM_FAILOVER)
     printf("LAB16_READY build=%s mode=scripted fixture=lab16-sd/v5 harness=1\n", CONFIG_LAB16_BUILD_ID);
@@ -827,6 +1284,10 @@ void app_main(void)
     }
     printf("LAB16_BOOT status=stable settle_ms=%d\n", CONFIG_LAB16_BOOT_SETTLE_MS);
     fflush(stdout);
+
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    const bool mem_capture_ready = mem_sampler_start();
+#endif
 
     lab16_sd_session_t session;
     esp_err_t session_err = sd_session_open(&session);
@@ -854,19 +1315,50 @@ void app_main(void)
                                       NULL) == ESP_OK);
         if (stream_ok) {
             audio_ok = (validate_written_pcm(&session, start_lba, target_pcm_bytes) == ESP_OK);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+            printf("LAB16_EVT schema=lab16-event/v1 event=sd_readback t_us=%" PRId64
+                   " beat=sd_mic_recording pcm_bytes=%" PRIu64 " validation=%s\n",
+                   esp_timer_get_time(), target_pcm_bytes, audio_ok ? "pass" : "fail");
+#endif
+        }
+        if (stream_ok && audio_ok) {
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+            mem_begin_beat("wifi_upload_active");
+#endif
         }
         if (stream_ok && audio_ok && lab16_station_join()) {
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+            printf("LAB16_EVT schema=lab16-event/v1 event=wifi_join t_us=%" PRId64
+                   " beat=wifi_upload_active status=connected\n", esp_timer_get_time());
+#endif
             int uploaded = 0;
             int failed = 0;
             upload_ok = (lab16_upload_pcm_from_sd(&session.card, start_lba, (uint32_t)CONFIG_LAB16_STREAM_SECONDS,
                                                   1, NULL, NULL, &uploaded, &failed) == ESP_OK);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+            printf("LAB16_EVT schema=lab16-event/v1 event=upload_terminal t_us=%" PRId64
+                   " beat=wifi_upload_active uploaded=%d failed=%d expected=%" PRIu32 "\n",
+                   esp_timer_get_time(), uploaded, failed, (uint32_t)CONFIG_LAB16_STREAM_SECONDS);
+#endif
         } else if (stream_ok && audio_ok) {
             printf("LAB16_UPLOAD status=failed reason=wifi_join\n");
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+            printf("LAB16_EVT schema=lab16-event/v1 event=wifi_join t_us=%" PRId64
+                   " beat=wifi_upload_active status=failed\n", esp_timer_get_time());
+#endif
         }
         harness_ok = stream_ok && audio_ok && upload_ok;
 #endif
     }
     sd_session_close(&session);
+
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    mem_begin_beat("upload_complete_workers_quiescent");
+    mem_sampler_stop_and_wait();
+    if (!mem_capture_ready) {
+        printf("LAB16_MEM schema=lab16-memory/v3 event=capture_incomplete reason=monitor_start_failed\n");
+    }
+#endif
 
     if (probe.err == ESP_OK && probe.read_lba0_ok && harness_ok) {
         printf("LAB16_HARNESS_DONE status=complete\n");

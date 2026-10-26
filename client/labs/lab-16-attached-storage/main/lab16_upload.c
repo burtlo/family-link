@@ -7,9 +7,15 @@
 #include "esp_attr.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "mbedtls/sha256.h"
 #include "sdkconfig.h"
+
+#ifndef CONFIG_LAB16_CAPTURE_EVIDENCE
+#define CONFIG_LAB16_CAPTURE_EVIDENCE 0
+#endif
 
 enum {
     SAMPLE_RATE = 16000,
@@ -43,7 +49,101 @@ static void wav_header(uint8_t *p, uint32_t pcm_bytes)
 
 static uint8_t s_read_buf[64 * SECTOR_BYTES] DMA_ATTR __attribute__((aligned(4)));
 
-static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, int timeout_ms);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+static lab16_upload_capture_stats_t s_capture_stats;
+static portMUX_TYPE s_capture_mux = portMUX_INITIALIZER_UNLOCKED;
+#endif
+
+void lab16_upload_capture_reset(void)
+{
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    portENTER_CRITICAL(&s_capture_mux);
+    memset(&s_capture_stats, 0, sizeof(s_capture_stats));
+    portEXIT_CRITICAL(&s_capture_mux);
+#endif
+}
+
+void lab16_upload_capture_snapshot(lab16_upload_capture_stats_t *out)
+{
+    if (out == NULL) return;
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    portENTER_CRITICAL(&s_capture_mux);
+    *out = s_capture_stats;
+    portEXIT_CRITICAL(&s_capture_mux);
+#else
+    memset(out, 0, sizeof(*out));
+#endif
+}
+
+static void capture_buffer_alloc(const char *name, size_t requested, bool success)
+{
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    portENTER_CRITICAL(&s_capture_mux);
+    if (success) {
+        s_capture_stats.app_buffer_count++;
+        s_capture_stats.app_buffer_bytes += requested;
+    }
+    const uint32_t count = s_capture_stats.app_buffer_count;
+    const size_t bytes = s_capture_stats.app_buffer_bytes;
+    portEXIT_CRITICAL(&s_capture_mux);
+    printf("LAB16_EVT schema=lab16-event/v1 event=buffer_alloc t_us=%" PRId64
+           " beat=wifi_upload_active name=%s requested_bytes=%zu caps=SPIRAM_8BIT region=psram success=%u"
+           " outstanding_count=%" PRIu32 " outstanding_bytes=%zu queue_count=0\n",
+           esp_timer_get_time(), name, requested, success ? 1U : 0U, count, bytes);
+    fflush(stdout);
+#else
+    (void)name; (void)requested; (void)success;
+#endif
+}
+
+static void capture_buffer_free(const char *name, size_t requested, void *buffer)
+{
+    if (buffer == NULL) return;
+    // The lifecycle event describes live allocations after the real free.
+    free(buffer);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    portENTER_CRITICAL(&s_capture_mux);
+    if (s_capture_stats.app_buffer_count > 0) s_capture_stats.app_buffer_count--;
+    if (s_capture_stats.app_buffer_bytes >= requested) s_capture_stats.app_buffer_bytes -= requested;
+    const uint32_t count = s_capture_stats.app_buffer_count;
+    const size_t bytes = s_capture_stats.app_buffer_bytes;
+    portEXIT_CRITICAL(&s_capture_mux);
+    printf("LAB16_EVT schema=lab16-event/v1 event=buffer_free t_us=%" PRId64
+           " beat=wifi_upload_active name=%s requested_bytes=%zu region=psram"
+           " outstanding_count=%" PRIu32 " outstanding_bytes=%zu queue_count=0\n",
+           esp_timer_get_time(), name, requested, count, bytes);
+    fflush(stdout);
+#else
+    (void)name; (void)requested;
+#endif
+}
+
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+static void capture_request_state(int inflight_delta, int accepted_delta, int failed_delta, int retry_delta)
+{
+    portENTER_CRITICAL(&s_capture_mux);
+    s_capture_stats.request_inflight = (uint32_t)((int)s_capture_stats.request_inflight + inflight_delta);
+    s_capture_stats.accepted_requests = (uint32_t)((int)s_capture_stats.accepted_requests + accepted_delta);
+    s_capture_stats.failed_requests = (uint32_t)((int)s_capture_stats.failed_requests + failed_delta);
+    s_capture_stats.retries = (uint32_t)((int)s_capture_stats.retries + retry_delta);
+    portEXIT_CRITICAL(&s_capture_mux);
+}
+#endif
+
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+static void sha256_hex(const uint8_t *data, size_t bytes, char out[65])
+{
+    uint8_t digest[32];
+    if (mbedtls_sha256(data, bytes, digest, 0) != 0) {
+        out[0] = '\0';
+        return;
+    }
+    for (unsigned i = 0; i < sizeof(digest); i++) snprintf(out + i * 2, 3, "%02x", digest[i]);
+    out[64] = '\0';
+}
+#endif
+
+static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, int attempt, int timeout_ms);
 
 static esp_err_t sd_read_locked(const sdmmc_card_t *card, SemaphoreHandle_t sd_mu, void *dst, size_t lba,
                                 size_t sectors)
@@ -98,7 +198,7 @@ int lab16_upload_pcm_chunk(int session_id, int seq, const uint8_t *pcm, size_t p
     memcpy(wav + WAV_HEADER_BYTES, pcm, pcm_bytes);
     int status = -1;
     for (int attempt = 0; attempt < max_attempts; attempt++) {
-        status = post_chunk(wav, WAV_HEADER_BYTES + (int)pcm_bytes, session_id, seq, timeout_ms);
+        status = post_chunk(wav, WAV_HEADER_BYTES + (int)pcm_bytes, session_id, seq, attempt + 1, timeout_ms);
         if (status == 200) {
             break;
         }
@@ -110,7 +210,7 @@ int lab16_upload_pcm_chunk(int session_id, int seq, const uint8_t *pcm, size_t p
     return status;
 }
 
-static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, int timeout_ms)
+static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, int attempt, int timeout_ms)
 {
     char url[160];
     snprintf(url, sizeof(url), "http://%s:%d/v1/diary", CONFIG_LAB16_SERVER_HOST, CONFIG_LAB16_SERVER_PORT);
@@ -127,6 +227,15 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, 
     char post[80];
     int post_len = snprintf(post, sizeof(post), "\r\n--%s--\r\n", bnd);
     int total = pre_len + wav_len + post_len;
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    const int64_t request_start_us = esp_timer_get_time();
+    capture_request_state(1, 0, 0, 0);
+    printf("LAB16_EVT schema=lab16-event/v1 event=request_start t_us=%" PRId64
+           " beat=wifi_upload_active session=%d seq=%d attempt=%d pcm_bytes=%d wav_bytes=%d"
+           " request_body_bytes=%d outstanding_requests=1\n",
+           request_start_us, session_id, seq, attempt, wav_len - WAV_HEADER_BYTES, wav_len, total);
+    fflush(stdout);
+#endif
 
     esp_http_client_config_t cfg = {
         .url = url,
@@ -134,6 +243,18 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, 
         .timeout_ms = timeout_ms,
     };
     esp_http_client_handle_t client = esp_http_client_init(&cfg);
+    if (client == NULL) {
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+        const int64_t ended_us = esp_timer_get_time();
+        capture_request_state(-1, 0, 1, 0);
+        printf("LAB16_EVT schema=lab16-event/v1 event=request_end t_us=%" PRId64
+               " beat=wifi_upload_active session=%d seq=%d attempt=%d status=-1 request_body_bytes=%d"
+               " response_content_length=-1 response_body_bytes_received=0 response_body_read_complete=0"
+               " latency_us=%" PRId64 " outstanding_requests=0\n",
+               ended_us, session_id, seq, attempt, total, ended_us - request_start_us);
+#endif
+        return -1;
+    }
     char auth[128];
     snprintf(auth, sizeof(auth), "Bearer %s", CONFIG_LAB16_DEVICE_TOKEN);
     esp_http_client_set_header(client, "Authorization", auth);
@@ -143,6 +264,15 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, 
 
     if (esp_http_client_open(client, total) != ESP_OK) {
         esp_http_client_cleanup(client);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+        const int64_t ended_us = esp_timer_get_time();
+        capture_request_state(-1, 0, 1, 0);
+        printf("LAB16_EVT schema=lab16-event/v1 event=request_end t_us=%" PRId64
+               " beat=wifi_upload_active session=%d seq=%d attempt=%d status=-1 request_body_bytes=%d"
+               " response_content_length=-1 response_body_bytes_received=0 response_body_read_complete=0"
+               " latency_us=%" PRId64 " outstanding_requests=0\n",
+               ended_us, session_id, seq, attempt, total, ended_us - request_start_us);
+#endif
         return -1;
     }
     esp_http_client_write(client, pre, pre_len);
@@ -150,8 +280,35 @@ static int post_chunk(const uint8_t *wav, int wav_len, int session_id, int seq, 
     esp_http_client_write(client, post, post_len);
     (void)esp_http_client_fetch_headers(client);
     int status = esp_http_client_get_status_code(client);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    const int64_t response_content_length = esp_http_client_get_content_length(client);
+    int64_t response_body_bytes_received = 0;
+    bool response_body_read_complete = true;
+    char response_scratch[128];
+    int read_bytes;
+    // Consume and count actual response body bytes, but discard them immediately.
+    // This keeps no response content in the evidence bundle or application state.
+    while ((read_bytes = esp_http_client_read(client, response_scratch, sizeof(response_scratch))) > 0) {
+        response_body_bytes_received += read_bytes;
+    }
+    if (read_bytes < 0 ||
+        (response_content_length >= 0 && response_body_bytes_received != response_content_length)) {
+        response_body_read_complete = false;
+    }
+#endif
     esp_http_client_close(client);
     esp_http_client_cleanup(client);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+    printf("LAB16_EVT schema=lab16-event/v1 event=request_end t_us=%" PRId64
+           " beat=wifi_upload_active session=%d seq=%d attempt=%d status=%d request_body_bytes=%d"
+           " response_content_length=%" PRId64 " response_body_bytes_received=%" PRId64
+           " response_body_read_complete=%u latency_us=%" PRId64 " outstanding_requests=0\n",
+           esp_timer_get_time(), session_id, seq, attempt, status, total, response_content_length,
+           response_body_bytes_received, response_body_read_complete ? 1U : 0U,
+           esp_timer_get_time() - request_start_us);
+    fflush(stdout);
+    capture_request_state(-1, status == 200 ? 1 : 0, status == 200 ? 0 : 1, 0);
+#endif
     return status;
 }
 
@@ -164,11 +321,16 @@ esp_err_t lab16_upload_pcm_from_sd(const sdmmc_card_t *card, uint64_t start_lba,
     int uploaded = 0;
     int failed = 0;
 
-    uint8_t *wav = heap_caps_malloc(WAV_HEADER_BYTES + CHUNK_PCM_BYTES, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-    uint8_t *pcm = heap_caps_malloc(CHUNK_PCM_BYTES, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    lab16_upload_capture_reset();
+    const size_t wav_requested = WAV_HEADER_BYTES + CHUNK_PCM_BYTES;
+    const size_t pcm_requested = CHUNK_PCM_BYTES;
+    uint8_t *wav = heap_caps_malloc(wav_requested, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    capture_buffer_alloc("wav", wav_requested, wav != NULL);
+    uint8_t *pcm = heap_caps_malloc(pcm_requested, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    capture_buffer_alloc("pcm", pcm_requested, pcm != NULL);
     if (wav == NULL || pcm == NULL) {
-        free(wav);
-        free(pcm);
+        capture_buffer_free("wav", wav_requested, wav);
+        capture_buffer_free("pcm", pcm_requested, pcm);
         return ESP_ERR_NO_MEM;
     }
 
@@ -189,27 +351,57 @@ esp_err_t lab16_upload_pcm_from_sd(const sdmmc_card_t *card, uint64_t start_lba,
         }
         wav_header(wav, CHUNK_PCM_BYTES);
         memcpy(wav + WAV_HEADER_BYTES, pcm, CHUNK_PCM_BYTES);
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+        char pcm_sha256[65];
+        sha256_hex(pcm, CHUNK_PCM_BYTES, pcm_sha256);
+        printf("LAB16_EVT schema=lab16-event/v1 event=chunk_source t_us=%" PRId64
+               " beat=wifi_upload_active session=%d seq=%d pcm_bytes=%d wav_bytes=%d pcm_sha256=%s\n",
+               esp_timer_get_time(), session_id, seq, CHUNK_PCM_BYTES, WAV_HEADER_BYTES + CHUNK_PCM_BYTES,
+               pcm_sha256[0] ? pcm_sha256 : "unavailable");
+#endif
         int status = -1;
+        int attempts = 0;
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-            status = post_chunk(wav, WAV_HEADER_BYTES + CHUNK_PCM_BYTES, session_id, seq, 20000);
+            attempts++;
+            status = post_chunk(wav, WAV_HEADER_BYTES + CHUNK_PCM_BYTES, session_id, seq, attempts, 20000);
             if (status == 200) {
                 uploaded++;
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+                printf("LAB16_EVT schema=lab16-event/v1 event=chunk_terminal t_us=%" PRId64
+                       " beat=wifi_upload_active session=%d seq=%d attempts=%d accepted=1 failed=0"
+                       " request_body_pcm_bytes=%d wav_bytes=%d pcm_sha256=%s\n",
+                       esp_timer_get_time(), session_id, seq, attempts, CHUNK_PCM_BYTES,
+                       WAV_HEADER_BYTES + CHUNK_PCM_BYTES, pcm_sha256[0] ? pcm_sha256 : "unavailable");
+                fflush(stdout);
+#endif
                 if (seq % 30 == 0) {
                     printf("LAB16_UPLOAD session=%d progress seq=%d uploaded=%d\n", session_id, seq, uploaded);
                     fflush(stdout);
                 }
                 break;
             }
+            if (attempt + 1 < MAX_ATTEMPTS) {
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+                capture_request_state(0, 0, 0, 1);
+#endif
+            }
             vTaskDelay(pdMS_TO_TICKS(1500));
         }
         if (status != 200) {
             failed++;
+#if CONFIG_LAB16_CAPTURE_EVIDENCE
+            printf("LAB16_EVT schema=lab16-event/v1 event=chunk_terminal t_us=%" PRId64
+                   " beat=wifi_upload_active session=%d seq=%d attempts=%d accepted=0 failed=1"
+                   " request_body_pcm_bytes=%d wav_bytes=%d pcm_sha256=%s\n",
+                   esp_timer_get_time(), session_id, seq, attempts, CHUNK_PCM_BYTES,
+                   WAV_HEADER_BYTES + CHUNK_PCM_BYTES, pcm_sha256[0] ? pcm_sha256 : "unavailable");
+#endif
             printf("LAB16_UPLOAD session=%d chunk seq=%d status=http_%d\n", session_id, seq, status);
         }
     }
 
-    free(wav);
-    free(pcm);
+    capture_buffer_free("wav", wav_requested, wav);
+    capture_buffer_free("pcm", pcm_requested, pcm);
     if (uploaded_out) {
         *uploaded_out = uploaded;
     }

@@ -1,9 +1,24 @@
 #pragma once
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "sdmmc_cmd.h"
+
+typedef struct {
+    uint32_t app_buffer_count;
+    size_t app_buffer_bytes;
+    uint32_t request_inflight;
+    uint32_t accepted_requests;
+    uint32_t failed_requests;
+    uint32_t retries;
+} lab16_upload_capture_stats_t;
+
+void lab16_upload_capture_reset(void);
+void lab16_upload_capture_snapshot(lab16_upload_capture_stats_t *out);
 
 #define LAB16_UPLOAD_EVT_STARTED (1U << 0)
 #define LAB16_UPLOAD_EVT_DONE (1U << 1)

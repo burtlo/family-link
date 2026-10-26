@@ -489,9 +489,10 @@ labs:
     variants:
       default: upload
       upload:
-        build_dir: build/labs/lab-16-attached-storage-scripted
+        build_dir: build/labs/lab-16-attached-storage-upload
         sdkconfig_defaults:
           - sdkconfig.defaults
+          - sdkconfig.defaults.upload
       server-offline-during-record:
         build_dir: build/labs/lab-16-attached-storage-scripted
         sdkconfig_defaults:
@@ -518,6 +519,7 @@ labs:
         Success: LAB16_UPLOAD status=complete uploaded=210 and LAB16_HARNESS_DONE status=complete.
         Overlap success: both sessions 180 chunks on server; verify_overlap_capture.py.
         Verify: python client/labs/lab-16-attached-storage/tools/verify_capture.py <log>
+        Compare upload repeatability: make lab.lab16.compare RUN_A=<run_id> RUN_B=<run_id>
       instructions_doc: client/labs/lab-16-attached-storage/README.md
 
   lab14:

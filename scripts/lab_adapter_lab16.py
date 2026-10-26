@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+import re
 import subprocess
 import sys
 import threading
@@ -33,6 +35,9 @@ OVERLAP_CHUNKS_PER_SESSION = 180
 LIVE_STREAM_CHUNKS = 180
 LIVE_STREAM_MARKER = "LAB16_LIVE status=streaming"
 VERIFY_LIVE = Path("client/labs/lab-16-attached-storage/tools/verify_live_stream_capture.py")
+UPLOAD_FIXTURE = Path("server/labs/lab-16-attached-storage/fixtures/upload/fixture.json")
+UPLOAD_PARSER = Path("client/labs/lab-16-attached-storage/tools/parse_upload_evidence.py")
+UPLOAD_VARIANT = "upload"
 
 
 class OwnedServer:
@@ -43,7 +48,8 @@ class OwnedServer:
         self._drain = None
 
     def start(self, repo_root: Path, run_id: str, log_path: Path, device_token: str, port: int = PORT,
-              bind: str = "0.0.0.0", expected_chunks: int | None = None) -> None:
+              bind: str = "0.0.0.0", expected_chunks: int | None = None,
+              fixture_file: Path | None = None) -> None:
         from server_log import BoundedRedactingLog
 
         source = repo_root / SERVER_DIR / "server.py"
@@ -62,6 +68,8 @@ class OwnedServer:
         ]
         if expected_chunks is not None:
             cmd.extend(["--expected-chunks", str(expected_chunks)])
+        if fixture_file is not None:
+            cmd.extend(["--fixture-file", str(fixture_file)])
         self.proc = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -256,6 +264,68 @@ def verify_overlap_server(port: int, device_token: str) -> list[str]:
     return errors
 
 
+def _experiment_verdict_from_upload_metrics(metrics: dict) -> str:
+    if metrics.get("memory_status") != "COMPLETE":
+        return "UNMEASURED"
+    functional = metrics.get("functional_status")
+    if functional == "PASS":
+        return "PASS"
+    if functional == "FAIL":
+        return "FAIL"
+    return "UNMEASURED"
+
+
+def classify_upload_capture(post_reset: str, cleanup_ok: bool, serial_path: Path, upload_metrics: dict,
+                            server_errors: list[str] | None = None) -> dict:
+    """Upload variant: parser metrics are authoritative; serial verify is advisory."""
+    from device_guardrails.lab16_serial import verify_lab16_upload_capture
+
+    experiment = _experiment_verdict_from_upload_metrics(upload_metrics)
+    ready = READY_PREFIX in (post_reset or "")
+    harness = HARNESS_COMPLETE in (post_reset or "")
+    server_errors = server_errors or []
+    functional = upload_metrics.get("functional_status")
+    memory = upload_metrics.get("memory_status")
+    device_finished = ready and harness and functional == "PASS"
+
+    def _failure(workflow: str, reason: str, *, completed: bool = False) -> dict:
+        return {
+            "workflow_status": workflow,
+            "experiment_verdict": experiment,
+            "caller_completed": completed,
+            "cleanup_succeeded": cleanup_ok,
+            "terminal_reason": reason,
+        }
+
+    if server_errors:
+        return _failure("FAIL", "; ".join(server_errors))
+    if not cleanup_ok:
+        return _failure("FAIL", "cleanup_failed")
+    if not device_finished:
+        verify_errors = verify_lab16_upload_capture(
+            serial_path.read_text(encoding="utf-8", errors="replace"))
+        if functional == "FAIL":
+            reason = "; ".join(upload_metrics.get("functional_verification_errors")
+                               or upload_metrics.get("functional_incomplete_reasons")
+                               or verify_errors) or "upload_functional_failed"
+            return _failure("FAIL", reason)
+        if memory != "COMPLETE":
+            reason = "; ".join(upload_metrics.get("incomplete_reasons") or []) or "memory_evidence_incomplete"
+            return _failure("INCOMPLETE", reason)
+        reason = "; ".join(verify_errors) or "upload_capture_incomplete"
+        return _failure("FAIL", reason)
+    if memory != "COMPLETE":
+        reason = "; ".join(upload_metrics.get("incomplete_reasons") or []) or "memory_evidence_incomplete"
+        return _failure("INCOMPLETE", reason, completed=True)
+    return {
+        "workflow_status": "PASS",
+        "experiment_verdict": experiment,
+        "caller_completed": True,
+        "cleanup_succeeded": True,
+        "terminal_reason": "harness_and_upload_verified",
+    }
+
+
 def classify_capture(post_reset: str, cleanup_ok: bool, repo_root: Path, serial_path: Path, *,
                      variant: str = "upload", server_errors: list[str] | None = None) -> dict:
     if variant == OVERLAP_VARIANT:
@@ -302,18 +372,338 @@ def classify_capture(post_reset: str, cleanup_ok: bool, repo_root: Path, serial_
     }
 
 
-def server_identity(repo_root: Path) -> dict[str, str]:
+def server_identity(repo_root: Path, variant: str = "upload") -> dict[str, str]:
     server_dir = repo_root / SERVER_DIR
     source = (server_dir / "server.py").read_bytes()
     manifest = json.loads((server_dir / "manifest.lab.json").read_text(encoding="utf-8"))
-    fixture = (server_dir / "fixtures" / "device.json").read_bytes()
+    fixture_path = repo_root / (UPLOAD_FIXTURE if variant == UPLOAD_VARIANT else SERVER_DIR / "fixtures" / "device.json")
+    fixture = fixture_path.read_bytes()
+    fixture_data = json.loads(fixture.decode("utf-8"))
     return {
         "path": SERVER_DIR.as_posix(),
         "revision": manifest["lab_revision"],
         "source_sha256": hashlib.sha256(source).hexdigest(),
         "fixture_sha256": hashlib.sha256(fixture).hexdigest(),
-        "fixture_revision": manifest["fixture_revision"],
+        "fixture_revision": fixture_data.get("fixture_revision", manifest["fixture_revision"]),
+        "fixture_path": fixture_path.relative_to(repo_root).as_posix(),
+        "fixture_schema": fixture_data.get("fixture_schema", "lab16-diary-fixture-v1"),
+        "fixture_id": fixture_data.get("fixture_id", fixture_data.get("device_id", "unknown")),
+        "generator_version": fixture_data.get("generator_version", "existing-static-fixture"),
+        "seed": fixture_data.get("seed", "not-recorded"),
     }
+
+
+def upload_build_source_identity(repo_root: Path, build_dir: Path) -> dict[str, str]:
+    """Hash the selected project inputs and the source/header inputs of this build."""
+    repo_root = repo_root.resolve()
+    build_dir = build_dir.resolve()
+    project = repo_root / "client/labs/lab-16-attached-storage"
+    cmake_cache = build_dir / "CMakeCache.txt"
+    if not cmake_cache.is_file():
+        raise RuntimeError("LAB-16 upload build is missing CMakeCache.txt")
+
+    cache_values: dict[str, str] = {}
+    for line in cmake_cache.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line and not line.startswith(("#", "//")) and "=" in line:
+            key, value = line.split("=", 1)
+            cache_values[key.split(":", 1)[0]] = value
+    toolchain_file = Path(cache_values.get("CMAKE_TOOLCHAIN_FILE", ""))
+    idf_root = toolchain_file.parents[2] if len(toolchain_file.parents) > 2 else None
+    compiler = Path(cache_values.get("CMAKE_C_COMPILER", ""))
+    toolchain_root = compiler.parents[3] if len(compiler.parents) > 3 else None
+
+    input_paths: set[Path] = {
+        project / "CMakeLists.txt",
+        project / "dependencies.lock",
+        project / "manifest.lab.json",
+        project / "partitions.csv",
+        project / "sdkconfig.defaults",
+        project / "sdkconfig.defaults.upload",
+    }
+    build_tool_keys = (
+        "CMAKE_COMMAND", "CMAKE_MAKE_PROGRAM", "CMAKE_C_COMPILER", "CMAKE_CXX_COMPILER",
+        "CMAKE_ASM_COMPILER", "CMAKE_LINKER", "CMAKE_AR", "CMAKE_RANLIB", "CMAKE_OBJCOPY", "PYTHON",
+    )
+    for key in build_tool_keys:
+        tool_path = Path(cache_values.get(key, ""))
+        if tool_path.is_file():
+            input_paths.add(tool_path.resolve(strict=True))
+    code_suffixes = {".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".S", ".s", ".inc", ".inl"}
+    for source_dir in (project / "main", project / "components"):
+        if not source_dir.is_dir():
+            raise RuntimeError(f"LAB-16 upload build source directory is missing: {source_dir}")
+        for path in source_dir.rglob("*"):
+            if path.is_file() and (path.suffix in code_suffixes or path.name == "CMakeLists.txt"
+                                   or path.name == "idf_component.yml" or path.name.startswith("Kconfig")):
+                input_paths.add(path)
+    managed_components = project / "managed_components"
+    if managed_components.is_dir():
+        for path in managed_components.rglob("*"):
+            if path.is_file() and (path.name == "CMakeLists.txt" or path.name == "idf_component.yml"
+                                   or path.suffix == ".cmake" or path.name.startswith("Kconfig")):
+                input_paths.add(path)
+
+    compile_commands = build_dir / "compile_commands.json"
+    build_ninja = build_dir / "build.ninja"
+    for path in (cmake_cache, build_ninja, compile_commands, build_dir / "sdkconfig",
+                 build_dir / "config/sdkconfig.h", build_dir / "bootloader/bootloader.bin",
+                 build_dir / "partition_table/partition-table.bin"):
+        if path.is_file():
+            input_paths.add(path)
+    if not compile_commands.is_file() or not build_ninja.is_file():
+        raise RuntimeError("LAB-16 upload build is missing compile_commands.json or build.ninja")
+
+    commands = json.loads(compile_commands.read_text(encoding="utf-8"))
+    if not isinstance(commands, list) or not commands:
+        raise RuntimeError("LAB-16 upload compile command database is empty")
+    compiled_sources: set[str] = set()
+    compiled_source_paths: list[Path] = []
+    for command in commands:
+        source = Path(command["file"]).resolve(strict=True)
+        input_paths.add(source)
+        compiled_source_paths.append(source)
+        compiled_sources.add(str(source).casefold())
+        for token in re.findall(r"[A-Za-z]:[/\\][^\s\"']+\.exe", command.get("command", "")):
+            executable = Path(token)
+            if executable.is_file():
+                input_paths.add(executable.resolve(strict=True))
+
+    if toolchain_file.is_file():
+        input_paths.add(toolchain_file.resolve(strict=True))
+    if idf_root is not None:
+        idf_cmake = idf_root / "tools/cmake"
+        if idf_cmake.is_dir():
+            for path in idf_cmake.rglob("*"):
+                if path.is_file() and (path.name == "CMakeLists.txt" or path.suffix == ".cmake"):
+                    input_paths.add(path)
+        used_idf_components: set[Path] = set()
+        for source in compiled_source_paths:
+            try:
+                relative = source.relative_to(idf_root / "components")
+            except ValueError:
+                continue
+            component_root = idf_root / "components" / relative.parts[0]
+            used_idf_components.add(component_root)
+        for component_root in used_idf_components:
+            for path in component_root.rglob("*"):
+                if path.is_file() and (path.name == "CMakeLists.txt" or path.name == "idf_component.yml"
+                                       or path.suffix == ".cmake" or path.name.startswith("Kconfig")):
+                    input_paths.add(path)
+
+    ninja = Path(cache_values.get("CMAKE_MAKE_PROGRAM", ""))
+    if not ninja.is_file():
+        raise RuntimeError("LAB-16 upload build does not identify its Ninja executable")
+    dependency_result = subprocess.run(
+        [str(ninja), "-C", str(build_dir), "-t", "deps"],
+        cwd=repo_root, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90,
+        check=False,
+    )
+    if dependency_result.returncode != 0:
+        raise RuntimeError("could not enumerate LAB-16 upload compiler dependencies")
+    dependency_sources: set[str] = set()
+    dependency_paths: dict[str, str] = {}
+    for line in dependency_result.stdout.splitlines():
+        if not line.startswith("    "):
+            continue
+        raw_path = line.strip()
+        dependency_paths.setdefault(raw_path.replace("\\", "/").casefold(), raw_path)
+    if toolchain_root is None:
+        for raw_path in dependency_paths.values():
+            normalized = raw_path.replace("\\", "/")
+            marker = "xtensa-esp-elf/"
+            index = normalized.casefold().find(marker)
+            if index >= 0:
+                candidate = Path(normalized[:index + len(marker) - 1])
+                if candidate.is_dir():
+                    toolchain_root = candidate
+                    break
+    for raw_path in dependency_paths.values():
+        dependency = Path(raw_path).resolve(strict=True)
+        input_paths.add(dependency)
+        dependency_sources.add(str(dependency).casefold())
+    missing_dependencies = compiled_sources - dependency_sources
+    if missing_dependencies:
+        raise RuntimeError(f"Ninja dependency database omitted {len(missing_dependencies)} compiled source files")
+
+    def input_key(path: Path) -> str:
+        resolved = path.resolve(strict=True)
+        for base, label in ((repo_root, ""), (idf_root, "external/esp-idf/"),
+                            (toolchain_root, "external/xtensa-toolchain/")):
+            if base is None:
+                continue
+            try:
+                relative = resolved.relative_to(base.resolve())
+            except ValueError:
+                continue
+            return label + relative.as_posix()
+        parent_key = hashlib.sha256(str(resolved.parent).casefold().encode("utf-8")).hexdigest()[:16]
+        return f"external/unresolved-{parent_key}/{resolved.name}"
+
+    files: dict[str, str] = {}
+    for path in sorted(input_paths, key=lambda item: str(item).casefold()):
+        files[input_key(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = hashlib.sha256(json.dumps(files, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    return {"sha256": digest, "files": files}
+
+
+def upload_server_rows(port: int, device_token: str) -> list[dict]:
+    with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=5) as response:
+        health = json.loads(response.read().decode("utf-8"))
+    if not health.get("run_id"):
+        raise RuntimeError("server health response omitted run ID")
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}/v1/diary",
+        headers={"Authorization": f"Bearer {device_token}"},
+    )
+    with urllib.request.urlopen(req, timeout=15) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    rows = payload.get("chunks")
+    if not isinstance(rows, list):
+        raise RuntimeError("server diary response did not contain a chunk list")
+    return rows
+
+
+def capture_upload_evidence(repo_root: Path, evidence, serial_path: Path, server: OwnedServer,
+                            device_token: str, identity: dict[str, str], run_id: str, *,
+                            partial_capture: bool = False, verify_server: bool = True) -> tuple[dict, list[str]]:
+    parser_spec = importlib.util.spec_from_file_location("lab16_upload_evidence_parser", repo_root / UPLOAD_PARSER)
+    if parser_spec is None or parser_spec.loader is None:
+        raise RuntimeError("could not load LAB-16 upload evidence parser")
+    parser_module = importlib.util.module_from_spec(parser_spec)
+    parser_spec.loader.exec_module(parser_module)
+    errors: list[str] = []
+    try:
+        serial_text = serial_path.read_text(encoding="utf-8", errors="replace")
+        parse = parser_module.parse_serial_partial if partial_capture else parser_module.parse_serial
+        metrics = parse(serial_text)
+    except Exception as exc:
+        errors.append(f"upload serial evidence parse failed: {type(exc).__name__}: {exc}")
+        metrics = {
+            "document": "family-link.lab-metrics/v2",
+            "parser": "lab16-upload-evidence-parser/v3",
+            "variant": UPLOAD_VARIANT,
+            "memory_status": "INCOMPLETE",
+            "functional_status": "UNMEASURED",
+            "incomplete_reasons": errors.copy(),
+            "required_beats": ["baseline_before_sd", "sd_mount_probe", "mic_i2s_open_start",
+                               "mic_i2s_open_complete", "sd_mic_recording", "wifi_upload_active",
+                               "upload_complete_workers_quiescent"],
+            "observed_beats": [],
+            "memory_samples": [],
+            "beat_windows": {},
+            "device_events": [],
+        }
+    rows: list[dict] = []
+    if partial_capture:
+        metrics["memory_status"] = "INCOMPLETE"
+        metrics.setdefault("incomplete_reasons", []).append("capture_interrupted_before_normal_completion")
+        metrics["functional_status"] = "UNMEASURED"
+        errors.append("server verification skipped because capture did not return normally")
+    elif not verify_server:
+        errors.append("server verification was not requested")
+    elif server.proc is None or server.proc.poll() is not None:
+        errors.append("run-owned diary server is not alive for final verification")
+    else:
+        try:
+            with urllib.request.urlopen(f"http://127.0.0.1:{PORT}/health", timeout=5) as response:
+                health = json.loads(response.read().decode("utf-8"))
+            if health.get("run_id") != run_id:
+                raise RuntimeError("health run ID does not match this evidence run")
+            if health.get("fixture_sha256") != identity["fixture_sha256"]:
+                raise RuntimeError("server fixture hash does not match versioned upload fixture")
+            rows = upload_server_rows(PORT, device_token)
+            errors.extend(parser_module.verify_server_rows(metrics, rows))
+        except Exception as exc:
+            errors.append(f"run-owned server evidence inspection failed: {type(exc).__name__}: {exc}")
+    if errors:
+        metrics["functional_verification_errors"] = list(errors)
+        if metrics.get("functional_status") != "FAIL":
+            metrics["functional_status"] = "UNMEASURED"
+            metrics.setdefault("functional_incomplete_reasons", []).append("server_verification_incomplete")
+    metrics["run_id"] = run_id
+    metrics["fixture"] = {
+        "id": identity["fixture_id"],
+        "revision": identity["fixture_revision"],
+        "schema": identity["fixture_schema"],
+        "path": identity["fixture_path"],
+        "sha256": identity["fixture_sha256"],
+        "generator_version": identity["generator_version"],
+        "seed": identity["seed"],
+    }
+    metrics["server_verification_errors"] = errors
+    metrics["server_chunks"] = sorted(rows, key=lambda row: (str(row.get("session")), int(row.get("seq", -1))))
+    metrics_path = evidence.run_dir / "metrics.json"
+    metrics_sha256 = None
+    write_metrics = not partial_capture or bool(metrics.get("memory_samples"))
+    if write_metrics:
+        metrics_path.write_text(json.dumps(metrics, indent=2, sort_keys=True) + "\n", encoding="utf-8",
+                                newline="\n")
+        metrics_sha256 = hashlib.sha256(metrics_path.read_bytes()).hexdigest()
+
+    for row in metrics.get("memory_samples", []):
+        evidence.event_sink({"source": "device", "kind": "memory_window", "monotonic_ns": row["t_end_us"] * 1000,
+                             **{key: value for key, value in row.items() if key not in {"schema", "event"}}})
+    for row in metrics.get("device_events", []):
+        evidence.event_sink({"source": "device", "kind": str(row.get("event", "event")),
+                             "monotonic_ns": int(row.get("t_us", 0)) * 1000,
+                             **{key: value for key, value in row.items() if key not in {"schema", "event", "t_us"}}})
+    for row in rows:
+        evidence.event_sink({"source": "server", "kind": "diary_chunk_accepted",
+                             "monotonic_ns": time.monotonic_ns(), **row})
+    evidence.update_context({
+        "fixture": {"file": identity["fixture_path"], "revision": identity["fixture_revision"],
+                    "schema": identity["fixture_schema"], "sha256": identity["fixture_sha256"],
+                    "id": identity["fixture_id"], "generator_version": identity["generator_version"],
+                    "seed": identity["seed"]},
+        "server": {"path": identity["path"], "revision": identity["revision"],
+                   "source_sha256": identity["source_sha256"], "fixture_sha256": identity["fixture_sha256"],
+                   "fixture_revision": identity["fixture_revision"]},
+        "artifacts": {
+            "serial_log": serial_path.relative_to(repo_root).as_posix(),
+            "server_log": (evidence.run_dir / "server.log").relative_to(repo_root).as_posix(),
+            **({"metrics": metrics_path.relative_to(repo_root).as_posix()} if write_metrics else {}),
+        },
+        "capture": {"status": "incomplete" if partial_capture else "complete",
+                    **({"metrics_sha256": metrics_sha256} if metrics_sha256 else {})},
+        "event_loss": {"firmware_trace": {"status": "COMPLETE" if metrics.get("memory_status") == "COMPLETE"
+                                             else "INCOMPLETE",
+                                            "dropped_events": 0}},
+    })
+    notes_path = evidence.run_dir / "notes.md"
+    notes_path.write_text(
+        f"# LAB-16 upload run {run_id}\n\n"
+        f"Variant: `upload`\n\nFixture: `{identity['fixture_path']}` ({identity['fixture_revision']}, "
+        f"SHA-256 `{identity['fixture_sha256']}`; generator `{identity['generator_version']}`, "
+        f"seed `{identity['seed']}`)\n\n"
+        f"Memory status: {metrics.get('memory_status', 'INCOMPLETE')}\n\n"
+        f"Functional status: {metrics.get('functional_status', 'UNMEASURED')}\n\n"
+        + (f"Metrics SHA-256: `{metrics_sha256}`\n\n" if metrics_sha256 else
+           "Metrics artifact: not written because no memory samples were parsed.\n\n")
+        + ("Server verification errors: " + "; ".join(errors) + "\n" if errors else "Server hash verification passed.\n"),
+        encoding="utf-8",
+        newline="\n",
+    )
+    return metrics, errors
+
+
+def capture_serial_with_partial_upload_evidence(*, capture_args: tuple, capture_kwargs: dict,
+                                                selected_variant: str, repo_root: Path, evidence,
+                                                serial_path: Path, server: OwnedServer,
+                                                device_token: str, identity: dict[str, str],
+                                                run_id: str):
+    """Keep a valid metrics prefix if a serial read or capture is interrupted."""
+    try:
+        return capture_serial(*capture_args, **capture_kwargs)
+    except (Exception, KeyboardInterrupt):
+        if selected_variant == UPLOAD_VARIANT and serial_path.is_file():
+            try:
+                capture_upload_evidence(repo_root, evidence, serial_path, server, device_token, identity, run_id,
+                                        partial_capture=True, verify_server=False)
+            except Exception as exc:
+                evidence.event_sink({"source": "host", "kind": "partial_metrics_preservation",
+                                     "monotonic_ns": time.monotonic_ns(), "outcome": "failed",
+                                     "error_type": type(exc).__name__})
+        raise
 
 
 class Adapter:
@@ -339,16 +729,23 @@ class Adapter:
             seconds = max(seconds, 600)
 
         def execute(context, evidence):
-            identity = server_identity(host.ROOT)
+            identity = server_identity(host.ROOT, selected)
             server = OwnedServer()
             cleanup_ok = False
             captured = False
+            capture_started = False
+            capture_interrupted = False
             failure = ""
             post_reset = ""
+            upload_metrics = None
+            upload_evidence_errors: list[str] = []
+            server_errors: list[str] = []
             try:
                 target = host.resolve_run_target(config, getattr(args, "kit", "") or "",
                                                   getattr(args, "port", "") or "")
                 device_token = lab16_build._token_for_kit(target.deployment, target.kit)
+                resolved_host_ip = lab16_build.client_address()
+                host_ip_method = "override" if __import__("os").environ.get("LAB16_CLIENT_ADDRESS") else "route_discovery"
                 log_path = evidence.run_dir / "server.log"
                 serial_path = host.ROOT / "logs/device/labs/lab-16" / context.run_id / "serial.txt"
                 if overlap:
@@ -359,11 +756,74 @@ class Adapter:
                     expected_chunks = None
                 if not delay_server:
                     server.start(host.ROOT, context.run_id, log_path, device_token, PORT, bind="0.0.0.0",
-                                 expected_chunks=expected_chunks)
+                                 expected_chunks=expected_chunks,
+                                 fixture_file=(host.ROOT / identity["fixture_path"] if selected == UPLOAD_VARIANT else None))
                     self.bound_ports.append(PORT)
-                evidence.update_context({"hardware": {"kit_nickname": target.kit_id}})
+                evidence.update_context({
+                    "hardware": {"kit_nickname": target.kit_id},
+                    "fixture": {"file": identity["fixture_path"], "revision": identity["fixture_revision"],
+                                "schema": identity["fixture_schema"], "sha256": identity["fixture_sha256"],
+                                "id": identity["fixture_id"], "generator_version": identity["generator_version"],
+                                "seed": identity["seed"]},
+                    "server": {"path": identity["path"], "revision": identity["revision"],
+                               "source_sha256": identity["source_sha256"],
+                               "fixture_sha256": identity["fixture_sha256"],
+                               "fixture_revision": identity["fixture_revision"]},
+                    "capture": {"resolved_host_ip": resolved_host_ip, "host_ip_resolution": host_ip_method,
+                                "server_port": PORT, "server_process_run_id": context.run_id},
+                })
                 build_dir = host.build_lab(config, spec.make_name, selected, kit=target.kit_id,
                                             port=target.device, target=target)
+                sdkconfig_path = Path(build_dir) / "sdkconfig"
+                built_host_ip = ""
+                if sdkconfig_path.is_file():
+                    for line in sdkconfig_path.read_text(encoding="utf-8", errors="replace").splitlines():
+                        if line.startswith("CONFIG_LAB16_SERVER_HOST="):
+                            built_host_ip = line.split("=", 1)[1].strip().strip('"')
+                            break
+                if built_host_ip != resolved_host_ip:
+                    raise RuntimeError("LAB-16 build endpoint differs from recorded host-IP resolution")
+                firmware_files = [
+                    Path("client/labs/lab-16-attached-storage/main/app_main.c"),
+                    Path("client/labs/lab-16-attached-storage/main/lab16_upload.c"),
+                    Path("client/labs/lab-16-attached-storage/main/lab16_upload.h"),
+                    Path("client/labs/lab-16-attached-storage/main/Kconfig.projbuild"),
+                    Path("client/labs/lab-16-attached-storage/main/CMakeLists.txt"),
+                    Path("client/labs/lab-16-attached-storage/sdkconfig.defaults"),
+                    Path("client/labs/lab-16-attached-storage/sdkconfig.defaults.upload"),
+                    Path("client/labs/lab-16-attached-storage/manifest.lab.json"),
+                    Path("config/labs.registry.yaml"),
+                    Path("scripts/lab_adapter_lab16.py"),
+                    Path("scripts/lab16_build.py"),
+                    UPLOAD_PARSER,
+                    UPLOAD_FIXTURE,
+                    Path("server/labs/lab-16-attached-storage/server.py"),
+                    Path("server/labs/lab-16-attached-storage/manifest.lab.json"),
+                ]
+                firmware_hashes = {path.as_posix(): hashlib.sha256((host.ROOT / path).read_bytes()).hexdigest()
+                                   for path in firmware_files}
+                sdkconfig_sha = hashlib.sha256(sdkconfig_path.read_bytes()).hexdigest() if sdkconfig_path.is_file() else None
+                binary_path = Path(build_dir) / "lab16_attached_storage.bin"
+                binary_sha = hashlib.sha256(binary_path.read_bytes()).hexdigest() if binary_path.is_file() else None
+                if selected == UPLOAD_VARIANT:
+                    build_inputs = upload_build_source_identity(host.ROOT, Path(build_dir))
+                    firmware_hashes.update(build_inputs["files"])
+                    source_sha = hashlib.sha256(
+                        json.dumps(firmware_hashes, sort_keys=True, separators=(",", ":")).encode("utf-8")
+                    ).hexdigest()
+                else:
+                    build_inputs = None
+                    source_sha = hashlib.sha256("".join(firmware_hashes.values()).encode("ascii")).hexdigest()
+                evidence.update_context({
+                    "firmware": {"build_id": "lab16-fw-v5-upload-memory" if selected == UPLOAD_VARIANT else None,
+                                 "project_path": str(spec.project_dir), "source_sha256": source_sha,
+                                 "sdkconfig_sha256": sdkconfig_sha, "binary_sha256": binary_sha},
+                    "source": {"identity_schema": "lab16-build-inputs/v2" if build_inputs else "lab16-source/v1",
+                               "build_input_count": len(build_inputs["files"]) if build_inputs else None,
+                               "files": firmware_hashes},
+                    "build": {"status": "passed", "directory": Path(build_dir).relative_to(host.ROOT).as_posix(),
+                              "resolved_host_ip": built_host_ip, "host_ip_resolution": host_ip_method},
+                })
                 flash = host._flash_from_env_and_args(args, spec, for_run=True)
                 if flash:
                     port = host.revalidate_run_target(config, target)
@@ -376,23 +836,28 @@ class Adapter:
                     cap_limit = 900
                 else:
                     cap_limit = MAX_SERIAL_SECONDS
-                post_reset, delayed = capture_serial(
-                    target.device,
-                    serial_path,
-                    seconds,
-                    server if not delay_server else None,
-                    host.ROOT,
-                    context.run_id,
-                    log_path,
-                    device_token,
-                    delay_server,
-                    cap_limit,
-                    simulate_server_outage=live_failover,
+                evidence.update_context({
+                    "capture": {"status": "capturing"},
+                    "artifacts": {"serial_log": serial_path.relative_to(host.ROOT).as_posix(),
+                                  "server_log": log_path.relative_to(host.ROOT).as_posix()},
+                })
+                capture_started = True
+                post_reset, delayed = capture_serial_with_partial_upload_evidence(
+                    capture_args=(target.device, serial_path, seconds, server if not delay_server else None,
+                                  host.ROOT, context.run_id, log_path, device_token, delay_server, cap_limit),
+                    capture_kwargs={"simulate_server_outage": live_failover},
+                    selected_variant=selected, repo_root=host.ROOT, evidence=evidence,
+                    serial_path=serial_path, server=server, device_token=device_token,
+                    identity=identity, run_id=context.run_id,
                 )
+                capture_started = False
                 if delayed is not None:
                     server = delayed
                 captured = True
-                server_errors: list[str] = []
+                if selected == UPLOAD_VARIANT:
+                    upload_metrics, upload_evidence_errors = capture_upload_evidence(
+                        host.ROOT, evidence, serial_path, server, device_token, identity, context.run_id)
+                    server_errors = list(upload_evidence_errors)
                 if server.proc is not None and server.proc.poll() is None:
                     if overlap:
                         server_errors = verify_overlap_server(PORT, device_token)
@@ -401,27 +866,42 @@ class Adapter:
                 cleanup_ok = server.stop() if server.proc is not None else True
             except KeyboardInterrupt:
                 failure = "KeyboardInterrupt"
+                capture_interrupted = capture_started
+                if server.proc is not None:
+                    cleanup_ok = server.stop()
             except Exception as exc:
                 failure = type(exc).__name__
+                capture_interrupted = capture_started
                 if server.proc is not None:
                     cleanup_ok = server.stop()
             if not captured:
                 result = {
-                    "workflow_status": "FAIL",
+                    "workflow_status": "INCOMPLETE" if (capture_interrupted or failure == "KeyboardInterrupt")
+                    else "FAIL",
                     "experiment_verdict": "UNMEASURED",
                     "caller_completed": False,
                     "cleanup_succeeded": cleanup_ok,
-                    "terminal_reason": failure or "capture_not_started",
+                    "terminal_reason": ("serial_capture_interrupted" if capture_interrupted else
+                                         failure or "capture_not_started"),
                 }
             else:
-                result = classify_capture(
-                    post_reset,
-                    cleanup_ok,
-                    host.ROOT,
-                    serial_path,
-                    variant=selected,
-                    server_errors=server_errors if (overlap or live_failover) else None,
-                )
+                if selected == UPLOAD_VARIANT and upload_metrics is not None:
+                    result = classify_upload_capture(
+                        post_reset,
+                        cleanup_ok,
+                        serial_path,
+                        upload_metrics,
+                        server_errors=server_errors,
+                    )
+                else:
+                    result = classify_capture(
+                        post_reset,
+                        cleanup_ok,
+                        host.ROOT,
+                        serial_path,
+                        variant=selected,
+                        server_errors=server_errors if (overlap or live_failover) else None,
+                    )
                 if failure == "KeyboardInterrupt":
                     result["workflow_status"] = "INCOMPLETE"
             self.last_workflow = result["workflow_status"]
@@ -438,5 +918,6 @@ class Adapter:
             project_path=str(spec.project_dir),
             firmware_target=spec.target,
             capture_seconds=seconds,
+            max_events=10000 if selected == UPLOAD_VARIANT else 2000,
             execute=execute,
         )

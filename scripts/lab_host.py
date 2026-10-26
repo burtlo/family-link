@@ -702,6 +702,46 @@ def capture_lab(
     return serial_path
 
 
+def _lab16_compare_upload_module():
+    import importlib.util
+
+    path = ROOT / "client/labs/lab-16-attached-storage/tools/compare_upload_runs.py"
+    module_spec = importlib.util.spec_from_file_location("lab16_compare_upload_runs", path)
+    if module_spec is None or module_spec.loader is None:
+        raise ProjectConfigError(f"compare tool not found: {path}")
+    module = importlib.util.module_from_spec(module_spec)
+    sys.modules[module_spec.name] = module
+    module_spec.loader.exec_module(module)
+    return module
+
+
+def cmd_compare(config: ProjectConfig, args: argparse.Namespace) -> int:
+    spec = get_lab(args.lab)
+    if spec.make_name != "lab16":
+        raise ProjectConfigError(f"lab.{spec.make_name}.compare is only implemented for lab16 upload metrics")
+    run_a = (args.run_a or os.environ.get("RUN_A", "")).strip()
+    run_b = (args.run_b or os.environ.get("RUN_B", "")).strip()
+    if not run_a or not run_b:
+        raise ProjectConfigError("compare requires RUN_A and RUN_B (or --run-a and --run-b)")
+    compare = _lab16_compare_upload_module()
+    logs_root = config.path_value("firmware.logs")
+    path_a = compare.resolve_metrics_path(ROOT, spec.evidence_slug, run_a, logs_root)
+    path_b = compare.resolve_metrics_path(ROOT, spec.evidence_slug, run_b, logs_root)
+    _print_run_banner(
+        f"LAB COMPARE: lab.{spec.make_name} ({spec.lab_id})",
+        [
+            f"run_a={run_a}",
+            f"run_b={run_b}",
+            f"metrics_a: {_rel(path_a)}",
+            f"metrics_b: {_rel(path_b)}",
+        ],
+    )
+    report = compare.compare_run_files(path_a, path_b, run_a=run_a, run_b=run_b)
+    print(compare.format_report(report), end="")
+    print()
+    return 0 if report.repeatability_pass else 1
+
+
 def cmd_parse(config: ProjectConfig, args: argparse.Namespace) -> int:
     spec = get_lab(args.lab)
     serial_arg = Path(args.serial).expanduser() if args.serial else None
@@ -838,6 +878,14 @@ def main() -> int:
         help="path to serial.txt (default: RUN_ID folder or latest capture)",
     )
 
+    compare_p = sub.add_parser(
+        "compare",
+        help="Compare two upload run metrics for repeatability (make lab.lab16.compare)",
+    )
+    compare_p.add_argument("lab")
+    compare_p.add_argument("--run-a", default=os.environ.get("RUN_A", ""))
+    compare_p.add_argument("--run-b", default=os.environ.get("RUN_B", ""))
+
     args = parser.parse_args()
     try:
         config = ProjectConfig()
@@ -848,6 +896,8 @@ def main() -> int:
             return cmd_help(args)
         if args.action == "parse":
             return cmd_parse(config, args)
+        if args.action == "compare":
+            return cmd_compare(config, args)
         spec = get_lab(args.lab)
         variant = args.variant or None
         if args.action == "build":

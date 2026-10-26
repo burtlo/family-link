@@ -39,7 +39,8 @@ Use these IDs in manifests, traces, and evidence paths. Folder names are **kebab
 | `LAB-13` | `lab-13-full-journey` | `lab-13-full-journey` | [Roadmap § LAB-13](v2-experience-demo-roadmap.md#lab-13--composed-v2-journey) |
 | `LAB-14` | `lab-14-device-ui-catalog` | `none` | Visual catalog of authored device-ui layouts, panels, and screens; YAML in [`docs/product/device-ui/catalog/`](../product/device-ui/catalog/README.md) |
 | `LAB-15` | `lab-15-capture-memory-envelope` | `none` | [Capture memory envelope](lab-15-capture-memory-envelope.md) — UI + full PCM reserve + optional Opus/SD arms |
-| `LAB-16` | `lab-16-attached-storage` | `none` | Fast read-only SENSOR microSD discovery + LBA0 read; [`client/labs/lab-16-attached-storage/README.md`](../../client/labs/lab-16-attached-storage/README.md) |
+| `LAB-16` | `lab-16-attached-storage` | `none` | Attached-storage + mic lab (`make lab.lab16`); memory campaign: [`client/labs/lab-16-attached-storage/README.md`](../../client/labs/lab-16-attached-storage/README.md) |
+| *(campaign)* | — | *(V2 fixture TBD)* | Product `CASE=` comms-load memory (proposed `make lab.v2-comms`): [`v2-comms-memory/README.md`](v2-comms-memory/README.md) |
 
 `LAB-14` is a visual review image for the current device-ui specifications (`make lab.lab14`). It is not a login, performance, or contract experiment.
 

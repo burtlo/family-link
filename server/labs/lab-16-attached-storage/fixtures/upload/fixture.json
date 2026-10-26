@@ -1,0 +1,30 @@
+{
+  "fixture_id": "lab16-record-to-sd-then-upload",
+  "fixture_revision": "lab16-upload/v2",
+  "fixture_schema": "lab16-upload-fixture/v1",
+  "generator_version": "static-json/v1",
+  "seed": "not-applicable; captured PCM is device input and is not stored in the fixture",
+  "variant": "upload",
+  "device_id": "lab16-upload-desk",
+  "name": "LAB-16 upload fixture",
+  "session": "1",
+  "sample_rate_hz": 16000,
+  "channels": 1,
+  "sample_format": "signed-pcm16-le",
+  "duration_seconds": 210,
+  "pcm_bytes": 6720000,
+  "pcm_start_lba": 2048,
+  "chunk_seconds": 1,
+  "chunks": 210,
+  "expected_chunks": 210,
+  "expected_pcm_bytes": 32000,
+  "wav_header_bytes": 44,
+  "expected_wav_bytes": 32044,
+  "multipart_boundary": "----FamilyLinkLab16",
+  "multipart_fields": ["session", "seq", "blob"],
+  "expected_request_status": 200,
+  "timing": {
+    "post_flash_settle_ms": 500,
+    "memory_sample_interval_ms": 50
+  }
+}

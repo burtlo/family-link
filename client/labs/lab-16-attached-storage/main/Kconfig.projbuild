@@ -47,4 +47,8 @@ menu "LAB-16 attached storage smoke"
         bool "Stream 1 s diary chunks during recording; buffer to SD on upload failure"
         default n
 
+    config LAB16_CAPTURE_EVIDENCE
+        bool "Capture same-boot memory and upload telemetry"
+        default n
+
 endmenu

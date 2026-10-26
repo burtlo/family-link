@@ -174,6 +174,18 @@ lab.%.help:
 lab.%.parse:
 	$(call py_run,scripts/lab_host.py parse $* $(if $(RUN_ID),--run-id "$(RUN_ID)",))
 
+lab.%.compare:
+ifndef RUN_A
+	$(error lab.$*.compare requires RUN_A and RUN_B, e.g. make lab.lab16.compare RUN_A=run-one RUN_B=run-two)
+endif
+ifndef RUN_B
+	$(error lab.$*.compare requires RUN_A and RUN_B, e.g. make lab.lab16.compare RUN_A=run-one RUN_B=run-two)
+endif
+	$(call py_run,scripts/lab_host.py compare $* --run-a "$(RUN_A)" --run-b "$(RUN_B)")
+
+lab.lab16.results:
+	$(call py_run,client/labs/lab-16-attached-storage/tools/render_memory_results.py)
+
 lab.%.scripted.build:
 	$(call py_run,scripts/lab_host.py build $* --variant scripted $(if $(KIT),--kit "$(KIT)",) $(if $(PORT),--port "$(PORT)",))
 

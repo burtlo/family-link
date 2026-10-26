@@ -11,6 +11,7 @@ docs/labs/evidence/
 └── <lab-slug>/                  # e.g. lab-02
     ├── REPORT-<LAB-ID>-<rev>.md
     ├── TEMPLATE-REPORT.md       # Optional per-lab copy (LAB-02 has one)
+    ├── results/                 # LAB-16: generated KiB tables per VARIANT (`make lab.lab16.results`)
     └── runs/
         └── <run-id>/
             ├── run-manifest.json   # Shared runs: schemas/run-manifest.v2.md; legacy LAB-02: v1

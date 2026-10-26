@@ -135,7 +135,7 @@ The stage router can become the view host. The modules should expose separate â€
 
 ## LAB-16 and V2 test plan location
 
-The detailed LAB-16 variant results, clean baseline, memory tables, and V2 communications scenarios have moved to the [LAB-16 and V2 device memory test plan](../../../client/labs/lab-16-attached-storage/README.md). This lifecycle review stays focused on V2 screens, UI allocations, and scene transitions.
+LAB-16 `VARIANT=` memory scenarios: [lab-16-attached-storage README](../../../client/labs/lab-16-attached-storage/README.md). V2 product `CASE=` communication-load memory scenarios: [v2-comms-memory README](../../labs/v2-comms-memory/README.md). This lifecycle review stays focused on V2 screens, UI allocations, and scene transitions.
 
 ## Current lifecycle and scene-by-scene review
 
