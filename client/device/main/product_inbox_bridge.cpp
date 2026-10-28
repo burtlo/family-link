@@ -1,7 +1,7 @@
 #include "product_inbox_fw.h"
 #include "product_inbox_http_worker.h"
 #include "product_login_fw.h"
-#include "product_shell_fw.h"
+#include "product_split_pane.h"
 #include "product_volume_fw.h"
 
 #include "esp_attr.h"
@@ -1154,7 +1154,7 @@ extern "C" int product_inbox_on_boot_pressed(void)
         return product_volume_on_boot_leave();
     }
     /* Picker, wipe, record, and receipt own Boot. Only the inbox opens volume. */
-    if (product_shell_stage() != FL_SHELL_STAGE_INBOX) {
+    if (product_stage_get() != FL_SHELL_STAGE_INBOX) {
         return 0;
     }
     return product_volume_on_boot_from_inbox();

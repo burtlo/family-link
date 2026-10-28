@@ -16,7 +16,7 @@ class ProductShellModelTests(unittest.TestCase):
         subprocess.run([
             "cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-pedantic",
             "-I", str(SHARED / "fl_shell_model/include"),
-            "-I", str(SHARED / "product_shell/include"),
+            "-I", str(SHARED / "tests"),
             str(SHARED / "fl_shell_model/fl_shell_model.c"),
             str(SHARED / "tests/shell_model_test.c"), "-o", str(cls.binary),
         ], check=True, cwd=ROOT)

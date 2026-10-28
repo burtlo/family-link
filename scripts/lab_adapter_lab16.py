@@ -700,9 +700,10 @@ def capture_upload_evidence(repo_root: Path, evidence, serial_path: Path, server
                    "source_sha256": identity["source_sha256"], "fixture_sha256": identity["fixture_sha256"],
                    "fixture_revision": identity["fixture_revision"]},
         "artifacts": {
-            "serial_log": serial_path.relative_to(repo_root).as_posix(),
-            "server_log": (evidence.run_dir / "server.log").relative_to(repo_root).as_posix(),
-            **({"metrics": metrics_path.relative_to(repo_root).as_posix()} if write_metrics else {}),
+            "serial_log": serial_path.resolve().relative_to(evidence.repo_root).as_posix(),
+            "server_log": (evidence.run_dir / "server.log").resolve().relative_to(evidence.repo_root).as_posix(),
+            **({"metrics": metrics_path.resolve().relative_to(evidence.repo_root).as_posix()}
+               if write_metrics else {}),
         },
         "capture": {"status": "incomplete" if partial_capture else "complete",
                     **({"metrics_sha256": metrics_sha256} if metrics_sha256 else {})},

@@ -1,6 +1,6 @@
 # LAB-16 memory campaign — all VARIANT summaries
 
-Generated: 2026-10-26 03:38 UTC by `render_memory_results.py`. Do not edit by hand; run `make lab.lab16.results`.
+Generated: 2026-10-28 02:42 UTC by `render_memory_results.py`. Do not edit by hand; run `make lab.lab16.results`.
 
 Campaign index: [README.md](../README.md). Per-run inventory: [runs/README.md](../runs/README.md). Full per-beat tables live in each linked `results/<variant>.md` file.
 

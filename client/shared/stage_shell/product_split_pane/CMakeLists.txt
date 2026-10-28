@@ -1,7 +1,7 @@
 idf_component_register(
-    SRCS "product_shell_fw.c"
+    SRCS "product_split_pane.c"
     INCLUDE_DIRS "include"
-    REQUIRES fl_shell_model esp_timer esp_lvgl_port heap freertos
+    REQUIRES fl_shell_model esp_lvgl_port
 )
 
 if(NOT FIRMWARE_BUILD_ID)

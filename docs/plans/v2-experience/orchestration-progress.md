@@ -6,7 +6,7 @@ Status: **complete** (P1–P10 host L1/L2; device composed L2 waived)
 |---------|-----------|--------|-------|
 | P1 | completed (+ hardening) | pass (independent) | 12 host tests; `p1-hardening-notes.md` |
 | P2 | completed (+ hardening) | pass (independent) | CAT-21–CAT-37; `p2-hardening-notes.md` |
-| P3 | completed | pass | `client/shared/stage_shell/`; `V2_PRODUCT_SHELL_READY` |
+| P3 | completed | pass | `client/shared/stage_shell/`; `V2_PRODUCT_SPLIT_PANE_READY` |
 | P4 | completed | pass (host L1/L2) | `client/shared/login_session/`; P1 wire; device login mount |
 | P5 | completed (+ hardening) | pass (independent) | 12+7 session tests; `p5-hardening-notes.md` |
 | P6 | completed (+ repair) | pass (host L1/L2) | 11+2 inbox tests; P1 Range 206 |
@@ -52,8 +52,8 @@ Status: **complete** (P1–P10 host L1/L2; device composed L2 waived)
 
 ### Implementer
 
-- **`client/shared/stage_shell/`** — `fl_shell_model` + `product_shell` (cover-down, session writer)
-- **`client/device`** — BSP display + shell mount; boot marker **`V2_PRODUCT_SHELL_READY`**
+- **`client/shared/stage_shell/`** — `fl_shell_model` + `product_split_pane` (80/160 LVGL slots, stage bookmark)
+- **`client/device`** — BSP display + split-pane init; boot marker **`V2_PRODUCT_SPLIT_PANE_READY`**
 - **Tests:** `test_lab06_model` (15), `test_product_shell_model` (6)
 
 ### Verifier
@@ -122,7 +122,7 @@ Status: **complete** (P1–P10 host L1/L2; device composed L2 waived)
 ### Implementer
 
 - **`client/shared/record_capture/`** — promoted LAB-10 ui/capture/render; `fl_product_record` session, attached storage, flsk2 encoder; product ink-overflow (no auto-finish)
-- **Device:** `product_record_bridge` (240×240 canvas + 80×240 rail); `product_shell_stage()`; `V2_PRODUCT_RECORD_READY`
+- **Device:** `product_record_bridge` (240×240 canvas + 80×240 rail); `product_stage_get()`; `V2_PRODUCT_RECORD_READY`
 - **Tests:** `test_product_record_model` (5), `test_product_record_scripted` (1); LAB-10 python suite unchanged (71)
 
 ### Verifier

@@ -38,7 +38,7 @@ Z_ORDER_CALLS = ("lv_obj_move_foreground", "lv_obj_move_background", "lv_obj_swa
 
 RENDER_FUNCTIONS = ("render_login_copy", "render_pin_screen")
 RENDER_FORBIDDEN = (
-    "product_shell_set_stage",
+    "product_stage_set",
     "product_stage_",
     "product_inbox_",
     "product_send_",
@@ -197,7 +197,7 @@ def scan_display_power(sources: dict[str, str]) -> list[str]:
     allowed = {
         LOGIN: ("wake_login_display", "blank_login_display"),
         APP_MAIN: ("app_main", "boot_backlight_after_display"),
-        "product_app_start.c": ("product_app_run",),
+        "product_app_run.c": ("product_app_run",),
         "product_network.c": ("join_configured_wifi",),
     }
     for name, text in sources.items():

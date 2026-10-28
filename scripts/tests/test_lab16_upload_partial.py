@@ -72,7 +72,7 @@ class Lab16UploadPartialCaptureTest(unittest.TestCase):
     def _run_interrupted_capture(self, serial_contents: str, run_id: str) -> tuple[dict, Path]:
         temp = tempfile.TemporaryDirectory()
         self.addCleanup(temp.cleanup)
-        repo_root = Path(temp.name)
+        repo_root = Path(temp.name).resolve()
         parser_path = repo_root / adapter.UPLOAD_PARSER
         parser_path.parent.mkdir(parents=True)
         shutil.copyfile(PARSER_SOURCE, parser_path)

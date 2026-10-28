@@ -1,4 +1,3 @@
-#include "bsp/esp-box-3.h"
 #include "esp_app_desc.h"
 #include "esp_chip_info.h"
 #include "esp_log.h"
@@ -6,7 +5,7 @@
 #include "esp_system.h"
 #include "lvgl.h"
 #include "nvs_flash.h"
-#include "product_app_start.h"
+#include "product_app_run.h"
 #include "product_display.h"
 #include "product_hardware_buttons.h"
 #include "product_mem_probe.h"

@@ -1,7 +1,7 @@
 #include "product_volume_fw.h"
 
 #include "product_inbox_fw.h"
-#include "product_shell_fw.h"
+#include "product_split_pane.h"
 
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -198,7 +198,7 @@ extern "C" int product_volume_on_boot_from_inbox(void)
         return 0;
     }
     render_volume();
-    product_shell_set_stage(FL_SHELL_STAGE_VOLUME);
+    product_stage_set(FL_SHELL_STAGE_VOLUME);
     return 1;
 }
 
@@ -217,7 +217,7 @@ extern "C" int product_volume_on_boot_leave(void)
     if (s_storage.persist_stop_index(index) == 0) {
         (void)persist_stop_to_nvs(index);
     }
-    product_shell_set_stage(FL_SHELL_STAGE_INBOX);
+    product_stage_set(FL_SHELL_STAGE_INBOX);
     return 1;
 }
 

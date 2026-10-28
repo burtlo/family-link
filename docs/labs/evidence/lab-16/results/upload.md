@@ -1,6 +1,6 @@
 # LAB-16 VARIANT `upload` — memory results
 
-Generated: 2026-10-26 03:38 UTC by `render_memory_results.py`. Do not edit by hand; run `make lab.lab16.results`.
+Generated: 2026-10-28 02:42 UTC by `render_memory_results.py`. Do not edit by hand; run `make lab.lab16.results`.
 
 **Accepted repeatability pair:** [20261025-upload-manual-01](../runs/20261025-upload-manual-01/run-manifest.json) and [20261025-upload-manual-02](../runs/20261025-upload-manual-02/run-manifest.json).
 
@@ -10,8 +10,7 @@ Table cells are **interval minimum free** (or minimum largest DMA block) in KiB,
 
 **Repeatability:** memory/stack and identity only; timing lines in the compare block are informational ([TIMING-AND-NETWORK-NOTES.md](../TIMING-AND-NETWORK-NOTES.md)).
 
-
-
+<a id="campaign-summary"></a>
 ## Campaign summary (accepted pair)
 
 Rows below use run A; the pair is identical on these summary beats (repeatability **PASS**).
@@ -23,8 +22,7 @@ Rows below use run A; the pair is identical on these summary beats (repeatabilit
 | Wi-Fi and WAV upload active | 187.13 (57%) | 177.85 (55%) | 92.00 (29%) | 16315.11 (100%) |
 | Upload complete, workers quiescent | 203.13 (62%) | 195.55 (61%) | 108.00 (34%) | 16378.25 (100%) |
 
-
-
+<a id="repeatability"></a>
 ## Repeatability compare
 
 ```text
@@ -41,8 +39,7 @@ Informational (does not fail memory repeatability):
   - request_latency_max_ms: 305.1 vs 449.7 (delta 144.6, tol 250.0 ms)
 ```
 
-
-
+<a id="run-20261025-upload-manual-01"></a>
 ## Full beat windows — `20261025-upload-manual-01`
 
 Metrics: [metrics.json](../runs/20261025-upload-manual-01/metrics.json)
@@ -58,7 +55,7 @@ Metrics: [metrics.json](../runs/20261025-upload-manual-01/metrics.json)
 | `upload_complete_workers_quiescent` | 203.13 (62%) | 195.55 (61%) | 108.00 (34%) | 16378.25 (100%) | 1 |
 
 
-
+<a id="run-20261025-upload-manual-02"></a>
 ## Full beat windows — `20261025-upload-manual-02`
 
 Metrics: [metrics.json](../runs/20261025-upload-manual-02/metrics.json)

@@ -7,7 +7,7 @@
 #include "product_inbox_fw.h"
 #include "product_mem_probe.h"
 #include "product_record_fw.h"
-#include "product_shell_fw.h"
+#include "product_split_pane.h"
 #include "product_volume_fw.h"
 
 #include "bsp/esp-box-3.h"
@@ -846,7 +846,7 @@ static void enter_muted(int64_t now_ms)
     product_send_release_widgets();
     product_record_release_surface();
     product_login_http_on_mute();
-    product_shell_set_stage(FL_SHELL_STAGE_ROSTER);
+    product_stage_set(FL_SHELL_STAGE_ROSTER);
     ESP_LOGI("product_login", "mute_latch latched=1 stage=%s", s_session.stage_name());
     product_mem_probe("mute_latched", 0);
 }
@@ -998,10 +998,10 @@ extern "C" bool product_login_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 
 extern "C" void product_split_pane_release(void)
 {
-    if (!product_shell_slots_live()) {
+    if (!product_split_pane_slots_live()) {
         return;
     }
-    product_shell_release_slots();
+    product_split_pane_release_slots();
     s_upper_label = nullptr;
     s_lower_label = nullptr;
     s_lower_slot = nullptr;
@@ -1025,10 +1025,10 @@ extern "C" void product_split_pane_rebuild(void)
 {
     lv_obj_t *upper = nullptr;
     lv_obj_t *lower = nullptr;
-    if (product_shell_slots_live()) {
+    if (product_split_pane_slots_live()) {
         return;
     }
-    if (!product_shell_rebuild_slots() || !product_shell_slot_roots(&upper, &lower)) {
+    if (!product_split_pane_rebuild_slots() || !product_split_pane_slot_roots(&upper, &lower)) {
         ESP_LOGE("product_login", "split_pane_rebuild_failed");
         return;
     }

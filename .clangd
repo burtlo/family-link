@@ -1,2 +1,6 @@
+# ESP-IDF device firmware: compile_commands from `make app:build` → build/device/.
+# Clangd parses with host clang; strip GCC/Xtensa-only flags and query the cross-GCC driver.
 CompileFlags:
   CompilationDatabase: build/device
+  BuiltinHeaders: QueryDriver
+  Remove: [-m*, -f*]

@@ -587,7 +587,7 @@ class DeviceGuardrailsPresentationInvariantTests(unittest.TestCase):
         )
         self.assertEqual(pres.scan_render_is_pure(login), [])
         transition = login.replace(
-            "{ render_pin_screen(); }", "{ product_shell_set_stage(FL_SHELL_STAGE_INBOX); render_pin_screen(); }"
+            "{ render_pin_screen(); }", "{ product_stage_set(FL_SHELL_STAGE_INBOX); render_pin_screen(); }"
         )
         self.assertTrue(pres.scan_render_is_pure(transition))
         realign = login.replace(
@@ -628,15 +628,15 @@ class DeviceGuardrailsMuteBootTests(unittest.TestCase):
         self.assertIn("bsp_display_brightness_set(80)", unlatched_arm)
         self.assertIn("bsp_display_backlight_on(", unlatched_arm)
 
-        app_start = (ROOT / "client/device/main/product_app_start.c").read_text(encoding="utf-8")
-        app_start = _strip_c_comments(app_start)
-        run_body = pres.function_body(app_start, "product_app_run")
+        app_run_src = (ROOT / "client/device/main/product_app_run.c").read_text(encoding="utf-8")
+        app_run_src = _strip_c_comments(app_run_src)
+        run_body = pres.function_body(app_run_src, "product_app_run")
         for marker in (
-            "lvgl_lock_failed",
-            "product_shell_init_failed",
+            "product_split_pane_init_failed",
             "product_login_attach_failed",
         ):
             self.assertIn(marker, run_body)
+        self.assertIn("lvgl_lock_failed", app_run_src)
         self.assertEqual(_unguarded_light_calls(run_body), [])
 
 

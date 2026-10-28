@@ -1,4 +1,4 @@
-#include "product_app_start.h"
+#include "product_app_run.h"
 
 #include "bsp/esp-box-3.h"
 #include "esp_log.h"
@@ -9,7 +9,7 @@
 #include "product_login_fw.h"
 #include "product_mem_probe.h"
 #include "product_network.h"
-#include "product_shell_fw.h"
+#include "product_split_pane.h"
 
 #define APP_LOG_TAG              "app_main"
 #define APP_LVGL_ATTACH_LOCK_MS  5000
@@ -23,14 +23,14 @@ void product_app_run(void)
         return;
     }
 
-    if (!product_shell_init(lv_screen_active())) {
-        ESP_LOGE(APP_LOG_TAG, "product_shell_init_failed");
+    if (!product_split_pane_init(lv_screen_active())) {
+        ESP_LOGE(APP_LOG_TAG, "product_split_pane_init_failed");
         bsp_display_unlock();
         goto idle;
     }
     lv_obj_t *upper = NULL;
     lv_obj_t *lower = NULL;
-    if (!product_shell_slot_roots(&upper, &lower) || !product_login_attach(upper, lower)) {
+    if (!product_split_pane_slot_roots(&upper, &lower) || !product_login_attach(upper, lower)) {
         ESP_LOGE(APP_LOG_TAG, "product_login_attach_failed");
         bsp_display_unlock();
         goto idle;
@@ -48,7 +48,7 @@ idle:
 }
 
 /* LVGL is single-threaded: the BSP runs lv_timer_handler on its own task. app_main must
- * take bsp_display_lock before any lv_* call (shell init, login attach) and unlock after. */
+ * take bsp_display_lock before any lv_* call (split pane init, login attach) and unlock after. */
 static bool product_app_lvgl_lock_for_attach(void)
 {
     if (!bsp_display_lock(APP_LVGL_ATTACH_LOCK_MS)) {
@@ -59,7 +59,7 @@ static bool product_app_lvgl_lock_for_attach(void)
 }
 
 /* app_main must not return: LVGL, login timer, and product_net already run elsewhere.
- * This task has no further work, including after a failed shell/login attach (goto idle)
+ * This task has no further work, including after a failed pane/login attach (goto idle)
  * when subsystems stay up for serial diagnosis. A blunt sleep loop until boot owns a
  * clearer main-task lifecycle. */
 static void product_app_idle(void)
