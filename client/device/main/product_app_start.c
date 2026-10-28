@@ -11,16 +11,18 @@
 #include "product_network.h"
 #include "product_shell_fw.h"
 
-#define APP_LOG_TAG "app_main"
+#define APP_LOG_TAG              "app_main"
+#define APP_LVGL_ATTACH_LOCK_MS  5000
 
+static bool product_app_lvgl_lock_for_attach(void);
 static void product_app_idle(void);
 
 void product_app_run(void)
 {
-    if (!bsp_display_lock(5000)) {
-        ESP_LOGE(APP_LOG_TAG, "lvgl_lock_failed");
+    if (!product_app_lvgl_lock_for_attach()) {
         return;
     }
+
     if (!product_shell_init(lv_screen_active())) {
         ESP_LOGE(APP_LOG_TAG, "product_shell_init_failed");
         bsp_display_unlock();
@@ -45,6 +47,21 @@ idle:
     product_app_idle();
 }
 
+/* LVGL is single-threaded: the BSP runs lv_timer_handler on its own task. app_main must
+ * take bsp_display_lock before any lv_* call (shell init, login attach) and unlock after. */
+static bool product_app_lvgl_lock_for_attach(void)
+{
+    if (!bsp_display_lock(APP_LVGL_ATTACH_LOCK_MS)) {
+        ESP_LOGE(APP_LOG_TAG, "lvgl_lock_failed");
+        return false;
+    }
+    return true;
+}
+
+/* app_main must not return: LVGL, login timer, and product_net already run elsewhere.
+ * This task has no further work, including after a failed shell/login attach (goto idle)
+ * when subsystems stay up for serial diagnosis. A blunt sleep loop until boot owns a
+ * clearer main-task lifecycle. */
 static void product_app_idle(void)
 {
     while (true) {
