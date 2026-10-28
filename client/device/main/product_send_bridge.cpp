@@ -5,7 +5,7 @@
 #include "product_mem_probe.h"
 #include "product_record_fw.h"
 #include "product_send_http_worker.h"
-#include "product_split_pane.h"
+#include "product_split_pane.hpp"
 
 #include "esp_log.h"
 #include "esp_random.h"
@@ -221,7 +221,7 @@ void render_send()
     char title[32];
     char subtitle[96];
     char body[64];
-    if (product_stage_get() == FL_SHELL_STAGE_PICKER) {
+    if (stage_shell::splitPane().stage() == FL_SHELL_STAGE_PICKER) {
         return;
     }
     s_journey.receipt_title(title, (int)sizeof(title));
@@ -606,8 +606,8 @@ void show_couldnt_record()
 
 void paint_for_stage()
 {
-    int picker = product_stage_get() == FL_SHELL_STAGE_PICKER;
-    int receipt = product_stage_get() == FL_SHELL_STAGE_RECEIPT;
+    int picker = stage_shell::splitPane().stage() == FL_SHELL_STAGE_PICKER;
+    int receipt = stage_shell::splitPane().stage() == FL_SHELL_STAGE_RECEIPT;
     if (!s_attached) {
         return;
     }
@@ -644,7 +644,7 @@ void present_stage_change(const fl_product_send::SendStageResult &advanced)
     if (advanced.changed == 0) {
         return;
     }
-    product_stage_set((fl_shell_stage_t)shell_for_place(advanced.place));
+    stage_shell::splitPane().setStage((fl_shell_stage_t)shell_for_place(advanced.place));
     product_mem_probe("stage_service", advanced.place);
 }
 
@@ -1101,7 +1101,7 @@ extern "C" void product_send_set_refresh_failed(int failed)
         return;
     }
     place = s_stage.place();
-    shell = product_stage_get();
+    shell = stage_shell::splitPane().stage();
     if (shell != FL_SHELL_STAGE_ROSTER && shell != FL_SHELL_STAGE_PIN && shell != FL_SHELL_STAGE_HANGOUT) {
         return;
     }
@@ -1111,7 +1111,7 @@ extern "C" void product_send_set_refresh_failed(int failed)
         return;
     }
     restored = shell_for_place(place);
-    product_stage_set(static_cast<fl_shell_stage_t>(restored));
+    stage_shell::splitPane().setStage(static_cast<fl_shell_stage_t>(restored));
 }
 
 extern "C" void product_send_on_signed_in(const char *user_id)

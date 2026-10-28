@@ -5,7 +5,7 @@
 #include "product_mem_probe.h"
 #include "product_record_fw.h"
 #include "product_send_fw.h"
-#include "product_split_pane.h"
+#include "product_split_pane.hpp"
 #include "product_ui_window.h"
 #include "product_volume_fw.h"
 
@@ -25,7 +25,7 @@ static int apply_send_stage(const product_send_stage_result_t *result)
     if (result->show_record_canvas) {
         (void)product_ui_window_show_record();
     }
-    product_stage_set((fl_shell_stage_t)result->shell_stage);
+    stage_shell::splitPane().setStage((fl_shell_stage_t)result->shell_stage);
     ESP_LOGI(kTag, "place=%d shell=%d", result->place, result->shell_stage);
     product_mem_probe("stage", result->place);
     return 1;
@@ -36,7 +36,7 @@ extern "C" product_screen_t product_stage_screen(void)
     if (!product_login_is_signed_in()) {
         return PRODUCT_SCREEN_LOGIN;
     }
-    switch (product_stage_get()) {
+    switch (stage_shell::splitPane().stage()) {
     case FL_SHELL_STAGE_VOLUME:
         return PRODUCT_SCREEN_VOLUME;
     case FL_SHELL_STAGE_RECORD:
@@ -78,7 +78,7 @@ extern "C" void product_stage_on_signed_in(void)
     const char *user = session != nullptr ? session->signed_user() : "";
     product_send_note_inbox();
     product_send_on_signed_in(user);
-    product_stage_set(FL_SHELL_STAGE_INBOX);
+    stage_shell::splitPane().setStage(FL_SHELL_STAGE_INBOX);
     ESP_LOGI(kTag, "stage=inbox");
 }
 

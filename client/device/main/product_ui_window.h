@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lvgl.h"
+#include "product_ui_window_canvas.h"
 
 #include <stdbool.h>
 

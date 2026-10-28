@@ -10,7 +10,14 @@ enum class Scene {
     Record,
 };
 
-/* Root LVGL host: content root on the active screen, desk split-pane vs record scene. */
+/*
+ * Root LVGL host for the device desk.
+ *
+ * Owns: active screen sizing, themed shell backdrop, transparent content root,
+ *       desk vs record scene, desk module attach orchestration.
+ * Split-pane (stage_shell::SplitPane) owns upper/lower slots and stage bookmark;
+ * it queries this window for canvas, split geometry, and slot theme colors.
+ */
 class UiWindow {
 public:
     bool create(lv_obj_t *screen);
@@ -19,6 +26,10 @@ public:
     [[nodiscard]] bool created() const { return created_; }
     [[nodiscard]] Scene scene() const { return scene_; }
     lv_obj_t *contentRoot() const { return content_root_; }
+
+    bool canvasSize(lv_coord_t *width_out, lv_coord_t *height_out) const;
+    bool splitPaneUpperHeight(lv_coord_t *height_out) const;
+    bool splitPaneSlotColors(uint32_t *upper_rgb24_out, uint32_t *lower_rgb24_out) const;
 
     bool mountDesk();
     bool mountRecord();

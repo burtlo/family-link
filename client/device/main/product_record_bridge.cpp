@@ -11,7 +11,7 @@
 #include "freertos/semphr.h"
 #include "product_mem_probe.h"
 #include "product_mic_capture.h"
-#include "product_split_pane.h"
+#include "product_split_pane.hpp"
 #include "product_stage_router.h"
 
 #include <new>
@@ -712,7 +712,7 @@ extern "C" void product_record_service(int64_t now_ms)
     }
     /* The codec opens during the wipe so audio is flowing at wipe-complete. */
     product_mic_set_armed(s_record != nullptr && (s_record->wiping() || s_record->capture_active()) ? 1 : 0);
-    if (product_stage_get() == FL_SHELL_STAGE_RECORD) {
+    if (stage_shell::splitPane().stage() == FL_SHELL_STAGE_RECORD) {
         paint_motion();
         if (s_record != nullptr && s_record->capture_active()) {
             s_record->render_update();

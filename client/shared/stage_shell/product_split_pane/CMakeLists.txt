@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "product_split_pane.c"
+    SRCS "product_split_pane.cpp"
     INCLUDE_DIRS "include"
     REQUIRES fl_shell_model esp_lvgl_port
 )
