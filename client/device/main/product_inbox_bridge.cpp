@@ -19,7 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 constexpr const char *kTag = "product_inbox";
 constexpr int kCardWidth = 132;
@@ -87,9 +88,14 @@ struct CardWidget {
 };
 
 const CardFill kCardFills[] = {
-    {"card-bg-01", 0x5AA0E8}, {"card-bg-02", 0x67C587}, {"card-bg-03", 0xE8C040},
-    {"card-bg-04", 0xD875A8}, {"card-bg-05", 0xE85B5B}, {"card-bg-06", 0x8B7CE8},
-    {"card-bg-07", 0xE88840}, {"card-bg-08", 0x4EC4C8},
+    {"card-bg-01", 0x5AA0E8},
+    {"card-bg-02", 0x67C587},
+    {"card-bg-03", 0xE8C040},
+    {"card-bg-04", 0xD875A8},
+    {"card-bg-05", 0xE85B5B},
+    {"card-bg-06", 0x8B7CE8},
+    {"card-bg-07", 0xE88840},
+    {"card-bg-08", 0x4EC4C8},
 };
 
 CardWidget s_cards[fl_product_inbox::kMaxMessages];
@@ -1143,7 +1149,10 @@ extern "C" void product_inbox_set_ui_visible(int visible)
     render_inbox();
 }
 
-fl_product_inbox::CarouselSession *product_inbox_session(void) { return &s_inbox; }
+fl_product_inbox::CarouselSession *product_inbox_session(void)
+{
+    return &s_inbox;
+}
 
 extern "C" int product_inbox_on_boot_pressed(void)
 {

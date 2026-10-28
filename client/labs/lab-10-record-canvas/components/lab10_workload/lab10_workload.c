@@ -65,12 +65,23 @@ static const coordinate_t PATHS[LAB10_WORKLOAD_MAX_STROKES][4] = {
 };
 
 static const uint8_t STROKE_COLORS[LAB10_WORKLOAD_MAX_STROKES] = {
-    1u, 4u, 0u, 5u, 2u, 3u, 0u, 4u,
+    1u,
+    4u,
+    0u,
+    5u,
+    2u,
+    3u,
+    0u,
+    4u,
 };
 
 static const uint32_t COLOR_RGB[6] = {
-    UINT32_C(0x000000), UINT32_C(0xF8F8F8), UINT32_C(0xE8C040),
-    UINT32_C(0x4CAF50), UINT32_C(0xE53935), UINT32_C(0x5AA0E8),
+    UINT32_C(0x000000),
+    UINT32_C(0xF8F8F8),
+    UINT32_C(0xE8C040),
+    UINT32_C(0x4CAF50),
+    UINT32_C(0xE53935),
+    UINT32_C(0x5AA0E8),
 };
 
 static uint64_t next_random(uint64_t *state)
@@ -298,11 +309,16 @@ const char *lab10_workload_phase_name(lab10_workload_phase_t phase)
 const char *lab10_workload_boundary_name(lab10_workload_boundary_t boundary)
 {
     static const char *const names[] = {
-        "NONE", "STROKE_START", "STROKE_CONTINUE", "STROKE_END",
-        "PEN_UP_GAP", "COLOR_CHANGE", "TERMINAL",
+        "NONE",
+        "STROKE_START",
+        "STROKE_CONTINUE",
+        "STROKE_END",
+        "PEN_UP_GAP",
+        "COLOR_CHANGE",
+        "TERMINAL",
     };
     return boundary <= LAB10_WORKLOAD_BOUNDARY_TERMINAL ? names[boundary]
-                                                         : NULL;
+                                                        : NULL;
 }
 
 const char *lab10_workload_terminal_name(lab10_workload_terminal_t terminal)
@@ -315,9 +331,14 @@ const char *lab10_workload_terminal_name(lab10_workload_terminal_t terminal)
 const char *lab10_workload_result_name(lab10_workload_result_t result)
 {
     static const char *const names[] = {
-        "ok", "invalid-argument", "invalid-workload-id", "invalid-seed",
-        "invalid-event-capacity", "invalid-point-capacity",
-        "invalid-duration-capacity", "invalid-jitter-bound",
+        "ok",
+        "invalid-argument",
+        "invalid-workload-id",
+        "invalid-seed",
+        "invalid-event-capacity",
+        "invalid-point-capacity",
+        "invalid-duration-capacity",
+        "invalid-jitter-bound",
         "output-capacity",
     };
     return result <= LAB10_WORKLOAD_OUTPUT_CAPACITY ? names[result] : NULL;
@@ -545,7 +566,6 @@ size_t lab10_workload_trace_size_bytes(const lab10_workload_trace_t *trace)
         return 0u;
     }
     return sizeof(*trace) -
-               sizeof(trace->events) +
+           sizeof(trace->events) +
            (size_t)trace->event_count * sizeof(trace->events[0]);
 }
-

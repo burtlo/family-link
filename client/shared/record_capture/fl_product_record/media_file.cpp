@@ -3,13 +3,17 @@
 #include <stdio.h>
 #include <unistd.h>
 
-namespace fl_product_record {
+namespace fl_product_record
+{
 
 MediaBackend::~MediaBackend() {}
 
 FileMediaBackend::FileMediaBackend() : file_(0), size_(0) {}
 
-FileMediaBackend::~FileMediaBackend() { close(); }
+FileMediaBackend::~FileMediaBackend()
+{
+    close();
+}
 
 bool FileMediaBackend::open_path(const char *path, bool truncate)
 {

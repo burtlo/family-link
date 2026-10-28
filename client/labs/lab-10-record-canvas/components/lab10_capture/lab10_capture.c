@@ -387,24 +387,24 @@ static void record_rejection(lab10_capture_t *capture,
     ++capture->stats.rejected_report_count;
     capture->last_processed_was_move = false;
     switch (reason) {
-    case LAB10_CAPTURE_REJECT_RAIL_TOUCH:
-        ++capture->stats.rejected_rail_touch_count;
-        break;
-    case LAB10_CAPTURE_REJECT_OUTSIDE_DISPLAY:
-        ++capture->stats.rejected_outside_display_count;
-        break;
-    case LAB10_CAPTURE_REJECT_SECOND_TOUCH:
-    case LAB10_CAPTURE_REJECT_WRONG_TOUCH:
-        ++capture->stats.rejected_second_touch_count;
-        break;
-    case LAB10_CAPTURE_REJECT_INVALID_TIMESTAMP:
-        ++capture->stats.invalid_timestamp_count;
-        break;
-    case LAB10_CAPTURE_REJECT_INVALID_COORDINATE:
-        ++capture->stats.invalid_coordinate_count;
-        break;
-    default:
-        break;
+        case LAB10_CAPTURE_REJECT_RAIL_TOUCH:
+            ++capture->stats.rejected_rail_touch_count;
+            break;
+        case LAB10_CAPTURE_REJECT_OUTSIDE_DISPLAY:
+            ++capture->stats.rejected_outside_display_count;
+            break;
+        case LAB10_CAPTURE_REJECT_SECOND_TOUCH:
+        case LAB10_CAPTURE_REJECT_WRONG_TOUCH:
+            ++capture->stats.rejected_second_touch_count;
+            break;
+        case LAB10_CAPTURE_REJECT_INVALID_TIMESTAMP:
+            ++capture->stats.invalid_timestamp_count;
+            break;
+        case LAB10_CAPTURE_REJECT_INVALID_COORDINATE:
+            ++capture->stats.invalid_coordinate_count;
+            break;
+        default:
+            break;
     }
 }
 
@@ -419,16 +419,16 @@ static bool route_matches_coordinates(const lab10_capture_raw_report_t *report)
         lab10_palette_hit_test(report->display_x, report->display_y);
 
     switch (report->route) {
-    case LAB10_ROUTE_OUTSIDE:
-        return !on_display;
-    case LAB10_ROUTE_CANVAS:
-        return on_canvas;
-    case LAB10_ROUTE_PALETTE:
-        return on_rail && palette >= 0;
-    case LAB10_ROUTE_RAIL_REJECTED:
-        return on_rail && palette < 0;
-    default:
-        return false;
+        case LAB10_ROUTE_OUTSIDE:
+            return !on_display;
+        case LAB10_ROUTE_CANVAS:
+            return on_canvas;
+        case LAB10_ROUTE_PALETTE:
+            return on_rail && palette >= 0;
+        case LAB10_ROUTE_RAIL_REJECTED:
+            return on_rail && palette < 0;
+        default:
+            return false;
     }
 }
 
@@ -568,8 +568,8 @@ static void process_report(lab10_capture_t *capture,
 
     if (report->route != LAB10_ROUTE_CANVAS) {
         record_rejection(capture, report->route == LAB10_ROUTE_OUTSIDE
-                                  ? LAB10_CAPTURE_REJECT_OUTSIDE_DISPLAY
-                                  : LAB10_CAPTURE_REJECT_RAIL_TOUCH);
+                                      ? LAB10_CAPTURE_REJECT_OUTSIDE_DISPLAY
+                                      : LAB10_CAPTURE_REJECT_RAIL_TOUCH);
         return;
     }
     if (report->color_index >= LAB10_SWATCH_COUNT) {
@@ -873,7 +873,7 @@ size_t lab10_capture_poll(lab10_capture_t *capture,
 
     if (queue_overflow_latched(capture)) {
         (void)finish_capture(capture, LAB10_CAPTURE_OUTCOME_QUEUE_OVERFLOW,
-                              LAB10_CAPTURE_FAILURE_NONE);
+                             LAB10_CAPTURE_FAILURE_NONE);
     }
     capture->stats.queue_depth_current = queue_depth(capture);
     return processed;
@@ -1010,54 +1010,54 @@ size_t lab10_capture_copy_pending_raw(const lab10_capture_t *capture,
 const char *lab10_capture_reject_reason_name(lab10_capture_reject_reason_t reason)
 {
     switch (reason) {
-    case LAB10_CAPTURE_REJECT_OUTSIDE_DISPLAY:
-        return "outside_display";
-    case LAB10_CAPTURE_REJECT_RAIL_TOUCH:
-        return "rail_touch";
-    case LAB10_CAPTURE_REJECT_SECOND_TOUCH:
-        return "second_touch";
-    case LAB10_CAPTURE_REJECT_NO_ACTIVE_STROKE:
-        return "no_active_stroke";
-    case LAB10_CAPTURE_REJECT_WRONG_TOUCH:
-        return "wrong_touch";
-    case LAB10_CAPTURE_REJECT_ACTIVE_STROKE:
-        return "active_stroke";
-    case LAB10_CAPTURE_REJECT_INVALID_TIMESTAMP:
-        return "invalid_timestamp";
-    case LAB10_CAPTURE_REJECT_INVALID_COORDINATE:
-        return "invalid_coordinate";
-    case LAB10_CAPTURE_REJECT_INVALID_PHASE:
-        return "invalid_phase";
-    case LAB10_CAPTURE_REJECT_INVALID_COLOR:
-        return "invalid_color";
-    case LAB10_CAPTURE_REJECT_STALE_COLOR:
-        return "stale_color";
-    case LAB10_CAPTURE_REJECT_TERMINAL:
-        return "terminal";
-    case LAB10_CAPTURE_REJECT_NONE:
-    default:
-        return "none";
+        case LAB10_CAPTURE_REJECT_OUTSIDE_DISPLAY:
+            return "outside_display";
+        case LAB10_CAPTURE_REJECT_RAIL_TOUCH:
+            return "rail_touch";
+        case LAB10_CAPTURE_REJECT_SECOND_TOUCH:
+            return "second_touch";
+        case LAB10_CAPTURE_REJECT_NO_ACTIVE_STROKE:
+            return "no_active_stroke";
+        case LAB10_CAPTURE_REJECT_WRONG_TOUCH:
+            return "wrong_touch";
+        case LAB10_CAPTURE_REJECT_ACTIVE_STROKE:
+            return "active_stroke";
+        case LAB10_CAPTURE_REJECT_INVALID_TIMESTAMP:
+            return "invalid_timestamp";
+        case LAB10_CAPTURE_REJECT_INVALID_COORDINATE:
+            return "invalid_coordinate";
+        case LAB10_CAPTURE_REJECT_INVALID_PHASE:
+            return "invalid_phase";
+        case LAB10_CAPTURE_REJECT_INVALID_COLOR:
+            return "invalid_color";
+        case LAB10_CAPTURE_REJECT_STALE_COLOR:
+            return "stale_color";
+        case LAB10_CAPTURE_REJECT_TERMINAL:
+            return "terminal";
+        case LAB10_CAPTURE_REJECT_NONE:
+        default:
+            return "none";
     }
 }
 const char *lab10_capture_outcome_name(lab10_capture_terminal_outcome_t outcome)
 {
     switch (outcome) {
-    case LAB10_CAPTURE_OUTCOME_COMPLETED:
-        return "completed";
-    case LAB10_CAPTURE_OUTCOME_STOPPED:
-        return "stopped";
-    case LAB10_CAPTURE_OUTCOME_CANCELLED:
-        return "cancelled";
-    case LAB10_CAPTURE_OUTCOME_DURATION_CAP:
-        return "duration_cap";
-    case LAB10_CAPTURE_OUTCOME_POINT_CAP:
-        return "point_cap";
-    case LAB10_CAPTURE_OUTCOME_QUEUE_OVERFLOW:
-        return "queue_overflow";
-    case LAB10_CAPTURE_OUTCOME_FAILED:
-        return "failed";
-    case LAB10_CAPTURE_OUTCOME_NONE:
-    default:
-        return "none";
+        case LAB10_CAPTURE_OUTCOME_COMPLETED:
+            return "completed";
+        case LAB10_CAPTURE_OUTCOME_STOPPED:
+            return "stopped";
+        case LAB10_CAPTURE_OUTCOME_CANCELLED:
+            return "cancelled";
+        case LAB10_CAPTURE_OUTCOME_DURATION_CAP:
+            return "duration_cap";
+        case LAB10_CAPTURE_OUTCOME_POINT_CAP:
+            return "point_cap";
+        case LAB10_CAPTURE_OUTCOME_QUEUE_OVERFLOW:
+            return "queue_overflow";
+        case LAB10_CAPTURE_OUTCOME_FAILED:
+            return "failed";
+        case LAB10_CAPTURE_OUTCOME_NONE:
+        default:
+            return "none";
     }
 }

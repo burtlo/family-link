@@ -1,7 +1,8 @@
 #ifndef FL_PRODUCT_VOLUME_STOPS_HPP
 #define FL_PRODUCT_VOLUME_STOPS_HPP
 
-namespace fl_product_volume {
+namespace fl_product_volume
+{
 
 enum { kVolumeStopCount = 13 };
 

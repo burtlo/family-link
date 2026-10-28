@@ -7,3 +7,5 @@ jsonschema>=4.23,<5
 Pillow>=10,<12
 pypng>=0.20220715.0,<1
 lz4>=4.3,<5
+# Repo C/C++ formatting (make format); see docs/standards/code-formatting.md
+clang-format>=19,<24

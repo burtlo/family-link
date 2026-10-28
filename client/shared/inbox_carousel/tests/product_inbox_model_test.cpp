@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 int g_failures = 0;
 

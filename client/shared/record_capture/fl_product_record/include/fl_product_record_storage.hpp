@@ -7,7 +7,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace fl_product_record {
+namespace fl_product_record
+{
 
 enum MediaKind {
     kMediaAudio = 1,
@@ -25,8 +26,9 @@ struct StoredObject {
     int valid;
 };
 
-class AttachedStorage {
-public:
+class AttachedStorage
+{
+  public:
     AttachedStorage();
 
     void attach_media(MediaBackend *backend);
@@ -55,7 +57,7 @@ public:
     uint32_t in_progress_audio_bytes() const;
     uint32_t in_progress_sketch_bytes() const;
 
-private:
+  private:
     enum {
         kWriteWindowBytes = 4096,
         kMediaDataOrigin = 4096,

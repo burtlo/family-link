@@ -2,8 +2,10 @@
 
 #include <string.h>
 
-namespace fl_product_send {
-namespace {
+namespace fl_product_send
+{
+namespace
+{
 
 bool body_has_schema(const char *body, int body_len)
 {
@@ -69,18 +71,18 @@ Com013Class classify_http_result(int wifi_up, int transport_ok, int http_status,
 const char *ui_phase_label(SendUiPhase phase)
 {
     switch (phase) {
-    case kSendUiPreparing:
-        return "preparing";
-    case kSendUiSending:
-        return "sending";
-    case kSendUiSent:
-        return "sent";
-    case kSendUiCouldntSend:
-        return "couldn't send";
-    case kSendUiQueuedWait:
-        return "connecting";
-    default:
-        return "";
+        case kSendUiPreparing:
+            return "preparing";
+        case kSendUiSending:
+            return "sending";
+        case kSendUiSent:
+            return "sent";
+        case kSendUiCouldntSend:
+            return "couldn't send";
+        case kSendUiQueuedWait:
+            return "connecting";
+        default:
+            return "";
     }
 }
 

@@ -78,7 +78,8 @@ void lab16_upload_capture_reset(void)
 
 void lab16_upload_capture_snapshot(lab16_upload_capture_stats_t *out)
 {
-    if (out == NULL) return;
+    if (out == NULL)
+        return;
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
     portENTER_CRITICAL(&s_capture_mux);
     *out = s_capture_stats;
@@ -105,19 +106,24 @@ static void capture_buffer_alloc(const char *name, size_t requested, bool succes
            esp_timer_get_time(), s_evidence_beat, name, requested, success ? 1U : 0U, count, bytes);
     fflush(stdout);
 #else
-    (void)name; (void)requested; (void)success;
+    (void)name;
+    (void)requested;
+    (void)success;
 #endif
 }
 
 static void capture_buffer_free(const char *name, size_t requested, void *buffer)
 {
-    if (buffer == NULL) return;
+    if (buffer == NULL)
+        return;
     // The lifecycle event describes live allocations after the real free.
     free(buffer);
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
     portENTER_CRITICAL(&s_capture_mux);
-    if (s_capture_stats.app_buffer_count > 0) s_capture_stats.app_buffer_count--;
-    if (s_capture_stats.app_buffer_bytes >= requested) s_capture_stats.app_buffer_bytes -= requested;
+    if (s_capture_stats.app_buffer_count > 0)
+        s_capture_stats.app_buffer_count--;
+    if (s_capture_stats.app_buffer_bytes >= requested)
+        s_capture_stats.app_buffer_bytes -= requested;
     const uint32_t count = s_capture_stats.app_buffer_count;
     const size_t bytes = s_capture_stats.app_buffer_bytes;
     portEXIT_CRITICAL(&s_capture_mux);
@@ -127,7 +133,8 @@ static void capture_buffer_free(const char *name, size_t requested, void *buffer
            esp_timer_get_time(), s_evidence_beat, name, requested, count, bytes);
     fflush(stdout);
 #else
-    (void)name; (void)requested;
+    (void)name;
+    (void)requested;
 #endif
 }
 
@@ -151,7 +158,8 @@ static void sha256_hex(const uint8_t *data, size_t bytes, char out[65])
         out[0] = '\0';
         return;
     }
-    for (unsigned i = 0; i < sizeof(digest); i++) snprintf(out + i * 2, 3, "%02x", digest[i]);
+    for (unsigned i = 0; i < sizeof(digest); i++)
+        snprintf(out + i * 2, 3, "%02x", digest[i]);
     out[64] = '\0';
 }
 #endif

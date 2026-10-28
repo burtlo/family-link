@@ -91,13 +91,13 @@ static bool publish_pending_scripted_diagnostic(
 static bool canvas_readback_format_supported(lv_color_format_t format)
 {
     switch (format) {
-    case LV_COLOR_FORMAT_RGB565:
-    case LV_COLOR_FORMAT_RGB888:
-    case LV_COLOR_FORMAT_XRGB8888:
-    case LV_COLOR_FORMAT_ARGB8888:
-        return true;
-    default:
-        return false;
+        case LV_COLOR_FORMAT_RGB565:
+        case LV_COLOR_FORMAT_RGB888:
+        case LV_COLOR_FORMAT_XRGB8888:
+        case LV_COLOR_FORMAT_ARGB8888:
+            return true;
+        default:
+            return false;
     }
 }
 
@@ -302,10 +302,10 @@ static void release_view_resources(lab10_ui_view_t *view)
             if (lab10_capture_status(view->capture, view->capture_session_id) ==
                 LAB10_CAPTURE_STATUS_ACTIVE) {
                 (void)lab10_capture_cancel(view->capture,
-                                            view->capture_session_id);
+                                           view->capture_session_id);
             }
             (void)lab10_capture_release_result(view->capture,
-                                                view->capture_session_id);
+                                               view->capture_session_id);
         }
         lab10_capture_destroy(view->capture);
         view->capture = NULL;
@@ -349,7 +349,7 @@ static void *allocate_canvas_buffer(uint32_t bytes, const char **region)
         if (buffer != NULL) {
             ESP_LOGW(TAG, "discarding misaligned %s canvas buffer=%p",
                      memory_region == LAB10_CANVAS_MEMORY_PSRAM ? "PSRAM"
-                                                                  : "internal",
+                                                                : "internal",
                      buffer);
             heap_caps_free(buffer);
         }
@@ -440,8 +440,8 @@ static void on_transition(lab10_screen_state_t from, lab10_screen_state_t to,
 }
 
 static bool canvas_sample_matches_ink_color(lv_color32_t sample,
-                                             uint8_t color_index,
-                                             lv_color_format_t format)
+                                            uint8_t color_index,
+                                            lv_color_format_t format)
 {
     if (color_index <= LAB10_COLOR_BACKGROUND ||
         color_index >= LAB10_SWATCH_COUNT || sample.alpha != UINT8_MAX) {
@@ -661,9 +661,9 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
     const lab10_ui_scripted_capture_state_t capture_state =
         capture_active
             ? LAB10_UI_SCRIPTED_CAPTURE_ACTIVE
-            : duration_terminal
-                  ? LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP
-                  : LAB10_UI_SCRIPTED_CAPTURE_OTHER_TERMINAL;
+        : duration_terminal
+            ? LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP
+            : LAB10_UI_SCRIPTED_CAPTURE_OTHER_TERMINAL;
     lab10_ui_scripted_event_t scripted_event;
     const lab10_ui_scripted_poll_result_t result =
         lab10_ui_scripted_schedule_poll(
@@ -730,8 +730,7 @@ void lab10_ui_view_scripted_poll(lab10_ui_view_t *view)
             .trace_loss_count = stats.trace_loss_count,
             .duration_cap_count = stats.duration_cap_hit_count,
             .terminal_event_count = stats.terminal_event_count,
-            .completion_scheduler_accepted =
-                result == LAB10_UI_SCRIPTED_POLL_COMPLETE,
+            .completion_scheduler_accepted = result == LAB10_UI_SCRIPTED_POLL_COMPLETE,
         };
         if (lab10_ui_scripted_diagnostic_begin(
                 &view->scripted_diagnostic_lifecycle,
@@ -784,20 +783,20 @@ static void on_canvas_event(lv_event_t *event)
     }
     lab10_touch_phase_t phase = LAB10_PHASE_NONE;
     switch (lv_event_get_code(event)) {
-    case LV_EVENT_PRESSED:
-        phase = LAB10_PHASE_DOWN;
-        break;
-    case LV_EVENT_PRESSING:
-        phase = LAB10_PHASE_MOVE;
-        break;
-    case LV_EVENT_RELEASED:
-        phase = LAB10_PHASE_UP;
-        break;
-    case LV_EVENT_PRESS_LOST:
-        phase = LAB10_PHASE_LEAVE;
-        break;
-    default:
-        return;
+        case LV_EVENT_PRESSED:
+            phase = LAB10_PHASE_DOWN;
+            break;
+        case LV_EVENT_PRESSING:
+            phase = LAB10_PHASE_MOVE;
+            break;
+        case LV_EVENT_RELEASED:
+            phase = LAB10_PHASE_UP;
+            break;
+        case LV_EVENT_PRESS_LOST:
+            phase = LAB10_PHASE_LEAVE;
+            break;
+        default:
+            return;
     }
     /* The model rejects x >= 240 even if an input driver reports a wide point. */
     handle_touch_and_poll(view, phase, point.x, point.y);
@@ -806,16 +805,16 @@ static void on_canvas_event(lv_event_t *event)
 static lab10_touch_phase_t touch_phase_from_event(lv_event_code_t code)
 {
     switch (code) {
-    case LV_EVENT_PRESSED:
-        return LAB10_PHASE_DOWN;
-    case LV_EVENT_PRESSING:
-        return LAB10_PHASE_MOVE;
-    case LV_EVENT_RELEASED:
-        return LAB10_PHASE_UP;
-    case LV_EVENT_PRESS_LOST:
-        return LAB10_PHASE_LEAVE;
-    default:
-        return LAB10_PHASE_NONE;
+        case LV_EVENT_PRESSED:
+            return LAB10_PHASE_DOWN;
+        case LV_EVENT_PRESSING:
+            return LAB10_PHASE_MOVE;
+        case LV_EVENT_RELEASED:
+            return LAB10_PHASE_UP;
+        case LV_EVENT_PRESS_LOST:
+            return LAB10_PHASE_LEAVE;
+        default:
+            return LAB10_PHASE_NONE;
     }
 }
 
@@ -949,7 +948,7 @@ static void entry_animation_done(lv_anim_t *animation)
             !lab10_render_begin(s_anim_view->renderer,
                                 s_anim_view->capture_session_id)) {
             (void)lab10_capture_cancel(s_anim_view->capture,
-                                        s_anim_view->capture_session_id);
+                                       s_anim_view->capture_session_id);
             lab10_ui_view_present_state(s_anim_view, LAB10_SCREEN_FAILED);
             s_anim_view = NULL;
             return;
@@ -981,7 +980,7 @@ static void entry_animation_done(lv_anim_t *animation)
                 LAB10_CAPTURE_ACCEPTED_POINT_CAPACITY,
                 LAB10_UI_SCRIPTED_MOVE_INTERVAL_US)) {
             (void)lab10_capture_cancel(s_anim_view->capture,
-                                        s_anim_view->capture_session_id);
+                                       s_anim_view->capture_session_id);
             lab10_ui_view_present_state(s_anim_view, LAB10_SCREEN_FAILED);
             s_anim_view = NULL;
             return;
@@ -1060,18 +1059,18 @@ static void start_circle_animation(lab10_ui_view_t *view, lv_obj_t *object,
 static const char *outcome_text(lab10_screen_state_t state)
 {
     switch (state) {
-    case LAB10_SCREEN_STOPPED:
-        return "stopped";
-    case LAB10_SCREEN_CANCELLED:
-        return "cancelled";
-    case LAB10_SCREEN_FAILED:
-        return "failed";
-    case LAB10_SCREEN_COMPLETED:
-        return "completed";
-    case LAB10_SCREEN_RECORDING:
-        return "recording";
-    default:
-        return "";
+        case LAB10_SCREEN_STOPPED:
+            return "stopped";
+        case LAB10_SCREEN_CANCELLED:
+            return "cancelled";
+        case LAB10_SCREEN_FAILED:
+            return "failed";
+        case LAB10_SCREEN_COMPLETED:
+            return "completed";
+        case LAB10_SCREEN_RECORDING:
+            return "recording";
+        default:
+            return "";
     }
 }
 
@@ -1125,11 +1124,11 @@ bool lab10_ui_view_init(lab10_ui_view_t *view, lv_obj_t *parent)
         return view_init_failed(view, "renderer_hooks");
     }
     lab10_ui_set_hooks(&view->model, &(lab10_ui_hooks_t){
-        .on_transition = on_transition,
-        .on_palette_changed = on_palette_changed,
-        .on_touch_routed = on_touch_routed,
-        .context = view,
-    });
+                                         .on_transition = on_transition,
+                                         .on_palette_changed = on_palette_changed,
+                                         .on_touch_routed = on_touch_routed,
+                                         .context = view,
+                                     });
 
     view->root = lv_obj_create(parent);
     if (view->root == NULL) {
@@ -1360,22 +1359,22 @@ static lab10_ui_terminal_kind_t capture_terminal_kind(
     lab10_capture_terminal_outcome_t outcome)
 {
     switch (outcome) {
-    case LAB10_CAPTURE_OUTCOME_COMPLETED:
-        return LAB10_UI_TERMINAL_COMPLETED;
-    case LAB10_CAPTURE_OUTCOME_STOPPED:
-        return LAB10_UI_TERMINAL_STOPPED;
-    case LAB10_CAPTURE_OUTCOME_CANCELLED:
-        return LAB10_UI_TERMINAL_CANCELLED;
-    case LAB10_CAPTURE_OUTCOME_DURATION_CAP:
-        return LAB10_UI_TERMINAL_DURATION_CAP;
-    case LAB10_CAPTURE_OUTCOME_POINT_CAP:
-        return LAB10_UI_TERMINAL_POINT_CAP;
-    case LAB10_CAPTURE_OUTCOME_QUEUE_OVERFLOW:
-        return LAB10_UI_TERMINAL_QUEUE_OVERFLOW;
-    case LAB10_CAPTURE_OUTCOME_FAILED:
-    case LAB10_CAPTURE_OUTCOME_NONE:
-    default:
-        return LAB10_UI_TERMINAL_FAILED;
+        case LAB10_CAPTURE_OUTCOME_COMPLETED:
+            return LAB10_UI_TERMINAL_COMPLETED;
+        case LAB10_CAPTURE_OUTCOME_STOPPED:
+            return LAB10_UI_TERMINAL_STOPPED;
+        case LAB10_CAPTURE_OUTCOME_CANCELLED:
+            return LAB10_UI_TERMINAL_CANCELLED;
+        case LAB10_CAPTURE_OUTCOME_DURATION_CAP:
+            return LAB10_UI_TERMINAL_DURATION_CAP;
+        case LAB10_CAPTURE_OUTCOME_POINT_CAP:
+            return LAB10_UI_TERMINAL_POINT_CAP;
+        case LAB10_CAPTURE_OUTCOME_QUEUE_OVERFLOW:
+            return LAB10_UI_TERMINAL_QUEUE_OVERFLOW;
+        case LAB10_CAPTURE_OUTCOME_FAILED:
+        case LAB10_CAPTURE_OUTCOME_NONE:
+        default:
+            return LAB10_UI_TERMINAL_FAILED;
     }
 }
 

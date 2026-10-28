@@ -1,6 +1,7 @@
 #include "pollers.hpp"
 
-namespace lab07 {
+namespace lab07
+{
 
 RosterPoller::RosterPoller(SessionWriter *session) : session_(session) {}
 

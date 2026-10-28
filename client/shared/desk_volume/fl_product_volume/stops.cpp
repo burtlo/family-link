@@ -1,14 +1,19 @@
 #include "fl_product_volume_stops.hpp"
 
-namespace fl_product_volume {
-namespace {
+namespace fl_product_volume
+{
+namespace
+{
 
 constexpr int kStops[kVolumeStopCount] = {
     0, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100};
 
 } /* namespace */
 
-int volume_stop_index_default() { return kVolumeStopCount - 1; }
+int volume_stop_index_default()
+{
+    return kVolumeStopCount - 1;
+}
 
 int volume_codec_for_stop_index(int index)
 {

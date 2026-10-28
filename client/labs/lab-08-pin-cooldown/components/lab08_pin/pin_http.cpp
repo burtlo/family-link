@@ -2,8 +2,10 @@
 
 #include <string.h>
 
-namespace lab08 {
-namespace {
+namespace lab08
+{
+namespace
+{
 
 bool is_ws(char c)
 {

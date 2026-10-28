@@ -4,7 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace fl_product_record {
+namespace fl_product_record
+{
 
 struct CapturePointView {
     uint64_t timestamp_us;

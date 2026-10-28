@@ -23,7 +23,8 @@
 #define CONFIG_LAB09_BASE_URL "http://127.0.0.1:8769"
 #endif
 
-namespace {
+namespace
+{
 
 constexpr int kScreenW = 320;
 constexpr int kScreenH = 240;
@@ -701,39 +702,31 @@ void scripted_harness()
                             s_probe.session().terminal_count_for(ticket.operation_id) == 1 &&
                             strcmp(s_probe.session().terminal_for(ticket.operation_id), "success") != 0 &&
                             s_probe.applied_visible() == 0;
-                write_accounted(observation, lab07::format_scoped_observation(
-                                    "I-expire-http", "none", expire_status, 0, 0, observation,
-                                    (int)sizeof(observation)),
+                write_accounted(observation, lab07::format_scoped_observation("I-expire-http", "none", expire_status, 0, 0, observation, (int)sizeof(observation)),
                                 (int)sizeof(observation));
             }
         }
     }
     print_traces();
-    write_accounted(observation, lab07::format_scoped_observation(
-                        "I-confused", "none", 0, confused < 0 ? 0 : confused, 0, observation,
-                        (int)sizeof(observation)),
+    write_accounted(observation, lab07::format_scoped_observation("I-confused", "none", 0, confused < 0 ? 0 : confused, 0, observation, (int)sizeof(observation)),
                     (int)sizeof(observation));
     wipe_handle();
     if (http_sign_in("user-a")) {
         perform_exchange("/session/mute", HTTP_METHOD_POST, "{\"mode\":\"revoke-on-mute\"}", 28, s_handle,
-                          &s_exchange);
+                         &s_exchange);
         perform_exchange("/inbox", HTTP_METHOD_POST, "{}", 2, s_handle, &s_exchange);
         revoke_status = s_exchange.http_status;
     }
     wipe_handle();
     if (http_sign_in("user-a")) {
         perform_exchange("/session/mute", HTTP_METHOD_POST, "{\"mode\":\"leave-server-session\"}", 32, s_handle,
-                          &s_exchange);
+                         &s_exchange);
         perform_exchange("/inbox", HTTP_METHOD_POST, "{}", 2, s_handle, &s_exchange);
         leave_status = s_exchange.http_status;
     }
-    write_accounted(observation, lab07::format_scoped_observation(
-                        "I-revoke-branches", "revoke-on-mute", revoke_status, 0,
-                        revoke_status == 401 ? 1 : 0, observation, (int)sizeof(observation)),
+    write_accounted(observation, lab07::format_scoped_observation("I-revoke-branches", "revoke-on-mute", revoke_status, 0, revoke_status == 401 ? 1 : 0, observation, (int)sizeof(observation)),
                     (int)sizeof(observation));
-    write_accounted(observation, lab07::format_scoped_observation(
-                        "I-revoke-branches", "leave-server-session", leave_status, 0,
-                        leave_status == 200 ? 0 : 1, observation, (int)sizeof(observation)),
+    write_accounted(observation, lab07::format_scoped_observation("I-revoke-branches", "leave-server-session", leave_status, 0, leave_status == 200 ? 0 : 1, observation, (int)sizeof(observation)),
                     (int)sizeof(observation));
     s_probe.cleanup();
     wipe_handle();

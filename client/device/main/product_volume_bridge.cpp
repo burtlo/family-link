@@ -14,7 +14,8 @@
 #include "fl_product_volume_journey.hpp"
 #include "fl_product_volume_stops.hpp"
 
-namespace {
+namespace
+{
 
 constexpr const char *kTag = "product_volume";
 constexpr const char *kNvsNamespace = "fl_desk";
@@ -86,7 +87,10 @@ void render_volume()
     lv_slider_set_value(s_slider, s_journey.stop_index(), LV_ANIM_OFF);
 }
 
-void on_speaker_codec(int codec) { (void)codec; }
+void on_speaker_codec(int codec)
+{
+    (void)codec;
+}
 
 void on_slider_changed(lv_event_t *event)
 {
@@ -239,7 +243,10 @@ extern "C" int product_volume_on_mute(void)
     return 1;
 }
 
-extern "C" int product_volume_on_red_record(void) { return s_journey.on_red_record(); }
+extern "C" int product_volume_on_red_record(void)
+{
+    return s_journey.on_red_record();
+}
 
 extern "C" void product_volume_on_wifi(bool up)
 {

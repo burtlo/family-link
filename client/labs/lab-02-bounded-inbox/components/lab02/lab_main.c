@@ -125,14 +125,14 @@ void lab02_app_start(void)
     }
 
     const esp_app_desc_t *desc = esp_app_get_description();
-    const char *build_id = CONFIG_LAB02_BUILD_ID[0] ? CONFIG_LAB02_BUILD_ID :
-                           (desc && desc->version[0] ? desc->version : "dev");
+    const char *build_id = CONFIG_LAB02_BUILD_ID[0] ? CONFIG_LAB02_BUILD_ID : (desc && desc->version[0] ? desc->version : "dev");
     const lab02_fixture_blob_t *blob = lab02_fixture_selected();
     const char *fixture_rev = blob && blob->name ? blob->name : fixture_name();
 
     printf("LAB02_READY build=%s fixture=%s mode=%s backend=%s harness=%d scenario=%s "
            "trace_schema=lab-trace/v1 draw_buf_height_lines=%d draw_buf_count=%d "
-           "draw_buf_bytes=%d color_depth_bits=%d\n", build_id, fixture_rev, mode_name(),
+           "draw_buf_bytes=%d color_depth_bits=%d\n",
+           build_id, fixture_rev, mode_name(),
            backend_name(), LAB02_HARNESS_ID, CONFIG_LAB02_SCENARIO,
            CONFIG_BSP_LCD_DRAW_BUF_HEIGHT, LAB02_EFFECTIVE_DRAW_BUF_COUNT,
            LAB02_LCD_W * CONFIG_BSP_LCD_DRAW_BUF_HEIGHT * LAB02_EFFECTIVE_DRAW_BUF_COUNT *

@@ -7,8 +7,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_login {
-namespace {
+namespace fl_product_login
+{
+namespace
+{
 
 void copy_text(char *dst, int cap, const char *src)
 {
@@ -40,8 +42,7 @@ const char *scenario_class(const char *scenario)
         "R-retry-fail", "R-idle", "R-stale-beat", "R-mute", "R-timeout-ui",
         "K-ok", "K-wrong", "K-five", "K-switch-user", "K-timeouts",
         "K-lost", "K-mute-local", "K-boot", "K-idle",
-        "I-mute", "I-signout", "I-switch", "I-push", "I-expire-client"
-    };
+        "I-mute", "I-signout", "I-switch", "I-push", "I-expire-client"};
     int i;
     if (text_eq(scenario, "R-wire") || text_eq(scenario, "R-stale-clock") ||
         text_eq(scenario, "K-concurrent") || text_eq(scenario, "K-mismatch") ||
@@ -896,7 +897,7 @@ void SessionWriter::advance_to(int64_t target_ms)
         int64_t timeout_at = roster_inflight_ ? roster_deadline_ms_ : 0x7fffffffffffffffLL;
         int64_t heart_at = heartbeat_armed_ ? next_heartbeat_due_ms_ : 0x7fffffffffffffffLL;
         int64_t roster_at = (roster_timer_armed_ && !roster_inflight_) ? next_roster_due_ms_
-                                                                        : 0x7fffffffffffffffLL;
+                                                                       : 0x7fffffffffffffffLL;
         int64_t pin_at = pin_next_event_ms();
         int64_t connect_at = (connecting_retry_armed_ && !roster_inflight_) ? connecting_retry_due_ms_
                                                                             : 0x7fffffffffffffffLL;
@@ -985,10 +986,22 @@ void SessionWriter::annotate_last(const char *parsed_keys, int grace_ms, int cle
     record->clear_stale = clear_stale;
 }
 
-int SessionWriter::stage() const { return stage_; }
-const char *SessionWriter::stage_name() const { return stage_token(stage_); }
-int SessionWriter::user_count() const { return user_count_; }
-const char *SessionWriter::focus_id() const { return focus_id_; }
+int SessionWriter::stage() const
+{
+    return stage_;
+}
+const char *SessionWriter::stage_name() const
+{
+    return stage_token(stage_);
+}
+int SessionWriter::user_count() const
+{
+    return user_count_;
+}
+const char *SessionWriter::focus_id() const
+{
+    return focus_id_;
+}
 const char *SessionWriter::user_at(int index) const
 {
     if (index < 0 || index >= user_count_) {
@@ -997,7 +1010,8 @@ const char *SessionWriter::user_at(int index) const
     return users_[index].id;
 }
 
-namespace {
+namespace
+{
 bool card_bg_recognized(const char *id)
 {
     static const char *kKnown[] = {"card-bg-01", "card-bg-02", "card-bg-03", "card-bg-04",
@@ -1053,17 +1067,38 @@ const char *SessionWriter::user_avatar_id_at(int index) const
     return users_[index].avatar_id;
 }
 
-int SessionWriter::connecting_backoff_index() const { return connecting_backoff_index_; }
-bool SessionWriter::health_ack_pending() const { return health_unacked_; }
-uint64_t SessionWriter::health_operation_id() const { return health_operation_id_; }
-const char *SessionWriter::health_reason() const { return health_reason_; }
-const char *SessionWriter::boot_id() const { return boot_id_; }
+int SessionWriter::connecting_backoff_index() const
+{
+    return connecting_backoff_index_;
+}
+bool SessionWriter::health_ack_pending() const
+{
+    return health_unacked_;
+}
+uint64_t SessionWriter::health_operation_id() const
+{
+    return health_operation_id_;
+}
+const char *SessionWriter::health_reason() const
+{
+    return health_reason_;
+}
+const char *SessionWriter::boot_id() const
+{
+    return boot_id_;
+}
 int SessionWriter::roster_request_timeout_ms() const
 {
     return roster_timeout_ms_ > 0 ? roster_timeout_ms_ : kRequestTimeoutMs;
 }
-int SessionWriter::roster_updating() const { return roster_updating_ ? 1 : 0; }
-int SessionWriter::hangout_known() const { return hangout_known_ ? 1 : 0; }
+int SessionWriter::roster_updating() const
+{
+    return roster_updating_ ? 1 : 0;
+}
+int SessionWriter::hangout_known() const
+{
+    return hangout_known_ ? 1 : 0;
+}
 
 void SessionWriter::order_roster(RosterResult *result)
 {
@@ -1171,26 +1206,86 @@ void SessionWriter::remember_login(const char *user_id)
     copy_text(recent_ids_[0], kMaxId, user_id);
 }
 
-int SessionWriter::selectable_cards() const { return selectable_cards_; }
-int SessionWriter::stale() const { return stale_; }
-int SessionWriter::missed_beats() const { return missed_beats_; }
-int SessionWriter::inflight_requests() const { return roster_inflight_ ? 1 : 0; }
-int SessionWriter::touch_during_wait() const { return roster_touch_; }
-int SessionWriter::queue_count() const { return queue_count_; }
-int SessionWriter::overflow_terminals() const { return overflow_terminals_; }
-int SessionWriter::rejected_results() const { return rejected_results_; }
-bool SessionWriter::roster_inflight() const { return roster_inflight_; }
-uint32_t SessionWriter::roster_attempt() const { return roster_attempt_; }
-uint64_t SessionWriter::roster_operation_id() const { return roster_operation_id_; }
-int64_t SessionWriter::now_ms() const { return now_ms_; }
-int64_t SessionWriter::next_roster_due_ms() const { return next_roster_due_ms_; }
-int64_t SessionWriter::next_heartbeat_due_ms() const { return next_heartbeat_due_ms_; }
-int SessionWriter::heartbeat_period_ms() const { return kHeartbeatPeriodMs; }
-bool SessionWriter::has_wrong_pin() const { return pin_phase_ == kPinPhaseWrong; }
-uint32_t SessionWriter::generation() const { return generation_; }
-const char *SessionWriter::session_id() const { return session_id_; }
-int SessionWriter::event_count() const { return event_count_; }
-const TerminalRecord &SessionWriter::event_at(int index) const { return events_[index]; }
+int SessionWriter::selectable_cards() const
+{
+    return selectable_cards_;
+}
+int SessionWriter::stale() const
+{
+    return stale_;
+}
+int SessionWriter::missed_beats() const
+{
+    return missed_beats_;
+}
+int SessionWriter::inflight_requests() const
+{
+    return roster_inflight_ ? 1 : 0;
+}
+int SessionWriter::touch_during_wait() const
+{
+    return roster_touch_;
+}
+int SessionWriter::queue_count() const
+{
+    return queue_count_;
+}
+int SessionWriter::overflow_terminals() const
+{
+    return overflow_terminals_;
+}
+int SessionWriter::rejected_results() const
+{
+    return rejected_results_;
+}
+bool SessionWriter::roster_inflight() const
+{
+    return roster_inflight_;
+}
+uint32_t SessionWriter::roster_attempt() const
+{
+    return roster_attempt_;
+}
+uint64_t SessionWriter::roster_operation_id() const
+{
+    return roster_operation_id_;
+}
+int64_t SessionWriter::now_ms() const
+{
+    return now_ms_;
+}
+int64_t SessionWriter::next_roster_due_ms() const
+{
+    return next_roster_due_ms_;
+}
+int64_t SessionWriter::next_heartbeat_due_ms() const
+{
+    return next_heartbeat_due_ms_;
+}
+int SessionWriter::heartbeat_period_ms() const
+{
+    return kHeartbeatPeriodMs;
+}
+bool SessionWriter::has_wrong_pin() const
+{
+    return pin_phase_ == kPinPhaseWrong;
+}
+uint32_t SessionWriter::generation() const
+{
+    return generation_;
+}
+const char *SessionWriter::session_id() const
+{
+    return session_id_;
+}
+int SessionWriter::event_count() const
+{
+    return event_count_;
+}
+const TerminalRecord &SessionWriter::event_at(int index) const
+{
+    return events_[index];
+}
 
 int64_t SessionWriter::quiet_anchor_ms() const
 {
@@ -1347,7 +1442,8 @@ void run_scripted_catalog(SessionWriter *session)
     session->annotate_last("grace_ms|clear_stale", 0, 0);
 }
 
-namespace {
+namespace
+{
 
 const char *kControlEight[] = {"su-01", "su-02", "su-03", "su-04", "su-05", "su-06", "su-07", "su-08"};
 const char *kControlSeven[] = {"su-01", "su-02", "su-03", "su-04", "su-05", "su-06", "su-07"};
@@ -1370,7 +1466,7 @@ void submit_plain(SessionWriter *session, const char *const *ids, int count, int
 }
 
 void submit_armed(SessionWriter *session, const char *const *ids, int count, int valid,
-                   const char *scenario)
+                  const char *scenario)
 {
     RosterResult result = users_from(ids, count, valid);
     if (session->stage() == kStageMuted) {

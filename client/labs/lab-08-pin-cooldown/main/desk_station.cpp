@@ -138,7 +138,7 @@ bool join_desk_wifi(const char *ssid, const char *password)
         }
     }
     EventBits_t bits = xEventGroupWaitBits(s_wifi_events, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE,
-                                            pdMS_TO_TICKS(30000));
+                                           pdMS_TO_TICKS(30000));
     if ((bits & WIFI_CONNECTED_BIT) == 0) {
         ESP_LOGE(TAG, "Wi-Fi connect timeout");
         return false;

@@ -3,7 +3,8 @@
 
 #include "session.hpp"
 
-namespace lab08 {
+namespace lab08
+{
 
 /* Classify one finished exchange. operation_id is the id captured at submission.
    This function does not read the session's current or next operation id. */

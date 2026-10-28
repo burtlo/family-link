@@ -10,6 +10,10 @@ echo "\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\
 echo
 echo "  SETUP"
 echo "    make install     Prepares the host: Python venv, serial/flash tools, ESP-IDF when absent."
+echo "    make format      Runs clang-format (client/server C/C++) and LF normalization (see docs/standards/code-formatting.md)."
+echo "    make format.check  Fails if C/C++ or tracked text line endings are out of spec."
+echo "    make eol.fix       Converts tracked text files to LF (keeps CRLF on .bat/.cmd only)."
+echo "    make eol.check     Fails if tracked text files contain CR line endings."
 echo
 echo "\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////\\\\\\\\////"
 echo

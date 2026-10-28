@@ -3,7 +3,8 @@
 
 #include "session.hpp"
 
-namespace lab07 {
+namespace lab07
+{
 
 /* Virtual-clock catalog and on-screen lab controls.
    Not the session-owner interface. Fixture URLs and HTTP stay in the firmware harness. */

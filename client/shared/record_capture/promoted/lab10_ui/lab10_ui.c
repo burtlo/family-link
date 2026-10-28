@@ -24,19 +24,33 @@ static const int16_t SCRIPTED_PATHS[4][LAB10_SCRIPTED_PATH_WAYPOINTS][2] = {
 };
 
 static const uint8_t SCRIPTED_STROKE_COLORS[LAB10_UI_SCRIPTED_STROKE_COUNT] = {
-    LAB10_COLOR_WHITE, LAB10_COLOR_GOLD, LAB10_COLOR_GREEN,
-    LAB10_COLOR_RED,   LAB10_COLOR_BLUE, LAB10_COLOR_WHITE,
-    LAB10_COLOR_GOLD,  LAB10_COLOR_RED,  LAB10_COLOR_GREEN,
-    LAB10_COLOR_BLUE,  LAB10_COLOR_WHITE, LAB10_COLOR_RED,
-    LAB10_COLOR_GOLD,  LAB10_COLOR_BLUE, LAB10_COLOR_GREEN,
-    LAB10_COLOR_WHITE, LAB10_COLOR_BLUE, LAB10_COLOR_RED,
+    LAB10_COLOR_WHITE,
+    LAB10_COLOR_GOLD,
+    LAB10_COLOR_GREEN,
+    LAB10_COLOR_RED,
+    LAB10_COLOR_BLUE,
+    LAB10_COLOR_WHITE,
+    LAB10_COLOR_GOLD,
+    LAB10_COLOR_RED,
+    LAB10_COLOR_GREEN,
+    LAB10_COLOR_BLUE,
+    LAB10_COLOR_WHITE,
+    LAB10_COLOR_RED,
+    LAB10_COLOR_GOLD,
+    LAB10_COLOR_BLUE,
+    LAB10_COLOR_GREEN,
+    LAB10_COLOR_WHITE,
+    LAB10_COLOR_BLUE,
+    LAB10_COLOR_RED,
 };
 
-static const uint64_t SCRIPTED_CADENCE_US[
-    LAB10_SCRIPTED_CADENCE_PATTERN_LENGTH] = {
-        UINT64_C(36000), UINT64_C(36000), UINT64_C(36000),
-        UINT64_C(40000), UINT64_C(40000),
-    };
+static const uint64_t SCRIPTED_CADENCE_US[LAB10_SCRIPTED_CADENCE_PATTERN_LENGTH] = {
+    UINT64_C(36000),
+    UINT64_C(36000),
+    UINT64_C(36000),
+    UINT64_C(40000),
+    UINT64_C(40000),
+};
 
 static bool is_outcome(lab10_screen_state_t state)
 {
@@ -174,39 +188,39 @@ bool lab10_ui_terminal_screen_state(
     }
 
     switch (terminal) {
-    case LAB10_UI_TERMINAL_COMPLETED:
-        if (qualification != NULL && qualification->scripted_session &&
-            (!qualification->decision_resolved ||
-             !qualification->completion_accepted)) {
-            *state = LAB10_SCREEN_FAILED;
-        } else {
-            *state = LAB10_SCREEN_COMPLETED;
-        }
-        return true;
-    case LAB10_UI_TERMINAL_STOPPED:
-        *state = LAB10_SCREEN_STOPPED;
-        return true;
-    case LAB10_UI_TERMINAL_CANCELLED:
-        *state = LAB10_SCREEN_CANCELLED;
-        return true;
-    case LAB10_UI_TERMINAL_DURATION_CAP:
-        if (qualification != NULL && qualification->scripted_session) {
-            if (!qualification->decision_resolved) {
-                return false;
+        case LAB10_UI_TERMINAL_COMPLETED:
+            if (qualification != NULL && qualification->scripted_session &&
+                (!qualification->decision_resolved ||
+                 !qualification->completion_accepted)) {
+                *state = LAB10_SCREEN_FAILED;
+            } else {
+                *state = LAB10_SCREEN_COMPLETED;
             }
-            *state = qualification->completion_accepted
-                         ? LAB10_SCREEN_COMPLETED
-                         : LAB10_SCREEN_FAILED;
             return true;
-        }
-        *state = LAB10_SCREEN_COMPLETED;
-        return true;
-    case LAB10_UI_TERMINAL_POINT_CAP:
-    case LAB10_UI_TERMINAL_QUEUE_OVERFLOW:
-    case LAB10_UI_TERMINAL_FAILED:
-    default:
-        *state = LAB10_SCREEN_FAILED;
-        return true;
+        case LAB10_UI_TERMINAL_STOPPED:
+            *state = LAB10_SCREEN_STOPPED;
+            return true;
+        case LAB10_UI_TERMINAL_CANCELLED:
+            *state = LAB10_SCREEN_CANCELLED;
+            return true;
+        case LAB10_UI_TERMINAL_DURATION_CAP:
+            if (qualification != NULL && qualification->scripted_session) {
+                if (!qualification->decision_resolved) {
+                    return false;
+                }
+                *state = qualification->completion_accepted
+                             ? LAB10_SCREEN_COMPLETED
+                             : LAB10_SCREEN_FAILED;
+                return true;
+            }
+            *state = LAB10_SCREEN_COMPLETED;
+            return true;
+        case LAB10_UI_TERMINAL_POINT_CAP:
+        case LAB10_UI_TERMINAL_QUEUE_OVERFLOW:
+        case LAB10_UI_TERMINAL_FAILED:
+        default:
+            *state = LAB10_SCREEN_FAILED;
+            return true;
     }
 }
 
@@ -371,8 +385,7 @@ static void scripted_advance(lab10_ui_scripted_schedule_t *schedule,
                              uint64_t now_us,
                              lab10_ui_scripted_action_t completed_action)
 {
-    uint64_t delay = SCRIPTED_CADENCE_US[
-        schedule->cadence_index % LAB10_SCRIPTED_CADENCE_PATTERN_LENGTH];
+    uint64_t delay = SCRIPTED_CADENCE_US[schedule->cadence_index % LAB10_SCRIPTED_CADENCE_PATTERN_LENGTH];
     ++schedule->cadence_index;
     if (completed_action == LAB10_UI_SCRIPTED_ACTION_UP) {
         delay += LAB10_UI_SCRIPTED_PEN_UP_GAP_US;
@@ -387,8 +400,8 @@ static void scripted_advance(lab10_ui_scripted_schedule_t *schedule,
      */
     if (schedule->next_event_timestamp_us <= now_us) {
         schedule->next_event_timestamp_us = now_us +
-            SCRIPTED_CADENCE_US[schedule->cadence_index %
-                                LAB10_SCRIPTED_CADENCE_PATTERN_LENGTH];
+                                            SCRIPTED_CADENCE_US[schedule->cadence_index %
+                                                                LAB10_SCRIPTED_CADENCE_PATTERN_LENGTH];
     }
 }
 
@@ -594,7 +607,7 @@ lab10_ui_circle_transition_t lab10_ui_ring_exit_transition(
 }
 
 lab10_ui_ring_reveal_clip_t lab10_ui_ring_reveal_clip(int16_t origin_y,
-                                                       int32_t outer_radius)
+                                                      int32_t outer_radius)
 {
     const int32_t inner_radius = outer_radius - LAB10_RING_BAND_WIDTH;
     int32_t y_line = (int32_t)origin_y - inner_radius;
@@ -643,13 +656,13 @@ lab10_touch_route_t lab10_ui_route_touch(const lab10_ui_model_t *model,
         return LAB10_ROUTE_CANVAS;
     }
     return lab10_palette_hit_test(x, y) >= 0 ? LAB10_ROUTE_PALETTE
-                                              : LAB10_ROUTE_RAIL_REJECTED;
+                                             : LAB10_ROUTE_RAIL_REJECTED;
 }
 
 lab10_touch_route_t lab10_ui_handle_touch(lab10_ui_model_t *model,
-                                           lab10_touch_phase_t phase,
-                                           int16_t x, int16_t y,
-                                           uint8_t touch_id)
+                                          lab10_touch_phase_t phase,
+                                          int16_t x, int16_t y,
+                                          uint8_t touch_id)
 {
     if (model == NULL) {
         return LAB10_ROUTE_OUTSIDE;
@@ -675,7 +688,7 @@ lab10_touch_route_t lab10_ui_handle_touch(lab10_ui_model_t *model,
             event.color_index = model->selected_color;
             if (model->hooks.on_palette_changed != NULL) {
                 model->hooks.on_palette_changed(previous, model->selected_color,
-                                                 model->hooks.context);
+                                                model->hooks.context);
             }
         }
     } else if (route == LAB10_ROUTE_CANVAS && phase != LAB10_PHASE_NONE) {

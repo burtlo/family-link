@@ -2,8 +2,10 @@
 
 #include <string.h>
 
-namespace fl_product_send {
-namespace {
+namespace fl_product_send
+{
+namespace
+{
 
 int finished_upload_active(const SendJourney &journey)
 {
@@ -57,9 +59,15 @@ void SendStageReducer::reset()
     hold_until_ms_ = 0;
 }
 
-void SendStageReducer::note_inbox() { place_ = kSendPlaceInbox; }
+void SendStageReducer::note_inbox()
+{
+    place_ = kSendPlaceInbox;
+}
 
-int SendStageReducer::place() const { return place_; }
+int SendStageReducer::place() const
+{
+    return place_;
+}
 
 const char *SendStageReducer::lower_status() const
 {

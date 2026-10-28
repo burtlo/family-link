@@ -936,27 +936,27 @@ static void manual_task(void *unused)
             continue;
         }
         switch (cmd.code) {
-        case LAB05_UI_OVERLAP:
-            rc = run_overlap_reps(1u, 0);
-            break;
-        case LAB05_UI_REPLACE:
-            rc = run_replace_once(0);
-            break;
-        case LAB05_UI_REPLACE_ALLOC:
-            rc = run_replace_once(1);
-            break;
-        case LAB05_UI_ALLOC_FAIL:
-            rc = run_alloc_once();
-            break;
-        case LAB05_UI_STALE:
-            rc = run_stale_once();
-            break;
-        case LAB05_UI_CANCEL:
-            rc = run_cancel_once();
-            break;
-        default:
-            rc = -1;
-            break;
+            case LAB05_UI_OVERLAP:
+                rc = run_overlap_reps(1u, 0);
+                break;
+            case LAB05_UI_REPLACE:
+                rc = run_replace_once(0);
+                break;
+            case LAB05_UI_REPLACE_ALLOC:
+                rc = run_replace_once(1);
+                break;
+            case LAB05_UI_ALLOC_FAIL:
+                rc = run_alloc_once();
+                break;
+            case LAB05_UI_STALE:
+                rc = run_stale_once();
+                break;
+            case LAB05_UI_CANCEL:
+                rc = run_cancel_once();
+                break;
+            default:
+                rc = -1;
+                break;
         }
         if (rc != 0) {
             printf("LAB05_PEAK_SCENARIO status=failed code=%u\n", (unsigned)cmd.code);

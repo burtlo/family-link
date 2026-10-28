@@ -20,7 +20,8 @@ typedef struct {
 static inline bool lab06_cancel_arm(lab06_cancel_control_t *control,
                                     bool scripted, bool transitioning)
 {
-    if (control == NULL || scripted || transitioning) return false;
+    if (control == NULL || scripted || transitioning)
+        return false;
     control->armed = true;
     return true;
 }
@@ -29,7 +30,8 @@ static inline bool lab06_cancel_arm(lab06_cancel_control_t *control,
 static inline bool lab06_cancel_transition_started(
     lab06_cancel_control_t *control, bool scripted)
 {
-    if (control == NULL || scripted) return false;
+    if (control == NULL || scripted)
+        return false;
     control->transition_scheduled = control->armed;
     control->armed = false;
     return control->transition_scheduled;
@@ -40,7 +42,8 @@ static inline bool lab06_cancel_transition_started(
 static inline bool lab06_cancel_control_clear(
     lab06_cancel_control_t *control, bool scripted)
 {
-    if (control == NULL || scripted) return false;
+    if (control == NULL || scripted)
+        return false;
     const bool was_pending = control->armed || control->transition_scheduled;
     control->armed = false;
     control->transition_scheduled = false;
@@ -50,7 +53,8 @@ static inline bool lab06_cancel_control_clear(
 static inline void lab06_cancel_transition_finished(
     lab06_cancel_control_t *control)
 {
-    if (control == NULL) return;
+    if (control == NULL)
+        return;
     control->armed = false;
     control->transition_scheduled = false;
 }

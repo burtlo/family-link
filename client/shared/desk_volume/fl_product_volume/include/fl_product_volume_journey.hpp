@@ -5,18 +5,22 @@
 
 #include <stdint.h>
 
-namespace fl_product_inbox {
+namespace fl_product_inbox
+{
 class CarouselSession;
 }
 
-namespace fl_product_login {
+namespace fl_product_login
+{
 class SessionWriter;
 }
 
-namespace fl_product_volume {
+namespace fl_product_volume
+{
 
-class DeskVolumeJourney {
-public:
+class DeskVolumeJourney
+{
+  public:
     DeskVolumeJourney();
 
     void bind_storage(VolumeStorage *storage);
@@ -40,7 +44,7 @@ public:
 
     int volume_body_visible() const;
 
-private:
+  private:
     VolumeSession session_;
     int connectivity_lost_while_volume_;
 };

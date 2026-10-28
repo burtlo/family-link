@@ -19,6 +19,9 @@ reviewable artifacts and verification gates.
 Normative words have their usual meanings: **MUST**, **MUST NOT**, **SHOULD**, and
 **MAY**.
 
+C/C++ layout and brace style in the active tree MUST follow
+[code-formatting.md](code-formatting.md) (`make format` / root `.clang-format`).
+
 ## 1. Architectural boundaries
 
 Every interactive client MUST separate three responsibilities, even if a small

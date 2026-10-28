@@ -26,7 +26,7 @@ typedef enum {
 typedef struct {
     int focus_index;
     uint16_t total_count;
-    uint32_t inbox_revision; /* Applied model revision. */
+    uint32_t inbox_revision;         /* Applied model revision. */
     uint32_t pending_inbox_revision; /* Accepted mutation; not yet visible. */
     lab02_load_stage_t load_stage;
     bool scroll_locked;

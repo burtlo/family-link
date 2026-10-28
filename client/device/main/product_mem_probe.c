@@ -47,8 +47,14 @@ static void log_sample(const char *phase, int32_t detail, int with_lvgl)
              psram_free, pcTaskGetName(NULL), stack_hw);
 }
 
-void product_mem_probe(const char *phase, int32_t detail) { log_sample(phase, detail, 1); }
+void product_mem_probe(const char *phase, int32_t detail)
+{
+    log_sample(phase, detail, 1);
+}
 
-void product_mem_probe_heap(const char *phase, int32_t detail) { log_sample(phase, detail, 0); }
+void product_mem_probe_heap(const char *phase, int32_t detail)
+{
+    log_sample(phase, detail, 0);
+}
 
 #endif

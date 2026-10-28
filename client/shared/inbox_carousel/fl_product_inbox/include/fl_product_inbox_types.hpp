@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-namespace fl_product_inbox {
+namespace fl_product_inbox
+{
 
 enum {
     kMaxMessages = 64,

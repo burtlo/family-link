@@ -5,10 +5,12 @@
 #include "fl_product_send_picker.hpp"
 #include "fl_product_send_types.hpp"
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
-class SendJourney {
-public:
+class SendJourney
+{
+  public:
     SendJourney();
 
     void reset();
@@ -53,7 +55,7 @@ public:
     int streaming_active() const;
     SendUiPhase ui_phase() const;
 
-private:
+  private:
     char inbox_snapshot_[kMaxInboxSelectionId];
     char restored_selection_[kMaxInboxSelectionId];
     RecipientPicker picker_;

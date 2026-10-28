@@ -7,7 +7,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace fl_product_record {
+namespace fl_product_record
+{
 
 enum SessionNotice {
     kSessionNoticeNone = 0,
@@ -16,8 +17,9 @@ enum SessionNotice {
     kSessionNoticeCaptureFailed = 3
 };
 
-class RecordSession {
-public:
+class RecordSession
+{
+  public:
     RecordSession();
     ~RecordSession();
 
@@ -58,7 +60,7 @@ public:
     void *renderer_handle();
     uint64_t capture_clock_us() const;
 
-private:
+  private:
     bool finish_capture(FinishReason reason);
     bool open_kept_capture();
     void reset_runtime();

@@ -5,8 +5,10 @@
 
 #include <string.h>
 
-namespace fl_product_record {
-namespace {
+namespace fl_product_record
+{
+namespace
+{
 
 uint16_t rgb565_from_index(uint8_t color_index)
 {
@@ -24,7 +26,10 @@ uint32_t read_u32(const uint8_t *p)
 
 } /* namespace */
 
-uint16_t rail_color_rgb565(uint8_t color_index) { return rgb565_from_index(color_index); }
+uint16_t rail_color_rgb565(uint8_t color_index)
+{
+    return rgb565_from_index(color_index);
+}
 
 size_t encode_flsk2(const CapturePointView *points, size_t point_count, uint8_t *out, size_t out_cap,
                     uint32_t start_ms)

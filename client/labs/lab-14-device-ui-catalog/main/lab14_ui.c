@@ -61,7 +61,7 @@ static lv_obj_t *make_slot(lv_obj_t *parent, int x, int y, int w, int h, uint32_
 }
 
 static lv_obj_t *make_button(lv_obj_t *parent, const char *text, int x, int y, int w, int h,
-                            int type_px, lv_event_cb_t cb, void *user)
+                             int type_px, lv_event_cb_t cb, void *user)
 {
     const lab14_tokens_t *t = &g_catalog->tokens;
     lv_obj_t *button = lv_button_create(parent);

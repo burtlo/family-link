@@ -5,8 +5,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace fl_product_send {
-namespace {
+namespace fl_product_send
+{
+namespace
+{
 
 int find_key(const char *body, int len, const char *key)
 {
@@ -95,9 +97,9 @@ int build_message_create(const FrozenPayload &payload, char *out, int out_cap)
         return 0;
     }
     written = snprintf(out, (size_t)out_cap,
-                     "{\"schema\":\"fl.message-create/2\",\"client_message_id\":\"%s\","
-                     "\"recipient_user_ids\":[",
-                     payload.client_message_id);
+                       "{\"schema\":\"fl.message-create/2\",\"client_message_id\":\"%s\","
+                       "\"recipient_user_ids\":[",
+                       payload.client_message_id);
     for (i = 0; i < payload.recipient_count; ++i) {
         written += snprintf(out + written, (size_t)(out_cap - written), "%s\"%s\"",
                             i == 0 ? "" : ",", payload.recipient_user_ids[i]);

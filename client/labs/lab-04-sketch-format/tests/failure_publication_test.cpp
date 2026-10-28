@@ -9,8 +9,10 @@ int main()
     lab04::FailurePublication failure;
     assert(!failure.failed());
     std::vector<std::thread> publishers;
-    for (int i = 0; i < 8; ++i) publishers.emplace_back([&failure] { failure.publish_queue_overflow(); });
-    for (auto &publisher : publishers) publisher.join();
+    for (int i = 0; i < 8; ++i)
+        publishers.emplace_back([&failure] { failure.publish_queue_overflow(); });
+    for (auto &publisher : publishers)
+        publisher.join();
     assert(failure.failed());
     assert(failure.queue_overflows() == 8);
     // Publication is sticky: the app task cannot miss a previously published

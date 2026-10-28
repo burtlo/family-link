@@ -3,14 +3,17 @@
 
 #include "fl_product_volume_storage.hpp"
 
-namespace fl_product_volume {
+namespace fl_product_volume
+{
 
-enum VolumeScreen { kVolumeScreenInbox = 0, kVolumeScreenVolume = 1 };
+enum VolumeScreen { kVolumeScreenInbox = 0,
+                    kVolumeScreenVolume = 1 };
 
 typedef void (*SpeakerCodecCallback)(int codec);
 
-class VolumeSession {
-public:
+class VolumeSession
+{
+  public:
     VolumeSession();
 
     void bind_storage(VolumeStorage *storage);
@@ -28,7 +31,7 @@ public:
 
     int playback_pause_armed() const;
 
-private:
+  private:
     void notify_speaker_codec();
 
     VolumeStorage *storage_;

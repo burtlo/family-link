@@ -4,7 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 /* Incremental hasher. Callers feed stored bytes in part-sized steps. */
 struct Sha256Stream {

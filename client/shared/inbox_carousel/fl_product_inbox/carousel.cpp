@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace fl_product_inbox {
-namespace {
+namespace fl_product_inbox
+{
+namespace
+{
 
 bool text_eq(const char *a, const char *b)
 {
@@ -63,7 +65,10 @@ CarouselSession::CarouselSession()
     reset_fields(0);
 }
 
-CarouselSession::~CarouselSession() { release_sketch_buffers(); }
+CarouselSession::~CarouselSession()
+{
+    release_sketch_buffers();
+}
 
 void CarouselSession::reset_fields(int64_t now_ms)
 {
@@ -230,7 +235,10 @@ void CarouselSession::set_wifi(bool up, int64_t now_ms)
     begin_connecting(now_ms);
 }
 
-void CarouselSession::set_session_generation(uint32_t generation) { session_generation_ = generation; }
+void CarouselSession::set_session_generation(uint32_t generation)
+{
+    session_generation_ = generation;
+}
 
 CarouselSession::MessageRuntime *CarouselSession::selected_runtime()
 {
@@ -844,9 +852,18 @@ void CarouselSession::note_refresh_failure(int64_t now_ms)
     begin_connecting(now_ms);
 }
 
-int CarouselSession::message_count() const { return message_count_; }
-int CarouselSession::selected_index() const { return selected_index_; }
-const char *CarouselSession::selected_message_id() const { return selected_message_id_; }
+int CarouselSession::message_count() const
+{
+    return message_count_;
+}
+int CarouselSession::selected_index() const
+{
+    return selected_index_;
+}
+const char *CarouselSession::selected_message_id() const
+{
+    return selected_message_id_;
+}
 
 const InboxMessage *CarouselSession::message_at(int index) const
 {
@@ -856,8 +873,14 @@ const InboxMessage *CarouselSession::message_at(int index) const
     return &messages_[index];
 }
 
-uint32_t CarouselSession::inbox_revision() const { return inbox_revision_; }
-int CarouselSession::has_valid_inbox() const { return has_valid_inbox_; }
+uint32_t CarouselSession::inbox_revision() const
+{
+    return inbox_revision_;
+}
+int CarouselSession::has_valid_inbox() const
+{
+    return has_valid_inbox_;
+}
 
 ConnectivitySlot CarouselSession::connectivity_slot() const
 {
@@ -870,9 +893,18 @@ ConnectivitySlot CarouselSession::connectivity_slot() const
     return kSlotNone;
 }
 
-TransportState CarouselSession::transport_state() const { return transport_; }
-PlaybackPhase CarouselSession::playback_phase() const { return playback_; }
-uint32_t CarouselSession::playback_operation_id() const { return playback_operation_id_; }
+TransportState CarouselSession::transport_state() const
+{
+    return transport_;
+}
+PlaybackPhase CarouselSession::playback_phase() const
+{
+    return playback_;
+}
+uint32_t CarouselSession::playback_operation_id() const
+{
+    return playback_operation_id_;
+}
 
 int CarouselSession::play_disabled() const
 {
@@ -882,10 +914,22 @@ int CarouselSession::play_disabled() const
     return 0;
 }
 
-int CarouselSession::sketch_visible() const { return sketch_visible_; }
-int CarouselSession::portrait_hidden() const { return portrait_hidden_; }
-int CarouselSession::unread_badge_shown() const { return 0; }
-int CarouselSession::last_update_level() const { return last_update_level_; }
+int CarouselSession::sketch_visible() const
+{
+    return sketch_visible_;
+}
+int CarouselSession::portrait_hidden() const
+{
+    return portrait_hidden_;
+}
+int CarouselSession::unread_badge_shown() const
+{
+    return 0;
+}
+int CarouselSession::last_update_level() const
+{
+    return last_update_level_;
+}
 
 int CarouselSession::inbox_fetch_due(int64_t now_ms) const
 {
@@ -903,11 +947,20 @@ int CarouselSession::recovery_fetch_due(int64_t now_ms) const
     return now_ms >= next_recovery_fetch_ms_ ? 1 : 0;
 }
 
-int CarouselSession::inbox_fetch_armed() const { return inbox_fetch_armed_; }
+int CarouselSession::inbox_fetch_armed() const
+{
+    return inbox_fetch_armed_;
+}
 
-int CarouselSession::ui_visible() const { return ui_visible_; }
+int CarouselSession::ui_visible() const
+{
+    return ui_visible_;
+}
 
-void CarouselSession::set_ui_visible(int visible) { ui_visible_ = visible ? 1 : 0; }
+void CarouselSession::set_ui_visible(int visible)
+{
+    ui_visible_ = visible ? 1 : 0;
+}
 
 int CarouselSession::media_fetch_allowed() const
 {
@@ -917,15 +970,30 @@ int CarouselSession::media_fetch_allowed() const
     return 1;
 }
 
-int CarouselSession::recovery_pulse_pending() const { return recovery_pulse_; }
+int CarouselSession::recovery_pulse_pending() const
+{
+    return recovery_pulse_;
+}
 
-void CarouselSession::clear_recovery_pulse() { recovery_pulse_ = 0; }
+void CarouselSession::clear_recovery_pulse()
+{
+    recovery_pulse_ = 0;
+}
 
-void CarouselSession::arm_inbox_fetch() { inbox_fetch_armed_ = 1; }
+void CarouselSession::arm_inbox_fetch()
+{
+    inbox_fetch_armed_ = 1;
+}
 
-void CarouselSession::consume_inbox_arm() { inbox_fetch_armed_ = 0; }
+void CarouselSession::consume_inbox_arm()
+{
+    inbox_fetch_armed_ = 0;
+}
 
-void CarouselSession::retain_inbox_arm_on_snapshot(int retain) { snapshot_keeps_arm_ = retain ? 1 : 0; }
+void CarouselSession::retain_inbox_arm_on_snapshot(int retain)
+{
+    snapshot_keeps_arm_ = retain ? 1 : 0;
+}
 
 void CarouselSession::release_snapshot_arm()
 {
@@ -948,7 +1016,10 @@ void CarouselSession::acknowledge_inbox_fetch(int64_t now_ms)
     }
 }
 
-uint32_t CarouselSession::session_generation() const { return session_generation_; }
+uint32_t CarouselSession::session_generation() const
+{
+    return session_generation_;
+}
 
 int CarouselSession::sketch_bytes_stored() const
 {
@@ -1027,7 +1098,10 @@ int CarouselSession::apply_sketch_fetch_result(uint32_t generation, uint32_t ope
     return deliver_sketch_chunk(operation_id, message_id, bytes, len, now_ms);
 }
 
-const char *CarouselSession::pending_last_viewed_message_id() const { return pending_last_viewed_; }
+const char *CarouselSession::pending_last_viewed_message_id() const
+{
+    return pending_last_viewed_;
+}
 
 int CarouselSession::last_viewed_write_due(int64_t now_ms) const
 {
@@ -1061,7 +1135,10 @@ int CarouselSession::prefix_play_ready() const
     return rt->audio_buffered >= (int)kAudioPrefixBytes;
 }
 
-uint16_t CarouselSession::sketch_points_rendered() const { return sketch_rendered_; }
+uint16_t CarouselSession::sketch_points_rendered() const
+{
+    return sketch_rendered_;
+}
 
 int CarouselSession::play_head_ms() const
 {
@@ -1072,9 +1149,15 @@ int CarouselSession::play_head_ms() const
     return rt->play_head_ms;
 }
 
-int CarouselSession::settings_pause_active() const { return settings_pause_active_; }
+int CarouselSession::settings_pause_active() const
+{
+    return settings_pause_active_;
+}
 
-const uint16_t *CarouselSession::selected_sketch_pixels() const { return sketch_pixels_; }
+const uint16_t *CarouselSession::selected_sketch_pixels() const
+{
+    return sketch_pixels_;
+}
 
 int CarouselSession::message_sketch_len(int index) const
 {

@@ -3,7 +3,8 @@
 
 #include "session.hpp"
 
-namespace lab09 {
+namespace lab09
+{
 
 enum {
     kImageBytes = 28800,
@@ -13,8 +14,9 @@ enum {
 
 /* Lab cache and fixture classification. This is not a session writer.
    apply_stage stays on lab07::SessionWriter. */
-class Probe {
-public:
+class Probe
+{
+  public:
     Probe();
 
     lab07::SessionWriter &session();
@@ -42,7 +44,7 @@ public:
     const char *playback_label() const;
     const char *profile_label() const;
 
-private:
+  private:
     void release_image();
     void clear_cards();
 

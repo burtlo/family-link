@@ -48,8 +48,7 @@ static void transition_to(unsigned next)
            "touch",
 #endif
            previous, next, CONFIG_LAB05_BUILD_ID);
-    lv_screen_load_anim(s_screens[next], next > previous ? LV_SCR_LOAD_ANIM_MOVE_LEFT
-                                                         : LV_SCR_LOAD_ANIM_MOVE_RIGHT,
+    lv_screen_load_anim(s_screens[next], next > previous ? LV_SCR_LOAD_ANIM_MOVE_LEFT : LV_SCR_LOAD_ANIM_MOVE_RIGHT,
                         250, 0, false);
 }
 

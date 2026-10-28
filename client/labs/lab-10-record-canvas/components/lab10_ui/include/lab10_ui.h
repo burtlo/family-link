@@ -70,9 +70,9 @@ typedef enum {
     LAB10_COLOR_BLUE = 5,
 } lab10_color_index_t;
 
-#define LAB10_UI_SCRIPTED_REQUIRED_COLOR_MASK \
+#define LAB10_UI_SCRIPTED_REQUIRED_COLOR_MASK                         \
     ((uint8_t)((1u << LAB10_COLOR_WHITE) | (1u << LAB10_COLOR_GOLD) | \
-               (1u << LAB10_COLOR_GREEN) | (1u << LAB10_COLOR_RED) | \
+               (1u << LAB10_COLOR_GREEN) | (1u << LAB10_COLOR_RED) |  \
                (1u << LAB10_COLOR_BLUE)))
 
 typedef enum {
@@ -343,14 +343,14 @@ lab10_ui_circle_transition_t lab10_ui_ring_entry_transition(
 lab10_ui_circle_transition_t lab10_ui_ring_exit_transition(
     int16_t origin_x, int16_t origin_y);
 lab10_ui_ring_reveal_clip_t lab10_ui_ring_reveal_clip(int16_t origin_y,
-                                                       int32_t outer_radius);
+                                                      int32_t outer_radius);
 
 lab10_touch_route_t lab10_ui_route_touch(const lab10_ui_model_t *model,
                                          int16_t x, int16_t y);
 lab10_touch_route_t lab10_ui_handle_touch(lab10_ui_model_t *model,
-                                           lab10_touch_phase_t phase,
-                                           int16_t x, int16_t y,
-                                           uint8_t touch_id);
+                                          lab10_touch_phase_t phase,
+                                          int16_t x, int16_t y,
+                                          uint8_t touch_id);
 
 uint32_t lab10_ui_enter_fab_bloom(lab10_ui_model_t *model);
 uint32_t lab10_ui_enter_ring_wipe(lab10_ui_model_t *model);

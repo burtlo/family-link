@@ -9,9 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_journey {
+namespace fl_product_journey
+{
 
-namespace {
+namespace
+{
 
 const char kInboxSnapshot[] =
     "{\"schema\":\"fl.inbox-page/2\",\"inbox_revision\":1,\"total_count\":2,"
@@ -139,7 +141,7 @@ int scenario_roster_during_pin(HostJourney &journey)
     fl_product_login::deliver_classified_roster(&login, roster_op, 1, 200, kRosterBody, (int)strlen(kRosterBody), 1);
     CHECK(login.pin_phase() != fl_product_login::kPinPhaseIdle);
     CHECK(login.pin_phase() == fl_product_login::kPinPhaseEntry ||
-           login.pin_phase() == fl_product_login::kPinPhaseChecking);
+          login.pin_phase() == fl_product_login::kPinPhaseChecking);
     printf("scenario=roster-during-pin pin_phase=%d selectable=%d\n", (int)login.pin_phase(),
            login.selectable_cards());
     return g_failures;
@@ -263,7 +265,10 @@ int scenario_boot_pending_send(HostJourney &journey)
 
 } /* namespace */
 
-HostJourney::HostJourney() : now_ms_(0) { reset(0); }
+HostJourney::HostJourney() : now_ms_(0)
+{
+    reset(0);
+}
 
 void HostJourney::reset(int boot_muted)
 {
@@ -287,17 +292,35 @@ void HostJourney::advance(int64_t now_ms)
     send_.advance_to(now_ms);
 }
 
-fl_product_login::SessionWriter &HostJourney::login() { return login_; }
+fl_product_login::SessionWriter &HostJourney::login()
+{
+    return login_;
+}
 
-fl_product_inbox::CarouselSession &HostJourney::inbox() { return inbox_; }
+fl_product_inbox::CarouselSession &HostJourney::inbox()
+{
+    return inbox_;
+}
 
-fl_product_volume::DeskVolumeJourney &HostJourney::volume() { return volume_; }
+fl_product_volume::DeskVolumeJourney &HostJourney::volume()
+{
+    return volume_;
+}
 
-fl_product_volume::VolumeStorage &HostJourney::volume_storage() { return volume_storage_; }
+fl_product_volume::VolumeStorage &HostJourney::volume_storage()
+{
+    return volume_storage_;
+}
 
-fl_product_send::SendJourney &HostJourney::send() { return send_; }
+fl_product_send::SendJourney &HostJourney::send()
+{
+    return send_;
+}
 
-fl_shell_session_t &HostJourney::shell() { return shell_; }
+fl_shell_session_t &HostJourney::shell()
+{
+    return shell_;
+}
 
 void HostJourney::shell_goto(fl_shell_stage_t stage)
 {
@@ -307,9 +330,15 @@ void HostJourney::shell_goto(fl_shell_stage_t stage)
     }
 }
 
-fl_shell_stage_t HostJourney::shell_stage() const { return shell_.panels[0].stage; }
+fl_shell_stage_t HostJourney::shell_stage() const
+{
+    return shell_.panels[0].stage;
+}
 
-int HostJourney::signed_in() const { return login_.signed_in(); }
+int HostJourney::signed_in() const
+{
+    return login_.signed_in();
+}
 
 int HostJourney::volume_screen_active() const
 {

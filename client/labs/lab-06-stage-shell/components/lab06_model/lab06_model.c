@@ -6,13 +6,12 @@
 static const char *panel_text(lab06_stage_t stage, lab06_slot_t slot)
 {
     static const char *const upper[LAB06_STAGE_COUNT] = {
-        "Roster", "PIN", "Hangout", "Inbox", "Record", "Receipt"
-    };
+        "Roster", "PIN", "Hangout", "Inbox", "Record", "Receipt"};
     static const char *const lower[LAB06_STAGE_COUNT] = {
         "Choose a user", "Enter PIN", "No messages", "Synthetic inbox",
-        "Synthetic record", "Synthetic receipt"
-    };
-    if ((unsigned)stage >= LAB06_STAGE_COUNT) return "Invalid";
+        "Synthetic record", "Synthetic receipt"};
+    if ((unsigned)stage >= LAB06_STAGE_COUNT)
+        return "Invalid";
     return slot == LAB06_SLOT_UPPER ? upper[stage] : lower[stage];
 }
 
@@ -34,7 +33,8 @@ static void terminal(lab06_session_t *session, uint32_t operation_id,
                      lab06_terminal_t outcome, const char *reason)
 {
     for (size_t i = 0; i < session->terminal_ids_count; ++i) {
-        if (session->terminal_ids[i] == operation_id) return;
+        if (session->terminal_ids[i] == operation_id)
+            return;
     }
     if (session->terminal_ids_count < LAB06_TERMINAL_HISTORY) {
         session->terminal_ids[session->terminal_ids_count++] = operation_id;
@@ -52,7 +52,8 @@ static void terminal(lab06_session_t *session, uint32_t operation_id,
 static bool operation_is_terminal(const lab06_session_t *session, uint32_t operation_id)
 {
     for (size_t i = 0; i < session->terminal_ids_count; ++i) {
-        if (session->terminal_ids[i] == operation_id) return true;
+        if (session->terminal_ids[i] == operation_id)
+            return true;
     }
     return false;
 }
@@ -62,7 +63,8 @@ static bool operation_is_terminal(const lab06_session_t *session, uint32_t opera
  * ring remains diagnostic history only. */
 static bool admit_operation(lab06_session_t *session, uint32_t operation_id)
 {
-    if (operation_id <= session->operation_id_watermark) return false;
+    if (operation_id <= session->operation_id_watermark)
+        return false;
     session->operation_id_watermark = operation_id;
     return true;
 }
@@ -94,7 +96,8 @@ void lab06_session_init(lab06_session_t *session, uint32_t owner_id, lab06_stage
 bool lab06_begin_stage_transition(lab06_session_t *session, uint32_t writer_id,
                                   lab06_stage_t destination, uint32_t operation_id)
 {
-    if (!admit_operation(session, operation_id)) return false;
+    if (!admit_operation(session, operation_id))
+        return false;
     if (writer_id != session->owner_id) {
         terminal(session, operation_id, LAB06_TERMINAL_FAILURE, "second_writer");
         return false;
@@ -125,7 +128,8 @@ bool lab06_begin_stage_transition(lab06_session_t *session, uint32_t writer_id,
 bool lab06_finish_stage_transition(lab06_session_t *session, uint32_t operation_id)
 {
     if (!session->transitioning || session->transition_operation_id != operation_id) {
-        if (!admit_operation(session, operation_id)) return false;
+        if (!admit_operation(session, operation_id))
+            return false;
         session->stale_callbacks++;
         terminal(session, operation_id, LAB06_TERMINAL_STALE, "stale_transition");
         return false;
@@ -140,7 +144,8 @@ bool lab06_finish_stage_transition(lab06_session_t *session, uint32_t operation_
 bool lab06_cancel_stage_transition(lab06_session_t *session, uint32_t operation_id)
 {
     if (!session->transitioning || session->transition_operation_id != operation_id) {
-        if (!admit_operation(session, operation_id)) return false;
+        if (!admit_operation(session, operation_id))
+            return false;
         session->stale_callbacks++;
         terminal(session, operation_id, LAB06_TERMINAL_STALE, "stale_cancel");
         return false;
@@ -192,7 +197,8 @@ bool lab06_panel_handle(const lab06_session_t *session, lab06_slot_t slot,
 
 bool lab06_event_queue_push(lab06_session_t *session, uint32_t operation_id)
 {
-    if (!admit_operation(session, operation_id)) return false;
+    if (!admit_operation(session, operation_id))
+        return false;
     if (session->event_count == LAB06_EVENT_CAPACITY) {
         session->queue_overflows++;
         terminal(session, operation_id, LAB06_TERMINAL_FAILURE, "overflow");
@@ -206,7 +212,8 @@ bool lab06_event_queue_push(lab06_session_t *session, uint32_t operation_id)
 
 bool lab06_event_queue_pop(lab06_session_t *session, uint32_t *operation_id_out)
 {
-    if (!session->event_count || !operation_id_out) return false;
+    if (!session->event_count || !operation_id_out)
+        return false;
     *operation_id_out = session->event_ids[session->event_head];
     session->event_head = (session->event_head + 1) % LAB06_EVENT_CAPACITY;
     session->event_count--;

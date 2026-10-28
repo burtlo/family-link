@@ -7,8 +7,10 @@
 #include <new>
 #include <string.h>
 
-namespace fl_product_record {
-namespace {
+namespace fl_product_record
+{
+namespace
+{
 
 /* Ease-in-out quint, the lab ring path. Endpoints are the promoted radii. */
 int32_t ease_in_out_quint(int32_t elapsed, int32_t duration, int32_t from, int32_t to)
@@ -55,9 +57,15 @@ uint64_t clock_now_us(void *context)
     return adapter->session->capture_clock_us();
 }
 
-lab10_capture_t *as_capture(void *handle) { return static_cast<lab10_capture_t *>(handle); }
+lab10_capture_t *as_capture(void *handle)
+{
+    return static_cast<lab10_capture_t *>(handle);
+}
 
-lab10_render_t *as_renderer(void *handle) { return static_cast<lab10_render_t *>(handle); }
+lab10_render_t *as_renderer(void *handle)
+{
+    return static_cast<lab10_render_t *>(handle);
+}
 
 } /* namespace */
 
@@ -188,13 +196,25 @@ int RecordSession::consume_notice()
     return notice;
 }
 
-bool RecordSession::capture_active() const { return recording_; }
+bool RecordSession::capture_active() const
+{
+    return recording_;
+}
 
-bool RecordSession::wiping() const { return wiping_; }
+bool RecordSession::wiping() const
+{
+    return wiping_;
+}
 
-bool RecordSession::reversing() const { return reversing_; }
+bool RecordSession::reversing() const
+{
+    return reversing_;
+}
 
-int64_t RecordSession::now_ms() const { return now_ms_; }
+int64_t RecordSession::now_ms() const
+{
+    return now_ms_;
+}
 
 int32_t RecordSession::ring_outer_radius() const
 {
@@ -212,11 +232,20 @@ int32_t RecordSession::ring_outer_radius() const
                              LAB10_RING_RADIUS_START, LAB10_RING_RADIUS_COVERAGE);
 }
 
-bool RecordSession::ink_overflow() const { return ink_overflow_; }
+bool RecordSession::ink_overflow() const
+{
+    return ink_overflow_;
+}
 
-MicState RecordSession::mic_state() const { return mic_; }
+MicState RecordSession::mic_state() const
+{
+    return mic_;
+}
 
-FinishReason RecordSession::last_finish() const { return last_finish_; }
+FinishReason RecordSession::last_finish() const
+{
+    return last_finish_;
+}
 
 bool RecordSession::try_start(const char *client_message_id, MicState mic_at_start)
 {
@@ -341,18 +370,18 @@ bool RecordSession::route_touch(int16_t x, int16_t y, uint8_t phase, uint8_t tou
         return false;
     }
     switch (phase) {
-    case 0:
-        ui_phase = LAB10_PHASE_DOWN;
-        break;
-    case 1:
-        ui_phase = LAB10_PHASE_MOVE;
-        break;
-    case 2:
-        ui_phase = LAB10_PHASE_UP;
-        break;
-    default:
-        ui_phase = LAB10_PHASE_LEAVE;
-        break;
+        case 0:
+            ui_phase = LAB10_PHASE_DOWN;
+            break;
+        case 1:
+            ui_phase = LAB10_PHASE_MOVE;
+            break;
+        case 2:
+            ui_phase = LAB10_PHASE_UP;
+            break;
+        default:
+            ui_phase = LAB10_PHASE_LEAVE;
+            break;
     }
     route = lab10_ui_route_touch(&s_ui_model, x, y);
     if (route == LAB10_ROUTE_PALETTE) {
@@ -393,7 +422,10 @@ bool RecordSession::route_touch(int16_t x, int16_t y, uint8_t phase, uint8_t tou
     return true;
 }
 
-void RecordSession::poll_capture() { advance_to(now_ms_); }
+void RecordSession::poll_capture()
+{
+    advance_to(now_ms_);
+}
 
 void RecordSession::render_update()
 {
@@ -416,7 +448,10 @@ bool RecordSession::render_backlog(size_t *source_points, size_t *pending_points
     return true;
 }
 
-uint8_t RecordSession::selected_color() const { return lab10_ui_selected_color(&s_ui_model); }
+uint8_t RecordSession::selected_color() const
+{
+    return lab10_ui_selected_color(&s_ui_model);
+}
 
 bool RecordSession::finish_capture(FinishReason reason)
 {
@@ -501,14 +536,29 @@ void RecordSession::cancel_recording()
     session_id_ = 0;
 }
 
-void RecordSession::attach_media(MediaBackend *backend) { storage_.attach_media(backend); }
+void RecordSession::attach_media(MediaBackend *backend)
+{
+    storage_.attach_media(backend);
+}
 
-AttachedStorage &RecordSession::storage() { return storage_; }
+AttachedStorage &RecordSession::storage()
+{
+    return storage_;
+}
 
-void *RecordSession::capture_handle() { return capture_; }
+void *RecordSession::capture_handle()
+{
+    return capture_;
+}
 
-void *RecordSession::renderer_handle() { return renderer_; }
+void *RecordSession::renderer_handle()
+{
+    return renderer_;
+}
 
-uint64_t RecordSession::capture_clock_us() const { return clock_us_; }
+uint64_t RecordSession::capture_clock_us() const
+{
+    return clock_us_;
+}
 
 } /* namespace fl_product_record */

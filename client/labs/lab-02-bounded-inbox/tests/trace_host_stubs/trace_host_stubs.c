@@ -79,7 +79,8 @@ BaseType_t xQueueReceive(QueueHandle_t queue, void *item, TickType_t ticks)
         }
         while (queue->count == 0u) {
             int result = pthread_cond_timedwait(&queue->changed, &queue->mutex, &deadline);
-            if (result == ETIMEDOUT) break;
+            if (result == ETIMEDOUT)
+                break;
         }
     }
     if (queue->count == 0u) {

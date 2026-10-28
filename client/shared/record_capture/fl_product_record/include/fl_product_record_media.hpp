@@ -5,13 +5,15 @@
 #include <stdint.h>
 #include <stdio.h>
 
-namespace fl_product_record {
+namespace fl_product_record
+{
 
 /* Offset read/write, append, and flush. Host tests supply a file.
  * Device SD stays behind this interface; this header has no ESP-IDF types.
  */
-class MediaBackend {
-public:
+class MediaBackend
+{
+  public:
     virtual ~MediaBackend();
 
     virtual bool write_at(uint64_t offset, const uint8_t *data, size_t len) = 0;
@@ -20,8 +22,9 @@ public:
     virtual bool flush() = 0;
 };
 
-class FileMediaBackend : public MediaBackend {
-public:
+class FileMediaBackend : public MediaBackend
+{
+  public:
     FileMediaBackend();
     ~FileMediaBackend() override;
 
@@ -33,7 +36,7 @@ public:
     bool append(const uint8_t *data, size_t len, uint64_t *out_offset) override;
     bool flush() override;
 
-private:
+  private:
     FileMediaBackend(const FileMediaBackend &);
     FileMediaBackend &operator=(const FileMediaBackend &);
 

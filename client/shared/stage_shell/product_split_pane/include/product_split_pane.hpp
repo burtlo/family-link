@@ -5,7 +5,8 @@
 
 #include <stdint.h>
 
-namespace stage_shell {
+namespace stage_shell
+{
 
 /*
  * Desk split-pane LVGL chrome: upper/lower slots and stage bookmark.
@@ -14,12 +15,16 @@ namespace stage_shell {
  * full-bleed content root and exposes layout via product_ui_window_* queries.
  * SplitPane only mounts slot objects inside that parent.
  */
-class SplitPane {
-public:
+class SplitPane
+{
+  public:
     bool mount(lv_obj_t *content_root);
     void unmount();
 
-    [[nodiscard]] bool mounted() const { return mounted_; }
+    [[nodiscard]] bool mounted() const
+    {
+        return mounted_;
+    }
     [[nodiscard]] bool slotsLive() const;
     bool slotRoots(lv_obj_t **upper_out, lv_obj_t **lower_out) const;
 
@@ -29,7 +34,7 @@ public:
     [[nodiscard]] fl_shell_stage_t stage() const;
     void setStage(fl_shell_stage_t stage);
 
-private:
+  private:
     bool queryLayoutFromWindow();
     bool buildSlots();
     void styleSlot(lv_obj_t *slot, uint32_t bg_rgb24);

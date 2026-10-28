@@ -5,7 +5,12 @@
 #define LAB12_USER_ID_MAX 32
 #define LAB12_AVATAR_ID_MAX 16
 #define LAB12_ACCENT_MAX 8
-typedef enum { LAB12_SYNC_IDLE, LAB12_SYNC_PENDING, LAB12_SYNC_UNCERTAIN, LAB12_SYNC_ACKNOWLEDGED, LAB12_SYNC_REJECTED, LAB12_SYNC_STALE } lab12_sync_status_t;
+typedef enum { LAB12_SYNC_IDLE,
+               LAB12_SYNC_PENDING,
+               LAB12_SYNC_UNCERTAIN,
+               LAB12_SYNC_ACKNOWLEDGED,
+               LAB12_SYNC_REJECTED,
+               LAB12_SYNC_STALE } lab12_sync_status_t;
 typedef struct {
     char user_id[LAB12_USER_ID_MAX];
     uint32_t revision;

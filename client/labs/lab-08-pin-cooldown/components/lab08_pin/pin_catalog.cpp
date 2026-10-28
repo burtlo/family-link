@@ -5,8 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace lab08 {
-namespace {
+namespace lab08
+{
+namespace
+{
 
 void enter_pin(lab07::SessionWriter *session, const char *pin)
 {

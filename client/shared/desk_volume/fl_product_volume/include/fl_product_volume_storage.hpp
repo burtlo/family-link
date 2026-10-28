@@ -1,10 +1,12 @@
 #ifndef FL_PRODUCT_VOLUME_STORAGE_HPP
 #define FL_PRODUCT_VOLUME_STORAGE_HPP
 
-namespace fl_product_volume {
+namespace fl_product_volume
+{
 
-class VolumeStorage {
-public:
+class VolumeStorage
+{
+  public:
     VolumeStorage();
 
     void reset_for_tests();
@@ -16,7 +18,7 @@ public:
     int load_stop_index(int *index_out);
     int persist_stop_index(int index);
 
-private:
+  private:
     int has_saved_;
     int saved_index_;
     int fail_next_;

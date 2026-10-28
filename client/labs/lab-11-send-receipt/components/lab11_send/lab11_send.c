@@ -75,19 +75,19 @@ bool lab11_parse_response(const char *json, lab11_parsed_t *out)
 const char *lab11_terminal_name(lab11_terminal_t terminal)
 {
     switch (terminal) {
-    case LAB11_TERM_SUCCESS:
-        return "success";
-    case LAB11_TERM_FAILURE:
-        return "failure";
-    case LAB11_TERM_CANCELLED:
-        return "cancelled";
-    case LAB11_TERM_STALE:
-        return "stale";
-    case LAB11_TERM_TIMED_OUT:
-        return "timed_out";
-    case LAB11_TERM_NONE:
-    default:
-        return "none";
+        case LAB11_TERM_SUCCESS:
+            return "success";
+        case LAB11_TERM_FAILURE:
+            return "failure";
+        case LAB11_TERM_CANCELLED:
+            return "cancelled";
+        case LAB11_TERM_STALE:
+            return "stale";
+        case LAB11_TERM_TIMED_OUT:
+            return "timed_out";
+        case LAB11_TERM_NONE:
+        default:
+            return "none";
     }
 }
 
@@ -404,8 +404,7 @@ bool lab11_op_begin(lab11_session_t *session, lab11_capture_t *capture, uint32_t
     session->retry_extra_bytes = 0;
     session->response_bytes = LAB11_RESPONSE_CAP;
     session->full_payload_duplicate_bytes = 0;
-    session->peak_calculated_bytes = session->retained_input_bytes + session->staging_bytes
-        + session->transport_bytes + session->retry_extra_bytes + session->response_bytes;
+    session->peak_calculated_bytes = session->retained_input_bytes + session->staging_bytes + session->transport_bytes + session->retry_extra_bytes + session->response_bytes;
     session->live_buffers = 2;
     set_phase_text(session, "before first byte");
     return true;
@@ -526,8 +525,7 @@ int lab11_worker_exchange(lab11_session_t *session, lab11_transport_t *transport
     if (session->step == LAB11_STEP_STATUS) {
         snprintf(request.method, sizeof(request.method), "GET");
         snprintf(request.path, sizeof(request.path), "/v1/status");
-        if (call_transport(session, transport, &request, &response) != 0 || response.lost
-            || !lab11_parse_response(response.body, &out->parsed)) {
+        if (call_transport(session, transport, &request, &response) != 0 || response.lost || !lab11_parse_response(response.body, &out->parsed)) {
             out->kind = LAB11_EV_HTTP_FAIL;
             return 1;
         }
@@ -539,8 +537,7 @@ int lab11_worker_exchange(lab11_session_t *session, lab11_transport_t *transport
             session->step = LAB11_STEP_COMPLETE;
         } else {
             desc = session->queue[0];
-            if (session->capture == NULL || session->staging == NULL || desc.length > session->chunk_bytes
-                || desc.offset + desc.length > session->frozen_len) {
+            if (session->capture == NULL || session->staging == NULL || desc.length > session->chunk_bytes || desc.offset + desc.length > session->frozen_len) {
                 out->kind = LAB11_EV_HTTP_FAIL;
                 return 1;
             }
@@ -628,8 +625,7 @@ int lab11_worker_exchange(lab11_session_t *session, lab11_transport_t *transport
         snprintf(request.method, sizeof(request.method), "GET");
         snprintf(request.path, sizeof(request.path), "/v1/receipts/%s", session->client_message_id);
         session->lookup_count += 1u;
-        if (call_transport(session, transport, &request, &response) != 0 || response.lost
-            || !lab11_parse_response(response.body, &out->parsed)) {
+        if (call_transport(session, transport, &request, &response) != 0 || response.lost || !lab11_parse_response(response.body, &out->parsed)) {
             out->kind = LAB11_EV_HTTP_FAIL;
             return 1;
         }
@@ -645,8 +641,7 @@ int lab11_worker_exchange(lab11_session_t *session, lab11_transport_t *transport
         snprintf(request.path, sizeof(request.path), "/v1/publish");
         request.body = (const uint8_t *)session->control_body;
         request.body_len = (uint32_t)strlen(session->control_body);
-        if (call_transport(session, transport, &request, &response) != 0 || response.lost
-            || !lab11_parse_response(response.body, &out->parsed)) {
+        if (call_transport(session, transport, &request, &response) != 0 || response.lost || !lab11_parse_response(response.body, &out->parsed)) {
             out->kind = LAB11_EV_HTTP_FAIL;
             return 1;
         }
@@ -664,8 +659,7 @@ int lab11_worker_exchange(lab11_session_t *session, lab11_transport_t *transport
         snprintf(request.path, sizeof(request.path), "/v1/push");
         request.body = (const uint8_t *)session->control_body;
         request.body_len = (uint32_t)strlen(session->control_body);
-        if (call_transport(session, transport, &request, &response) != 0 || response.lost
-            || !lab11_parse_response(response.body, &out->parsed)) {
+        if (call_transport(session, transport, &request, &response) != 0 || response.lost || !lab11_parse_response(response.body, &out->parsed)) {
             out->kind = LAB11_EV_HTTP_FAIL;
             return 1;
         }
@@ -705,146 +699,146 @@ bool lab11_writer_apply(lab11_session_t *session, uint32_t writer, const lab11_w
         return false;
     }
     switch (event->kind) {
-    case LAB11_EV_OFFLINE:
-        if (strcmp(session->work, "none") == 0) {
+        case LAB11_EV_OFFLINE:
+            if (strcmp(session->work, "none") == 0) {
+                snprintf(session->work, sizeof(session->work), "discarded");
+            }
+            session->discarded_explicit = true;
+            session->server_accepted = 0;
+            return terminalize(session, LAB11_TERM_FAILURE, "offline");
+        case LAB11_EV_CANCEL:
+            session->server_accepted = 0;
+            return terminalize(session, LAB11_TERM_CANCELLED, "cancelled");
+        case LAB11_EV_HTTP_FAIL:
+            return terminalize(session, LAB11_TERM_FAILURE, "transport");
+        case LAB11_EV_STORAGE:
+            session->server_accepted = 0;
+            session->discarded_explicit = true;
             snprintf(session->work, sizeof(session->work), "discarded");
-        }
-        session->discarded_explicit = true;
-        session->server_accepted = 0;
-        return terminalize(session, LAB11_TERM_FAILURE, "offline");
-    case LAB11_EV_CANCEL:
-        session->server_accepted = 0;
-        return terminalize(session, LAB11_TERM_CANCELLED, "cancelled");
-    case LAB11_EV_HTTP_FAIL:
-        return terminalize(session, LAB11_TERM_FAILURE, "transport");
-    case LAB11_EV_STORAGE:
-        session->server_accepted = 0;
-        session->discarded_explicit = true;
-        snprintf(session->work, sizeof(session->work), "discarded");
-        return terminalize(session, LAB11_TERM_FAILURE, "storage");
-    case LAB11_EV_INVALID:
-        session->server_accepted = event->parsed.accepted;
-        return terminalize(session, LAB11_TERM_FAILURE, "invalid_recipient");
-    case LAB11_EV_LOST:
-        if (session->step == LAB11_STEP_COMPLETE || session->phase == LAB11_PHASE_CHECKING) {
-            session->step = LAB11_STEP_LOOKUP;
-            session->phase = LAB11_PHASE_LOOKUP;
-            session->success_visible = false;
-            set_phase_text(session, "lookup");
+            return terminalize(session, LAB11_TERM_FAILURE, "storage");
+        case LAB11_EV_INVALID:
+            session->server_accepted = event->parsed.accepted;
+            return terminalize(session, LAB11_TERM_FAILURE, "invalid_recipient");
+        case LAB11_EV_LOST:
+            if (session->step == LAB11_STEP_COMPLETE || session->phase == LAB11_PHASE_CHECKING) {
+                session->step = LAB11_STEP_LOOKUP;
+                session->phase = LAB11_PHASE_LOOKUP;
+                session->success_visible = false;
+                set_phase_text(session, "lookup");
+                return true;
+            }
+            session->retry_same_sequence += 1u;
+            session->phase = LAB11_PHASE_UPLOADING;
             return true;
-        }
-        session->retry_same_sequence += 1u;
-        session->phase = LAB11_PHASE_UPLOADING;
-        return true;
-    case LAB11_EV_CONFLICT:
-        if (session->queue_count > 0 && session->queue[0].sequence == event->sequence) {
+        case LAB11_EV_CONFLICT:
+            if (session->queue_count > 0 && session->queue[0].sequence == event->sequence) {
+                pop_head(session);
+            }
+            session->identity_conflict = true;
+            if (event->parsed.durable_parts != session->durable_unique && session->durable_unique != 0) {
+                return terminalize(session, LAB11_TERM_FAILURE, "reconcile");
+            }
+            session->server_durable = event->parsed.durable_parts;
+            return true;
+        case LAB11_EV_PART:
+            if (session->queue_count == 0 || session->queue[0].sequence != event->sequence) {
+                return terminalize(session, LAB11_TERM_FAILURE, "sequence");
+            }
+            if (event->parsed.sequence != event->sequence || strcmp(event->parsed.result, "acked") != 0) {
+                return terminalize(session, LAB11_TERM_FAILURE, "parse");
+            }
             pop_head(session);
-        }
-        session->identity_conflict = true;
-        if (event->parsed.durable_parts != session->durable_unique && session->durable_unique != 0) {
-            return terminalize(session, LAB11_TERM_FAILURE, "reconcile");
-        }
-        session->server_durable = event->parsed.durable_parts;
-        return true;
-    case LAB11_EV_PART:
-        if (session->queue_count == 0 || session->queue[0].sequence != event->sequence) {
-            return terminalize(session, LAB11_TERM_FAILURE, "sequence");
-        }
-        if (event->parsed.sequence != event->sequence || strcmp(event->parsed.result, "acked") != 0) {
+            if (event->sequence < 16u && !session->sequence_done[event->sequence]) {
+                session->sequence_done[event->sequence] = true;
+                session->durable_unique += 1u;
+            }
+            if (event->parsed.durable_parts != session->durable_unique) {
+                return terminalize(session, LAB11_TERM_FAILURE, "reconcile");
+            }
+            session->server_durable = event->parsed.durable_parts;
+            session->phase = LAB11_PHASE_UPLOADING;
+            set_phase_text(session, "uploading");
+            return true;
+        case LAB11_EV_COMPLETE:
+            session->server_durable = event->parsed.durable_parts;
+            if (event->parsed.accepted == 1u && session->condition == LAB11_COND_ARCHIVE) {
+                session->server_accepted = 1u;
+                session->message_count = event->parsed.message_count;
+                session->receipt_parsed = true;
+                snprintf(session->receipt_id, sizeof(session->receipt_id), "%s", event->parsed.receipt_id);
+                session->phase = LAB11_PHASE_CHECKING;
+                if (!condition_met(session)) {
+                    session->success_visible = false;
+                    return terminalize(session, LAB11_TERM_FAILURE, "condition");
+                }
+                if (session->follow_push) {
+                    session->step = LAB11_STEP_PUSH;
+                    session->phase = LAB11_PHASE_UPLOADING;
+                    session->success_visible = false;
+                    set_phase_text(session, "awaiting push");
+                    return true;
+                }
+                return terminalize(session, LAB11_TERM_SUCCESS, "condition_met");
+            }
+            if (session->condition == LAB11_COND_PUBLISH && event->parsed.accepted == 0u) {
+                session->success_visible = false;
+                session->step = LAB11_STEP_PUBLISH;
+                session->phase = LAB11_PHASE_UPLOADING;
+                set_phase_text(session, "awaiting publish");
+                return true;
+            }
             return terminalize(session, LAB11_TERM_FAILURE, "parse");
-        }
-        pop_head(session);
-        if (event->sequence < 16u && !session->sequence_done[event->sequence]) {
-            session->sequence_done[event->sequence] = true;
-            session->durable_unique += 1u;
-        }
-        if (event->parsed.durable_parts != session->durable_unique) {
-            return terminalize(session, LAB11_TERM_FAILURE, "reconcile");
-        }
-        session->server_durable = event->parsed.durable_parts;
-        session->phase = LAB11_PHASE_UPLOADING;
-        set_phase_text(session, "uploading");
-        return true;
-    case LAB11_EV_COMPLETE:
-        session->server_durable = event->parsed.durable_parts;
-        if (event->parsed.accepted == 1u && session->condition == LAB11_COND_ARCHIVE) {
-            session->server_accepted = 1u;
+        case LAB11_EV_LOOKUP:
+            session->server_accepted = event->parsed.accepted;
             session->message_count = event->parsed.message_count;
-            session->receipt_parsed = true;
-            snprintf(session->receipt_id, sizeof(session->receipt_id), "%s", event->parsed.receipt_id);
-            session->phase = LAB11_PHASE_CHECKING;
+            session->server_durable = event->parsed.durable_parts;
+            if (event->parsed.accepted == 1u && strcmp(event->parsed.receipt_id, session->client_message_id) == 0) {
+                session->lookup_same = true;
+                session->receipt_parsed = true;
+                snprintf(session->receipt_id, sizeof(session->receipt_id), "%s", event->parsed.receipt_id);
+            }
+            if (event->cancel_during_lookup || session->cancel_during_lookup) {
+                return terminalize(session, LAB11_TERM_CANCELLED, "cancelled");
+            }
+            if (session->condition == LAB11_COND_PUBLISH) {
+                session->step = LAB11_STEP_PUBLISH;
+                session->success_visible = false;
+                set_phase_text(session, "awaiting publish");
+                return true;
+            }
+            if (!condition_met(session)) {
+                return terminalize(session, LAB11_TERM_FAILURE, "condition");
+            }
+            return terminalize(session, LAB11_TERM_SUCCESS, "condition_met");
+        case LAB11_EV_PUBLISH:
+            session->published = true;
+            session->server_accepted = event->parsed.accepted;
+            session->message_count = event->parsed.message_count;
+            if (event->parsed.accepted == 1u) {
+                session->receipt_parsed = true;
+                snprintf(session->receipt_id, sizeof(session->receipt_id), "%s", event->parsed.receipt_id);
+            }
             if (!condition_met(session)) {
                 session->success_visible = false;
                 return terminalize(session, LAB11_TERM_FAILURE, "condition");
             }
-            if (session->follow_push) {
-                session->step = LAB11_STEP_PUSH;
-                session->phase = LAB11_PHASE_UPLOADING;
-                session->success_visible = false;
-                set_phase_text(session, "awaiting push");
-                return true;
+            return terminalize(session, LAB11_TERM_SUCCESS, "condition_met");
+        case LAB11_EV_PUSH:
+            snprintf(session->push_result, sizeof(session->push_result), "%s",
+                     event->parsed.push_result[0] ? event->parsed.push_result : "failed");
+            if (session->terminal_count == 0 && session->server_accepted == 1u && condition_met(session)) {
+                return terminalize(session, LAB11_TERM_SUCCESS, "condition_met");
             }
-            return terminalize(session, LAB11_TERM_SUCCESS, "condition_met");
-        }
-        if (session->condition == LAB11_COND_PUBLISH && event->parsed.accepted == 0u) {
-            session->success_visible = false;
-            session->step = LAB11_STEP_PUBLISH;
-            session->phase = LAB11_PHASE_UPLOADING;
-            set_phase_text(session, "awaiting publish");
             return true;
-        }
-        return terminalize(session, LAB11_TERM_FAILURE, "parse");
-    case LAB11_EV_LOOKUP:
-        session->server_accepted = event->parsed.accepted;
-        session->message_count = event->parsed.message_count;
-        session->server_durable = event->parsed.durable_parts;
-        if (event->parsed.accepted == 1u && strcmp(event->parsed.receipt_id, session->client_message_id) == 0) {
-            session->lookup_same = true;
-            session->receipt_parsed = true;
-            snprintf(session->receipt_id, sizeof(session->receipt_id), "%s", event->parsed.receipt_id);
-        }
-        if (event->cancel_during_lookup || session->cancel_during_lookup) {
-            return terminalize(session, LAB11_TERM_CANCELLED, "cancelled");
-        }
-        if (session->condition == LAB11_COND_PUBLISH) {
-            session->step = LAB11_STEP_PUBLISH;
+        case LAB11_EV_STATUS:
+            snprintf(session->restart_status, sizeof(session->restart_status), "%s", event->parsed.status);
+            snprintf(session->resumed_sequences, sizeof(session->resumed_sequences), "%s", event->parsed.resumed);
+            session->server_accepted = 0;
             session->success_visible = false;
-            set_phase_text(session, "awaiting publish");
-            return true;
-        }
-        if (!condition_met(session)) {
-            return terminalize(session, LAB11_TERM_FAILURE, "condition");
-        }
-        return terminalize(session, LAB11_TERM_SUCCESS, "condition_met");
-    case LAB11_EV_PUBLISH:
-        session->published = true;
-        session->server_accepted = event->parsed.accepted;
-        session->message_count = event->parsed.message_count;
-        if (event->parsed.accepted == 1u) {
-            session->receipt_parsed = true;
-            snprintf(session->receipt_id, sizeof(session->receipt_id), "%s", event->parsed.receipt_id);
-        }
-        if (!condition_met(session)) {
-            session->success_visible = false;
-            return terminalize(session, LAB11_TERM_FAILURE, "condition");
-        }
-        return terminalize(session, LAB11_TERM_SUCCESS, "condition_met");
-    case LAB11_EV_PUSH:
-        snprintf(session->push_result, sizeof(session->push_result), "%s",
-                 event->parsed.push_result[0] ? event->parsed.push_result : "failed");
-        if (session->terminal_count == 0 && session->server_accepted == 1u && condition_met(session)) {
-            return terminalize(session, LAB11_TERM_SUCCESS, "condition_met");
-        }
-        return true;
-    case LAB11_EV_STATUS:
-        snprintf(session->restart_status, sizeof(session->restart_status), "%s", event->parsed.status);
-        snprintf(session->resumed_sequences, sizeof(session->resumed_sequences), "%s", event->parsed.resumed);
-        session->server_accepted = 0;
-        session->success_visible = false;
-        return terminalize(session, LAB11_TERM_SUCCESS, "status_recorded");
-    case LAB11_EV_NONE:
-    default:
-        return false;
+            return terminalize(session, LAB11_TERM_SUCCESS, "status_recorded");
+        case LAB11_EV_NONE:
+        default:
+            return false;
     }
 }
 
@@ -894,8 +888,7 @@ static bool until_terminal(lab11_session_t *session, lab11_transport_t *transpor
     bool conflicted = false;
     int guard;
     for (guard = 0; guard < 40 && session->terminal_count == 0; guard++) {
-        if (conflict_once && !conflicted && session->step == LAB11_STEP_PARTS && session->queue_count == 0
-            && session->part_total > 0 && session->durable_unique == session->part_total) {
+        if (conflict_once && !conflicted && session->step == LAB11_STEP_PARTS && session->queue_count == 0 && session->part_total > 0 && session->durable_unique == session->part_total) {
             lab11_part_desc_t desc;
             desc.sequence = 0;
             desc.offset = 0;
@@ -927,8 +920,7 @@ static bool reconcile_message(lab11_session_t *session, lab11_transport_t *trans
     if (!lab11_parse_response(response.body, &parsed)) {
         return false;
     }
-    if (parsed.accepted != session->server_accepted || parsed.durable_parts != session->server_durable
-        || parsed.complete_posts != session->complete_posts) {
+    if (parsed.accepted != session->server_accepted || parsed.durable_parts != session->server_durable || parsed.complete_posts != session->complete_posts) {
         return false;
     }
     session->reconcile_ok = true;
@@ -989,8 +981,7 @@ static bool upload_case(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_plan_parts(session, session->writer_id)) {
         return false;
     }
-    if (session->full_payload_duplicate_bytes != 0 || session->staging_bytes != chunk
-        || session->staging_bytes >= session->frozen_len || session->retry_extra_bytes != 0) {
+    if (session->full_payload_duplicate_bytes != 0 || session->staging_bytes != chunk || session->staging_bytes >= session->frozen_len || session->retry_extra_bytes != 0) {
         return false;
     }
     if (!until_terminal(session, transport, conflict_once)) {
@@ -1031,9 +1022,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
         return false;
     }
 
-    if (!upload_case(session, capture, transport, 1, "m-one-a", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false)
-        || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || !session->success_visible
-        || strstr(session->phase_text, "Sent") != NULL) {
+    if (!upload_case(session, capture, transport, 1, "m-one-a", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false) || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || !session->success_visible || strstr(session->phase_text, "Sent") != NULL) {
         ok = false;
     }
     peak1024 = session->peak_calculated_bytes;
@@ -1046,9 +1035,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_post_control(session, transport, "{\"reset\":1}")) {
         return false;
     }
-    if (!upload_case(session, capture, transport, 2, "m-one-p", LAB11_COND_PUBLISH, LAB11_CHUNK_1024, false, false)
-        || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || !session->published
-        || !session->success_visible) {
+    if (!upload_case(session, capture, transport, 2, "m-one-p", LAB11_COND_PUBLISH, LAB11_CHUNK_1024, false, false) || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || !session->published || !session->success_visible) {
         ok = false;
     }
     emit_line(session, trace, ctx, "D-one", "decided");
@@ -1056,8 +1043,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_post_control(session, transport, "{\"reset\":1}")) {
         return false;
     }
-    if (!upload_case(session, capture, transport, 3, "m-one-b", LAB11_COND_ARCHIVE, LAB11_CHUNK_4096, false, false)
-        || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || !session->success_visible) {
+    if (!upload_case(session, capture, transport, 3, "m-one-b", LAB11_COND_ARCHIVE, LAB11_CHUNK_4096, false, false) || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || !session->success_visible) {
         ok = false;
     }
     peak4096 = session->peak_calculated_bytes;
@@ -1068,10 +1054,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_post_control(session, transport, "{\"reset\":1,\"drop_next_acks\":1}")) {
         return false;
     }
-    if (!upload_case(session, capture, transport, 4, "m-ack", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, true, false)
-        || !session->identity_conflict || session->retry_same_sequence < 1u
-        || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u
-        || capture->bytes[0] != saved_byte || memcmp(capture->content_sha256, saved_sha, sizeof(saved_sha)) != 0) {
+    if (!upload_case(session, capture, transport, 4, "m-ack", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, true, false) || !session->identity_conflict || session->retry_same_sequence < 1u || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || capture->bytes[0] != saved_byte || memcmp(capture->content_sha256, saved_sha, sizeof(saved_sha)) != 0) {
         ok = false;
     }
     emit_line(session, trace, ctx, "D-drop-ack", "decided");
@@ -1079,9 +1062,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_post_control(session, transport, "{\"reset\":1,\"drop_next_receipt\":1}")) {
         return false;
     }
-    if (!upload_case(session, capture, transport, 5, "m-rcpt", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false)
-        || !session->lookup_same || session->complete_posts != 1u || session->server_accepted != 1u
-        || session->terminal != LAB11_TERM_SUCCESS || !session->reconcile_ok) {
+    if (!upload_case(session, capture, transport, 5, "m-rcpt", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false) || !session->lookup_same || session->complete_posts != 1u || session->server_accepted != 1u || session->terminal != LAB11_TERM_SUCCESS || !session->reconcile_ok) {
         ok = false;
     }
     emit_line(session, trace, ctx, "D-drop-receipt", "decided");
@@ -1089,10 +1070,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_post_control(session, transport, "{\"reset\":1,\"storage_full\":1}")) {
         return false;
     }
-    if (!upload_case(session, capture, transport, 6, "m-full", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false)
-        || session->terminal != LAB11_TERM_FAILURE || strcmp(session->reason, "storage") != 0
-        || session->terminal_count != 1u || session->live_buffers != 0u || session->sketch_len != 0u
-        || session->pcm_len != 0u || session->borrow.held) {
+    if (!upload_case(session, capture, transport, 6, "m-full", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false) || session->terminal != LAB11_TERM_FAILURE || strcmp(session->reason, "storage") != 0 || session->terminal_count != 1u || session->live_buffers != 0u || session->sketch_len != 0u || session->pcm_len != 0u || session->borrow.held) {
         ok = false;
     }
     emit_line(session, trace, ctx, "D-full", "decided");
@@ -1101,15 +1079,13 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
         return false;
     }
     if (!lab11_op_begin(session, capture, session->writer_id, 7, "m-c0", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024,
-                        transport->copies_body)
-        || !lab11_plan_parts(session, session->writer_id)) {
+                        transport->copies_body) ||
+        !lab11_plan_parts(session, session->writer_id)) {
         return false;
     }
     {
         uint32_t before = session->exchange_count;
-        if (!lab11_request_cancel(session, 7) || session->exchange_count != before || !step_once(session, transport)
-            || session->terminal != LAB11_TERM_CANCELLED || session->server_accepted != 0u
-            || session->exchange_count != before || !reconcile_message(session, transport)) {
+        if (!lab11_request_cancel(session, 7) || session->exchange_count != before || !step_once(session, transport) || session->terminal != LAB11_TERM_CANCELLED || session->server_accepted != 0u || session->exchange_count != before || !reconcile_message(session, transport)) {
             ok = false;
         }
     }
@@ -1120,8 +1096,8 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
         return false;
     }
     if (!lab11_op_begin(session, capture, session->writer_id, 8, "m-c1", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024,
-                        transport->copies_body)
-        || !lab11_plan_parts(session, session->writer_id)) {
+                        transport->copies_body) ||
+        !lab11_plan_parts(session, session->writer_id)) {
         return false;
     }
     for (i = 0; i < 20 && session->durable_unique < 1u && session->terminal_count == 0; i++) {
@@ -1137,8 +1113,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
         if (session->terminal_count == 0 && !step_once(session, transport)) {
             return false;
         }
-        if (session->terminal != LAB11_TERM_CANCELLED || session->server_accepted != 0u
-            || session->server_durable < 1u || session->remote_rollback || !reconcile_message(session, transport)) {
+        if (session->terminal != LAB11_TERM_CANCELLED || session->server_accepted != 0u || session->server_durable < 1u || session->remote_rollback || !reconcile_message(session, transport)) {
             ok = false;
         }
     }
@@ -1148,15 +1123,12 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_post_control(session, transport, "{\"reset\":1}")) {
         return false;
     }
-    if (!upload_case(session, capture, transport, 9, "m-c2", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false)
-        || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u) {
+    if (!upload_case(session, capture, transport, 9, "m-c2", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false) || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u) {
         ok = false;
     } else {
         uint32_t before = session->exchange_count;
         uint8_t count = session->terminal_count;
-        if (!lab11_request_cancel(session, 9) || session->exchange_count != before || session->terminal_count != count
-            || session->server_accepted != 1u || session->remote_rollback || !session->success_visible
-            || !reconcile_message(session, transport)) {
+        if (!lab11_request_cancel(session, 9) || session->exchange_count != before || session->terminal_count != count || session->server_accepted != 1u || session->remote_rollback || !session->success_visible || !reconcile_message(session, transport)) {
             ok = false;
         }
     }
@@ -1167,8 +1139,8 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
         return false;
     }
     if (!lab11_op_begin(session, capture, session->writer_id, 10, "m-c3", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024,
-                        transport->copies_body)
-        || !lab11_plan_parts(session, session->writer_id)) {
+                        transport->copies_body) ||
+        !lab11_plan_parts(session, session->writer_id)) {
         return false;
     }
     for (i = 0; i < 30 && session->phase != LAB11_PHASE_LOOKUP && session->terminal_count == 0; i++) {
@@ -1178,13 +1150,9 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     }
     {
         uint32_t before = session->exchange_count;
-        if (session->phase != LAB11_PHASE_LOOKUP || session->terminal_count != 0
-            || !lab11_request_cancel(session, 10) || session->exchange_count != before
-            || !step_once(session, transport)) {
+        if (session->phase != LAB11_PHASE_LOOKUP || session->terminal_count != 0 || !lab11_request_cancel(session, 10) || session->exchange_count != before || !step_once(session, transport)) {
             ok = false;
-        } else if (session->terminal != LAB11_TERM_CANCELLED || session->server_accepted != 1u
-                   || !session->lookup_same || session->complete_posts != 1u || session->remote_rollback
-                   || session->terminal_count != 1u || !reconcile_message(session, transport)) {
+        } else if (session->terminal != LAB11_TERM_CANCELLED || session->server_accepted != 1u || !session->lookup_same || session->complete_posts != 1u || session->remote_rollback || session->terminal_count != 1u || !reconcile_message(session, transport)) {
             ok = false;
         }
     }
@@ -1210,8 +1178,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     }
     snprintf(capture->info.recipients[0], LAB11_RECIPIENT_LEN, "%s", saved_recipient);
     capture->info.recipient_count = saved_count;
-    if (!lab11_plan_parts(session, session->writer_id) || !until_terminal(session, transport, false)
-        || !reconcile_message(session, transport)) {
+    if (!lab11_plan_parts(session, session->writer_id) || !until_terminal(session, transport, false) || !reconcile_message(session, transport)) {
         ok = false;
     }
     emit_line(session, trace, ctx, "D-many", "exploratory");
@@ -1219,8 +1186,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_post_control(session, transport, "{\"reset\":1,\"invalid_recipient\":1}")) {
         return false;
     }
-    if (!upload_case(session, capture, transport, 12, "m-inv", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false)
-        || session->terminal != LAB11_TERM_FAILURE || session->server_accepted != 0u) {
+    if (!upload_case(session, capture, transport, 12, "m-inv", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, false) || session->terminal != LAB11_TERM_FAILURE || session->server_accepted != 0u) {
         ok = false;
     }
     emit_line(session, trace, ctx, "D-invalid-recipient", "exploratory");
@@ -1234,9 +1200,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     session->station_up = false;
     {
         uint32_t before = session->exchange_count;
-        if (!step_once(session, transport) || session->exchange_count != before
-            || strcmp(session->work, input->offline_work != NULL ? input->offline_work : "discarded") != 0
-            || !session->discarded_explicit || session->server_accepted != 0u) {
+        if (!step_once(session, transport) || session->exchange_count != before || strcmp(session->work, input->offline_work != NULL ? input->offline_work : "discarded") != 0 || !session->discarded_explicit || session->server_accepted != 0u) {
             ok = false;
         }
     }
@@ -1246,9 +1210,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
     if (!lab11_post_control(session, transport, "{\"reset\":1,\"push_fail\":1}")) {
         return false;
     }
-    if (!upload_case(session, capture, transport, 14, "m-push", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, true)
-        || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || session->terminal_count != 1u
-        || strcmp(session->push_result, "failed") != 0) {
+    if (!upload_case(session, capture, transport, 14, "m-push", LAB11_COND_ARCHIVE, LAB11_CHUNK_1024, false, true) || session->terminal != LAB11_TERM_SUCCESS || session->server_accepted != 1u || session->terminal_count != 1u || strcmp(session->push_result, "failed") != 0) {
         ok = false;
     }
     emit_line(session, trace, ctx, "D-push-fail", "exploratory");
@@ -1258,9 +1220,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
         return false;
     }
     session->step = LAB11_STEP_STATUS;
-    if (!step_once(session, transport) || session->server_accepted != 0u || session->success_visible
-        || strcmp(session->restart_status, input->restart_status != NULL ? input->restart_status : "open") != 0
-        || strcmp(session->resumed_sequences, "1,2") != 0) {
+    if (!step_once(session, transport) || session->server_accepted != 0u || session->success_visible || strcmp(session->restart_status, input->restart_status != NULL ? input->restart_status : "open") != 0 || strcmp(session->resumed_sequences, "1,2") != 0) {
         ok = false;
     }
     emit_line(session, trace, ctx, "D-restart", "exploratory");
@@ -1276,9 +1236,7 @@ bool lab11_run_scripted(lab11_session_t *session, lab11_capture_t *capture, lab1
         desc.length = 1;
         lab11_admit_part(session, session->writer_id, &desc);
     }
-    if (session->terminal != LAB11_TERM_FAILURE || strcmp(session->reason, "overflow") != 0
-        || session->queue_count != LAB11_PART_QUEUE_CAPACITY || session->overflow_count != 1u
-        || session->terminal_count != 1u || session->live_buffers != 0u) {
+    if (session->terminal != LAB11_TERM_FAILURE || strcmp(session->reason, "overflow") != 0 || session->queue_count != LAB11_PART_QUEUE_CAPACITY || session->overflow_count != 1u || session->terminal_count != 1u || session->live_buffers != 0u) {
         ok = false;
     } else if (trace != NULL) {
         char line[400];

@@ -5,8 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace lab07 {
-namespace {
+namespace lab07
+{
+namespace
+{
 
 void copy_text(char *dst, int cap, const char *src)
 {
@@ -67,8 +69,7 @@ void sha256_hex(const char *text, char *out, int out_cap)
         0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116,
         0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
         0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
-        0xc67178f2
-    };
+        0xc67178f2};
     uint8_t block[64];
     uint32_t state[8] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
                          0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
@@ -706,7 +707,7 @@ void SessionWriter::note_remote_observation(int side_effects, const char *reason
 }
 
 bool SessionWriter::copy_pin_request(char *user, int user_cap, char *pin, int pin_cap, char *key,
-                                    int key_cap) const
+                                     int key_cap) const
 {
     if (!pin_submitted_) {
         return false;
@@ -822,13 +823,34 @@ void SessionWriter::note_pin_presented_time()
     property_seq_ += 1;
 }
 
-int SessionWriter::pin_phase() const { return pin_phase_; }
-int SessionWriter::digit_len() const { return pin_digit_len_; }
-int SessionWriter::display_power() const { return stage_ == kStageMuted ? 0 : 1; }
-const char *SessionWriter::pin_mask() const { return pin_mask_; }
-const char *SessionWriter::visible_copy() const { return visible_copy_; }
-const char *SessionWriter::pin_copy_token() const { return pin_copy_token_; }
-int SessionWriter::wrong_count() const { return wrong_count_; }
+int SessionWriter::pin_phase() const
+{
+    return pin_phase_;
+}
+int SessionWriter::digit_len() const
+{
+    return pin_digit_len_;
+}
+int SessionWriter::display_power() const
+{
+    return stage_ == kStageMuted ? 0 : 1;
+}
+const char *SessionWriter::pin_mask() const
+{
+    return pin_mask_;
+}
+const char *SessionWriter::visible_copy() const
+{
+    return visible_copy_;
+}
+const char *SessionWriter::pin_copy_token() const
+{
+    return pin_copy_token_;
+}
+int SessionWriter::wrong_count() const
+{
+    return wrong_count_;
+}
 int SessionWriter::cooldown_remaining_ms() const
 {
     if (cooldown_until_ms_ <= now_ms_) {
@@ -844,11 +866,26 @@ bool SessionWriter::keypad_open() const
     }
     return true;
 }
-bool SessionWriter::pin_submitted() const { return pin_submitted_; }
-uint64_t SessionWriter::pin_operation_id() const { return pin_operation_id_; }
-uint32_t SessionWriter::pin_key_generation() const { return pin_key_generation_; }
-const char *SessionWriter::pin_key_fingerprint() const { return pin_fingerprint_; }
-int SessionWriter::pin_attempt() const { return pin_attempt_; }
+bool SessionWriter::pin_submitted() const
+{
+    return pin_submitted_;
+}
+uint64_t SessionWriter::pin_operation_id() const
+{
+    return pin_operation_id_;
+}
+uint32_t SessionWriter::pin_key_generation() const
+{
+    return pin_key_generation_;
+}
+const char *SessionWriter::pin_key_fingerprint() const
+{
+    return pin_fingerprint_;
+}
+int SessionWriter::pin_attempt() const
+{
+    return pin_attempt_;
+}
 int SessionWriter::pin_delay_ms(int index) const
 {
     if (index < 0 || index > 2) {
@@ -856,14 +893,38 @@ int SessionWriter::pin_delay_ms(int index) const
     }
     return delay_ms_[index];
 }
-int SessionWriter::authenticated() const { return authenticated_; }
-int SessionWriter::last_update_level() const { return last_update_level_; }
-uint32_t SessionWriter::property_seq() const { return property_seq_; }
-int SessionWriter::pin_queue_count() const { return pin_queue_count_; }
-int SessionWriter::pin_overflow_terminals() const { return pin_overflow_terminals_; }
-int SessionWriter::boot_zero() const { return boot_zero_; }
-int SessionWriter::boot_partial() const { return boot_partial_; }
-int SessionWriter::boot_full() const { return boot_full_; }
+int SessionWriter::authenticated() const
+{
+    return authenticated_;
+}
+int SessionWriter::last_update_level() const
+{
+    return last_update_level_;
+}
+uint32_t SessionWriter::property_seq() const
+{
+    return property_seq_;
+}
+int SessionWriter::pin_queue_count() const
+{
+    return pin_queue_count_;
+}
+int SessionWriter::pin_overflow_terminals() const
+{
+    return pin_overflow_terminals_;
+}
+int SessionWriter::boot_zero() const
+{
+    return boot_zero_;
+}
+int SessionWriter::boot_partial() const
+{
+    return boot_partial_;
+}
+int SessionWriter::boot_full() const
+{
+    return boot_full_;
+}
 
 int format_pin_trace_line(const TerminalRecord &record, char *buffer, int capacity)
 {

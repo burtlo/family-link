@@ -3,8 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_send {
-namespace {
+namespace fl_product_send
+{
+namespace
+{
 
 enum { kReceiptNameLimit = 25 };
 
@@ -94,7 +96,10 @@ void write_capture_uuid(char *out, int cap, uint32_t seq, uint32_t seed)
 
 } /* namespace */
 
-SendJourney::SendJourney() { reset(); }
+SendJourney::SendJourney()
+{
+    reset();
+}
 
 void SendJourney::reset()
 {
@@ -111,9 +116,15 @@ void SendJourney::remember_inbox_selection(const char *message_id)
     strncpy(inbox_snapshot_, message_id, sizeof(inbox_snapshot_) - 1);
 }
 
-const char *SendJourney::remembered_inbox_selection() const { return inbox_snapshot_; }
+const char *SendJourney::remembered_inbox_selection() const
+{
+    return inbox_snapshot_;
+}
 
-const char *SendJourney::restored_inbox_selection() const { return restored_selection_; }
+const char *SendJourney::restored_inbox_selection() const
+{
+    return restored_selection_;
+}
 
 void SendJourney::set_session_generation(uint32_t generation)
 {
@@ -121,9 +132,15 @@ void SendJourney::set_session_generation(uint32_t generation)
     outbox_.set_worker_generation(generation);
 }
 
-void SendJourney::set_wifi(int up) { outbox_.set_wifi(up); }
+void SendJourney::set_wifi(int up)
+{
+    outbox_.set_wifi(up);
+}
 
-void SendJourney::set_refresh_failed(int failed) { outbox_.set_refresh_failed(failed); }
+void SendJourney::set_refresh_failed(int failed)
+{
+    outbox_.set_refresh_failed(failed);
+}
 
 void SendJourney::on_mute_during_capture()
 {
@@ -134,7 +151,10 @@ void SendJourney::on_mute_during_capture()
     clear_capture_freeze();
 }
 
-void SendJourney::seed_capture_ids(uint32_t seed) { capture_id_seed_ = seed; }
+void SendJourney::seed_capture_ids(uint32_t seed)
+{
+    capture_id_seed_ = seed;
+}
 
 void SendJourney::freeze_capture_recipients()
 {
@@ -157,7 +177,10 @@ void SendJourney::clear_capture_freeze()
     capture_client_message_id_[0] = '\0';
 }
 
-int SendJourney::frozen_recipient_count() const { return frozen_recipient_count_; }
+int SendJourney::frozen_recipient_count() const
+{
+    return frozen_recipient_count_;
+}
 
 const char *SendJourney::frozen_recipient_id(int index) const
 {
@@ -225,7 +248,10 @@ void SendJourney::receipt_subtitle(char *out, int cap) const
     format_name_line(frozen_names_, frozen_recipient_count_, out, cap);
 }
 
-const char *SendJourney::capture_client_message_id() const { return capture_client_message_id_; }
+const char *SendJourney::capture_client_message_id() const
+{
+    return capture_client_message_id_;
+}
 
 void SendJourney::on_mute_after_finish(int held)
 {
@@ -236,7 +262,10 @@ void SendJourney::on_mute_after_finish(int held)
     }
 }
 
-void SendJourney::set_signed_in_user(const char *user_id) { outbox_.set_signed_in_user(user_id); }
+void SendJourney::set_signed_in_user(const char *user_id)
+{
+    outbox_.set_signed_in_user(user_id);
+}
 
 void SendJourney::on_same_user_signed_in(const char *user_id)
 {
@@ -251,17 +280,35 @@ void SendJourney::on_same_user_signed_in(const char *user_id)
     outbox_.set_upload_blocked(0);
 }
 
-void SendJourney::leave_wait() { outbox_.leave_wait(); }
+void SendJourney::leave_wait()
+{
+    outbox_.leave_wait();
+}
 
-const char *SendJourney::body_label() const { return outbox_.body_label(); }
+const char *SendJourney::body_label() const
+{
+    return outbox_.body_label();
+}
 
-int SendJourney::mute_discarded_in_progress() const { return mute_discarded_; }
+int SendJourney::mute_discarded_in_progress() const
+{
+    return mute_discarded_;
+}
 
-int SendJourney::mute_held_finished() const { return mute_held_; }
+int SendJourney::mute_held_finished() const
+{
+    return mute_held_;
+}
 
-RecipientPicker &SendJourney::picker() { return picker_; }
+RecipientPicker &SendJourney::picker()
+{
+    return picker_;
+}
 
-SendOutbox &SendJourney::outbox() { return outbox_; }
+SendOutbox &SendJourney::outbox()
+{
+    return outbox_;
+}
 
 int SendJourney::bind_test_payload(const FrozenPayload &payload, const uint8_t *audio,
                                    const uint8_t *sketch)
@@ -298,8 +345,14 @@ int SendJourney::inbox_fetch_may_proceed() const
     return outbox_.inbox_fetch_may_proceed();
 }
 
-int SendJourney::streaming_active() const { return outbox_.active(); }
+int SendJourney::streaming_active() const
+{
+    return outbox_.active();
+}
 
-SendUiPhase SendJourney::ui_phase() const { return outbox_.ui_phase(); }
+SendUiPhase SendJourney::ui_phase() const
+{
+    return outbox_.ui_phase();
+}
 
 } /* namespace fl_product_send */

@@ -115,11 +115,11 @@ static void emit_stale_fetch_terminals(const lab02_fetch_req_t *requests, unsign
         const lab02_fetch_req_t *req = &requests[i];
         int64_t terminal_us = esp_timer_get_time();
         uint64_t terminal_fields = LAB02_TRACE_FIELD_SESSION_ID |
-            LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ATTEMPT |
-            LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_ELAPSED_US |
-            LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_SUBMITTED_US |
-            LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_PAGE_INDEX |
-            LAB02_TRACE_FIELD_OP_KIND;
+                                   LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ATTEMPT |
+                                   LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_ELAPSED_US |
+                                   LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_SUBMITTED_US |
+                                   LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_PAGE_INDEX |
+                                   LAB02_TRACE_FIELD_OP_KIND;
         if (s_pump_ev.has_page && s_pump_ev.page.run_id[0]) {
             terminal_fields |= LAB02_TRACE_FIELD_RUN_ID;
         }
@@ -224,11 +224,15 @@ static lab02_fetch_req_t request_envelope(int page_index, uint32_t op_id)
         attempt = 1;
     }
     lab02_fetch_req_t req = {
-        .page_index = page_index, .op_id = op_id,
-        .session_id = s_session_generation, .revision = s_inbox_revision,
+        .page_index = page_index,
+        .op_id = op_id,
+        .session_id = s_session_generation,
+        .revision = s_inbox_revision,
         .page_size = effective_page_size(),
         .page_offset = page_index * (int)effective_page_size(),
-        .attempt = attempt, .submitted_us = now, .response_read_timeout_us = 12000000,
+        .attempt = attempt,
+        .submitted_us = now,
+        .response_read_timeout_us = 12000000,
     };
     return req;
 }
@@ -236,11 +240,14 @@ static lab02_fetch_req_t request_envelope(int page_index, uint32_t op_id)
 /* Presentation uses try-locks only; a busy producer leaves bounded work pending. */
 static bool finish_reconciled_slot(void)
 {
-    if (s_reconciled_slot < 0) return true;
-    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
+    if (s_reconciled_slot < 0)
+        return true;
+    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE)
+        return false;
     int slot = s_reconciled_slot;
     memset(&s_terminals[slot], 0, sizeof(s_terminals[slot]));
-    if (slot < LAB02_FETCH_QUEUE_CAP) xSemaphoreGive(s_fetch_slots);
+    if (slot < LAB02_FETCH_QUEUE_CAP)
+        xSemaphoreGive(s_fetch_slots);
     s_reconciled_slot = -1;
     xSemaphoreGive(s_post_mutex);
     return true;
@@ -316,7 +323,8 @@ static int page_for_focus(int focus, uint16_t page_size)
 
 static void prefetch_for_focus(int focus)
 {
-    if (s_resolving_focus) return;
+    if (s_resolving_focus)
+        return;
     if (!s_http_mode || s_load_stage != LAB02_LOAD_READY) {
         return;
     }
@@ -336,15 +344,18 @@ static void prefetch_for_focus(int focus)
         s_focus_admission_us = esp_timer_get_time() + 20000;
         lab02_trace_emit("focus_admission_pending", 0, page, NULL, NULL);
     }
-    if (page > 0) (void)enqueue_fetch(page - 1, &op, false, false);
+    if (page > 0)
+        (void)enqueue_fetch(page - 1, &op, false, false);
     (void)enqueue_fetch(page + 1, &op, false, false);
 }
 
 static int find_identity(const char *id)
 {
-    if (!id[0]) return -1;
+    if (!id[0])
+        return -1;
     for (uint16_t i = 0; i < s_model.count; i++) {
-        if (!strcmp(s_model.items[i].message_id, id)) return i;
+        if (!strcmp(s_model.items[i].message_id, id))
+            return i;
     }
     return -1;
 }
@@ -362,24 +373,30 @@ static void reconcile_focus_id(void)
 {
     const lab02_inbox_item_t *current = lab02_inbox_model_item(&s_model, s_focus_index);
     if (!s_focus_message_id[0]) {
-        if (current) snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", current->message_id);
+        if (current)
+            snprintf(s_focus_message_id, sizeof(s_focus_message_id), "%s", current->message_id);
         return;
     }
     int found = find_identity(s_focus_message_id);
-    if (s_resolving_focus && s_scroll_locked) return;
+    if (s_resolving_focus && s_scroll_locked)
+        return;
     if (found >= 0) {
-        if (s_focus_index != found || s_resolving_focus) s_presentation_dirty = true;
+        if (s_focus_index != found || s_resolving_focus)
+            s_presentation_dirty = true;
         bool resolved = s_resolving_focus;
         s_focus_index = found;
         s_resolving_focus = false;
         s_identity_failed_page = -1;
-        if (resolved) prefetch_for_focus(s_focus_index);
+        if (resolved)
+            prefetch_for_focus(s_focus_index);
         return;
     }
-    if (!s_resolving_focus) return;
+    if (!s_resolving_focus)
+        return;
     int pages = (s_model.count + effective_page_size() - 1) / effective_page_size();
     for (int p = 0; p < pages; p++) {
-        if (!(s_loaded_pages & (1U << p))) return; /* Partial materialization proves nothing. */
+        if (!(s_loaded_pages & (1U << p)))
+            return; /* Partial materialization proves nothing. */
     }
     if (!s_model.count) {
         s_focus_message_id[0] = 0;
@@ -409,18 +426,21 @@ static void reconcile_focus_id(void)
 static void advance_identity_search(void)
 {
     if (!s_resolving_focus || s_identity_failed_page != -1 ||
-        esp_timer_get_time() < s_identity_admission_us) return;
+        esp_timer_get_time() < s_identity_admission_us)
+        return;
     s_identity_admission_us = esp_timer_get_time() + 20000;
     int pages = (s_model.count + effective_page_size() - 1) / effective_page_size();
     for (int p = 0; p < pages; p++) {
-        if (s_loaded_pages & (1U << p)) continue;
+        if (s_loaded_pages & (1U << p))
+            continue;
         if (s_failed_pages & (1U << p)) {
             s_identity_failed_page = p;
             s_presentation_dirty = true;
             return;
         }
         uint32_t op = 0;
-        if (!s_inflight_op[p]) (void)enqueue_fetch(p, &op, false, false);
+        if (!s_inflight_op[p])
+            (void)enqueue_fetch(p, &op, false, false);
         return;
     }
 }
@@ -451,7 +471,8 @@ static bool apply_page(const lab02_sess_event_t *ev)
         for (int p = 1; p < LAB02_HTTP_MAX_PAGES; p++) {
             s_inflight_op[p] = 0;
         }
-        if (!s_resolving_focus) remember_neighbors();
+        if (!s_resolving_focus)
+            remember_neighbors();
         s_resolving_focus = s_focus_message_id[0] != 0;
         s_identity_failed_page = -1;
         s_identity_admission_us = 0;
@@ -466,7 +487,8 @@ static bool apply_page(const lab02_sess_event_t *ev)
         if (!ev->initial) {
             s_inflight_op[page] = 0;
             s_failed_pages |= (1U << page);
-            if (s_resolving_focus) s_identity_failed_page = page;
+            if (s_resolving_focus)
+                s_identity_failed_page = page;
             s_presentation_dirty = true;
         }
         s_metrics.fetch_fail++;
@@ -500,7 +522,8 @@ static bool apply_page(const lab02_sess_event_t *ev)
     }
     if (s_resolving_focus && find_identity(s_focus_message_id) < 0) {
         int expected = (int)s_model.count - page_data->page_offset;
-        if (expected > (int)effective_page_size()) expected = effective_page_size();
+        if (expected > (int)effective_page_size())
+            expected = effective_page_size();
         if (expected < 0 || page_data->item_count != expected) {
             s_loaded_pages &= ~(1U << page);
             s_failed_pages |= 1U << page;
@@ -571,7 +594,8 @@ static void handle_fetch_done(const lab02_sess_event_t *ev)
         s_metrics.fetch_fail++;
         s_inflight_op[page] = 0;
         s_failed_pages |= (1U << page);
-        if (s_resolving_focus) s_identity_failed_page = page;
+        if (s_resolving_focus)
+            s_identity_failed_page = page;
         if (page == 0 && !ev->initial) {
             s_refresh_failed = true;
         }
@@ -586,7 +610,8 @@ static void handle_fetch_done(const lab02_sess_event_t *ev)
         s_metrics.fetch_timeout++;
         s_inflight_op[page] = 0;
         s_failed_pages |= (1U << page);
-        if (s_resolving_focus) s_identity_failed_page = page;
+        if (s_resolving_focus)
+            s_identity_failed_page = page;
         if (page == 0 && !ev->initial) {
             s_refresh_failed = true;
         }
@@ -684,9 +709,11 @@ bool lab02_session_begin_http(lab02_page_provider_t *pp)
     if (!s_fetch_slots) {
         s_fetch_slots = xSemaphoreCreateCounting(LAB02_FETCH_QUEUE_CAP, LAB02_FETCH_QUEUE_CAP);
     }
-    if (!s_post_mutex) s_post_mutex = xSemaphoreCreateMutex();
+    if (!s_post_mutex)
+        s_post_mutex = xSemaphoreCreateMutex();
     if (!s_fetch_q || !s_fetch_slots || !s_post_mutex ||
-        xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
+        xSemaphoreTake(s_post_mutex, 0) != pdTRUE)
+        return false;
     terminal_slot_t *boot = &s_terminals[LAB02_FETCH_QUEUE_CAP];
     bool available = !boot->admitted;
     if (available) {
@@ -719,8 +746,7 @@ lab02_session_snapshot_t lab02_session_snapshot(void)
         .presentation_dirty = s_presentation_dirty,
         .http_active = s_http_mode,
         .identity_resolving = s_resolving_focus,
-        .focused_page_failed = s_http_mode && (s_resolving_focus ? s_identity_failed_page != -1 :
-            ((s_failed_pages & (1U << page_for_focus(s_focus_index, effective_page_size()))) != 0)),
+        .focused_page_failed = s_http_mode && (s_resolving_focus ? s_identity_failed_page != -1 : ((s_failed_pages & (1U << page_for_focus(s_focus_index, effective_page_size()))) != 0)),
         .cached_due_to_refresh_failure = s_http_mode && s_refresh_failed,
         .transport_unreachable = s_http_mode && s_transport_unreachable,
     };
@@ -730,19 +756,24 @@ lab02_session_snapshot_t lab02_session_snapshot(void)
 lab02_slot_snapshot_t lab02_session_slot_snapshot(const lab02_page_provider_t *provider, int index)
 {
     lab02_slot_snapshot_t slot = {.index = index,
-        .session_generation = s_session_generation, .inbox_revision = s_inbox_revision,
-        .state = LAB02_SLOT_OUT_OF_RANGE};
-    if (!provider || !provider->model || index < 0 || index >= provider->model->count) return slot;
+                                  .session_generation = s_session_generation,
+                                  .inbox_revision = s_inbox_revision,
+                                  .state = LAB02_SLOT_OUT_OF_RANGE};
+    if (!provider || !provider->model || index < 0 || index >= provider->model->count)
+        return slot;
     if (s_resolving_focus) {
         slot.state = s_identity_failed_page == -1 ? LAB02_SLOT_LOADING : LAB02_SLOT_ERROR;
         return slot;
     }
     slot.item = lab02_inbox_model_item(provider->model, index);
     int page = page_for_focus(index, effective_page_size());
-    if (slot.item) slot.state = LAB02_SLOT_BOUND;
+    if (slot.item)
+        slot.state = LAB02_SLOT_BOUND;
     else if (s_http_mode && page < LAB02_HTTP_MAX_PAGES &&
-             (s_failed_pages & (1U << page))) slot.state = LAB02_SLOT_ERROR;
-    else slot.state = LAB02_SLOT_LOADING;
+             (s_failed_pages & (1U << page)))
+        slot.state = LAB02_SLOT_ERROR;
+    else
+        slot.state = LAB02_SLOT_LOADING;
     return slot;
 }
 
@@ -763,15 +794,18 @@ bool lab02_session_resource_counts(lab02_session_resource_counts_t *out)
     }
     memset(out, 0, sizeof(*out));
     for (int page = 0; page < LAB02_HTTP_MAX_PAGES; page++) {
-        if (s_inflight_op[page] != 0u) out->active_fetches++;
+        if (s_inflight_op[page] != 0u)
+            out->active_fetches++;
     }
     for (int i = 0; i < TERMINAL_CAP; i++) {
         if (s_terminals[i].admitted) {
             out->admitted_fetches++;
-            if (!s_terminals[i].posted) out->terminal_pending++;
+            if (!s_terminals[i].posted)
+                out->terminal_pending++;
         }
     }
-    if (s_fetch_q) out->fetch_queue_depth = (uint32_t)uxQueueMessagesWaiting(s_fetch_q);
+    if (s_fetch_q)
+        out->fetch_queue_depth = (uint32_t)uxQueueMessagesWaiting(s_fetch_q);
     xSemaphoreGive(s_post_mutex);
     return true;
 }
@@ -795,7 +829,8 @@ void lab02_session_intent_focus(int focus_index)
     if (m && m->count > 0 && focus_index >= (int)m->count) {
         focus_index = (int)m->count - 1;
     }
-    if (focus_index == s_focus_index && s_resolving_focus) return;
+    if (focus_index == s_focus_index && s_resolving_focus)
+        return;
     s_resolving_focus = false;
     s_identity_failed_page = -1;
     if (focus_index == s_focus_index) {
@@ -838,7 +873,8 @@ static void apply_transport_reachable(bool reachable)
 
 void lab02_session_intent_transport(bool reachable)
 {
-    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
+    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE)
+        return;
     s_transport_session = s_stage_session;
     s_transport_latest = reachable;
     s_transport_pending = true;
@@ -904,8 +940,10 @@ bool lab02_session_intent_retry_page_for_index(int index)
         return false;
     }
     if (s_resolving_focus) {
-        if (s_identity_failed_page < 0) return false;
-        if (!owner_retry_page(s_identity_failed_page)) return false;
+        if (s_identity_failed_page < 0)
+            return false;
+        if (!owner_retry_page(s_identity_failed_page))
+            return false;
         s_identity_failed_page = -1;
         s_presentation_dirty = true;
         return true;
@@ -915,14 +953,16 @@ bool lab02_session_intent_retry_page_for_index(int index)
 
 bool lab02_session_intent_retry_initial_load(void)
 {
-    if (!s_http_mode || s_load_stage != LAB02_LOAD_ERROR) return false;
+    if (!s_http_mode || s_load_stage != LAB02_LOAD_ERROR)
+        return false;
     s_initial_retry_pending = true; /* repeated taps coalesce, even under contention */
     return true;
 }
 
 static void admit_initial_retry(void)
 {
-    if (!s_initial_retry_pending) return;
+    if (!s_initial_retry_pending)
+        return;
     if (!s_http_mode || s_load_stage != LAB02_LOAD_ERROR) {
         s_initial_retry_pending = false;
         return;
@@ -965,11 +1005,13 @@ static void admit_initial_retry(void)
 
 bool lab02_session_http_take_initial_restart(lab02_fetch_req_t *out)
 {
-    if (!out || !s_post_mutex || xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
+    if (!out || !s_post_mutex || xSemaphoreTake(s_post_mutex, 0) != pdTRUE)
+        return false;
     terminal_slot_t *boot = &s_terminals[LAB02_FETCH_QUEUE_CAP];
     bool available = s_initial_restart_pending && boot->admitted && !boot->posted &&
                      boot->event.request.session_id == atomic_load(&s_session_generation);
-    if (available) *out = boot->event.request;
+    if (available)
+        *out = boot->event.request;
     s_initial_restart_pending = false;
     xSemaphoreGive(s_post_mutex);
     return available;
@@ -977,15 +1019,19 @@ bool lab02_session_http_take_initial_restart(lab02_fetch_req_t *out)
 
 void lab02_session_pump(void)
 {
-    if (!s_post_mutex || !finish_reconciled_slot()) return;
-    if (!finish_pending_fetch_delivery_cleanup()) return;
+    if (!s_post_mutex || !finish_reconciled_slot())
+        return;
+    if (!finish_pending_fetch_delivery_cleanup())
+        return;
     admit_initial_retry();
-    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return;
+    if (xSemaphoreTake(s_post_mutex, 0) != pdTRUE)
+        return;
     uint32_t stages = s_stage_session == s_session_generation ? s_pending_stages : 0;
     s_pending_stages = 0;
     bool worker_status = s_stage_session == s_session_generation && s_worker_status_pending;
     bool worker_available = s_worker_status_available;
-    if (worker_status) s_worker_status_pending = false;
+    if (worker_status)
+        s_worker_status_pending = false;
     bool transport = s_transport_pending && s_transport_session == s_session_generation;
     bool reachable = s_transport_latest;
     s_transport_pending = false;
@@ -1008,7 +1054,8 @@ void lab02_session_pump(void)
     int slot = -1;
     for (int i = 0; i < TERMINAL_CAP && (s_scroll_locked || !s_has_pending_revision); i++) {
         if (s_terminals[i].posted &&
-            (slot < 0 || s_terminals[i].sequence < s_terminals[slot].sequence)) slot = i;
+            (slot < 0 || s_terminals[i].sequence < s_terminals[slot].sequence))
+            slot = i;
     }
     if (slot >= 0) {
         s_pump_ev = s_terminals[slot].event;
@@ -1035,14 +1082,16 @@ void lab02_session_pump(void)
     /* Preserve ordered startup transitions even if both were posted before a
      * pump. Repeated reports coalesce; invalid transitions remain observable. */
     for (int stage = LAB02_LOAD_SHELL; stage <= LAB02_LOAD_ERROR; stage++) {
-        if (stages & (1U << stage)) transition_stage((lab02_load_stage_t)stage);
+        if (stages & (1U << stage))
+            transition_stage((lab02_load_stage_t)stage);
     }
-    if (transport) apply_transport_reachable(reachable);
+    if (transport)
+        apply_transport_reachable(reachable);
     if (slot >= 0) {
         bool stale = s_pump_ev.session_id != s_session_generation ||
-            (!s_pump_ev.initial &&
-             (s_inflight_op[s_pump_ev.page_index] != s_pump_ev.op_id ||
-              s_pump_ev.request.revision != s_inbox_revision));
+                     (!s_pump_ev.initial &&
+                      (s_inflight_op[s_pump_ev.page_index] != s_pump_ev.op_id ||
+                       s_pump_ev.request.revision != s_inbox_revision));
         if (stale) {
             s_metrics.apply_stale++;
             lab02_trace_emit("apply_stale", s_pump_ev.op_id, s_pump_ev.page_index, NULL, "session_revision_or_op_mismatch");
@@ -1054,10 +1103,10 @@ void lab02_session_pump(void)
             uint32_t prior_fail = s_metrics.fetch_fail;
             const lab02_inbox_page_t *page = &s_pump_ev.page;
             bool mutation = !s_pump_ev.initial && s_pump_ev.outcome == LAB02_FETCH_OK &&
-                s_pump_ev.has_page && s_pump_ev.page_index == 0 &&
-                page->revision > s_inbox_revision;
+                            s_pump_ev.has_page && s_pump_ev.page_index == 0 &&
+                            page->revision > s_inbox_revision;
             bool valid = page->item_count <= LAB02_DEFAULT_PAGE_SIZE &&
-                page->page_offset == 0 && page->total_count <= LAB02_INBOX_MAX_ITEMS;
+                         page->page_offset == 0 && page->total_count <= LAB02_INBOX_MAX_ITEMS;
             if (mutation && valid && (s_scroll_locked || s_has_pending_revision)) {
                 s_inflight_op[0] = 0;
                 if (s_has_pending_revision && page->revision < s_pending_revision.page.revision) {
@@ -1086,15 +1135,16 @@ void lab02_session_pump(void)
                 handle_fetch_done(&s_pump_ev);
             }
             stale = s_metrics.apply_stale != prior_stale;
-            if (s_metrics.fetch_fail != prior_fail) s_pump_ev.outcome = LAB02_FETCH_FAIL;
+            if (s_metrics.fetch_fail != prior_fail)
+                s_pump_ev.outcome = LAB02_FETCH_FAIL;
         }
         int64_t terminal_us = esp_timer_get_time();
         uint64_t terminal_fields = LAB02_TRACE_FIELD_SESSION_ID |
-            LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ATTEMPT |
-            LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_ELAPSED_US |
-            LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_SUBMITTED_US |
-            LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_PAGE_INDEX |
-            LAB02_TRACE_FIELD_OP_KIND;
+                                   LAB02_TRACE_FIELD_REVISION | LAB02_TRACE_FIELD_ATTEMPT |
+                                   LAB02_TRACE_FIELD_OUTCOME | LAB02_TRACE_FIELD_ELAPSED_US |
+                                   LAB02_TRACE_FIELD_OP_ID | LAB02_TRACE_FIELD_SUBMITTED_US |
+                                   LAB02_TRACE_FIELD_TERMINAL_US | LAB02_TRACE_FIELD_PAGE_INDEX |
+                                   LAB02_TRACE_FIELD_OP_KIND;
         if (s_pump_ev.request.started_us > 0) {
             terminal_fields |= LAB02_TRACE_FIELD_STARTED_US;
         }
@@ -1103,8 +1153,7 @@ void lab02_session_pump(void)
             .session_id = s_pump_ev.session_id,
             .revision = s_pump_ev.request.revision,
             .attempt = s_pump_ev.request.attempt,
-            .outcome = stale ? "stale" : (s_pump_ev.outcome == LAB02_FETCH_OK ? "success" :
-                       (s_pump_ev.outcome == LAB02_FETCH_TIMEOUT ? "timed_out" : "failure")),
+            .outcome = stale ? "stale" : (s_pump_ev.outcome == LAB02_FETCH_OK ? "success" : (s_pump_ev.outcome == LAB02_FETCH_TIMEOUT ? "timed_out" : "failure")),
             .elapsed_us = terminal_us - s_pump_ev.request.submitted_us,
             .submitted_us = s_pump_ev.request.submitted_us,
             .started_us = s_pump_ev.request.started_us,
@@ -1112,12 +1161,12 @@ void lab02_session_pump(void)
             .page_index = s_pump_ev.request.page_index,
             .op_kind = "http_fetch",
             .op_id = s_pump_ev.op_id,
-            .run_id = s_pump_ev.has_page && s_pump_ev.page.run_id[0] ?
-                s_pump_ev.page.run_id : NULL,
+            .run_id = s_pump_ev.has_page && s_pump_ev.page.run_id[0] ? s_pump_ev.page.run_id : NULL,
         };
         lab02_trace_emit_payload("fetch_terminal", s_pump_ev.op_id,
                                  s_pump_ev.page_index, NULL, &terminal_payload);
-        if (!finish_reconciled_slot()) return;
+        if (!finish_reconciled_slot())
+            return;
     }
     /* At most one completion acceptance OR one pending model apply per pump.
      * Reconcile against the latest owner focus/ID, never the arrival-time index. */
@@ -1207,10 +1256,11 @@ void lab02_session_http_fetch_started(uint32_t session_id, uint32_t op_id,
         return;
     }
     uint64_t started_fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_OP_ID |
-                  LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_PAGE_INDEX |
-                  LAB02_TRACE_FIELD_SUBMITTED_US | LAB02_TRACE_FIELD_STARTED_US |
-                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE;
-    if (s_last_run_id[0]) started_fields |= LAB02_TRACE_FIELD_RUN_ID;
+                              LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_PAGE_INDEX |
+                              LAB02_TRACE_FIELD_SUBMITTED_US | LAB02_TRACE_FIELD_STARTED_US |
+                              LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE;
+    if (s_last_run_id[0])
+        started_fields |= LAB02_TRACE_FIELD_RUN_ID;
     const lab02_trace_payload_t started_payload = {
         .fields = started_fields,
         .session_id = session_id,
@@ -1258,7 +1308,8 @@ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
         return false;
     }
     int slot = 0;
-    while (slot < LAB02_FETCH_QUEUE_CAP && s_terminals[slot].admitted) slot++;
+    while (slot < LAB02_FETCH_QUEUE_CAP && s_terminals[slot].admitted)
+        slot++;
     if (slot == LAB02_FETCH_QUEUE_CAP) {
         xSemaphoreGive(s_post_mutex);
         xSemaphoreGive(s_fetch_slots);
@@ -1285,10 +1336,11 @@ static bool enqueue_fetch(int page_index, uint32_t *op_id_out, bool refresh,
     s_failed_pages &= ~(1U << page_index);
     xSemaphoreGive(s_post_mutex);
     uint64_t admitted_fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
-                  LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OP_ID |
-                  LAB02_TRACE_FIELD_PAGE_INDEX | LAB02_TRACE_FIELD_SUBMITTED_US |
-                  LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE;
-    if (s_last_run_id[0]) admitted_fields |= LAB02_TRACE_FIELD_RUN_ID;
+                               LAB02_TRACE_FIELD_ATTEMPT | LAB02_TRACE_FIELD_OP_ID |
+                               LAB02_TRACE_FIELD_PAGE_INDEX | LAB02_TRACE_FIELD_SUBMITTED_US |
+                               LAB02_TRACE_FIELD_OP_KIND | LAB02_TRACE_FIELD_STATE;
+    if (s_last_run_id[0])
+        admitted_fields |= LAB02_TRACE_FIELD_RUN_ID;
     const lab02_trace_payload_t admitted_payload = {
         .fields = admitted_fields,
         .session_id = req.session_id,
@@ -1318,7 +1370,8 @@ void lab02_session_http_fetch_finished(lab02_fetch_outcome_t outcome, uint32_t s
                          "duplicate_or_unadmitted");
         return;
     }
-    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
+    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE)
+        return;
     terminal_slot_t *reservation = NULL;
     for (int i = 0; i < TERMINAL_CAP; i++) {
         terminal_slot_t *candidate = &s_terminals[i];
@@ -1341,7 +1394,8 @@ void lab02_session_http_fetch_finished(lab02_fetch_outcome_t outcome, uint32_t s
     ev->op_id = op_id;
     ev->page_index = page_index;
     ev->has_page = page != NULL && outcome == LAB02_FETCH_OK;
-    if (ev->has_page) ev->page = *page;
+    if (ev->has_page)
+        ev->page = *page;
     reservation->sequence = ++s_terminal_sequence;
     reservation->posted = true;
     xSemaphoreGive(s_post_mutex);
@@ -1358,7 +1412,8 @@ bool lab02_session_http_take_fetch_request(lab02_fetch_req_t *out)
 
 void lab02_session_http_mark_stage(lab02_load_stage_t stage, uint32_t session_id)
 {
-    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
+    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE)
+        return;
     if (session_id == s_stage_session && stage >= LAB02_LOAD_SHELL && stage <= LAB02_LOAD_ERROR)
         s_pending_stages |= 1U << stage;
     xSemaphoreGive(s_post_mutex);
@@ -1376,18 +1431,21 @@ uint16_t lab02_session_materialized_count(void)
 
 bool lab02_session_http_initial_request(lab02_fetch_req_t *out)
 {
-    if (!out || !s_post_mutex || xSemaphoreTake(s_post_mutex, 0) != pdTRUE) return false;
+    if (!out || !s_post_mutex || xSemaphoreTake(s_post_mutex, 0) != pdTRUE)
+        return false;
     terminal_slot_t *boot = &s_terminals[LAB02_FETCH_QUEUE_CAP];
     bool available = boot->admitted && !boot->posted &&
-        boot->event.request.session_id == s_session_generation;
-    if (available) *out = boot->event.request;
+                     boot->event.request.session_id == s_session_generation;
+    if (available)
+        *out = boot->event.request;
     xSemaphoreGive(s_post_mutex);
     return available;
 }
 
 void lab02_session_http_worker_started(bool available, uint32_t session_id)
 {
-    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE) return;
+    if (!s_post_mutex || xSemaphoreTake(s_post_mutex, portMAX_DELAY) != pdTRUE)
+        return;
     /* Startup is one immutable result per session. Duplicate/stale reports
      * cannot reopen admission after a failed allocation. */
     if (session_id == s_stage_session && !s_worker_status_reported) {

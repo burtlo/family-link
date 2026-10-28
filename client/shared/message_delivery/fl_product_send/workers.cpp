@@ -1,6 +1,7 @@
 #include "fl_product_send_workers.hpp"
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 WorkerTicket begin_send_worker(fl_product_login::SessionWriter *session, int64_t now_ms)
 {

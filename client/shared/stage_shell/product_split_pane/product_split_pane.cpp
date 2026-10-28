@@ -3,9 +3,11 @@
 #include "esp_log.h"
 #include "product_ui_window_canvas.h"
 
-namespace stage_shell {
+namespace stage_shell
+{
 
-namespace {
+namespace
+{
 
 constexpr const char *kTag = "product_split_pane";
 

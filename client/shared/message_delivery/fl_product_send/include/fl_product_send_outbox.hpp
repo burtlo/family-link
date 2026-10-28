@@ -3,7 +3,8 @@
 
 #include "fl_product_send_types.hpp"
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 struct SendTransportResult {
     int transport_ok;
@@ -13,8 +14,9 @@ struct SendTransportResult {
     int body_len;
 };
 
-class SendOutbox {
-public:
+class SendOutbox
+{
+  public:
     SendOutbox();
 
     void reset();
@@ -55,7 +57,7 @@ public:
     int sketch_part_sequence() const;
     int trace_line(char *out, int out_cap) const;
 
-private:
+  private:
     void set_ui(SendUiPhase phase);
     void finish_terminal(SendTerminal terminal, SendUiPhase ui, int64_t now_ms);
     void note_accepted(int64_t now_ms);

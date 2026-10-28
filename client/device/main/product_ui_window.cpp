@@ -9,9 +9,11 @@
 #include "product_split_pane.hpp"
 #include "product_theme.h"
 
-namespace product_ui {
+namespace product_ui
+{
 
-namespace {
+namespace
+{
 
 constexpr const char *kTag = "product_ui_window";
 
@@ -21,13 +23,13 @@ constexpr lv_coord_t kSplitPaneUpperHeight = 80;
 product_ui_scene_t to_c_scene(Scene scene)
 {
     switch (scene) {
-    case Scene::Desk:
-        return PRODUCT_UI_SCENE_DESK;
-    case Scene::Record:
-        return PRODUCT_UI_SCENE_RECORD;
-    case Scene::None:
-    default:
-        return PRODUCT_UI_SCENE_NONE;
+        case Scene::Desk:
+            return PRODUCT_UI_SCENE_DESK;
+        case Scene::Record:
+            return PRODUCT_UI_SCENE_RECORD;
+        case Scene::None:
+        default:
+            return PRODUCT_UI_SCENE_NONE;
     }
 }
 

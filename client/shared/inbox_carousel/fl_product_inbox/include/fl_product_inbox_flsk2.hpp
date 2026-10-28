@@ -4,7 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-namespace fl_product_inbox {
+namespace fl_product_inbox
+{
 
 bool flsk2_validate(const uint8_t *data, size_t len, uint16_t *point_count);
 void flsk2_paint_prefix(uint16_t *pixels, size_t pixel_count, const uint8_t *data, size_t len,

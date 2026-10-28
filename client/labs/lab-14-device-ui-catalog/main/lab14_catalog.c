@@ -109,8 +109,12 @@ static void load_tokens(lab14_tokens_t *tokens, const cJSON *root)
             count = LAB14_SWATCH_COUNT;
         }
         static const lab14_swatch_t k_default_swatches[LAB14_SWATCH_COUNT] = {
-            {269, 208, 0x000000}, {291, 172, 0xF8F8F8}, {269, 136, 0xE8C040},
-            {291, 100, 0x4CAF50}, {269, 64, 0xE53935}, {291, 28, 0x5AA0E8},
+            {269, 208, 0x000000},
+            {291, 172, 0xF8F8F8},
+            {269, 136, 0xE8C040},
+            {291, 100, 0x4CAF50},
+            {269, 64, 0xE53935},
+            {291, 28, 0x5AA0E8},
         };
         for (int i = 0; i < count; i++) {
             const cJSON *item = cJSON_GetArrayItem(swatches, i);
@@ -125,8 +129,12 @@ static void load_tokens(lab14_tokens_t *tokens, const cJSON *root)
     }
     if (tokens->swatch_count <= 0) {
         static const lab14_swatch_t k_fallback[LAB14_SWATCH_COUNT] = {
-            {269, 208, 0x000000}, {291, 172, 0xF8F8F8}, {269, 136, 0xE8C040},
-            {291, 100, 0x4CAF50}, {269, 64, 0xE53935}, {291, 28, 0x5AA0E8},
+            {269, 208, 0x000000},
+            {291, 172, 0xF8F8F8},
+            {269, 136, 0xE8C040},
+            {291, 100, 0x4CAF50},
+            {269, 64, 0xE53935},
+            {291, 28, 0x5AA0E8},
         };
         memcpy(tokens->swatches, k_fallback, sizeof(k_fallback));
         tokens->swatch_count = LAB14_SWATCH_COUNT;

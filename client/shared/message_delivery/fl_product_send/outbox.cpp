@@ -8,8 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_send {
-namespace {
+namespace fl_product_send
+{
+namespace
+{
 
 int hex_digit(char c)
 {
@@ -53,7 +55,10 @@ int client_message_id_is_uuid(const char *id)
 
 } /* namespace */
 
-SendOutbox::SendOutbox() { reset(); }
+SendOutbox::SendOutbox()
+{
+    reset();
+}
 
 void SendOutbox::reset()
 {
@@ -63,13 +68,25 @@ void SendOutbox::reset()
     ui_ = kSendUiHidden;
 }
 
-void SendOutbox::set_wifi(int up) { wifi_up_ = up ? 1 : 0; }
+void SendOutbox::set_wifi(int up)
+{
+    wifi_up_ = up ? 1 : 0;
+}
 
-void SendOutbox::set_refresh_failed(int failed) { refresh_failed_ = failed ? 1 : 0; }
+void SendOutbox::set_refresh_failed(int failed)
+{
+    refresh_failed_ = failed ? 1 : 0;
+}
 
-void SendOutbox::set_upload_blocked(int blocked) { upload_blocked_ = blocked ? 1 : 0; }
+void SendOutbox::set_upload_blocked(int blocked)
+{
+    upload_blocked_ = blocked ? 1 : 0;
+}
 
-void SendOutbox::set_worker_generation(uint32_t generation) { worker_generation_ = generation; }
+void SendOutbox::set_worker_generation(uint32_t generation)
+{
+    worker_generation_ = generation;
+}
 
 void SendOutbox::set_signed_in_user(const char *user_id)
 {
@@ -216,9 +233,15 @@ void SendOutbox::request_cancel()
     /* A finished send is already in flight. Boot does not cancel that upload. */
 }
 
-void SendOutbox::leave_wait() { left_wait_ = 1; }
+void SendOutbox::leave_wait()
+{
+    left_wait_ = 1;
+}
 
-int SendOutbox::left_wait() const { return left_wait_; }
+int SendOutbox::left_wait() const
+{
+    return left_wait_;
+}
 
 void SendOutbox::set_ui(SendUiPhase phase)
 {
@@ -282,7 +305,10 @@ int SendOutbox::active() const
     return step_ != kWireIdle || ui_ == kSendUiSent || ui_ == kSendUiCouldntSend;
 }
 
-SendUiPhase SendOutbox::ui_phase() const { return ui_; }
+SendUiPhase SendOutbox::ui_phase() const
+{
+    return ui_;
+}
 
 const char *SendOutbox::body_label() const
 {
@@ -292,11 +318,20 @@ const char *SendOutbox::body_label() const
     return ui_phase_label(ui_);
 }
 
-SendTerminal SendOutbox::terminal() const { return terminal_; }
+SendTerminal SendOutbox::terminal() const
+{
+    return terminal_;
+}
 
-const char *SendOutbox::server_message_id() const { return server_message_id_; }
+const char *SendOutbox::server_message_id() const
+{
+    return server_message_id_;
+}
 
-const char *SendOutbox::client_message_id() const { return payload_.client_message_id; }
+const char *SendOutbox::client_message_id() const
+{
+    return payload_.client_message_id;
+}
 
 int SendOutbox::inbox_fetch_may_proceed() const
 {
@@ -307,7 +342,10 @@ int SendOutbox::inbox_fetch_may_proceed() const
     return 1;
 }
 
-int SendOutbox::part_size_bytes() const { return kPartSizeBytes; }
+int SendOutbox::part_size_bytes() const
+{
+    return kPartSizeBytes;
+}
 
 int SendOutbox::has_pending_http() const
 {
@@ -454,9 +492,15 @@ void SendOutbox::note_http_sent(uint32_t *seq_out)
     }
 }
 
-void SendOutbox::cancel_http_sent() { http_inflight_ = 0; }
+void SendOutbox::cancel_http_sent()
+{
+    http_inflight_ = 0;
+}
 
-int SendOutbox::http_inflight() const { return http_inflight_; }
+int SendOutbox::http_inflight() const
+{
+    return http_inflight_;
+}
 
 int SendOutbox::apply_http_result(const char *client_message_id, uint32_t seq, const HttpAction &action,
                                   const SendTransportResult &result, int64_t now_ms)
@@ -540,9 +584,15 @@ int SendOutbox::apply_transport_result(const HttpAction &action, const SendTrans
     return 1;
 }
 
-int SendOutbox::audio_part_sequence() const { return (int)audio_parts_sent_; }
+int SendOutbox::audio_part_sequence() const
+{
+    return (int)audio_parts_sent_;
+}
 
-int SendOutbox::sketch_part_sequence() const { return (int)sketch_parts_sent_; }
+int SendOutbox::sketch_part_sequence() const
+{
+    return (int)sketch_parts_sent_;
+}
 
 int SendOutbox::trace_line(char *out, int out_cap) const
 {

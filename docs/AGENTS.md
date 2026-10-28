@@ -37,6 +37,7 @@ For v1 build/flash commands and archive-local indexes, humans working inside the
 | Experience spec authoring | [`product/experience-specification-authoring.md`](product/experience-specification-authoring.md) · skill: [`.cursor/skills/author-experience-specification/SKILL.md`](../.cursor/skills/author-experience-specification/SKILL.md) |
 | Client/server contract authoring | [`product/communication-contract-authoring.md`](product/communication-contract-authoring.md) · skill: [`.cursor/skills/author-communication-contract/SKILL.md`](../.cursor/skills/author-communication-contract/SKILL.md) |
 | Client coding standards | [`standards/client-application-coding-standards.md`](standards/client-application-coding-standards.md) |
+| C/C++ formatting (clang-format) | [`standards/code-formatting.md`](standards/code-formatting.md) · `make format` / `make format.check` |
 | Embedded target invariants + desk claim classes | [`standards/device-target-invariants.md`](standards/device-target-invariants.md) |
 | Device presentation (one tick, one screen owner, touch, display power) — read before any device UI fix | [`standards/device-presentation-invariants.md`](standards/device-presentation-invariants.md) |
 | Product device build, flash, markers | [`standards/device-build-flash.md`](standards/device-build-flash.md) |

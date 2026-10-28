@@ -10,7 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 
-namespace {
+namespace
+{
 
 int g_failures = 0;
 
@@ -28,7 +29,10 @@ struct TempMedia {
     char path[64];
     fl_product_record::FileMediaBackend backend;
 
-    TempMedia() { path[0] = '\0'; }
+    TempMedia()
+    {
+        path[0] = '\0';
+    }
 
     bool open()
     {

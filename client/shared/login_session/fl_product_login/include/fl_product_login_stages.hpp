@@ -4,7 +4,8 @@
 /* Single header for login stage tokens. LAB-08 links this header.
    No other module may define these token constants. */
 
-namespace fl_product_login {
+namespace fl_product_login
+{
 
 enum Stage {
     kStageWifiUnavailable = 1,
@@ -27,22 +28,22 @@ constexpr char kTokenSignedOut[] = "signed_out";
 inline const char *stage_token(int stage)
 {
     switch (stage) {
-    case kStageWifiUnavailable:
-        return kTokenWifiUnavailable;
-    case kStageConnecting:
-        return kTokenConnecting;
-    case kStageRoster:
-        return kTokenRoster;
-    case kStageEmptyHangout:
-        return kTokenEmptyHangout;
-    case kStageMuted:
-        return kTokenMuted;
-    case kStageSignedIn:
-        return kTokenSignedIn;
-    case kStageSignedOut:
-        return kTokenSignedOut;
-    default:
-        return "";
+        case kStageWifiUnavailable:
+            return kTokenWifiUnavailable;
+        case kStageConnecting:
+            return kTokenConnecting;
+        case kStageRoster:
+            return kTokenRoster;
+        case kStageEmptyHangout:
+            return kTokenEmptyHangout;
+        case kStageMuted:
+            return kTokenMuted;
+        case kStageSignedIn:
+            return kTokenSignedIn;
+        case kStageSignedOut:
+            return kTokenSignedOut;
+        default:
+            return "";
     }
 }
 

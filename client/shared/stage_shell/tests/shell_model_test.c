@@ -13,7 +13,7 @@ static void test_fl_shell_single_writer(void)
     uint32_t generation;
     assert(fl_shell_panel_handle(&session, FL_SHELL_SLOT_LOWER, &generation));
     assert(fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_LOWER, generation, 2,
-                                  "12", FL_SHELL_UPDATE_PROPERTY));
+                                     "12", FL_SHELL_UPDATE_PROPERTY));
     uint32_t terminal_total = session.terminal_total;
     assert(!fl_shell_begin_stage_transition(&session, 18, FL_SHELL_STAGE_ROSTER, 3));
     assert(session.stage == FL_SHELL_STAGE_PIN && !session.transitioning);
@@ -88,7 +88,7 @@ static void test_fl_shell_data_during_exit(void)
     assert(fl_shell_begin_stage_transition(&session, 1, FL_SHELL_STAGE_PIN, 21));
     uint32_t terminals = session.terminal_total;
     assert(!fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_UPPER, generation, 22,
-                                   "late badge", FL_SHELL_UPDATE_PROPERTY));
+                                      "late badge", FL_SHELL_UPDATE_PROPERTY));
     assert(session.handle_uses == uses && session.panels[0].updates == 0);
     assert(session.terminal_total == terminals + 1);
     assert(session.last_result.operation_id == 22);
@@ -101,8 +101,8 @@ static void test_fl_shell_data_during_exit(void)
     assert(session.last_result.terminal_count == 1);
     assert(session.terminal_total == terminals + 2);
     assert(!fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_UPPER,
-                                   session.panels[0].generation, 22,
-                                   "duplicate callback", FL_SHELL_UPDATE_PROPERTY));
+                                      session.panels[0].generation, 22,
+                                      "duplicate callback", FL_SHELL_UPDATE_PROPERTY));
     assert(session.terminal_total == terminals + 2);
     assert(strcmp(session.panels[0].text, "PIN") == 0);
 }
@@ -116,7 +116,7 @@ static void test_fl_shell_stale_panel(void)
     assert(fl_shell_begin_stage_transition(&session, 1, FL_SHELL_STAGE_INBOX, 22));
     assert(fl_shell_finish_stage_transition(&session, 22));
     assert(!fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_LOWER, generation, 24,
-                                   "old panel", FL_SHELL_UPDATE_SUBTREE));
+                                      "old panel", FL_SHELL_UPDATE_SUBTREE));
     assert(session.handle_uses == 0);
     assert(session.stale_callbacks == 1);
     assert(session.last_result.operation_id == 24);
@@ -164,9 +164,9 @@ static void test_fl_shell_cancel_schedule(void)
     assert(fl_shell_cancel_transition_started(&control, false));
     assert(!control.armed && control.transition_scheduled);
     assert(fl_shell_animation_action(control.transition_scheduled, 199999,
-                                  200000, 400000) == FL_SHELL_ANIMATION_ADVANCE);
+                                     200000, 400000) == FL_SHELL_ANIMATION_ADVANCE);
     assert(fl_shell_animation_action(control.transition_scheduled, 200000,
-                                  200000, 400000) == FL_SHELL_ANIMATION_CANCEL);
+                                     200000, 400000) == FL_SHELL_ANIMATION_CANCEL);
     fl_shell_cancel_transition_finished(&control);
     assert(!control.armed && !control.transition_scheduled);
 
@@ -176,7 +176,7 @@ static void test_fl_shell_cancel_schedule(void)
     fl_shell_session_t rejected_session;
     fl_shell_session_init(&rejected_session, 1, FL_SHELL_STAGE_ROSTER);
     assert(!fl_shell_begin_stage_transition(&rejected_session, 2,
-                                         FL_SHELL_STAGE_PIN, 1));
+                                            FL_SHELL_STAGE_PIN, 1));
     assert(fl_shell_cancel_control_clear(&control, false));
     assert(!control.armed && !control.transition_scheduled);
     assert(!fl_shell_cancel_transition_started(&control, false));
@@ -214,7 +214,7 @@ static void test_fl_shell_level2_control(void)
     uint32_t generation;
     assert(fl_shell_panel_handle(&session, FL_SHELL_SLOT_UPPER, &generation));
     assert(!fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_UPPER, generation, 25,
-                                   "forced rebuild", FL_SHELL_UPDATE_SCENE));
+                                      "forced rebuild", FL_SHELL_UPDATE_SCENE));
     assert(session.panels[0].updates == 0 && session.handle_uses == 0);
     assert(session.terminal_total == 1);
     assert(session.last_result.operation_id == 25);
@@ -225,11 +225,11 @@ static void test_fl_shell_level2_control(void)
 
     fl_shell_session_init(&session, 1, FL_SHELL_STAGE_ROSTER);
     assert(!fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_UPPER, generation, 25,
-                                   NULL, FL_SHELL_UPDATE_SCENE));
+                                      NULL, FL_SHELL_UPDATE_SCENE));
     assert(!fl_shell_apply_panel_data(&session, (fl_shell_slot_t)2, generation, 26,
-                                   "malformed", FL_SHELL_UPDATE_SCENE));
+                                      "malformed", FL_SHELL_UPDATE_SCENE));
     assert(!fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_UPPER, generation, 27,
-                                   "malformed", (fl_shell_update_level_t)99));
+                                      "malformed", (fl_shell_update_level_t)99));
     assert(session.terminal_total == 0);
     assert(session.terminal_ids_count == 0);
     assert(session.operation_id_watermark == 0);
@@ -243,7 +243,7 @@ static void test_fl_shell_pending_capacity(void)
     for (uint32_t operation_id = 1; operation_id <= FL_SHELL_EVENT_CAPACITY; ++operation_id)
         assert(fl_shell_event_queue_push(&session, operation_id));
     assert(fl_shell_begin_stage_transition(&session, 1, FL_SHELL_STAGE_PIN,
-                                        FL_SHELL_EVENT_CAPACITY + 1u));
+                                           FL_SHELL_EVENT_CAPACITY + 1u));
     size_t pending_operations = session.event_count + (session.transitioning ? 1u : 0u);
     assert(session.event_count == FL_SHELL_EVENT_CAPACITY);
     assert(session.transitioning);
@@ -260,9 +260,9 @@ static void test_fl_shell_data_levels(void)
     assert(fl_shell_panel_handle(&session, FL_SHELL_SLOT_LOWER, &generation));
     uint32_t focused_id = session.panels[FL_SHELL_SLOT_LOWER].focused_synthetic_id;
     assert(fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_LOWER, generation, 26,
-                                  "badge updated", FL_SHELL_UPDATE_PROPERTY));
+                                     "badge updated", FL_SHELL_UPDATE_PROPERTY));
     assert(fl_shell_apply_panel_data(&session, FL_SHELL_SLOT_LOWER, generation, 27,
-                                  "roster revised", FL_SHELL_UPDATE_SUBTREE));
+                                     "roster revised", FL_SHELL_UPDATE_SUBTREE));
     assert(session.panels[FL_SHELL_SLOT_LOWER].focused_synthetic_id == focused_id);
     assert(session.panels[FL_SHELL_SLOT_LOWER].updates == 2);
     assert(session.panels[FL_SHELL_SLOT_UPPER].updates == 0);
@@ -348,20 +348,35 @@ static void test_fl_shell_event_queue_terminals(void)
 int main(int argc, char **argv)
 {
     assert(argc == 2);
-    if (strcmp(argv[1], "single_writer") == 0) test_fl_shell_single_writer();
-    else if (strcmp(argv[1], "terminal_id_reuse") == 0) test_fl_shell_terminal_operation_id_reuse();
-    else if (strcmp(argv[1], "geometry") == 0) test_fl_shell_geometry();
-    else if (strcmp(argv[1], "idempotent_enter") == 0) test_fl_shell_idempotent_enter();
-    else if (strcmp(argv[1], "data_during_exit") == 0) test_fl_shell_data_during_exit();
-    else if (strcmp(argv[1], "stale_panel") == 0) test_fl_shell_stale_panel();
-    else if (strcmp(argv[1], "cancel") == 0) test_fl_shell_cancel();
-    else if (strcmp(argv[1], "cancel_schedule") == 0) test_fl_shell_cancel_schedule();
-    else if (strcmp(argv[1], "level2_control") == 0) test_fl_shell_level2_control();
-    else if (strcmp(argv[1], "pending_capacity") == 0) test_fl_shell_pending_capacity();
-    else if (strcmp(argv[1], "data_levels") == 0) test_fl_shell_data_levels();
-    else if (strcmp(argv[1], "cycle") == 0) test_fl_shell_cycle();
-    else if (strcmp(argv[1], "overflow") == 0) test_fl_shell_event_overflow();
-    else if (strcmp(argv[1], "queue_terminals") == 0) test_fl_shell_event_queue_terminals();
-    else return 2;
+    if (strcmp(argv[1], "single_writer") == 0)
+        test_fl_shell_single_writer();
+    else if (strcmp(argv[1], "terminal_id_reuse") == 0)
+        test_fl_shell_terminal_operation_id_reuse();
+    else if (strcmp(argv[1], "geometry") == 0)
+        test_fl_shell_geometry();
+    else if (strcmp(argv[1], "idempotent_enter") == 0)
+        test_fl_shell_idempotent_enter();
+    else if (strcmp(argv[1], "data_during_exit") == 0)
+        test_fl_shell_data_during_exit();
+    else if (strcmp(argv[1], "stale_panel") == 0)
+        test_fl_shell_stale_panel();
+    else if (strcmp(argv[1], "cancel") == 0)
+        test_fl_shell_cancel();
+    else if (strcmp(argv[1], "cancel_schedule") == 0)
+        test_fl_shell_cancel_schedule();
+    else if (strcmp(argv[1], "level2_control") == 0)
+        test_fl_shell_level2_control();
+    else if (strcmp(argv[1], "pending_capacity") == 0)
+        test_fl_shell_pending_capacity();
+    else if (strcmp(argv[1], "data_levels") == 0)
+        test_fl_shell_data_levels();
+    else if (strcmp(argv[1], "cycle") == 0)
+        test_fl_shell_cycle();
+    else if (strcmp(argv[1], "overflow") == 0)
+        test_fl_shell_event_overflow();
+    else if (strcmp(argv[1], "queue_terminals") == 0)
+        test_fl_shell_event_queue_terminals();
+    else
+        return 2;
     return 0;
 }

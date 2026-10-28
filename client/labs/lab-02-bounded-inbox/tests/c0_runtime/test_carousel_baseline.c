@@ -28,11 +28,13 @@ static unsigned starts_by_id[128], ends_by_id[128];
 static lv_indev_data_t pointer_data;
 static void pointer_read(lv_indev_t *indev, lv_indev_data_t *data)
 {
-    (void)indev; *data = pointer_data;
+    (void)indev;
+    *data = pointer_data;
 }
 static void pointer_step(lv_indev_t *indev, int x, lv_indev_state_t state)
 {
-    pointer_data.point.x = x; pointer_data.point.y = LAB02_CARD_Y + 60;
+    pointer_data.point.x = x;
+    pointer_data.point.y = LAB02_CARD_Y + 60;
     pointer_data.state = state;
     lv_indev_read(indev);
 }
@@ -44,29 +46,37 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus,
     (void)generation;
     (void)focus;
     (void)message_id;
-    if (!strcmp(event, "snap_start")) snap_starts++;
-    if (!strcmp(event, "snap_end")) snap_ends++;
+    if (!strcmp(event, "snap_start"))
+        snap_starts++;
+    if (!strcmp(event, "snap_end"))
+        snap_ends++;
     if (!strcmp(event, "snap_start") || !strcmp(event, "snap_end")) {
         assert(payload && (payload->fields & LAB02_TRACE_FIELD_SNAP_ID));
         unsigned id = payload->snap_id;
         assert(id < 128);
-        if (!strcmp(event, "snap_start")) assert(++starts_by_id[id] == 1);
-        else assert(++ends_by_id[id] == 1 && starts_by_id[id] == 1);
+        if (!strcmp(event, "snap_start"))
+            assert(++starts_by_id[id] == 1);
+        else
+            assert(++ends_by_id[id] == 1 && starts_by_id[id] == 1);
     }
     printf("C0_TRACE scenario=%s event=%s\n", scenario, event);
 }
 
-
 void lab02_trace_emit(const char *event, uint32_t generation, int focus,
                       const char *message_id, const char *extra)
 {
-    if (!strcmp(event, "snap_start")) snap_starts++;
-    if (!strcmp(event, "snap_end")) snap_ends++;
+    if (!strcmp(event, "snap_start"))
+        snap_starts++;
+    if (!strcmp(event, "snap_end"))
+        snap_ends++;
     if (!strcmp(event, "snap_start") || !strcmp(event, "snap_end")) {
-        const char *field = strstr(extra, "snap_id="); unsigned id = 0;
+        const char *field = strstr(extra, "snap_id=");
+        unsigned id = 0;
         assert(field && sscanf(field, "snap_id=%u", &id) == 1 && id < 128);
-        if (!strcmp(event, "snap_start")) assert(++starts_by_id[id] == 1);
-        else assert(++ends_by_id[id] == 1 && starts_by_id[id] == 1);
+        if (!strcmp(event, "snap_start"))
+            assert(++starts_by_id[id] == 1);
+        else
+            assert(++ends_by_id[id] == 1 && starts_by_id[id] == 1);
     }
     printf("C0_TRACE scenario=%s event=%s gen=%u focus=%d msg=%s %s\n",
            scenario, event, generation, focus, message_id ? message_id : "-", extra ? extra : "");
@@ -88,7 +98,9 @@ bool lab02_page_provider_init(lab02_page_provider_t *pp)
 #endif
 }
 const lab02_inbox_item_t *lab02_page_provider_item(const lab02_page_provider_t *pp, int index)
-{ return lab02_inbox_model_item(pp->model, index); }
+{
+    return lab02_inbox_model_item(pp->model, index);
+}
 
 void lab02_page_provider_http_retry_initial_load(void) {}
 extern unsigned lab02_host_fetch_queue_depth(void);
@@ -147,16 +159,18 @@ static void checkpoint(const char *name)
     fputs("P6\n320 240\n255\n", file);
     /* LVGL RGB888 draw buffer is BGR in this host runtime. */
     for (size_t i = 0; i < sizeof(framebuffer); i += 3) {
-        fputc(framebuffer[i + 2], file); fputc(framebuffer[i + 1], file); fputc(framebuffer[i], file);
+        fputc(framebuffer[i + 2], file);
+        fputc(framebuffer[i + 1], file);
+        fputc(framebuffer[i], file);
     }
     fclose(file);
 }
 
 static lab02_inbox_page_t make_page(unsigned revision, int offset, int count, int shift)
 {
-    lab02_inbox_page_t p = {.revision = revision, .total_count = (uint16_t)count,
-                            .page_offset = offset, .item_count = 16};
-    if (count - offset < 16) p.item_count = (uint16_t)(count - offset);
+    lab02_inbox_page_t p = {.revision = revision, .total_count = (uint16_t)count, .page_offset = offset, .item_count = 16};
+    if (count - offset < 16)
+        p.item_count = (uint16_t)(count - offset);
     for (int i = 0; i < p.item_count; i++) {
         int id = offset + i + shift;
         p.items[i].unread = true;
@@ -176,7 +190,7 @@ static void *deliver(void *unused)
 {
     (void)unused;
     lab02_session_http_fetch_finished(LAB02_FETCH_OK, request.session_id,
-        request.op_id, request.page_index, &response, initial_response);
+                                      request.op_id, request.page_index, &response, initial_response);
     atomic_store(&delivered, true);
     return NULL;
 }
@@ -185,7 +199,9 @@ static void submit(lab02_fetch_req_t req, lab02_inbox_page_t page, bool initial)
 {
     printf("C0_DELIVERY scenario=%s session=%u op_id=%u page=%d response_revision=%u initial=%d snap_id=%u\n",
            scenario, req.session_id, req.op_id, req.page_index, page.revision, initial, lab02_snap_current_id());
-    request = req; response = page; initial_response = initial;
+    request = req;
+    response = page;
+    initial_response = initial;
     atomic_store(&delivered, false);
     pthread_t worker;
     assert(!pthread_create(&worker, NULL, deliver, NULL));
@@ -216,8 +232,10 @@ static lab02_fetch_req_t take_page(int page)
 static lab02_card_view_t *view_at(int index)
 {
     for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++)
-        if (carousel.pool.views[i].bound_index == index) return &carousel.pool.views[i];
-    assert(!"visible binding missing"); return NULL;
+        if (carousel.pool.views[i].bound_index == index)
+            return &carousel.pool.views[i];
+    assert(!"visible binding missing");
+    return NULL;
 }
 
 static void assert_window(void)
@@ -246,13 +264,15 @@ static void assert_archived_ignored(lv_anim_t *archived)
     int focus = lab02_session_snapshot().focus_index;
     unsigned terminals = snap_ends;
     uint32_t generations[LAB02_CARD_POOL_SIZE];
-    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++) generations[i] = carousel.pool.views[i].bind_generation;
+    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++)
+        generations[i] = carousel.pool.views[i].bind_generation;
     archived->custom_exec_cb(archived, 999);
     archived->completed_cb(archived);
     archived->deleted_cb(archived);
     assert(lv_obj_get_scroll_x(carousel.scroll) == x && snap_ends == terminals);
     assert(lab02_session_snapshot().focus_index == focus);
-    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++) assert(carousel.pool.views[i].bind_generation == generations[i]);
+    for (int i = 0; i < LAB02_CARD_POOL_SIZE; i++)
+        assert(carousel.pool.views[i].bind_generation == generations[i]);
 }
 
 static void drag_to(int index)
@@ -260,8 +280,7 @@ static void drag_to(int index)
     lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_BEGIN, NULL);
     /* Same raw displacement used by LVGL indev scrolling, avoiding the API
      * scroll_to wrapper which synthesizes a complete begin/end pair. */
-    lv_obj_scroll_by_raw(carousel.scroll, lv_obj_get_scroll_x(carousel.scroll) -
-                         lab02_snap_target_x_for_index(index, carousel.item_count), 0);
+    lv_obj_scroll_by_raw(carousel.scroll, lv_obj_get_scroll_x(carousel.scroll) - lab02_snap_target_x_for_index(index, carousel.item_count), 0);
     lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL, NULL);
 }
 
@@ -269,7 +288,8 @@ int main(int argc, char **argv)
 {
     setvbuf(stdout, NULL, _IONBF, 0);
     assert(argc == 3);
-    scenario = argv[1]; artifact_dir = argv[2];
+    scenario = argv[1];
+    artifact_dir = argv[2];
     lv_init();
     lv_display_t *display = lv_display_create(320, 240);
     lv_display_set_color_format(display, LV_COLOR_FORMAT_RGB888);
@@ -287,15 +307,19 @@ int main(int argc, char **argv)
     checkpoint("ready");
 
     if (!strcmp(scenario, "fast-boundary")) {
-        drag_to(10); assert_window(); /* Entirely local materialized content. */
-        drag_to(40); assert_window(); /* Delayed multi-page jump. */
-        drag_to(2); assert_window(); /* Reversal while finger remains down. */
+        drag_to(10);
+        assert_window(); /* Entirely local materialized content. */
+        drag_to(40);
+        assert_window(); /* Delayed multi-page jump. */
+        drag_to(2);
+        assert_window(); /* Reversal while finger remains down. */
         drag_to(20);
         checkpoint("drag20");
         /* Intermediate focus may be coalesced; end must commit latest intent. */
         lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_END, NULL);
         assert(lab02_session_snapshot().focus_index == 20);
-        advance(300); checkpoint("terminal");
+        advance(300);
+        checkpoint("terminal");
         lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_BEGIN, NULL);
         lv_obj_scroll_by_raw(carousel.scroll, lv_obj_get_scroll_x(carousel.scroll) - 566, 0);
         lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL, NULL);
@@ -318,7 +342,7 @@ int main(int argc, char **argv)
         lab02_carousel_set_focus(&carousel, 15, false);
         lab02_fetch_req_t req = take_page(1);
         lab02_session_http_fetch_finished(LAB02_FETCH_TIMEOUT, req.session_id,
-            req.op_id, req.page_index, NULL, false);
+                                          req.op_id, req.page_index, NULL, false);
         lab02_carousel_pump(&carousel);
         advance(CONFIG_LAB02_SLOW_BIND_MS + 20);
         checkpoint("neighbor-error");
@@ -340,7 +364,7 @@ int main(int argc, char **argv)
             assert(lab02_session_http_take_fetch_request(&pending));
             automatic_page_retry |= pending.page_index == 1;
             lab02_session_http_fetch_finished(LAB02_FETCH_FAIL, pending.session_id,
-                pending.op_id, pending.page_index, NULL, false);
+                                              pending.op_id, pending.page_index, NULL, false);
             lab02_carousel_pump(&carousel);
         }
         assert(!automatic_page_retry);
@@ -372,15 +396,17 @@ int main(int argc, char **argv)
             assert_window();
             const int stride = LAB02_CARD_W + LAB02_CARD_GAP;
             const int offsets[] = {0, stride / 4, stride / 2, stride - 1};
-            for (int idx = 0; idx < n; idx++) for (unsigned j = 0; j < 4; j++) {
-                int x = idx * stride + offsets[j];
-                int max = LAB02_CARD_GAP + n * stride - LAB02_LCD_W;
-                if (x > max) x = max;
-                lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_BEGIN, NULL);
-                lv_obj_scroll_by_raw(carousel.scroll, lv_obj_get_scroll_x(carousel.scroll) - x, 0);
-                lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL, NULL);
-                assert_window();
-            }
+            for (int idx = 0; idx < n; idx++)
+                for (unsigned j = 0; j < 4; j++) {
+                    int x = idx * stride + offsets[j];
+                    int max = LAB02_CARD_GAP + n * stride - LAB02_LCD_W;
+                    if (x > max)
+                        x = max;
+                    lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_BEGIN, NULL);
+                    lv_obj_scroll_by_raw(carousel.scroll, lv_obj_get_scroll_x(carousel.scroll) - x, 0);
+                    lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL, NULL);
+                    assert_window();
+                }
             lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_END, NULL);
             assert(lab02_session_snapshot().focus_index == n - 2);
             advance(300);
@@ -416,21 +442,24 @@ int main(int argc, char **argv)
         lab02_carousel_set_focus(&carousel, 8, true);
         lv_anim_t archived = *lv_anim_get(&carousel.snap, NULL);
         uint32_t old_id = carousel.snap.operation_id;
-        advance(60); checkpoint("snap8");
+        advance(60);
+        checkpoint("snap8");
         drag_to(2);
         lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_END, NULL);
         checkpoint("reverse2");
         assert(lab02_session_snapshot().focus_index == 2);
         assert_archived_ignored(&archived);
         assert(ends_by_id[old_id] == 1);
-        advance(300); checkpoint("latest-target-terminal");
+        advance(300);
+        checkpoint("latest-target-terminal");
         assert(lab02_session_snapshot().focus_index == 2);
         lab02_carousel_set_focus(&carousel, 10, true);
         advance(40);
         lab02_carousel_set_focus(&carousel, 5, true);
         advance(40);
         lab02_carousel_set_focus(&carousel, 7, true);
-        advance(300); checkpoint("replacement-terminal");
+        advance(300);
+        checkpoint("replacement-terminal");
         assert(lab02_session_snapshot().focus_index == 7);
         old_id = carousel.snap.operation_id;
         lab02_carousel_set_focus(&carousel, 7, true);
@@ -453,7 +482,8 @@ int main(int argc, char **argv)
         pointer_step(pointer, 200, LV_INDEV_STATE_PRESSED);
         assert(ends_by_id[old_id] == 1 && !carousel.snap.scroll_lock);
         pointer_step(pointer, 200, LV_INDEV_STATE_RELEASED);
-        advance(600); checkpoint("pointer-reversal-terminal");
+        advance(600);
+        checkpoint("pointer-reversal-terminal");
         assert(lab02_session_snapshot().focus_index != 8);
         assert(snap_starts == snap_ends);
         lv_indev_delete(pointer);
@@ -526,7 +556,8 @@ int main(int argc, char **argv)
         }
         checkpoint("arrival");
         assert(lab02_page_provider_item(&carousel.provider, 20));
-        advance(300); checkpoint("terminal");
+        advance(300);
+        checkpoint("terminal");
         assert(lab02_page_provider_item(&carousel.provider, 20));
     } else if (!strcmp(scenario, "push-during-snap") || !strcmp(scenario, "remove-during-snap")) {
         bool removal = !strcmp(scenario, "remove-during-snap");
@@ -549,7 +580,8 @@ int main(int argc, char **argv)
         checkpoint("arrival");
         assert(lab02_session_snapshot().inbox_revision == 1);
         assert(lab02_session_snapshot().pending_inbox_revision == 2);
-        advance(300); checkpoint("terminal");
+        advance(300);
+        checkpoint("terminal");
         assert(lab02_session_snapshot().inbox_revision == 2);
         const lab02_inbox_item_t *item = lab02_page_provider_item(&carousel.provider, lab02_session_snapshot().focus_index);
         assert(item && !strcmp(item->message_id, removal ? "m9" : "m8"));
@@ -575,7 +607,8 @@ int main(int argc, char **argv)
         item = lab02_page_provider_item(&carousel.provider, carousel.focus_index);
         assert(item && !strcmp(item->message_id, removal ? "m7" : "m6"));
         assert_archived_ignored(&archived);
-        advance(300); checkpoint("mutation-replacement-terminal");
+        advance(300);
+        checkpoint("mutation-replacement-terminal");
         assert(lv_obj_get_scroll_x(carousel.scroll) == lab02_snap_target_x_for_index(removal ? 6 : 7, carousel.item_count));
         assert(snap_starts == snap_ends);
 
@@ -587,21 +620,24 @@ int main(int argc, char **argv)
         assert(lab02_session_snapshot().pending_inbox_revision == 4);
         drag_to(2);
         lv_obj_send_event(carousel.scroll, LV_EVENT_SCROLL_END, NULL);
-        advance(300); checkpoint("mutation-reversal-terminal");
+        advance(300);
+        checkpoint("mutation-reversal-terminal");
         assert(lab02_session_snapshot().inbox_revision == 4);
         assert(lab02_session_snapshot().focus_index == 2 && snap_starts == snap_ends);
 
     } else if (!strcmp(scenario, "queue-full")) {
         lab02_fetch_req_t accepted = take_page(1);
-        for (int i = 0; i < 8; i++) lab02_session_intent_transport((i & 1) != 0);
+        for (int i = 0; i < 8; i++)
+            lab02_session_intent_transport((i & 1) != 0);
         lab02_inbox_page_t page = make_page(1, 16, 64, 0);
         /* No pumping between transport burst and the actual terminal producer path. */
         lab02_session_http_fetch_finished(LAB02_FETCH_OK, accepted.session_id,
-            accepted.op_id, accepted.page_index, &page, false);
+                                          accepted.op_id, accepted.page_index, &page, false);
         printf("C0_TRACE scenario=%s event=accepted_terminal_retained op_id=%u dropped=%u\n",
                scenario, accepted.op_id, lab02_session_metrics().fetch_event_dropped);
         assert(lab02_session_metrics().fetch_event_dropped == 0);
-        for (int i = 0; i < 12; i++) lab02_carousel_pump(&carousel);
+        for (int i = 0; i < 12; i++)
+            lab02_carousel_pump(&carousel);
         checkpoint("terminal-retained");
         assert(lab02_page_provider_item(&carousel.provider, 20));
     } else if (!strcmp(scenario, "stale-after-revision")) {
@@ -614,7 +650,9 @@ int main(int argc, char **argv)
         checkpoint("old-result");
         assert(lab02_session_metrics().apply_stale == 1);
         assert(!lab02_page_provider_item(&carousel.provider, 20));
-    } else { assert(!"unknown scenario"); }
+    } else {
+        assert(!"unknown scenario");
+    }
     printf("C0_RESULT scenario=%s characterization=PASS acceptance=F001-C2\n", scenario);
     return 0;
 }

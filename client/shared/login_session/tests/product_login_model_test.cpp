@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 int g_failures = 0;
 
@@ -281,8 +282,7 @@ int test_stage_enum()
 {
     const char *tokens[] = {
         fl_product_login::kTokenWifiUnavailable, fl_product_login::kTokenConnecting, fl_product_login::kTokenRoster,
-        fl_product_login::kTokenEmptyHangout, fl_product_login::kTokenMuted
-    };
+        fl_product_login::kTokenEmptyHangout, fl_product_login::kTokenMuted};
     int i;
     int j;
     g_failures = 0;
@@ -403,8 +403,7 @@ int test_one_terminal()
 
 const char *kDecided[] = {
     "R-wifi-absent", "R-invalid-200", "R-empty", "R-eight", "R-retry",
-    "R-retry-fail", "R-idle", "R-stale-beat", "R-mute", "R-timeout-ui"
-};
+    "R-retry-fail", "R-idle", "R-stale-beat", "R-mute", "R-timeout-ui"};
 
 bool line_has(const char *line, const char *token)
 {
@@ -710,7 +709,7 @@ int test_request_identity()
     http_session.boot(0, true);
     http_id = http_session.roster_operation_id();
     classified = fl_product_login::deliver_classified_roster(&http_session, http_id, 1, 404, missing_body,
-                                                 (int)strlen(missing_body), 0);
+                                                             (int)strlen(missing_body), 0);
     CHECK(classified.operation_id == http_id);
     CHECK(classified.http_status == 404);
     CHECK(strcmp(http_session.terminal_for(http_id), "failure") == 0);
@@ -719,7 +718,7 @@ int test_request_identity()
     http_session.boot(1, true);
     http_id = http_session.roster_operation_id();
     classified = fl_product_login::deliver_classified_roster(&http_session, http_id, 1, 200, invalid_body,
-                                                 (int)strlen(invalid_body), 1);
+                                                             (int)strlen(invalid_body), 1);
     CHECK(classified.valid == 0);
     CHECK(classified.parse_ok == 1);
     CHECK(strcmp(http_session.terminal_for(http_id), "failure") == 0);
@@ -728,7 +727,7 @@ int test_request_identity()
     http_session.boot(2, true);
     http_id = http_session.roster_operation_id();
     classified = fl_product_login::deliver_classified_roster(&http_session, http_id, 1, 200, malformed_body,
-                                                 (int)strlen(malformed_body), 2);
+                                                             (int)strlen(malformed_body), 2);
     CHECK(classified.parse_ok == 0);
     CHECK(strcmp(http_session.terminal_for(http_id), "failure") == 0);
     CHECK(http_session.selectable_cards() == 0);
@@ -865,7 +864,7 @@ int test_http_apply(const char *perform_text, const char *status_text, const cha
     session.boot(0, true);
     operation_id = session.roster_operation_id();
     result = fl_product_login::deliver_classified_roster(&session, operation_id, perform_ok, http_status, body, len,
-                                             session.now_ms());
+                                                         session.now_ms());
     terminal = session.terminal_for(operation_id);
     printf("http_apply operation_id=%llu terminal=%s terminal_count=%d stage=%s selectable_cards=%d "
            "user_count=%d valid=%d http_status=%d parse_ok=%d scenario=%s held_response=0\n",

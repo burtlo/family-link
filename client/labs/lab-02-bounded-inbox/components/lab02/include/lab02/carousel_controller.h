@@ -37,4 +37,3 @@ lab02_carousel_t *lab02_carousel_instance(void);
 #ifdef __cplusplus
 }
 #endif
-

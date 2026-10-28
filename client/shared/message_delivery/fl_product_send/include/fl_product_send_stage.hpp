@@ -5,7 +5,8 @@
 
 #include <stdint.h>
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 /* Places this reducer owns. Ring-wipe is a substate of the record shell
  * stage. Preparing, sending, sent, and the connectivity wait share receipt. */
@@ -78,8 +79,9 @@ struct SendStageResult {
 };
 
 /* Single writer for picker, wipe, record, and receipt. Callers emit intents. */
-class SendStageReducer {
-public:
+class SendStageReducer
+{
+  public:
     SendStageReducer();
 
     void reset();
@@ -93,7 +95,7 @@ public:
     /* Also elapses the sent dwell. leave_wait does not move the current place. */
     SendStageResult advance(int64_t now_ms, SendJourney &journey);
 
-private:
+  private:
     void present(SendStageResult *result) const;
     void enter(int place, SendStageResult *result);
     void pause_and_remember(SendJourney &journey, const SendStageHooks *hooks, int64_t now_ms,

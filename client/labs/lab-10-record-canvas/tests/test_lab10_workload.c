@@ -371,4 +371,3 @@ int main(void)
     puts("LAB10_WORKLOAD_NATIVE_TEST_PASS");
     return 0;
 }
-

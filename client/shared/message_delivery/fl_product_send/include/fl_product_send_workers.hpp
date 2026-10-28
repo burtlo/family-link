@@ -3,7 +3,8 @@
 
 #include "fl_product_login_workers.hpp"
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 using WorkerTicket = fl_product_login::WorkerTicket;
 

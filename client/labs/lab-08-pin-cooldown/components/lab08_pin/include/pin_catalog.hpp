@@ -5,7 +5,8 @@
 
 #include <cstdint>
 
-namespace lab08 {
+namespace lab08
+{
 
 enum ManualAction {
     kManualSelectUser = 1,

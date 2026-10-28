@@ -122,7 +122,8 @@ int main(void)
     bool start_results[4] = {false, false, false, false};
     for (unsigned i = 0; i < 4u; ++i) {
         require_true(pthread_create(&starters[i], NULL, repeated_start,
-                                    &start_results[i]) == 0, "starter thread");
+                                    &start_results[i]) == 0,
+                     "starter thread");
     }
     atomic_store(&s_start_gate, true);
     for (unsigned i = 0; i < 4u; ++i) {
@@ -231,8 +232,8 @@ int main(void)
     lab02_trace_emit_payload("overlong_receipt", 3u, 3, "message", &overlong_payload);
     lab02_trace_stats_t overlong_end = stats();
     require_true(overlong_end.admitted == overlong_start.admitted &&
-                 overlong_end.oversized - overlong_start.oversized == 1u &&
-                 overlong_end.dropped - overlong_start.dropped == 1u,
+                     overlong_end.oversized - overlong_start.oversized == 1u &&
+                     overlong_end.dropped - overlong_start.dropped == 1u,
                  "overlong receipt rejected");
 
     /* Saturation is observable and never blocks the producer. */
@@ -246,7 +247,7 @@ int main(void)
     require_true(saturation.admitted == LAB02_TRACE_QUEUE_CAPACITY,
                  "queue admission count");
     require_true(saturation.dropped - saturation_start.dropped == 1u &&
-                 saturation.queue_full - saturation_start.queue_full == 1u,
+                     saturation.queue_full - saturation_start.queue_full == 1u,
                  "queue loss accounting");
     require_true(saturation.high_water == LAB02_TRACE_QUEUE_CAPACITY,
                  "queue high water");
@@ -267,7 +268,8 @@ int main(void)
     pthread_join(worker, NULL);
     lab02_trace_stats_t concurrent = stats();
     require_true((concurrent.admitted - concurrent_start.admitted) +
-                     (concurrent.dropped - concurrent_start.dropped) == 64u,
+                         (concurrent.dropped - concurrent_start.dropped) ==
+                     64u,
                  "producer accounting conservation");
     require_true(concurrent.dropped > concurrent_start.dropped,
                  "concurrent saturation loss");
@@ -282,16 +284,16 @@ int main(void)
     lab02_trace_emit("oversized", 4, 4, "message", oversized);
     lab02_trace_stats_t oversized_stats = stats();
     require_true(oversized_stats.admitted == 0u &&
-                 oversized_stats.oversized - oversized_start.oversized == 1u &&
-                 oversized_stats.dropped - oversized_start.dropped == 1u,
+                     oversized_stats.oversized - oversized_start.oversized == 1u &&
+                     oversized_stats.dropped - oversized_start.dropped == 1u,
                  "oversized loss accounting");
     lab02_trace_stats_t loss_before_reset = stats();
     lab02_trace_reset();
     lab02_trace_stats_t loss_after_reset = stats();
     require_true(loss_after_reset.dropped == loss_before_reset.dropped &&
-                 loss_after_reset.oversized == loss_before_reset.oversized &&
-                 loss_after_reset.queue_full == loss_before_reset.queue_full &&
-                 loss_after_reset.stale_discarded == loss_before_reset.stale_discarded,
+                     loss_after_reset.oversized == loss_before_reset.oversized &&
+                     loss_after_reset.queue_full == loss_before_reset.queue_full &&
+                     loss_after_reset.stale_discarded == loss_before_reset.stale_discarded,
                  "reset preserves cumulative loss evidence");
 
     /* A stalled sink may stop the drain context, but it must not stop a

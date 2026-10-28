@@ -55,7 +55,7 @@ struct lab10_audio_model {
 static void model_lock(lab10_audio_model_t *model)
 {
     while (atomic_flag_test_and_set_explicit(&model->state_lock,
-                                              memory_order_acquire)) {
+                                             memory_order_acquire)) {
     }
 }
 
@@ -341,31 +341,31 @@ static bool expected_result(const lab10_audio_model_t *model)
         return false;
     }
     switch (scenario->expected_outcome) {
-    case LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS:
-        return model->outcome == LAB10_AUDIO_OUTCOME_COMPLETED &&
-               model->metrics.audio_continuity_status ==
-                   scenario->expected_continuity &&
-               model->metrics.audio_overrun_count == 0 &&
-               model->metrics.audio_underrun_count == 0;
-    case LAB10_AUDIO_EXPECT_COMPLETED_WITH_DRAWING_PRESSURE:
-        return model->outcome == LAB10_AUDIO_OUTCOME_COMPLETED &&
-               model->metrics.audio_continuity_status ==
-                   scenario->expected_continuity &&
-               model->metrics.drawing_queue_overflow_count > 0;
-    case LAB10_AUDIO_EXPECT_STOPPED_AND_CLEAN:
-        return model->outcome == LAB10_AUDIO_OUTCOME_STOPPED &&
-               model->metrics.live_resources_after_terminal == 0;
-    case LAB10_AUDIO_EXPECT_CANCELLED_AND_CLEAN:
-        return model->outcome == LAB10_AUDIO_OUTCOME_CANCELLED &&
-               model->metrics.live_resources_after_terminal == 0;
-    case LAB10_AUDIO_EXPECT_CAPTURE_FAILED_AND_CLEAN:
-        return model->outcome == LAB10_AUDIO_OUTCOME_FAILED &&
-               model->failure == LAB10_AUDIO_FAILURE_CAPTURE &&
-               model->metrics.live_resources_after_terminal == 0;
-    case LAB10_AUDIO_EXPECT_ALLOCATION_FAILED_AND_CLEAN:
-        return model->outcome == LAB10_AUDIO_OUTCOME_FAILED &&
-               model->failure == LAB10_AUDIO_FAILURE_ALLOCATION &&
-               model->metrics.live_resources_after_terminal == 0;
+        case LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS:
+            return model->outcome == LAB10_AUDIO_OUTCOME_COMPLETED &&
+                   model->metrics.audio_continuity_status ==
+                       scenario->expected_continuity &&
+                   model->metrics.audio_overrun_count == 0 &&
+                   model->metrics.audio_underrun_count == 0;
+        case LAB10_AUDIO_EXPECT_COMPLETED_WITH_DRAWING_PRESSURE:
+            return model->outcome == LAB10_AUDIO_OUTCOME_COMPLETED &&
+                   model->metrics.audio_continuity_status ==
+                       scenario->expected_continuity &&
+                   model->metrics.drawing_queue_overflow_count > 0;
+        case LAB10_AUDIO_EXPECT_STOPPED_AND_CLEAN:
+            return model->outcome == LAB10_AUDIO_OUTCOME_STOPPED &&
+                   model->metrics.live_resources_after_terminal == 0;
+        case LAB10_AUDIO_EXPECT_CANCELLED_AND_CLEAN:
+            return model->outcome == LAB10_AUDIO_OUTCOME_CANCELLED &&
+                   model->metrics.live_resources_after_terminal == 0;
+        case LAB10_AUDIO_EXPECT_CAPTURE_FAILED_AND_CLEAN:
+            return model->outcome == LAB10_AUDIO_OUTCOME_FAILED &&
+                   model->failure == LAB10_AUDIO_FAILURE_CAPTURE &&
+                   model->metrics.live_resources_after_terminal == 0;
+        case LAB10_AUDIO_EXPECT_ALLOCATION_FAILED_AND_CLEAN:
+            return model->outcome == LAB10_AUDIO_OUTCOME_FAILED &&
+                   model->failure == LAB10_AUDIO_FAILURE_ALLOCATION &&
+                   model->metrics.live_resources_after_terminal == 0;
     }
     return false;
 }
@@ -394,38 +394,14 @@ static const lab10_audio_scenario_t SCENARIOS[LAB10_AUDIO_SCENARIO_COUNT] = {
         "no-stroke-control", "audio with no canvas events",
         LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS,
         LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
-    [LAB10_AUDIO_SCENARIO_SPARSE_DRAWING] = {
-        "sparse-drawing", "few drawing events with balanced audio",
-        LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS,
-        LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
-    [LAB10_AUDIO_SCENARIO_CONTINUOUS_DRAWING] = {
-        "continuous-drawing", "one drawing event per audio tick",
-        LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS,
-        LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
-    [LAB10_AUDIO_SCENARIO_DENSE_DRAWING] = {
-        "dense-drawing", "drawing queue pressure while audio remains balanced",
-        LAB10_AUDIO_EXPECT_COMPLETED_WITH_DRAWING_PRESSURE,
-        LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, true, false},
-    [LAB10_AUDIO_SCENARIO_RAPID_COLOR_SWITCHING] = {
-        "rapid-color-switching", "frequent color changes between drawing events",
-        LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS,
-        LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
-    [LAB10_AUDIO_SCENARIO_STOP_DURING_AUDIO] = {
-        "stop-during-audio", "stop while the bounded audio model is active",
-        LAB10_AUDIO_EXPECT_STOPPED_AND_CLEAN,
-        LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
-    [LAB10_AUDIO_SCENARIO_CANCEL_DURING_AUDIO] = {
-        "cancel-during-audio", "cancel while the bounded audio model is active",
-        LAB10_AUDIO_EXPECT_CANCELLED_AND_CLEAN,
-        LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
-    [LAB10_AUDIO_SCENARIO_AUDIO_CAPTURE_FAILURE] = {
-        "audio-capture-failure", "inject an audio capture failure",
-        LAB10_AUDIO_EXPECT_CAPTURE_FAILED_AND_CLEAN,
-        LAB10_AUDIO_CONTINUITY_UNMEASURED, false, false},
-    [LAB10_AUDIO_SCENARIO_ALLOCATION_FAILURE] = {
-        "allocation-failure", "fail bounded PCM allocation at start",
-        LAB10_AUDIO_EXPECT_ALLOCATION_FAILED_AND_CLEAN,
-        LAB10_AUDIO_CONTINUITY_UNMEASURED, false, false},
+    [LAB10_AUDIO_SCENARIO_SPARSE_DRAWING] = {"sparse-drawing", "few drawing events with balanced audio", LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS, LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
+    [LAB10_AUDIO_SCENARIO_CONTINUOUS_DRAWING] = {"continuous-drawing", "one drawing event per audio tick", LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS, LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
+    [LAB10_AUDIO_SCENARIO_DENSE_DRAWING] = {"dense-drawing", "drawing queue pressure while audio remains balanced", LAB10_AUDIO_EXPECT_COMPLETED_WITH_DRAWING_PRESSURE, LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, true, false},
+    [LAB10_AUDIO_SCENARIO_RAPID_COLOR_SWITCHING] = {"rapid-color-switching", "frequent color changes between drawing events", LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS, LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
+    [LAB10_AUDIO_SCENARIO_STOP_DURING_AUDIO] = {"stop-during-audio", "stop while the bounded audio model is active", LAB10_AUDIO_EXPECT_STOPPED_AND_CLEAN, LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
+    [LAB10_AUDIO_SCENARIO_CANCEL_DURING_AUDIO] = {"cancel-during-audio", "cancel while the bounded audio model is active", LAB10_AUDIO_EXPECT_CANCELLED_AND_CLEAN, LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS, false, false},
+    [LAB10_AUDIO_SCENARIO_AUDIO_CAPTURE_FAILURE] = {"audio-capture-failure", "inject an audio capture failure", LAB10_AUDIO_EXPECT_CAPTURE_FAILED_AND_CLEAN, LAB10_AUDIO_CONTINUITY_UNMEASURED, false, false},
+    [LAB10_AUDIO_SCENARIO_ALLOCATION_FAILURE] = {"allocation-failure", "fail bounded PCM allocation at start", LAB10_AUDIO_EXPECT_ALLOCATION_FAILED_AND_CLEAN, LAB10_AUDIO_CONTINUITY_UNMEASURED, false, false},
 };
 
 const lab10_audio_scenario_t *lab10_audio_scenario(
@@ -444,18 +420,18 @@ const char *lab10_audio_expected_outcome_name(
     lab10_audio_expected_outcome_t expected_outcome)
 {
     switch (expected_outcome) {
-    case LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS:
-        return "completed-audio-continuous";
-    case LAB10_AUDIO_EXPECT_COMPLETED_WITH_DRAWING_PRESSURE:
-        return "completed-with-drawing-pressure";
-    case LAB10_AUDIO_EXPECT_STOPPED_AND_CLEAN:
-        return "stopped-and-clean";
-    case LAB10_AUDIO_EXPECT_CANCELLED_AND_CLEAN:
-        return "cancelled-and-clean";
-    case LAB10_AUDIO_EXPECT_CAPTURE_FAILED_AND_CLEAN:
-        return "capture-failed-and-clean";
-    case LAB10_AUDIO_EXPECT_ALLOCATION_FAILED_AND_CLEAN:
-        return "allocation-failed-and-clean";
+        case LAB10_AUDIO_EXPECT_COMPLETED_AUDIO_CONTINUOUS:
+            return "completed-audio-continuous";
+        case LAB10_AUDIO_EXPECT_COMPLETED_WITH_DRAWING_PRESSURE:
+            return "completed-with-drawing-pressure";
+        case LAB10_AUDIO_EXPECT_STOPPED_AND_CLEAN:
+            return "stopped-and-clean";
+        case LAB10_AUDIO_EXPECT_CANCELLED_AND_CLEAN:
+            return "cancelled-and-clean";
+        case LAB10_AUDIO_EXPECT_CAPTURE_FAILED_AND_CLEAN:
+            return "capture-failed-and-clean";
+        case LAB10_AUDIO_EXPECT_ALLOCATION_FAILED_AND_CLEAN:
+            return "allocation-failed-and-clean";
     }
     return "invalid";
 }
@@ -463,16 +439,16 @@ const char *lab10_audio_expected_outcome_name(
 const char *lab10_audio_outcome_name(lab10_audio_outcome_t outcome)
 {
     switch (outcome) {
-    case LAB10_AUDIO_OUTCOME_NONE:
-        return "none";
-    case LAB10_AUDIO_OUTCOME_COMPLETED:
-        return "completed";
-    case LAB10_AUDIO_OUTCOME_STOPPED:
-        return "stopped";
-    case LAB10_AUDIO_OUTCOME_CANCELLED:
-        return "cancelled";
-    case LAB10_AUDIO_OUTCOME_FAILED:
-        return "failed";
+        case LAB10_AUDIO_OUTCOME_NONE:
+            return "none";
+        case LAB10_AUDIO_OUTCOME_COMPLETED:
+            return "completed";
+        case LAB10_AUDIO_OUTCOME_STOPPED:
+            return "stopped";
+        case LAB10_AUDIO_OUTCOME_CANCELLED:
+            return "cancelled";
+        case LAB10_AUDIO_OUTCOME_FAILED:
+            return "failed";
     }
     return "invalid";
 }
@@ -480,14 +456,14 @@ const char *lab10_audio_outcome_name(lab10_audio_outcome_t outcome)
 const char *lab10_audio_failure_name(lab10_audio_failure_t failure)
 {
     switch (failure) {
-    case LAB10_AUDIO_FAILURE_NONE:
-        return "none";
-    case LAB10_AUDIO_FAILURE_CAPTURE:
-        return "capture";
-    case LAB10_AUDIO_FAILURE_ALLOCATION:
-        return "allocation";
-    case LAB10_AUDIO_FAILURE_INVALID_CONFIGURATION:
-        return "invalid-configuration";
+        case LAB10_AUDIO_FAILURE_NONE:
+            return "none";
+        case LAB10_AUDIO_FAILURE_CAPTURE:
+            return "capture";
+        case LAB10_AUDIO_FAILURE_ALLOCATION:
+            return "allocation";
+        case LAB10_AUDIO_FAILURE_INVALID_CONFIGURATION:
+            return "invalid-configuration";
     }
     return "invalid";
 }
@@ -495,18 +471,18 @@ const char *lab10_audio_failure_name(lab10_audio_failure_t failure)
 const char *lab10_audio_continuity_name(lab10_audio_continuity_t continuity)
 {
     switch (continuity) {
-    case LAB10_AUDIO_CONTINUITY_MODEL_NONE:
-        return "none";
-    case LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS:
-        return "model-continuous";
-    case LAB10_AUDIO_CONTINUITY_MODEL_OVERRUN:
-        return "model-overrun";
-    case LAB10_AUDIO_CONTINUITY_MODEL_UNDERRUN:
-        return "model-underrun";
-    case LAB10_AUDIO_CONTINUITY_MODEL_OVERRUN_AND_UNDERRUN:
-        return "model-overrun-and-underrun";
-    case LAB10_AUDIO_CONTINUITY_UNMEASURED:
-        return "unmeasured";
+        case LAB10_AUDIO_CONTINUITY_MODEL_NONE:
+            return "none";
+        case LAB10_AUDIO_CONTINUITY_MODEL_CONTINUOUS:
+            return "model-continuous";
+        case LAB10_AUDIO_CONTINUITY_MODEL_OVERRUN:
+            return "model-overrun";
+        case LAB10_AUDIO_CONTINUITY_MODEL_UNDERRUN:
+            return "model-underrun";
+        case LAB10_AUDIO_CONTINUITY_MODEL_OVERRUN_AND_UNDERRUN:
+            return "model-overrun-and-underrun";
+        case LAB10_AUDIO_CONTINUITY_UNMEASURED:
+            return "unmeasured";
     }
     return "invalid";
 }
@@ -736,7 +712,7 @@ size_t lab10_audio_process_drawing(lab10_audio_model_t *model,
         const lab10_audio_drawing_event_t event =
             model->drawing_queue[model->drawing_tail];
         model->drawing_tail = (uint16_t)((model->drawing_tail + 1u) %
-                                          model->config.drawing_queue_capacity);
+                                         model->config.drawing_queue_capacity);
         --model->drawing_depth;
         uint64_t latency = 0;
         if (timestamp_us >= event.queued_at_us) {
@@ -916,99 +892,99 @@ bool lab10_audio_run_scenario(lab10_audio_model_t *model,
     }
     uint64_t timestamp_us = 0;
     switch (scenario_id) {
-    case LAB10_AUDIO_SCENARIO_NO_STROKE_CONTROL:
-        for (unsigned index = 0; index < 12u; ++index) {
-            run_audio_tick(model, session_token, &timestamp_us);
-        }
-        (void)lab10_audio_complete(model, session_token, timestamp_us + 1u,
-                                    timestamp_us + 2u);
-        break;
-    case LAB10_AUDIO_SCENARIO_SPARSE_DRAWING:
-        for (unsigned index = 0; index < 12u; ++index) {
-            run_audio_tick(model, session_token, &timestamp_us);
-            if (index == 1u || index == 6u || index == 10u) {
-                (void)lab10_audio_submit_drawing(model, session_token,
-                                                 timestamp_us, index + 1u, 1u);
+        case LAB10_AUDIO_SCENARIO_NO_STROKE_CONTROL:
+            for (unsigned index = 0; index < 12u; ++index) {
+                run_audio_tick(model, session_token, &timestamp_us);
+            }
+            (void)lab10_audio_complete(model, session_token, timestamp_us + 1u,
+                                       timestamp_us + 2u);
+            break;
+        case LAB10_AUDIO_SCENARIO_SPARSE_DRAWING:
+            for (unsigned index = 0; index < 12u; ++index) {
+                run_audio_tick(model, session_token, &timestamp_us);
+                if (index == 1u || index == 6u || index == 10u) {
+                    (void)lab10_audio_submit_drawing(model, session_token,
+                                                     timestamp_us, index + 1u, 1u);
+                    (void)lab10_audio_process_drawing(model, session_token,
+                                                      timestamp_us + 1u, 1u);
+                }
+            }
+            (void)lab10_audio_complete(model, session_token, timestamp_us + 1u,
+                                       timestamp_us + 2u);
+            break;
+        case LAB10_AUDIO_SCENARIO_CONTINUOUS_DRAWING:
+            for (unsigned index = 0; index < 24u; ++index) {
+                run_audio_tick(model, session_token, &timestamp_us);
+                (void)lab10_audio_submit_drawing(model, session_token, timestamp_us,
+                                                 1u, 1u);
                 (void)lab10_audio_process_drawing(model, session_token,
                                                   timestamp_us + 1u, 1u);
             }
-        }
-        (void)lab10_audio_complete(model, session_token, timestamp_us + 1u,
-                                    timestamp_us + 2u);
-        break;
-    case LAB10_AUDIO_SCENARIO_CONTINUOUS_DRAWING:
-        for (unsigned index = 0; index < 24u; ++index) {
-            run_audio_tick(model, session_token, &timestamp_us);
-            (void)lab10_audio_submit_drawing(model, session_token, timestamp_us,
-                                             1u, 1u);
-            (void)lab10_audio_process_drawing(model, session_token,
-                                              timestamp_us + 1u, 1u);
-        }
-        (void)lab10_audio_complete(model, session_token, timestamp_us + 1u,
-                                    timestamp_us + 2u);
-        break;
-    case LAB10_AUDIO_SCENARIO_DENSE_DRAWING:
-        for (unsigned index = 0; index < 32u; ++index) {
-            run_audio_tick(model, session_token, &timestamp_us);
-            for (unsigned event = 0; event < 3u; ++event) {
-                (void)lab10_audio_submit_drawing(model, session_token,
-                                                 timestamp_us,
-                                                 index + event + 1u,
-                                                 (uint8_t)(event + 1u));
-            }
-            if (index % 4u == 0u) {
-                (void)lab10_audio_process_drawing(model, session_token,
-                                                  timestamp_us + 2u, 1u);
-            }
-        }
-        while (lab10_audio_process_drawing(model, session_token,
-                                           timestamp_us + 3u, 8u) != 0) {
-        }
-        (void)lab10_audio_complete(model, session_token, timestamp_us + 4u,
-                                    timestamp_us + 5u);
-        break;
-    case LAB10_AUDIO_SCENARIO_RAPID_COLOR_SWITCHING:
-        for (unsigned index = 0; index < 18u; ++index) {
-            run_audio_tick(model, session_token, &timestamp_us);
-            (void)lab10_audio_submit_drawing(
-                model, session_token, timestamp_us, index + 1u,
-                (uint8_t)((index % 5u) + 1u));
-            (void)lab10_audio_process_drawing(model, session_token,
-                                              timestamp_us + 1u, 1u);
-        }
-        (void)lab10_audio_complete(model, session_token, timestamp_us + 1u,
-                                    timestamp_us + 2u);
-        break;
-    case LAB10_AUDIO_SCENARIO_STOP_DURING_AUDIO:
-        for (unsigned index = 0; index < 4u; ++index) {
-            run_audio_tick(model, session_token, &timestamp_us);
-            (void)lab10_audio_submit_drawing(model, session_token, timestamp_us,
-                                             index + 1u, 1u);
-        }
-        (void)lab10_audio_stop(model, session_token, timestamp_us + 1u,
-                                timestamp_us + 2u);
-        break;
-    case LAB10_AUDIO_SCENARIO_CANCEL_DURING_AUDIO:
-        for (unsigned index = 0; index < 4u; ++index) {
-            run_audio_tick(model, session_token, &timestamp_us);
-            (void)lab10_audio_submit_drawing(model, session_token, timestamp_us,
-                                             index + 1u, 1u);
-        }
-        (void)lab10_audio_cancel(model, session_token, timestamp_us + 1u,
-                                  timestamp_us + 2u);
-        break;
-    case LAB10_AUDIO_SCENARIO_AUDIO_CAPTURE_FAILURE:
-        for (unsigned index = 0; index < 3u; ++index) {
-            run_audio_tick(model, session_token, &timestamp_us);
-        }
-        (void)lab10_audio_fail_capture(model, session_token, timestamp_us + 1u,
+            (void)lab10_audio_complete(model, session_token, timestamp_us + 1u,
                                        timestamp_us + 2u);
-        break;
-    case LAB10_AUDIO_SCENARIO_ALLOCATION_FAILURE:
-        /* start() terminalizes this scenario when its allocator rejects PCM. */
-        break;
-    case LAB10_AUDIO_SCENARIO_COUNT:
-        return false;
+            break;
+        case LAB10_AUDIO_SCENARIO_DENSE_DRAWING:
+            for (unsigned index = 0; index < 32u; ++index) {
+                run_audio_tick(model, session_token, &timestamp_us);
+                for (unsigned event = 0; event < 3u; ++event) {
+                    (void)lab10_audio_submit_drawing(model, session_token,
+                                                     timestamp_us,
+                                                     index + event + 1u,
+                                                     (uint8_t)(event + 1u));
+                }
+                if (index % 4u == 0u) {
+                    (void)lab10_audio_process_drawing(model, session_token,
+                                                      timestamp_us + 2u, 1u);
+                }
+            }
+            while (lab10_audio_process_drawing(model, session_token,
+                                               timestamp_us + 3u, 8u) != 0) {
+            }
+            (void)lab10_audio_complete(model, session_token, timestamp_us + 4u,
+                                       timestamp_us + 5u);
+            break;
+        case LAB10_AUDIO_SCENARIO_RAPID_COLOR_SWITCHING:
+            for (unsigned index = 0; index < 18u; ++index) {
+                run_audio_tick(model, session_token, &timestamp_us);
+                (void)lab10_audio_submit_drawing(
+                    model, session_token, timestamp_us, index + 1u,
+                    (uint8_t)((index % 5u) + 1u));
+                (void)lab10_audio_process_drawing(model, session_token,
+                                                  timestamp_us + 1u, 1u);
+            }
+            (void)lab10_audio_complete(model, session_token, timestamp_us + 1u,
+                                       timestamp_us + 2u);
+            break;
+        case LAB10_AUDIO_SCENARIO_STOP_DURING_AUDIO:
+            for (unsigned index = 0; index < 4u; ++index) {
+                run_audio_tick(model, session_token, &timestamp_us);
+                (void)lab10_audio_submit_drawing(model, session_token, timestamp_us,
+                                                 index + 1u, 1u);
+            }
+            (void)lab10_audio_stop(model, session_token, timestamp_us + 1u,
+                                   timestamp_us + 2u);
+            break;
+        case LAB10_AUDIO_SCENARIO_CANCEL_DURING_AUDIO:
+            for (unsigned index = 0; index < 4u; ++index) {
+                run_audio_tick(model, session_token, &timestamp_us);
+                (void)lab10_audio_submit_drawing(model, session_token, timestamp_us,
+                                                 index + 1u, 1u);
+            }
+            (void)lab10_audio_cancel(model, session_token, timestamp_us + 1u,
+                                     timestamp_us + 2u);
+            break;
+        case LAB10_AUDIO_SCENARIO_AUDIO_CAPTURE_FAILURE:
+            for (unsigned index = 0; index < 3u; ++index) {
+                run_audio_tick(model, session_token, &timestamp_us);
+            }
+            (void)lab10_audio_fail_capture(model, session_token, timestamp_us + 1u,
+                                           timestamp_us + 2u);
+            break;
+        case LAB10_AUDIO_SCENARIO_ALLOCATION_FAILURE:
+            /* start() terminalizes this scenario when its allocator rejects PCM. */
+            break;
+        case LAB10_AUDIO_SCENARIO_COUNT:
+            return false;
     }
     return lab10_audio_get_result(model, session_token, result);
 }

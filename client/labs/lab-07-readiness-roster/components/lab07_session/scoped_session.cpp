@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace lab07 {
-namespace {
+namespace lab07
+{
+namespace
+{
 
 void copy_text(char *dst, int cap, const char *src)
 {
@@ -421,14 +423,38 @@ void SessionWriter::note_scoped_observation(int b_side_effects)
     scoped_trace_b_side_ = b_side_effects;
 }
 
-int SessionWriter::signed_in() const { return signed_in_; }
-const char *SessionWriter::signed_user() const { return signed_user_; }
-int SessionWriter::scoped_applied() const { return scoped_applied_; }
-int SessionWriter::scoped_inflight() const { return scoped_inflight_ ? 1 : 0; }
-uint64_t SessionWriter::scoped_operation_id() const { return scoped_operation_id_; }
-uint32_t SessionWriter::scoped_generation() const { return scoped_frozen_generation_; }
-int SessionWriter::scoped_queue_count() const { return scoped_queue_count_; }
-int SessionWriter::scoped_overflow_terminals() const { return scoped_overflow_terminals_; }
+int SessionWriter::signed_in() const
+{
+    return signed_in_;
+}
+const char *SessionWriter::signed_user() const
+{
+    return signed_user_;
+}
+int SessionWriter::scoped_applied() const
+{
+    return scoped_applied_;
+}
+int SessionWriter::scoped_inflight() const
+{
+    return scoped_inflight_ ? 1 : 0;
+}
+uint64_t SessionWriter::scoped_operation_id() const
+{
+    return scoped_operation_id_;
+}
+uint32_t SessionWriter::scoped_generation() const
+{
+    return scoped_frozen_generation_;
+}
+int SessionWriter::scoped_queue_count() const
+{
+    return scoped_queue_count_;
+}
+int SessionWriter::scoped_overflow_terminals() const
+{
+    return scoped_overflow_terminals_;
+}
 
 int format_scoped_trace_line(const TerminalRecord &record, char *buffer, int capacity)
 {

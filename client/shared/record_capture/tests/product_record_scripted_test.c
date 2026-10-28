@@ -558,9 +558,9 @@ static void test_scripted_multicolor_strokes_render_until_duration_cap(void)
     assert(lab10_ui_enter_fab_bloom(&model) == 1u);
     assert(lab10_ui_finish_entry(&model) == 2u);
     lab10_ui_set_hooks(&model, &(lab10_ui_hooks_t){
-                                    .on_touch_routed = submit_ui_touch,
-                                    .context = &touch,
-                                });
+                                   .on_touch_routed = submit_ui_touch,
+                                   .context = &touch,
+                               });
 
     lab10_render_t *renderer = lab10_render_create(&(lab10_render_config_t){
         .mode = LAB10_RENDER_MODE_SEGMENT,
@@ -606,10 +606,10 @@ static void test_scripted_multicolor_strokes_render_until_duration_cap(void)
         const lab10_ui_scripted_capture_state_t capture_state =
             stats.status == LAB10_CAPTURE_STATUS_ACTIVE
                 ? LAB10_UI_SCRIPTED_CAPTURE_ACTIVE
-                : stats.terminal_outcome ==
-                          LAB10_CAPTURE_OUTCOME_DURATION_CAP
-                      ? LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP
-                      : LAB10_UI_SCRIPTED_CAPTURE_OTHER_TERMINAL;
+            : stats.terminal_outcome ==
+                    LAB10_CAPTURE_OUTCOME_DURATION_CAP
+                ? LAB10_UI_SCRIPTED_CAPTURE_DURATION_CAP
+                : LAB10_UI_SCRIPTED_CAPTURE_OTHER_TERMINAL;
         const lab10_ui_scripted_poll_result_t result = poll_schedule(
             &schedule, clock.now_us, capture_state, &summary, &event);
         if (result == LAB10_UI_SCRIPTED_POLL_EVENT) {
@@ -685,7 +685,7 @@ static void test_scripted_multicolor_strokes_render_until_duration_cap(void)
     /* A 20 ms UI poll can quantize deadline boundaries to one poll interval. */
     assert(min_move_interval_us >= UINT64_C(20000));
     assert(max_move_interval_us <= LAB10_UI_SCRIPTED_CADENCE_MAX_US +
-                                      UINT64_C(20000));
+                                       UINT64_C(20000));
     assert(longest_pen_up_gap_us >=
            LAB10_UI_SCRIPTED_PEN_UP_GAP_US +
                LAB10_UI_SCRIPTED_PAUSE_US);

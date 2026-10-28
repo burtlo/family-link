@@ -2,7 +2,8 @@
 
 #include "fl_product_volume_stops.hpp"
 
-namespace fl_product_volume {
+namespace fl_product_volume
+{
 
 VolumeStorage::VolumeStorage()
 {
@@ -16,11 +17,20 @@ void VolumeStorage::reset_for_tests()
     fail_next_ = 0;
 }
 
-void VolumeStorage::set_fail_next_persist(int fail) { fail_next_ = fail ? 1 : 0; }
+void VolumeStorage::set_fail_next_persist(int fail)
+{
+    fail_next_ = fail ? 1 : 0;
+}
 
-int VolumeStorage::has_saved_stop() const { return has_saved_; }
+int VolumeStorage::has_saved_stop() const
+{
+    return has_saved_;
+}
 
-int VolumeStorage::saved_stop_index() const { return saved_index_; }
+int VolumeStorage::saved_stop_index() const
+{
+    return saved_index_;
+}
 
 int VolumeStorage::load_stop_index(int *index_out)
 {

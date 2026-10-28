@@ -348,20 +348,35 @@ static void test_lab06_event_queue_terminals(void)
 int main(int argc, char **argv)
 {
     assert(argc == 2);
-    if (strcmp(argv[1], "single_writer") == 0) test_lab06_single_writer();
-    else if (strcmp(argv[1], "terminal_id_reuse") == 0) test_lab06_terminal_operation_id_reuse();
-    else if (strcmp(argv[1], "geometry") == 0) test_lab06_geometry();
-    else if (strcmp(argv[1], "idempotent_enter") == 0) test_lab06_idempotent_enter();
-    else if (strcmp(argv[1], "data_during_exit") == 0) test_lab06_data_during_exit();
-    else if (strcmp(argv[1], "stale_panel") == 0) test_lab06_stale_panel();
-    else if (strcmp(argv[1], "cancel") == 0) test_lab06_cancel();
-    else if (strcmp(argv[1], "cancel_schedule") == 0) test_lab06_cancel_schedule();
-    else if (strcmp(argv[1], "level2_control") == 0) test_lab06_level2_control();
-    else if (strcmp(argv[1], "pending_capacity") == 0) test_lab06_pending_capacity();
-    else if (strcmp(argv[1], "data_levels") == 0) test_lab06_data_levels();
-    else if (strcmp(argv[1], "cycle") == 0) test_lab06_cycle();
-    else if (strcmp(argv[1], "overflow") == 0) test_lab06_event_overflow();
-    else if (strcmp(argv[1], "queue_terminals") == 0) test_lab06_event_queue_terminals();
-    else return 2;
+    if (strcmp(argv[1], "single_writer") == 0)
+        test_lab06_single_writer();
+    else if (strcmp(argv[1], "terminal_id_reuse") == 0)
+        test_lab06_terminal_operation_id_reuse();
+    else if (strcmp(argv[1], "geometry") == 0)
+        test_lab06_geometry();
+    else if (strcmp(argv[1], "idempotent_enter") == 0)
+        test_lab06_idempotent_enter();
+    else if (strcmp(argv[1], "data_during_exit") == 0)
+        test_lab06_data_during_exit();
+    else if (strcmp(argv[1], "stale_panel") == 0)
+        test_lab06_stale_panel();
+    else if (strcmp(argv[1], "cancel") == 0)
+        test_lab06_cancel();
+    else if (strcmp(argv[1], "cancel_schedule") == 0)
+        test_lab06_cancel_schedule();
+    else if (strcmp(argv[1], "level2_control") == 0)
+        test_lab06_level2_control();
+    else if (strcmp(argv[1], "pending_capacity") == 0)
+        test_lab06_pending_capacity();
+    else if (strcmp(argv[1], "data_levels") == 0)
+        test_lab06_data_levels();
+    else if (strcmp(argv[1], "cycle") == 0)
+        test_lab06_cycle();
+    else if (strcmp(argv[1], "overflow") == 0)
+        test_lab06_event_overflow();
+    else if (strcmp(argv[1], "queue_terminals") == 0)
+        test_lab06_event_queue_terminals();
+    else
+        return 2;
     return 0;
 }

@@ -18,7 +18,8 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 constexpr const char *kTag = "product_record";
 fl_product_record::RecordSession *s_record = nullptr;
@@ -46,8 +47,9 @@ uint32_t s_touch_events = 0;
 StaticSemaphore_t s_store_mu_buf;
 SemaphoreHandle_t s_store_mu = nullptr;
 
-class StoreLock {
-public:
+class StoreLock
+{
+  public:
     StoreLock()
     {
         if (s_store_mu != nullptr) {
@@ -61,7 +63,7 @@ public:
         }
     }
 
-private:
+  private:
     StoreLock(const StoreLock &);
     StoreLock &operator=(const StoreLock &);
 };
@@ -288,14 +290,14 @@ void paint_motion()
 uint8_t touch_phase(lv_event_code_t code)
 {
     switch (code) {
-    case LV_EVENT_PRESSED:
-        return 0;
-    case LV_EVENT_PRESSING:
-        return 1;
-    case LV_EVENT_RELEASED:
-        return 2;
-    default:
-        return 3;
+        case LV_EVENT_PRESSED:
+            return 0;
+        case LV_EVENT_PRESSING:
+            return 1;
+        case LV_EVENT_RELEASED:
+            return 2;
+        default:
+            return 3;
     }
 }
 

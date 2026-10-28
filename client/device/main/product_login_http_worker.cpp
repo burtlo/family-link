@@ -19,7 +19,8 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 int64_t capped_session_advance_target(const fl_product_login::SessionWriter *session, int64_t now_ms)
 {
@@ -298,7 +299,7 @@ void handle_health_result(const HttpResult &result)
         return;
     }
     s_session->deliver_health_completion(result.exchange.perform_ok, result.exchange.http_status,
-                                       result.exchange.body, result.exchange.body_len, s_session->now_ms());
+                                         result.exchange.body, result.exchange.body_len, s_session->now_ms());
 }
 
 void handle_refresh_result(const HttpResult &result)
@@ -353,66 +354,66 @@ void worker_task(void *arg)
         strncpy(result.session_id, job.session_id, sizeof(result.session_id) - 1);
         strncpy(result.user_id, job.user_id, sizeof(result.user_id) - 1);
         switch (job.kind) {
-        case kJobRoster:
-            if (join_url("v2/hangout", url, (int)sizeof(url))) {
-                perform_exchange(url, HTTP_METHOD_GET, nullptr, 0, nullptr, job.timeout_ms, &result.exchange);
-            }
-            break;
-        case kJobHealth:
-            if (join_url("v2/endpoint/health", url, (int)sizeof(url))) {
-                const char *reason = job.reason[0] ? job.reason : "periodic";
-                snprintf(json, sizeof(json),
-                         "{\"schema\":\"fl.endpoint-health/2\",\"reason\":\"%s\",\"boot_id\":\"%s\","
-                         "\"muted\":%s}",
-                         reason, job.boot_id[0] ? job.boot_id : "boot", job.muted ? "true" : "false");
-                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, job.timeout_ms,
-                                 &result.exchange);
-                wipe_buffer(json, (int)sizeof(json));
-            }
-            break;
-        case kJobPin:
-            if (s_session != nullptr &&
-                (job.pin_epoch != s_session->pin_http_epoch() ||
-                 job.operation_id != s_session->pin_operation_id() || !s_session->pin_submitted())) {
-                ESP_LOGW(kTag, "skip stale pin job op=%llu epoch=%" PRIu32 " live=%" PRIu32 " submitted=%d",
-                         (unsigned long long)job.operation_id, job.pin_epoch, s_session->pin_http_epoch(),
-                         s_session->pin_submitted() ? 1 : 0);
-                result.exchange.perform_ok = 0;
-                result.exchange.http_status = 0;
-                result.exchange.body_len = 0;
-            } else if (join_url("v2/session/login", url, (int)sizeof(url))) {
-                fl_product_login::format_p1_operation_id(job.operation_id, operation_text,
-                                                       (int)sizeof(operation_text));
-                snprintf(json, sizeof(json),
-                         "{\"schema\":\"fl.session-login/2\",\"operation_id\":\"%s\",\"user_id\":\"%s\","
-                         "\"pin\":\"%s\"}",
-                         operation_text, job.user_id, job.pin);
-                ESP_LOGI(kTag, "pin_login POST op=%s user=%s", operation_text, job.user_id);
-                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, job.timeout_ms,
-                                 &result.exchange);
-                ESP_LOGI(kTag, "pin_login op=%s http=%d perform=%d", operation_text,
-                         result.exchange.http_status, result.exchange.perform_ok);
-                wipe_buffer(json, (int)sizeof(json));
-                wipe_buffer(job.pin, (int)sizeof(job.pin));
-            }
-            break;
-        case kJobRefresh:
-            if (join_url("v2/session/refresh", url, (int)sizeof(url))) {
-                perform_exchange(url, HTTP_METHOD_POST, "{}", 2, job.bearer, job.timeout_ms, &result.exchange);
-            }
-            break;
-        case kJobInvalidate:
-            result.invalidate_attempt = job.invalidate_attempt;
-            if (join_url("v2/session/invalidate", url, (int)sizeof(url))) {
-                fl_product_login::format_invalidate_body(job.operation_id, job.bearer[0] != '\0' ? job.bearer : nullptr,
-                                                         json, (int)sizeof(json));
-                perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, job.timeout_ms,
-                                 &result.exchange);
-                wipe_buffer(json, (int)sizeof(json));
-            }
-            break;
-        default:
-            break;
+            case kJobRoster:
+                if (join_url("v2/hangout", url, (int)sizeof(url))) {
+                    perform_exchange(url, HTTP_METHOD_GET, nullptr, 0, nullptr, job.timeout_ms, &result.exchange);
+                }
+                break;
+            case kJobHealth:
+                if (join_url("v2/endpoint/health", url, (int)sizeof(url))) {
+                    const char *reason = job.reason[0] ? job.reason : "periodic";
+                    snprintf(json, sizeof(json),
+                             "{\"schema\":\"fl.endpoint-health/2\",\"reason\":\"%s\",\"boot_id\":\"%s\","
+                             "\"muted\":%s}",
+                             reason, job.boot_id[0] ? job.boot_id : "boot", job.muted ? "true" : "false");
+                    perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, job.timeout_ms,
+                                     &result.exchange);
+                    wipe_buffer(json, (int)sizeof(json));
+                }
+                break;
+            case kJobPin:
+                if (s_session != nullptr &&
+                    (job.pin_epoch != s_session->pin_http_epoch() ||
+                     job.operation_id != s_session->pin_operation_id() || !s_session->pin_submitted())) {
+                    ESP_LOGW(kTag, "skip stale pin job op=%llu epoch=%" PRIu32 " live=%" PRIu32 " submitted=%d",
+                             (unsigned long long)job.operation_id, job.pin_epoch, s_session->pin_http_epoch(),
+                             s_session->pin_submitted() ? 1 : 0);
+                    result.exchange.perform_ok = 0;
+                    result.exchange.http_status = 0;
+                    result.exchange.body_len = 0;
+                } else if (join_url("v2/session/login", url, (int)sizeof(url))) {
+                    fl_product_login::format_p1_operation_id(job.operation_id, operation_text,
+                                                             (int)sizeof(operation_text));
+                    snprintf(json, sizeof(json),
+                             "{\"schema\":\"fl.session-login/2\",\"operation_id\":\"%s\",\"user_id\":\"%s\","
+                             "\"pin\":\"%s\"}",
+                             operation_text, job.user_id, job.pin);
+                    ESP_LOGI(kTag, "pin_login POST op=%s user=%s", operation_text, job.user_id);
+                    perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, job.timeout_ms,
+                                     &result.exchange);
+                    ESP_LOGI(kTag, "pin_login op=%s http=%d perform=%d", operation_text,
+                             result.exchange.http_status, result.exchange.perform_ok);
+                    wipe_buffer(json, (int)sizeof(json));
+                    wipe_buffer(job.pin, (int)sizeof(job.pin));
+                }
+                break;
+            case kJobRefresh:
+                if (join_url("v2/session/refresh", url, (int)sizeof(url))) {
+                    perform_exchange(url, HTTP_METHOD_POST, "{}", 2, job.bearer, job.timeout_ms, &result.exchange);
+                }
+                break;
+            case kJobInvalidate:
+                result.invalidate_attempt = job.invalidate_attempt;
+                if (join_url("v2/session/invalidate", url, (int)sizeof(url))) {
+                    fl_product_login::format_invalidate_body(job.operation_id, job.bearer[0] != '\0' ? job.bearer : nullptr,
+                                                             json, (int)sizeof(json));
+                    perform_exchange(url, HTTP_METHOD_POST, json, (int)strlen(json), nullptr, job.timeout_ms,
+                                     &result.exchange);
+                    wipe_buffer(json, (int)sizeof(json));
+                }
+                break;
+            default:
+                break;
         }
         if (s_results != nullptr) {
             xQueueSend(s_results, &result, portMAX_DELAY);
@@ -492,40 +493,40 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
     drain_stale_pin_jobs(session);
     while (s_results != nullptr && xQueueReceive(s_results, &result, 0) == pdTRUE) {
         switch (result.kind) {
-        case kJobRoster:
-            handle_roster_result(result);
-            if (result.operation_id == s_active_roster_id) {
-                s_active_roster_id = 0;
-            }
-            break;
-        case kJobPin:
-            handle_pin_result(result);
-            if (result.operation_id == s_active_pin_id) {
-                s_active_pin_id = 0;
-                s_active_pin_epoch = 0;
-            }
-            break;
-        case kJobHealth:
-            handle_health_result(result);
-            s_active_health = false;
-            if (s_session != nullptr && s_session->health_ack_pending() &&
-                result.operation_id == s_session->health_operation_id()) {
-                /* This beat failed. Do not queue it; the next scheduled beat is fresh. */
-                s_health_skip_id = result.operation_id;
-            }
-            break;
-        case kJobRefresh:
-            handle_refresh_result(result);
-            if (result.operation_id == s_active_refresh_id) {
-                s_active_refresh_id = 0;
-            }
-            break;
-        case kJobInvalidate:
-            handle_invalidate_result(result);
-            s_active_invalidate = false;
-            break;
-        default:
-            break;
+            case kJobRoster:
+                handle_roster_result(result);
+                if (result.operation_id == s_active_roster_id) {
+                    s_active_roster_id = 0;
+                }
+                break;
+            case kJobPin:
+                handle_pin_result(result);
+                if (result.operation_id == s_active_pin_id) {
+                    s_active_pin_id = 0;
+                    s_active_pin_epoch = 0;
+                }
+                break;
+            case kJobHealth:
+                handle_health_result(result);
+                s_active_health = false;
+                if (s_session != nullptr && s_session->health_ack_pending() &&
+                    result.operation_id == s_session->health_operation_id()) {
+                    /* This beat failed. Do not queue it; the next scheduled beat is fresh. */
+                    s_health_skip_id = result.operation_id;
+                }
+                break;
+            case kJobRefresh:
+                handle_refresh_result(result);
+                if (result.operation_id == s_active_refresh_id) {
+                    s_active_refresh_id = 0;
+                }
+                break;
+            case kJobInvalidate:
+                handle_invalidate_result(result);
+                s_active_invalidate = false;
+                break;
+            default:
+                break;
         }
     }
     if (session->roster_inflight() && session->roster_operation_id() != s_active_roster_id) {

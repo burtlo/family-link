@@ -83,8 +83,7 @@ bool lab16_station_join(void)
         strncpy((char *)wcfg.sta.ssid, CONFIG_LAB16_WIFI_SSID, sizeof(wcfg.sta.ssid) - 1);
         strncpy((char *)wcfg.sta.password, CONFIG_LAB16_WIFI_PASSWORD, sizeof(wcfg.sta.password) - 1);
         wcfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-        if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_set_config(WIFI_IF_STA, &wcfg) != ESP_OK
-            || esp_wifi_start() != ESP_OK) {
+        if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_set_config(WIFI_IF_STA, &wcfg) != ESP_OK || esp_wifi_start() != ESP_OK) {
             return false;
         }
         s_wifi_started = true;

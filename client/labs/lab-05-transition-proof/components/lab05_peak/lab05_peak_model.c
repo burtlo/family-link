@@ -435,39 +435,39 @@ void lab05_peak_session_init(lab05_peak_session *session)
 const char *lab05_peak_terminal_name(lab05_peak_terminal terminal)
 {
     switch (terminal) {
-    case LAB05_PEAK_TERMINAL_SUCCESS:
-        return "success";
-    case LAB05_PEAK_TERMINAL_FAILURE:
-        return "failure";
-    case LAB05_PEAK_TERMINAL_CANCELLED:
-        return "cancelled";
-    case LAB05_PEAK_TERMINAL_STALE:
-        return "stale";
-    case LAB05_PEAK_TERMINAL_TIMED_OUT:
-        return "timed_out";
-    case LAB05_PEAK_TERMINAL_NONE:
-    default:
-        return "none";
+        case LAB05_PEAK_TERMINAL_SUCCESS:
+            return "success";
+        case LAB05_PEAK_TERMINAL_FAILURE:
+            return "failure";
+        case LAB05_PEAK_TERMINAL_CANCELLED:
+            return "cancelled";
+        case LAB05_PEAK_TERMINAL_STALE:
+            return "stale";
+        case LAB05_PEAK_TERMINAL_TIMED_OUT:
+            return "timed_out";
+        case LAB05_PEAK_TERMINAL_NONE:
+        default:
+            return "none";
     }
 }
 
 const char *lab05_peak_scenario_name(lab05_peak_scenario scenario)
 {
     switch (scenario) {
-    case LAB05_PEAK_SCENARIO_OVERLAP:
-        return "P-overlap";
-    case LAB05_PEAK_SCENARIO_REPLACE:
-        return "P-replace";
-    case LAB05_PEAK_SCENARIO_ALLOC_FAIL:
-        return "P-alloc-fail";
-    case LAB05_PEAK_SCENARIO_STALE_CALLBACK:
-        return "P-stale-callback";
-    case LAB05_PEAK_SCENARIO_CANCEL:
-        return "P-cancel";
-    case LAB05_PEAK_SCENARIO_QUEUE_OVERFLOW:
-        return "queue-overflow";
-    default:
-        return "unknown";
+        case LAB05_PEAK_SCENARIO_OVERLAP:
+            return "P-overlap";
+        case LAB05_PEAK_SCENARIO_REPLACE:
+            return "P-replace";
+        case LAB05_PEAK_SCENARIO_ALLOC_FAIL:
+            return "P-alloc-fail";
+        case LAB05_PEAK_SCENARIO_STALE_CALLBACK:
+            return "P-stale-callback";
+        case LAB05_PEAK_SCENARIO_CANCEL:
+            return "P-cancel";
+        case LAB05_PEAK_SCENARIO_QUEUE_OVERFLOW:
+            return "queue-overflow";
+        default:
+            return "unknown";
     }
 }
 
@@ -482,14 +482,14 @@ const char *lab05_peak_control_name(lab05_peak_control control)
 const char *lab05_peak_op_kind_name(lab05_peak_op_kind kind)
 {
     switch (kind) {
-    case LAB05_PEAK_OP_REPETITION:
-        return "repetition";
-    case LAB05_PEAK_OP_WORKER:
-        return "worker";
-    case LAB05_PEAK_OP_OTHER:
-        return "other";
-    default:
-        return "other";
+        case LAB05_PEAK_OP_REPETITION:
+            return "repetition";
+        case LAB05_PEAK_OP_WORKER:
+            return "worker";
+        case LAB05_PEAK_OP_OTHER:
+            return "other";
+        default:
+            return "other";
     }
 }
 

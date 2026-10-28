@@ -19,7 +19,9 @@ typedef struct {
 } lab02_snap_state_t;
 
 typedef enum {
-    LAB02_SNAP_SUCCESS, LAB02_SNAP_STALE, LAB02_SNAP_CANCELLED
+    LAB02_SNAP_SUCCESS,
+    LAB02_SNAP_STALE,
+    LAB02_SNAP_CANCELLED
 } lab02_snap_outcome_t;
 typedef void (*lab02_snap_terminal_cb)(void *, uint32_t, lab02_snap_outcome_t);
 

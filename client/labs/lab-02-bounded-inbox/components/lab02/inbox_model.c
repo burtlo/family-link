@@ -141,7 +141,7 @@ static bool parse_v2_item(cJSON *it, lab02_inbox_item_t *dst)
 }
 
 bool lab02_inbox_model_merge_v2_page(lab02_inbox_model_t *model, int page_offset, const char *json,
-                                      size_t len, uint32_t *inbox_revision_out)
+                                     size_t len, uint32_t *inbox_revision_out)
 {
     lab02_inbox_page_t page;
     if (!lab02_inbox_model_parse_v2_page(json, len, page_offset, &page) ||
@@ -155,7 +155,7 @@ bool lab02_inbox_model_merge_v2_page(lab02_inbox_model_t *model, int page_offset
 }
 
 bool lab02_inbox_model_parse_v2_page(const char *json, size_t len, int page_offset,
-                                    lab02_inbox_page_t *out)
+                                     lab02_inbox_page_t *out)
 {
     if (!json || !out || page_offset < 0 || page_offset >= LAB02_INBOX_MAX_ITEMS) {
         return false;
@@ -214,7 +214,7 @@ bool lab02_inbox_model_parse_v2_page(const char *json, size_t len, int page_offs
 }
 
 bool lab02_inbox_model_apply_v2_page(lab02_inbox_model_t *model,
-                                    const lab02_inbox_page_t *page)
+                                     const lab02_inbox_page_t *page)
 {
     if (!model || !page || page->item_count > LAB02_DEFAULT_PAGE_SIZE ||
         page->page_offset < 0 || page->page_offset + page->item_count > LAB02_INBOX_MAX_ITEMS) {

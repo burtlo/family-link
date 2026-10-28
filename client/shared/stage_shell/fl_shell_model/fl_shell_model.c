@@ -6,13 +6,12 @@
 static const char *panel_text(fl_shell_stage_t stage, fl_shell_slot_t slot)
 {
     static const char *const upper[FL_SHELL_STAGE_COUNT] = {
-        "Roster", "PIN", "Hangout", "Inbox", "Volume", "Record", "Receipt", "Picker"
-    };
+        "Roster", "PIN", "Hangout", "Inbox", "Volume", "Record", "Receipt", "Picker"};
     static const char *const lower[FL_SHELL_STAGE_COUNT] = {
         "Choose a user", "Enter PIN", "No messages", "Synthetic inbox",
-        "Desk volume slider", "Synthetic record", "Synthetic receipt", "Choose people"
-    };
-    if ((unsigned)stage >= FL_SHELL_STAGE_COUNT) return "Invalid";
+        "Desk volume slider", "Synthetic record", "Synthetic receipt", "Choose people"};
+    if ((unsigned)stage >= FL_SHELL_STAGE_COUNT)
+        return "Invalid";
     return slot == FL_SHELL_SLOT_UPPER ? upper[stage] : lower[stage];
 }
 
@@ -34,7 +33,8 @@ static void terminal(fl_shell_session_t *session, uint32_t operation_id,
                      fl_shell_terminal_t outcome, const char *reason)
 {
     for (size_t i = 0; i < session->terminal_ids_count; ++i) {
-        if (session->terminal_ids[i] == operation_id) return;
+        if (session->terminal_ids[i] == operation_id)
+            return;
     }
     if (session->terminal_ids_count < FL_SHELL_TERMINAL_HISTORY) {
         session->terminal_ids[session->terminal_ids_count++] = operation_id;
@@ -52,7 +52,8 @@ static void terminal(fl_shell_session_t *session, uint32_t operation_id,
 static bool operation_is_terminal(const fl_shell_session_t *session, uint32_t operation_id)
 {
     for (size_t i = 0; i < session->terminal_ids_count; ++i) {
-        if (session->terminal_ids[i] == operation_id) return true;
+        if (session->terminal_ids[i] == operation_id)
+            return true;
     }
     return false;
 }
@@ -62,7 +63,8 @@ static bool operation_is_terminal(const fl_shell_session_t *session, uint32_t op
  * ring remains diagnostic history only. */
 static bool admit_operation(fl_shell_session_t *session, uint32_t operation_id)
 {
-    if (operation_id <= session->operation_id_watermark) return false;
+    if (operation_id <= session->operation_id_watermark)
+        return false;
     session->operation_id_watermark = operation_id;
     return true;
 }
@@ -92,9 +94,10 @@ void fl_shell_session_init(fl_shell_session_t *session, uint32_t owner_id, fl_sh
 }
 
 bool fl_shell_begin_stage_transition(fl_shell_session_t *session, uint32_t writer_id,
-                                  fl_shell_stage_t destination, uint32_t operation_id)
+                                     fl_shell_stage_t destination, uint32_t operation_id)
 {
-    if (!admit_operation(session, operation_id)) return false;
+    if (!admit_operation(session, operation_id))
+        return false;
     if (writer_id != session->owner_id) {
         terminal(session, operation_id, FL_SHELL_TERMINAL_FAILURE, "second_writer");
         return false;
@@ -125,7 +128,8 @@ bool fl_shell_begin_stage_transition(fl_shell_session_t *session, uint32_t write
 bool fl_shell_finish_stage_transition(fl_shell_session_t *session, uint32_t operation_id)
 {
     if (!session->transitioning || session->transition_operation_id != operation_id) {
-        if (!admit_operation(session, operation_id)) return false;
+        if (!admit_operation(session, operation_id))
+            return false;
         session->stale_callbacks++;
         terminal(session, operation_id, FL_SHELL_TERMINAL_STALE, "stale_transition");
         return false;
@@ -140,7 +144,8 @@ bool fl_shell_finish_stage_transition(fl_shell_session_t *session, uint32_t oper
 bool fl_shell_cancel_stage_transition(fl_shell_session_t *session, uint32_t operation_id)
 {
     if (!session->transitioning || session->transition_operation_id != operation_id) {
-        if (!admit_operation(session, operation_id)) return false;
+        if (!admit_operation(session, operation_id))
+            return false;
         session->stale_callbacks++;
         terminal(session, operation_id, FL_SHELL_TERMINAL_STALE, "stale_cancel");
         return false;
@@ -154,8 +159,8 @@ bool fl_shell_cancel_stage_transition(fl_shell_session_t *session, uint32_t oper
 }
 
 bool fl_shell_apply_panel_data(fl_shell_session_t *session, fl_shell_slot_t slot,
-                            uint32_t generation, uint32_t operation_id, const char *text,
-                            fl_shell_update_level_t update_level)
+                               uint32_t generation, uint32_t operation_id, const char *text,
+                               fl_shell_update_level_t update_level)
 {
     if (operation_id == 0 || (unsigned)slot > FL_SHELL_SLOT_LOWER || !text ||
         (update_level != FL_SHELL_UPDATE_PROPERTY && update_level != FL_SHELL_UPDATE_SUBTREE &&
@@ -182,7 +187,7 @@ bool fl_shell_apply_panel_data(fl_shell_session_t *session, fl_shell_slot_t slot
 }
 
 bool fl_shell_panel_handle(const fl_shell_session_t *session, fl_shell_slot_t slot,
-                        uint32_t *generation_out)
+                           uint32_t *generation_out)
 {
     if ((unsigned)slot > FL_SHELL_SLOT_LOWER || !generation_out || !session->panels[slot].alive)
         return false;
@@ -192,7 +197,8 @@ bool fl_shell_panel_handle(const fl_shell_session_t *session, fl_shell_slot_t sl
 
 bool fl_shell_event_queue_push(fl_shell_session_t *session, uint32_t operation_id)
 {
-    if (!admit_operation(session, operation_id)) return false;
+    if (!admit_operation(session, operation_id))
+        return false;
     if (session->event_count == FL_SHELL_EVENT_CAPACITY) {
         session->queue_overflows++;
         terminal(session, operation_id, FL_SHELL_TERMINAL_FAILURE, "overflow");
@@ -206,7 +212,8 @@ bool fl_shell_event_queue_push(fl_shell_session_t *session, uint32_t operation_i
 
 bool fl_shell_event_queue_pop(fl_shell_session_t *session, uint32_t *operation_id_out)
 {
-    if (!session->event_count || !operation_id_out) return false;
+    if (!session->event_count || !operation_id_out)
+        return false;
     *operation_id_out = session->event_ids[session->event_head];
     session->event_head = (session->event_head + 1) % FL_SHELL_EVENT_CAPACITY;
     session->event_count--;

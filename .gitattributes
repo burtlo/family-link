@@ -20,6 +20,10 @@
 CMakeLists.txt text eol=lf
 Makefile text eol=lf
 Kconfig text eol=lf
+*.sh text eol=lf
+*.ini text eol=lf
+*.mdc text eol=lf
+*.toml text eol=lf
 
 # Windows command scripts conventionally use CRLF.
 *.bat text eol=crlf

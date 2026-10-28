@@ -11,14 +11,15 @@
 #include "freertos/idf_additions.h"
 #include "freertos/task.h"
 
-namespace {
+namespace
+{
 
 constexpr const char *kTag = "product_mic";
 constexpr int kMicTaskStack = 6144;
 /* pcm_s16le, 16000 Hz, one channel (message-delivery COM-OPEN-002). */
 constexpr int kSampleRate = 16000;
-constexpr size_t kReadBytes = 640;   /* 20 ms */
-constexpr size_t kPushBytes = 2048;  /* 64 ms per storage append */
+constexpr size_t kReadBytes = 640;  /* 20 ms */
+constexpr size_t kPushBytes = 2048; /* 64 ms per storage append */
 constexpr float kInputGainDb = 42.0f;
 
 TaskHandle_t s_task = nullptr;

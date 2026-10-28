@@ -84,16 +84,16 @@ enum {
     LAB10_WORKLOAD_FEATURE_CANCEL = 1u << 11,
 };
 
-#define LAB10_WORKLOAD_REQUIRED_HUMAN_FEATURES                         \
-    (LAB10_WORKLOAD_FEATURE_VARIABLE_SPACING |                         \
-     LAB10_WORKLOAD_FEATURE_VARIABLE_VELOCITY |                        \
-     LAB10_WORKLOAD_FEATURE_CORNERS |                                  \
-     LAB10_WORKLOAD_FEATURE_PAUSES |                                   \
-     LAB10_WORKLOAD_FEATURE_PEN_UP_GAPS |                              \
-     LAB10_WORKLOAD_FEATURE_MULTIPLE_STROKES |                         \
-     LAB10_WORKLOAD_FEATURE_COLOR_CHANGES |                             \
-     LAB10_WORKLOAD_FEATURE_EDGE_POINTS |                              \
-     LAB10_WORKLOAD_FEATURE_LEAVE_REENTER |                            \
+#define LAB10_WORKLOAD_REQUIRED_HUMAN_FEATURES  \
+    (LAB10_WORKLOAD_FEATURE_VARIABLE_SPACING |  \
+     LAB10_WORKLOAD_FEATURE_VARIABLE_VELOCITY | \
+     LAB10_WORKLOAD_FEATURE_CORNERS |           \
+     LAB10_WORKLOAD_FEATURE_PAUSES |            \
+     LAB10_WORKLOAD_FEATURE_PEN_UP_GAPS |       \
+     LAB10_WORKLOAD_FEATURE_MULTIPLE_STROKES |  \
+     LAB10_WORKLOAD_FEATURE_COLOR_CHANGES |     \
+     LAB10_WORKLOAD_FEATURE_EDGE_POINTS |       \
+     LAB10_WORKLOAD_FEATURE_LEAVE_REENTER |     \
      LAB10_WORKLOAD_FEATURE_BACKGROUND_ERASE)
 
 typedef enum {
@@ -173,4 +173,3 @@ lab10_workload_result_t lab10_workload_generate(
 
 /* The encoded trace size is bounded by the header plus populated events. */
 size_t lab10_workload_trace_size_bytes(const lab10_workload_trace_t *trace);
-

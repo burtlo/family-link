@@ -34,6 +34,8 @@ void app_main(void)
 {
     boot_log_identity();
 
+    /* External SD card for recordings (bsp_sdcard_mount), not on-chip NVS; mount before
+     * display so powering the BOX-3 slot with the LCD running can blank the panel. */
     if (!boot_phase("storage", product_record_mount_storage)) {
         return;
     }

@@ -30,7 +30,8 @@
 #define CONFIG_LAB08_MALFORMED_URL "http://127.0.0.1:8768/malformed"
 #endif
 
-namespace {
+namespace
+{
 
 constexpr int kScreenW = 320;
 constexpr int kScreenH = 240;

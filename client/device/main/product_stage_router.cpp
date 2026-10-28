@@ -37,15 +37,15 @@ extern "C" product_screen_t product_stage_screen(void)
         return PRODUCT_SCREEN_LOGIN;
     }
     switch (stage_shell::splitPane().stage()) {
-    case FL_SHELL_STAGE_VOLUME:
-        return PRODUCT_SCREEN_VOLUME;
-    case FL_SHELL_STAGE_RECORD:
-        return PRODUCT_SCREEN_RECORD;
-    case FL_SHELL_STAGE_PICKER:
-    case FL_SHELL_STAGE_RECEIPT:
-        return PRODUCT_SCREEN_SEND;
-    default:
-        return PRODUCT_SCREEN_INBOX;
+        case FL_SHELL_STAGE_VOLUME:
+            return PRODUCT_SCREEN_VOLUME;
+        case FL_SHELL_STAGE_RECORD:
+            return PRODUCT_SCREEN_RECORD;
+        case FL_SHELL_STAGE_PICKER:
+        case FL_SHELL_STAGE_RECEIPT:
+            return PRODUCT_SCREEN_SEND;
+        default:
+            return PRODUCT_SCREEN_INBOX;
     }
 }
 

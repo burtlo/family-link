@@ -12,18 +12,24 @@
 static const char *phase_name(lab02_load_stage_t stage)
 {
     switch (stage) {
-    case LAB02_LOAD_CONNECTING: return "connecting";
-    case LAB02_LOAD_FETCHING: return "fetching";
-    case LAB02_LOAD_READY: return "ready";
-    case LAB02_LOAD_ERROR: return "error";
-    case LAB02_LOAD_SHELL:
-    default: return "shell";
+        case LAB02_LOAD_CONNECTING:
+            return "connecting";
+        case LAB02_LOAD_FETCHING:
+            return "fetching";
+        case LAB02_LOAD_READY:
+            return "ready";
+        case LAB02_LOAD_ERROR:
+            return "error";
+        case LAB02_LOAD_SHELL:
+        default:
+            return "shell";
     }
 }
 
 void lab02_resource_sample_emit(const lab02_carousel_t *carousel)
 {
-    if (!carousel) return;
+    if (!carousel)
+        return;
 
     lab02_session_resource_counts_t counts = {0};
     (void)lab02_session_resource_counts(&counts);

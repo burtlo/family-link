@@ -16,12 +16,13 @@
 #include <unistd.h>
 #endif
 
-#define CHECK(cond) do { \
-    if (!(cond)) { \
-        fprintf(stderr, "FAIL %s (%s:%d)\n", #cond, __FILE__, __LINE__); \
-        return 1; \
-    } \
-} while (0)
+#define CHECK(cond)                                                          \
+    do {                                                                     \
+        if (!(cond)) {                                                       \
+            fprintf(stderr, "FAIL %s (%s:%d)\n", #cond, __FILE__, __LINE__); \
+            return 1;                                                        \
+        }                                                                    \
+    } while (0)
 
 static lab11_capture_info_t info_one(void)
 {

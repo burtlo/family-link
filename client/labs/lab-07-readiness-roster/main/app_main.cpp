@@ -31,7 +31,8 @@
 #define CONFIG_LAB07_HOLD_URL "http://127.0.0.1:8767/roster?script=delayed"
 #endif
 
-namespace {
+namespace
+{
 constexpr int kScreenW = 320;
 constexpr int kScreenH = 240;
 constexpr int kStatusY = 0;
@@ -637,8 +638,8 @@ bool deliver_live_roster(const char *url)
     operation_id = s_session.roster_operation_id();
     perform_http(url, &exchange);
     result = lab07::deliver_classified_roster(&s_session, operation_id, exchange.perform_ok,
-                                             exchange.http_status, exchange.body, exchange.body_len,
-                                             s_session.now_ms());
+                                              exchange.http_status, exchange.body, exchange.body_len,
+                                              s_session.now_ms());
     terminal = s_session.terminal_for(operation_id);
     selectable = s_session.selectable_cards();
     s_http_seq += 1;

@@ -3,8 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_send {
-namespace {
+namespace fl_product_send
+{
+namespace
+{
 
 enum { kHeaderLimit = 25 };
 
@@ -95,7 +97,10 @@ int avatar_known(const char *id)
 
 } /* namespace */
 
-RecipientPicker::RecipientPicker() { reset(); }
+RecipientPicker::RecipientPicker()
+{
+    reset();
+}
 
 void RecipientPicker::reset()
 {
@@ -202,7 +207,10 @@ void RecipientPicker::set_focus(int index)
     }
 }
 
-int RecipientPicker::member_count() const { return member_count_; }
+int RecipientPicker::member_count() const
+{
+    return member_count_;
+}
 
 int RecipientPicker::is_selected(int index) const
 {
@@ -352,7 +360,10 @@ RecipientCard RecipientPicker::card_for_index(int index) const
     return resolve_recipient_fallback(members_[index]);
 }
 
-int RecipientPicker::empty_copy_shown() const { return member_count_ == 0; }
+int RecipientPicker::empty_copy_shown() const
+{
+    return member_count_ == 0;
+}
 
 RecipientCard resolve_recipient_fallback(const HangoutMember &member)
 {

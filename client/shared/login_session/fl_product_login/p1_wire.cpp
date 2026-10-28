@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_login {
-namespace {
+namespace fl_product_login
+{
+namespace
+{
 
 bool is_ws(char c)
 {
@@ -388,7 +390,7 @@ PinResult deliver_classified_pin(SessionWriter *session, uint64_t operation_id, 
                                  int http_status, const char *body, int body_len, int64_t now_ms)
 {
     PinResult result = classify_pin_http(operation_id, generation, session_id, user_id, perform_ok, http_status,
-                                       body, body_len);
+                                         body, body_len);
     if (session != 0) {
         session->deliver_pin_completion(result, now_ms);
     }

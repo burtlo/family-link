@@ -18,9 +18,10 @@ typedef struct {
 /* Manual input is accepted only while the stable panels are idle. Scripted
  * harness transitions keep their existing independent cancellation probe. */
 static inline bool fl_shell_cancel_arm(fl_shell_cancel_control_t *control,
-                                    bool scripted, bool transitioning)
+                                       bool scripted, bool transitioning)
 {
-    if (control == NULL || scripted || transitioning) return false;
+    if (control == NULL || scripted || transitioning)
+        return false;
     control->armed = true;
     return true;
 }
@@ -29,7 +30,8 @@ static inline bool fl_shell_cancel_arm(fl_shell_cancel_control_t *control,
 static inline bool fl_shell_cancel_transition_started(
     fl_shell_cancel_control_t *control, bool scripted)
 {
-    if (control == NULL || scripted) return false;
+    if (control == NULL || scripted)
+        return false;
     control->transition_scheduled = control->armed;
     control->armed = false;
     return control->transition_scheduled;
@@ -40,7 +42,8 @@ static inline bool fl_shell_cancel_transition_started(
 static inline bool fl_shell_cancel_control_clear(
     fl_shell_cancel_control_t *control, bool scripted)
 {
-    if (control == NULL || scripted) return false;
+    if (control == NULL || scripted)
+        return false;
     const bool was_pending = control->armed || control->transition_scheduled;
     control->armed = false;
     control->transition_scheduled = false;
@@ -50,7 +53,8 @@ static inline bool fl_shell_cancel_control_clear(
 static inline void fl_shell_cancel_transition_finished(
     fl_shell_cancel_control_t *control)
 {
-    if (control == NULL) return;
+    if (control == NULL)
+        return;
     control->armed = false;
     control->transition_scheduled = false;
 }

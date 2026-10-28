@@ -436,7 +436,7 @@ lab10_render_t *lab10_render_create(const lab10_render_config_t *config)
         return NULL;
     }
     lab10_render_config_t resolved = config != NULL ? *config
-                                                     : (lab10_render_config_t){0};
+                                                    : (lab10_render_config_t){0};
     if (!mode_valid(resolved.mode) || !role_valid(resolved.role)) {
         return NULL;
     }
@@ -460,7 +460,7 @@ lab10_render_t *lab10_render_create(const lab10_render_config_t *config)
 
     lab10_render_t *renderer = alloc(sizeof(*renderer),
                                      config != NULL ? config->allocator_context
-                                                     : NULL);
+                                                    : NULL);
     if (renderer == NULL) {
         return NULL;
     }
@@ -675,8 +675,8 @@ lab10_render_update_result_t lab10_render_update(
                 }
                 const uint16_t before = renderer->metrics.raster_ops_last_update;
                 raster_whole_job(renderer, &points_processed,
-                                  &renderer->metrics.raster_ops_last_update,
-                                  raster_budget);
+                                 &renderer->metrics.raster_ops_last_update,
+                                 raster_budget);
                 if (renderer->metrics.raster_ops_last_update == before &&
                     renderer->job.active) {
                     break;
@@ -800,55 +800,55 @@ const uint8_t *lab10_render_pixels(const lab10_render_t *renderer,
 const char *lab10_render_mode_name(lab10_render_mode_t mode)
 {
     switch (mode) {
-    case LAB10_RENDER_MODE_DIRECT_POINT:
-        return "direct_point";
-    case LAB10_RENDER_MODE_SEGMENT:
-        return "segment";
-    case LAB10_RENDER_MODE_BOUNDED_BATCH:
-        return "bounded_batch";
-    case LAB10_RENDER_MODE_WHOLE_FRAME:
-        return "whole_frame";
-    default:
-        return "unknown";
+        case LAB10_RENDER_MODE_DIRECT_POINT:
+            return "direct_point";
+        case LAB10_RENDER_MODE_SEGMENT:
+            return "segment";
+        case LAB10_RENDER_MODE_BOUNDED_BATCH:
+            return "bounded_batch";
+        case LAB10_RENDER_MODE_WHOLE_FRAME:
+            return "whole_frame";
+        default:
+            return "unknown";
     }
 }
 
 const char *lab10_render_role_name(lab10_render_role_t role)
 {
-    return role == LAB10_RENDER_ROLE_CONTROL ? "control" :
-           role == LAB10_RENDER_ROLE_CANDIDATE ? "candidate" : "unknown";
+    return role == LAB10_RENDER_ROLE_CONTROL ? "control" : role == LAB10_RENDER_ROLE_CANDIDATE ? "candidate"
+                                                                                               : "unknown";
 }
 
 const char *lab10_render_frame_phase_name(lab10_render_frame_phase_t phase)
 {
     switch (phase) {
-    case LAB10_RENDER_FRAME_IDLE:
-        return "idle";
-    case LAB10_RENDER_FRAME_CLEAR:
-        return "clear";
-    case LAB10_RENDER_FRAME_REPLAY:
-        return "replay";
-    case LAB10_RENDER_FRAME_PUBLISH:
-        return "publish";
-    default:
-        return "unknown";
+        case LAB10_RENDER_FRAME_IDLE:
+            return "idle";
+        case LAB10_RENDER_FRAME_CLEAR:
+            return "clear";
+        case LAB10_RENDER_FRAME_REPLAY:
+            return "replay";
+        case LAB10_RENDER_FRAME_PUBLISH:
+            return "publish";
+        default:
+            return "unknown";
     }
 }
 
 const char *lab10_render_lock_state_name(lab10_render_lock_state_t state)
 {
     switch (state) {
-    case LAB10_RENDER_LOCK_UNKNOWN:
-        return "unknown";
-    case LAB10_RENDER_LOCK_UI_TASK_OWNED:
-        return "ui_task_owned";
-    case LAB10_RENDER_LOCK_ACQUIRED:
-        return "acquired";
-    case LAB10_RENDER_LOCK_RELEASED:
-        return "released";
-    case LAB10_RENDER_LOCK_FAILED:
-        return "failed";
-    default:
-        return "unknown";
+        case LAB10_RENDER_LOCK_UNKNOWN:
+            return "unknown";
+        case LAB10_RENDER_LOCK_UI_TASK_OWNED:
+            return "ui_task_owned";
+        case LAB10_RENDER_LOCK_ACQUIRED:
+            return "acquired";
+        case LAB10_RENDER_LOCK_RELEASED:
+            return "released";
+        case LAB10_RENDER_LOCK_FAILED:
+            return "failed";
+        default:
+            return "unknown";
     }
 }

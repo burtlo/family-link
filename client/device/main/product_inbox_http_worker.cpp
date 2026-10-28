@@ -20,7 +20,8 @@
 
 fl_product_inbox::CarouselSession *product_inbox_session(void);
 
-namespace {
+namespace
+{
 
 constexpr int kWorkerStack = 16384;
 constexpr int kQueueDepth = 4;

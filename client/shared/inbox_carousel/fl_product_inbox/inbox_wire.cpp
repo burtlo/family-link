@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_inbox {
-namespace {
+namespace fl_product_inbox
+{
+namespace
+{
 
 constexpr int kInboxTimeoutMs = 1000;
 constexpr int kMediaTimeoutMs = 5000;
@@ -87,7 +89,10 @@ int playback_active(const CarouselSession &session)
 
 } /* namespace */
 
-InboxWirePlanner::InboxWirePlanner() { reset(); }
+InboxWirePlanner::InboxWirePlanner()
+{
+    reset();
+}
 
 void InboxWirePlanner::reset()
 {

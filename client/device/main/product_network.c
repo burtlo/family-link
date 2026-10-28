@@ -112,8 +112,7 @@ static bool join_configured_wifi(void)
         wcfg.sta.pmf_cfg.capable = true;
         wcfg.sta.pmf_cfg.required = false;
         ESP_LOGI(kTag, "joining ssid=%s", CONFIG_FAMILY_WIFI_SSID);
-        if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_set_config(WIFI_IF_STA, &wcfg) != ESP_OK
-            || esp_wifi_start() != ESP_OK) {
+        if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_set_config(WIFI_IF_STA, &wcfg) != ESP_OK || esp_wifi_start() != ESP_OK) {
             memset(&wcfg, 0, sizeof(wcfg));
             return false;
         }

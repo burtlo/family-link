@@ -19,7 +19,6 @@ static struct {
 
 static void update_status_label(lab02_carousel_t *c);
 
-
 static const char *focused_message_id(lab02_carousel_t *c, int index)
 {
     const lab02_inbox_item_t *item = lab02_page_provider_item(&c->provider, index);
@@ -171,7 +170,8 @@ static void rebind_pool(lab02_carousel_t *c)
 static void on_snap_done(void *user, uint32_t id, lab02_snap_outcome_t outcome)
 {
     lab02_carousel_t *c = (lab02_carousel_t *)user;
-    if (!c || !c->scroll || c->snap.operation_id != id || outcome == LAB02_SNAP_STALE) return;
+    if (!c || !c->scroll || c->snap.operation_id != id || outcome == LAB02_SNAP_STALE)
+        return;
     lab02_session_intent_scroll_lock(false);
     sync_from_session(c, true);
     rebind_pool(c);
@@ -181,7 +181,8 @@ static void on_snap_done(void *user, uint32_t id, lab02_snap_outcome_t outcome)
  * mutation and relocate that identity. Never calculate a target from old count. */
 static void supersede_snap(lab02_carousel_t *c, int index, const char *reason)
 {
-    if (!c->snap.scroll_lock) return;
+    if (!c->snap.scroll_lock)
+        return;
     lab02_snap_cancel(&c->snap, reason);
     lab02_session_intent_focus(index);
     lab02_session_intent_scroll_lock(false);
@@ -195,7 +196,8 @@ static void scroll_deleted(lv_event_t *e)
     c->scroll = NULL; /* Invalidate before cancellation callbacks. */
     lab02_snap_cancel(&c->snap, "scroller_deleted");
     lab02_session_intent_scroll_lock(false);
-    if (s_carousel == c) s_carousel = NULL;
+    if (s_carousel == c)
+        s_carousel = NULL;
 }
 
 static void scroll_event_cb(lv_event_t *e)
@@ -221,7 +223,8 @@ static void scroll_event_cb(lv_event_t *e)
         rebind_pool(c);
         return;
     }
-    if (c->snap.driving_scroll) return;
+    if (c->snap.driving_scroll)
+        return;
     if (code == LV_EVENT_SCROLL_BEGIN) {
         int idx = lab02_snap_index_from_scroll_x(lv_obj_get_scroll_x(c->scroll), c->item_count);
         supersede_snap(c, idx, "reversed");
@@ -238,7 +241,7 @@ static void scroll_event_cb(lv_event_t *e)
             int32_t target = lab02_snap_target_x_for_index(idx, c->item_count);
             lab02_session_intent_scroll_lock(true);
             lab02_snap_animate_to(c->scroll, &c->snap, target, idx,
-                                 focused_message_id(c, idx), "touch", on_snap_done, c);
+                                  focused_message_id(c, idx), "touch", on_snap_done, c);
         } else {
             lab02_session_intent_scroll_lock(false);
         }
@@ -331,7 +334,7 @@ void lab02_carousel_set_focus_with_origin(lab02_carousel_t *c, int index, bool a
     if (animate) {
         lab02_session_intent_scroll_lock(true);
         lab02_snap_animate_to(c->scroll, &c->snap, target, index,
-                             focused_message_id(c, index), origin, on_snap_done, c);
+                              focused_message_id(c, index), origin, on_snap_done, c);
     } else {
         lab02_session_intent_scroll_lock(false);
         sync_from_session(c, false);

@@ -14,23 +14,32 @@
 static bool ellipsis_dsc(const lv_font_t *font, lv_font_glyph_dsc_t *out,
                          uint32_t letter, uint32_t next)
 {
-    (void)font; (void)next;
-    if (letter != 0x2026) return false;
-    out->adv_w = 10; out->box_w = 9; out->box_h = 2;
-    out->ofs_x = 0; out->ofs_y = 0; out->stride = 9;
+    (void)font;
+    (void)next;
+    if (letter != 0x2026)
+        return false;
+    out->adv_w = 10;
+    out->box_w = 9;
+    out->box_h = 2;
+    out->ofs_x = 0;
+    out->ofs_y = 0;
+    out->stride = 9;
     out->format = LV_FONT_GLYPH_FORMAT_A8;
     return true;
 }
 static const void *ellipsis_bitmap(lv_font_glyph_dsc_t *glyph, lv_draw_buf_t *buffer)
 {
-    (void)glyph; (void)buffer;
-    static const uint8_t dots[] = {255,255,0,0,255,255,0,255,255,
-                                  255,255,0,0,255,255,0,255,255};
+    (void)glyph;
+    (void)buffer;
+    static const uint8_t dots[] = {255, 255, 0, 0, 255, 255, 0, 255, 255,
+                                   255, 255, 0, 0, 255, 255, 0, 255, 255};
     return dots;
 }
 static const lv_font_t ellipsis_font = {.get_glyph_dsc = ellipsis_dsc,
-    .get_glyph_bitmap = ellipsis_bitmap, .line_height = 16, .base_line = 3,
-    .static_bitmap = 1};
+                                        .get_glyph_bitmap = ellipsis_bitmap,
+                                        .line_height = 16,
+                                        .base_line = 3,
+                                        .static_bitmap = 1};
 static lv_font_t card_font;
 
 static void cancel_pending(lab02_card_view_t *view, const char *reason)
@@ -58,7 +67,8 @@ static void cancel_pending(lab02_card_view_t *view, const char *reason)
     view->pending_bind = false;
     memset(&view->pending_item, 0, sizeof(view->pending_item));
 #if CONFIG_LAB02_SLOW_BIND_MS > 0
-    if (view->bind_timer) lv_timer_pause(view->bind_timer);
+    if (view->bind_timer)
+        lv_timer_pause(view->bind_timer);
 #endif
 }
 
@@ -194,21 +204,22 @@ void lab02_card_view_set_pos_for_index(lab02_card_view_t *view, int index)
 }
 
 void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
-                              const lab02_slot_snapshot_t *slot)
+                             const lab02_slot_snapshot_t *slot)
 {
-    if (!view || !slot) return;
+    if (!view || !slot)
+        return;
     /* All property changes occur in one LVGL owner callback; no render can
      * interleave old content with the new immutable identity. */
     lab02_card_view_unbind(view, generation);
     view->bind_generation = generation;
     view->session_generation = slot->session_generation;
     view->inbox_revision = slot->inbox_revision;
-    if (slot->state == LAB02_SLOT_OUT_OF_RANGE) return;
+    if (slot->state == LAB02_SLOT_OUT_OF_RANGE)
+        return;
     view->bound_index = slot->index;
     lv_label_set_long_mode(view->sender_lab, LV_LABEL_LONG_WRAP);
     view->state = slot->state == LAB02_SLOT_ERROR ? LAB02_CARD_ERROR : LAB02_CARD_LOADING;
-    lv_label_set_text(view->sender_lab, view->state == LAB02_CARD_ERROR ?
-                      "Message unavailable" : "Loading message…");
+    lv_label_set_text(view->sender_lab, view->state == LAB02_CARD_ERROR ? "Message unavailable" : "Loading message…");
     lv_obj_remove_flag(view->root, LV_OBJ_FLAG_HIDDEN);
     const lab02_trace_payload_t payload = {
         .fields = LAB02_TRACE_FIELD_SESSION_ID | LAB02_TRACE_FIELD_REVISION |
@@ -222,7 +233,8 @@ void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
     };
     lab02_trace_emit_payload("card_state", generation, slot->index,
                              slot->item ? slot->item->message_id : NULL, &payload);
-    if (slot->state != LAB02_SLOT_BOUND || !slot->item) return;
+    if (slot->state != LAB02_SLOT_BOUND || !slot->item)
+        return;
     strncpy(view->bound_message_id, slot->item->message_id,
             sizeof(view->bound_message_id) - 1u);
     view->bound_message_id[sizeof(view->bound_message_id) - 1u] = '\0';
@@ -235,7 +247,8 @@ void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
         view->pending_bind = true;
         lv_timer_reset(view->bind_timer);
         lv_timer_resume(view->bind_timer);
-    } else apply_bind_labels(view, slot->item);
+    } else
+        apply_bind_labels(view, slot->item);
 #else
     apply_bind_labels(view, slot->item);
 #endif
@@ -248,15 +261,14 @@ void lab02_card_view_bind(lab02_card_view_t *view, int index, uint32_t generatio
         view->card_slot = index;
     }
     lab02_session_snapshot_t session = lab02_session_snapshot();
-    lab02_slot_snapshot_t slot = {.index = index, .item = item,
-        .session_generation = lab02_session_generation(), .inbox_revision = session.inbox_revision,
-        .state = item ? LAB02_SLOT_BOUND : LAB02_SLOT_LOADING};
+    lab02_slot_snapshot_t slot = {.index = index, .item = item, .session_generation = lab02_session_generation(), .inbox_revision = session.inbox_revision, .state = item ? LAB02_SLOT_BOUND : LAB02_SLOT_LOADING};
     lab02_card_view_present(view, generation, &slot);
 }
 
 void lab02_card_view_unbind(lab02_card_view_t *view, uint32_t generation)
 {
-    if (!view) return;
+    if (!view)
+        return;
     cancel_pending(view, "superseded");
     if (view->bound_message_id[0]) {
         const lab02_trace_payload_t payload = {

@@ -15,8 +15,7 @@
 
 static const char *SCENARIOS[] = {
     "D-one", "D-drop-ack", "D-drop-receipt", "D-full", "D-cancel",
-    "D-many", "D-invalid-recipient", "D-offline", "D-push-fail", "D-restart"
-};
+    "D-many", "D-invalid-recipient", "D-offline", "D-push-fail", "D-restart"};
 
 typedef struct {
     lv_obj_t *root;
@@ -309,17 +308,7 @@ bool lab11_fw_init(lv_obj_t *screen, const char *mode)
         lv_obj_set_style_pad_row(text, 0, 0);
         snprintf(hash_text, sizeof(hash_text), "lab11-send/v1  %s", hex);
         button_y = FL_WELL_H - (FL_BTN_H * 2 + FL_GAP);
-        if (add_label(text, hash_text) == NULL
-            || add_label(text, "128 points, 180000 ms, 120x120, queue 16") == NULL
-            || add_label(text, "accept-on-archive-commit") == NULL
-            || (ui.expected = add_label(text, ui.session.expected_text)) == NULL
-            || (ui.chunk = add_label(text, "chunk probe 1024  queue 8")) == NULL
-            || (ui.progress = add_label(text, "idle")) == NULL
-            || (ui.phase = add_label(text, "idle")) == NULL
-            || add_button(well, "Next", 0, button_y, on_next) == NULL
-            || add_button(well, "Chunk", FL_BTN_W + FL_GAP, button_y, on_chunk) == NULL
-            || add_button(well, "Run", 0, button_y + FL_BTN_H + FL_GAP, on_run) == NULL
-            || add_button(well, "Cancel", FL_BTN_W + FL_GAP, button_y + FL_BTN_H + FL_GAP, on_cancel) == NULL) {
+        if (add_label(text, hash_text) == NULL || add_label(text, "128 points, 180000 ms, 120x120, queue 16") == NULL || add_label(text, "accept-on-archive-commit") == NULL || (ui.expected = add_label(text, ui.session.expected_text)) == NULL || (ui.chunk = add_label(text, "chunk probe 1024  queue 8")) == NULL || (ui.progress = add_label(text, "idle")) == NULL || (ui.phase = add_label(text, "idle")) == NULL || add_button(well, "Next", 0, button_y, on_next) == NULL || add_button(well, "Chunk", FL_BTN_W + FL_GAP, button_y, on_chunk) == NULL || add_button(well, "Run", 0, button_y + FL_BTN_H + FL_GAP, on_run) == NULL || add_button(well, "Cancel", FL_BTN_W + FL_GAP, button_y + FL_BTN_H + FL_GAP, on_cancel) == NULL) {
             return false;
         }
     }

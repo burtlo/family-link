@@ -23,14 +23,23 @@ typedef enum {
     LAB06_STAGE_RECEIPT
 } lab06_stage_t;
 
-typedef enum { LAB06_SLOT_UPPER = 0, LAB06_SLOT_LOWER = 1 } lab06_slot_t;
-typedef enum { LAB06_TERMINAL_NONE = 0, LAB06_TERMINAL_SUCCESS, LAB06_TERMINAL_FAILURE,
-               LAB06_TERMINAL_CANCELLED, LAB06_TERMINAL_STALE } lab06_terminal_t;
-typedef enum { LAB06_UPDATE_PROPERTY = 0, LAB06_UPDATE_SUBTREE = 1,
+typedef enum { LAB06_SLOT_UPPER = 0,
+               LAB06_SLOT_LOWER = 1 } lab06_slot_t;
+typedef enum { LAB06_TERMINAL_NONE = 0,
+               LAB06_TERMINAL_SUCCESS,
+               LAB06_TERMINAL_FAILURE,
+               LAB06_TERMINAL_CANCELLED,
+               LAB06_TERMINAL_STALE } lab06_terminal_t;
+typedef enum { LAB06_UPDATE_PROPERTY = 0,
+               LAB06_UPDATE_SUBTREE = 1,
                LAB06_UPDATE_SCENE = 2 } lab06_update_level_t;
 
-typedef struct { int16_t x, y, width, height; } lab06_rect_t;
-typedef struct { lab06_rect_t chrome, content; } lab06_slot_geometry_t;
+typedef struct {
+    int16_t x, y, width, height;
+} lab06_rect_t;
+typedef struct {
+    lab06_rect_t chrome, content;
+} lab06_slot_geometry_t;
 
 typedef struct {
     uint32_t generation;

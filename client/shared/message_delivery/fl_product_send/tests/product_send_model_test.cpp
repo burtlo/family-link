@@ -10,7 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 int g_failures = 0;
 
@@ -51,7 +52,10 @@ void read_header(fl_product_send::RecipientPicker &picker, char *out, int cap)
     picker.header_text(out, cap);
 }
 
-void sign_in_sender(fl_product_send::SendOutbox &outbox) { outbox.set_signed_in_user(kTestSender); }
+void sign_in_sender(fl_product_send::SendOutbox &outbox)
+{
+    outbox.set_signed_in_user(kTestSender);
+}
 
 fl_product_send::FrozenPayload make_payload(const char *client_id, uint32_t audio_bytes, int sketch)
 {

@@ -246,33 +246,45 @@ void lab02_trace_emit_payload(const char *event, uint32_t generation, int focus_
         record.elapsed_us = payload->elapsed_us;
         record.server_completed_ns = payload->server_completed_ns;
         valid = copy_field(record.state, sizeof(record.state), payload->state, true,
-                           &record.fields, LAB02_TRACE_FIELD_STATE) && valid;
+                           &record.fields, LAB02_TRACE_FIELD_STATE) &&
+                valid;
         valid = copy_field(record.outcome, sizeof(record.outcome), payload->outcome, true,
-                           &record.fields, LAB02_TRACE_FIELD_OUTCOME) && valid;
+                           &record.fields, LAB02_TRACE_FIELD_OUTCOME) &&
+                valid;
         valid = copy_field(record.reason, sizeof(record.reason), payload->reason, true,
-                           &record.fields, LAB02_TRACE_FIELD_REASON) && valid;
+                           &record.fields, LAB02_TRACE_FIELD_REASON) &&
+                valid;
         valid = copy_field(record.before, sizeof(record.before), payload->before, true,
-                           &record.fields, LAB02_TRACE_FIELD_BEFORE) && valid;
+                           &record.fields, LAB02_TRACE_FIELD_BEFORE) &&
+                valid;
         valid = copy_field(record.after, sizeof(record.after), payload->after, true,
-                           &record.fields, LAB02_TRACE_FIELD_AFTER) && valid;
+                           &record.fields, LAB02_TRACE_FIELD_AFTER) &&
+                valid;
         valid = copy_field(record.op_kind, sizeof(record.op_kind), payload->op_kind, true,
-                           &record.fields, LAB02_TRACE_FIELD_OP_KIND) && valid;
+                           &record.fields, LAB02_TRACE_FIELD_OP_KIND) &&
+                valid;
         valid = copy_field(record.page_receipt_id, sizeof(record.page_receipt_id),
                            payload->page_receipt_id, true, &record.fields,
-                           LAB02_TRACE_FIELD_PAGE_RECEIPT_ID) && valid;
+                           LAB02_TRACE_FIELD_PAGE_RECEIPT_ID) &&
+                valid;
         valid = copy_field(record.run_id, sizeof(record.run_id), payload->run_id, true,
-                           &record.fields, LAB02_TRACE_FIELD_RUN_ID) && valid;
+                           &record.fields, LAB02_TRACE_FIELD_RUN_ID) &&
+                valid;
         valid = copy_field(record.focus_msg_before, sizeof(record.focus_msg_before),
                            payload->focus_msg_before, true, &record.fields,
-                           LAB02_TRACE_FIELD_FOCUS_MSG_BEFORE) && valid;
+                           LAB02_TRACE_FIELD_FOCUS_MSG_BEFORE) &&
+                valid;
         valid = copy_field(record.focus_msg_after, sizeof(record.focus_msg_after),
                            payload->focus_msg_after, true, &record.fields,
-                           LAB02_TRACE_FIELD_FOCUS_MSG_AFTER) && valid;
+                           LAB02_TRACE_FIELD_FOCUS_MSG_AFTER) &&
+                valid;
         valid = copy_field(record.snap_origin, sizeof(record.snap_origin), payload->snap_origin,
-                           true, &record.fields, LAB02_TRACE_FIELD_SNAP_ORIGIN) && valid;
+                           true, &record.fields, LAB02_TRACE_FIELD_SNAP_ORIGIN) &&
+                valid;
         record.publication_after_apply = payload->publication_after_apply;
         valid = copy_field(record.extra, sizeof(record.extra), payload->extra, false,
-                           &record.fields, LAB02_TRACE_FIELD_LEGACY_EXTRA) && valid;
+                           &record.fields, LAB02_TRACE_FIELD_LEGACY_EXTRA) &&
+                valid;
     }
     if (!valid) {
         account_drop(true);
@@ -308,7 +320,8 @@ void lab02_trace_emit(const char *event, uint32_t generation, int focus_index,
 
 void lab02_trace_emit_resource_sample(const lab02_resource_sample_t *sample)
 {
-    if (!sample) return;
+    if (!sample)
+        return;
     const lab02_trace_payload_t payload = {
         .fields = LAB02_TRACE_FIELD_SESSION_ID |
                   LAB02_TRACE_FIELD_STATE |
@@ -396,64 +409,117 @@ static void write_record(const lab02_trace_record_t *record)
                         (unsigned)record->generation, (long)record->focus_index,
                         record->message_id[0] ? record->message_id : "-");
     const uint64_t fields = record->fields;
-    if (fields & LAB02_TRACE_FIELD_SESSION_ID) used = append_u32(line, sizeof(line), used, "session_id", record->session_id);
-    if (fields & LAB02_TRACE_FIELD_REVISION) used = append_u32(line, sizeof(line), used, "revision", record->revision);
-    if (fields & LAB02_TRACE_FIELD_SNAP_ID) used = append_u32(line, sizeof(line), used, "snap_id", record->snap_id);
-    if (fields & LAB02_TRACE_FIELD_FETCH_SNAP_ID) used = append_u32(line, sizeof(line), used, "fetch_snap_id", record->fetch_snap_id);
-    if (fields & LAB02_TRACE_FIELD_ATTEMPT) used = append_u32(line, sizeof(line), used, "attempt", record->attempt);
-    if (fields & LAB02_TRACE_FIELD_OP_ID) used = append_u32(line, sizeof(line), used, "op_id", record->op_id);
-    if (fields & LAB02_TRACE_FIELD_APPLIED_REVISION) used = append_u32(line, sizeof(line), used, "applied_revision", record->applied_revision);
-    if (fields & LAB02_TRACE_FIELD_BIND_GENERATION) used = append_u32(line, sizeof(line), used, "bind_generation", record->bind_generation);
-    if (fields & LAB02_TRACE_FIELD_CARD_SLOT) used = append_u32(line, sizeof(line), used, "card_slot", record->card_slot);
-    if (fields & LAB02_TRACE_FIELD_GESTURE_ID) used = append_u32(line, sizeof(line), used, "gesture_id", record->gesture_id);
-    if (fields & LAB02_TRACE_FIELD_FOCUS_BEFORE) used = append_i32(line, sizeof(line), used, "focus_before", record->focus_before);
-    if (fields & LAB02_TRACE_FIELD_FOCUS_AFTER) used = append_i32(line, sizeof(line), used, "focus_after", record->focus_after);
-    if (fields & LAB02_TRACE_FIELD_START_X) used = append_i32(line, sizeof(line), used, "start_x", record->start_x);
-    if (fields & LAB02_TRACE_FIELD_TARGET_X) used = append_i32(line, sizeof(line), used, "target_x", record->target_x);
-    if (fields & LAB02_TRACE_FIELD_PAGE_INDEX) used = append_i32(line, sizeof(line), used, "page_index", record->page_index);
-    if (fields & LAB02_TRACE_FIELD_SUBMITTED_US) used = append_i64(line, sizeof(line), used, "submitted_us", record->submitted_us);
-    if (fields & LAB02_TRACE_FIELD_STARTED_US) used = append_i64(line, sizeof(line), used, "started_us", record->started_us);
-    if (fields & LAB02_TRACE_FIELD_TERMINAL_US) used = append_i64(line, sizeof(line), used, "terminal_us", record->terminal_us);
-    if (fields & LAB02_TRACE_FIELD_ELAPSED_US) used = append_i64(line, sizeof(line), used, "elapsed_us", record->elapsed_us);
-    if (fields & LAB02_TRACE_FIELD_SERVER_COMPLETED_NS) used = append_i64(line, sizeof(line), used, "server_completed_ns", record->server_completed_ns);
-    if (fields & LAB02_TRACE_FIELD_STATE) used = append_field(line, sizeof(line), used, "state", record->state);
-    if (fields & LAB02_TRACE_FIELD_OUTCOME) used = append_field(line, sizeof(line), used, "outcome", record->outcome);
-    if (fields & LAB02_TRACE_FIELD_REASON) used = append_field(line, sizeof(line), used, "reason", record->reason);
-    if (fields & LAB02_TRACE_FIELD_BEFORE) used = append_field(line, sizeof(line), used, "before", record->before);
-    if (fields & LAB02_TRACE_FIELD_AFTER) used = append_field(line, sizeof(line), used, "after", record->after);
-    if (fields & LAB02_TRACE_FIELD_OP_KIND) used = append_field(line, sizeof(line), used, "op_kind", record->op_kind);
-    if (fields & LAB02_TRACE_FIELD_PAGE_RECEIPT_ID) used = append_field(line, sizeof(line), used, "page_receipt_id", record->page_receipt_id);
-    if (fields & LAB02_TRACE_FIELD_RUN_ID) used = append_field(line, sizeof(line), used, "run_id", record->run_id);
-    if (fields & LAB02_TRACE_FIELD_FOCUS_MSG_BEFORE) used = append_field(line, sizeof(line), used, "focus_msg_before", record->focus_msg_before);
-    if (fields & LAB02_TRACE_FIELD_FOCUS_MSG_AFTER) used = append_field(line, sizeof(line), used, "focus_msg_after", record->focus_msg_after);
-    if (fields & LAB02_TRACE_FIELD_SNAP_ORIGIN) used = append_field(line, sizeof(line), used, "snap_origin", record->snap_origin);
-    if (fields & LAB02_TRACE_FIELD_PUBLICATION_AFTER_APPLY) used = append_field(line, sizeof(line), used,
-                                                                                "publication_after_apply",
-                                                                                record->publication_after_apply ? "true" : "false");
-    if (fields & LAB02_TRACE_FIELD_QUEUE_DEPTH) used = append_u32(line, sizeof(line), used, "queue_depth", record->queue_depth);
-    if (fields & LAB02_TRACE_FIELD_QUEUE_HIGH_WATER) used = append_u32(line, sizeof(line), used, "queue_high_water", record->queue_high_water);
-    if (fields & LAB02_TRACE_FIELD_OVERFLOW) used = append_u32(line, sizeof(line), used, "overflow", record->overflow);
-    if (fields & LAB02_TRACE_FIELD_INTERNAL_FREE_BYTES) used = append_u32(line, sizeof(line), used, "internal_free_bytes", record->internal_free_bytes);
-    if (fields & LAB02_TRACE_FIELD_INTERNAL_MIN_FREE_BYTES) used = append_u32(line, sizeof(line), used, "internal_min_free_bytes", record->internal_min_free_bytes);
-    if (fields & LAB02_TRACE_FIELD_INTERNAL_LARGEST_FREE_BYTES) used = append_u32(line, sizeof(line), used, "internal_largest_free_bytes", record->internal_largest_free_bytes);
-    if (fields & LAB02_TRACE_FIELD_DMA_FREE_BYTES) used = append_u32(line, sizeof(line), used, "dma_free_bytes", record->dma_free_bytes);
-    if (fields & LAB02_TRACE_FIELD_DMA_LARGEST_FREE_BYTES) used = append_u32(line, sizeof(line), used, "dma_largest_free_bytes", record->dma_largest_free_bytes);
-    if (fields & LAB02_TRACE_FIELD_PSRAM_FREE_BYTES) used = append_u32(line, sizeof(line), used, "psram_free_bytes", record->psram_free_bytes);
-    if (fields & LAB02_TRACE_FIELD_PSRAM_LARGEST_FREE_BYTES) used = append_u32(line, sizeof(line), used, "psram_largest_free_bytes", record->psram_largest_free_bytes);
-    if (fields & LAB02_TRACE_FIELD_LVGL_MEM_USED_BYTES) used = append_u32(line, sizeof(line), used, "lvgl_mem_used_bytes", record->lvgl_mem_used_bytes);
-    if (fields & LAB02_TRACE_FIELD_LVGL_MEM_HIGH_WATER_BYTES) used = append_u32(line, sizeof(line), used, "lvgl_mem_high_water_bytes", record->lvgl_mem_high_water_bytes);
-    if (fields & LAB02_TRACE_FIELD_LVGL_BIGGEST_FREE_BYTES) used = append_u32(line, sizeof(line), used, "lvgl_biggest_free_bytes", record->lvgl_biggest_free_bytes);
-    if (fields & LAB02_TRACE_FIELD_LIVE_CARD_ROOTS) used = append_u32(line, sizeof(line), used, "live_card_roots", record->live_card_roots);
-    if (fields & LAB02_TRACE_FIELD_LIVE_CARD_NODES) used = append_u32(line, sizeof(line), used, "live_card_nodes", record->live_card_nodes);
-    if (fields & LAB02_TRACE_FIELD_ACTIVE_FETCHES) used = append_u32(line, sizeof(line), used, "active_fetches", record->active_fetches);
-    if (fields & LAB02_TRACE_FIELD_ADMITTED_FETCHES) used = append_u32(line, sizeof(line), used, "admitted_fetches", record->admitted_fetches);
-    if (fields & LAB02_TRACE_FIELD_FETCH_QUEUE_DEPTH) used = append_u32(line, sizeof(line), used, "fetch_queue_depth", record->fetch_queue_depth);
-    if (fields & LAB02_TRACE_FIELD_TERMINAL_PENDING) used = append_u32(line, sizeof(line), used, "terminal_pending", record->terminal_pending);
+    if (fields & LAB02_TRACE_FIELD_SESSION_ID)
+        used = append_u32(line, sizeof(line), used, "session_id", record->session_id);
+    if (fields & LAB02_TRACE_FIELD_REVISION)
+        used = append_u32(line, sizeof(line), used, "revision", record->revision);
+    if (fields & LAB02_TRACE_FIELD_SNAP_ID)
+        used = append_u32(line, sizeof(line), used, "snap_id", record->snap_id);
+    if (fields & LAB02_TRACE_FIELD_FETCH_SNAP_ID)
+        used = append_u32(line, sizeof(line), used, "fetch_snap_id", record->fetch_snap_id);
+    if (fields & LAB02_TRACE_FIELD_ATTEMPT)
+        used = append_u32(line, sizeof(line), used, "attempt", record->attempt);
+    if (fields & LAB02_TRACE_FIELD_OP_ID)
+        used = append_u32(line, sizeof(line), used, "op_id", record->op_id);
+    if (fields & LAB02_TRACE_FIELD_APPLIED_REVISION)
+        used = append_u32(line, sizeof(line), used, "applied_revision", record->applied_revision);
+    if (fields & LAB02_TRACE_FIELD_BIND_GENERATION)
+        used = append_u32(line, sizeof(line), used, "bind_generation", record->bind_generation);
+    if (fields & LAB02_TRACE_FIELD_CARD_SLOT)
+        used = append_u32(line, sizeof(line), used, "card_slot", record->card_slot);
+    if (fields & LAB02_TRACE_FIELD_GESTURE_ID)
+        used = append_u32(line, sizeof(line), used, "gesture_id", record->gesture_id);
+    if (fields & LAB02_TRACE_FIELD_FOCUS_BEFORE)
+        used = append_i32(line, sizeof(line), used, "focus_before", record->focus_before);
+    if (fields & LAB02_TRACE_FIELD_FOCUS_AFTER)
+        used = append_i32(line, sizeof(line), used, "focus_after", record->focus_after);
+    if (fields & LAB02_TRACE_FIELD_START_X)
+        used = append_i32(line, sizeof(line), used, "start_x", record->start_x);
+    if (fields & LAB02_TRACE_FIELD_TARGET_X)
+        used = append_i32(line, sizeof(line), used, "target_x", record->target_x);
+    if (fields & LAB02_TRACE_FIELD_PAGE_INDEX)
+        used = append_i32(line, sizeof(line), used, "page_index", record->page_index);
+    if (fields & LAB02_TRACE_FIELD_SUBMITTED_US)
+        used = append_i64(line, sizeof(line), used, "submitted_us", record->submitted_us);
+    if (fields & LAB02_TRACE_FIELD_STARTED_US)
+        used = append_i64(line, sizeof(line), used, "started_us", record->started_us);
+    if (fields & LAB02_TRACE_FIELD_TERMINAL_US)
+        used = append_i64(line, sizeof(line), used, "terminal_us", record->terminal_us);
+    if (fields & LAB02_TRACE_FIELD_ELAPSED_US)
+        used = append_i64(line, sizeof(line), used, "elapsed_us", record->elapsed_us);
+    if (fields & LAB02_TRACE_FIELD_SERVER_COMPLETED_NS)
+        used = append_i64(line, sizeof(line), used, "server_completed_ns", record->server_completed_ns);
+    if (fields & LAB02_TRACE_FIELD_STATE)
+        used = append_field(line, sizeof(line), used, "state", record->state);
+    if (fields & LAB02_TRACE_FIELD_OUTCOME)
+        used = append_field(line, sizeof(line), used, "outcome", record->outcome);
+    if (fields & LAB02_TRACE_FIELD_REASON)
+        used = append_field(line, sizeof(line), used, "reason", record->reason);
+    if (fields & LAB02_TRACE_FIELD_BEFORE)
+        used = append_field(line, sizeof(line), used, "before", record->before);
+    if (fields & LAB02_TRACE_FIELD_AFTER)
+        used = append_field(line, sizeof(line), used, "after", record->after);
+    if (fields & LAB02_TRACE_FIELD_OP_KIND)
+        used = append_field(line, sizeof(line), used, "op_kind", record->op_kind);
+    if (fields & LAB02_TRACE_FIELD_PAGE_RECEIPT_ID)
+        used = append_field(line, sizeof(line), used, "page_receipt_id", record->page_receipt_id);
+    if (fields & LAB02_TRACE_FIELD_RUN_ID)
+        used = append_field(line, sizeof(line), used, "run_id", record->run_id);
+    if (fields & LAB02_TRACE_FIELD_FOCUS_MSG_BEFORE)
+        used = append_field(line, sizeof(line), used, "focus_msg_before", record->focus_msg_before);
+    if (fields & LAB02_TRACE_FIELD_FOCUS_MSG_AFTER)
+        used = append_field(line, sizeof(line), used, "focus_msg_after", record->focus_msg_after);
+    if (fields & LAB02_TRACE_FIELD_SNAP_ORIGIN)
+        used = append_field(line, sizeof(line), used, "snap_origin", record->snap_origin);
+    if (fields & LAB02_TRACE_FIELD_PUBLICATION_AFTER_APPLY)
+        used = append_field(line, sizeof(line), used,
+                            "publication_after_apply",
+                            record->publication_after_apply ? "true" : "false");
+    if (fields & LAB02_TRACE_FIELD_QUEUE_DEPTH)
+        used = append_u32(line, sizeof(line), used, "queue_depth", record->queue_depth);
+    if (fields & LAB02_TRACE_FIELD_QUEUE_HIGH_WATER)
+        used = append_u32(line, sizeof(line), used, "queue_high_water", record->queue_high_water);
+    if (fields & LAB02_TRACE_FIELD_OVERFLOW)
+        used = append_u32(line, sizeof(line), used, "overflow", record->overflow);
+    if (fields & LAB02_TRACE_FIELD_INTERNAL_FREE_BYTES)
+        used = append_u32(line, sizeof(line), used, "internal_free_bytes", record->internal_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_INTERNAL_MIN_FREE_BYTES)
+        used = append_u32(line, sizeof(line), used, "internal_min_free_bytes", record->internal_min_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_INTERNAL_LARGEST_FREE_BYTES)
+        used = append_u32(line, sizeof(line), used, "internal_largest_free_bytes", record->internal_largest_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_DMA_FREE_BYTES)
+        used = append_u32(line, sizeof(line), used, "dma_free_bytes", record->dma_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_DMA_LARGEST_FREE_BYTES)
+        used = append_u32(line, sizeof(line), used, "dma_largest_free_bytes", record->dma_largest_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_PSRAM_FREE_BYTES)
+        used = append_u32(line, sizeof(line), used, "psram_free_bytes", record->psram_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_PSRAM_LARGEST_FREE_BYTES)
+        used = append_u32(line, sizeof(line), used, "psram_largest_free_bytes", record->psram_largest_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_LVGL_MEM_USED_BYTES)
+        used = append_u32(line, sizeof(line), used, "lvgl_mem_used_bytes", record->lvgl_mem_used_bytes);
+    if (fields & LAB02_TRACE_FIELD_LVGL_MEM_HIGH_WATER_BYTES)
+        used = append_u32(line, sizeof(line), used, "lvgl_mem_high_water_bytes", record->lvgl_mem_high_water_bytes);
+    if (fields & LAB02_TRACE_FIELD_LVGL_BIGGEST_FREE_BYTES)
+        used = append_u32(line, sizeof(line), used, "lvgl_biggest_free_bytes", record->lvgl_biggest_free_bytes);
+    if (fields & LAB02_TRACE_FIELD_LIVE_CARD_ROOTS)
+        used = append_u32(line, sizeof(line), used, "live_card_roots", record->live_card_roots);
+    if (fields & LAB02_TRACE_FIELD_LIVE_CARD_NODES)
+        used = append_u32(line, sizeof(line), used, "live_card_nodes", record->live_card_nodes);
+    if (fields & LAB02_TRACE_FIELD_ACTIVE_FETCHES)
+        used = append_u32(line, sizeof(line), used, "active_fetches", record->active_fetches);
+    if (fields & LAB02_TRACE_FIELD_ADMITTED_FETCHES)
+        used = append_u32(line, sizeof(line), used, "admitted_fetches", record->admitted_fetches);
+    if (fields & LAB02_TRACE_FIELD_FETCH_QUEUE_DEPTH)
+        used = append_u32(line, sizeof(line), used, "fetch_queue_depth", record->fetch_queue_depth);
+    if (fields & LAB02_TRACE_FIELD_TERMINAL_PENDING)
+        used = append_u32(line, sizeof(line), used, "terminal_pending", record->terminal_pending);
     if (used >= 0 && record->extra[0]) {
         size_t remaining = sizeof(line) - (size_t)used;
         int n = snprintf(line + used, remaining, " %s", record->extra);
-        if (n < 0 || (size_t)n >= remaining) used = -1;
-        else used += n;
+        if (n < 0 || (size_t)n >= remaining)
+            used = -1;
+        else
+            used += n;
     }
     if (used < 0) {
         return;
@@ -623,7 +689,7 @@ void lab02_trace_reset(void)
     if (state == TRACE_STATE_RUNNING) {
         unsigned expected = state;
         (void)atomic_compare_exchange_strong(&s_task_state, &expected,
-                                              TRACE_STATE_STOPPING);
+                                             TRACE_STATE_STOPPING);
     }
     reset_lifecycle_counters();
 }

@@ -5,14 +5,22 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_inbox {
-namespace {
+namespace fl_product_inbox
+{
+namespace
+{
 
 bool catalog_avatar(const char *id)
 {
     static const char *kKnown[] = {
-        "avatar-01", "avatar-02", "avatar-03", "avatar-04",
-        "avatar-05", "avatar-06", "avatar-07", "avatar-08",
+        "avatar-01",
+        "avatar-02",
+        "avatar-03",
+        "avatar-04",
+        "avatar-05",
+        "avatar-06",
+        "avatar-07",
+        "avatar-08",
     };
     if (id == 0 || id[0] == 0) {
         return false;
@@ -28,8 +36,14 @@ bool catalog_avatar(const char *id)
 bool catalog_card(const char *id)
 {
     static const char *kKnown[] = {
-        "card-bg-01", "card-bg-02", "card-bg-03", "card-bg-04",
-        "card-bg-05", "card-bg-06", "card-bg-07", "card-bg-08",
+        "card-bg-01",
+        "card-bg-02",
+        "card-bg-03",
+        "card-bg-04",
+        "card-bg-05",
+        "card-bg-06",
+        "card-bg-07",
+        "card-bg-08",
     };
     if (id == 0 || id[0] == 0) {
         return false;

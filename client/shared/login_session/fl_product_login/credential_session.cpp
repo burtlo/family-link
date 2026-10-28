@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_login {
-namespace {
+namespace fl_product_login
+{
+namespace
+{
 
 void copy_text(char *dst, int cap, const char *src)
 {
@@ -223,9 +225,15 @@ void SessionWriter::deliver_health_completion(int perform_ok, int http_status, c
     ack_health();
 }
 
-int SessionWriter::health_ack_count() const { return health_ack_count_; }
+int SessionWriter::health_ack_count() const
+{
+    return health_ack_count_;
+}
 
-const char *SessionWriter::health_server_time() const { return health_server_time_; }
+const char *SessionWriter::health_server_time() const
+{
+    return health_server_time_;
+}
 
 int64_t SessionWriter::credential_next_event_ms() const
 {
@@ -260,13 +268,37 @@ void SessionWriter::on_credential_clock()
     }
 }
 
-int SessionWriter::credential_active() const { return credential_present_ && !credential_expired_ ? 1 : 0; }
-int SessionWriter::credential_expired() const { return credential_expired_ ? 1 : 0; }
-const char *SessionWriter::credential_token() const { return credential_token_; }
-int64_t SessionWriter::credential_bound_ms() const { return credential_bound_ms_; }
-int64_t SessionWriter::next_refresh_due_ms() const { return next_refresh_due_ms_; }
-int SessionWriter::refresh_inflight() const { return refresh_inflight_ ? 1 : 0; }
-uint64_t SessionWriter::refresh_operation_id() const { return refresh_operation_id_; }
-int SessionWriter::invalidate_attempts() const { return invalidate_attempts_sent_; }
+int SessionWriter::credential_active() const
+{
+    return credential_present_ && !credential_expired_ ? 1 : 0;
+}
+int SessionWriter::credential_expired() const
+{
+    return credential_expired_ ? 1 : 0;
+}
+const char *SessionWriter::credential_token() const
+{
+    return credential_token_;
+}
+int64_t SessionWriter::credential_bound_ms() const
+{
+    return credential_bound_ms_;
+}
+int64_t SessionWriter::next_refresh_due_ms() const
+{
+    return next_refresh_due_ms_;
+}
+int SessionWriter::refresh_inflight() const
+{
+    return refresh_inflight_ ? 1 : 0;
+}
+uint64_t SessionWriter::refresh_operation_id() const
+{
+    return refresh_operation_id_;
+}
+int SessionWriter::invalidate_attempts() const
+{
+    return invalidate_attempts_sent_;
+}
 
 } /* namespace fl_product_login */

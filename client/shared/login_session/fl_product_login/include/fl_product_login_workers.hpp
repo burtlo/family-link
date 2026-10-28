@@ -3,7 +3,8 @@
 
 #include "fl_product_login_session.hpp"
 
-namespace fl_product_login {
+namespace fl_product_login
+{
 
 /* P6 stubs: capture generation at submit; drop mismatched completions. */
 

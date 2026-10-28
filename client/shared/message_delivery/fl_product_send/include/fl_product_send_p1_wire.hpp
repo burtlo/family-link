@@ -3,7 +3,8 @@
 
 #include "fl_product_send_types.hpp"
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 struct WireParseResult {
     int ok;

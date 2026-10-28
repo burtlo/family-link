@@ -2,7 +2,8 @@
 
 #include "lvgl.h"
 
-namespace product_ui {
+namespace product_ui
+{
 
 enum class Scene {
     None,
@@ -18,14 +19,24 @@ enum class Scene {
  * Split-pane (stage_shell::SplitPane) owns upper/lower slots and stage bookmark;
  * it queries this window for canvas, split geometry, and slot theme colors.
  */
-class UiWindow {
-public:
+class UiWindow
+{
+  public:
     bool create(lv_obj_t *screen);
     void destroy();
 
-    [[nodiscard]] bool created() const { return created_; }
-    [[nodiscard]] Scene scene() const { return scene_; }
-    lv_obj_t *contentRoot() const { return content_root_; }
+    [[nodiscard]] bool created() const
+    {
+        return created_;
+    }
+    [[nodiscard]] Scene scene() const
+    {
+        return scene_;
+    }
+    lv_obj_t *contentRoot() const
+    {
+        return content_root_;
+    }
 
     bool canvasSize(lv_coord_t *width_out, lv_coord_t *height_out) const;
     bool splitPaneUpperHeight(lv_coord_t *height_out) const;
@@ -35,7 +46,7 @@ public:
     bool mountRecord();
     bool deskRoots(lv_obj_t **upper_out, lv_obj_t **lower_out);
 
-private:
+  private:
     bool ensureContentRoot(lv_obj_t *screen);
     bool ensureDeskSlots();
     bool attachDeskModulesOnce();

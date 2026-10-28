@@ -3,10 +3,15 @@
 
 #include <string.h>
 
-namespace fl_product_inbox {
-namespace {
+namespace fl_product_inbox
+{
+namespace
+{
 
-uint16_t read_u16(const uint8_t *p) { return (uint16_t)p[0] | ((uint16_t)p[1] << 8); }
+uint16_t read_u16(const uint8_t *p)
+{
+    return (uint16_t)p[0] | ((uint16_t)p[1] << 8);
+}
 uint32_t read_u32(const uint8_t *p)
 {
     return read_u16(p) | ((uint32_t)read_u16(p + 2) << 16);

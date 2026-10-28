@@ -3,12 +3,17 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace fl_product_inbox {
-namespace {
+namespace fl_product_inbox
+{
+namespace
+{
 
 constexpr int kInboxMaxBytes = 262144;
 
-bool is_ws(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
+bool is_ws(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
 
 int find_key(const char *body, int len, const char *key)
 {

@@ -68,7 +68,7 @@ define py_run
 	@$(GITBASH) "$(MAKE_PY_SH)" run $(1)
 endef
 
-.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind avatars app app\:build app\:flash app\:monitor app\:test server lab.help lab.p1.server lab.lab02.server lab.lab03.server lab.lab07.server lab.lab08.server lab.lab09.server lab.lab11.server
+.PHONY: help config config.host config.deployment config.labs install test build devices flash flash.all device.bind avatars format format.check eol.fix eol.check app app\:build app\:flash app\:monitor app\:test server lab.help lab.p1.server lab.lab02.server lab.lab03.server lab.lab07.server lab.lab08.server lab.lab09.server lab.lab11.server
 
 # Lab device firmware (registry: config/labs.registry.yaml). Optional: KIT PORT SECONDS FLASH RUN_ID
 # Prefer the explicit .scripted profile over VARIANT= for operator workflows.
@@ -95,6 +95,26 @@ config.labs:
 install:
 	$(call step_msg,Installing venv host tools and ESP-IDF if needed)
 	$(call py_host_run,scripts/install.py)
+
+format:
+	$(call step_msg,Formatting active-repo C/C++ sources)
+	$(call py_run,scripts/clang_format.py)
+	$(call step_msg,Normalizing tracked text files to LF line endings)
+	$(call py_run,scripts/normalize_eol.py)
+
+format.check:
+	$(call step_msg,Checking C/C++ formatting)
+	$(call py_run,scripts/clang_format.py --check)
+	$(call step_msg,Checking repository line endings)
+	$(call py_run,scripts/normalize_eol.py --check)
+
+eol.fix:
+	$(call step_msg,Normalizing tracked text files to LF line endings)
+	$(call py_run,scripts/normalize_eol.py)
+
+eol.check:
+	$(call step_msg,Checking repository line endings)
+	$(call py_run,scripts/normalize_eol.py --check)
 
 avatars:
 	$(call step_msg,Packing profile avatars for firmware)

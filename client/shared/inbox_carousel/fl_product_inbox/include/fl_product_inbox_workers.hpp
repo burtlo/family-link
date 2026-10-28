@@ -3,10 +3,11 @@
 
 #include "fl_product_login_workers.hpp"
 
-namespace fl_product_inbox {
+namespace fl_product_inbox
+{
 
 fl_product_login::WorkerTicket begin_inbox_worker(fl_product_login::SessionWriter *session,
-                                                int64_t now_ms);
+                                                  int64_t now_ms);
 fl_product_login::WorkerTicket begin_media_worker(fl_product_login::SessionWriter *session,
                                                   int64_t now_ms);
 fl_product_login::WorkerTicket begin_playback_worker(fl_product_login::SessionWriter *session,

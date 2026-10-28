@@ -3,7 +3,8 @@
 
 #include "fl_product_send_types.hpp"
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 Com013Class classify_http_result(int wifi_up, int transport_ok, int http_status, const char *body,
                                  int body_len, int refresh_failed);

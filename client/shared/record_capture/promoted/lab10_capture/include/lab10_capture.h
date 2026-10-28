@@ -208,11 +208,11 @@ lab10_capture_submit_result_t lab10_capture_submit(
 size_t lab10_capture_poll(lab10_capture_t *capture,
                           lab10_capture_session_id_t session_id);
 bool lab10_capture_stop(lab10_capture_t *capture,
-                         lab10_capture_session_id_t session_id);
+                        lab10_capture_session_id_t session_id);
 bool lab10_capture_cancel(lab10_capture_t *capture,
-                           lab10_capture_session_id_t session_id);
+                          lab10_capture_session_id_t session_id);
 bool lab10_capture_complete(lab10_capture_t *capture,
-                             lab10_capture_session_id_t session_id);
+                            lab10_capture_session_id_t session_id);
 
 lab10_capture_status_t lab10_capture_status(const lab10_capture_t *capture,
                                             lab10_capture_session_id_t session_id);

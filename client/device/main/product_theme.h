@@ -15,7 +15,8 @@
 #define PRODUCT_THEME_DARK_SURFACE_LOWER_RGB24 UINT32_C(0x242C34)
 
 #ifdef __cplusplus
-namespace product_theme {
+namespace product_theme
+{
 
 struct Dark {
     static constexpr uint32_t kSurfaceRgb24 = PRODUCT_THEME_DARK_SURFACE_RGB24;

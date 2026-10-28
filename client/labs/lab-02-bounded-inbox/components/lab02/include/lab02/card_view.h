@@ -47,7 +47,7 @@ void lab02_card_view_bind(lab02_card_view_t *view, int index, uint32_t generatio
                           const lab02_inbox_item_t *item);
 /** Clear old content and apply one session-owned slot atomically on the UI owner. */
 void lab02_card_view_present(lab02_card_view_t *view, uint32_t generation,
-                              const lab02_slot_snapshot_t *slot);
+                             const lab02_slot_snapshot_t *slot);
 void lab02_card_view_unbind(lab02_card_view_t *view, uint32_t generation);
 void lab02_card_view_set_pos_for_index(lab02_card_view_t *view, int index);
 bool lab02_card_view_is_stale(const lab02_card_view_t *view, uint32_t generation);

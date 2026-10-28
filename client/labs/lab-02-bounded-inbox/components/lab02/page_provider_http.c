@@ -48,7 +48,7 @@ static bool http_errno_timed_out(int eno)
 }
 
 static lab02_http_fetch_result_t http_fetch_page(const lab02_fetch_req_t *req, char *buf, size_t buf_len,
-                                               size_t *out_len)
+                                                 size_t *out_len)
 {
     if (strlen(CONFIG_LAB02_SERVER_URL) == 0) {
         return LAB02_HTTP_FETCH_FAIL;
@@ -157,8 +157,7 @@ static void worker_task(void *arg)
                 .op_id = req.op_id,
                 .snap_id = s_result_page.snap_id,
                 .revision = s_result_page.revision,
-                .page_receipt_id = s_result_page.page_receipt_id[0] ?
-                    s_result_page.page_receipt_id : "-",
+                .page_receipt_id = s_result_page.page_receipt_id[0] ? s_result_page.page_receipt_id : "-",
                 .run_id = s_result_page.run_id[0] ? s_result_page.run_id : "-",
                 .server_completed_ns = (int64_t)s_result_page.server_completed_ns,
             };
@@ -296,9 +295,11 @@ static void start_boot(const lab02_fetch_req_t *request)
 
 void lab02_page_provider_http_start_io(void)
 {
-    if (s_io_started || atomic_load(&s_boot_running) || strlen(CONFIG_LAB02_SERVER_URL) == 0) return;
+    if (s_io_started || atomic_load(&s_boot_running) || strlen(CONFIG_LAB02_SERVER_URL) == 0)
+        return;
     lab02_fetch_req_t request;
-    if (lab02_session_http_initial_request(&request)) start_boot(&request);
+    if (lab02_session_http_initial_request(&request))
+        start_boot(&request);
 }
 
 bool lab02_page_provider_http_active(void)
@@ -311,7 +312,9 @@ void lab02_page_provider_http_service_initial_retry(void)
 {
     /* An old boot may have posted its terminal but not exited yet. Do not
      * overwrite its frozen input/scratch or consume the deferred restart. */
-    if (atomic_load(&s_boot_running) || strlen(CONFIG_LAB02_SERVER_URL) == 0) return;
+    if (atomic_load(&s_boot_running) || strlen(CONFIG_LAB02_SERVER_URL) == 0)
+        return;
     lab02_fetch_req_t request;
-    if (lab02_session_http_take_initial_restart(&request)) start_boot(&request);
+    if (lab02_session_http_take_initial_restart(&request))
+        start_boot(&request);
 }

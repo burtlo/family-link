@@ -4,7 +4,8 @@
 
 #include <string.h>
 
-namespace fl_product_inbox {
+namespace fl_product_inbox
+{
 
 fl_product_login::WorkerTicket begin_inbox_worker(fl_product_login::SessionWriter *session,
                                                   int64_t now_ms)

@@ -2,7 +2,8 @@
 
 #include "fl_product_volume_stops.hpp"
 
-namespace fl_product_volume {
+namespace fl_product_volume
+{
 
 VolumeSession::VolumeSession()
 {
@@ -26,7 +27,10 @@ void VolumeSession::set_speaker_codec_callback(SpeakerCodecCallback callback)
     notify_speaker_codec();
 }
 
-void VolumeSession::bind_storage(VolumeStorage *storage) { storage_ = storage; }
+void VolumeSession::bind_storage(VolumeStorage *storage)
+{
+    storage_ = storage;
+}
 
 void VolumeSession::on_power_on()
 {
@@ -39,13 +43,25 @@ void VolumeSession::on_power_on()
     playback_pause_armed_ = 0;
 }
 
-VolumeScreen VolumeSession::screen() const { return screen_; }
+VolumeScreen VolumeSession::screen() const
+{
+    return screen_;
+}
 
-int VolumeSession::stop_index() const { return stop_index_; }
+int VolumeSession::stop_index() const
+{
+    return stop_index_;
+}
 
-int VolumeSession::speaker_codec() const { return volume_codec_for_stop_index(stop_index_); }
+int VolumeSession::speaker_codec() const
+{
+    return volume_codec_for_stop_index(stop_index_);
+}
 
-int VolumeSession::shows_numeric_readout() const { return 0; }
+int VolumeSession::shows_numeric_readout() const
+{
+    return 0;
+}
 
 void VolumeSession::open_volume()
 {
@@ -72,6 +88,9 @@ void VolumeSession::set_stop_index(int index)
     notify_speaker_codec();
 }
 
-int VolumeSession::playback_pause_armed() const { return playback_pause_armed_; }
+int VolumeSession::playback_pause_armed() const
+{
+    return playback_pause_armed_;
+}
 
 } /* namespace fl_product_volume */

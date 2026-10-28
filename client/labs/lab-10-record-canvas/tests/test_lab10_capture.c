@@ -198,7 +198,7 @@ static void signal_terminalization(void *context)
 }
 
 static lab10_capture_t *new_capture_with_gate(fake_clock_t *clock,
-                                               concurrency_gate_t *gate)
+                                              concurrency_gate_t *gate)
 {
     return lab10_capture_create(&(lab10_capture_config_t){
         .clock_now_us = fake_now,
@@ -234,7 +234,7 @@ static void *submit_thread_main(void *context)
 {
     submit_thread_args_t *args = context;
     args->result = lab10_capture_submit(args->capture, args->session_id,
-                                         &args->report);
+                                        &args->report);
     return NULL;
 }
 
@@ -257,19 +257,19 @@ static void *terminal_thread_main(void *context)
 {
     terminal_thread_args_t *args = context;
     switch (args->operation) {
-    case TERMINAL_BOUNDARY_STOP:
-        args->result = lab10_capture_stop(args->capture, args->session_id);
-        break;
-    case TERMINAL_BOUNDARY_CANCEL:
-        args->result = lab10_capture_cancel(args->capture, args->session_id);
-        break;
-    case TERMINAL_BOUNDARY_COMPLETE:
-        args->result = lab10_capture_complete(args->capture, args->session_id);
-        break;
-    case TERMINAL_BOUNDARY_DURATION:
-        (void)lab10_capture_poll(args->capture, args->session_id);
-        args->result = true;
-        break;
+        case TERMINAL_BOUNDARY_STOP:
+            args->result = lab10_capture_stop(args->capture, args->session_id);
+            break;
+        case TERMINAL_BOUNDARY_CANCEL:
+            args->result = lab10_capture_cancel(args->capture, args->session_id);
+            break;
+        case TERMINAL_BOUNDARY_COMPLETE:
+            args->result = lab10_capture_complete(args->capture, args->session_id);
+            break;
+        case TERMINAL_BOUNDARY_DURATION:
+            (void)lab10_capture_poll(args->capture, args->session_id);
+            args->result = true;
+            break;
     }
     atomic_store_explicit(&args->done, true, memory_order_release);
     return NULL;
@@ -925,7 +925,7 @@ static void test_allocation_failure(void)
 }
 
 static void assert_invalid_configuration(lab10_capture_config_t config,
-                                          allocator_probe_t *probe)
+                                         allocator_probe_t *probe)
 {
     lab10_capture_t *capture = lab10_capture_create(&config);
     assert(capture != NULL);

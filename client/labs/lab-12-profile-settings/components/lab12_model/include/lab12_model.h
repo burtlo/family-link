@@ -5,7 +5,11 @@
 #define LAB12_QUEUE_CAPACITY 4U
 #define LAB12_MAX_CARDS 3U
 #define LAB12_COLOR_COUNT 4U
-typedef enum { LAB12_SUCCESS, LAB12_FAILURE, LAB12_CANCELLED, LAB12_STALE, LAB12_TIMED_OUT } lab12_terminal_t;
+typedef enum { LAB12_SUCCESS,
+               LAB12_FAILURE,
+               LAB12_CANCELLED,
+               LAB12_STALE,
+               LAB12_TIMED_OUT } lab12_terminal_t;
 typedef struct {
     uint32_t operation_id;
     lab12_terminal_t terminal;

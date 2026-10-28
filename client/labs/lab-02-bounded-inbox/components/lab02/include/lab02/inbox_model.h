@@ -45,9 +45,9 @@ bool lab02_inbox_model_parse(const char *json, size_t len, lab02_inbox_model_t *
 bool lab02_inbox_model_merge_v2_page(lab02_inbox_model_t *model, int page_offset, const char *json,
                                      size_t len, uint32_t *inbox_revision_out);
 bool lab02_inbox_model_parse_v2_page(const char *json, size_t len, int page_offset,
-                                    lab02_inbox_page_t *out);
+                                     lab02_inbox_page_t *out);
 bool lab02_inbox_model_apply_v2_page(lab02_inbox_model_t *model,
-                                    const lab02_inbox_page_t *page);
+                                     const lab02_inbox_page_t *page);
 const lab02_inbox_item_t *lab02_inbox_model_item(const lab02_inbox_model_t *m, int index);
 
 #ifdef __cplusplus

@@ -3,26 +3,29 @@
 
 #include "session.hpp"
 
-namespace lab07 {
+namespace lab07
+{
 
 /* Roster and health pollers only enqueue observations.
    They do not apply session stage transitions. */
 
-class RosterPoller {
-public:
+class RosterPoller
+{
+  public:
     explicit RosterPoller(SessionWriter *session);
     bool submit(const RosterResult &result);
 
-private:
+  private:
     SessionWriter *session_;
 };
 
-class HealthPoller {
-public:
+class HealthPoller
+{
+  public:
     explicit HealthPoller(SessionWriter *session);
     void submit_ack();
 
-private:
+  private:
     SessionWriter *session_;
 };
 

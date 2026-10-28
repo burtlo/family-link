@@ -1,6 +1,7 @@
 #include "fl_product_login_pollers.hpp"
 
-namespace fl_product_login {
+namespace fl_product_login
+{
 
 RosterPoller::RosterPoller(SessionWriter *session) : session_(session) {}
 

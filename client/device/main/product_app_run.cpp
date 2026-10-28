@@ -8,26 +8,32 @@
 #include "product_network.h"
 #include "product_ui_window.h"
 
-#define APP_LOG_TAG              "app_main"
-#define APP_LVGL_ATTACH_LOCK_MS  5000
+#define APP_LOG_TAG "app_main"
+#define APP_LVGL_ATTACH_LOCK_MS 5000
 
-namespace {
+namespace
+{
 
-class DisplayLock {
-public:
-    explicit DisplayLock(int timeout_ms) : locked_(bsp_display_lock(timeout_ms) != 0) {}
+class DisplayLock
+{
+  public:
+    explicit DisplayLock(int timeout_ms)
+        : locked_(bsp_display_lock(timeout_ms) != 0) {}
     ~DisplayLock()
     {
         if (locked_) {
             bsp_display_unlock();
         }
     }
-    explicit operator bool() const { return locked_; }
+    explicit operator bool() const
+    {
+        return locked_;
+    }
 
     DisplayLock(const DisplayLock &) = delete;
     DisplayLock &operator=(const DisplayLock &) = delete;
 
-private:
+  private:
     bool locked_;
 };
 

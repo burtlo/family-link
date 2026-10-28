@@ -14,7 +14,8 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 constexpr int kHttpBodyCap = 4096;
 constexpr int kHttpWorkerStack = 16384;

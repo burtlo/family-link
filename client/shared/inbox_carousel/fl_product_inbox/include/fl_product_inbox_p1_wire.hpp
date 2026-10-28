@@ -3,7 +3,8 @@
 
 #include "fl_product_inbox_types.hpp"
 
-namespace fl_product_inbox {
+namespace fl_product_inbox
+{
 
 struct InboxParseResult {
     int parse_ok;

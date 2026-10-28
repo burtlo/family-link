@@ -3,7 +3,8 @@
 
 #include "fl_product_inbox_carousel.hpp"
 
-namespace fl_product_inbox {
+namespace fl_product_inbox
+{
 
 enum InboxWireKind {
     kInboxWireNone = 0,
@@ -44,8 +45,9 @@ struct InboxWireSlots {
 
 /* Host-testable planner. HTTP stays on the device worker. At most one job of each kind
  * is in flight. ordinary_due and recovery_due are sampled before advance_to. */
-class InboxWirePlanner {
-public:
+class InboxWirePlanner
+{
+  public:
     InboxWirePlanner();
     void reset();
     void collect(CarouselSession &session, InboxWireSlots *out, int64_t now_ms, int ordinary_due,
@@ -67,7 +69,7 @@ public:
                       const char *message_id, int perform_ok, int http_status, const uint8_t *bytes, int len,
                       int full_asset, int hash_matches, int terminal, int64_t now_ms);
 
-private:
+  private:
     void fill_inbox_job(CarouselSession &session, InboxWireJob *job);
     int fill_last_viewed_job(CarouselSession &session, InboxWireJob *job, int64_t now_ms);
     int fill_media_job(CarouselSession &session, InboxWireJob *job, int sketch, int64_t now_ms);

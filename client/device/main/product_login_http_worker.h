@@ -5,7 +5,8 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-namespace fl_product_login {
+namespace fl_product_login
+{
 class SessionWriter;
 }
 #endif

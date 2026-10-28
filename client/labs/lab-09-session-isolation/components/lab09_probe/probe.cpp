@@ -3,8 +3,10 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace lab09 {
-namespace {
+namespace lab09
+{
+namespace
+{
 
 void copy_text(char *dst, int cap, const char *src)
 {
@@ -130,8 +132,14 @@ Probe::Probe() : image_bytes_(0), image_operation_(0), card_count_(0), duplicate
     profile_[0] = 0;
 }
 
-lab07::SessionWriter &Probe::session() { return session_; }
-const lab07::SessionWriter &Probe::session() const { return session_; }
+lab07::SessionWriter &Probe::session()
+{
+    return session_;
+}
+const lab07::SessionWriter &Probe::session() const
+{
+    return session_;
+}
 
 void Probe::release_image()
 {
@@ -179,9 +187,15 @@ void Probe::mute(int64_t now_ms)
     profile_[0] = 0;
 }
 
-void Probe::unmute(int64_t now_ms) { session_.unmute(now_ms); }
+void Probe::unmute(int64_t now_ms)
+{
+    session_.unmute(now_ms);
+}
 
-void Probe::arm(const char *scenario) { session_.arm_scoped_scenario(scenario); }
+void Probe::arm(const char *scenario)
+{
+    session_.arm_scoped_scenario(scenario);
+}
 
 lab07::ScopedTicket Probe::begin(const char *kind, int64_t now_ms)
 {
@@ -374,10 +388,19 @@ int Probe::complete(const lab07::ScopedTicket &ticket, int perform_ok, int http_
     return 1;
 }
 
-void Probe::cleanup() { release_image(); }
+void Probe::cleanup()
+{
+    release_image();
+}
 
-int Probe::image_bytes() const { return image_bytes_; }
-int Probe::card_count() const { return card_count_; }
+int Probe::image_bytes() const
+{
+    return image_bytes_;
+}
+int Probe::card_count() const
+{
+    return card_count_;
+}
 const char *Probe::card_at(int index) const
 {
     if (index < 0 || index >= card_count_) {
@@ -385,11 +408,26 @@ const char *Probe::card_at(int index) const
     }
     return cards_[index];
 }
-int Probe::duplicate_cards() const { return duplicate_cards_; }
-int Probe::applied_visible() const { return session_.scoped_applied(); }
-const char *Probe::active_user() const { return session_.signed_in() ? session_.signed_user() : ""; }
-const char *Probe::playback_label() const { return playback_; }
-const char *Probe::profile_label() const { return profile_; }
+int Probe::duplicate_cards() const
+{
+    return duplicate_cards_;
+}
+int Probe::applied_visible() const
+{
+    return session_.scoped_applied();
+}
+const char *Probe::active_user() const
+{
+    return session_.signed_in() ? session_.signed_user() : "";
+}
+const char *Probe::playback_label() const
+{
+    return playback_;
+}
+const char *Probe::profile_label() const
+{
+    return profile_;
+}
 
 int emit_scoped_traces(const lab07::SessionWriter &session, char *buffer, int capacity)
 {

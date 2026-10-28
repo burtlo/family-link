@@ -419,7 +419,7 @@ static void *audio_concurrent_drawing(void *argument)
             (uint8_t)((index % 5u) + 1u));
         atomic_fetch_add(&context->current_calls, 1u);
         (void)lab10_audio_process_drawing(context->model,
-                                           context->session_token, 100u, 1u);
+                                          context->session_token, 100u, 1u);
     }
     return NULL;
 }

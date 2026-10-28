@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 enum {
     kPartSizeBytes = 16384,

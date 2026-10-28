@@ -10,12 +10,14 @@
 
 #include <stdint.h>
 
-namespace fl_product_journey {
+namespace fl_product_journey
+{
 
 /* Host-side composition of promoted product modules (P3–P9) for scripted runs. */
 
-class HostJourney {
-public:
+class HostJourney
+{
+  public:
     HostJourney();
 
     void reset(int boot_muted);
@@ -34,7 +36,7 @@ public:
     int signed_in() const;
     int volume_screen_active() const;
 
-private:
+  private:
     fl_product_login::SessionWriter login_;
     fl_product_inbox::CarouselSession inbox_;
     fl_product_volume::VolumeStorage volume_storage_;

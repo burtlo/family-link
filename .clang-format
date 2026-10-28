@@ -1,0 +1,18 @@
+---
+# Family Link C/C++ — LLVM-derived style (clang-format). See docs/standards/code-formatting.md
+Language: Cpp
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 0
+BreakBeforeBraces: Linux
+PointerAlignment: Right
+ReferenceAlignment: Right
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+SortIncludes: false
+IncludeBlocks: Preserve
+IndentCaseLabels: true
+SpaceBeforeAssignmentOperators: true

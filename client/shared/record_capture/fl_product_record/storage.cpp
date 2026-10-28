@@ -2,8 +2,10 @@
 
 #include <string.h>
 
-namespace fl_product_record {
-namespace {
+namespace fl_product_record
+{
+namespace
+{
 
 const uint8_t kMagic[8] = {'F', 'L', 'R', 'E', 'C', '0', '1', 0};
 
@@ -70,7 +72,10 @@ void AttachedStorage::attach_media(MediaBackend *backend)
     }
 }
 
-bool AttachedStorage::has_in_progress() const { return in_progress_.valid != 0; }
+bool AttachedStorage::has_in_progress() const
+{
+    return in_progress_.valid != 0;
+}
 
 bool AttachedStorage::id_ok(const char *client_message_id) const
 {

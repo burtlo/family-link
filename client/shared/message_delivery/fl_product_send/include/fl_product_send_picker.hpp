@@ -3,7 +3,8 @@
 
 #include "fl_product_send_types.hpp"
 
-namespace fl_product_send {
+namespace fl_product_send
+{
 
 struct HangoutMember {
     char user_id[kMaxUserId];
@@ -22,8 +23,9 @@ struct RecipientCard {
     int use_card_fallback;
 };
 
-class RecipientPicker {
-public:
+class RecipientPicker
+{
+  public:
     RecipientPicker();
 
     void reset();
@@ -56,7 +58,7 @@ public:
     RecipientCard card_for_index(int index) const;
     int empty_copy_shown() const;
 
-private:
+  private:
     int index_of_user(const char *user_id) const;
 
     HangoutMember members_[kMaxRecipients + 1];

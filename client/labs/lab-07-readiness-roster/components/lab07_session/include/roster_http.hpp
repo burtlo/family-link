@@ -3,7 +3,8 @@
 
 #include "session.hpp"
 
-namespace lab07 {
+namespace lab07
+{
 
 /* Classify one finished HTTP exchange into a roster completion.
    operation_id is the id captured when the request was submitted.

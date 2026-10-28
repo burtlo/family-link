@@ -3,7 +3,8 @@
 
 #include "fl_product_login_session.hpp"
 
-namespace fl_product_login {
+namespace fl_product_login
+{
 
 /* Virtual-clock catalog and on-screen lab controls.
    Not the session-owner interface. Fixture URLs and HTTP stay in the firmware harness. */

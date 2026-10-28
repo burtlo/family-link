@@ -4,10 +4,12 @@
 #include "fl_product_inbox_p1_wire.hpp"
 #include "fl_product_inbox_types.hpp"
 
-namespace fl_product_inbox {
+namespace fl_product_inbox
+{
 
-class CarouselSession {
-public:
+class CarouselSession
+{
+  public:
     CarouselSession();
     ~CarouselSession();
 
@@ -90,7 +92,7 @@ public:
      * Returns 1 when the paint contains ink. */
     int paint_message_sketch(int index, uint16_t *pixels, int pixel_count) const;
 
-private:
+  private:
     struct MessageRuntime {
         int play_head_ms;
         int completed;

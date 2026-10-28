@@ -159,9 +159,11 @@ static uint32_t mem_stack_hwm(TaskHandle_t task)
 
 static void mem_stack_window_sample(lab16_task_stack_window_t *window, TaskHandle_t task)
 {
-    if (task == NULL) return;
+    if (task == NULL)
+        return;
     const uint32_t hwm = mem_stack_hwm(task);
-    if (!window->seen || hwm < window->hwm_sdk_units) window->hwm_sdk_units = hwm;
+    if (!window->seen || hwm < window->hwm_sdk_units)
+        window->hwm_sdk_units = hwm;
     window->seen = true;
 }
 
@@ -281,8 +283,10 @@ static void mem_accumulate_sample(const char *beat)
     mem_stack_window_sample(&window->tcpip_stack, tcpip_task);
     const uint64_t pcm_bytes = s_pcm_bytes_written;
     const uint32_t driver_writes = s_sd_driver_writes;
-    if (pcm_bytes > window->pcm_bytes_max) window->pcm_bytes_max = pcm_bytes;
-    if (driver_writes > window->sd_driver_writes_max) window->sd_driver_writes_max = driver_writes;
+    if (pcm_bytes > window->pcm_bytes_max)
+        window->pcm_bytes_max = pcm_bytes;
+    if (driver_writes > window->sd_driver_writes_max)
+        window->sd_driver_writes_max = driver_writes;
     if (upload_stats.app_buffer_count > window->outstanding_buffer_count_max) {
         window->outstanding_buffer_count_max = upload_stats.app_buffer_count;
     }
@@ -298,7 +302,8 @@ static void mem_accumulate_sample(const char *beat)
     if (upload_stats.failed_requests > window->failed_requests_max) {
         window->failed_requests_max = upload_stats.failed_requests;
     }
-    if (upload_stats.retries > window->retries_max) window->retries_max = upload_stats.retries;
+    if (upload_stats.retries > window->retries_max)
+        window->retries_max = upload_stats.retries;
     window->sample_count++;
     s_mem_sample_count++;
     portEXIT_CRITICAL(&s_mem_mux);
@@ -319,7 +324,8 @@ static int64_t mem_watermark_delta(size_t baseline, size_t observed)
 static void mem_emit_window_locked(const char *beat)
 {
     const lab16_mem_window_t *w = &s_mem_window;
-    if (w->sample_count == 0) return;
+    if (w->sample_count == 0)
+        return;
     const uint32_t seq = ++s_mem_window_seq;
     printf("LAB16_MEM schema=lab16-memory/v3 event=window seq=%" PRIu32
            " sample_interval_ms=%d sample_count=%" PRIu32 " t_start_us=%" PRId64 " t_end_us=%" PRId64
@@ -383,8 +389,7 @@ static void mem_emit_window_locked(const char *beat)
            LAB16_MEM_SAMPLER_STACK_BYTES, LAB16_MEM_SAMPLER_STACK_BYTES,
            w->sampler_stack_hwm_sdk_units, sizeof(StackType_t),
            (unsigned)CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE,
-           (unsigned)(CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE + TASK_EXTRA_STACK_SIZE
-                      + LAB16_EVENT_LOOP_CORE_LOCKING_EXTRA_BYTES),
+           (unsigned)(CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE + TASK_EXTRA_STACK_SIZE + LAB16_EVENT_LOOP_CORE_LOCKING_EXTRA_BYTES),
            mem_stack_status(w->event_loop_stack.seen), w->event_loop_stack.hwm_sdk_units, sizeof(StackType_t),
            (unsigned)LAB16_WIFI_TASK_STACK_BYTES, (unsigned)LAB16_WIFI_TASK_STACK_BYTES,
            mem_stack_status(w->wifi_stack.seen), w->wifi_stack.hwm_sdk_units, sizeof(StackType_t),
@@ -395,9 +400,11 @@ static void mem_emit_window_locked(const char *beat)
 
 static void mem_sample_tick(void)
 {
-    if (s_mem_sample_mu == NULL) return;
+    if (s_mem_sample_mu == NULL)
+        return;
     xSemaphoreTake(s_mem_sample_mu, portMAX_DELAY);
-    if (!s_mem_sampler_stop) mem_accumulate_sample(s_mem_beat);
+    if (!s_mem_sampler_stop)
+        mem_accumulate_sample(s_mem_beat);
     xSemaphoreGive(s_mem_sample_mu);
 }
 
@@ -412,7 +419,8 @@ static void mem_sampler(void *arg)
             continue;
         }
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(LAB16_MEM_SAMPLE_INTERVAL_MS));
-        if (!s_mem_sampler_stop && s_mem_sampler_enabled) mem_sample_tick();
+        if (!s_mem_sampler_stop && s_mem_sampler_enabled)
+            mem_sample_tick();
     }
     s_mem_sampler_running = false;
     s_mem_sampler_task = NULL;
@@ -444,7 +452,8 @@ static bool mem_sampler_start(void)
                esp_timer_get_time());
         return false;
     }
-    while (!s_mem_sampler_running) vTaskDelay(1);
+    while (!s_mem_sampler_running)
+        vTaskDelay(1);
     printf("LAB16_EVT schema=lab16-event/v1 event=beat t_us=%" PRId64 " beat=baseline_before_sd\n",
            esp_timer_get_time());
     xSemaphoreTake(s_mem_sample_mu, portMAX_DELAY);
@@ -458,7 +467,8 @@ static bool mem_sampler_start(void)
 
 static void mem_begin_beat(const char *beat)
 {
-    if (s_mem_sample_mu == NULL) return;
+    if (s_mem_sample_mu == NULL)
+        return;
     xSemaphoreTake(s_mem_sample_mu, portMAX_DELAY);
     mem_emit_window_locked(s_mem_beat);
     mem_reset_window();
@@ -480,10 +490,12 @@ static void mem_set_pcm_progress(uint64_t bytes, uint32_t writes)
 
 static void mem_sampler_stop_and_wait(void)
 {
-    if (s_mem_sampler_task == NULL) return;
+    if (s_mem_sampler_task == NULL)
+        return;
     s_mem_sampler_stop = true;
     xTaskNotifyGive(s_mem_sampler_task);
-    while (s_mem_sampler_task != NULL) vTaskDelay(1);
+    while (s_mem_sampler_task != NULL)
+        vTaskDelay(1);
     xSemaphoreTake(s_mem_sample_mu, portMAX_DELAY);
     mem_emit_window_locked(s_mem_beat);
     printf("LAB16_MEM schema=lab16-memory/v3 event=monitor_stopped t_us=%" PRId64
@@ -1034,7 +1046,8 @@ static bool run_live_failover_harness(lab16_sd_session_t *session, const lab16_s
     }
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
     printf("LAB16_EVT schema=lab16-event/v1 event=wifi_join t_us=%" PRId64
-           " beat=live_stream_upload_active status=connected\n", esp_timer_get_time());
+           " beat=live_stream_upload_active status=connected\n",
+           esp_timer_get_time());
     lab16_upload_set_evidence_beat("live_stream_upload_active");
     mem_begin_beat("live_mic_i2s_open_start");
 #endif
@@ -1402,7 +1415,8 @@ void app_main(void)
         if (stream_ok && audio_ok && lab16_station_join()) {
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
             printf("LAB16_EVT schema=lab16-event/v1 event=wifi_join t_us=%" PRId64
-                   " beat=wifi_upload_active status=connected\n", esp_timer_get_time());
+                   " beat=wifi_upload_active status=connected\n",
+                   esp_timer_get_time());
 #endif
             int uploaded = 0;
             int failed = 0;
@@ -1417,7 +1431,8 @@ void app_main(void)
             printf("LAB16_UPLOAD status=failed reason=wifi_join\n");
 #if CONFIG_LAB16_CAPTURE_EVIDENCE
             printf("LAB16_EVT schema=lab16-event/v1 event=wifi_join t_us=%" PRId64
-                   " beat=wifi_upload_active status=failed\n", esp_timer_get_time());
+                   " beat=wifi_upload_active status=failed\n",
+                   esp_timer_get_time());
 #endif
         }
         harness_ok = stream_ok && audio_ok && upload_ok;

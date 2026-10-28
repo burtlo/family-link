@@ -3,7 +3,8 @@
 
 #include "fl_product_login_session.hpp"
 
-namespace fl_product_login {
+namespace fl_product_login
+{
 
 /* P1 login contract 0.13: hangout roster, session login, endpoint health. */
 

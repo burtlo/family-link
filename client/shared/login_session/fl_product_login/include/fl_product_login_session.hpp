@@ -5,7 +5,8 @@
 
 #include <stdint.h>
 
-namespace fl_product_login {
+namespace fl_product_login
+{
 
 enum {
     kRosterResultQueueCapacity = 4,
@@ -186,8 +187,9 @@ bool scoped_kind_name(const char *kind);
    surface LAB-08 and LAB-13 call. Fixture URLs, HTTP, catalogs, and on-screen controls
    stay outside this header. One writer applies stage. */
 
-class SessionWriter {
-public:
+class SessionWriter
+{
+  public:
     SessionWriter();
 
     void boot(int64_t now_ms, bool wifi_up);
@@ -340,7 +342,7 @@ public:
     int roster_updating() const;
     int hangout_known() const;
 
-private:
+  private:
     void reset_runtime();
     void apply_stage(int stage, const char *trigger);
     void begin_roster(int64_t now_ms, bool periodic, bool hold);

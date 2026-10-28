@@ -7,7 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 int g_failures = 0;
 
@@ -269,7 +270,10 @@ int test_restart_after_failed_persist()
 
 int g_last_speaker_codec = -1;
 
-void test_speaker_codec_hook(int codec) { g_last_speaker_codec = codec; }
+void test_speaker_codec_hook(int codec)
+{
+    g_last_speaker_codec = codec;
+}
 
 int test_speaker_codec_callback()
 {

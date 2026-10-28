@@ -21,7 +21,8 @@
 #include "fl_product_send_journey.hpp"
 #include "fl_product_send_stage.hpp"
 
-namespace {
+namespace
+{
 
 static_assert(static_cast<int>(fl_product_send::kSendIntentRed) == PRODUCT_SEND_INTENT_RED,
               "red intent");
@@ -51,9 +52,14 @@ struct CardFill {
 };
 
 const CardFill kCardFills[] = {
-    {"card-bg-01", 0x5AA0E8}, {"card-bg-02", 0x67C587}, {"card-bg-03", 0xE8C040},
-    {"card-bg-04", 0xD875A8}, {"card-bg-05", 0xE85B5B}, {"card-bg-06", 0x8B7CE8},
-    {"card-bg-07", 0xE88840}, {"card-bg-08", 0x4EC4C8},
+    {"card-bg-01", 0x5AA0E8},
+    {"card-bg-02", 0x67C587},
+    {"card-bg-03", 0xE8C040},
+    {"card-bg-04", 0xD875A8},
+    {"card-bg-05", 0xE85B5B},
+    {"card-bg-06", 0x8B7CE8},
+    {"card-bg-07", 0xE88840},
+    {"card-bg-08", 0x4EC4C8},
 };
 
 fl_product_send::SendJourney s_journey;
@@ -94,18 +100,18 @@ char s_finished_sender[fl_product_send::kMaxUserId];
 int shell_for_place(int place)
 {
     switch (place) {
-    case fl_product_send::kSendPlacePicker:
-    case fl_product_send::kSendPlaceCouldntRecord:
-        return (int)FL_SHELL_STAGE_PICKER;
-    case fl_product_send::kSendPlaceWipe:
-    case fl_product_send::kSendPlaceRecording:
-    case fl_product_send::kSendPlaceReverse:
-    case fl_product_send::kSendPlaceFinishReverse:
-        return (int)FL_SHELL_STAGE_RECORD;
-    case fl_product_send::kSendPlaceReceipt:
-        return (int)FL_SHELL_STAGE_RECEIPT;
-    default:
-        return (int)FL_SHELL_STAGE_INBOX;
+        case fl_product_send::kSendPlacePicker:
+        case fl_product_send::kSendPlaceCouldntRecord:
+            return (int)FL_SHELL_STAGE_PICKER;
+        case fl_product_send::kSendPlaceWipe:
+        case fl_product_send::kSendPlaceRecording:
+        case fl_product_send::kSendPlaceReverse:
+        case fl_product_send::kSendPlaceFinishReverse:
+            return (int)FL_SHELL_STAGE_RECORD;
+        case fl_product_send::kSendPlaceReceipt:
+            return (int)FL_SHELL_STAGE_RECEIPT;
+        default:
+            return (int)FL_SHELL_STAGE_INBOX;
     }
 }
 
@@ -1083,7 +1089,10 @@ static void begin_finish_collapse_hook(void *capture, int64_t now_ms)
     product_record_begin_finish_collapse(now_ms);
 }
 
-extern "C" void product_send_note_inbox(void) { s_stage.note_inbox(); }
+extern "C" void product_send_note_inbox(void)
+{
+    s_stage.note_inbox();
+}
 
 extern "C" void product_send_set_wifi(int up)
 {

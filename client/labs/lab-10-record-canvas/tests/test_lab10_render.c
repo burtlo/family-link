@@ -361,7 +361,8 @@ static void populate_large_whole_frame_capture(lab10_capture_t *capture,
                                                fake_clock_t *clock,
                                                lab10_capture_session_id_t session)
 {
-    enum { POINT_COUNT = 512, POINTS_PER_COLOR = 128 };
+    enum { POINT_COUNT = 512,
+           POINTS_PER_COLOR = 128 };
     const uint8_t colors[] = {
         LAB10_COLOR_WHITE,
         LAB10_COLOR_RED,

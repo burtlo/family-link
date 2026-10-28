@@ -22,7 +22,8 @@
 #include <stdio.h>
 #include <string.h>
 
-namespace {
+namespace
+{
 
 fl_product_login::SessionWriter s_session;
 lv_obj_t *s_upper_label = nullptr;
@@ -121,9 +122,14 @@ struct CardFill {
 };
 
 const CardFill kCardFills[] = {
-    {"card-bg-01", 0x5AA0E8}, {"card-bg-02", 0x67C587}, {"card-bg-03", 0xE8C040},
-    {"card-bg-04", 0xD875A8}, {"card-bg-05", 0xE85B5B}, {"card-bg-06", 0x8B7CE8},
-    {"card-bg-07", 0xE88840}, {"card-bg-08", 0x4EC4C8},
+    {"card-bg-01", 0x5AA0E8},
+    {"card-bg-02", 0x67C587},
+    {"card-bg-03", 0xE8C040},
+    {"card-bg-04", 0xD875A8},
+    {"card-bg-05", 0xE85B5B},
+    {"card-bg-06", 0x8B7CE8},
+    {"card-bg-07", 0xE88840},
+    {"card-bg-08", 0x4EC4C8},
 };
 
 static uint32_t card_fill(const char *id)
@@ -960,7 +966,10 @@ bool build_login_lower(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 
 } /* namespace */
 
-fl_product_login::SessionWriter *product_login_session(void) { return &s_session; }
+fl_product_login::SessionWriter *product_login_session(void)
+{
+    return &s_session;
+}
 
 extern "C" bool product_login_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
@@ -1040,7 +1049,6 @@ extern "C" void product_split_pane_rebuild(void)
     product_mem_probe("split_pane_rebuilt", 0);
 }
 
-
 extern "C" void product_login_present(int visible)
 {
     if (s_upper_label == nullptr || s_login_lower_layer == nullptr) {
@@ -1103,4 +1111,3 @@ extern "C" void product_login_schedule_wifi_driver_failed(void)
 {
     s_wifi_driver_fail_pending = true;
 }
-

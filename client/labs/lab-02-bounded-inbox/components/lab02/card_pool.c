@@ -45,28 +45,35 @@ void lab02_card_pool_rebind(lab02_card_pool_t *pool, const lab02_page_provider_t
         view->card_slot = s;
         if (view->bound_index < first || view->bound_index > last ||
             view->bound_index >= count) {
-            if (view->bound_index >= 0) lab02_card_view_unbind(view, generation);
+            if (view->bound_index >= 0)
+                lab02_card_view_unbind(view, generation);
         }
     }
     for (int idx = first; idx <= last && idx < first + LAB02_CARD_POOL_SIZE; idx++) {
         lab02_card_view_t *view = NULL;
         for (int s = 0; s < LAB02_CARD_POOL_SIZE; s++)
-            if (pool->views[s].bound_index == idx) view = &pool->views[s];
+            if (pool->views[s].bound_index == idx)
+                view = &pool->views[s];
         if (!view) {
             for (int s = 0; s < LAB02_CARD_POOL_SIZE; s++)
-                if (pool->views[s].bound_index < 0) { view = &pool->views[s]; break; }
+                if (pool->views[s].bound_index < 0) {
+                    view = &pool->views[s];
+                    break;
+                }
         }
-        if (!view) continue;
+        if (!view)
+            continue;
         lab02_slot_snapshot_t slot = lab02_session_slot_snapshot(pp, idx);
         bool same = view->bound_index == idx &&
-            view->session_generation == slot.session_generation &&
-            view->inbox_revision == slot.inbox_revision &&
-            ((slot.state == LAB02_SLOT_BOUND && slot.item &&
-              strcmp(view->bound_message_id, slot.item->message_id) == 0 &&
-              (view->state == LAB02_CARD_BOUND || view->pending_bind)) ||
-             (slot.state == LAB02_SLOT_LOADING && view->state == LAB02_CARD_LOADING && !view->pending_bind) ||
-             (slot.state == LAB02_SLOT_ERROR && view->state == LAB02_CARD_ERROR));
-        if (!same) lab02_card_view_present(view, generation, &slot);
+                    view->session_generation == slot.session_generation &&
+                    view->inbox_revision == slot.inbox_revision &&
+                    ((slot.state == LAB02_SLOT_BOUND && slot.item &&
+                      strcmp(view->bound_message_id, slot.item->message_id) == 0 &&
+                      (view->state == LAB02_CARD_BOUND || view->pending_bind)) ||
+                     (slot.state == LAB02_SLOT_LOADING && view->state == LAB02_CARD_LOADING && !view->pending_bind) ||
+                     (slot.state == LAB02_SLOT_ERROR && view->state == LAB02_CARD_ERROR));
+        if (!same)
+            lab02_card_view_present(view, generation, &slot);
         lab02_card_view_set_pos_for_index(view, idx);
         lab02_card_view_style_root(view->root, idx == focus);
     }
@@ -86,6 +93,8 @@ void lab02_card_pool_resource_counts(const lab02_card_pool_t *pool,
             }
         }
     }
-    if (live_roots) *live_roots = roots;
-    if (live_nodes) *live_nodes = nodes;
+    if (live_roots)
+        *live_roots = roots;
+    if (live_nodes)
+        *live_nodes = nodes;
 }

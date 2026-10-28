@@ -2,10 +2,15 @@
 
 #include <string.h>
 
-namespace fl_product_send {
-namespace {
+namespace fl_product_send
+{
+namespace
+{
 
-uint32_t rotr(uint32_t x, uint32_t n) { return (x >> n) | (x << (32u - n)); }
+uint32_t rotr(uint32_t x, uint32_t n)
+{
+    return (x >> n) | (x << (32u - n));
+}
 
 uint32_t load_be(const uint8_t *p)
 {
