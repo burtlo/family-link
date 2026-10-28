@@ -6,6 +6,7 @@
 #include "product_record_fw.h"
 #include "product_send_fw.h"
 #include "product_split_pane.h"
+#include "product_ui_window.h"
 #include "product_volume_fw.h"
 
 #include "esp_log.h"
@@ -22,9 +23,7 @@ static int apply_send_stage(const product_send_stage_result_t *result)
         return 0;
     }
     if (result->show_record_canvas) {
-        /* The record surface covers the display; the split pane returns on leaving it. */
-        product_split_pane_release();
-        (void)product_record_ensure(lv_screen_active());
+        (void)product_ui_window_show_record();
     }
     product_stage_set((fl_shell_stage_t)result->shell_stage);
     ESP_LOGI(kTag, "place=%d shell=%d", result->place, result->shell_stage);
@@ -61,8 +60,10 @@ extern "C" void product_stage_present(void)
         ESP_LOGI(kTag, "screen=%d from=%d", (int)screen, (int)s_shown);
         s_shown = screen;
     }
-    if (screen != PRODUCT_SCREEN_RECORD) {
-        product_split_pane_rebuild();
+    if (screen == PRODUCT_SCREEN_RECORD) {
+        (void)product_ui_window_show_record();
+    } else {
+        (void)product_ui_window_show_desk();
     }
     product_login_present(screen == PRODUCT_SCREEN_LOGIN);
     product_inbox_set_ui_visible(screen == PRODUCT_SCREEN_INBOX);

@@ -1,8 +1,9 @@
 idf_component_register(
-    SRCS "app_main.c" "product_app_run.c"
+    SRCS "app_main.c" "product_app_run.cpp"
            "product_display.c" "product_hardware_buttons.c" "product_network.c"
            "product_mem_probe.c"
            "product_stage_router.cpp"
+           "product_ui_window.cpp"
            "product_login_bridge.cpp" "product_login_http_worker.cpp" "product_inbox_bridge.cpp"
            "product_inbox_http_worker.cpp"
            "product_mic_capture.cpp"

@@ -155,16 +155,15 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         """
         self.assertGreater(len(lab16_stack_job_errors(sample)), 0)
 
-    def test_record_entry_releases_split_pane_and_present_rebuilds_it(self):
-        """Second red frees the split pane before the record surface attaches; leaving RECORD rebuilds it."""
+    def test_record_entry_uses_ui_window_and_present_restores_desk(self):
+        """Record entry mounts the record scene via the UI window; leaving RECORD restores desk."""
         router = (ROOT / "client/device/main/product_stage_router.cpp").read_text(encoding="utf-8")
         apply = router[router.find("static int apply_send_stage(") : router.find("extern \"C\" product_screen_t")]
-        self.assertLess(apply.find("product_split_pane_release();"), apply.find("product_record_ensure("))
-        self.assertGreater(apply.find("product_split_pane_release();"), 0)
+        self.assertIn("product_ui_window_show_record();", apply)
         start = router.find("extern \"C\" void product_stage_present(void)")
         present = router[start : router.find("\n}\n", start)]
-        self.assertLess(present.find("product_split_pane_rebuild();"), present.find("product_login_present("))
-        self.assertIn("screen != PRODUCT_SCREEN_RECORD", present)
+        self.assertLess(present.find("product_ui_window_show_desk();"), present.find("product_login_present("))
+        self.assertIn("PRODUCT_SCREEN_RECORD", present)
 
     def test_sign_out_releases_signed_in_widgets_but_keeps_takes(self):
         """Unmute rebuilds login from the same LVGL pool; a finished take must survive (DEC-033)."""
@@ -628,12 +627,12 @@ class DeviceGuardrailsMuteBootTests(unittest.TestCase):
         self.assertIn("bsp_display_brightness_set(80)", unlatched_arm)
         self.assertIn("bsp_display_backlight_on(", unlatched_arm)
 
-        app_run_src = (ROOT / "client/device/main/product_app_run.c").read_text(encoding="utf-8")
+        app_run_src = (ROOT / "client/device/main/product_app_run.cpp").read_text(encoding="utf-8")
         app_run_src = _strip_c_comments(app_run_src)
         run_body = pres.function_body(app_run_src, "product_app_run")
         for marker in (
-            "product_split_pane_init_failed",
-            "product_login_attach_failed",
+            "product_ui_window_create_failed",
+            "product_ui_window_show_desk_failed",
         ):
             self.assertIn(marker, run_body)
         self.assertIn("lvgl_lock_failed", app_run_src)

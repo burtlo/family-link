@@ -1001,7 +1001,7 @@ extern "C" void product_split_pane_release(void)
     if (!product_split_pane_slots_live()) {
         return;
     }
-    product_split_pane_release_slots();
+    product_split_pane_destroy_slots();
     s_upper_label = nullptr;
     s_lower_label = nullptr;
     s_lower_slot = nullptr;
@@ -1028,7 +1028,7 @@ extern "C" void product_split_pane_rebuild(void)
     if (product_split_pane_slots_live()) {
         return;
     }
-    if (!product_split_pane_rebuild_slots() || !product_split_pane_slot_roots(&upper, &lower)) {
+    if (!product_split_pane_create_slots() || !product_split_pane_slot_roots(&upper, &lower)) {
         ESP_LOGE("product_login", "split_pane_rebuild_failed");
         return;
     }

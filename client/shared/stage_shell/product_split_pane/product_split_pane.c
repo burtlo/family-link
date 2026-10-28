@@ -5,19 +5,19 @@
 #include <string.h>
 
 typedef struct {
-    lv_obj_t *screen;
+    lv_obj_t *parent;
     lv_obj_t *upper_slot;
     lv_obj_t *lower_slot;
     fl_shell_stage_t stage;
-    bool initialized;
+    bool created;
 } product_split_pane_state_t;
 
 static product_split_pane_state_t s_pane;
 
 static bool build_slots(void)
 {
-    s_pane.upper_slot = lv_obj_create(s_pane.screen);
-    s_pane.lower_slot = lv_obj_create(s_pane.screen);
+    s_pane.upper_slot = lv_obj_create(s_pane.parent);
+    s_pane.lower_slot = lv_obj_create(s_pane.parent);
     if (s_pane.upper_slot == NULL || s_pane.lower_slot == NULL) {
         return false;
     }
@@ -39,53 +39,66 @@ static bool build_slots(void)
     return true;
 }
 
-bool product_split_pane_init(lv_obj_t *screen)
+bool product_split_pane_create(lv_obj_t *parent)
 {
-    if (screen == NULL) {
+    if (parent == NULL) {
         return false;
     }
+    if (s_pane.created) {
+        return product_split_pane_slots_live();
+    }
     memset(&s_pane, 0, sizeof(s_pane));
-    s_pane.screen = screen;
+    s_pane.parent = parent;
     s_pane.stage = FL_SHELL_STAGE_ROSTER;
-    lv_obj_set_size(screen, 320, 240);
-    lv_obj_set_style_bg_color(screen, lv_color_hex(0x101820), 0);
-    lv_obj_set_style_pad_all(screen, 0, 0);
-    lv_obj_set_style_border_width(screen, 0, 0);
-    lv_obj_set_scrollable(screen, false);
+    lv_obj_set_size(parent, 320, 240);
+    lv_obj_set_style_pad_all(parent, 0, 0);
+    lv_obj_set_style_border_width(parent, 0, 0);
+    lv_obj_set_scrollable(parent, false);
     if (!build_slots()) {
         return false;
     }
-    s_pane.initialized = true;
+    s_pane.created = true;
     ESP_LOGI("product_split_pane", "V2_PRODUCT_SPLIT_PANE_READY build=%s", FIRMWARE_BUILD_ID);
     return true;
 }
 
+void product_split_pane_destroy(void)
+{
+    product_split_pane_destroy_slots();
+    memset(&s_pane, 0, sizeof(s_pane));
+}
+
+bool product_split_pane_created(void)
+{
+    return s_pane.created;
+}
+
 bool product_split_pane_slot_roots(lv_obj_t **upper_out, lv_obj_t **lower_out)
 {
-    if (!s_pane.initialized || upper_out == NULL || lower_out == NULL) {
+    if (!s_pane.created || upper_out == NULL || lower_out == NULL) {
         return false;
     }
     *upper_out = s_pane.upper_slot;
     *lower_out = s_pane.lower_slot;
-    return true;
+    return s_pane.upper_slot != NULL && s_pane.lower_slot != NULL;
 }
 
 fl_shell_stage_t product_stage_get(void)
 {
-    return s_pane.initialized ? s_pane.stage : FL_SHELL_STAGE_ROSTER;
+    return s_pane.created ? s_pane.stage : FL_SHELL_STAGE_ROSTER;
 }
 
 void product_stage_set(fl_shell_stage_t stage)
 {
-    if (!s_pane.initialized || (unsigned)stage >= FL_SHELL_STAGE_COUNT) {
+    if (!s_pane.created || (unsigned)stage >= FL_SHELL_STAGE_COUNT) {
         return;
     }
     s_pane.stage = stage;
 }
 
-void product_split_pane_release_slots(void)
+void product_split_pane_destroy_slots(void)
 {
-    if (!s_pane.initialized) {
+    if (!s_pane.created) {
         return;
     }
     if (s_pane.upper_slot != NULL) {
@@ -98,19 +111,19 @@ void product_split_pane_release_slots(void)
     s_pane.lower_slot = NULL;
 }
 
-bool product_split_pane_rebuild_slots(void)
+bool product_split_pane_create_slots(void)
 {
-    if (!s_pane.initialized) {
+    if (!s_pane.created) {
         return false;
     }
     if (s_pane.upper_slot != NULL && s_pane.lower_slot != NULL) {
         return true;
     }
-    product_split_pane_release_slots();
+    product_split_pane_destroy_slots();
     return build_slots();
 }
 
 bool product_split_pane_slots_live(void)
 {
-    return s_pane.initialized && s_pane.upper_slot != NULL && s_pane.lower_slot != NULL;
+    return s_pane.created && s_pane.upper_slot != NULL && s_pane.lower_slot != NULL;
 }
