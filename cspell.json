@@ -2,12 +2,15 @@
   "version": "0.2",
   "language": "en",
   "words": [
+    "LOGD",
     "LOGE",
     "LOGI",
-    "LOGW",
-    "LOGD",
     "LOGV",
-    "lvgl"
+    "LOGW",
+    "lvgl",
+    "refr"
   ],
-  "ignoreRegExpList": ["/ESP_LOG[IDEWV]/"]
+  "ignoreRegExpList": [
+    "/ESP_LOG[IDEWV]/"
+  ]
 }
