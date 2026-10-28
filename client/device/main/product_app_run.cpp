@@ -31,6 +31,21 @@ private:
     bool locked_;
 };
 
+bool attach_product_ui()
+{
+    if (!product_ui_window_create(lv_screen_active())) {
+        ESP_LOGE(APP_LOG_TAG, "product_ui_window_create_failed");
+        return false;
+    }
+    if (!product_ui_window_show_desk()) {
+        ESP_LOGE(APP_LOG_TAG, "product_ui_window_show_desk_failed");
+        return false;
+    }
+    lv_refr_now(lv_display_get_default());
+    product_mem_probe("ui_ready", 0);
+    return true;
+}
+
 void product_app_idle(void)
 {
     while (true) {
@@ -48,14 +63,8 @@ extern "C" void product_app_run(void)
         DisplayLock lock(APP_LVGL_ATTACH_LOCK_MS);
         if (!lock) {
             ESP_LOGE(APP_LOG_TAG, "lvgl_lock_failed");
-        } else if (!product_ui_window_create(lv_screen_active())) {
-            ESP_LOGE(APP_LOG_TAG, "product_ui_window_create_failed");
-        } else if (!product_ui_window_show_desk()) {
-            ESP_LOGE(APP_LOG_TAG, "product_ui_window_show_desk_failed");
         } else {
-            lv_refr_now(lv_display_get_default());
-            product_mem_probe("ui_ready", 0);
-            ui_ready = true;
+            ui_ready = attach_product_ui();
         }
     }
 
