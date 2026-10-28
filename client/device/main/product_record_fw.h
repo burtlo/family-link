@@ -10,8 +10,9 @@
 extern "C" {
 #endif
 
-/* Boot only, before product_display_start(). Never from the LVGL timer. */
-void product_record_mount_storage(void);
+/* Boot only, before product_display_start(). Never from the LVGL timer.
+ * Returns false when the card is not mounted. */
+bool product_record_mount_storage(void);
 bool product_record_attach(lv_obj_t *panel_root);
 int product_record_ensure(lv_obj_t *panel_root);
 /* Sign-out: delete the record surface. The session and finished takes stay. */

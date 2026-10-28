@@ -34,7 +34,7 @@ Slice for this pass:
 
 ### Strengths (repository)
 
-- Product firmware exists and identifies itself. [client/device/main/app_main.c](../../../client/device/main/app_main.c) logs `V2_BOOTSTRAP_READY` and does not mount a journey.
+- Product firmware exists and identifies itself. [client/device/main/app_main.c](../../../client/device/main/app_main.c) logs `build=<id>` then `product_ui_ready build=<id>` and does not mount a journey.
 - Lab firmware exists for `LAB-02` through `LAB-12` and `LAB-14`. `LAB-01` and `LAB-13` have no project trees. `LAB-08` and `LAB-09` call `lab07::SessionWriter` and do not add a second stage owner. `LAB-12` stays outside this slice. The [lab inventory](#lab-inventory) records each lab’s evidence limit.
 - Login screens and the record screen are in the device UI catalog and can be flashed with `make lab.lab14`.
 - Eight card-background fills are selected in [FOUNDATION-CARD-BACKGROUNDS](../../product/device-ui/foundations/FOUNDATION-CARD-BACKGROUNDS.md). [COMP-USER-CARD](../../product/device-ui/components/COMP-USER-CARD.md) and [COMP-MESSAGE-CARD](../../product/device-ui/components/COMP-MESSAGE-CARD.md) already point card faces at `card_background_id`.
@@ -89,7 +89,7 @@ Product firmware is a bootstrap. Journey behavior lives in labs and in specifica
 
 | Path | Role |
 |------|------|
-| [client/device/main/app_main.c](../../../client/device/main/app_main.c) | Product firmware entry. Logs `V2_BOOTSTRAP_READY`. |
+| [client/device/main/app_main.c](../../../client/device/main/app_main.c) | Product firmware entry. Logs early `build=<id>` and `product_ui_ready build=<id>`. |
 | [client/labs/](../../../client/labs/README.md) | One ESP-IDF project per lab. Not the shipping app. |
 | [server/labs/](../../../server/labs/README.md) | Lab fixtures only, including `lab-02-paging`, `lab-03-media`, `lab-07-readiness-roster`, `lab-08-pin-cooldown`, `lab-09-session-isolation`, `lab-11-send-receipt`, and `lab-12-profile-settings`. |
 | [config/labs.registry.yaml](../../../config/labs.registry.yaml) | Host entrypoints for `make lab.*`. |
@@ -217,7 +217,7 @@ Product firmware is a bootstrap. Journey behavior lives in labs and in specifica
 |----|-------|----------|------------|---------------|---------------------|
 | P1 | Accept core-journey wire | docs, config | — | Communication contracts; a versioned fixture under `server/labs/` | Contract `COM-OPEN` rows named below. No product AC is done by docs alone. |
 | P2 | Author missing core screens | docs, host-ui | — | `docs/product/device-ui/screens/`, `panels/`, `catalog/scenes/` | Screen checklist against carousel, send, and Volume acceptance rows. `make lab.lab14` for catalog scenes. |
-| P3 | Promote a product stage shell | code | — | `client/shared/` (new), `client/device/`, patterns from `client/labs/lab-06-stage-shell/`. Overlap reference: `client/labs/lab-05-transition-proof/` | `LAB-06` regression stays green. Product app boots past `V2_BOOTSTRAP_READY` into an empty shell. L0/L1. `LAB-05` peak is not a product budget. |
+| P3 | Promote a product stage shell | code | — | `client/shared/` (new), `client/device/`, patterns from `client/labs/lab-06-stage-shell/`. Overlap reference: `client/labs/lab-05-transition-proof/` | `LAB-06` regression stays green. Product app reaches `product_ui_ready` into an empty shell. L0/L1. `LAB-05` peak is not a product budget. |
 | P4 | Signed-out login | code | P1, P3 | Product session reducer; login screens; health/roster/PIN client. Reference: `client/labs/lab-07-readiness-roster/`, `client/labs/lab-08-pin-cooldown/` | Signed-out `EXP-LOGIN` rows, including `EXP-054`. Not `EXP-053` or `EXP-055`. L1 model plus L2 scripted fixture. `LAB-07` and `LAB-08` stay labs. |
 | P5 | Signed-in credential, refresh, and late-result fence | code | P1, P4 | Session module used by later calls. Reference: `client/labs/lab-09-session-isolation/` | `EXP-LOGIN` `EXP-010`, `EXP-012`, `EXP-042`, `EXP-050`, `EXP-053`, `EXP-055`. Carousel `EXP-021`, `EXP-025`. Send `EXP-032`, `EXP-033`. |
 | P6 | Inbox carousel and playback | code, host-ui | P1, P2, P5 | Inbox screen; playback worker; `LAB-02`, `LAB-03`, and `LAB-04` as reference only | Carousel `EXP-001`–`EXP-045` except BOOT and red-record handoffs owned by P9 and P8. |

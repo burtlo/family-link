@@ -21,17 +21,6 @@ This note separates physical memory capacity, free-heap readings, and known allo
 - Before Wi-Fi came up, free DMA-capable internal SRAM was **99,231 B (96.9 KiB)**. After Wi-Fi got an IP, it was **28,723 B (28.1 KiB)**. Thus the readings really do change during startup.
 - The microphone hardware was initialized, but active recording was not tested. No successful server response was captured.
 
-## Which memory is which
-
-| Pool or term | Physical role | What this capture can say |
-|---|---|---|
-| Internal SRAM | 512 KiB on the ESP32-S3 chip. It holds internal heap and buffers that must be on-chip. | At `login_http_worker_ready`, the internal heap reported 251,687 B total and 26,975 B free. |
-| PSRAM | 16 MiB of external working RAM. It is volatile RAM, not the SD card. | At `login_http_worker_ready`, the PSRAM heap reported 16,681,124 B total and 16,547,312 B free. |
-| DMA-capable internal SRAM heap | A capability of internal SRAM blocks used for peripheral transfers; it is not a third RAM chip or a separate 512 KiB pool. The probe asks specifically for `MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL`, so these readings are not PSRAM. | `dma_total=243,547 B`, `dma_free=19,215 B`, and `dma_big=18,432 B` at `login_http_worker_ready`. `dma_big` is the largest contiguous free block of DMA-capable internal SRAM, not the total free amount. |
-| SD card / flash | Nonvolatile storage. The SD card is removable; flash stores firmware and settings. | The card mounted. Neither its capacity nor its mounted filesystem space is a RAM reading. |
-
-`KiB` means 1,024 bytes. For example, `63,488 ÷ 1,024 = 62 KiB`.
-
 ## Boot-phase readings from the successful diagnostic flash
 
 The table shows the logged startup phases, from before storage mount through Wi-Fi and login-worker startup. Values are bytes. `dma_total` (243,547 B) and `int_total` (251,687 B) are two overlapping views of internal SRAM heap; `psram_total` (16,681,124 B) is the separate external PSRAM heap.

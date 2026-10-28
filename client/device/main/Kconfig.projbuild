@@ -20,11 +20,14 @@ config FAMILY_DEVICE_MEM_DIAGNOSTIC
     bool "Log phase-tagged memory samples (DMA block, LVGL pool, task stack)"
     default n
     help
-        When enabled, app_main logs the largest internal DMA block before
-        display init, then that block plus lv_mem_monitor after display init.
-        Record/send phases log V2_MEM lines (tag product_mem) with the LVGL
-        pool, internal DMA largest block, PSRAM free, and the calling task's
-        stack high-water mark. Log only. There is no numeric assert and no CI gate.
+        When enabled, firmware logs V2_MEM lines (tag product_mem) at phase
+        tags such as before_<phase> and after_<phase> (storage, mic, display,
+        nvs) in app_main boot phases, plus ui_ready after shell and login
+        attach, then across
+        record, login, send, and network paths. Samples include internal DMA
+        heap, general internal and PSRAM free space, optional LVGL pool stats
+        (product_mem_probe on the LVGL task), task name, and stack high-water.
+        Log only. There is no numeric assert and no CI gate.
 
 config FAMILY_DEVICE_DIAG_SKIP_RING
     bool "Diagnostic only: do not draw the record ring arc"

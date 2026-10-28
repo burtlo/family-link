@@ -992,7 +992,7 @@ extern "C" bool product_login_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     if (s_login_timer == nullptr) {
         return false;
     }
-    ESP_LOGI("product_login", "V2_PRODUCT_LOGIN_READY desk=present-v1 build=%s", FAMILY_BUILD_ID);
+    ESP_LOGI("product_login", "V2_PRODUCT_LOGIN_READY desk=present-v1 build=%s", FIRMWARE_BUILD_ID);
     return true;
 }
 

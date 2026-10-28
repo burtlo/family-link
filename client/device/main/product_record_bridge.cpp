@@ -381,16 +381,15 @@ lv_obj_t *paint_swatch(lv_obj_t *parent, int center_x, int center_y, uint32_t rg
 
 /* Powering the BOX-3 card slot while the LCD is running leaves the panel white
  * until power cycle, so the card is mounted once, before the display starts. */
-extern "C" void product_record_mount_storage(void)
+extern "C" bool product_record_mount_storage(void)
 {
     if (s_store_mu == nullptr) {
         s_store_mu = xSemaphoreCreateRecursiveMutexStatic(&s_store_mu_buf);
     }
-    product_mem_probe_heap("storage_mount_before", 0);
     const esp_err_t mounted = bsp_sdcard_mount();
     s_storage_mounted = mounted == ESP_OK || mounted == ESP_ERR_INVALID_STATE;
     ESP_LOGI(kTag, "sd mount err=%s mounted=%d", esp_err_to_name(mounted), s_storage_mounted ? 1 : 0);
-    product_mem_probe_heap("storage_mount_after", s_storage_mounted ? 1 : 0);
+    return s_storage_mounted;
 }
 
 extern "C" bool product_record_attach(lv_obj_t *panel_root)
@@ -473,7 +472,7 @@ extern "C" bool product_record_attach(lv_obj_t *panel_root)
         paint_motion();
     }
     s_attached = true;
-    ESP_LOGI(kTag, "V2_PRODUCT_RECORD_READY build=%s", FAMILY_BUILD_ID);
+    ESP_LOGI(kTag, "V2_PRODUCT_RECORD_READY build=%s", FIRMWARE_BUILD_ID);
     return true;
 }
 

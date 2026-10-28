@@ -55,7 +55,7 @@ State what overlaps at the failure moment (check all that apply):
 
 | Phase | What to capture |
 |-------|-----------------|
-| Boot | `CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC`: `before_display` / `after_display` |
+| Boot | `CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC`: `before_storage` … `after_nvs` / `after_display` / `ui_ready` |
 | Repro peak | Wipe start, RED, finish reverse, first HTTP submit |
 | Metrics | `dma_largest_internal`, `lv_mem_monitor`, optional PSRAM largest |
 | Saved log | `desk_record_send_check.py` on serial file |

@@ -15,13 +15,18 @@ make app:monitor FILTER='product_mute:I product_login:I'   # serial log (KIT= PO
 ```
 
 `app:monitor` needs a prior **`make app:build`** (or `make app`) so
-`FAMILY_BUILD_ID` and `build/device/sdkconfig` exist; it reuses the current
+`FIRMWARE_BUILD_ID` and `build/device/sdkconfig` exist; it reuses the current
 package’s build id from `artifacts/device/bootstrap/current.json`.
 
-Boot markers (distinct claims):
+Boot (serial tag `app_main`; normative order **BOOT-ORDER** in
+[device-target-invariants.md](../../docs/standards/device-target-invariants.md)):
 
-- `V2_BOOTSTRAP_READY build=<id>` — early boot after display init
-- `product_ui_ready` — login shell attached on the LVGL timer
+- `app_main.c` — kit bring-up through NVS, then `product_app_run()`
+- `build=<id>` — first line in `app_main`
+- Subsystem lines (`product_record` SD mount, `product_mic`, `product_display`, …)
+- `boot_step=*` / `boot_backlight …` — display and initial backlight policy
+- `product_ui_ready build=<id>` — shell and login attached; flash guardrail waits for this
+- Wi-Fi starts after the ready line (`product_network`)
 
 ## Standards and guardrails
 

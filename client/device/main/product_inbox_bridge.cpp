@@ -923,7 +923,7 @@ extern "C" bool product_inbox_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     }
     s_attached = true;
     render_inbox();
-    ESP_LOGI(kTag, "V2_PRODUCT_INBOX_READY build=%s", FAMILY_BUILD_ID);
+    ESP_LOGI(kTag, "V2_PRODUCT_INBOX_READY build=%s", FIRMWARE_BUILD_ID);
     return true;
 }
 

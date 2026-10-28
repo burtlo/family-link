@@ -986,7 +986,7 @@ bool product_shell_init(lv_obj_t *screen)
         s_shell.product_runtime = true;
         s_shell.initialized = true;
         s_shell.operation_stage_before = FL_SHELL_STAGE_ROSTER;
-        ESP_LOGI("product_shell", "V2_PRODUCT_SHELL_READY build=%s", FAMILY_BUILD_ID);
+        ESP_LOGI("product_shell", "V2_PRODUCT_SHELL_READY build=%s", FIRMWARE_BUILD_ID);
         return true;
     }
     if (!mount_stage(FL_SHELL_STAGE_ROSTER)) return false;
@@ -998,6 +998,6 @@ bool product_shell_init(lv_obj_t *screen)
     record_resource_sample("boot");
     if (xTaskCreate(synthetic_worker, "shell_synthetic", 3072, NULL, 3, NULL) != pdPASS)
         return false;
-    ESP_LOGI("product_shell", "V2_PRODUCT_SHELL_READY build=%s", FAMILY_BUILD_ID);
+    ESP_LOGI("product_shell", "V2_PRODUCT_SHELL_READY build=%s", FIRMWARE_BUILD_ID);
     return true;
 }

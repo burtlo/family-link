@@ -8,8 +8,8 @@ Behavioral MUSTs stay in
 [client-application-coding-standards.md](client-application-coding-standards.md)
 (§§1–2, 4, 7–8, 11–13). This profile states only the embedded facts those
 sections cannot: heap capability, the two memory ledgers, current numeric
-baselines, which functions are the presentation path, and which boot line
-means what.
+baselines, which functions are the presentation path, `app_main` bring-up order,
+and which boot lines mean what.
 
 ## Claim classes
 
@@ -18,7 +18,7 @@ means what.
 | **tooling** | A host check failed a known-bad fixture | A desk journey |
 | **compile** | `make app:build` and `device-build-report.json` | Flash, boot, or behavior |
 | **flash** | The image was written | `product_ui_ready` |
-| **boot-marker** | Serial contains `product_ui_ready` for that build id | PIN, record, or send behavior |
+| **boot-marker** | Serial contains `product_ui_ready build=<id>` for that build id | PIN, record, or send behavior |
 | **behavior** | An operator-authorized desk script plus serial | — |
 
 A user-visible memory, stack, input, or lifecycle fix stays below **behavior**
@@ -29,12 +29,13 @@ is tooling. `make app:build` is compile.
 
 | ID | Embedded rule | Proof |
 |----|---------------|-------|
-| MEM-CAP | A large buffer names its heap capability and lifetime. The panel draw buffer is internal DMA. `esp_get_free_heap_size` is not evidence. | `CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC` logs the largest internal DMA block before display init and that block plus `lv_mem_monitor` after it. Log only. No numeric boot assert. |
+| MEM-CAP | A large buffer names its heap capability and lifetime. The panel draw buffer is internal DMA. `esp_get_free_heap_size` is not evidence. | With `CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC`, `app_main` logs `V2_MEM` at `before_<phase>` and `after_<phase>` for `storage`, `mic`, `display` (`after_display` includes LVGL), and `nvs` (`after_nvs` is heap-only and is the pre–UI-attach baseline); then `ui_ready` (LVGL, after shell and login attach). Log only. No numeric boot assert. |
 | MEM-LEDGER | `CONFIG_LV_MEM_SIZE` is the object pool. Draw-buffer bytes are a separate ledger. Product baseline is 32 KiB. Some lab builds use 64 KiB. This program does not raise the pool. | `check_sdkconfig_defaults` |
 | MEM-DELTA | Pool size and draw-buffer line count move only with a before/after DMA largest-block measurement. Runtime draw height is 16 lines in `product_display.c`. `CONFIG_BSP_LCD_DRAW_BUF_HEIGHT=40` is a different number. | Baseline test locks both numbers |
 | STK-PATH | The LVGL timer path does not construct large frame objects. Floors until a manual `-fstack-usage` pass replaces them: main task 16 KiB, LVGL task 12 KiB. | Timer scan rejects a non-static `HttpResult`. Stack-usage aggregation is manual and not a CI gate. See [device-build-flash.md](device-build-flash.md). |
-| PRES-PATH | §§1–2 and 13 already forbid blocking on the presentation path. The path is `on_login_timer` plus direct callees and hooks it assigns. Workers may block. | Timer scan; live firmware must scan clean. The SD card is mounted once in `app_main` before display init. Mounting it while the BOX-3 LCD runs left the panel white until power cycle (desk serial, 2026-10-24). |
-| BOOT-MARK | `V2_BOOTSTRAP_READY` means the panel came up. `product_ui_ready` means shell and login attached. Product flash waits for both. | `product_flash_log_ok`. A fixture with only the bootstrap line fails. |
+| PRES-PATH | §§1–2 and 13 already forbid blocking on the presentation path. The path is `on_login_timer` plus direct callees and hooks it assigns. Workers may block. | Timer scan; live firmware must scan clean. |
+| BOOT-ORDER | `app_main` bring-up order is fixed: log `build=`; mount SD and init mic before display (either failure aborts boot like display init); start LCD/LVGL and apply initial backlight (mute latched at boot stays dark through failed UI attach); `nvs_flash_init`; then `product_app_run()` (shell and login attach; log `product_ui_ready build=`; `product_network_start` / Wi-Fi). Never mount SD after the BOX-3 LCD is running (white panel until power cycle, desk serial 2026-10-24). Never start Wi-Fi before `product_ui_ready`. | Source order in `app_main.c` through NVS, then `product_app_start.c`; `<phase>_init_failed` on tag `app_main` (`storage`, `mic`, `display`); subsystem lines on `product_record` / `product_mic` / `product_display`; optional `product_mem` phases. |
+| BOOT-MARK | `app_main` logs `build=<build-id>` at entry. `product_ui_ready build=<build-id>` means shell and login attached. Product flash waits for the ready line with the package build id. | `product_flash_log_ok`. A log with only the early `build=` line fails. |
 | CFG-FP | A desk-oriented build records build id and sdkconfig fingerprint. Product, lab-02, and lab-16 are different profiles. | `device-build-report.json` beside the bootstrap package. A missing kit does not fail the build. |
 | ACC-NEG | A capture PASS rejects Guru Meditation, panic text, stack overflow, and a duration that contradicts the PCM payload (16-bit mono). | `verify_capture.py` and saved-log tests |
 | INT-WIRE | A hardware producer with no caller under `client/device` is an open integration gap. Model tests do not close it. | Desk script `--strict-wiring` on a saved log. **Open:** nothing calls `product_record_push_pcm`. |
@@ -57,7 +58,7 @@ assigned on that same tick (`begin_wipe` reaches `ensure_media`).
 ## Desk checklist
 
 Operator-authorized. Not a CI job. For login, inbox, record, and send, a saved
-serial log needs `product_ui_ready`, and it must not contain Guru Meditation,
+serial log needs `product_ui_ready build=<id>`, and it must not contain Guru Meditation,
 panic, or stack overflow. Record/send behavior additionally needs a non-zero
 audio count and a send-worker line. Until INT-WIRE is repaired, run the checker
 without `--strict-wiring`; that mode checks boot and forbidden text only.
@@ -83,7 +84,7 @@ Physical L3 is not a merge blocker in CI.
 
 | Phase | Mechanism | IDs |
 |-------|-----------|-----|
-| 0 | `scripts/tests/test_device_guardrails.py`, `scripts/tests/test_lab16_capture.py` | PRES-PATH, STK-PATH, MEM-LEDGER, MEM-DELTA, ACC-NEG |
-| 1 | `device-build-report.json`, `product_flash_log_ok` | CFG-FP, BOOT-MARK |
+| 0 | `scripts/tests/test_device_guardrails.py`, `scripts/tests/test_lab16_capture.py` | PRES-PATH, STK-PATH, MEM-LEDGER, MEM-DELTA, ACC-NEG, BOOT-ORDER (source review) |
+| 1 | `device-build-report.json`, `product_flash_log_ok` | CFG-FP, BOOT-MARK, BOOT-ORDER (serial hygiene) |
 | 2 | Quiescence model and source scan; `CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC` | LIFE-QUIESCE, MEM-CAP |
 | 3 | `desk_record_send_check.py` on saved logs | INT-WIRE, ACC-NEG, BOOT-MARK |

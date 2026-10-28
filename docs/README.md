@@ -29,7 +29,7 @@ Historical v1 product docs (vision, requirements, plans, features) remain in the
 ## Client engineering
 
 Product device build and flash: [device-build-flash](standards/device-build-flash.md)
-(bootstrap marker `V2_BOOTSTRAP_READY` vs product `product_ui_ready`).
+(early `build=<id>` vs product `product_ui_ready build=<id>` on tag `app_main`).
 
 | Doc | Role |
 |-----|------|

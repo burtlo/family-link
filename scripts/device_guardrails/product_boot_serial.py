@@ -3,28 +3,28 @@ from __future__ import annotations
 
 import re
 
-from device_guardrails.serial_common import require_substrings, serial_forbidden_errors
+from device_guardrails.serial_common import serial_forbidden_errors
 
-BOOTSTRAP = re.compile(r"V2_BOOTSTRAP_READY build=\S+")
-PRODUCT_UI = re.compile(r"product_ui_ready")
+EARLY_BUILD = re.compile(r"\bbuild=\S+")
+PRODUCT_UI_READY = re.compile(r"product_ui_ready build=\S+")
 
 
 def verify_product_boot(text: str, *, require_product_ui: bool = True) -> list[str]:
     errors = serial_forbidden_errors(text)
-    if not BOOTSTRAP.search(text):
-        errors.append("missing V2_BOOTSTRAP_READY build=<id>")
-    if require_product_ui and not PRODUCT_UI.search(text):
-        errors.append("missing product_ui_ready (bootstrap-only is not product UI boot)")
+    if not EARLY_BUILD.search(text):
+        errors.append("missing early build=<id> (app_main)")
+    if require_product_ui and not PRODUCT_UI_READY.search(text):
+        errors.append("missing product_ui_ready build=<id>")
     return errors
 
 
-def verify_bootstrap_only_should_fail(text: str) -> list[str]:
-    """Return errors when a log has bootstrap but not product UI (negative gate)."""
+def verify_incomplete_ui_boot_should_fail(text: str) -> list[str]:
+    """Return errors when a log has early build id but not product UI ready (negative gate)."""
     errors: list[str] = []
-    if not BOOTSTRAP.search(text):
-        errors.append("fixture should include bootstrap marker for negative test")
-    if PRODUCT_UI.search(text):
-        errors.append("fixture should not include product_ui_ready")
+    if not EARLY_BUILD.search(text):
+        errors.append("fixture should include early build=<id>")
+    if PRODUCT_UI_READY.search(text):
+        errors.append("fixture should not include product_ui_ready build=<id>")
     if not errors:
         errors = verify_product_boot(text, require_product_ui=True)
     return errors

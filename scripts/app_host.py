@@ -22,7 +22,7 @@ from device_targets import (
 )
 from firmware import (
     build as firmware_build,
-    family_build_id_from_package,
+    firmware_build_id_from_package,
     flash as firmware_flash,
     idf_environment,
     idf_product_cmake_args,
@@ -106,7 +106,7 @@ def resolve_app_serial_port(config: ProjectConfig, kit: str = "", port: str = ""
 def monitor_app(config: ProjectConfig, kit: str = "", port: str = "", print_filter: str = "") -> int:
     env, idf = idf_environment(config)
     device = resolve_app_serial_port(config, kit, port)
-    build_id = family_build_id_from_package(config)
+    build_id = firmware_build_id_from_package(config)
     argv = [*idf, *idf_product_cmake_args(config, build_id), "-p", device, "monitor"]
     filter_text = print_filter.strip()
     if filter_text:

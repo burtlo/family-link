@@ -165,7 +165,7 @@ Do not commit credentials, PINs, or raw media from real households. Use syntheti
 - Validate with `python scripts/lab_registry.py validate` and inspect with `make config.labs`.
 - Optional: add `[command.lab.<name>]` sections to `config/host.defaults.ini` for the agent command catalog.
 - Do **not** point `[firmware].source` at a lab tree or overwrite bootstrap `artifacts/device/bootstrap/current.json`.
-- Lab boot markers differ from `V2_BOOTSTRAP_READY`; define a per-lab ready line in the lab README (e.g. `LAB02_READY build=<id>`).
+- Lab boot markers differ from product `product_ui_ready build=<id>`; define a per-lab ready line in the lab README (e.g. `LAB02_READY build=<id>`).
 
 Manual `idf.py` remains valid for debugging; registry `build_dir` values must match `-B` paths, for example:
 

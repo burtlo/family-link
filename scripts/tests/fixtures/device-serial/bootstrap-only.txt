@@ -1,2 +1,0 @@
-I (bootstrap) V2_BOOTSTRAP_READY build=abc123
-I (bootstrap) version=1.0.0 idf=v5.4.2 reset_reason=1 cores=2 revision=0

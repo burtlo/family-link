@@ -196,7 +196,8 @@ def scan_display_power(sources: dict[str, str]) -> list[str]:
     errors: list[str] = []
     allowed = {
         LOGIN: ("wake_login_display", "blank_login_display"),
-        APP_MAIN: ("app_main",),
+        APP_MAIN: ("app_main", "boot_backlight_after_display"),
+        "product_app_start.c": ("product_app_run",),
         "product_network.c": ("join_configured_wifi",),
     }
     for name, text in sources.items():

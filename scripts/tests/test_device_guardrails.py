@@ -16,7 +16,7 @@ from device_guardrails.presentation_path import (
     scan_text_for_timer_violation,
     scan_timer_path,
 )
-from device_guardrails.product_boot_serial import verify_bootstrap_only_should_fail, verify_product_boot
+from device_guardrails.product_boot_serial import verify_incomplete_ui_boot_should_fail, verify_product_boot
 from device_guardrails.quiescence_fault import (
     inject_lab16_fault,
     inject_lab16_quiesced,
@@ -103,8 +103,8 @@ class DeviceGuardrailsPhase0Tests(unittest.TestCase):
 
 
 class DeviceGuardrailsPhase1Tests(unittest.TestCase):
-    def test_flash_log_bootstrap_only_is_not_product_ui(self):
-        text = (FIXTURES / "bootstrap-only.txt").read_text(encoding="utf-8")
+    def test_flash_log_incomplete_ui_boot_is_not_product_ui(self):
+        text = (FIXTURES / "incomplete-ui-boot.txt").read_text(encoding="utf-8")
         self.assertFalse(product_flash_log_ok(text, "abc123"))
 
     def test_flash_log_both_markers_pass(self):
@@ -123,11 +123,11 @@ class DeviceGuardrailsPhase1Tests(unittest.TestCase):
         self.assertEqual(report["sdkconfig_baselines"]["CONFIG_ESP_MAIN_TASK_STACK_SIZE"], "16384")
         self.assertEqual(report["sdkconfig_baselines"]["CONFIG_BSP_LCD_DRAW_BUF_HEIGHT"], "40")
 
-    def test_bootstrap_only_fails_product_gate(self):
-        text = (FIXTURES / "bootstrap-only.txt").read_text(encoding="utf-8")
+    def test_incomplete_ui_boot_fails_product_gate(self):
+        text = (FIXTURES / "incomplete-ui-boot.txt").read_text(encoding="utf-8")
         gate = verify_product_boot(text, require_product_ui=True)
         self.assertTrue(any("product_ui_ready" in item for item in gate))
-        self.assertGreater(len(verify_bootstrap_only_should_fail(text)), 0)
+        self.assertGreater(len(verify_incomplete_ui_boot_should_fail(text)), 0)
 
     def test_product_ui_minimal_passes_boot_gate(self):
         text = (FIXTURES / "product-ui-minimal.txt").read_text(encoding="utf-8")
@@ -607,29 +607,37 @@ class DeviceGuardrailsMuteBootTests(unittest.TestCase):
         brightness_set or backlight_on. The latched arm blanks before the
         shell and login attach failure returns.
         """
-        source = (ROOT / "client/device/main/app_main.c").read_text(encoding="utf-8")
-        body = _app_main_body(source)
-        decision = _first_latch_decision(body)
+        app_main_src = (ROOT / "client/device/main/app_main.c").read_text(encoding="utf-8")
+        app_main_src = _strip_c_comments(app_main_src)
+        boot_backlight = pres.function_body(app_main_src, "boot_backlight_after_display")
+        decision = _first_latch_decision(boot_backlight)
         self.assertIsNotNone(decision)
         assert decision is not None
-        before = body[: decision.start]
+        before = boot_backlight[: decision.start]
         self.assertNotIn("bsp_display_brightness_set", before)
         self.assertNotIn("bsp_display_backlight_on", before)
         self.assertIsNotNone(decision.latched)
-        self.assertIsNotNone(decision.unlatched)
-        assert decision.latched is not None and decision.unlatched is not None
+        assert decision.latched is not None
         self.assertIn("bsp_display_backlight_off(", decision.latched)
         self.assertNotIn("bsp_display_brightness_set", decision.latched)
         self.assertNotIn("bsp_display_backlight_on", decision.latched)
-        self.assertIn("bsp_display_brightness_set(80)", decision.unlatched)
-        self.assertIn("bsp_display_backlight_on(", decision.unlatched)
+        if decision.unlatched is not None:
+            unlatched_arm = decision.unlatched
+        else:
+            unlatched_arm = boot_backlight[decision.end :]
+        self.assertIn("bsp_display_brightness_set(80)", unlatched_arm)
+        self.assertIn("bsp_display_backlight_on(", unlatched_arm)
+
+        app_start = (ROOT / "client/device/main/product_app_start.c").read_text(encoding="utf-8")
+        app_start = _strip_c_comments(app_start)
+        run_body = pres.function_body(app_start, "product_app_run")
         for marker in (
             "lvgl_lock_failed",
             "product_shell_init_failed",
             "product_login_attach_failed",
         ):
-            self.assertLess(decision.end, body.index(marker), marker)
-        self.assertEqual(_unguarded_light_calls(body), [])
+            self.assertIn(marker, run_body)
+        self.assertEqual(_unguarded_light_calls(run_body), [])
 
 
 if __name__ == "__main__":

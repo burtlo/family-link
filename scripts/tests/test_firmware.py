@@ -8,7 +8,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit
 from device_targets import Port, select, bind
-from firmware import digest, family_build_id_from_package, idf_product_cmake_args, package_for, publish, build
+from firmware import digest, firmware_build_id_from_package, idf_product_cmake_args, package_for, publish, build
 from project_config import ProjectConfigError
 
 
@@ -66,10 +66,10 @@ class IdfCmakeArgsTests(unittest.TestCase):
                 raise KeyError(key)
 
         args = idf_product_cmake_args(Config(), "abc123")
-        self.assertIn("-DFAMILY_BUILD_ID=abc123", args)
+        self.assertIn("-DFIRMWARE_BUILD_ID=abc123", args)
         self.assertIn("-B", args)
 
-    def test_family_build_id_from_package(self):
+    def test_firmware_build_id_from_package(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             pkg = root / "pkg"
@@ -95,7 +95,7 @@ class IdfCmakeArgsTests(unittest.TestCase):
                 def text(self, key):
                     return "esp32s3" if key == "idf.target" else "v5.4.2"
 
-            self.assertEqual(family_build_id_from_package(Config()), "deadbeef")
+            self.assertEqual(firmware_build_id_from_package(Config()), "deadbeef")
 
 
 class PackageTests(unittest.TestCase):

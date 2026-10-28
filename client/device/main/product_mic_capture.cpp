@@ -107,17 +107,18 @@ bool start_task()
 
 /* I2S DMA buffers must be internal and contiguous; by the time a recording
  * starts no block is large enough, so the codec is set up before the display. */
-extern "C" void product_mic_init(void)
+extern "C" bool product_mic_init(void)
 {
     if (s_mic != nullptr) {
-        return;
+        return true;
     }
-    product_mem_probe_heap("mic_init_before", 0);
     s_mic = bsp_audio_codec_microphone_init();
-    product_mem_probe_heap("mic_init_after", s_mic != nullptr ? 1 : 0);
     if (s_mic == nullptr) {
-        ESP_LOGW(kTag, "mic_init_failed");
+        ESP_LOGE(kTag, "mic_init_failed");
+        return false;
     }
+    ESP_LOGI(kTag, "mic_init_ok");
+    return true;
 }
 
 extern "C" void product_mic_set_armed(int armed)

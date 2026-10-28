@@ -127,7 +127,7 @@ extern "C" bool product_volume_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot
         return false;
     }
     s_attached = true;
-    ESP_LOGI(kTag, "V2_PRODUCT_VOLUME_READY build=%s", FAMILY_BUILD_ID);
+    ESP_LOGI(kTag, "V2_PRODUCT_VOLUME_READY build=%s", FIRMWARE_BUILD_ID);
     return true;
 }
 

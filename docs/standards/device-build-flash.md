@@ -5,11 +5,11 @@ display, LVGL shell, login, inbox, record/send, and volume. Kit nicknames select
 physical positions; endpoint credentials come from deployment overlays via
 `make app KIT=<nickname>`.
 
-A **legacy bootstrap path** still exists inside the same binary: early boot logs
-`V2_BOOTSTRAP_READY build=<build-id>` after display init. When the login shell
-attaches successfully, the firmware also logs `product_ui_ready`. Desk acceptance
-must treat those markers as **distinct** claims (see
-[device-target-invariants.md](device-target-invariants.md)).
+Bring-up order and boot markers are normative in
+[device-target-invariants.md](device-target-invariants.md) (**BOOT-ORDER**,
+**BOOT-MARK**). In short: `build=` first; SD and mic before display; display and
+backlight before NVS; shell/login attach; `product_ui_ready build=`; then Wi-Fi.
+Flash acceptance waits for `product_ui_ready build=<build-id>` matching the package.
 
 ## Daily commands
 
@@ -25,6 +25,8 @@ make flash.mazi         # Named kit targets (deployment alias)
 `make build` and `make app:build` require the configured ESP-IDF version but no
 USB kit for a plain build. Each successful build records an immutable package
 under `artifacts/device/bootstrap/<build-id>/` and updates `current.json`.
+That id is compiled into the app as the `FIRMWARE_BUILD_ID` macro (`-DFIRMWARE_BUILD_ID=…`
+from the firmware build) and logged as `build=` / `product_ui_ready build=`.
 The merged `firmware.bin` contains bootloader, partition table, and application;
 the package retains component images, ELF, effective sdkconfig, partition layout,
 IDF flash metadata, size report, SHA-256 hashes, and (after `make app:build`)
@@ -39,9 +41,9 @@ IDF flash metadata, size report, SHA-256 hashes, and (after `make app:build`)
 `make flash` / `make app:flash` require exactly one connected registered kit
 unless `KIT=` is set. Flashing verifies package hashes; it does not rebuild.
 A missing kit fails flash. It does not fail `make app:build`.
-Product serial capture after flash requires both
-`V2_BOOTSTRAP_READY build=<build-id>` and `product_ui_ready`.
-The bootstrap line alone is not product UI boot
+Product serial capture after flash requires
+`product_ui_ready build=<build-id>` matching the flashed package.
+An early `build=` line alone is not product UI boot
 (see `scripts/device_guardrails/` and `client/device/README.md`).
 
 ## Explicit USB binding

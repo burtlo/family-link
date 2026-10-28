@@ -172,11 +172,11 @@ def idf_product_cmake_args(config, build_id: str) -> list[str]:
         str(output),
         "-DIDF_TARGET=esp32s3",
         f"-DSDKCONFIG={output / 'sdkconfig'}",
-        f"-DFAMILY_BUILD_ID={build_id}",
+        f"-DFIRMWARE_BUILD_ID={build_id}",
     ]
 
 
-def family_build_id_from_package(config) -> str:
+def firmware_build_id_from_package(config) -> str:
     _, manifest = package_for(config)
     return str(manifest["build_id"])
 
@@ -206,11 +206,10 @@ def package_for(config):
 
 
 def product_flash_log_ok(data, build_id):
-    """Product flash evidence needs both boot lines. Bootstrap alone is not UI boot."""
+    """Product flash evidence needs product_ui_ready with the package build id."""
     if isinstance(data, str):
         data = data.encode()
-    bootstrap = f"V2_BOOTSTRAP_READY build={build_id}".encode()
-    return bootstrap in data and b"product_ui_ready" in data
+    return f"product_ui_ready build={build_id}".encode() in data
 
 
 def device_build_report(
@@ -292,8 +291,8 @@ def flash(config, name, all_kits):
             if not capture(port.device, manifest["build_id"], logs / f"{kit.id}.log",
                            config.integer("firmware.boot_seconds", default=12, minimum=1)):
                 raise ProjectConfigError(
-                    "Expected product boot markers not observed "
-                    "(V2_BOOTSTRAP_READY and product_ui_ready)"
+                    "Expected product boot marker not observed "
+                    f"(product_ui_ready build={manifest['build_id']})"
                 )
             print(f"PASS {kit.id}: written and product UI boot confirmed")
         except (ProjectConfigError, OSError, subprocess.SubprocessError) as exc:
