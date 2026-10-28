@@ -269,9 +269,9 @@ static void show_roster_cards(void)
         return;
     }
     if (roster_cards_current()) {
-        lv_obj_remove_flag(s_roster_row, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_roster_row, false);
         if (s_lower_label != nullptr) {
-            lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(s_lower_label, true);
         }
         return;
     }
@@ -302,7 +302,7 @@ static void show_roster_cards(void)
     lv_obj_set_flex_align(s_roster_row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_scroll_dir(s_roster_row, LV_DIR_HOR);
     lv_obj_set_scrollbar_mode(s_roster_row, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_remove_flag(s_roster_row, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_clickable(s_roster_row, false);
     lv_obj_add_event_cb(s_roster_row, on_roster_row_scroll, LV_EVENT_SCROLL, nullptr);
     lv_obj_add_event_cb(s_roster_row, on_roster_row_scroll, LV_EVENT_SCROLL_END, nullptr);
     for (i = 0; i < count; ++i) {
@@ -323,8 +323,8 @@ static void show_roster_cards(void)
         lv_obj_set_style_bg_opa(card, focused ? LV_OPA_COVER : LV_OPA_60, 0);
         lv_obj_set_style_border_width(card, 0, 0);
         lv_obj_set_style_pad_all(card, 0, 0);
-        lv_obj_remove_flag(card, LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_add_flag(card, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_set_scrollable(card, false);
+        lv_obj_set_clickable(card, true);
         lv_obj_add_event_cb(card, on_roster_card_pressed, LV_EVENT_PRESSED, (void *)(intptr_t)i);
         lv_obj_add_event_cb(card, on_roster_card_clicked, LV_EVENT_CLICKED, (void *)(intptr_t)i);
         circle = lv_obj_create(card);
@@ -335,15 +335,15 @@ static void show_roster_cards(void)
             lv_obj_set_style_bg_color(circle, lv_color_hex(0xF4F4F4), 0);
             lv_obj_set_style_bg_opa(circle, LV_OPA_COVER, 0);
             lv_obj_set_style_border_width(circle, 0, 0);
-            lv_obj_remove_flag(circle, LV_OBJ_FLAG_CLICKABLE);
-            lv_obj_remove_flag(circle, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_set_clickable(circle, false);
+            lv_obj_set_scrollable(circle, false);
             mark = lv_label_create(circle);
             if (mark != nullptr) {
                 lv_label_set_text(mark, initials);
                 lv_obj_set_style_text_color(mark, lv_color_hex(0x101418), 0);
                 lv_obj_set_style_text_font(mark, &lv_font_montserrat_16, 0);
                 lv_obj_center(mark);
-                lv_obj_remove_flag(mark, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_set_clickable(mark, false);
             }
         }
         label = lv_label_create(card);
@@ -355,7 +355,7 @@ static void show_roster_cards(void)
             lv_obj_set_style_text_color(label, lv_color_hex(0x101418), 0);
             lv_obj_set_style_text_font(label, &lv_font_montserrat_16, 0);
             lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -12);
-            lv_obj_remove_flag(label, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_set_clickable(label, false);
         }
     }
     s_roster_shown = count;
@@ -364,7 +364,7 @@ static void show_roster_cards(void)
         lv_obj_set_scroll_dir(s_roster_row, LV_DIR_NONE);
     }
     if (s_lower_label != nullptr) {
-        lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_lower_label, true);
     }
     ESP_LOGI("product_login", "roster cards=%d focus=%s", count, s_roster_focus[0] ? s_roster_focus : "none");
     product_mem_probe("roster_built", count);
@@ -437,8 +437,8 @@ static void ensure_pin_pad(void)
     lv_obj_set_style_bg_opa(s_pin_pad, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(s_pin_pad, 0, 0);
     lv_obj_set_style_pad_all(s_pin_pad, 0, 0);
-    lv_obj_remove_flag(s_pin_pad, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(s_pin_pad, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollable(s_pin_pad, false);
+    lv_obj_set_clickable(s_pin_pad, false);
     for (row = 0; row < 3; ++row) {
         for (col = 0; col < 3; ++col) {
             int digit = row * 3 + col + 1;
@@ -458,8 +458,8 @@ static void ensure_pin_pad(void)
             lv_obj_set_style_bg_opa(key, LV_OPA_COVER, 0);
             lv_obj_set_style_border_width(key, 0, 0);
             lv_obj_set_style_pad_all(key, 0, 0);
-            lv_obj_remove_flag(key, LV_OBJ_FLAG_SCROLLABLE);
-            lv_obj_add_flag(key, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_set_scrollable(key, false);
+            lv_obj_set_clickable(key, true);
             lv_obj_add_event_cb(key, on_pin_key_activate, LV_EVENT_PRESSED, (void *)(intptr_t)text[0]);
             label = lv_label_create(key);
             if (label != nullptr) {
@@ -467,7 +467,7 @@ static void ensure_pin_pad(void)
                 lv_obj_set_style_text_color(label, lv_color_hex(0x101418), 0);
                 lv_obj_set_style_text_font(label, &lv_font_montserrat_32, 0);
                 lv_obj_center(label);
-                lv_obj_remove_flag(label, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_set_clickable(label, false);
             }
         }
     }
@@ -477,7 +477,7 @@ static void hide_pin_pad(void)
 {
     s_pin_announced = 0;
     if (s_pin_pad != nullptr) {
-        lv_obj_add_flag(s_pin_pad, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_pin_pad, true);
     }
 }
 
@@ -544,7 +544,7 @@ static void format_connecting(char *out, int cap)
 static void hide_cooldown(void)
 {
     if (s_cooldown != nullptr) {
-        lv_obj_add_flag(s_cooldown, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_cooldown, true);
     }
 }
 
@@ -568,7 +568,7 @@ static void show_cooldown(void)
         lv_obj_set_style_bg_opa(s_cooldown, LV_OPA_COVER, 0);
         lv_obj_set_style_border_width(s_cooldown, 0, 0);
         lv_obj_set_style_pad_all(s_cooldown, 0, 0);
-        lv_obj_remove_flag(s_cooldown, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scrollable(s_cooldown, false);
         lv_obj_t *title = lv_label_create(s_cooldown);
         s_cooldown_try = lv_label_create(s_cooldown);
         if (title != nullptr) {
@@ -591,7 +591,7 @@ static void show_cooldown(void)
     if (s_cooldown_try != nullptr) {
         set_label_text(s_cooldown_try, line);
     }
-    lv_obj_remove_flag(s_cooldown, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_cooldown, false);
 }
 
 static void render_pin_screen(void)
@@ -638,7 +638,7 @@ static void render_pin_screen(void)
         snprintf(heading, sizeof(heading), "Sign in as %s   %s", name, marks);
     }
     if (s_upper_label != nullptr) {
-        lv_obj_remove_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_upper_label, false);
         set_label_text(s_upper_label, heading);
     }
     lower_status = s_session.pin_lower_is_status();
@@ -651,15 +651,15 @@ static void render_pin_screen(void)
                 format_connecting(status_line, (int)sizeof(status_line));
                 set_label_text(s_lower_label, status_line);
             }
-            lv_obj_remove_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(s_lower_label, false);
         }
         note_lower_kind(3);
     } else {
         if (s_lower_label != nullptr) {
-            lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(s_lower_label, true);
         }
         if (s_pin_pad != nullptr) {
-            lv_obj_remove_flag(s_pin_pad, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(s_pin_pad, false);
         }
         note_lower_kind(2);
     }
@@ -756,17 +756,17 @@ static void render_login_copy(void)
         hide_cooldown();
         hide_pin_pad();
         clear_roster_cards();
-        lv_obj_add_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_upper_label, true);
+        lv_obj_set_hidden(s_lower_label, true);
         return;
     }
     if (s_session.pin_phase() == fl_product_login::kPinPhaseCooldown) {
         hide_pin_pad();
         if (s_roster_row != nullptr) {
-            lv_obj_add_flag(s_roster_row, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(s_roster_row, true);
         }
-        lv_obj_add_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_upper_label, true);
+        lv_obj_set_hidden(s_lower_label, true);
         show_cooldown();
         return;
     }
@@ -781,19 +781,19 @@ static void render_login_copy(void)
     } else if (s_session.stage() == fl_product_login::kStageRoster && s_session.user_count() > 0) {
         upper = "Sign in as ...";
     }
-    lv_obj_remove_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_upper_label, false);
     set_label_text(s_upper_label, upper);
     wifi_down = !s_wifi_up || s_session.stage() == fl_product_login::kStageWifiUnavailable;
     show_cards = !wifi_down && s_session.stage() == fl_product_login::kStageRoster &&
                  s_session.user_count() > 0 && s_session.pin_phase() == fl_product_login::kPinPhaseIdle;
     if (show_cards) {
-        lv_obj_add_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_lower_label, true);
         show_roster_cards();
         note_lower_kind(1);
         return;
     }
     clear_roster_cards();
-    lv_obj_remove_flag(s_lower_label, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_lower_label, false);
     if (wifi_down) {
         set_label_text(s_lower_label, "no Wi-Fi");
         note_lower_kind(3);
@@ -939,15 +939,15 @@ bool build_login_lower(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     lv_obj_set_style_bg_opa(s_login_lower_layer, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(s_login_lower_layer, 0, 0);
     lv_obj_set_style_pad_all(s_login_lower_layer, 0, 0);
-    lv_obj_remove_flag(s_login_lower_layer, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(s_login_lower_layer, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollable(s_login_lower_layer, false);
+    lv_obj_set_clickable(s_login_lower_layer, false);
     s_lower_slot = s_login_lower_layer;
     s_lower_label = lv_label_create(s_lower_slot);
     if (s_lower_label == nullptr) {
         return false;
     }
-    lv_obj_remove_flag(upper_slot, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(lower_slot, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_clickable(upper_slot, false);
+    lv_obj_set_clickable(lower_slot, false);
     lv_obj_align(s_upper_label, LV_ALIGN_LEFT_MID, 12, 0);
     lv_obj_center(s_lower_label);
     lv_obj_set_style_text_color(s_upper_label, lv_color_hex(0xFFFFFF), 0);
@@ -1049,7 +1049,7 @@ extern "C" void product_login_present(int visible)
     if (visible) {
         if (s_login_shown != 1) {
             s_login_shown = 1;
-            lv_obj_remove_flag(s_login_lower_layer, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(s_login_lower_layer, false);
         }
         render_login_copy();
         return;
@@ -1061,8 +1061,8 @@ extern "C" void product_login_present(int visible)
     hide_cooldown();
     hide_pin_pad();
     clear_roster_cards();
-    lv_obj_add_flag(s_upper_label, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(s_login_lower_layer, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_upper_label, true);
+    lv_obj_set_hidden(s_login_lower_layer, true);
 }
 
 extern "C" int product_login_is_signed_in(void)

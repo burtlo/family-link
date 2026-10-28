@@ -167,9 +167,9 @@ void layout_record_surface(bool visible)
         return;
     }
     if (visible) {
-        lv_obj_remove_flag(s_root, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_root, false);
     } else {
-        lv_obj_add_flag(s_root, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_root, true);
     }
 }
 
@@ -225,13 +225,13 @@ void show_full_reveal()
     if (s_reveal == nullptr || s_canvas == nullptr || s_rail == nullptr) {
         return;
     }
-    lv_obj_remove_flag(s_reveal, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_reveal, false);
     lv_obj_set_pos(s_reveal, 0, 0);
     lv_obj_set_size(s_reveal, LAB10_LCD_WIDTH, LAB10_LCD_HEIGHT);
     lv_obj_set_pos(s_canvas, 0, 0);
     lv_obj_set_pos(s_rail, LAB10_RAIL_X, 0);
     if (s_ring != nullptr) {
-        lv_obj_add_flag(s_ring, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_ring, true);
     }
 }
 
@@ -248,7 +248,7 @@ void place_ring(int32_t radius)
     }
     lv_obj_set_size(s_ring, radius * 2, radius * 2);
     lv_obj_set_pos(s_ring, LAB10_RING_ORIGIN_X - radius, LAB10_RING_ORIGIN_Y - radius);
-    lv_obj_remove_flag(s_ring, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_ring, false);
 }
 
 void paint_motion()
@@ -269,9 +269,9 @@ void paint_motion()
     clip = lab10_ui_ring_reveal_clip(LAB10_RING_ORIGIN_Y, radius);
     if (s_reveal != nullptr) {
         if (clip.hidden) {
-            lv_obj_add_flag(s_reveal, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(s_reveal, true);
         } else {
-            lv_obj_remove_flag(s_reveal, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_set_hidden(s_reveal, false);
             lv_obj_set_pos(s_reveal, clip.x, clip.y);
             lv_obj_set_size(s_reveal, clip.width, clip.height);
             if (s_canvas != nullptr) {
@@ -326,7 +326,7 @@ void bind_pointer(lv_obj_t *obj)
     if (obj == nullptr) {
         return;
     }
-    lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_clickable(obj, true);
     lv_obj_add_event_cb(obj, on_record_pointer, LV_EVENT_PRESSED, nullptr);
     lv_obj_add_event_cb(obj, on_record_pointer, LV_EVENT_PRESSING, nullptr);
     lv_obj_add_event_cb(obj, on_record_pointer, LV_EVENT_RELEASED, nullptr);
@@ -417,11 +417,11 @@ extern "C" bool product_record_attach(lv_obj_t *panel_root)
     if (s_root == nullptr) {
         return false;
     }
-    lv_obj_add_flag(s_root, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_root, true);
     lv_obj_remove_style_all(s_root);
     lv_obj_set_size(s_root, LAB10_LCD_WIDTH, LAB10_LCD_HEIGHT);
     lv_obj_set_pos(s_root, 0, 0);
-    lv_obj_add_flag(s_root, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_root, true);
     s_reveal = lv_obj_create(s_root);
     if (s_reveal == nullptr) {
         return false;
@@ -429,7 +429,7 @@ extern "C" bool product_record_attach(lv_obj_t *panel_root)
     lv_obj_remove_style_all(s_reveal);
     lv_obj_set_pos(s_reveal, 0, 0);
     lv_obj_set_size(s_reveal, LAB10_LCD_WIDTH, LAB10_LCD_HEIGHT);
-    lv_obj_remove_flag(s_reveal, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollable(s_reveal, false);
     s_canvas = lv_canvas_create(s_reveal);
     s_rail = lv_obj_create(s_reveal);
     if (s_canvas == nullptr || s_rail == nullptr) {
@@ -458,8 +458,8 @@ extern "C" bool product_record_attach(lv_obj_t *panel_root)
         return false;
     }
     lv_obj_remove_style_all(s_ring);
-    lv_obj_remove_flag(s_ring, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(s_ring, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_clickable(s_ring, false);
+    lv_obj_set_scrollable(s_ring, false);
     lv_obj_set_style_bg_opa(s_ring, LV_OPA_TRANSP, LV_PART_MAIN);
     lv_obj_set_style_arc_width(s_ring, 0, LV_PART_MAIN);
     lv_obj_set_style_arc_width(s_ring, LAB10_RING_BAND_WIDTH, LV_PART_INDICATOR);
@@ -467,7 +467,7 @@ extern "C" bool product_record_attach(lv_obj_t *panel_root)
     lv_obj_set_style_arc_opa(s_ring, LV_OPA_COVER, LV_PART_INDICATOR);
     lv_arc_set_bg_angles(s_ring, 0, 360);
     lv_arc_set_angles(s_ring, 0, 360);
-    lv_obj_add_flag(s_ring, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_hidden(s_ring, true);
     if (s_record->wiping() || s_record->reversing()) {
         paint_motion();
     }

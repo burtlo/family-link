@@ -250,9 +250,9 @@ void set_hidden(lv_obj_t *obj, int hidden)
         return;
     }
     if (hidden) {
-        lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(obj, true);
     } else {
-        lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(obj, false);
     }
 }
 
@@ -356,8 +356,8 @@ int ensure_canvas(CardWidget *card)
     lv_canvas_set_buffer(card->canvas, card->canvas_buf, fl_product_inbox::kSketchGrid,
                          fl_product_inbox::kSketchGrid, LV_COLOR_FORMAT_RGB565);
     lv_obj_set_pos(card->canvas, 6, 7);
-    lv_obj_remove_flag(card->canvas, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(card->canvas, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_clickable(card->canvas, false);
+    lv_obj_set_scrollable(card->canvas, false);
     return 1;
 }
 
@@ -583,8 +583,8 @@ int create_card(const char *message_id)
     lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(obj, 0, 0);
     lv_obj_set_style_pad_all(obj, 0, 0);
-    lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollable(obj, false);
+    lv_obj_set_clickable(obj, true);
     lv_obj_add_event_cb(obj, on_card_pressed, LV_EVENT_PRESSED, nullptr);
     lv_obj_add_event_cb(obj, on_card_clicked, LV_EVENT_CLICKED, nullptr);
     card->circle = lv_obj_create(obj);
@@ -595,14 +595,14 @@ int create_card(const char *message_id)
         lv_obj_set_style_bg_color(card->circle, lv_color_hex(0xF4F4F4), 0);
         lv_obj_set_style_bg_opa(card->circle, LV_OPA_COVER, 0);
         lv_obj_set_style_border_width(card->circle, 0, 0);
-        lv_obj_remove_flag(card->circle, LV_OBJ_FLAG_CLICKABLE);
-        lv_obj_remove_flag(card->circle, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_clickable(card->circle, false);
+        lv_obj_set_scrollable(card->circle, false);
         card->initials = lv_label_create(card->circle);
         if (card->initials != nullptr) {
             lv_obj_set_style_text_color(card->initials, lv_color_hex(kTextOnCard), 0);
             lv_obj_set_style_text_font(card->initials, &lv_font_montserrat_16, 0);
             lv_obj_center(card->initials);
-            lv_obj_remove_flag(card->initials, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_set_clickable(card->initials, false);
         }
     }
     card->name = lv_label_create(obj);
@@ -613,7 +613,7 @@ int create_card(const char *message_id)
         lv_obj_set_style_text_color(card->name, lv_color_hex(kTextOnCard), 0);
         lv_obj_set_style_text_font(card->name, &lv_font_montserrat_16, 0);
         lv_obj_align(card->name, LV_ALIGN_TOP_MID, 0, 84);
-        lv_obj_remove_flag(card->name, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_set_clickable(card->name, false);
     }
     card->duration = lv_label_create(obj);
     if (card->duration != nullptr) {
@@ -622,7 +622,7 @@ int create_card(const char *message_id)
         lv_obj_set_style_text_color(card->duration, lv_color_hex(kTextOnCard), 0);
         lv_obj_set_style_text_font(card->duration, &lv_font_montserrat_16, 0);
         lv_obj_align(card->duration, LV_ALIGN_TOP_MID, 0, 104);
-        lv_obj_remove_flag(card->duration, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_set_clickable(card->duration, false);
     }
     return slot;
 }
@@ -969,10 +969,10 @@ extern "C" bool product_inbox_build_widgets(lv_obj_t *upper_slot, lv_obj_t *lowe
     lv_obj_set_size(s_lower_root, 320, 160);
     lv_obj_set_pos(s_upper_root, 0, 0);
     lv_obj_set_pos(s_lower_root, 0, 0);
-    lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_scrollable(s_upper_root, false);
+    lv_obj_set_scrollable(s_lower_root, false);
+    lv_obj_set_clickable(s_upper_root, false);
+    lv_obj_set_clickable(s_lower_root, false);
     s_heading = lv_label_create(s_upper_root);
     s_play_button = lv_button_create(s_upper_root);
     s_row = lv_obj_create(s_lower_root);

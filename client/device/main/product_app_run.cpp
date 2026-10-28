@@ -1,8 +1,6 @@
 #include "product_app_run.h"
-
 #include "bsp/esp-box-3.h"
 #include "esp_log.h"
-#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "lvgl.h"
 #include "product_hardware_buttons.h"

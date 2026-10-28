@@ -158,10 +158,10 @@ extern "C" bool product_volume_build_widgets(lv_obj_t *upper_slot, lv_obj_t *low
     lv_obj_set_size(s_lower_root, 320, 160);
     lv_obj_set_style_bg_opa(s_upper_root, LV_OPA_TRANSP, 0);
     lv_obj_set_style_bg_opa(s_lower_root, LV_OPA_TRANSP, 0);
-    lv_obj_add_flag(s_upper_root, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_add_flag(s_lower_root, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_hidden(s_upper_root, true);
+    lv_obj_set_hidden(s_lower_root, true);
+    lv_obj_set_clickable(s_upper_root, false);
+    lv_obj_set_clickable(s_lower_root, false);
     lv_label_set_text(s_title_label, "Volume");
     lv_obj_align(s_title_label, LV_ALIGN_LEFT_MID, 8, 0);
     lv_slider_set_range(s_slider, 0, fl_product_volume::kVolumeStopCount - 1);
@@ -254,10 +254,10 @@ extern "C" void product_volume_set_visible(int visible)
         return;
     }
     if (visible) {
-        lv_obj_remove_flag(s_upper_root, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_remove_flag(s_lower_root, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_upper_root, false);
+        lv_obj_set_hidden(s_lower_root, false);
     } else {
-        lv_obj_add_flag(s_upper_root, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(s_lower_root, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(s_upper_root, true);
+        lv_obj_set_hidden(s_lower_root, true);
     }
 }

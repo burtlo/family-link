@@ -134,14 +134,14 @@ int resume_place_ok(void)
 void hide_obj(lv_obj_t *obj)
 {
     if (obj != nullptr) {
-        lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(obj, true);
     }
 }
 
 void show_obj(lv_obj_t *obj)
 {
     if (obj != nullptr) {
-        lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_hidden(obj, false);
     }
 }
 
@@ -453,8 +453,8 @@ void build_cards()
         lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
         lv_obj_set_style_border_width(obj, 0, 0);
         lv_obj_set_style_pad_all(obj, 0, 0);
-        lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_set_scrollable(obj, false);
+        lv_obj_set_clickable(obj, true);
         lv_obj_add_event_cb(obj, on_picker_card_pressed, LV_EVENT_PRESSED, nullptr);
         lv_obj_add_event_cb(obj, on_picker_card_clicked, LV_EVENT_CLICKED, (void *)(intptr_t)i);
         circle = lv_obj_create(obj);
@@ -465,15 +465,15 @@ void build_cards()
             lv_obj_set_style_bg_color(circle, lv_color_hex(0xF4F4F4), 0);
             lv_obj_set_style_bg_opa(circle, LV_OPA_COVER, 0);
             lv_obj_set_style_border_width(circle, 0, 0);
-            lv_obj_remove_flag(circle, LV_OBJ_FLAG_CLICKABLE);
-            lv_obj_remove_flag(circle, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_set_clickable(circle, false);
+            lv_obj_set_scrollable(circle, false);
             mark = lv_label_create(circle);
             if (mark != nullptr) {
                 lv_label_set_text(mark, initials);
                 lv_obj_set_style_text_color(mark, lv_color_hex(0x101418), 0);
                 lv_obj_set_style_text_font(mark, &lv_font_montserrat_16, 0);
                 lv_obj_center(mark);
-                lv_obj_remove_flag(mark, LV_OBJ_FLAG_CLICKABLE);
+                lv_obj_set_clickable(mark, false);
             }
         }
         label = lv_label_create(obj);
@@ -485,7 +485,7 @@ void build_cards()
             lv_obj_set_style_text_color(label, lv_color_hex(0x101418), 0);
             lv_obj_set_style_text_font(label, &lv_font_montserrat_16, 0);
             lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, -12);
-            lv_obj_remove_flag(label, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_set_clickable(label, false);
         }
     }
     focus = s_journey.picker().focused_index();
