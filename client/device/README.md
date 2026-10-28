@@ -18,6 +18,14 @@ make app:monitor FILTER='product_mute:I product_login:I'   # serial log (KIT= PO
 `FIRMWARE_BUILD_ID` and `build/device/sdkconfig` exist; it reuses the current
 package’s build id from `artifacts/device/bootstrap/current.json`.
 
+### Editor (clangd)
+
+Firmware is ESP-IDF + cross-GCC. **`esp_log.h` / `ESP_LOGI` are fine**; clangd
+without `build/device/compile_commands.json` only sees ISO C and reports false
+errors. Run **`make app:build`**, then restart clangd (root [`.clangd`](../../.clangd)
+uses that database). Optional: Espressif’s **ESP-IDF** VS Code/Cursor extension
+for build/flash/monitor alongside or instead of clangd.
+
 Boot (serial tag `app_main`; normative order **BOOT-ORDER** in
 [device-target-invariants.md](../../docs/standards/device-target-invariants.md)):
 

@@ -1,4 +1,9 @@
 {
+  "cSpell.useWorkspaceDictionary": true,
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/build/device",
+    "--query-driver=**"
+  ],
   "terminal.integrated.defaultProfile.windows": "PowerShell 7",
   "terminal.integrated.profiles.windows": {
     "PowerShell 7": {

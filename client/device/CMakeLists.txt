@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(EXTRA_COMPONENT_DIRS
     "${CMAKE_CURRENT_LIST_DIR}/../shared/stage_shell/fl_shell_model"
     "${CMAKE_CURRENT_LIST_DIR}/../shared/stage_shell/product_shell"
