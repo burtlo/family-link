@@ -1,5 +1,4 @@
 #include "product_app.hpp"
-
 #include "esp_log.h"
 #include "lvgl.h"
 #include "product_app_idle.hpp"

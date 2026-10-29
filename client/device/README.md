@@ -20,18 +20,24 @@ package’s build id from `artifacts/device/bootstrap/current.json`.
 
 ### Editor (clangd)
 
-Firmware is ESP-IDF + cross-GCC. **`esp_log.h` / `ESP_LOGI` are fine**; clangd
-without `build/device/compile_commands.json` only sees ISO C and reports false
-errors (`-mlongcalls`, missing `../hal.h` under Xtensa headers, and similar).
-Run **`make app:build`**, then restart clangd. Root [`.clangd`](../../.clangd)
-defines **`__XTENSA__`** for host parsing and strips GCC-only flags from
-`build/device/compile_commands.json`; [`.vscode/settings.json`](../../.vscode/settings.json)
-sets **`--query-driver=/**/xtensa-*-elf-*`** for the Espressif toolchain and disables
-the Microsoft C/C++ engine so clangd alone drives diagnostics. Without a fresh
-`compile_commands.json`, clangd falls back to host C++ and reports false errors
-(`-mlongcalls`, missing `../hal.h` under Xtensa headers, and similar). Optional:
-Espressif’s **ESP-IDF** VS Code/Cursor extension for build/flash/monitor
-alongside or instead of clangd.
+Firmware is ESP-IDF + cross-GCC. **`esp_log.h` / `ESP_LOGI` are fine**; **`bsp/esp-box-3.h`
+in `app_main.cpp` is required** for kit bring-up (backlight, SD/display ordering). If clangd
+reports **`sys/reent.h` file not found** (or `-mlongcalls`, missing `../hal.h`), that is almost
+always **IDE configuration**, not a firmware bug — **`make app:build` succeeds** with the same
+includes.
+
+Run **`make app:build`**, then **restart clangd** (Command Palette → “clangd: Restart language
+server”). Root [`.clangd`](../../.clangd) points at `build/device/compile_commands.json` and
+turns off include-cleaner (`UnusedIncludes` / `MissingIncludes`). [`.vscode/settings.json`](../../.vscode/settings.json)
+sets **`--query-driver`** to the Espressif **xtensa-esp32s3-elf-g++/.gcc** binaries so clangd
+gets newlib paths (including **`sys/reent.h`**). The Microsoft C/C++ engine is disabled so
+clangd alone drives diagnostics. Without a fresh `compile_commands.json` or a matching
+query-driver, clangd falls back to host C++ and reports false errors on every IDF/BSP
+include — do not “fix” that by deleting headers. Optional: Espressif’s **ESP-IDF**
+VS Code/Cursor extension for build/flash/monitor alongside or instead of clangd.
+
+Do **not** remove BSP includes from `app_main.cpp` (or other boot files) to silence clangd;
+that breaks real bring-up while the IDE error remains a tooling issue.
 
 Boot (serial tag `app_main`; normative order **BOOT-ORDER** in
 [device-target-invariants.md](../../docs/standards/device-target-invariants.md)):

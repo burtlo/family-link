@@ -1,9 +1,24 @@
-# ESP-IDF device firmware: compile_commands from `make app:build` → build/device/.
-# Host clangd strips GCC-only -m/-f flags and should query xtensa-*-elf-gcc for builtins
-# (see .vscode/settings.json --query-driver). Also define __XTENSA__ so headers such as
-# xtensa/config/core.h use <xtensa/hal.h> instead of ../hal.h (missing under esp32s3/include).
+# ESP-IDF firmware: use compile_commands from `make app:build` → build/device/.
+# Host clangd is not xtensa-gcc. Query the Espressif driver for newlib/sysroot
+# (`sys/reent.h`) and drop GCC machine flags clang cannot parse.
+# See client/device/README.md (Editor) and .vscode/settings.json --query-driver.
 CompileFlags:
   CompilationDatabase: build/device
   BuiltinHeaders: QueryDriver
-  Remove: [-m*, -f*]
-  Add: [-D__XTENSA__]
+  Remove:
+    - -m*
+    - -fstrict-volatile-bitfields
+    - -fno-tree-switch-conversion
+    - -fno-shrink-wrap
+    - -fmacro-prefix-map=*
+  Add:
+    - -Wno-unknown-warning-option
+    - -D__XTENSA__
+    - -DESP_PLATFORM
+    - -DIDF_TARGET=esp32s3
+
+# Include-cleaner is for host C++. It fights ESP-IDF include order (FreeRTOS.h
+# before task.h) and BSP headers. `make build` is the include authority.
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
