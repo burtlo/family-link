@@ -57,6 +57,21 @@ class ProductServerHardeningTests(unittest.TestCase):
         self.assertEqual(body["outcome"], "authenticated")
         return operation_id, body["session"]
 
+    def test_windows_host_skips_unsupported_directory_fsync(self):
+        """Desk PIN persist must not treat Windows directory fsync as failure."""
+        with mock.patch.object(server.os, "name", "nt"):
+            with mock.patch.object(
+                server.os, "open", side_effect=AssertionError("directory fsync is unsupported on Windows"),
+            ):
+                server._fsync_directory(Path(self.temp.name))
+
+        with mock.patch.object(server.os, "name", "nt"):
+            with _running_server("hardening-windows-pin-persist") as base:
+                client = _Client(base)
+                session = self._login(client, 0)
+                self.assertTrue(session)
+                self.assertTrue(server._pin_operations_path().is_file())
+
     def test_wrong_pin_retries_and_new_operation_can_authenticate(self):
         """A rejected PIN must not poison later independent login operations."""
         user = ACCOUNTS["users"][0]

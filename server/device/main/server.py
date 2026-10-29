@@ -443,7 +443,16 @@ def _atomic_write_json(path: Path, payload: dict) -> None:
 
 
 def _fsync_directory(directory: Path) -> None:
-    """Make an atomic rename durable when the local filesystem supports it."""
+    """Make an atomic rename durable when the local filesystem supports it.
+
+    Windows cannot open a directory for fsync (`PermissionError` on
+    `os.open(..., O_RDONLY)`). The file itself is already `fsync`'d before
+    `os.replace`. Treating that as a storage failure made PIN login return
+    HTTP 500 `storage_unavailable` on the desk host even after a successful
+    write.
+    """
+    if os.name == "nt":
+        return
     descriptor = os.open(directory, os.O_RDONLY)
     try:
         os.fsync(descriptor)

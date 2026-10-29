@@ -421,6 +421,7 @@ void SessionWriter::fail_pin_transport()
     if (stage_ != kStageMuted && stage_ != kStageWifiUnavailable) {
         apply_stage(kStageConnecting, "pin_transport_exhausted");
         selectable_cards_ = 0;
+        arm_connecting_backoff();
     }
     close_pin_operation("timed_out", "transport");
 }

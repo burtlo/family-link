@@ -24,13 +24,77 @@ def run(argv, *, cwd=ROOT, env=None, timeout=900):
     subprocess.run([str(a) for a in argv], cwd=cwd, env=env, timeout=timeout, check=True)
 
 
+def _windows_env(mapping):
+    """Uppercase keys so PATH from cmd `set` (`Path=`) overwrites the inherited PATH."""
+    return {str(key).upper(): value for key, value in mapping.items()}
+
+
+def _apply_exported_env(env, exported):
+    if os.name == "nt":
+        env.update(_windows_env(exported))
+    else:
+        env.update(exported)
+    return env
+
+
+def _idf_python_env_prefix(version):
+    text = str(version).strip().lstrip("v")
+    parts = [part for part in text.split(".") if part]
+    if len(parts) < 2:
+        raise ProjectConfigError(f"Unsupported ESP-IDF version: {version}")
+    return f"idf{parts[0]}.{parts[1]}"
+
+
+def _existing_idf_python_home(env, version):
+    tools = Path(env.get("IDF_TOOLS_PATH") or (Path.home() / ".espressif"))
+    root = tools / "python_env"
+    if not root.is_dir():
+        return None
+    prefix = _idf_python_env_prefix(version)
+    scripts_name = "Scripts" if os.name == "nt" else "bin"
+    python_name = "python.exe" if os.name == "nt" else "python"
+    homes = sorted(root.glob(f"{prefix}_*_env"), reverse=True)
+    for home in homes:
+        if (home / scripts_name / python_name).is_file():
+            return home
+    return None
+
+
+def _prepare_windows_idf_export_env(env, version):
+    for key in ("MSYSTEM", "MSYS", "MSYS2"):
+        env.pop(key, None)
+    home = _existing_idf_python_home(env, version)
+    if home is None:
+        return env
+    scripts = str(home / "Scripts")
+    env["IDF_PYTHON_ENV_PATH"] = str(home)
+    env["PATH"] = scripts + os.pathsep + env.get("PATH", "")
+    return env
+
+
+def _idf_python(env):
+    home = env.get("IDF_PYTHON_ENV_PATH")
+    if home:
+        scripts = "Scripts" if os.name == "nt" else "bin"
+        name = "python.exe" if os.name == "nt" else "python"
+        candidate = Path(home) / scripts / name
+        if candidate.is_file():
+            return str(candidate)
+    python = shutil.which("python", path=env.get("PATH"))
+    if python:
+        return python
+    raise ProjectConfigError("ESP-IDF Python unavailable; run make install")
+
+
 def idf_environment(config):
     idf = config.path_value("idf.path")
+    version = config.text("idf.version", required=True)
     env = dict(os.environ, IDF_PATH=str(idf))
     if os.name == "nt":
-        env = {key.upper(): value for key, value in env.items()}
-        # Make recipes enter through Git Bash; export.bat requires a native CMD environment.
-        env.pop("MSYSTEM", None)
+        env = _windows_env(env)
+        # Git Bash make recipes set MSYSTEM; export.bat refuses to run in that case.
+        # Git's python is also on PATH and selects a missing idf*_py3.13_env.
+        _prepare_windows_idf_export_env(env, version)
         export = idf / "export.bat"
         command = f'call "{export}" && echo __FAMILY_IDF_ENV__ && set'
         if '"' in str(export) or '\n' in str(export) or '%' in str(export):
@@ -39,11 +103,16 @@ def idf_environment(config):
         result = subprocess.run(f'cmd /d /s /c "{command}"', env=env,
                                 capture_output=True, text=True, timeout=120)
         if result.returncode or "__FAMILY_IDF_ENV__" not in result.stdout:
-            raise ProjectConfigError(f"ESP-IDF activation failed:\n{result.stdout}\n{result.stderr}")
+            raise ProjectConfigError(f"ESP-IDF activation failed:\n{result.stderr}")
+        exported = {}
         for line in result.stdout.split("__FAMILY_IDF_ENV__", 1)[1].splitlines():
             key, sep, value = line.partition("=")
             if sep and key:
-                env[key] = value
+                exported[key] = value
+        _apply_exported_env(env, exported)
+        if not env.get("IDF_PYTHON_ENV_PATH"):
+            detail = (result.stderr or "").strip() or "IDF_PYTHON_ENV_PATH was not set"
+            raise ProjectConfigError(f"ESP-IDF activation failed:\n{detail}")
     else:
         export = idf / "export.sh"
         result = subprocess.run(["bash", "-c", f"source {shlex.quote(str(export))} >/dev/null && env -0"],
@@ -52,9 +121,7 @@ def idf_environment(config):
             key, sep, value = entry.partition("=")
             if sep:
                 env[key] = value
-    python = shutil.which("python", path=env.get("PATH"))
-    if not python:
-        raise ProjectConfigError("ESP-IDF Python unavailable; run make install")
+    python = _idf_python(env)
     result = subprocess.run(["git", "describe", "--tags", "--exact-match"], cwd=idf,
                             capture_output=True, text=True, timeout=30)
     if result.returncode or result.stdout.strip() != config.text("idf.version", required=True):

@@ -160,6 +160,9 @@ class ProductLoginModelTests(unittest.TestCase):
     def test_p4_pin_retry_honors_delay(self):
         self._run("pin-retry-wait")
 
+    def test_p4_pin_transport_exhaustion_arms_connecting_backoff(self):
+        self._run("pin-transport-exhaust")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1557,6 +1557,36 @@ int test_failed_body_backoff()
     return g_failures;
 }
 
+int test_pin_transport_exhaustion_backoff()
+{
+    static const int kDelays[] = {fl_product_login::kPinRetryDelay0Ms, fl_product_login::kPinRetryDelay1Ms,
+                                  fl_product_login::kPinRetryDelay2Ms};
+    fl_product_login::SessionWriter session;
+    fl_product_login::PinResult result;
+    int attempt;
+    g_failures = 0;
+    establish(&session);
+    session.select_pin_user("su-01", session.now_ms());
+    session.enter_pin_digit('1', session.now_ms());
+    session.enter_pin_digit('2', session.now_ms());
+    session.enter_pin_digit('3', session.now_ms());
+    session.enter_pin_digit('4', session.now_ms());
+    for (attempt = 1; attempt <= fl_product_login::kPinMaxAttempts; ++attempt) {
+        result = pin_body(&session, fl_product_login::kPinOutcomeTransport, 500, 0, 0);
+        session.deliver_pin_completion(result, session.now_ms());
+        if (attempt < fl_product_login::kPinMaxAttempts) {
+            session.advance_to(session.now_ms() + kDelays[attempt - 1]);
+        }
+    }
+    CHECK(session.stage() == fl_product_login::kStageConnecting);
+    CHECK(session.pin_operation_id() == 0);
+    CHECK(session.roster_inflight() == false);
+    CHECK(session.connecting_backoff_index() == 1);
+    session.advance_to(session.now_ms() + 1000);
+    CHECK(session.roster_inflight());
+    return g_failures;
+}
+
 int test_pin_retry_wait()
 {
     fl_product_login::SessionWriter session;
@@ -1674,6 +1704,8 @@ int main(int argc, char **argv)
         failures = test_roster_uint32_revision();
     } else if (strcmp(name, "pin-retry-wait") == 0) {
         failures = test_pin_retry_wait();
+    } else if (strcmp(name, "pin-transport-exhaust") == 0) {
+        failures = test_pin_transport_exhaustion_backoff();
     } else if (strcmp(name, "http-apply") == 0) {
         if (argc < 5) {
             fprintf(stderr, "usage: http-apply <perform_ok> <http_status> <body-file>\n");

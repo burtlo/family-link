@@ -8,7 +8,18 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit
 from device_targets import Port, select, bind
-from firmware import digest, firmware_build_id_from_package, idf_product_cmake_args, package_for, publish, build
+from firmware import (
+    _idf_python,
+    _idf_python_env_prefix,
+    _prepare_windows_idf_export_env,
+    _windows_env,
+    digest,
+    firmware_build_id_from_package,
+    idf_product_cmake_args,
+    package_for,
+    publish,
+    build,
+)
 from project_config import ProjectConfigError
 
 
@@ -53,6 +64,48 @@ class TargetTests(unittest.TestCase):
     def test_bind_rejects_other_kits_serial_before_writing(self):
         with self.assertRaises(ProjectConfigError):
             bind(roster(), "arlo", "COM1", [Port("COM1", "AA11")])
+
+
+class IdfEnvironmentMergeTests(unittest.TestCase):
+    def test_windows_export_path_replaces_inherited_path(self):
+        env = _windows_env({"PATH": r"C:\repo\.venv\Scripts", "IDF_PATH": r"C:\esp\esp-idf"})
+        env.update(_windows_env({
+            "Path": r"C:\Users\lynnv\.espressif\python_env\idf5.4_py3.14_env\Scripts;C:\esp\esp-idf\tools",
+            "IDF_PYTHON_ENV_PATH": r"C:\Users\lynnv\.espressif\python_env\idf5.4_py3.14_env",
+        }))
+        self.assertTrue(env["PATH"].startswith(r"C:\Users\lynnv\.espressif\python_env"))
+        self.assertNotIn("Path", env)
+
+    def test_idf_python_env_prefix(self):
+        self.assertEqual(_idf_python_env_prefix("v5.4.2"), "idf5.4")
+
+    @unittest.skipUnless(sys.platform == "win32", "Windows IDF python_env layout")
+    def test_windows_export_prefers_installed_idf_python(self):
+        env = _windows_env({
+            "PATH": r"C:\Program Files\Git\usr\bin;C:\repo\.venv\Scripts",
+            "MSYSTEM": "MINGW64",
+            "IDF_PATH": r"C:\esp\esp-idf",
+        })
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory) / "python_env" / "idf5.4_py3.14_env"
+            scripts = home / "Scripts"
+            scripts.mkdir(parents=True)
+            (scripts / "python.exe").write_bytes(b"")
+            env["IDF_TOOLS_PATH"] = directory
+            _prepare_windows_idf_export_env(env, "v5.4.2")
+        self.assertNotIn("MSYSTEM", env)
+        self.assertTrue(env["PATH"].startswith(str(scripts)))
+        self.assertEqual(env["IDF_PYTHON_ENV_PATH"], str(home))
+
+    def test_idf_python_prefers_idf_python_env_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            scripts = home / ("Scripts" if sys.platform == "win32" else "bin")
+            scripts.mkdir()
+            name = "python.exe" if sys.platform == "win32" else "python"
+            (scripts / name).write_bytes(b"")
+            found = _idf_python({"IDF_PYTHON_ENV_PATH": str(home), "PATH": str(home)})
+            self.assertEqual(Path(found), scripts / name)
 
 
 class IdfCmakeArgsTests(unittest.TestCase):
