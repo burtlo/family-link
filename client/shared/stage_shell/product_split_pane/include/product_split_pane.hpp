@@ -1,9 +1,8 @@
 #pragma once
 
+#include "desk_layout.hpp"
 #include "fl_shell_model.h"
 #include "lvgl.h"
-
-#include <stdint.h>
 
 namespace stage_shell
 {
@@ -11,14 +10,14 @@ namespace stage_shell
 /*
  * Desk split-pane LVGL chrome: upper/lower slots and stage bookmark.
  *
- * Does not own canvas size or the content root — product_ui::UiWindow sets the
- * full-bleed content root and exposes layout via product_ui_window_* queries.
- * SplitPane only mounts slot objects inside that parent.
+ * Does not own canvas size or the content root — product_ui::UiWindow sizes the
+ * content root and passes DeskLayout at mount. SplitPane only builds slots inside
+ * that parent.
  */
 class SplitPane
 {
   public:
-    bool mount(lv_obj_t *content_root);
+    bool mount(lv_obj_t *content_root, const DeskLayout &layout);
     void unmount();
 
     [[nodiscard]] bool mounted() const
@@ -35,13 +34,14 @@ class SplitPane
     void setStage(fl_shell_stage_t stage);
 
   private:
-    bool queryLayoutFromWindow();
+    bool applyLayout(const DeskLayout &layout);
     bool buildSlots();
     void styleSlot(lv_obj_t *slot, uint32_t bg_rgb24);
 
     lv_obj_t *parent_ = nullptr;
     lv_obj_t *upper_ = nullptr;
     lv_obj_t *lower_ = nullptr;
+    DeskLayout layout_{};
     lv_coord_t canvas_w_ = 0;
     lv_coord_t canvas_h_ = 0;
     lv_coord_t upper_h_ = 0;

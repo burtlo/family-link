@@ -2,6 +2,8 @@
 
 #include "lvgl.h"
 
+#include "desk_layout.hpp"
+
 namespace product_ui
 {
 
@@ -17,7 +19,7 @@ enum class Scene {
  * Owns: active screen sizing, themed shell backdrop, transparent content root,
  *       desk vs record scene, desk module attach orchestration.
  * Split-pane (stage_shell::SplitPane) owns upper/lower slots and stage bookmark;
- * it queries canvas geometry through product_ui_window_canvas.h (C hooks in main).
+ * UiWindow passes stage_shell::DeskLayout at mount.
  */
 class UiWindow
 {
@@ -38,10 +40,6 @@ class UiWindow
         return content_root_;
     }
 
-    bool canvasSize(lv_coord_t *width_out, lv_coord_t *height_out) const;
-    bool splitPaneUpperHeight(lv_coord_t *height_out) const;
-    bool splitPaneSlotColors(uint32_t *upper_rgb24_out, uint32_t *lower_rgb24_out) const;
-
     bool mountDesk();
     bool mountRecord();
     bool deskRoots(lv_obj_t **upper_out, lv_obj_t **lower_out);
@@ -50,6 +48,7 @@ class UiWindow
     bool ensureContentRoot(lv_obj_t *screen);
     bool ensureDeskSlots();
     bool attachDeskModulesOnce();
+    bool deskSplitLayout(stage_shell::DeskLayout *layout_out) const;
 
     lv_obj_t *screen_ = nullptr;
     lv_obj_t *content_root_ = nullptr;

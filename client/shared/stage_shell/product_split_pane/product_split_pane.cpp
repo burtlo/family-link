@@ -1,7 +1,6 @@
 #include "product_split_pane.hpp"
 
 #include "esp_log.h"
-#include "product_ui_window_canvas.h"
 
 namespace stage_shell
 {
@@ -26,16 +25,17 @@ SplitPane &splitPane()
     return pane;
 }
 
-bool SplitPane::queryLayoutFromWindow()
+bool SplitPane::applyLayout(const DeskLayout &layout)
 {
-    if (!product_ui_window_canvas_size(&canvas_w_, &canvas_h_) ||
-        !product_ui_window_split_pane_upper_height(&upper_h_) ||
-        !product_ui_window_split_pane_slot_colors(&upper_rgb24_, &lower_rgb24_)) {
+    if (!layout.valid()) {
         return false;
     }
-    if (upper_h_ <= 0 || upper_h_ >= canvas_h_) {
-        return false;
-    }
+    layout_ = layout;
+    canvas_w_ = layout.canvas_w;
+    canvas_h_ = layout.canvas_h;
+    upper_h_ = layout.upper_h;
+    upper_rgb24_ = layout.upper_rgb24;
+    lower_rgb24_ = layout.lower_rgb24;
     return true;
 }
 
@@ -68,7 +68,7 @@ bool SplitPane::buildSlots()
     return true;
 }
 
-bool SplitPane::mount(lv_obj_t *content_root)
+bool SplitPane::mount(lv_obj_t *content_root, const DeskLayout &layout)
 {
     if (content_root == nullptr) {
         return false;
@@ -76,12 +76,11 @@ bool SplitPane::mount(lv_obj_t *content_root)
     if (mounted_) {
         return slotsLive();
     }
-    parent_ = content_root;
-    stage_ = FL_SHELL_STAGE_ROSTER;
-    if (!queryLayoutFromWindow()) {
-        parent_ = nullptr;
+    if (!applyLayout(layout)) {
         return false;
     }
+    parent_ = content_root;
+    stage_ = FL_SHELL_STAGE_ROSTER;
     if (!buildSlots()) {
         parent_ = nullptr;
         return false;
@@ -95,6 +94,7 @@ void SplitPane::unmount()
 {
     destroySlots();
     parent_ = nullptr;
+    layout_ = {};
     canvas_w_ = 0;
     canvas_h_ = 0;
     upper_h_ = 0;
@@ -149,14 +149,11 @@ void SplitPane::destroySlots()
 
 bool SplitPane::createSlots()
 {
-    if (!mounted_) {
+    if (!mounted_ || !layout_.valid()) {
         return false;
     }
     if (upper_ != nullptr && lower_ != nullptr) {
         return true;
-    }
-    if (!queryLayoutFromWindow()) {
-        return false;
     }
     destroySlots();
     return buildSlots();

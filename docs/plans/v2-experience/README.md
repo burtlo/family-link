@@ -14,6 +14,7 @@ The map does not authorize firmware work. Core-journey wire decisions are record
 |------|---------|
 | [implementation.md](implementation.md) | **Canonical** — deltas, work packages (P1–P10), verifier hooks, build order |
 | [ui-memory-lifecycle-review-2026-10-25.md](ui-memory-lifecycle-review-2026-10-25.md) | Read-only review of memory ownership, LAB-16 measurement coverage, and scene lifecycle |
+| [device-ui-shell-architecture-proposal.md](device-ui-shell-architecture-proposal.md) | **Proposal to explore** — candidate window / host / lazy-panel runtime; not owner-approved, not an implementation authorization |
 
 ## Normative sources
 
