@@ -1,0 +1,19 @@
+---
+description: Keep LF line endings in tracked text files (especially on Windows agents)
+alwaysApply: true
+---
+
+# Line endings (LF only)
+
+The repository stores **LF** for all tracked text files ([`.gitattributes`](../../.gitattributes), [`.editorconfig`](../../.editorconfig), [`docs/standards/code-formatting.md`](../../docs/standards/code-formatting.md)). Exception: `*.bat` and `*.cmd` use CRLF.
+
+## Agent edits
+
+On **Windows**, Cursor Agent file writes often land as **CRLF** even when the repo policy is LF. Do not leave that for the owner to fix.
+
+- Prefer **patch edits** on existing files over rewriting whole files when possible.
+- When creating or heavily editing tracked text files, treat **`\n` only** as the line terminator in file content.
+- After substantive edits to tracked text (especially C/C++, Python, Markdown, YAML, JSON), run **`make eol.fix`** from the repo root before finishing the task. Use **`make eol.check`** when you only need to verify.
+- Do **not** run `eol.fix` on paths under `poc-v1/` (archive boundary).
+
+Wire-format `\r\n` **inside string or byte literals** is fine; that is not a file line-ending change.

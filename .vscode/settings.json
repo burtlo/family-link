@@ -1,4 +1,6 @@
 {
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
   "C_Cpp.clang_format_style": "file",
   "C_Cpp.formatting": "clangFormat",
   "[c]": {

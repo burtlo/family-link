@@ -33,6 +33,8 @@ Tracked **text** files use **LF** only. Exceptions:
 
 Git enforces this via [`.gitattributes`](../../.gitattributes). **`make format`** runs LF normalization after clang-format; use **`make eol.fix`** / **`make eol.check`** when you only need line endings.
 
+On Windows, IDE and Agent file writes may still produce CRLF in the working tree even though `.editorconfig` specifies LF. Agents should follow [`.cursor/rules/line-endings.mdc`](../../.cursor/rules/line-endings.mdc) and run **`make eol.fix`** after substantive text edits.
+
 HTTP and serial fixtures may still contain `\r\n` **inside string or byte literals**; that is wire format, not file line endings.
 
 ## Editor
