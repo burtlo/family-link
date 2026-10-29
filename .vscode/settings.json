@@ -18,7 +18,7 @@
   "cSpell.useWorkspaceDictionary": true,
   "clangd.arguments": [
     "--compile-commands-dir=${workspaceFolder}/build/device",
-    "--query-driver=/**/xtensa-*-elf-*",
+    "--query-driver=**/xtensa-*-elf-g++*",
     "--background-index"
   ],
   "C_Cpp.intelliSenseEngine": "disabled",

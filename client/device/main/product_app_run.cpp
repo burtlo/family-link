@@ -1,8 +1,8 @@
 #include "product_app.hpp"
+
 #include "esp_log.h"
-#include "freertos/FreeRTOS.h" // IWYU pragma: keep (IDF: before task.h)
-#include "freertos/task.h"
 #include "lvgl.h"
+#include "product_app_idle.hpp"
 #include "product_buttons.hpp"
 #include "product_display.hpp"
 #include "product_display_lock.hpp"
@@ -19,7 +19,6 @@ namespace product_app
 namespace
 {
 bool attach_product_ui();
-void idle();
 } /* namespace */
 
 void run()
@@ -33,7 +32,7 @@ void run()
         ESP_LOGI(APP_LOG_TAG, "product_ui_ready build=%s", FIRMWARE_BUILD_ID);
         product_network::start();
     }
-    idle();
+    idle_forever();
 }
 
 namespace
@@ -59,15 +58,6 @@ bool attach_product_ui()
     lv_refr_now(lv_display_get_default());
     product_mem::probe("ui_ready", 0);
     return true;
-}
-
-/* app_main's task must not return after boot: LVGL, network, and workers run elsewhere.
- * Sleep here so the process stays up and serial logs remain useful without aborting boot. */
-void idle()
-{
-    while (true) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
 }
 
 } /* namespace */
