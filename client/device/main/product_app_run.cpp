@@ -5,6 +5,7 @@
 #include "freertos/task.h"
 #include "lvgl.h"
 #include "product_buttons.hpp"
+#include "product_display_lock.hpp"
 #include "product_mem.hpp"
 #include "product_network.hpp"
 #include "product_ui_window.hpp"
@@ -17,66 +18,13 @@ namespace product_app
 
 namespace
 {
-
-class DisplayLock
-{
-  public:
-    explicit DisplayLock(int timeout_ms)
-        : locked_(bsp_display_lock(timeout_ms) != 0) {}
-    ~DisplayLock()
-    {
-        if (locked_) {
-            bsp_display_unlock();
-        }
-    }
-    explicit operator bool() const
-    {
-        return locked_;
-    }
-
-    DisplayLock(const DisplayLock &) = delete;
-    DisplayLock &operator=(const DisplayLock &) = delete;
-
-  private:
-    bool locked_;
-};
-
-bool attach_product_ui()
-{
-    if (!product_ui::uiWindow().create(lv_screen_active())) {
-        ESP_LOGE(APP_LOG_TAG, "product_ui_window_create_failed");
-        return false;
-    }
-    if (!product_ui::uiWindow().mountDesk()) {
-        ESP_LOGE(APP_LOG_TAG, "product_ui_window_show_desk_failed");
-        return false;
-    }
-    lv_refr_now(lv_display_get_default());
-    product_mem::probe("ui_ready", 0);
-    return true;
-}
-
-void idle()
-{
-    while (true) {
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-}
-
+bool attach_product_ui();
+void idle();
 } /* namespace */
 
 void run()
 {
-    bool ui_ready = false;
-
-    {
-        DisplayLock lock(APP_LVGL_ATTACH_LOCK_MS);
-        if (!lock) {
-            ESP_LOGE(APP_LOG_TAG, "lvgl_lock_failed");
-        } else {
-            ui_ready = attach_product_ui();
-        }
-    }
+    const bool ui_ready = attach_product_ui();
 
     if (ui_ready) {
         if (product_buttons::mute_latched() == 0) {
@@ -87,5 +35,41 @@ void run()
     }
     idle();
 }
+
+namespace
+{
+
+bool attach_product_ui()
+{
+    product_display::DisplayLock lock(APP_LVGL_ATTACH_LOCK_MS);
+    if (!lock) {
+        ESP_LOGE(APP_LOG_TAG, "lvgl_lock_failed");
+        return false;
+    }
+
+    product_ui::UiWindow &win = product_ui::uiWindow();
+    if (!win.create(lv_screen_active())) {
+        ESP_LOGE(APP_LOG_TAG, "product_ui_window_create_failed");
+        return false;
+    }
+    if (!win.mountDesk()) {
+        ESP_LOGE(APP_LOG_TAG, "product_ui_window_show_desk_failed");
+        return false;
+    }
+    lv_refr_now(lv_display_get_default());
+    product_mem::probe("ui_ready", 0);
+    return true;
+}
+
+/* app_main's task must not return after boot: LVGL, network, and workers run elsewhere.
+ * Sleep here so the process stays up and serial logs remain useful without aborting boot. */
+void idle()
+{
+    while (true) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+} /* namespace */
 
 } /* namespace product_app */
