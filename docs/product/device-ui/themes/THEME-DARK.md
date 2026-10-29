@@ -2,7 +2,7 @@
 
 ID: `THEME-DARK`
 Type: Theme
-Revision: 0.4
+Revision: 0.5
 Status: Draft — first intentional color scheme (no second theme in v2)
 Owner: Product owner
 Approval: No visual approval claimed
@@ -29,6 +29,11 @@ matching legacy v1 device quantization.
 | `fl-color-sketch-canvas` | `#000000` | Record drawing surface fill and background-color ink |
 | `fl-color-swatch-ring` | `#B8BEC6` | Ring on every record-palette swatch |
 | `fl-color-card-peek` | `#242C34` | Optional non-focused peek fills when specified |
+| `fl-color-heading` | `#FFFFFF` | Login and inbox headings; PIN cooldown titles |
+| `fl-color-subheading` | `#B7CBD7` | Login lower status; inbox status; send subtitle and empty copy |
+| `fl-color-avatar-default` | `#F4F4F4` | Initials-circle fill when profile artwork is absent |
+| `fl-color-pin-keys` | `#D7E2EA` | PIN keypad key fill |
+| `fl-color-record-ring` | `#E53935` | Record elapsed-time arc (same hex as sketch red ink) |
 | `fl-color-text-on-card` | *(per catalog entry)* | User name on [`COMP-USER-CARD`](../components/COMP-USER-CARD.md) |
 
 Card faces use solid fills from
@@ -65,6 +70,8 @@ does the same; the focused panel then paints `fl-color-sketch-canvas`.
 
 ## Revision history
 
+- **0.5 — 2026-10-28:** As-built heading, subheading, avatar default, PIN
+  keys, and record ring.
 - **0.4 — 2026-10-21:** Sketch canvas `#000000` and swatch ring `#B8BEC6`.
 - **0.3 — 2026-10-21:** Two-pane lower surface `#242C34` (same pair as the
   profile-settings lab fixture).
