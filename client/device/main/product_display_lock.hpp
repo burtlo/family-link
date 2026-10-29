@@ -1,7 +1,5 @@
 #pragma once
 
-#include "bsp/esp-box-3.h"
-
 namespace product_display
 {
 
@@ -9,14 +7,8 @@ namespace product_display
 class DisplayLock
 {
   public:
-    explicit DisplayLock(int timeout_ms)
-        : locked_(bsp_display_lock(timeout_ms) != 0) {}
-    ~DisplayLock()
-    {
-        if (locked_) {
-            bsp_display_unlock();
-        }
-    }
+    explicit DisplayLock(int timeout_ms);
+    ~DisplayLock();
     explicit operator bool() const
     {
         return locked_;

@@ -202,6 +202,7 @@ def scan_display_power(sources: dict[str, str]) -> list[str]:
         LOGIN: ("wake_login_display", "blank_login_display"),
         APP_MAIN: ("app_main", "boot_backlight_after_display"),
         "product_app_run.cpp": ("run",),
+        "product_display.cpp": ("backlight_on",),
         "product_network.cpp": ("join_configured_wifi",),
     }
     for name, text in sources.items():

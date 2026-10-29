@@ -1,10 +1,10 @@
 #include "product_app.hpp"
-
-#include "bsp/esp-box-3.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h" // IWYU pragma: keep (IDF: before task.h)
 #include "freertos/task.h"
 #include "lvgl.h"
 #include "product_buttons.hpp"
+#include "product_display.hpp"
 #include "product_display_lock.hpp"
 #include "product_mem.hpp"
 #include "product_network.hpp"
@@ -28,7 +28,7 @@ void run()
 
     if (ui_ready) {
         if (product_buttons::mute_latched() == 0) {
-            (void)bsp_display_backlight_on();
+            product_display::backlight_on();
         }
         ESP_LOGI(APP_LOG_TAG, "product_ui_ready build=%s", FIRMWARE_BUILD_ID);
         product_network::start();

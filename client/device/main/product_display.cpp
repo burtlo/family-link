@@ -33,4 +33,9 @@ lv_display_t *start()
     return display;
 }
 
+void backlight_on()
+{
+    (void)bsp_display_backlight_on();
+}
+
 } /* namespace product_display */
