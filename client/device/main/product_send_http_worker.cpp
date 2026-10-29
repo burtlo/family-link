@@ -1,6 +1,6 @@
-#include "product_send_http_worker.h"
+#include "product_send_http_worker.hpp"
 
-#include "product_mem_probe.h"
+#include "product_mem.hpp"
 
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
@@ -45,7 +45,7 @@ QueueHandle_t s_jobs = nullptr;
 QueueHandle_t s_results = nullptr;
 TaskHandle_t s_worker = nullptr;
 char s_base_url[kUrlCap];
-product_send_http_result_t s_polled;
+product_send_http::Result s_polled;
 
 bool join_url(const char *suffix, char *out, int cap)
 {
@@ -146,7 +146,7 @@ void perform_exchange(const HttpJob &job, HttpExchange *out)
 void worker_task(void *arg)
 {
     HttpJob job;
-    static product_send_http_result_t result;
+    static product_send_http::Result result;
     static HttpExchange exchange;
     (void)arg;
     while (true) {
@@ -156,10 +156,10 @@ void worker_task(void *arg)
         memset(&result, 0, sizeof(result));
         result.seq = job.seq;
         strncpy(result.client_message_id, job.client_message_id, sizeof(result.client_message_id) - 1);
-        product_mem_probe_heap("send_worker_begin", (int32_t)job.body_len);
+        product_mem::probe_heap("send_worker_begin", (int32_t)job.body_len);
         perform_exchange(job, &exchange);
         memset(job.bearer, 0, sizeof(job.bearer));
-        product_mem_probe_heap("send_worker_end", exchange.perform_ok ? exchange.http_status : -1);
+        product_mem::probe_heap("send_worker_end", exchange.perform_ok ? exchange.http_status : -1);
         result.perform_ok = exchange.perform_ok;
         result.http_status = exchange.http_status;
         result.body_len = exchange.body_len;
@@ -175,31 +175,34 @@ void worker_task(void *arg)
 
 } /* namespace */
 
-extern "C" bool product_send_http_worker_start(void)
+namespace product_send_http
+{
+
+bool worker_start()
 {
     if (s_worker != nullptr) {
         return true;
     }
     strncpy(s_base_url, CONFIG_FAMILY_P1_BASE_URL, sizeof(s_base_url) - 1);
     s_jobs = xQueueCreate(1, sizeof(HttpJob));
-    s_results = xQueueCreate(1, sizeof(product_send_http_result_t));
+    s_results = xQueueCreate(1, sizeof(Result));
     if (s_jobs == nullptr || s_results == nullptr) {
         ESP_LOGE(kTag, "queue alloc failed");
-        product_send_http_worker_stop();
+        worker_stop();
         return false;
     }
     if (xTaskCreateWithCaps(worker_task, "send_http", kHttpWorkerStack, nullptr, 5, &s_worker,
                             MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) != pdPASS) {
         ESP_LOGE(kTag, "task create failed");
-        product_send_http_worker_stop();
+        worker_stop();
         return false;
     }
     ESP_LOGI(kTag, "send HTTP worker ready");
-    product_mem_probe_heap("send_http_worker_ready", 0);
+    product_mem::probe_heap("send_http_worker_ready", 0);
     return true;
 }
 
-extern "C" void product_send_http_worker_stop(void)
+void worker_stop()
 {
     if (s_worker != nullptr) {
         vTaskDeleteWithCaps(s_worker);
@@ -215,9 +218,8 @@ extern "C" void product_send_http_worker_stop(void)
     }
 }
 
-extern "C" bool product_send_http_submit(const char *method, const char *path, const uint8_t *body, uint32_t body_len,
-                                         int is_json, const char *client_message_id, uint32_t seq,
-                                         const char *bearer)
+bool submit(const char *method, const char *path, const uint8_t *body, uint32_t body_len, int is_json,
+            const char *client_message_id, uint32_t seq, const char *bearer)
 {
     HttpJob job;
     bool queued;
@@ -239,7 +241,7 @@ extern "C" bool product_send_http_submit(const char *method, const char *path, c
     return queued;
 }
 
-extern "C" const product_send_http_result_t *product_send_http_poll(void)
+const Result *poll()
 {
     if (s_results == nullptr) {
         return nullptr;
@@ -249,3 +251,5 @@ extern "C" const product_send_http_result_t *product_send_http_poll(void)
     }
     return &s_polled;
 }
+
+} /* namespace product_send_http */

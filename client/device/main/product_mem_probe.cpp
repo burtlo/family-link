@@ -1,17 +1,23 @@
-#include "product_mem_probe.h"
+#include "product_mem.hpp"
 
 #if CONFIG_FAMILY_DEVICE_MEM_DIAGNOSTIC
 
-#include "esp_heap_caps.h"  // IWYU pragma: keep
-#include "esp_log.h"        // IWYU pragma: keep
-#include "esp_timer.h"      // IWYU pragma: keep
-#include "freertos/FreeRTOS.h"  // IWYU pragma: keep
-#include "freertos/task.h"      // IWYU pragma: keep
-#include "lvgl.h"           // IWYU pragma: keep
+#include "esp_heap_caps.h"     // IWYU pragma: keep
+#include "esp_log.h"           // IWYU pragma: keep
+#include "esp_timer.h"         // IWYU pragma: keep
+#include "freertos/FreeRTOS.h" // IWYU pragma: keep
+#include "freertos/task.h"     // IWYU pragma: keep
+#include "lvgl.h"              // IWYU pragma: keep
 
-static const char *kTag = "product_mem";
+namespace product_mem
+{
 
-static void log_sample(const char *phase, int32_t detail, int with_lvgl)
+namespace
+{
+
+const char *kTag = "product_mem";
+
+void log_sample(const char *phase, int32_t detail, int with_lvgl)
 {
     const unsigned dma_total =
         (unsigned)heap_caps_get_total_size(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
@@ -47,14 +53,18 @@ static void log_sample(const char *phase, int32_t detail, int with_lvgl)
              psram_free, pcTaskGetName(NULL), stack_hw);
 }
 
-extern "C" void product_mem_probe(const char *phase, int32_t detail)
+} /* namespace */
+
+void probe(const char *phase, int32_t detail)
 {
     log_sample(phase, detail, 1);
 }
 
-extern "C" void product_mem_probe_heap(const char *phase, int32_t detail)
+void probe_heap(const char *phase, int32_t detail)
 {
     log_sample(phase, detail, 0);
 }
+
+} /* namespace product_mem */
 
 #endif

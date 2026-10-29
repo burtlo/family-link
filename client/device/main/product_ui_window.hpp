@@ -17,7 +17,7 @@ enum class Scene {
  * Owns: active screen sizing, themed shell backdrop, transparent content root,
  *       desk vs record scene, desk module attach orchestration.
  * Split-pane (stage_shell::SplitPane) owns upper/lower slots and stage bookmark;
- * it queries this window for canvas, split geometry, and slot theme colors.
+ * it queries canvas geometry through product_ui_window_canvas.h (C hooks in main).
  */
 class UiWindow
 {

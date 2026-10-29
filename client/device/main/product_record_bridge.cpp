@@ -1,4 +1,4 @@
-#include "product_record_fw.h"
+#include "product_record.hpp"
 
 #include "bsp/esp-box-3.h"
 #include "esp_heap_caps.h"
@@ -8,10 +8,10 @@
 #include "fl_product_record_media.hpp"
 #include "fl_product_record_session.hpp"
 #include "freertos/semphr.h"
-#include "product_mem_probe.h"
-#include "product_mic_capture.h"
+#include "product_mem.hpp"
+#include "product_mic.hpp"
 #include "product_split_pane.hpp"
-#include "product_stage_router.h"
+#include "product_stage_router.hpp"
 
 #include <new>
 #include <stdio.h>
@@ -179,15 +179,15 @@ bool ensure_session()
     if (s_record != nullptr) {
         return true;
     }
-    product_mem_probe("session_new_before", (int32_t)sizeof(fl_product_record::RecordSession));
+    product_mem::probe("session_new_before", (int32_t)sizeof(fl_product_record::RecordSession));
     s_record = new (std::nothrow) fl_product_record::RecordSession();
     if (s_record == nullptr) {
         ESP_LOGE(kTag, "record_session_alloc_failed");
         return false;
     }
-    product_mem_probe("session_new_after", 0);
+    product_mem::probe("session_new_after", 0);
     s_record->boot((int64_t)(esp_timer_get_time() / 1000LL));
-    product_mem_probe("session_boot_after", s_record->renderer_handle() != nullptr ? 1 : 0);
+    product_mem::probe("session_boot_after", s_record->renderer_handle() != nullptr ? 1 : 0);
     hook_renderer();
     return true;
 }
@@ -210,14 +210,14 @@ bool ensure_media()
     }
     /* FATFS is built without long file names: the name must fit 8.3. */
     snprintf(path, sizeof(path), "%s/flmsgs.bin", BSP_SD_MOUNT_POINT);
-    product_mem_probe("media_open_before", 0);
+    product_mem::probe("media_open_before", 0);
     if (!s_media.open_path(path, false) && !s_media.open_path(path, true)) {
         ESP_LOGW(kTag, "media open failed");
         return false;
     }
     s_record->attach_media(&s_media);
     s_media_ready = true;
-    product_mem_probe("media_open_after", 0);
+    product_mem::probe("media_open_after", 0);
     return true;
 }
 
@@ -266,7 +266,7 @@ void paint_motion()
         return;
     }
     radius = s_record->ring_outer_radius();
-    product_mem_probe(s_record->wiping() ? "wipe_frame" : "reverse_frame", radius);
+    product_mem::probe(s_record->wiping() ? "wipe_frame" : "reverse_frame", radius);
     clip = lab10_ui_ring_reveal_clip(LAB10_RING_ORIGIN_Y, radius);
     if (s_reveal != nullptr) {
         if (clip.hidden) {
@@ -308,7 +308,7 @@ void on_record_pointer(lv_event_t *event)
         return;
     }
     if (lv_event_get_code(event) == LV_EVENT_PRESSED) {
-        product_mem_probe("touch_down", 0);
+        product_mem::probe("touch_down", 0);
     }
     ++s_touch_events;
     indev = lv_event_get_indev(event);
@@ -339,21 +339,21 @@ void note_session_result()
     int notice;
     if (s_begin_failed != 0) {
         s_begin_failed = 0;
-        (void)product_stage_on_capture_failed();
+        (void)product_stage::on_capture_failed();
     }
     if (s_record == nullptr) {
         return;
     }
     notice = s_record->consume_notice();
     if (notice == fl_product_record::kSessionNoticeWipeCompleted) {
-        product_mem_probe("wipe_complete", 0);
-        (void)product_stage_on_wipe_complete();
+        product_mem::probe("wipe_complete", 0);
+        (void)product_stage::on_wipe_complete();
     } else if (notice == fl_product_record::kSessionNoticeTakeFinished) {
-        product_mem_probe("take_finished_notice", 0);
-        (void)product_stage_on_take_finished();
+        product_mem::probe("take_finished_notice", 0);
+        (void)product_stage::on_take_finished();
     } else if (notice == fl_product_record::kSessionNoticeCaptureFailed) {
-        product_mem_probe("capture_failed_notice", 0);
-        (void)product_stage_on_capture_failed();
+        product_mem::probe("capture_failed_notice", 0);
+        (void)product_stage::on_capture_failed();
     }
 }
 
@@ -382,7 +382,10 @@ lv_obj_t *paint_swatch(lv_obj_t *parent, int center_x, int center_y, uint32_t rg
 
 /* Powering the BOX-3 card slot while the LCD is running leaves the panel white
  * until power cycle, so the card is mounted once, before the display starts. */
-extern "C" bool product_record_mount_storage(void)
+namespace product_record
+{
+
+bool mount_storage(void)
 {
     if (s_store_mu == nullptr) {
         s_store_mu = xSemaphoreCreateRecursiveMutexStatic(&s_store_mu_buf);
@@ -393,7 +396,7 @@ extern "C" bool product_record_mount_storage(void)
     return s_storage_mounted;
 }
 
-extern "C" bool product_record_attach(lv_obj_t *panel_root)
+bool attach(lv_obj_t *panel_root)
 {
     unsigned index;
     if (panel_root == nullptr || s_attached) {
@@ -477,19 +480,19 @@ extern "C" bool product_record_attach(lv_obj_t *panel_root)
     return true;
 }
 
-extern "C" int product_record_ensure(lv_obj_t *panel_root)
+int ensure(lv_obj_t *panel_root)
 {
     int ok;
     if (s_attached) {
         return 1;
     }
-    product_mem_probe("record_attach_before", 0);
-    ok = product_record_attach(panel_root) ? 1 : 0;
-    product_mem_probe("record_attach_after", ok);
+    product_mem::probe("record_attach_before", 0);
+    ok = attach(panel_root) ? 1 : 0;
+    product_mem::probe("record_attach_after", ok);
     return ok;
 }
 
-extern "C" void product_record_release_surface(void)
+void release_surface(void)
 {
     unsigned index;
     if (s_root != nullptr) {
@@ -505,15 +508,15 @@ extern "C" void product_record_release_surface(void)
     }
     s_outlined_swatch = -1;
     s_attached = false;
-    product_mem_probe("record_surface_released", 0);
+    product_mem::probe("record_surface_released", 0);
 }
 
-extern "C" void product_record_set_visible(int visible)
+void set_visible(bool visible)
 {
-    layout_record_surface(visible != 0);
+    layout_record_surface(visible);
 }
 
-extern "C" int product_record_can_start_second(void)
+int can_start_second(void)
 {
     StoreLock lock;
     if (s_record == nullptr) {
@@ -522,13 +525,13 @@ extern "C" int product_record_can_start_second(void)
     return s_record->storage().can_start_second_recording() ? 1 : 0;
 }
 
-extern "C" int product_record_capture_can_start(void)
+int capture_can_start(void)
 {
     StoreLock lock;
     return ensure_media() ? 1 : 0;
 }
 
-extern "C" int product_record_begin_wipe(const char *client_message_id, int64_t now_ms)
+int begin_wipe(const char *client_message_id, int64_t now_ms)
 {
     StoreLock lock;
     if (!ensure_media() || client_message_id == nullptr) {
@@ -550,17 +553,17 @@ extern "C" int product_record_begin_wipe(const char *client_message_id, int64_t 
                  client_message_id, s_record->storage().has_in_progress() ? 1 : 0, finished, duplicate,
                  (s_record->wiping() || s_record->reversing() || s_record->capture_active()) ? 1 : 0);
         s_begin_failed = 1;
-        product_mem_probe("wipe_begin", 0);
+        product_mem::probe("wipe_begin", 0);
         return 0;
     }
-    product_mem_probe("wipe_begin", 1);
+    product_mem::probe("wipe_begin", 1);
     clear_canvas();
     s_outlined_swatch = -1;
     paint_motion();
     return 1;
 }
 
-extern "C" void product_record_begin_reverse(int64_t now_ms)
+void begin_reverse(int64_t now_ms)
 {
     StoreLock lock;
     if (!ensure_session()) {
@@ -570,18 +573,18 @@ extern "C" void product_record_begin_reverse(int64_t now_ms)
     paint_motion();
 }
 
-extern "C" void product_record_begin_finish_collapse(int64_t now_ms)
+void begin_finish_collapse(int64_t now_ms)
 {
     if (!ensure_session()) {
         return;
     }
-    product_mem_probe("collapse_begin", 0);
+    product_mem::probe("collapse_begin", 0);
     s_record->begin_finish_collapse(now_ms);
     paint_motion();
 }
 
-extern "C" int product_record_read_finished(const char *client_message_id, int kind, uint32_t offset, uint8_t *dest,
-                                            uint32_t len, uint32_t *out_read)
+int read_finished(const char *client_message_id, int kind, uint32_t offset, uint8_t *dest,
+                  uint32_t len, uint32_t *out_read)
 {
     size_t n = 0;
     fl_product_record::MediaKind media;
@@ -604,8 +607,8 @@ extern "C" int product_record_read_finished(const char *client_message_id, int k
     return 1;
 }
 
-extern "C" int product_record_finished_info(const char *client_message_id, uint32_t *audio_bytes,
-                                            uint32_t *sketch_bytes)
+int finished_info(const char *client_message_id, uint32_t *audio_bytes,
+                  uint32_t *sketch_bytes)
 {
     int i;
     StoreLock lock;
@@ -628,7 +631,7 @@ extern "C" int product_record_finished_info(const char *client_message_id, uint3
     return 0;
 }
 
-extern "C" int product_record_mark_uploading(const char *client_message_id)
+int mark_uploading(const char *client_message_id)
 {
     StoreLock lock;
     if (s_record == nullptr || client_message_id == nullptr) {
@@ -637,7 +640,7 @@ extern "C" int product_record_mark_uploading(const char *client_message_id)
     return s_record->storage().mark_finished_uploading(client_message_id) ? 1 : 0;
 }
 
-extern "C" void product_record_clear_upload(const char *client_message_id)
+void clear_upload(const char *client_message_id)
 {
     StoreLock lock;
     if (s_record == nullptr || client_message_id == nullptr) {
@@ -646,7 +649,7 @@ extern "C" void product_record_clear_upload(const char *client_message_id)
     s_record->storage().clear_finished_upload(client_message_id);
 }
 
-extern "C" int product_record_push_pcm(const uint8_t *pcm, size_t len)
+int push_pcm(const uint8_t *pcm, size_t len)
 {
     StoreLock lock;
     if (s_record == nullptr) {
@@ -655,7 +658,7 @@ extern "C" int product_record_push_pcm(const uint8_t *pcm, size_t len)
     return s_record->push_pcm(pcm, len) ? 1 : 0;
 }
 
-extern "C" void product_record_notify_mic_failed(void)
+void notify_mic_failed(void)
 {
     StoreLock lock;
     if (s_record == nullptr) {
@@ -664,7 +667,7 @@ extern "C" void product_record_notify_mic_failed(void)
     s_record->notify_mic_failed();
 }
 
-extern "C" void product_record_discard_in_progress(void)
+void discard_in_progress(void)
 {
     StoreLock lock;
     if (s_record == nullptr) {
@@ -673,7 +676,7 @@ extern "C" void product_record_discard_in_progress(void)
     s_record->storage().discard_in_progress();
 }
 
-extern "C" void product_record_cancel_recording(void)
+void cancel_recording(void)
 {
     StoreLock lock;
     if (s_record == nullptr) {
@@ -682,7 +685,7 @@ extern "C" void product_record_cancel_recording(void)
     s_record->cancel_recording();
 }
 
-extern "C" int product_record_finish_take(void)
+int finish_take(void)
 {
     int64_t started_us;
     int ok;
@@ -690,29 +693,29 @@ extern "C" int product_record_finish_take(void)
     if (s_record == nullptr) {
         return 0;
     }
-    product_mem_probe("finish_take_begin", 0);
+    product_mem::probe("finish_take_begin", 0);
     started_us = esp_timer_get_time();
     ok = s_record->stop_recording() ? 1 : 0;
-    product_mem_probe(ok ? "finish_take_ok_ms" : "finish_take_fail_ms",
-                      (int32_t)((esp_timer_get_time() - started_us) / 1000LL));
+    product_mem::probe(ok ? "finish_take_ok_ms" : "finish_take_fail_ms",
+                       (int32_t)((esp_timer_get_time() - started_us) / 1000LL));
     return ok;
 }
 
-extern "C" void product_record_service(int64_t now_ms)
+void service(int64_t now_ms)
 {
     {
         StoreLock lock;
         /* Connectivity loss does not stop this clock. */
         if (s_record != nullptr) {
             s_record->advance_to(now_ms);
-            if (product_mic_take_failure()) {
+            if (product_mic::take_failure()) {
                 s_record->notify_mic_failed();
             }
         }
         note_session_result();
     }
     /* The codec opens during the wipe so audio is flowing at wipe-complete. */
-    product_mic_set_armed(s_record != nullptr && (s_record->wiping() || s_record->capture_active()) ? 1 : 0);
+    product_mic::set_armed(s_record != nullptr && (s_record->wiping() || s_record->capture_active()));
     if (stage_shell::splitPane().stage() == FL_SHELL_STAGE_RECORD) {
         paint_motion();
         if (s_record != nullptr && s_record->capture_active()) {
@@ -722,3 +725,5 @@ extern "C" void product_record_service(int64_t now_ms)
         }
     }
 }
+
+} /* namespace product_record */

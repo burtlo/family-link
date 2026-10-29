@@ -119,7 +119,7 @@ def product_stop_without_ack(root: Path | None = None) -> list[str]:
             errors.append(f"missing worker: {name}")
             continue
         text = path.read_text(encoding="utf-8")
-        bodies = [body for fn, body in _functions(text) if fn.endswith("_http_worker_stop")]
+        bodies = [body for fn, body in _functions(text) if fn.endswith("_http_worker_stop") or fn == "worker_stop"]
         if not bodies:
             errors.append(f"{name}: worker stop function not found")
             continue

@@ -1,7 +1,7 @@
-#include "product_mic_capture.h"
+#include "product_mic.hpp"
 
-#include "product_mem_probe.h"
-#include "product_record_fw.h"
+#include "product_mem.hpp"
+#include "product_record.hpp"
 
 #include "bsp/esp-box-3.h"
 #include "esp_codec_dev.h"
@@ -73,7 +73,7 @@ void mic_task(void *arg)
             }
             open = true;
             fill = 0;
-            product_mem_probe_heap("mic_capture_open", 1);
+            product_mem::probe_heap("mic_capture_open", 1);
         }
         if (esp_codec_dev_read(s_mic, s_chunk + fill, (int)kReadBytes) != ESP_CODEC_DEV_OK) {
             fail("read");
@@ -82,7 +82,7 @@ void mic_task(void *arg)
         fill += kReadBytes;
         if (fill + kReadBytes > kPushBytes) {
             /* Refused outside interactive recording (wipe, finish, cancel). */
-            (void)product_record_push_pcm(s_chunk, fill);
+            (void)product_record::push_pcm(s_chunk, fill);
             fill = 0;
         }
     }
@@ -105,9 +105,10 @@ bool start_task()
 
 } /* namespace */
 
-/* I2S DMA buffers must be internal and contiguous; by the time a recording
- * starts no block is large enough, so the codec is set up before the display. */
-extern "C" bool product_mic_init(void)
+namespace product_mic
+{
+
+bool init()
 {
     if (s_mic != nullptr) {
         return true;
@@ -121,9 +122,9 @@ extern "C" bool product_mic_init(void)
     return true;
 }
 
-extern "C" void product_mic_set_armed(int armed)
+void set_armed(bool armed)
 {
-    if (armed == 0) {
+    if (!armed) {
         s_armed = 0;
         return;
     }
@@ -138,11 +139,13 @@ extern "C" void product_mic_set_armed(int armed)
     xTaskNotifyGive(s_task);
 }
 
-extern "C" int product_mic_take_failure(void)
+bool take_failure()
 {
     if (s_failed == 0) {
-        return 0;
+        return false;
     }
     s_failed = 0;
-    return 1;
+    return true;
 }
+
+} /* namespace product_mic */

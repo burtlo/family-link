@@ -1,13 +1,11 @@
 #include "product_ui_window.hpp"
 
-#include "product_ui_window.h"
-
 #include "esp_log.h"
-#include "product_canvas.h"
-#include "product_login_fw.h"
-#include "product_record_fw.h"
+#include "product_canvas.hpp"
+#include "product_login.hpp"
+#include "product_record.hpp"
 #include "product_split_pane.hpp"
-#include "product_theme.h"
+#include "product_theme.hpp"
 
 namespace product_ui
 {
@@ -19,19 +17,6 @@ constexpr const char *kTag = "product_ui_window";
 
 /* docs/product/device-ui/catalog/tokens.yaml — split_pane.split_y */
 constexpr lv_coord_t kSplitPaneUpperHeight = 80;
-
-product_ui_scene_t to_c_scene(Scene scene)
-{
-    switch (scene) {
-        case Scene::Desk:
-            return PRODUCT_UI_SCENE_DESK;
-        case Scene::Record:
-            return PRODUCT_UI_SCENE_RECORD;
-        case Scene::None:
-        default:
-            return PRODUCT_UI_SCENE_NONE;
-    }
-}
 
 void apply_full_bleed_lvgl_chrome(lv_obj_t *obj)
 {
@@ -53,8 +38,8 @@ bool UiWindow::canvasSize(lv_coord_t *width_out, lv_coord_t *height_out) const
     if (width_out == nullptr || height_out == nullptr) {
         return false;
     }
-    *width_out = static_cast<lv_coord_t>(PRODUCT_CANVAS_WIDTH);
-    *height_out = static_cast<lv_coord_t>(PRODUCT_CANVAS_HEIGHT);
+    *width_out = static_cast<lv_coord_t>(product_canvas::kWidth);
+    *height_out = static_cast<lv_coord_t>(product_canvas::kHeight);
     return true;
 }
 
@@ -138,10 +123,10 @@ void UiWindow::destroy()
         return;
     }
     if (scene_ == Scene::Record) {
-        product_record_release_surface();
+        product_record::release_surface();
     }
     if (desk_modules_attached_) {
-        product_split_pane_release();
+        product_login::split_pane_release();
         desk_modules_attached_ = false;
     }
     stage_shell::splitPane().unmount();
@@ -166,7 +151,7 @@ bool UiWindow::ensureDeskSlots()
         return true;
     }
     if (desk_modules_attached_) {
-        product_split_pane_rebuild();
+        product_login::split_pane_rebuild();
         return pane.slotsLive();
     }
     return pane.createSlots();
@@ -180,9 +165,9 @@ bool UiWindow::attachDeskModulesOnce()
     if (desk_modules_attached_) {
         return true;
     }
-    /* product_login_attach calls product_stage_present → mountDesk; set early. */
+    /* product_login::attach calls product_stage_present → mountDesk; set early. */
     desk_modules_attached_ = true;
-    if (!deskRoots(&upper, &lower) || !product_login_attach(upper, lower)) {
+    if (!deskRoots(&upper, &lower) || !product_login::attach(upper, lower)) {
         desk_modules_attached_ = false;
         return false;
     }
@@ -216,9 +201,9 @@ bool UiWindow::mountRecord()
         return true;
     }
     if (desk_modules_attached_ && stage_shell::splitPane().slotsLive()) {
-        product_split_pane_release();
+        product_login::split_pane_release();
     }
-    if (!product_record_ensure(content_root_)) {
+    if (!product_record::ensure(content_root_)) {
         return false;
     }
     scene_ = Scene::Record;
@@ -241,44 +226,4 @@ extern "C" bool product_ui_window_split_pane_slot_colors(uint32_t *upper_rgb24_o
                                                          uint32_t *lower_rgb24_out)
 {
     return product_ui::uiWindow().splitPaneSlotColors(upper_rgb24_out, lower_rgb24_out);
-}
-
-extern "C" bool product_ui_window_create(lv_obj_t *screen)
-{
-    return product_ui::uiWindow().create(screen);
-}
-
-extern "C" void product_ui_window_destroy(void)
-{
-    product_ui::uiWindow().destroy();
-}
-
-extern "C" bool product_ui_window_created(void)
-{
-    return product_ui::uiWindow().created();
-}
-
-extern "C" lv_obj_t *product_ui_window_content_root(void)
-{
-    return product_ui::uiWindow().contentRoot();
-}
-
-extern "C" product_ui_scene_t product_ui_window_scene(void)
-{
-    return product_ui::to_c_scene(product_ui::uiWindow().scene());
-}
-
-extern "C" bool product_ui_window_desk_roots(lv_obj_t **upper_out, lv_obj_t **lower_out)
-{
-    return product_ui::uiWindow().deskRoots(upper_out, lower_out);
-}
-
-extern "C" bool product_ui_window_show_desk(void)
-{
-    return product_ui::uiWindow().mountDesk();
-}
-
-extern "C" bool product_ui_window_show_record(void)
-{
-    return product_ui::uiWindow().mountRecord();
 }

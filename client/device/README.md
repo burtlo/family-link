@@ -36,7 +36,7 @@ alongside or instead of clangd.
 Boot (serial tag `app_main`; normative order **BOOT-ORDER** in
 [device-target-invariants.md](../../docs/standards/device-target-invariants.md)):
 
-- `app_main.cpp` — kit bring-up through NVS, then `product_app_run()`
+- `app_main.cpp` — kit bring-up through NVS, then `product_app::run()`
 - `build=<id>` — first line in `app_main`
 - Subsystem lines (`product_record` SD mount, `product_mic`, `product_display`, …)
 - `boot_step=*` / `boot_backlight …` — display and initial backlight policy
@@ -55,7 +55,7 @@ Boot (serial tag `app_main`; normative order **BOOT-ORDER** in
 
 The module map in one line: `on_login_timer` in `product_login_bridge.cpp` is
 the only LVGL timer. It polls buttons, advances login, services inbox, volume,
-send, and record, then calls `product_stage_present()` in
+send, and record, then calls `product_stage::present()` in
 `product_stage_router.cpp`, which shows exactly one module.
 
 Mechanical checks (host):
@@ -72,7 +72,7 @@ sdkconfig baseline, serial negatives, desk scripts against **saved** logs only).
 The SD card is mounted once in `app_main` before the display starts
 (`product_record_mount_storage`); powering the card slot while the LCD runs
 leaves the BOX-3 panel white until power cycle. The microphone codec is set up
-in `app_main` before the display for the same reason (`product_mic_init`): its
+in `app_main` before the display for the same reason (`product_mic::init()`): its
 I2S DMA buffers take about 7 KiB of internal RAM, and no block that large is
 free once a recording starts. `product_mic_capture.cpp` reads 16 kHz mono PCM on
 its own task from wipe start until finish and appends it under the record

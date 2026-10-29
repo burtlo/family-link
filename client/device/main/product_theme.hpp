@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 /*
  * Device UI color tokens. Runtime theme switching will select among these sets.
@@ -14,7 +14,6 @@
 #define PRODUCT_THEME_DARK_SURFACE_UPPER_RGB24 UINT32_C(0x101418)
 #define PRODUCT_THEME_DARK_SURFACE_LOWER_RGB24 UINT32_C(0x242C34)
 
-#ifdef __cplusplus
 namespace product_theme
 {
 
@@ -25,4 +24,3 @@ struct Dark {
 };
 
 } /* namespace product_theme */
-#endif

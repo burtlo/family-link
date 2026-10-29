@@ -1,20 +1,28 @@
-#include "product_stage_router.h"
+#include "product_stage_router.hpp"
 
-#include "product_inbox_fw.h"
-#include "product_login_fw.h"
-#include "product_mem_probe.h"
-#include "product_record_fw.h"
-#include "product_send_fw.h"
+#include "product_inbox.hpp"
+#include "product_login.hpp"
+#include "product_mem.hpp"
+#include "product_record.hpp"
+#include "product_send.hpp"
 #include "product_split_pane.hpp"
-#include "product_ui_window.h"
-#include "product_volume_fw.h"
+#include "product_ui_window.hpp"
+#include "product_volume.hpp"
 
 #include "esp_log.h"
 #include "lvgl.h"
 
-static const char *kTag = "product_stage";
+#include "fl_product_login_session.hpp"
 
-static int apply_send_stage(const product_send_stage_result_t *result)
+namespace product_stage
+{
+
+namespace
+{
+
+const char *kTag = "product_stage";
+
+int apply_send_stage(const product_send::StageResult *result)
 {
     if (result == 0 || result->ignored) {
         return 0;
@@ -23,110 +31,114 @@ static int apply_send_stage(const product_send_stage_result_t *result)
         return 0;
     }
     if (result->show_record_canvas) {
-        (void)product_ui_window_show_record();
+        (void)product_ui::uiWindow().mountRecord();
     }
     stage_shell::splitPane().setStage((fl_shell_stage_t)result->shell_stage);
     ESP_LOGI(kTag, "place=%d shell=%d", result->place, result->shell_stage);
-    product_mem_probe("stage", result->place);
+    product_mem::probe("stage", result->place);
     return 1;
 }
 
-extern "C" product_screen_t product_stage_screen(void)
+} /* namespace */
+
+Screen screen()
 {
-    if (!product_login_is_signed_in()) {
-        return PRODUCT_SCREEN_LOGIN;
+    if (!product_login::is_signed_in()) {
+        return Screen::Login;
     }
     switch (stage_shell::splitPane().stage()) {
         case FL_SHELL_STAGE_VOLUME:
-            return PRODUCT_SCREEN_VOLUME;
+            return Screen::Volume;
         case FL_SHELL_STAGE_RECORD:
-            return PRODUCT_SCREEN_RECORD;
+            return Screen::Record;
         case FL_SHELL_STAGE_PICKER:
         case FL_SHELL_STAGE_RECEIPT:
-            return PRODUCT_SCREEN_SEND;
+            return Screen::Send;
         default:
-            return PRODUCT_SCREEN_INBOX;
+            return Screen::Inbox;
     }
 }
 
 /* Sole writer of module visibility. Each module hides or shows only its own
  * widgets; LVGL skips hidden subtrees for both drawing and hit-testing, so
  * no module reorders siblings to win touch. */
-extern "C" void product_stage_present(void)
+void present()
 {
-    static product_screen_t s_shown = PRODUCT_SCREEN_COUNT;
-    const product_screen_t screen = product_stage_screen();
-    if (screen != s_shown) {
-        ESP_LOGI(kTag, "screen=%d from=%d", (int)screen, (int)s_shown);
-        s_shown = screen;
+    static Screen s_shown = Screen::Count;
+    const Screen active = screen();
+    if (active != s_shown) {
+        ESP_LOGI(kTag, "screen=%d from=%d", static_cast<int>(active), static_cast<int>(s_shown));
+        s_shown = active;
     }
-    if (screen == PRODUCT_SCREEN_RECORD) {
-        (void)product_ui_window_show_record();
+    if (active == Screen::Record) {
+        (void)product_ui::uiWindow().mountRecord();
     } else {
-        (void)product_ui_window_show_desk();
+        (void)product_ui::uiWindow().mountDesk();
     }
-    product_login_present(screen == PRODUCT_SCREEN_LOGIN);
-    product_inbox_set_ui_visible(screen == PRODUCT_SCREEN_INBOX);
-    product_volume_set_visible(screen == PRODUCT_SCREEN_VOLUME);
-    product_send_present(screen == PRODUCT_SCREEN_SEND);
-    product_record_set_visible(screen == PRODUCT_SCREEN_RECORD);
+    product_login::present(active == Screen::Login);
+    product_inbox::set_ui_visible(active == Screen::Inbox);
+    product_volume::set_visible(active == Screen::Volume);
+    product_send::present(active == Screen::Send);
+    product_record::set_visible(active == Screen::Record);
 }
 
-extern "C" void product_stage_on_signed_in(void)
+void on_signed_in()
 {
-    fl_product_login::SessionWriter *session = product_login_session();
+    fl_product_login::SessionWriter *session = product_login::session();
     const char *user = session != nullptr ? session->signed_user() : "";
-    product_send_note_inbox();
-    product_send_on_signed_in(user);
+    product_send::note_inbox();
+    product_send::on_signed_in(user);
     stage_shell::splitPane().setStage(FL_SHELL_STAGE_INBOX);
     ESP_LOGI(kTag, "stage=inbox");
 }
 
-extern "C" int product_stage_on_red_record(void)
+int on_red_record()
 {
-    product_send_stage_result_t result;
-    if (product_volume_active()) {
+    product_send::StageResult result;
+    if (product_volume::active()) {
         return 0;
     }
-    result = product_send_apply_intent(PRODUCT_SEND_INTENT_RED, product_login_is_signed_in());
+    result = product_send::apply_intent(product_send::Intent::Red, product_login::is_signed_in());
     return apply_send_stage(&result);
 }
 
-extern "C" int product_stage_on_boot(void)
+int on_boot()
 {
-    product_send_stage_result_t result;
-    if (product_volume_active()) {
+    product_send::StageResult result;
+    if (product_volume::active()) {
         return 0;
     }
-    result = product_send_apply_intent(PRODUCT_SEND_INTENT_BOOT, product_login_is_signed_in());
+    result = product_send::apply_intent(product_send::Intent::Boot, product_login::is_signed_in());
     if (result.opened_volume) {
-        return product_inbox_on_boot_pressed();
+        return product_inbox::on_boot_pressed();
     }
     return apply_send_stage(&result);
 }
 
-extern "C" void product_stage_on_mute(void)
+void on_mute()
 {
-    (void)product_send_apply_intent(PRODUCT_SEND_INTENT_MUTE, product_login_is_signed_in());
+    (void)product_send::apply_intent(product_send::Intent::Mute, product_login::is_signed_in());
 }
 
-extern "C" int product_stage_on_wipe_complete(void)
+int on_wipe_complete()
 {
-    product_send_stage_result_t result;
-    result = product_send_apply_intent(PRODUCT_SEND_INTENT_WIPE_COMPLETE, 1);
+    product_send::StageResult result;
+    result = product_send::apply_intent(product_send::Intent::WipeComplete, true);
     return apply_send_stage(&result);
 }
 
-extern "C" int product_stage_on_capture_failed(void)
+int on_capture_failed()
 {
-    product_send_stage_result_t result;
-    result = product_send_apply_intent(PRODUCT_SEND_INTENT_CAPTURE_FAILED, product_login_is_signed_in());
+    product_send::StageResult result;
+    result = product_send::apply_intent(product_send::Intent::CaptureFailed, product_login::is_signed_in());
     return apply_send_stage(&result);
 }
 
-extern "C" int product_stage_on_take_finished(void)
+int on_take_finished()
 {
-    product_send_stage_result_t result;
-    result = product_send_apply_intent(PRODUCT_SEND_INTENT_TAKE_FINISHED, product_login_is_signed_in());
+    product_send::StageResult result;
+    result = product_send::apply_intent(product_send::Intent::TakeFinished, product_login::is_signed_in());
     return apply_send_stage(&result);
 }
+
+} /* namespace product_stage */

@@ -1,3 +1,4 @@
+#include "bsp/esp-box-3.h"
 #include "esp_app_desc.h"
 #include "esp_chip_info.h"
 #include "esp_log.h"
@@ -5,12 +6,12 @@
 #include "esp_system.h"
 #include "lvgl.h"
 #include "nvs_flash.h"
-#include "product_app_run.h"
-#include "product_display.h"
-#include "product_hardware_buttons.h"
-#include "product_mem_probe.h"
-#include "product_mic_capture.h"
-#include "product_record_fw.h"
+#include "product_app.hpp"
+#include "product_display.hpp"
+#include "product_buttons.hpp"
+#include "product_mem.hpp"
+#include "product_mic.hpp"
+#include "product_record.hpp"
 
 #include <cstdio>
 
@@ -29,16 +30,21 @@ static bool boot_nvs_init(void);
 static void boot_backlight_after_display(void);
 static void boot_log_identity(void);
 
+static bool boot_mic_init(void)
+{
+    return product_mic::init();
+}
+
 extern "C" void app_main(void)
 {
     boot_log_identity();
 
     /* External SD card for recordings (bsp_sdcard_mount), not on-chip NVS; mount before
      * display so powering the BOX-3 slot with the LCD running can blank the panel. */
-    if (!boot_phase("storage", product_record_mount_storage)) {
+    if (!boot_phase("storage", product_record::mount_storage)) {
         return;
     }
-    if (!boot_phase("mic", product_mic_init)) {
+    if (!boot_phase("mic", boot_mic_init)) {
         return;
     }
     if (!boot_phase_display()) {
@@ -53,7 +59,7 @@ extern "C" void app_main(void)
         return;
     }
 
-    product_app_run();
+    product_app::run();
 }
 
 static bool boot_step_ok(const char *step, bool ok)
@@ -91,7 +97,7 @@ static void boot_probe_before(const char *phase)
     char mem_before[BOOT_PHASE_LABEL_MAX];
 
     snprintf(mem_before, sizeof mem_before, "before_%s", phase);
-    product_mem_probe_heap(mem_before, 0);
+    product_mem::probe_heap(mem_before, 0);
 }
 
 static void boot_probe_after(const char *phase, bool lvgl_pool)
@@ -100,9 +106,9 @@ static void boot_probe_after(const char *phase, bool lvgl_pool)
 
     snprintf(mem_after, sizeof mem_after, "after_%s", phase);
     if (lvgl_pool) {
-        product_mem_probe(mem_after, 0);
+        product_mem::probe(mem_after, 0);
     } else {
-        product_mem_probe_heap(mem_after, 0);
+        product_mem::probe_heap(mem_after, 0);
     }
 }
 
@@ -135,7 +141,7 @@ static bool boot_phase_display(void)
 
     boot_probe_before(phase);
     boot_init_step_label(phase, step, sizeof step);
-    lv_display_t *display = product_display_start();
+    lv_display_t *display = product_display::start();
     if (!boot_step_ptr(step, display)) {
         return false;
     }
@@ -159,7 +165,7 @@ static void boot_backlight_after_display(void)
 {
     /* If mute is latched at boot, keep the display dark for the whole early boot path,
      * including when UI attach never succeeds. */
-    if (product_hardware_buttons_mute_latched()) {
+    if (product_buttons::mute_latched()) {
         (void)bsp_display_backlight_off();
         ESP_LOGI("app_main", "boot_backlight policy=dark mute_latched=1");
         return;

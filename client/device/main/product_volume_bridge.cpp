@@ -1,6 +1,6 @@
-#include "product_volume_fw.h"
+#include "product_volume.hpp"
 
-#include "product_inbox_fw.h"
+#include "product_inbox.hpp"
 #include "product_split_pane.hpp"
 
 #include "esp_log.h"
@@ -13,6 +13,9 @@
 #include "fl_product_login_session.hpp"
 #include "fl_product_volume_journey.hpp"
 #include "fl_product_volume_stops.hpp"
+
+namespace product_volume
+{
 
 namespace
 {
@@ -107,8 +110,7 @@ void on_slider_changed(lv_event_t *event)
 
 } /* namespace */
 
-void product_volume_bind_models(fl_product_inbox::CarouselSession *inbox,
-                                fl_product_login::SessionWriter *login)
+void bind_models(fl_product_inbox::CarouselSession *inbox, fl_product_login::SessionWriter *login)
 {
     if (inbox != nullptr) {
         s_inbox = inbox;
@@ -118,7 +120,7 @@ void product_volume_bind_models(fl_product_inbox::CarouselSession *inbox,
     }
 }
 
-extern "C" bool product_volume_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+bool attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
     if (upper_slot == nullptr || lower_slot == nullptr || s_attached) {
         return false;
@@ -127,7 +129,7 @@ extern "C" bool product_volume_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot
     s_journey.bind_storage(&s_storage);
     s_journey.set_speaker_codec_callback(on_speaker_codec);
     s_journey.on_power_on();
-    if (!product_volume_build_widgets(upper_slot, lower_slot)) {
+    if (!build_widgets(upper_slot, lower_slot)) {
         return false;
     }
     s_attached = true;
@@ -135,7 +137,7 @@ extern "C" bool product_volume_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot
     return true;
 }
 
-extern "C" void product_volume_forget_widgets(void)
+void forget_widgets()
 {
     s_upper_root = nullptr;
     s_lower_root = nullptr;
@@ -143,7 +145,7 @@ extern "C" void product_volume_forget_widgets(void)
     s_slider = nullptr;
 }
 
-extern "C" bool product_volume_build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+bool build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
     if (upper_slot == nullptr || lower_slot == nullptr) {
         return false;
@@ -176,25 +178,24 @@ extern "C" bool product_volume_build_widgets(lv_obj_t *upper_slot, lv_obj_t *low
     return true;
 }
 
-extern "C" void product_volume_service(int64_t now_ms)
+void service(int64_t now_ms)
 {
     (void)now_ms;
-    if (!s_attached || !product_volume_active()) {
+    if (!s_attached || !active()) {
         return;
     }
     render_volume();
 }
 
-extern "C" int product_volume_active(void)
+bool active()
 {
-    return s_journey.screen() == fl_product_volume::kVolumeScreenVolume ? 1 : 0;
+    return s_journey.screen() == fl_product_volume::kVolumeScreenVolume;
 }
 
-extern "C" int product_volume_on_boot_from_inbox(void)
+int on_boot_from_inbox()
 {
     int64_t now_ms;
-    if (s_inbox == nullptr || s_login == nullptr || s_login->signed_in() == 0 ||
-        product_volume_active()) {
+    if (s_inbox == nullptr || s_login == nullptr || s_login->signed_in() == 0 || active()) {
         return 0;
     }
     now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
@@ -206,11 +207,11 @@ extern "C" int product_volume_on_boot_from_inbox(void)
     return 1;
 }
 
-extern "C" int product_volume_on_boot_leave(void)
+int on_boot_leave()
 {
     int64_t now_ms;
     int index;
-    if (s_inbox == nullptr || !product_volume_active()) {
+    if (s_inbox == nullptr || !active()) {
         return 0;
     }
     now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
@@ -225,11 +226,11 @@ extern "C" int product_volume_on_boot_leave(void)
     return 1;
 }
 
-extern "C" int product_volume_on_mute(void)
+int on_mute()
 {
     int64_t now_ms;
     int index;
-    if (s_inbox == nullptr || s_login == nullptr || !product_volume_active()) {
+    if (s_inbox == nullptr || s_login == nullptr || !active()) {
         return 0;
     }
     now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
@@ -243,19 +244,19 @@ extern "C" int product_volume_on_mute(void)
     return 1;
 }
 
-extern "C" int product_volume_on_red_record(void)
+int on_red_record()
 {
     return s_journey.on_red_record();
 }
 
-extern "C" void product_volume_on_wifi(bool up)
+void on_wifi(bool up)
 {
     if (!up) {
         s_journey.note_connectivity_lost();
     }
 }
 
-extern "C" void product_volume_set_visible(int visible)
+void set_visible(bool visible)
 {
     if (!s_attached || s_upper_root == nullptr || s_lower_root == nullptr) {
         return;
@@ -268,3 +269,5 @@ extern "C" void product_volume_set_visible(int visible)
         lv_obj_set_hidden(s_lower_root, true);
     }
 }
+
+} /* namespace product_volume */

@@ -1,10 +1,10 @@
-#include "product_send_fw.h"
+#include "product_send.hpp"
 
-#include "product_inbox_fw.h"
-#include "product_login_fw.h"
-#include "product_mem_probe.h"
-#include "product_record_fw.h"
-#include "product_send_http_worker.h"
+#include "product_inbox.hpp"
+#include "product_login.hpp"
+#include "product_mem.hpp"
+#include "product_record.hpp"
+#include "product_send_http_worker.hpp"
 #include "product_split_pane.hpp"
 
 #include "esp_log.h"
@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "fl_product_login_session.hpp"
+#include "fl_product_inbox_carousel.hpp"
 #include "fl_product_record_lab10.h"
 #include "fl_product_send_classify.hpp"
 #include "fl_product_send_journey.hpp"
@@ -24,17 +26,17 @@
 namespace
 {
 
-static_assert(static_cast<int>(fl_product_send::kSendIntentRed) == PRODUCT_SEND_INTENT_RED,
+static_assert(static_cast<int>(fl_product_send::kSendIntentRed) == static_cast<int>(product_send::Intent::Red),
               "red intent");
-static_assert(static_cast<int>(fl_product_send::kSendIntentBoot) == PRODUCT_SEND_INTENT_BOOT,
+static_assert(static_cast<int>(fl_product_send::kSendIntentBoot) == static_cast<int>(product_send::Intent::Boot),
               "boot intent");
-static_assert(static_cast<int>(fl_product_send::kSendIntentMute) == PRODUCT_SEND_INTENT_MUTE,
+static_assert(static_cast<int>(fl_product_send::kSendIntentMute) == static_cast<int>(product_send::Intent::Mute),
               "mute intent");
-static_assert(static_cast<int>(fl_product_send::kSendIntentWipeComplete) == PRODUCT_SEND_INTENT_WIPE_COMPLETE,
+static_assert(static_cast<int>(fl_product_send::kSendIntentWipeComplete) == static_cast<int>(product_send::Intent::WipeComplete),
               "wipe intent");
-static_assert(static_cast<int>(fl_product_send::kSendIntentCaptureFailed) == PRODUCT_SEND_INTENT_CAPTURE_FAILED,
+static_assert(static_cast<int>(fl_product_send::kSendIntentCaptureFailed) == static_cast<int>(product_send::Intent::CaptureFailed),
               "capture failed intent");
-static_assert(static_cast<int>(fl_product_send::kSendIntentTakeFinished) == PRODUCT_SEND_INTENT_TAKE_FINISHED,
+static_assert(static_cast<int>(fl_product_send::kSendIntentTakeFinished) == static_cast<int>(product_send::Intent::TakeFinished),
               "take finished intent");
 static_assert(fl_product_send::kSendRingReverseMs == LAB10_RING_DURATION_MS, "ring duration");
 
@@ -117,7 +119,7 @@ int shell_for_place(int place)
 
 void remember_finished_sender(void)
 {
-    fl_product_login::SessionWriter *session = product_login_session();
+    fl_product_login::SessionWriter *session = product_login::session();
     const char *user = session != nullptr ? session->signed_user() : nullptr;
     if (user == nullptr || user[0] == '\0') {
         return;
@@ -521,7 +523,7 @@ void sync_cards()
 void apply_roster(int fresh)
 {
     fl_product_send::HangoutMember members[fl_product_login::kMaxUsers];
-    fl_product_login::SessionWriter *session = product_login_session();
+    fl_product_login::SessionWriter *session = product_login::session();
     const char *self_id = "";
     int count = 0;
     int i;
@@ -651,20 +653,20 @@ void present_stage_change(const fl_product_send::SendStageResult &advanced)
         return;
     }
     stage_shell::splitPane().setStage((fl_shell_stage_t)shell_for_place(advanced.place));
-    product_mem_probe("stage_service", advanced.place);
+    product_mem::probe("stage_service", advanced.place);
 }
 
 int read_stored_part(void *ctx, int kind, uint32_t offset, uint8_t *dest, uint32_t len, uint32_t *out_read)
 {
     const char *id = static_cast<const char *>(ctx);
-    return product_record_read_finished(id, kind, offset, dest, len, out_read);
+    return product_record::read_finished(id, kind, offset, dest, len, out_read);
 }
 
 int start_payload(const fl_product_send::FrozenPayload &payload, const char names[][fl_product_send::kMaxName],
                   int name_count, int64_t now_ms)
 {
     fl_product_send::MediaPartReader reader;
-    fl_product_login::SessionWriter *session = product_login_session();
+    fl_product_login::SessionWriter *session = product_login::session();
     const char *user = session != nullptr ? session->signed_user() : "";
     if (user == nullptr || user[0] == '\0' || strcmp(user, payload.sender_user_id) != 0) {
         return 0;
@@ -682,18 +684,18 @@ int start_payload(const fl_product_send::FrozenPayload &payload, const char name
     if (!s_journey.bind_stored_payload(payload, reader)) {
         return 0;
     }
-    if (!product_record_mark_uploading(payload.client_message_id)) {
+    if (!product_record::mark_uploading(payload.client_message_id)) {
         return 0;
     }
     s_journey.outbox().begin_submit(now_ms);
-    product_mem_probe("upload_begin", (int32_t)payload.audio_byte_count);
+    product_mem::probe("upload_begin", (int32_t)payload.audio_byte_count);
     s_released_id[0] = '\0';
     return 1;
 }
 
 int build_finished_payload(fl_product_send::FrozenPayload *payload)
 {
-    fl_product_login::SessionWriter *session = product_login_session();
+    fl_product_login::SessionWriter *session = product_login::session();
     const char *user;
     const char *id;
     uint32_t audio = 0;
@@ -711,7 +713,7 @@ int build_finished_payload(fl_product_send::FrozenPayload *payload)
     if (id == nullptr || id[0] == '\0') {
         return 0;
     }
-    if (!product_record_finished_info(id, &audio, &sketch) || audio == 0) {
+    if (!product_record::finished_info(id, &audio, &sketch) || audio == 0) {
         return 0;
     }
     n = s_journey.frozen_recipient_count();
@@ -786,7 +788,7 @@ void release_if_terminal()
     if (strcmp(s_released_id, id) == 0) {
         return;
     }
-    product_record_clear_upload(id);
+    product_record::clear_upload(id);
     if (s_pending.valid == 0) {
         s_finished_sender[0] = '\0';
     }
@@ -813,7 +815,7 @@ void note_signed_in_user(const char *user)
 
 void sync_send_session()
 {
-    fl_product_login::SessionWriter *session = product_login_session();
+    fl_product_login::SessionWriter *session = product_login::session();
     const char *user = "";
     if (session != nullptr && session->signed_user() != nullptr) {
         user = session->signed_user();
@@ -832,19 +834,19 @@ void sync_send_session()
 
 void service_send_http(int64_t now_ms)
 {
-    const product_send_http_result_t *done;
+    const product_send_http::Result *done;
     fl_product_send::HttpAction action;
     fl_product_send::SendTransportResult transport;
-    fl_product_login::SessionWriter *session = product_login_session();
+    fl_product_login::SessionWriter *session = product_login::session();
     const char *bearer;
     uint32_t seq = 0;
     if (s_http_started == 0) {
-        s_http_started = product_send_http_worker_start() ? 1 : 0;
+        s_http_started = product_send_http::worker_start() ? 1 : 0;
     }
     sync_send_session();
-    done = product_send_http_poll();
+    done = product_send_http::poll();
     if (done != nullptr) {
-        product_mem_probe("send_http_result", done->perform_ok ? done->http_status : -1);
+        product_mem::probe("send_http_result", done->perform_ok ? done->http_status : -1);
         memset(&transport, 0, sizeof(transport));
         transport.transport_ok = done->perform_ok;
         transport.http_status = done->http_status;
@@ -869,15 +871,15 @@ void service_send_http(int64_t now_ms)
         return;
     }
     s_journey.outbox().note_http_sent(&seq);
-    if (!product_send_http_submit(action.method, action.path, action.body, action.body_len, action.is_json,
-                                  s_journey.outbox().client_message_id(), seq, bearer)) {
+    if (!product_send_http::submit(action.method, action.path, action.body, action.body_len, action.is_json,
+                                   s_journey.outbox().client_message_id(), seq, bearer)) {
         s_journey.outbox().cancel_http_sent();
     }
 }
 
 void restore_inbox_selection(int64_t now_ms)
 {
-    fl_product_inbox::CarouselSession *inbox = product_inbox_session();
+    fl_product_inbox::CarouselSession *inbox = product_inbox::session();
     const char *want = s_journey.remembered_inbox_selection();
     int i;
     if (inbox == nullptr) {
@@ -901,7 +903,10 @@ void restore_inbox_selection(int64_t now_ms)
 
 } /* namespace */
 
-extern "C" void product_send_service(int64_t now_ms)
+namespace product_send
+{
+
+void service(int64_t now_ms)
 {
     fl_product_send::SendStageResult advanced;
     if (!s_attached) {
@@ -922,7 +927,7 @@ extern "C" void product_send_service(int64_t now_ms)
     present_stage_change(advanced);
 }
 
-extern "C" bool product_send_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+bool attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
     if (upper_slot == nullptr || lower_slot == nullptr) {
         return false;
@@ -931,7 +936,7 @@ extern "C" bool product_send_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     s_stage.reset();
     s_finished_sender[0] = '\0';
     memset(&s_pending, 0, sizeof(s_pending));
-    if (!product_send_build_widgets(upper_slot, lower_slot)) {
+    if (!build_widgets(upper_slot, lower_slot)) {
         return false;
     }
     s_dot_phase = 0;
@@ -941,7 +946,7 @@ extern "C" bool product_send_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     return true;
 }
 
-extern "C" void product_send_forget_widgets(void)
+void forget_widgets(void)
 {
     int i;
     s_upper_label = nullptr;
@@ -959,7 +964,7 @@ extern "C" void product_send_forget_widgets(void)
     s_visible = 0;
 }
 
-extern "C" bool product_send_build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+bool build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
     int i;
     if (upper_slot == nullptr || lower_slot == nullptr) {
@@ -1020,7 +1025,7 @@ extern "C" bool product_send_build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower
 
 static void pause_for_record_hook(void *playback, int64_t now_ms)
 {
-    fl_product_inbox::CarouselSession *inbox = product_inbox_session();
+    fl_product_inbox::CarouselSession *inbox = product_inbox::session();
     (void)playback;
     if (inbox != nullptr) {
         inbox->pause_for_record(now_ms);
@@ -1029,7 +1034,7 @@ static void pause_for_record_hook(void *playback, int64_t now_ms)
 
 static const char *selected_message_hook(void *playback)
 {
-    fl_product_inbox::CarouselSession *inbox = product_inbox_session();
+    fl_product_inbox::CarouselSession *inbox = product_inbox::session();
     (void)playback;
     if (inbox == nullptr || inbox->selected_message_id() == nullptr) {
         return "";
@@ -1040,13 +1045,13 @@ static const char *selected_message_hook(void *playback)
 static int can_start_second_hook(void *capture)
 {
     (void)capture;
-    return product_record_can_start_second();
+    return product_record::can_start_second();
 }
 
 static void discard_in_progress_hook(void *capture)
 {
     (void)capture;
-    product_record_discard_in_progress();
+    product_record::discard_in_progress();
     if (s_journey.outbox().active() == 0) {
         s_finished_sender[0] = '\0';
     }
@@ -1055,58 +1060,58 @@ static void discard_in_progress_hook(void *capture)
 static void cancel_recording_hook(void *capture)
 {
     (void)capture;
-    product_record_cancel_recording();
+    product_record::cancel_recording();
 }
 
 static int finish_take_hook(void *capture)
 {
     (void)capture;
-    return product_record_finish_take();
+    return product_record::finish_take();
 }
 
 static int capture_can_start_hook(void *capture)
 {
     (void)capture;
-    return product_record_capture_can_start();
+    return product_record::capture_can_start();
 }
 
 static void begin_wipe_hook(void *capture, const char *client_message_id, int64_t now_ms)
 {
     (void)capture;
-    (void)product_record_begin_wipe(client_message_id, now_ms);
+    (void)product_record::begin_wipe(client_message_id, now_ms);
 }
 
 static void begin_reverse_hook(void *capture, int64_t now_ms)
 {
     (void)capture;
-    product_record_begin_reverse(now_ms);
+    product_record::begin_reverse(now_ms);
 }
 
 static void begin_finish_collapse_hook(void *capture, int64_t now_ms)
 {
     (void)capture;
     remember_finished_sender();
-    product_record_begin_finish_collapse(now_ms);
+    product_record::begin_finish_collapse(now_ms);
 }
 
-extern "C" void product_send_note_inbox(void)
+void note_inbox(void)
 {
     s_stage.note_inbox();
 }
 
-extern "C" void product_send_set_wifi(int up)
+void set_wifi(bool up)
 {
     s_wifi_up = up ? 1 : 0;
     s_journey.set_wifi(s_wifi_up);
 }
 
-extern "C" void product_send_set_refresh_failed(int failed)
+void set_refresh_failed(bool failed)
 {
     fl_shell_stage_t shell;
     int place;
     int restored;
     s_journey.set_refresh_failed(failed ? 1 : 0);
-    if (failed == 0 || product_login_is_signed_in() == 0) {
+    if (!failed || !product_login::is_signed_in()) {
         return;
     }
     place = s_stage.place();
@@ -1123,23 +1128,24 @@ extern "C" void product_send_set_refresh_failed(int failed)
     stage_shell::splitPane().setStage(static_cast<fl_shell_stage_t>(restored));
 }
 
-extern "C" void product_send_on_signed_in(const char *user_id)
+void on_signed_in(const char *user_id)
 {
     note_signed_in_user(user_id);
     s_journey.set_refresh_failed(0);
 }
 
-extern "C" void product_send_present(int visible)
+void present(bool visible)
 {
     s_visible = visible ? 1 : 0;
     paint_for_stage();
 }
 
-extern "C" product_send_stage_result_t product_send_apply_intent(int intent, int signed_in)
+product_send::StageResult apply_intent(Intent intent, bool signed_in)
 {
     fl_product_send::SendStageHooks hooks;
     fl_product_send::SendStageResult result;
-    product_send_stage_result_t out;
+    product_send::StageResult out;
+    const int intent_val = static_cast<int>(intent);
     int64_t now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
     memset(&hooks, 0, sizeof(hooks));
     hooks.pause_for_record = pause_for_record_hook;
@@ -1152,9 +1158,9 @@ extern "C" product_send_stage_result_t product_send_apply_intent(int intent, int
     hooks.begin_wipe = begin_wipe_hook;
     hooks.begin_reverse = begin_reverse_hook;
     hooks.begin_finish_collapse = begin_finish_collapse_hook;
-    result = s_stage.apply(static_cast<fl_product_send::SendIntent>(intent), s_journey, &hooks, signed_in,
+    result = s_stage.apply(static_cast<fl_product_send::SendIntent>(intent_val), s_journey, &hooks, signed_in ? 1 : 0,
                            now_ms);
-    if (intent == PRODUCT_SEND_INTENT_MUTE &&
+    if (intent == Intent::Mute &&
         (s_journey.outbox().active() != 0 || s_finished_sender[0] != '\0')) {
         s_journey.on_mute_after_finish(1);
     }
@@ -1170,16 +1176,16 @@ extern "C" product_send_stage_result_t product_send_apply_intent(int intent, int
     return out;
 }
 
-extern "C" void product_send_release_widgets(void)
+void release_widgets(void)
 {
     clear_cards();
     s_card_sig[0] = '\0';
 }
 
-extern "C" void product_send_detach(void)
+void detach(void)
 {
     int i;
-    product_send_http_worker_stop();
+    product_send_http::worker_stop();
     s_http_started = 0;
     s_attached = false;
     s_picker_open = 0;
@@ -1194,3 +1200,5 @@ extern "C" void product_send_detach(void)
         s_cards[i] = nullptr;
     }
 }
+
+} /* namespace product_send */

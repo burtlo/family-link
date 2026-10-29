@@ -1,8 +1,8 @@
-#include "product_inbox_fw.h"
-#include "product_inbox_http_worker.h"
-#include "product_login_fw.h"
+#include "product_inbox.hpp"
+#include "product_inbox_http_worker.hpp"
+#include "product_login.hpp"
 #include "product_split_pane.hpp"
-#include "product_volume_fw.h"
+#include "product_volume.hpp"
 
 #include "esp_attr.h"
 #include "esp_heap_caps.h"
@@ -13,6 +13,8 @@
 #include "fl_product_inbox_carousel.hpp"
 #include "fl_product_inbox_presentation.hpp"
 #include "fl_product_inbox_wire.hpp"
+
+#include "fl_product_login_session.hpp"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -109,7 +111,7 @@ void wipe_bearer(char *bearer, int cap)
 
 bool submit_wire_job(const fl_product_inbox::InboxWireJob &wire, const char *bearer)
 {
-    product_inbox_http_job_t job;
+    product_inbox_http::Job job;
     bool queued;
     memset(&job, 0, sizeof(job));
     job.kind = wire.kind;
@@ -130,12 +132,12 @@ bool submit_wire_job(const fl_product_inbox::InboxWireJob &wire, const char *bea
     job.range_start = wire.range_start;
     job.asset_bytes = wire.asset_bytes;
     job.timeout_ms = wire.timeout_ms;
-    queued = product_inbox_http_submit(&job);
+    queued = product_inbox_http::submit(&job);
     wipe_bearer(job.bearer, (int)sizeof(job.bearer));
     return queued;
 }
 
-void apply_http_result(const product_inbox_http_result_t *done, int64_t now_ms)
+void apply_http_result(const product_inbox_http::Result *done, int64_t now_ms)
 {
     if (done == nullptr) {
         return;
@@ -171,15 +173,15 @@ void apply_http_result(const product_inbox_http_result_t *done, int64_t now_ms)
 void queue_due_jobs(int64_t now_ms)
 {
     static fl_product_inbox::InboxWireSlots slots;
-    fl_product_login::SessionWriter *login = product_login_session();
+    fl_product_login::SessionWriter *login = product_login::session();
     const char *bearer = "";
     int ordinary_due;
     int recovery_due;
-    const product_inbox_http_result_t *done;
+    const product_inbox_http::Result *done;
     if (s_http_allowed) {
-        (void)product_inbox_http_worker_start();
+        (void)product_inbox_http::worker_start();
     }
-    while ((done = product_inbox_http_poll()) != nullptr) {
+    while ((done = product_inbox_http::poll()) != nullptr) {
         apply_http_result(done, now_ms);
     }
     ordinary_due = s_inbox.inbox_fetch_due(now_ms);
@@ -918,13 +920,16 @@ void render_inbox(void)
 
 } /* namespace */
 
-extern "C" bool product_inbox_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+namespace product_inbox
+{
+
+bool attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
     if (upper_slot == nullptr || lower_slot == nullptr) {
         return false;
     }
     s_inbox.boot(0);
-    if (!product_inbox_build_widgets(upper_slot, lower_slot)) {
+    if (!build_widgets(upper_slot, lower_slot)) {
         return false;
     }
     s_attached = true;
@@ -933,7 +938,7 @@ extern "C" bool product_inbox_attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
     return true;
 }
 
-extern "C" void product_inbox_forget_widgets(void)
+void forget_widgets(void)
 {
     int i;
     for (i = 0; i < fl_product_inbox::kMaxMessages; ++i) {
@@ -959,7 +964,7 @@ extern "C" void product_inbox_forget_widgets(void)
     s_user_scrolling = 0;
 }
 
-extern "C" bool product_inbox_build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
+bool build_widgets(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
     if (upper_slot == nullptr || lower_slot == nullptr) {
         return false;
@@ -1030,7 +1035,7 @@ extern "C" bool product_inbox_build_widgets(lv_obj_t *upper_slot, lv_obj_t *lowe
     return true;
 }
 
-extern "C" void product_inbox_service(int64_t now_ms)
+void service(int64_t now_ms)
 {
     if (!s_attached) {
         return;
@@ -1040,7 +1045,7 @@ extern "C" void product_inbox_service(int64_t now_ms)
     render_inbox();
 }
 
-extern "C" void product_inbox_on_signed_in(void)
+void on_signed_in(void)
 {
     fl_product_login::SessionWriter *login;
     uint32_t generation;
@@ -1051,7 +1056,7 @@ extern "C" void product_inbox_on_signed_in(void)
     now_ms = (int64_t)(esp_timer_get_time() / 1000LL);
     s_wire.reset();
     s_inbox.boot(now_ms);
-    login = product_login_session();
+    login = product_login::session();
     generation = 1;
     if (login != nullptr && login->generation() != 0) {
         generation = login->generation();
@@ -1059,19 +1064,19 @@ extern "C" void product_inbox_on_signed_in(void)
     s_inbox.set_session_generation(generation);
     s_inbox.set_wifi(s_last_wifi_up, now_ms);
     s_http_allowed = true;
-    (void)product_inbox_http_worker_start();
+    (void)product_inbox_http::worker_start();
     s_user_scrolling = 0;
     destroy_all_cards();
     render_inbox();
 }
 
-extern "C" void product_inbox_discard_results(void)
+void discard_results(void)
 {
-    const product_inbox_http_result_t *done;
+    const product_inbox_http::Result *done;
     if (!s_attached) {
         return;
     }
-    while ((done = product_inbox_http_poll()) != nullptr) {
+    while ((done = product_inbox_http::poll()) != nullptr) {
         if (done->parsed != nullptr) {
             free(done->parsed);
         }
@@ -1081,7 +1086,7 @@ extern "C" void product_inbox_discard_results(void)
     }
 }
 
-extern "C" void product_inbox_on_mute(void)
+void on_mute(void)
 {
     if (!s_attached) {
         return;
@@ -1104,7 +1109,7 @@ extern "C" void product_inbox_on_mute(void)
     destroy_all_cards();
 }
 
-extern "C" void product_inbox_note_refresh(int64_t now_ms)
+void note_refresh(int64_t now_ms)
 {
     if (!s_attached) {
         return;
@@ -1112,7 +1117,7 @@ extern "C" void product_inbox_note_refresh(int64_t now_ms)
     s_inbox.note_refresh_success(now_ms);
 }
 
-extern "C" void product_inbox_note_refresh_failure(int64_t now_ms)
+void note_refresh_failure(int64_t now_ms)
 {
     if (!s_attached) {
         return;
@@ -1120,7 +1125,7 @@ extern "C" void product_inbox_note_refresh_failure(int64_t now_ms)
     s_inbox.note_refresh_failure(now_ms);
 }
 
-extern "C" void product_inbox_set_wifi(bool up)
+void set_wifi(bool up)
 {
     s_last_wifi_up = up;
     if (!s_attached) {
@@ -1130,7 +1135,7 @@ extern "C" void product_inbox_set_wifi(bool up)
     render_inbox();
 }
 
-extern "C" void product_inbox_set_ui_visible(int visible)
+void set_ui_visible(bool visible)
 {
     const int shown = visible ? 1 : 0;
     if (!s_attached) {
@@ -1149,22 +1154,24 @@ extern "C" void product_inbox_set_ui_visible(int visible)
     render_inbox();
 }
 
-fl_product_inbox::CarouselSession *product_inbox_session(void)
+fl_product_inbox::CarouselSession *session(void)
 {
     return &s_inbox;
 }
 
-extern "C" int product_inbox_on_boot_pressed(void)
+int on_boot_pressed(void)
 {
     if (!s_attached) {
         return 0;
     }
-    if (product_volume_active()) {
-        return product_volume_on_boot_leave();
+    if (product_volume::active()) {
+        return product_volume::on_boot_leave();
     }
     /* Picker, wipe, record, and receipt own Boot. Only the inbox opens volume. */
     if (stage_shell::splitPane().stage() != FL_SHELL_STAGE_INBOX) {
         return 0;
     }
-    return product_volume_on_boot_from_inbox();
+    return product_volume::on_boot_from_inbox();
 }
+
+} /* namespace product_inbox */

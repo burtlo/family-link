@@ -1,6 +1,6 @@
-#include "product_login_http_worker.h"
-#include "product_inbox_fw.h"
-#include "product_send_fw.h"
+#include "product_login_http_worker.hpp"
+#include "product_inbox.hpp"
+#include "product_send.hpp"
 
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
@@ -236,12 +236,6 @@ void drop_queued_roster_jobs(void)
     }
 }
 
-extern "C" void product_login_http_on_mute(void)
-{
-    drop_queued_roster_jobs();
-    s_active_roster_id = 0;
-}
-
 void drain_stale_pin_jobs(fl_product_login::SessionWriter *session)
 {
     HttpJob pending;
@@ -316,11 +310,11 @@ void handle_refresh_result(const HttpResult &result)
                                                 result.exchange.body, result.exchange.body_len);
     s_session->deliver_refresh_completion(refresh, s_session->now_ms());
     if (refresh.perform_ok == 1 && refresh.http_status == 200 && refresh.parse_ok == 1) {
-        product_send_set_refresh_failed(0);
-        product_inbox_note_refresh(s_session->now_ms());
+        product_send::set_refresh_failed(false);
+        product_inbox::note_refresh(s_session->now_ms());
     } else {
-        product_send_set_refresh_failed(1);
-        product_inbox_note_refresh_failure(s_session->now_ms());
+        product_send::set_refresh_failed(true);
+        product_inbox::note_refresh_failure(s_session->now_ms());
     }
 }
 
@@ -422,7 +416,16 @@ void worker_task(void *arg)
 
 } /* namespace */
 
-extern "C" bool product_login_http_worker_start(fl_product_login::SessionWriter *session)
+namespace product_login_http
+{
+
+void on_mute()
+{
+    drop_queued_roster_jobs();
+    s_active_roster_id = 0;
+}
+
+bool worker_start(fl_product_login::SessionWriter *session)
 {
     if (session == nullptr || s_worker != nullptr) {
         return false;
@@ -437,7 +440,7 @@ extern "C" bool product_login_http_worker_start(fl_product_login::SessionWriter 
     if (s_jobs == nullptr || s_results == nullptr) {
         ESP_LOGE(kTag, "queue alloc failed jobs=%p results=%p free=%lu", (void *)s_jobs, (void *)s_results,
                  (unsigned long)esp_get_free_heap_size());
-        product_login_http_worker_stop();
+        worker_stop();
         return false;
     }
     if (xTaskCreateWithCaps(worker_task, "login_http", kHttpWorkerStack, nullptr, 5, &s_worker,
@@ -445,14 +448,14 @@ extern "C" bool product_login_http_worker_start(fl_product_login::SessionWriter 
         ESP_LOGE(kTag, "task create failed free=%lu internal_largest=%u",
                  (unsigned long)esp_get_free_heap_size(),
                  (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
-        product_login_http_worker_stop();
+        worker_stop();
         return false;
     }
     ESP_LOGI(kTag, "HTTP worker ready base=%s", s_base_url);
     return true;
 }
 
-extern "C" void product_login_http_worker_stop(void)
+void worker_stop()
 {
     if (s_worker != nullptr) {
         vTaskDeleteWithCaps(s_worker);
@@ -476,7 +479,7 @@ extern "C" void product_login_http_worker_stop(void)
     s_active_invalidate = false;
 }
 
-extern "C" void product_login_http_service(fl_product_login::SessionWriter *session, int64_t now_ms)
+void service(fl_product_login::SessionWriter *session, int64_t now_ms)
 {
     /* LVGL task stack is 7168 bytes. HttpResult carries a 4KB body; a local here
      * overflows that stack inside the roster log and reboots on the first hangout. */
@@ -602,3 +605,5 @@ extern "C" void product_login_http_service(fl_product_login::SessionWriter *sess
         }
     }
 }
+
+} /* namespace product_login_http */

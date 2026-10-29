@@ -1,12 +1,9 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace product_app
+{
 
 /** UI window create, desk mount, product_ui_ready, Wi-Fi, then idle (does not return). */
-void product_app_run(void);
+void run();
 
-#ifdef __cplusplus
-}
-#endif
+} /* namespace product_app */

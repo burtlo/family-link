@@ -1,9 +1,9 @@
-#include "product_hardware_buttons.h"
+#include "product_buttons.hpp"
 
-#include "product_inbox_fw.h"
-#include "product_login_fw.h"
-#include "product_stage_router.h"
-#include "product_volume_fw.h"
+#include "product_inbox.hpp"
+#include "product_login.hpp"
+#include "product_stage_router.hpp"
+#include "product_volume.hpp"
 
 #include "bsp/esp-box-3.h"
 #include "driver/gpio.h"
@@ -12,12 +12,20 @@
 
 #include <atomic>
 
-static const char *kTag = "product_hw_btn";
-static button_handle_t s_buttons[BSP_BUTTON_NUM];
-static std::atomic<bool> s_boot_pressed;
-static std::atomic<bool> s_mute_pressed;
-static std::atomic<bool> s_red_pressed;
-static bool s_mute_gpio_ready;
+namespace product_buttons
+{
+
+namespace
+{
+
+const char *kTag = "product_hw_btn";
+button_handle_t s_buttons[BSP_BUTTON_NUM];
+std::atomic<bool> s_boot_pressed;
+std::atomic<bool> s_mute_pressed;
+std::atomic<bool> s_red_pressed;
+bool s_mute_gpio_ready;
+
+} /* namespace */
 
 extern "C" {
 
@@ -42,7 +50,9 @@ static void on_red_press(void *button, void *context)
     s_red_pressed.store(true, std::memory_order_release);
 }
 
-bool product_hardware_buttons_init(void)
+} /* extern "C" */
+
+bool init()
 {
     int button_count = 0;
     s_boot_pressed.store(false, std::memory_order_relaxed);
@@ -54,8 +64,8 @@ bool product_hardware_buttons_init(void)
         return false;
     }
     if (s_buttons[BSP_BUTTON_CONFIG] != NULL) {
-        if (iot_button_register_cb(s_buttons[BSP_BUTTON_CONFIG], BUTTON_PRESS_DOWN, NULL,
-                                   on_boot_press, NULL) != ESP_OK) {
+        if (iot_button_register_cb(s_buttons[BSP_BUTTON_CONFIG], BUTTON_PRESS_DOWN, NULL, on_boot_press, NULL) !=
+            ESP_OK) {
             ESP_LOGW(kTag, "BOOT callback registration failed");
         }
     } else {
@@ -72,16 +82,16 @@ bool product_hardware_buttons_init(void)
         if (gpio_config(&mute_cfg) == ESP_OK) {
             s_mute_gpio_ready = true;
         }
-        if (iot_button_register_cb(s_buttons[BSP_BUTTON_MUTE], BUTTON_PRESS_DOWN, NULL,
-                                   on_mute_press, NULL) != ESP_OK) {
+        if (iot_button_register_cb(s_buttons[BSP_BUTTON_MUTE], BUTTON_PRESS_DOWN, NULL, on_mute_press, NULL) !=
+            ESP_OK) {
             ESP_LOGW(kTag, "mute callback registration failed");
         }
     } else {
         ESP_LOGW(kTag, "mute button handle missing");
     }
     if (s_buttons[BSP_BUTTON_MAIN] != NULL) {
-        if (iot_button_register_cb(s_buttons[BSP_BUTTON_MAIN], BUTTON_PRESS_DOWN, NULL,
-                                   on_red_press, NULL) != ESP_OK) {
+        if (iot_button_register_cb(s_buttons[BSP_BUTTON_MAIN], BUTTON_PRESS_DOWN, NULL, on_red_press, NULL) !=
+            ESP_OK) {
             ESP_LOGW(kTag, "red record callback registration failed");
         }
     } else {
@@ -91,12 +101,12 @@ bool product_hardware_buttons_init(void)
     return true;
 }
 
-int product_hardware_buttons_mute_gpio_ready(void)
+int mute_gpio_ready()
 {
     return s_mute_gpio_ready ? 1 : 0;
 }
 
-int product_hardware_buttons_mute_gpio_level(void)
+int mute_gpio_level()
 {
     if (!s_mute_gpio_ready) {
         return -1;
@@ -104,7 +114,7 @@ int product_hardware_buttons_mute_gpio_level(void)
     return gpio_get_level(BSP_BUTTON_MUTE_IO);
 }
 
-int product_hardware_buttons_mute_button_level(void)
+int mute_button_level()
 {
     if (s_buttons[BSP_BUTTON_MUTE] == NULL) {
         return -1;
@@ -112,7 +122,7 @@ int product_hardware_buttons_mute_button_level(void)
     return iot_button_get_key_level(s_buttons[BSP_BUTTON_MUTE]);
 }
 
-int product_hardware_buttons_mute_latched(void)
+int mute_latched()
 {
     /* GPIO tracks the physical latch on BOX-3; iot_button is momentary-press oriented. */
     if (s_mute_gpio_ready) {
@@ -124,26 +134,26 @@ int product_hardware_buttons_mute_latched(void)
     return 0;
 }
 
-void product_hardware_buttons_poll(void)
+void poll()
 {
     if (s_boot_pressed.exchange(false, std::memory_order_acq_rel)) {
-        if (!product_login_is_signed_in()) {
-            product_login_on_boot_pressed();
-        } else if (product_volume_active()) {
-            (void)product_inbox_on_boot_pressed();
+        if (!product_login::is_signed_in()) {
+            product_login::on_boot_pressed();
+        } else if (product_volume::active()) {
+            (void)product_inbox::on_boot_pressed();
         } else {
-            (void)product_stage_on_boot();
+            (void)product_stage::on_boot();
         }
     }
     /* Mute is a latch. The press edge is not the level. */
     (void)s_mute_pressed.exchange(false, std::memory_order_acq_rel);
-    product_login_on_mute_level(product_hardware_buttons_mute_latched());
+    product_login::on_mute_level(mute_latched());
     if (s_red_pressed.exchange(false, std::memory_order_acq_rel)) {
         /* Volume owns red while its screen is up. Signed-out red stays on login. */
-        if (product_login_is_signed_in() && product_volume_on_red_record() != 0) {
-            (void)product_stage_on_red_record();
+        if (product_login::is_signed_in() && product_volume::on_red_record() != 0) {
+            (void)product_stage::on_red_record();
         }
     }
 }
 
-} /* extern "C" */
+} /* namespace product_buttons */

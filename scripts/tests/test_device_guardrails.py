@@ -158,12 +158,11 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
     def test_record_entry_uses_ui_window_and_present_restores_desk(self):
         """Record entry mounts the record scene via the UI window; leaving RECORD restores desk."""
         router = (ROOT / "client/device/main/product_stage_router.cpp").read_text(encoding="utf-8")
-        apply = router[router.find("static int apply_send_stage(") : router.find("extern \"C\" product_screen_t")]
-        self.assertIn("product_ui_window_show_record();", apply)
-        start = router.find("extern \"C\" void product_stage_present(void)")
-        present = router[start : router.find("\n}\n", start)]
-        self.assertLess(present.find("product_ui_window_show_desk();"), present.find("product_login_present("))
-        self.assertIn("PRODUCT_SCREEN_RECORD", present)
+        apply = router[router.find("int apply_send_stage(") : router.find("Screen screen()")]
+        self.assertIn("product_ui::uiWindow().mountRecord();", apply)
+        present = pres.function_body(router, "present")
+        self.assertLess(present.find("product_ui::uiWindow().mountDesk();"), present.find("product_login::present("))
+        self.assertIn("Screen::Record", present)
 
     def test_sign_out_releases_signed_in_widgets_but_keeps_takes(self):
         """Unmute rebuilds login from the same LVGL pool; a finished take must survive (DEC-033)."""
@@ -171,14 +170,14 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         start = login.find("static void enter_muted(")
         body = login[start : login.find("\n}\n", start)]
         self.assertGreater(start, 0)
-        self.assertIn("product_inbox_on_mute();", body)
-        self.assertIn("product_send_release_widgets();", body)
-        self.assertIn("product_record_release_surface();", body)
+        self.assertIn("product_inbox::on_mute();", body)
+        self.assertIn("product_send::release_widgets();", body)
+        self.assertIn("product_record::release_surface();", body)
         inbox = (ROOT / "client/device/main/product_inbox_bridge.cpp").read_text(encoding="utf-8")
-        mute = inbox[inbox.find("void product_inbox_on_mute(void)") : inbox.find("void product_inbox_note_refresh")]
+        mute = inbox[inbox.find("void on_mute(void)") : inbox.find("void note_refresh")]
         self.assertIn("destroy_all_cards();", mute)
         record = (ROOT / "client/device/main/product_record_bridge.cpp").read_text(encoding="utf-8")
-        start = record.find("void product_record_release_surface(void)")
+        start = record.find("void release_surface(void)")
         release = record[start : record.find("\n}\n", start)]
         self.assertGreater(start, 0)
         self.assertNotIn("s_record", release)
@@ -187,8 +186,8 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
     def test_signed_in_mute_does_not_stop_inbox_worker(self):
         """Mute runs on the LVGL timer. Stopping the inbox task there can stall it."""
         text = (ROOT / "client/device/main/product_inbox_bridge.cpp").read_text(encoding="utf-8")
-        start = text.find("void product_inbox_on_mute(void)")
-        end = text.find("void product_inbox_note_refresh", start)
+        start = text.find("void on_mute(void)")
+        end = text.find("void note_refresh", start)
         self.assertGreater(start, 0)
         self.assertGreater(end, start)
         body = text[start:end]
@@ -196,22 +195,22 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         self.assertNotIn("vTaskDelete", body)
         login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(encoding="utf-8")
         timer = login.find("void on_login_timer")
-        timer_end = login.find("fl_product_login::SessionWriter *product_login_session", timer)
+        timer_end = login.find("namespace product_login", timer)
         tick = login[timer:timer_end]
-        poll = tick.find("product_hardware_buttons_poll")
-        http = tick.find("product_login_http_service")
+        poll = tick.find("product_buttons::poll")
+        http = tick.find("product_login_http::service")
         self.assertGreaterEqual(poll, 0)
         self.assertGreater(http, poll)
-        self.assertIn("product_inbox_discard_results()", tick)
-        self.assertLess(poll, tick.find("product_inbox_discard_results()"))
+        self.assertIn("product_inbox::discard_results()", tick)
+        self.assertLess(poll, tick.find("product_inbox::discard_results()"))
 
     def test_mute_latch_prefers_gpio_level(self):
         """Physical latch on BOX-3 is read from GPIO when configured."""
         text = (ROOT / "client/device/main/product_hardware_buttons.cpp").read_text(
             encoding="utf-8"
         )
-        start = text.find("int product_hardware_buttons_mute_latched(void)")
-        end = text.find("void product_hardware_buttons_poll", start)
+        start = text.find("int mute_latched()")
+        end = text.find("void poll", start)
         self.assertGreater(start, 0)
         self.assertGreater(end, start)
         body = text[start:end]
@@ -222,8 +221,8 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         self.assertGreater(gpio_at, 0)
         if button_at >= 0:
             self.assertLess(gpio_at, button_at)
-        init = text.find("bool product_hardware_buttons_init(void)")
-        init_end = text.find("int product_hardware_buttons_mute_latched", init)
+        init = text.find("bool init()")
+        init_end = text.find("int mute_latched", init)
         init_body = text[init:init_end]
         self.assertIn("s_mute_gpio_ready = true", init_body)
         self.assertIn("BSP_BUTTON_MUTE_IO", init_body)
@@ -255,7 +254,7 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         )
         hw = (ROOT / "client/device/main/product_hardware_buttons.cpp").read_text(encoding="utf-8")
         self.assertIn("V2_MUTE_EDGE", login)
-        self.assertIn("product_hardware_buttons_mute_gpio_level", hw)
+        self.assertIn("mute_gpio_level", hw)
         self.assertIn("FAMILY_DEVICE_MUTE_TRACE", (ROOT / "client/device/main/Kconfig.projbuild").read_text())
 
     def test_unmute_resets_login_http_roster_fence(self):
@@ -264,11 +263,11 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
             encoding="utf-8"
         )
         leave = pres.function_body(login, "leave_muted")
-        self.assertIn("product_login_http_on_mute()", leave)
-        self.assertLess(leave.find("product_login_http_on_mute()"), leave.find("s_session.unmute(now_ms)"))
+        self.assertIn("product_login_http::on_mute()", leave)
+        self.assertLess(leave.find("product_login_http::on_mute()"), leave.find("s_session.unmute(now_ms)"))
         self.assertIn("begin_roster_request", leave)
-        self.assertIn("product_login_http_service(&s_session", leave)
-        self.assertIn("void product_login_http_on_mute(void)", worker)
+        self.assertIn("product_login_http::service(&s_session", leave)
+        self.assertIn("void on_mute()", worker)
         self.assertIn("s_active_roster_id = 0", worker)
 
     def test_product_worker_stops_still_lack_ack(self):
@@ -290,7 +289,7 @@ class DeviceGuardrailsPhase3Tests(unittest.TestCase):
         self.assertTrue(any("INT-WIRE" in item for item in errors))
 
 
-_LATCH_CALL = "product_hardware_buttons_mute_latched()"
+_LATCH_CALL = "product_buttons::mute_latched()"
 _LIGHT_CALLS = ("bsp_display_brightness_set", "bsp_display_backlight_on")
 
 
@@ -377,9 +376,9 @@ def _app_main_body(source: str) -> str:
 
 def _latch_polarity(condition: str) -> str | None:
     compact = "".join(condition.split())
-    if compact == f"!{_LATCH_CALL}":
+    if compact in (f"!{_LATCH_CALL}", f"{_LATCH_CALL}==0"):
         return "unlatched"
-    if compact == _LATCH_CALL:
+    if compact in (_LATCH_CALL, f"{_LATCH_CALL}!=0"):
         return "latched"
     return None
 
@@ -486,18 +485,18 @@ def _unguarded_light_calls(body: str) -> list[str]:
 
 _GOOD_TICK = """
 static void on_login_timer(lv_timer_t *timer) {
-    product_hardware_buttons_poll();
+    product_buttons::poll();
     flush_wifi_schedule();
-    product_login_http_service(&s_session, now_ms);
+    product_login_http::service(&s_session, now_ms);
     note_sign_in_edge();
     if (s_session.signed_in() != 0) {
-        product_inbox_service(now_ms);
+        product_inbox::service(now_ms);
     } else {
-        product_inbox_discard_results();
+        product_inbox::discard_results();
     }
-    product_send_service(now_ms);
-    product_record_service(now_ms);
-    product_stage_present();
+    product_send::service(now_ms);
+    product_record::service(now_ms);
+    product_stage::present();
 }
 """
 
@@ -520,21 +519,21 @@ class DeviceGuardrailsPresentationInvariantTests(unittest.TestCase):
             "flush_wifi_schedule();", "if (s_backlight_dark) { return; }\n    flush_wifi_schedule();"
         )
         self.assertTrue(any("PRES-NORETURN" in e for e in pres.scan_tick_phase_order(early)))
-        late_poll = _GOOD_TICK.replace("    product_hardware_buttons_poll();\n", "").replace(
-            "product_stage_present();", "product_stage_present();\n    product_hardware_buttons_poll();"
+        late_poll = _GOOD_TICK.replace("    product_buttons::poll();\n", "").replace(
+            "product_stage::present();", "product_stage::present();\n    product_buttons::poll();"
         )
         self.assertTrue(pres.scan_tick_phase_order(late_poll))
         render_after = _GOOD_TICK.replace(
-            "product_stage_present();", "product_stage_present();\n    render_login_copy();"
+            "product_stage::present();", "product_stage::present();\n    render_login_copy();"
         )
         self.assertTrue(pres.scan_tick_phase_order(render_after))
 
     def test_presentation_single_visibility_owner(self):
-        router = "extern \"C\" void product_stage_present(void) { product_inbox_set_ui_visible(1); }"
+        router = "void present() { product_inbox::set_ui_visible(1); }"
         self.assertEqual(pres.scan_single_visibility_owner({pres.ROUTER: router}), [])
-        cross = {pres.ROUTER: router, "product_send_bridge.cpp": "static void show(void) { product_inbox_set_ui_visible(0); }"}
+        cross = {pres.ROUTER: router, "product_send_bridge.cpp": "static void show(void) { product_inbox::set_ui_visible(0); }"}
         self.assertTrue(pres.scan_single_visibility_owner(cross))
-        stray = {pres.ROUTER: router + " void other(void) { product_volume_set_visible(0); }"}
+        stray = {pres.ROUTER: router + " void other(void) { product_volume::set_visible(0); }"}
         self.assertTrue(pres.scan_single_visibility_owner(stray))
 
     def test_presentation_no_z_order_games(self):
@@ -560,11 +559,11 @@ class DeviceGuardrailsPresentationInvariantTests(unittest.TestCase):
         self.assertTrue(pres.scan_display_power({pres.LOGIN: stray}))
 
     def test_presentation_mute_reconcile(self):
-        hw = "void product_hardware_buttons_poll(void) { product_login_on_mute_level(product_hardware_buttons_mute_latched()); }"
+        hw = "void poll() { product_login::on_mute_level(product_buttons::mute_latched()); }"
         login = """
-        static void enter_muted(int64_t now_ms) { product_login_http_on_mute(); }
-        static void leave_muted(int64_t now_ms) { product_login_http_on_mute(); }
-        extern "C" void product_login_on_mute_level(int latched) {
+        static void enter_muted(int64_t now_ms) { product_login_http::on_mute(); }
+        static void leave_muted(int64_t now_ms) { product_login_http::on_mute(); }
+        void on_mute_level(int latched) {
             if (latched) { enter_muted(now_ms); } else { leave_muted(now_ms); }
         }
         """
@@ -576,7 +575,7 @@ class DeviceGuardrailsPresentationInvariantTests(unittest.TestCase):
             "static void leave_muted(int64_t now_ms) { lv_indev_reset(indev, nullptr);",
         )
         self.assertTrue(pres.scan_mute_reconcile(resets, hw))
-        edge_only = "void product_hardware_buttons_poll(void) { if (pressed) { product_login_on_mute_pressed(); } }"
+        edge_only = "void poll() { if (pressed) { product_login_on_mute_pressed(); } }"
         self.assertTrue(pres.scan_mute_reconcile(login, edge_only))
 
     def test_presentation_render_is_pure(self):
@@ -594,7 +593,7 @@ class DeviceGuardrailsPresentationInvariantTests(unittest.TestCase):
             "set_label_text(s_upper_label, heading); lv_obj_align(s_upper_label, LV_ALIGN_LEFT_MID, 12, 0);",
         )
         self.assertTrue(pres.scan_render_is_pure(realign))
-        cross = login.replace("{ render_pin_screen(); }", "{ product_inbox_on_signed_in(); render_pin_screen(); }")
+        cross = login.replace("{ render_pin_screen(); }", "{ product_inbox::on_signed_in(); render_pin_screen(); }")
         self.assertTrue(pres.scan_render_is_pure(cross))
 
 
@@ -629,7 +628,7 @@ class DeviceGuardrailsMuteBootTests(unittest.TestCase):
 
         app_run_src = (ROOT / "client/device/main/product_app_run.cpp").read_text(encoding="utf-8")
         app_run_src = _strip_c_comments(app_run_src)
-        run_body = pres.function_body(app_run_src, "product_app_run")
+        run_body = pres.function_body(app_run_src, "run")
         attach_body = pres.function_body(app_run_src, "attach_product_ui")
         for marker in (
             "product_ui_window_create_failed",

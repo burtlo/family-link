@@ -1,4 +1,4 @@
-#include "product_display.h"
+#include "product_display.hpp"
 
 #include "bsp/esp-box-3.h"
 #include "esp_log.h"
@@ -6,7 +6,10 @@
 
 #define PRODUCT_LCD_DRAW_LINES 16
 
-extern "C" lv_display_t *product_display_start(void)
+namespace product_display
+{
+
+lv_display_t *start()
 {
     bsp_display_cfg_t cfg = {
         .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),
@@ -29,3 +32,5 @@ extern "C" lv_display_t *product_display_start(void)
     }
     return display;
 }
+
+} /* namespace product_display */

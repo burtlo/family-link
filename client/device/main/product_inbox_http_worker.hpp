@@ -1,15 +1,12 @@
-#ifndef PRODUCT_INBOX_HTTP_WORKER_H
-#define PRODUCT_INBOX_HTTP_WORKER_H
+#pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
+#include <cstdint>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace product_inbox_http
+{
 
 /* Copied by value onto the worker queue. bearer is the session credential, not a log field. */
-typedef struct product_inbox_http_job {
+struct Job {
     int kind;
     char method[8];
     char path[96];
@@ -24,11 +21,11 @@ typedef struct product_inbox_http_job {
     uint32_t range_start;
     uint32_t asset_bytes;
     int timeout_ms;
-} product_inbox_http_job_t;
+};
 
 /* data and parsed are heap blocks. The UI tick frees both after it applies the result.
  * parsed is an fl_product_inbox::InboxParseResult allocated on the worker. */
-typedef struct product_inbox_http_result {
+struct Result {
     int kind;
     uint32_t generation;
     uint32_t operation_id;
@@ -41,17 +38,13 @@ typedef struct product_inbox_http_result {
     int data_len;
     uint8_t *data;
     void *parsed;
-} product_inbox_http_result_t;
+};
 
-bool product_inbox_http_worker_start(void);
-void product_inbox_http_worker_stop(void);
+bool worker_start();
+void worker_stop();
 /* Returns false when the queue is full or the worker is stopped. Does not block. */
-bool product_inbox_http_submit(const product_inbox_http_job_t *job);
+bool submit(const Job *job);
 /* UI thread. Null when no result is waiting. Valid until the next poll. */
-const product_inbox_http_result_t *product_inbox_http_poll(void);
+const Result *poll();
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+} /* namespace product_inbox_http */

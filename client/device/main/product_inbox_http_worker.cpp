@@ -1,4 +1,6 @@
-#include "product_inbox_http_worker.h"
+#include "product_inbox_http_worker.hpp"
+
+#include "product_inbox.hpp"
 
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
@@ -16,8 +18,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-fl_product_inbox::CarouselSession *product_inbox_session(void);
 
 namespace
 {
@@ -54,7 +54,7 @@ QueueHandle_t s_jobs = nullptr;
 QueueHandle_t s_results = nullptr;
 TaskHandle_t s_worker = nullptr;
 char s_base_url[kUrlCap];
-product_inbox_http_result_t s_polled;
+product_inbox_http::Result s_polled;
 HashRun s_audio_hash;
 HashRun s_sketch_hash;
 
@@ -175,7 +175,7 @@ esp_http_client_method_t method_of(const char *method)
     return HTTP_METHOD_GET;
 }
 
-void perform_exchange(const product_inbox_http_job_t &job, HttpExchange *out)
+void perform_exchange(const product_inbox_http::Job &job, HttpExchange *out)
 {
     esp_http_client_config_t config = {};
     esp_http_client_handle_t client;
@@ -245,7 +245,7 @@ void hex_encode(const uint8_t digest[32], char out[65])
     out[64] = 0;
 }
 
-void note_media_hash(const product_inbox_http_job_t &job, const uint8_t *data, int len, int *full_asset,
+void note_media_hash(const product_inbox_http::Job &job, const uint8_t *data, int len, int *full_asset,
                      int *hash_matches)
 {
     HashRun *run = job.kind == fl_product_inbox::kInboxWireSketch ? &s_sketch_hash : &s_audio_hash;
@@ -295,7 +295,7 @@ void note_media_hash(const product_inbox_http_job_t &job, const uint8_t *data, i
     }
 }
 
-void finish_inbox(const product_inbox_http_job_t &job, HttpExchange *exchange, product_inbox_http_result_t *result)
+void finish_inbox(const product_inbox_http::Job &job, HttpExchange *exchange, product_inbox_http::Result *result)
 {
     fl_product_inbox::InboxParseResult *parsed;
     result->terminal = 1;
@@ -325,7 +325,7 @@ void finish_inbox(const product_inbox_http_job_t &job, HttpExchange *exchange, p
     result->parsed = parsed;
 }
 
-void finish_media(const product_inbox_http_job_t &job, HttpExchange *exchange, product_inbox_http_result_t *result)
+void finish_media(const product_inbox_http::Job &job, HttpExchange *exchange, product_inbox_http::Result *result)
 {
     result->terminal = 1;
     result->hash_matches = 1;
@@ -344,7 +344,7 @@ void finish_media(const product_inbox_http_job_t &job, HttpExchange *exchange, p
     exchange->data = nullptr;
 }
 
-void perform_job(product_inbox_http_job_t &job, product_inbox_http_result_t *result)
+void perform_job(product_inbox_http::Job &job, product_inbox_http::Result *result)
 {
     memset(result, 0, sizeof(*result));
     result->kind = job.kind;
@@ -354,7 +354,7 @@ void perform_job(product_inbox_http_job_t &job, product_inbox_http_result_t *res
     result->terminal = 1;
     strncpy(result->message_id, job.message_id, sizeof(result->message_id) - 1);
     if (job.kind == fl_product_inbox::kInboxWireAudio || job.kind == fl_product_inbox::kInboxWireSketch) {
-        fl_product_inbox::CarouselSession *session = product_inbox_session();
+        fl_product_inbox::CarouselSession *session = product_inbox::session();
         int cancel = session == nullptr ||
                      fl_product_inbox::InboxWirePlanner::media_job_cancelled(*session, job.kind);
         if (cancel) {
@@ -387,8 +387,8 @@ void perform_job(product_inbox_http_job_t &job, product_inbox_http_result_t *res
 
 void worker_task(void *arg)
 {
-    product_inbox_http_job_t job;
-    static product_inbox_http_result_t result;
+    product_inbox_http::Job job;
+    static product_inbox_http::Result result;
     (void)arg;
     while (true) {
         if (xQueueReceive(s_jobs, &job, portMAX_DELAY) != pdTRUE) {
@@ -417,38 +417,41 @@ void worker_task(void *arg)
 
 } /* namespace */
 
-extern "C" bool product_inbox_http_worker_start(void)
+namespace product_inbox_http
+{
+
+bool worker_start()
 {
     if (s_worker != nullptr) {
         return true;
     }
     strncpy(s_base_url, CONFIG_FAMILY_P1_BASE_URL, sizeof(s_base_url) - 1);
     s_base_url[sizeof(s_base_url) - 1] = '\0';
-    s_jobs = xQueueCreate(kQueueDepth, sizeof(product_inbox_http_job_t));
-    s_results = xQueueCreate(kQueueDepth, sizeof(product_inbox_http_result_t));
+    s_jobs = xQueueCreate(kQueueDepth, sizeof(Job));
+    s_results = xQueueCreate(kQueueDepth, sizeof(Result));
     if (s_jobs == nullptr || s_results == nullptr) {
         ESP_LOGE(kTag, "queue alloc failed");
-        product_inbox_http_worker_stop();
+        worker_stop();
         return false;
     }
     if (xTaskCreateWithCaps(worker_task, "inbox_http", kWorkerStack, nullptr, 5, &s_worker,
                             MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) != pdPASS) {
         ESP_LOGE(kTag, "task create failed");
-        product_inbox_http_worker_stop();
+        worker_stop();
         return false;
     }
     ESP_LOGI(kTag, "inbox HTTP worker ready");
     return true;
 }
 
-extern "C" void product_inbox_http_worker_stop(void)
+void worker_stop()
 {
     if (s_worker != nullptr) {
         vTaskDeleteWithCaps(s_worker);
         s_worker = nullptr;
     }
     if (s_jobs != nullptr) {
-        product_inbox_http_job_t dropped;
+        product_inbox_http::Job dropped;
         while (xQueueReceive(s_jobs, &dropped, 0) == pdTRUE) {
             wipe(dropped.bearer, sizeof(dropped.bearer));
         }
@@ -456,7 +459,7 @@ extern "C" void product_inbox_http_worker_stop(void)
         s_jobs = nullptr;
     }
     if (s_results != nullptr) {
-        product_inbox_http_result_t dropped;
+        product_inbox_http::Result dropped;
         while (xQueueReceive(s_results, &dropped, 0) == pdTRUE) {
             if (dropped.data != nullptr) {
                 free(dropped.data);
@@ -472,7 +475,7 @@ extern "C" void product_inbox_http_worker_stop(void)
     hash_clear(&s_sketch_hash);
 }
 
-extern "C" bool product_inbox_http_submit(const product_inbox_http_job_t *job)
+bool submit(const Job *job)
 {
     if (s_jobs == nullptr || job == nullptr) {
         return false;
@@ -480,7 +483,7 @@ extern "C" bool product_inbox_http_submit(const product_inbox_http_job_t *job)
     return xQueueSend(s_jobs, job, 0) == pdTRUE;
 }
 
-extern "C" const product_inbox_http_result_t *product_inbox_http_poll(void)
+const Result *poll()
 {
     if (s_results == nullptr) {
         return nullptr;
@@ -490,3 +493,5 @@ extern "C" const product_inbox_http_result_t *product_inbox_http_poll(void)
     }
     return &s_polled;
 }
+
+} /* namespace product_inbox_http */

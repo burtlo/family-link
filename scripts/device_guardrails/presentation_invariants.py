@@ -16,22 +16,22 @@ ROUTER = "product_stage_router.cpp"
 APP_MAIN = "app_main.cpp"
 
 VISIBILITY_SETTERS = (
-    "product_login_present",
-    "product_inbox_set_ui_visible",
-    "product_volume_set_visible",
-    "product_send_present",
-    "product_record_set_visible",
+    "product_login::present",
+    "product_inbox::set_ui_visible",
+    "product_volume::set_visible",
+    "product_send::present",
+    "product_record::set_visible",
 )
 
 TICK_PHASES = (
-    "product_hardware_buttons_poll",
+    "product_buttons::poll",
     "flush_wifi_schedule",
-    "product_login_http_service",
+    "product_login_http::service",
     "note_sign_in_edge",
-    "product_inbox_service",
-    "product_send_service",
-    "product_record_service",
-    "product_stage_present",
+    "product_inbox::service",
+    "product_send::service",
+    "product_record::service",
+    "product_stage::present",
 )
 
 Z_ORDER_CALLS = ("lv_obj_move_foreground", "lv_obj_move_background", "lv_obj_swap")
@@ -40,9 +40,13 @@ RENDER_FUNCTIONS = ("render_login_copy", "render_pin_screen")
 RENDER_FORBIDDEN = (
     "product_stage_set",
     "product_stage_",
+    "product_inbox::",
     "product_inbox_",
+    "product_send::",
     "product_send_",
+    "product_volume::",
     "product_volume_",
+    "product_record::",
     "product_record_",
     "note_sign_in_edge",
     "wake_login_display",
@@ -54,8 +58,8 @@ RENDER_FORBIDDEN = (
     "lv_obj_move_",
 )
 
-MUTE_FUNCTIONS = ("product_login_on_mute_level", "enter_muted", "leave_muted")
-MUTE_FORBIDDEN = ("render_", "product_stage_present", "lv_indev_reset", "lv_refr_now")
+MUTE_FUNCTIONS = ("on_mute_level", "enter_muted", "leave_muted")
+MUTE_FORBIDDEN = ("render_", "product_stage::present", "lv_indev_reset", "lv_refr_now")
 
 
 def strip_comments(text: str) -> str:
@@ -140,23 +144,23 @@ def scan_tick_phase_order(login: str) -> list[str]:
         if calls[0] < last_at:
             errors.append(f"PRES-ORDER: {phase} must run after {last_name}")
         last_name, last_at = phase, calls[0]
-    present = _calls(body, "product_stage_present")
+    present = _calls(body, "product_stage::present")
     if present and any(m.start() > present[-1] for m in re.finditer(r"\b(render_\w+|product_\w+_service)\s*\(", body)):
-        errors.append("PRES-ORDER: nothing may render or service after product_stage_present")
+        errors.append("PRES-ORDER: nothing may render or service after product_stage::present")
     signed = body.find("if (s_session.signed_in() != 0)")
     other = body.find("} else {", signed)
     if signed < 0 or other < 0:
         errors.append("PRES-ORDER: inbox service must be gated on signed_in with a signed-out branch")
     else:
-        if "product_inbox_service" not in body[signed:other]:
-            errors.append("PRES-ORDER: product_inbox_service runs only while signed in")
-        if "product_inbox_discard_results" not in body[other:]:
-            errors.append("PRES-ORDER: signed-out ticks must call product_inbox_discard_results")
+        if "product_inbox::service" not in body[signed:other]:
+            errors.append("PRES-ORDER: product_inbox::service runs only while signed in")
+        if "product_inbox::discard_results" not in body[other:]:
+            errors.append("PRES-ORDER: signed-out ticks must call product_inbox::discard_results")
     return errors
 
 
 def scan_single_visibility_owner(sources: dict[str, str]) -> list[str]:
-    """PRES-OWNER: only product_stage_present calls module visibility setters."""
+    """PRES-OWNER: only product_stage::present calls module visibility setters."""
     errors: list[str] = []
     for name, text in sources.items():
         for setter in VISIBILITY_SETTERS:
@@ -166,9 +170,9 @@ def scan_single_visibility_owner(sources: dict[str, str]) -> list[str]:
             if name != ROUTER:
                 errors.append(f"PRES-OWNER: {name} calls {setter}; only {ROUTER} may")
                 continue
-            present = function_body(text, "product_stage_present")
+            present = function_body(text, "present")
             if len(_calls(present, setter)) != len(calls):
-                errors.append(f"PRES-OWNER: {setter} called outside product_stage_present")
+                errors.append(f"PRES-OWNER: {setter} called outside product_stage::present")
     return errors
 
 
@@ -197,7 +201,7 @@ def scan_display_power(sources: dict[str, str]) -> list[str]:
     allowed = {
         LOGIN: ("wake_login_display", "blank_login_display"),
         APP_MAIN: ("app_main", "boot_backlight_after_display"),
-        "product_app_run.cpp": ("product_app_run",),
+        "product_app_run.cpp": ("run",),
         "product_network.cpp": ("join_configured_wifi",),
     }
     for name, text in sources.items():
@@ -217,8 +221,8 @@ def scan_display_power(sources: dict[str, str]) -> list[str]:
 def scan_mute_reconcile(login: str, hw: str) -> list[str]:
     """PRES-MUTE: level sampled every poll; reconcile never renders."""
     errors: list[str] = []
-    poll = function_body(hw, "product_hardware_buttons_poll")
-    if "product_login_on_mute_level(product_hardware_buttons_mute_latched())" not in poll:
+    poll = function_body(hw, "poll")
+    if "product_login::on_mute_level(" not in poll or "mute_latched()" not in poll:
         errors.append("PRES-MUTE: the button poll must pass the latch level every tick")
     for fn in MUTE_FUNCTIONS:
         body = function_body(login, fn)
@@ -228,11 +232,11 @@ def scan_mute_reconcile(login: str, hw: str) -> list[str]:
         for forbidden in MUTE_FORBIDDEN:
             if re.search(rf"\b{re.escape(forbidden)}\w*\s*\(", body):
                 errors.append(f"PRES-MUTE: {fn} must not call {forbidden}")
-    level = function_body(login, "product_login_on_mute_level")
+    level = function_body(login, "on_mute_level")
     if "enter_muted(" not in level or "leave_muted(" not in level:
-        errors.append("PRES-MUTE: product_login_on_mute_level dispatches to enter_muted / leave_muted")
+        errors.append("PRES-MUTE: on_mute_level dispatches to enter_muted / leave_muted")
     for fn in ("enter_muted", "leave_muted"):
-        if "product_login_http_on_mute()" not in function_body(login, fn):
+        if "product_login_http::on_mute()" not in function_body(login, fn):
             errors.append(f"PRES-MUTE: {fn} must reset the login HTTP roster fence")
     return errors
 
