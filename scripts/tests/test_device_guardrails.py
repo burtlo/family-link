@@ -207,7 +207,7 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
 
     def test_mute_latch_prefers_gpio_level(self):
         """Physical latch on BOX-3 is read from GPIO when configured."""
-        text = (ROOT / "client/device/main/product_hardware_buttons.c").read_text(
+        text = (ROOT / "client/device/main/product_hardware_buttons.cpp").read_text(
             encoding="utf-8"
         )
         start = text.find("int product_hardware_buttons_mute_latched(void)")
@@ -253,7 +253,7 @@ class DeviceGuardrailsPhase2Tests(unittest.TestCase):
         login = (ROOT / "client/device/main/product_login_bridge.cpp").read_text(
             encoding="utf-8"
         )
-        hw = (ROOT / "client/device/main/product_hardware_buttons.c").read_text(encoding="utf-8")
+        hw = (ROOT / "client/device/main/product_hardware_buttons.cpp").read_text(encoding="utf-8")
         self.assertIn("V2_MUTE_EDGE", login)
         self.assertIn("product_hardware_buttons_mute_gpio_level", hw)
         self.assertIn("FAMILY_DEVICE_MUTE_TRACE", (ROOT / "client/device/main/Kconfig.projbuild").read_text())
@@ -606,7 +606,7 @@ class DeviceGuardrailsMuteBootTests(unittest.TestCase):
         brightness_set or backlight_on. The latched arm blanks before the
         shell and login attach failure returns.
         """
-        app_main_src = (ROOT / "client/device/main/app_main.c").read_text(encoding="utf-8")
+        app_main_src = (ROOT / "client/device/main/app_main.cpp").read_text(encoding="utf-8")
         app_main_src = _strip_c_comments(app_main_src)
         boot_backlight = pres.function_body(app_main_src, "boot_backlight_after_display")
         decision = _first_latch_decision(boot_backlight)
@@ -630,11 +630,12 @@ class DeviceGuardrailsMuteBootTests(unittest.TestCase):
         app_run_src = (ROOT / "client/device/main/product_app_run.cpp").read_text(encoding="utf-8")
         app_run_src = _strip_c_comments(app_run_src)
         run_body = pres.function_body(app_run_src, "product_app_run")
+        attach_body = pres.function_body(app_run_src, "attach_product_ui")
         for marker in (
             "product_ui_window_create_failed",
             "product_ui_window_show_desk_failed",
         ):
-            self.assertIn(marker, run_body)
+            self.assertIn(marker, attach_body)
         self.assertIn("lvgl_lock_failed", app_run_src)
         self.assertEqual(_unguarded_light_calls(run_body), [])
 

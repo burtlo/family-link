@@ -64,6 +64,39 @@ class ProductServerStartupTests(unittest.TestCase):
                 child_environment[server._RUNTIME_REEXEC_ENV], str(candidate)
             )
 
+    def test_host_reexecs_windows_venv_layout_when_bin_python_missing(self):
+        with tempfile.TemporaryDirectory(prefix="product-server-startup-") as temp:
+            root = Path(temp)
+            venv_scripts = root / ".venv" / "Scripts"
+            venv_scripts.mkdir(parents=True)
+            host_python = root / "host-python.exe"
+            host_python.write_bytes(b"host executable")
+            candidate = venv_scripts / "python.exe"
+            candidate.write_bytes(b"venv executable")
+
+            argv = ["server.py", "--run-id", "p7", "--port", "0"]
+            with (
+                mock.patch.object(server, "ROOT", root),
+                mock.patch.object(server.sys, "executable", str(host_python)),
+                mock.patch.object(server.sys, "prefix", str(root / "host")),
+                mock.patch.object(server.sys, "base_prefix", str(root / "host")),
+                mock.patch.object(server.sys, "argv", argv),
+                mock.patch.object(builtins, "__import__", side_effect=self._missing_runtime_import),
+                mock.patch.object(server.os, "execve") as execve,
+            ):
+                server._ensure_deployment_runtime()
+
+            execve.assert_called_once()
+            executable, child_argv, child_environment = execve.call_args.args
+            self.assertEqual(executable, str(candidate))
+            self.assertEqual(
+                child_argv,
+                [str(candidate), str(SERVER_PATH.resolve()), *argv[1:]],
+            )
+            self.assertEqual(
+                child_environment[server._RUNTIME_REEXEC_ENV], str(candidate)
+            )
+
     def test_reexec_marker_prevents_a_loop_if_venv_still_lacks_dependencies(self):
         with tempfile.TemporaryDirectory(prefix="product-server-startup-") as temp:
             root = Path(temp)

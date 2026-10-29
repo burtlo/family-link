@@ -379,7 +379,8 @@ int SendOutbox::part_bytes_for(uint32_t offset, uint32_t total, uint32_t *length
         return 0;
     }
     remain = total - offset;
-    *length_out = remain > kPartSizeBytes ? kPartSizeBytes : (uint32_t)remain;
+    *length_out =
+        remain > static_cast<uint32_t>(kPartSizeBytes) ? static_cast<uint32_t>(kPartSizeBytes) : remain;
     return 1;
 }
 

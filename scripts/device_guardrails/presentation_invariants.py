@@ -13,7 +13,7 @@ DEVICE_MAIN = ROOT / "client/device/main"
 
 LOGIN = "product_login_bridge.cpp"
 ROUTER = "product_stage_router.cpp"
-APP_MAIN = "app_main.c"
+APP_MAIN = "app_main.cpp"
 
 VISIBILITY_SETTERS = (
     "product_login_present",
@@ -198,7 +198,7 @@ def scan_display_power(sources: dict[str, str]) -> list[str]:
         LOGIN: ("wake_login_display", "blank_login_display"),
         APP_MAIN: ("app_main", "boot_backlight_after_display"),
         "product_app_run.cpp": ("product_app_run",),
-        "product_network.c": ("join_configured_wifi",),
+        "product_network.cpp": ("join_configured_wifi",),
     }
     for name, text in sources.items():
         for call in ("bsp_display_exit_sleep", "bsp_display_enter_sleep"):
@@ -257,7 +257,7 @@ def scan_render_is_pure(login: str) -> list[str]:
 def scan_presentation_invariants(base: Path | None = None) -> list[str]:
     sources = load_sources(base)
     login = sources.get(LOGIN, "")
-    hw = sources.get("product_hardware_buttons.c", "")
+    hw = sources.get("product_hardware_buttons.cpp", "")
     errors: list[str] = []
     errors.extend(scan_single_timer(sources))
     errors.extend(scan_tick_phase_order(login))

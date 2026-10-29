@@ -168,7 +168,7 @@ lab.help:
 
 server lab.p1.server:
 	$(call step_msg,P1 core-journey wire server on 0.0.0.0:8777)
-	$(call py_host_run,server/device/main/server.py --bind 0.0.0.0 --port 8777 --run-id local-dev $(if $(SERVER_TLS_CERT),--tls-cert "$(SERVER_TLS_CERT)",) $(if $(SERVER_TLS_KEY),--tls-key "$(SERVER_TLS_KEY)",) $(if $(filter 1 true yes,$(SERVER_PRODUCTION)),--production,))
+	$(call py_run,server/device/main/server.py --bind 0.0.0.0 --port 8777 --run-id local-dev $(if $(SERVER_TLS_CERT),--tls-cert "$(SERVER_TLS_CERT)",) $(if $(SERVER_TLS_KEY),--tls-key "$(SERVER_TLS_KEY)",) $(if $(filter 1 true yes,$(SERVER_PRODUCTION)),--production,))
 
 lab.lab02.server:
 	$(call py_host_run,server/labs/lab-02-paging/server.py --port 8765)

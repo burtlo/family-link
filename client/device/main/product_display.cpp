@@ -6,7 +6,7 @@
 
 #define PRODUCT_LCD_DRAW_LINES 16
 
-lv_display_t *product_display_start(void)
+extern "C" lv_display_t *product_display_start(void)
 {
     bsp_display_cfg_t cfg = {
         .lvgl_port_cfg = ESP_LVGL_PORT_INIT_CONFIG(),

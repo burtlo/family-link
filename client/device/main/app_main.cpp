@@ -12,8 +12,7 @@
 #include "product_mic_capture.h"
 #include "product_record_fw.h"
 
-#include <stdbool.h>
-#include <stdio.h>
+#include <cstdio>
 
 #define BOOT_PHASE_LABEL_MAX 24
 
@@ -30,7 +29,7 @@ static bool boot_nvs_init(void);
 static void boot_backlight_after_display(void);
 static void boot_log_identity(void);
 
-void app_main(void)
+extern "C" void app_main(void)
 {
     boot_log_identity();
 

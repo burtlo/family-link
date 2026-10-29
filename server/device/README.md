@@ -33,8 +33,9 @@ truth.
 
 YAML deployment validation and runtime loading require the repository host
 dependencies PyYAML and `jsonschema`. From the repository root, run `make
-install` first and use `.venv/bin/python` for direct server or validation
-commands. Startup fails closed if the YAML file is missing/invalid or those
+install` first and use `.venv/Scripts/python.exe` (Windows) or
+`.venv/bin/python` (macOS/Linux) for direct server or validation commands.
+`make server` uses the repository venv automatically. Startup fails closed if the YAML file is missing/invalid or those
 dependencies are unavailable; the server does not fall back to the legacy JSON
 fixtures.
 

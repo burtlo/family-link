@@ -1,6 +1,9 @@
 # ESP-IDF device firmware: compile_commands from `make app:build` → build/device/.
-# Clangd parses with host clang; strip GCC/Xtensa-only flags and query the cross-GCC driver.
+# Host clangd strips GCC-only -m/-f flags and should query xtensa-*-elf-gcc for builtins
+# (see .vscode/settings.json --query-driver). Also define __XTENSA__ so headers such as
+# xtensa/config/core.h use <xtensa/hal.h> instead of ../hal.h (missing under esp32s3/include).
 CompileFlags:
   CompilationDatabase: build/device
   BuiltinHeaders: QueryDriver
   Remove: [-m*, -f*]
+  Add: [-D__XTENSA__]

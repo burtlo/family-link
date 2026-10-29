@@ -16,10 +16,10 @@
   "cSpell.useWorkspaceDictionary": true,
   "clangd.arguments": [
     "--compile-commands-dir=${workspaceFolder}/build/device",
-    "--query-driver=/**/xtensa-*-elf-gcc",
-    "--query-driver=/**/xtensa-*-elf-g++",
+    "--query-driver=/**/xtensa-*-elf-*",
     "--background-index"
   ],
+  "C_Cpp.intelliSenseEngine": "disabled",
   "terminal.integrated.defaultProfile.windows": "PowerShell 7",
   "terminal.integrated.profiles.windows": {
     "PowerShell 7": {

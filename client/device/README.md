@@ -24,15 +24,19 @@ Firmware is ESP-IDF + cross-GCC. **`esp_log.h` / `ESP_LOGI` are fine**; clangd
 without `build/device/compile_commands.json` only sees ISO C and reports false
 errors (`-mlongcalls`, missing `../hal.h` under Xtensa headers, and similar).
 Run **`make app:build`**, then restart clangd. Root [`.clangd`](../../.clangd)
-strips GCC-only flags from that database; [`.vscode/settings.json`](../../.vscode/settings.json)
-sets `--query-driver` for the Espressif `xtensa-*-elf-gcc` toolchain. Optional:
+defines **`__XTENSA__`** for host parsing and strips GCC-only flags from
+`build/device/compile_commands.json`; [`.vscode/settings.json`](../../.vscode/settings.json)
+sets **`--query-driver=/**/xtensa-*-elf-*`** for the Espressif toolchain and disables
+the Microsoft C/C++ engine so clangd alone drives diagnostics. Without a fresh
+`compile_commands.json`, clangd falls back to host C++ and reports false errors
+(`-mlongcalls`, missing `../hal.h` under Xtensa headers, and similar). Optional:
 Espressif’s **ESP-IDF** VS Code/Cursor extension for build/flash/monitor
 alongside or instead of clangd.
 
 Boot (serial tag `app_main`; normative order **BOOT-ORDER** in
 [device-target-invariants.md](../../docs/standards/device-target-invariants.md)):
 
-- `app_main.c` — kit bring-up through NVS, then `product_app_run()`
+- `app_main.cpp` — kit bring-up through NVS, then `product_app_run()`
 - `build=<id>` — first line in `app_main`
 - Subsystem lines (`product_record` SD mount, `product_mic`, `product_display`, …)
 - `boot_step=*` / `boot_backlight …` — display and initial backlight policy

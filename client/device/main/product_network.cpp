@@ -9,12 +9,11 @@
 #include "esp_log.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
-#include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
 
-#include <string.h>
+#include <cstring>
 
 static const char *kTag = "product_network";
 #define WIFI_CONNECTED_BIT BIT0
@@ -26,13 +25,15 @@ static bool s_wifi_init_attempted;
 static bool s_wifi_init_ok;
 static int s_last_disconnect_reason;
 
+extern "C" {
+
 static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     (void)arg;
     if (base == WIFI_EVENT && id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
-        const wifi_event_sta_disconnected_t *disc = data;
+        const auto *disc = static_cast<const wifi_event_sta_disconnected_t *>(data);
         s_last_disconnect_reason = disc != NULL ? (int)disc->reason : -1;
         ESP_LOGW(kTag, "disconnect reason=%d", s_last_disconnect_reason);
         xEventGroupClearBits(s_wifi_events, WIFI_CONNECTED_BIT);
@@ -49,7 +50,7 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
 static bool join_configured_wifi(void)
 {
     esp_err_t err;
-    wifi_config_t wcfg = {0};
+    wifi_config_t wcfg{};
     EventBits_t bits;
 
     if (CONFIG_FAMILY_WIFI_SSID[0] == '\0') {
@@ -158,3 +159,5 @@ void product_network_start(void)
         ESP_LOGE(kTag, "network task create failed");
     }
 }
+
+} /* extern "C" */

@@ -6,7 +6,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULTS = REPO / "client/device/sdkconfig.defaults"
-DISPLAY = REPO / "client/device/main/product_display.c"
+DISPLAY = REPO / "client/device/main/product_display.cpp"
 DRAW_LINES_DEFINE = "#define PRODUCT_LCD_DRAW_LINES 16"
 
 # Documented product floor; do not raise LV_MEM or draw height via guardrails.

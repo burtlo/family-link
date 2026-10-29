@@ -7,7 +7,6 @@
 #include "fl_product_record_lab10.h"
 #include "fl_product_record_media.hpp"
 #include "fl_product_record_session.hpp"
-#include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "product_mem_probe.h"
 #include "product_mic_capture.h"

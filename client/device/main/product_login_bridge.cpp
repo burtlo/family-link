@@ -14,7 +14,6 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "lvgl.h"
-#include "sdkconfig.h"
 
 #include "fl_product_login_session.hpp"
 

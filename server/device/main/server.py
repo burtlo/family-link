@@ -340,6 +340,18 @@ def _deployment_dependencies_available() -> bool:
     return True
 
 
+def _repository_venv_python() -> Path | None:
+    """Return the repository venv interpreter when present (Windows or Unix layout)."""
+    for candidate in (
+        ROOT / ".venv" / "Scripts" / "python.exe",
+        ROOT / ".venv" / "bin" / "python",
+        ROOT / ".venv" / "bin" / "python3",
+    ):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def _running_in_repository_venv(candidate: Path) -> bool:
     """Avoid retrying a repository venv that is missing its dependencies."""
     try:
@@ -356,8 +368,8 @@ def _ensure_deployment_runtime() -> None:
     if _deployment_dependencies_available():
         return
 
-    candidate = ROOT / ".venv" / "bin" / "python"
-    if not candidate.is_file():
+    candidate = _repository_venv_python()
+    if candidate is None:
         return
     if _running_in_repository_venv(candidate):
         return
