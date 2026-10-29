@@ -1,10 +1,10 @@
 # Device UI view-controller architecture — owner-directed revision
 
-Date: 2026-10-29  
-Revision: 3  
-Status: **revised proposal for owner review** — architecture direction recorded;
-memory sizes, transition policies, and implementation details remain proposed  
-Audience: product owner and implementers  
+Date: 2026-10-29
+Revision: 4
+Status: **owner-directed architecture** — memory sizes and later implementation
+details remain measurement-gated
+Audience: product owner and implementers
 Scope: `client/device/` product UI runtime; this document does not authorize
 implementation or change current normative standards
 
@@ -238,12 +238,17 @@ route intent
 The resource plan may change the ordering:
 
 - **Replace before build:** unload outgoing first, then load incoming. Lowest
-  peak memory; appropriate for an instant or covered transition.
-- **Bounded overlap:** retain both loaded views for a measured transition.
-  Admission requires the declared peak to fit.
-- **Snapshot transition:** replace the outgoing live tree with a bounded
-  transition artifact, unload it, then load the incoming view. The snapshot's
-  format and bytes must be declared.
+  peak memory; appropriate when no outgoing pixels need to remain visible.
+- **Specified snapshot transition:** capture the outgoing presentation into a
+  bounded static artifact, unload its controller tree, then load and animate the
+  incoming controller according to the applicable existing transition
+  specification. The snapshot format, bytes, capability, and lifetime are
+  declared.
+
+Owner direction is that no product transition requires two live controller
+trees. Do not introduce a generic live-overlap mode. The first implementation
+uses the existing forward CoverUp motion identified by
+`TRANSITION-COVER-DOWN`: incoming `y=+240 → 0`, 400 ms, ease-in-out quint.
 
 If admission or `loadView()` fails, the root must keep or restore a valid
 controller hierarchy and report a route failure. It must not commit a stage
@@ -335,9 +340,11 @@ A lease transfer requires the old owner to:
 4. invalidate all borrowed pointers;
 5. return the lease before the new owner receives it.
 
-The arena size, heap capability, boot allocation timing, and partition strategy
-remain open. Reserving 112.5 KiB of internal memory at boot has not been shown
-safe, and moving interactive work to PSRAM has not been qualified.
+The arena size, heap capability, and partition strategy remain open. Initial
+allocation is lazy, matching current behavior. Preallocation may be revisited
+after the lease coordinator exists and target evidence can compare guaranteed
+availability against startup/Wi-Fi/audio pressure. Moving interactive work to
+PSRAM has not been qualified.
 
 ### LVGL pool strategy
 
@@ -548,9 +555,9 @@ change visibility or containment.
 | ID | Decision | Why it matters |
 |---|---|---|
 | `ARCH-OPEN-001` | Exact shared working-arena size and heap capabilities | Determines whether sketch, playback, and transition artifacts can share backing memory without harming Wi-Fi/audio/display margins |
-| `ARCH-OPEN-002` | Boot allocation versus lazy allocation of the arena | Trades fragmentation predictability against early reservation of scarce internal memory |
+| `ARCH-OPEN-002` | Whether later evidence justifies changing the accepted initial lazy allocation | Trades fragmentation predictability/availability against early reservation of scarce internal memory |
 | `ARCH-OPEN-003` | Per-route measured LVGL steady/load/transition budgets | Required for admission; current estimates are insufficient |
-| `ARCH-OPEN-004` | Which transitions require overlap, a snapshot, or replace-before-build | Determines peak memory and visible motion |
+| `ARCH-OPEN-004` | Per-transition static-snapshot envelope or replace-before-build rule | Live controller overlap is not required; specified motion and snapshot peak still need implementation budgets |
 | `ARCH-OPEN-005` | Compact/durable representation used to reconstruct sketch and partial playback pixels after a lease transfer | Required before one working arena can safely serve multiple scenes |
 | `ARCH-OPEN-006` | Whether login and PIN use separate whole-scene controllers or one parent scene controller replacing lower-slot child controllers | Affects containment granularity but not the root architecture |
 | `ARCH-OPEN-007` | Reserved low-memory recovery presentation and budget | Needed to recover deterministically from admission/load failure |
@@ -566,6 +573,7 @@ rather than duplicated here.
 - Treating `SplitPaneController` as the application root or “desktop app”
 - Reintroducing `RootShellController`, `SplitDeskHost`, or `SketchHost`
 - Keeping every scene's LVGL tree alive and hidden for the boot lifetime
+- Retaining two live controller trees for a transition
 - Combining the LVGL object pool and sketch pixel memory into one fictional
   interchangeable pool
 - Letting view lifecycle methods initialize or reset long-lived services
@@ -573,6 +581,9 @@ rather than duplicated here.
 - Raising memory settings without target measurements
 - One permanent uncompressed sketch framebuffer per inbox card
 - Authorizing firmware implementation through this proposal alone
+
+The authorized first implementation slice is mapped in
+[`device-ui-view-controller-first-slice-implementation-map.md`](device-ui-view-controller-first-slice-implementation-map.md).
 
 ## Review readiness
 
@@ -600,3 +611,4 @@ as an open naming choice. Silence on the remaining open items is not approval.
 | 1 | 2026-10-29 | Explored a shell/host architecture centered on `RootShellController` and `SplitDeskHost` |
 | 2 | 2026-10-29 | Replaced host-centered structure with owner-directed `RootViewController`, `SplitPaneController`, scene view controllers, explicit lifecycle, service separation, and root-coordinated memory admission/leases |
 | 3 | 2026-10-29 | Added storage-backed recording/sketch lifetimes, bounded in-card playback surfaces, and the linked controller memory-envelope specification |
+| 4 | 2026-10-29 | Recorded lazy initial surface allocation, no live-controller transition overlap, empty-root recovery, replacement-only measurement, and the first implementation map |

@@ -1,10 +1,9 @@
 # Device UI view-controller memory envelope
 
-Date: 2026-10-29  
-Revision: 1  
-Status: **proposal for owner review** — owner direction recorded; numeric budgets
-remain measurement-gated  
-Audience: product owner and implementers  
+Date: 2026-10-29
+Revision: 1
+Status: **owner direction recorded** — numeric budgets remain measurement-gated
+Audience: product owner and implementers
 Scope: `client/device/` view-controller, media, transition, and inbox-sketch
 memory architecture; this document does not authorize implementation
 
@@ -32,6 +31,25 @@ memory architecture; this document does not authorize implementation
 
 The intended inbox behavior remains the current owner-directed behavior: Play
 animates the sketch within the centered message card.
+
+Additional owner decisions recorded 2026-10-29:
+
+- The 112.5 KiB surface arena remains lazily allocated for now. Preallocation
+  may be reconsidered after the controller/lease implementation can guarantee
+  availability and expose measured tradeoffs.
+- No transition requires two live controller trees. Product stage motion uses
+  the already defined transition specifications; where outgoing pixels must
+  remain visible, a bounded static snapshot may replace the outgoing live tree.
+- Storage-full behavior is deferred to a later boot/storage-health design for
+  the 32 GB local store.
+- The minimum recovery state is `RootViewController` with no child and no
+  visible UI.
+- Existing eager screens are not a qualification baseline. Memory measurement
+  begins with the ground-up Root/Login slice and continues as new controllers
+  are added thoughtfully.
+- The 32 KiB LVGL pool remains the initial implementation setting. It is
+  reconsidered from replacement-controller measurements, not current eager-view
+  measurements.
 
 ## Goals
 
@@ -353,7 +371,7 @@ values after target validation:
 | Pixel leases | Dimensions, format, capability, lifetime |
 | Other heap | Models, queues, worker stacks, decode/network scratch |
 | Storage activity | Read/write bandwidth and synchronization boundary |
-| Transition modes | Replace, cover/snapshot, or overlap |
+| Transition modes | Replace or specified static-snapshot transition |
 | Degradation | Defined behavior if the preferred allocation is unavailable |
 
 Estimates are admission inputs. Only target measurements become budgets.
@@ -367,25 +385,29 @@ change before building the destination tree.
 
 ```text
 outgoing will disappear
-→ opaque cover if visually required
 → outgoing unloads and returns leases
 → incoming loads
-→ cover reveals incoming
+→ incoming appears without stage motion
 ```
 
-This is the default when two live trees exceed the transition allowance. It
-supports a visible transition without simultaneous full scene trees.
+Use this only when the applicable product specification does not require stage
+motion.
 
 ### Snapshot then replace
 
-Use a bounded surface snapshot when motion requires outgoing pixels but not
-outgoing interactivity. The snapshot has an explicit byte count and lease.
+Use a bounded surface snapshot when the specified motion requires outgoing
+pixels but not outgoing interactivity. Capture the outgoing presentation,
+unload its controller, load the incoming controller at the transition's start
+geometry, then run the already specified animation. The snapshot has an
+explicit byte count, capability, and lease.
 
-### Live overlap
+For the forward CoverUp motion identified by `TRANSITION-COVER-DOWN`, the
+incoming root moves from `y=+240` to `y=0` over 400 ms with ease-in-out quint.
 
-Allow both trees only when the specific transition has measured LVGL and heap
-headroom. The duration, peak, and input owner are declared. “Transitions may
-need it” is not sufficient admission.
+### Live overlap excluded
+
+No product transition requires two live controller trees. Transition admission
+must not select or silently fall back to live-controller overlap.
 
 ### Recovery reserve
 
@@ -466,15 +488,15 @@ must also have event probes around allocation and release.
 
 | ID | Decision | Evidence needed |
 |---|---|---|
-| `MEM-OPEN-001` | Final LVGL pool size | Per-controller and transition high-water plus fragmentation loops |
+| `MEM-OPEN-001` | Whether later replacement-controller evidence justifies changing the initial 32 KiB LVGL pool | Per-controller and transition high-water plus fragmentation loops |
 | `MEM-OPEN-002` | Active/transition/recovery logical reservation sizes | Worst approved transition measurements |
 | `MEM-OPEN-003` | Surface arena region and fallback | Internal vs PSRAM interaction latency and system-margin comparison |
-| `MEM-OPEN-004` | Lazy vs boot-time arena allocation | Fragmentation and startup/Wi-Fi/audio comparisons |
+| `MEM-OPEN-004` | Whether later evidence justifies changing the accepted initial lazy arena allocation | Fragmentation and startup/Wi-Fi/audio comparisons |
 | `MEM-OPEN-005` | Inbox renderer: direct single surface vs bounded scratch | Rendering correctness, tearing, and frame timing |
 | `MEM-OPEN-006` | Checkpoint format and frequency | Reconstruction latency, encoded size, and storage-write cost |
 | `MEM-OPEN-007` | Capture and upload chunk sizes/count | Storage latency, network jitter, retry behavior, and memory peak |
-| `MEM-OPEN-008` | Storage quota and full-storage policy | Product retention and failure behavior |
-| `MEM-OPEN-009` | Which transitions justify live overlap | Visual approval and measured peak |
+| `MEM-OPEN-008` | Deferred boot/storage-health policy for quota and full storage | Product retention and failure behavior; not part of the first controller slice |
+| `MEM-OPEN-009` | Static-snapshot resource envelopes for specified transitions | Per-transition snapshot dimensions, region, lifetime, and measured peak; live controller overlap is not required |
 | `MEM-OPEN-010` | Which Wi-Fi/HTTP allocations can be forced or configured into PSRAM | Product heap tracing and ESP-IDF/API constraints |
 
 ## Explicit non-goals
@@ -491,6 +513,7 @@ must also have event probes around allocation and release.
 ## Related documents
 
 - [`device-ui-shell-architecture-proposal.md`](device-ui-shell-architecture-proposal.md)
+- [`device-ui-view-controller-first-slice-implementation-map.md`](device-ui-view-controller-first-slice-implementation-map.md)
 - [`ui-memory-lifecycle-review-2026-10-25.md`](ui-memory-lifecycle-review-2026-10-25.md)
 - [`overlap-record-during-upload.md`](../../labs/evidence/lab-16/results/overlap-record-during-upload.md)
 - [`FOUNDATION-LVGL-BUDGET.md`](../../product/device-ui/foundations/FOUNDATION-LVGL-BUDGET.md)
