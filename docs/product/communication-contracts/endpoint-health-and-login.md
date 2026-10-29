@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | ID | `COM-ENDPOINT-HEALTH-LOGIN` |
-| Revision | 0.13 |
+| Revision | 0.14 |
 | Status | Interview draft; product meanings confirmed (login `DEC-072`); login clocks, session token, HTTP map, the five login routes, desk-credential installation, and invalidate spacing accepted as engineering wire 2026-10-22 |
 | Owner | Product owner for behavior; engineering proposal needed for protocol |
 | Approval | No approval claimed; no implementation authorization implied |
@@ -16,7 +16,7 @@ This contract gathers the exchanges exposed by [endpoint login](../experiences/e
 
 | Source | Authority here |
 |---|---|
-| [`EXP-LOGIN`](../experiences/endpoint-login.md) `DEC-029`–`DEC-032`, `DEC-038`–`DEC-039`, `DEC-054`–`DEC-057`, `DEC-066`–`DEC-071`, `EXP-004`, `EXP-010`–`EXP-011`, `EXP-014`, `EXP-022`–`EXP-024`, `EXP-035`, `EXP-040`–`EXP-043`, `EXP-050`–`EXP-055` | Owner-decided behavior and timing, including session issuance, the 3-minute credential bound, health-beat meaning, and PIN-key expiry/mismatch |
+| [`EXP-LOGIN`](../experiences/endpoint-login.md) `DEC-029`–`DEC-032`, `DEC-038`–`DEC-039`, `DEC-054`–`DEC-057`, `DEC-066`–`DEC-071`, `EXP-004`, `EXP-010`–`EXP-011`, `EXP-014`, `EXP-022`–`EXP-024`, `EXP-029`, `EXP-035`, `EXP-040`–`EXP-043`, `EXP-050`–`EXP-055` | Owner-decided behavior and timing, including session issuance, the 3-minute credential bound, health-beat meaning, PIN-key expiry/mismatch, and PIN-transport exhaust recovery |
 | [Client application coding standards](../../standards/client-application-coding-standards.md) §§3–7 | Normative client concurrency and operation constraints |
 | [Operational-contract concept guide](../../v1-assessments/operational-contract-shape.md) | Supporting structure, not v2 wire authority |
 | [Authentication and connectivity assessment](../../v1-assessments/authentication-connectivity.md) | V1 as-built login and hangout evidence, not v2 policy |
@@ -54,8 +54,8 @@ The routes in §4c are accepted engineering wire. Other paths are not.
 | Operation | Trigger and direction | Decided behavior | Open boundary |
 |---|---|---|---|
 | `OP-HEALTH` | Endpoint → server; boot, connectivity change, and every 60 seconds while powered | `POST /v2/endpoint/health` with the desk Bearer. The credential is placed on the desk before first boot. No route in this journey issues it. Runs while muted and independently of roster requests and user presence. Payload is device health only (`DEC-067`). Server marks endpoint stale after 180 seconds (§4a). Stale is server-only. Failed outage beats are skipped, not queued. Connectivity return sends a fresh beat immediately. Stale clears on a successful beat. One in-flight request covers overlapping triggers. | None for installation |
-| `OP-ROSTER` | Endpoint → server; unmute/readiness, active-roster refresh, Wi-Fi return, and unknown-user reconciliation | `GET /v2/hangout` with the desk Bearer. HTTP 200 plus a valid roster body, including zero users, is required before selectable cards. Active refresh is 60 seconds, slowing to five minutes after ten idle minutes without changes. One failed periodic check gets one immediate retry, then connecting in the lower slot. Connecting uses that same roster/readiness request with a 3-second request timeout (`DEC-044`), then waits 1, 2, and 4 seconds, then every 30 seconds (`DEC-042`). Success or Wi-Fi return resets the backoff. Normal roster polling keeps a one-second timeout. Failure classes are §4a. | None for the route or failure classes |
-| `OP-PIN` | Endpoint → server; fourth PIN digit | `POST /v2/session/login` with the desk Bearer. Four total attempts for a timed-out request, each with a one-second timeout and delays of 1/2/4 seconds. Same key and exact request on retry; server records the first result and replays it for exact duplicates without reprocessing for one minute from first acceptance. Success issues a server session and does not return inbox (`DEC-066`). Expired or mismatched keys follow `DEC-068`. A missing record after restart is `operation_expired`. | Atomic in-flight claim (`COM-OPEN-007`) |
+| `OP-ROSTER` | Endpoint → server; unmute/readiness, active-roster refresh, Wi-Fi return, unknown-user reconciliation, and connecting after exhausted PIN transport | `GET /v2/hangout` with the desk Bearer. HTTP 200 plus a valid roster body, including zero users, is required before selectable cards. Active refresh is 60 seconds, slowing to five minutes after ten idle minutes without changes. One failed periodic check gets one immediate retry, then connecting in the lower slot. Connecting uses that same roster/readiness request with a 3-second request timeout (`DEC-044`), then waits 1, 2, and 4 seconds, then every 30 seconds (`DEC-042`). Entering connecting from exhausted `OP-PIN` starts that same schedule even if Wi-Fi never dropped (`COM-005`). Success or Wi-Fi return resets the backoff. Normal roster polling keeps a one-second timeout. Failure classes are §4a. | None for the route or failure classes |
+| `OP-PIN` | Endpoint → server; fourth PIN digit | `POST /v2/session/login` with the desk Bearer. Four total attempts for a timed-out, unanswered, or HTTP 5xx request, each with a one-second timeout and delays of 1/2/4 seconds. Same key and exact request on retry; server records the first result and replays it for exact duplicates without reprocessing for one minute from first acceptance. Success issues a server session and does not return inbox (`DEC-066`). Expired or mismatched keys follow `DEC-068`. A missing record after restart is `operation_expired`. Exhausted attempts close the PIN operation and start connecting `OP-ROSTER` (`COM-005`). | Atomic in-flight claim (`COM-OPEN-007`) |
 | `OP-SESSION-INVALIDATE` | Endpoint → server; mute during or after an in-flight PIN success | `POST /v2/session/invalidate` with the desk Bearer. Best-effort, non-blocking. Always identifies the PIN operation; includes the session credential if the endpoint already received it. Login is already canceled locally; late PIN success cannot restore it (`EXP-042`). Arrival revokes immediately. If it never arrives, the credential dies at the 3-minute bound (`DEC-070`). Three attempts: immediate, then 1 second, then 2 seconds. | None |
 | `OP-SESSION-REFRESH` | Signed-in endpoint → server; every 60 seconds while signed in | `POST /v2/session/refresh` with body `{}`. Extends the credential. Does not ask for a PIN or change stage. Failure leaves the endpoint signed in (`DEC-069`, `COM-017`). Not a health beat. | None |
 
@@ -66,7 +66,7 @@ The routes in §4c are accepted engineering wire. Other paths are not.
 - **COM-009:** During an outage the endpoint MUST skip and discard failed health beats. It MUST NOT queue or replay them. When connectivity returns it MUST send a fresh beat immediately, then resume the 60-second interval (`EXP-043`).
 - **COM-003:** `OP-ROSTER` MUST return valid readiness information before the endpoint displays selectable roster cards (`EXP-004`, `EXP-024`, `EXP-034`). A malformed or unclassified server result must not be treated as ready.
 - **COM-004:** An active roster MUST follow the 60-second/idle five-minute policy. A failed periodic check MUST get one immediate retry; after a second failure the client shows connecting in the lower slot. Wi-Fi recovery changes the lower-slot copy from `no Wi-Fi` and causes an immediate server attempt; if that attempt is not valid, the lower slot shows connecting (`EXP-011`, `EXP-023`, `DEC-043`). While connecting is showing, the roster/readiness request uses a 3-second timeout (`DEC-044`); failed requests then wait 1 second, then 2 seconds, then 4 seconds, then 30 seconds (`DEC-042`). Success or Wi-Fi return resets that backoff. The one-second timeout applies only to normal roster polling (`DEC-038`). The 3 seconds is that connecting request’s timeout, not a second timer around polling. Full-canvas PIN cooldown takes presentation priority until the timer ends (`EXP-040`).
-- **COM-005:** A PIN timeout MUST not count as a wrong PIN. Timed-out `OP-PIN` attempts MUST follow four total one-second attempts with 1/2/4-second retry delays (`EXP-022`). The visible stage during retries remains PIN verification; exhausted attempts lead to connecting.
+- **COM-005:** A PIN timeout, missing response, connection failure, HTTP 5xx (including `storage_unavailable`), HTTP 429, or unclassified login result MUST not count as a wrong PIN. Those `OP-PIN` attempts MUST follow four total one-second attempts with 1/2/4-second retry delays (`EXP-022`). The visible stage during retries remains PIN verification. When the fourth attempt fails, the client MUST close that PIN operation, show connecting, and **start the connecting `OP-ROSTER` schedule in `COM-004`** even if Wi-Fi never dropped. It MUST NOT leave connecting with no hangout attempt scheduled. A later valid hangout MUST restore user selection and MUST NOT resume the exhausted PIN (`EXP-029`). Health beats MAY continue independently (`COM-001`) and MUST NOT be treated as PIN recovery.
 - **COM-006:** Each new PIN submission MUST have a new operation key. Retries MUST repeat the exact request with the same key. During the one-minute result-retention window, which starts when the server first accepts the request, the server MUST replay the first recorded result for an exact duplicate without reprocessing and log the duplicate (`DEC-032`, `DEC-039`, `DEC-068`).
 - **COM-007:** A roster or login response MUST be checked against the current session and operation identity before it changes client state. Mute cancels login locally; a late success cannot sign the endpoint back in (`EXP-010`, `EXP-017`, `EXP-033`). If the server created a session, the endpoint MUST request invalidation best-effort without blocking mute (`EXP-042`, `COM-016`).
 - **COM-008:** Health and roster activity MUST NOT overwrite active PIN entry or turn a transport failure into a credential failure ([client standard](../../standards/client-application-coding-standards.md) §§3, 7; `EXP-015`).
@@ -204,7 +204,8 @@ Shared-envelope codes used by this operation:
 | `operation_expired` | Same `operation_id` after the one-minute window | Connecting; not `wrong pin` (`COM-014`) |
 | `unauthenticated` | Bad endpoint credential | Connecting |
 | `invalid_request` / `unsupported_schema` | Malformed PIN request | Connecting |
-| `temporarily_unavailable` | Retryable server failure | PIN transport retry, then connecting (`EXP-022`) |
+| `temporarily_unavailable` | Retryable server failure | PIN transport retry, then connecting plus hangout retry (`COM-005`, `EXP-022`) |
+| `storage_unavailable` | Durable PIN persist failed after PIN check | Same as transport: PIN retry, then connecting plus hangout retry (`COM-005`). Not `wrong_pin` |
 
 **Duplicate handling (proposed, `COM-OPEN-007` implementation):** the server atomically claims `operation_id` for this endpoint before verifying the PIN. A concurrent exact duplicate waits for the recorded result and replays it. It MUST NOT verify the PIN a second time or issue a second session.
 
@@ -323,6 +324,7 @@ These are planned checks. Routes and token format for this contract are accepted
 | `COM-SCN-010` | HTTP 200 roster with `users: []` | Empty hangout; heading `Sign in as ...`; not connecting | COM-012 |
 | `COM-SCN-011` | HTTP 200 roster missing `user_id` on a member | Not ready; connecting; not treated as empty hangout | COM-012 |
 | `COM-SCN-005` | First PIN request succeeds remotely, response is lost, retry reaches server | Same key and request; first `authenticated` replayed with the same session; no second login | COM-005–006, COM-013 |
+| `COM-SCN-018` | Four `OP-PIN` attempts return HTTP 5xx `storage_unavailable`; Wi-Fi stays up; `/v2/hangout` still returns HTTP 200 | Client stays on PIN through the four attempts, then connecting, then a connecting hangout GET. Valid roster restores selectable cards. That PIN is not resumed. Health may still succeed independently | COM-004–005, COM-008 |
 | `COM-SCN-006` | Mute occurs during PIN request; success arrives afterward | Display stays off; endpoint remains signed out; invalidate uses `operation_id`; late success is ignored | COM-007, COM-016 |
 | `COM-SCN-007` | PIN entry is active when a background roster or health result arrives | PIN entry and its selected identity remain intact | COM-007–008 |
 | `COM-SCN-008` | Same PIN key arrives concurrently with the exact request | Second request waits and receives the first recorded result; one session | COM-006, COM-015 |
@@ -338,7 +340,7 @@ These are planned checks. Routes and token format for this contract are accepted
 |---|---|---|
 | `DEC-029`, `DEC-031`, `DEC-055`, `DEC-057`, `DEC-067`, `EXP-035`, `EXP-041`, `EXP-043`, `EXP-051` | COM-001–002, COM-009–011 | COM-SCN-001–002, COM-SCN-009, COM-SCN-017 |
 | `DEC-030`, `DEC-038`, `EXP-004`, `EXP-011`, `EXP-020`, `EXP-023`–`EXP-024` | COM-003–004, COM-012 | COM-SCN-003–004, COM-SCN-010–011 |
-| `DEC-032`, `DEC-039`, `DEC-066`, `DEC-068`, `EXP-014`, `EXP-022`, `EXP-050`, `EXP-052` | COM-005–006, COM-013–015 | COM-SCN-005, COM-SCN-008, COM-SCN-012–013 |
+| `DEC-032`, `DEC-039`, `DEC-066`, `DEC-068`, `EXP-014`, `EXP-022`, `EXP-029`, `EXP-050`, `EXP-052` | COM-005–006, COM-013–015 | COM-SCN-005, COM-SCN-008, COM-SCN-012–013, COM-SCN-018 |
 | `EXP-010`, `EXP-015`, `EXP-017`, `EXP-033`, `EXP-042`; client standard §§3, 7 | COM-007–008, COM-016 | COM-SCN-006–007 |
 | `DEC-069`, `DEC-070`, `EXP-053`, `EXP-055` | COM-017 | COM-SCN-014, COM-SCN-015 |
 | `DEC-071`, `EXP-054` | COM-018, COM-012 | COM-SCN-016 |
@@ -373,6 +375,8 @@ Revision 0.10 (2026-10-22): accepted `POST /v2/endpoint/health`, `GET /v2/hangou
 Revision 0.11 (2026-10-22): the long-lived desk Bearer is placed on the desk before first boot. No route in this journey issues it. No implementation authorization.
 
 Revision 0.12 (2026-10-22): accepted invalidate spacing of immediate, 1 second, and 2 seconds. The attempts do not block mute. No implementation authorization.
+
+Revision 0.14 (2026-10-28): exhausted PIN transport (timeout, no response, or HTTP 5xx including `storage_unavailable`) MUST start connecting `OP-ROSTER` even when Wi-Fi never dropped; a later valid hangout restores cards and does not resume that PIN (`COM-005`, `COM-SCN-018`, `EXP-022`, `EXP-029`). No implementation authorization.
 
 Revision 0.13 (2026-10-22): the server stale clock advances on acceptance of a valid health request. The client marks the attempt successful only when the ack is valid. A lost ack does not roll the server clock back. No implementation authorization.
 
