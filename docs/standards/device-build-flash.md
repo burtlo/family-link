@@ -18,6 +18,7 @@ make build              # Bootstrap-style package (no deployment overlay)
 make app:build          # Product build; optional KIT= for Wi-Fi/P1 sdkconfig overlay
 make app:flash          # Flash current package (one connected kit or KIT=)
 make app                # app:build then app:flash
+make app:log            # Headless serial log to logs/device/debug/ (no TTY; agent sessions)
 make devices
 make flash.mazi         # Named kit targets (deployment alias)
 ```

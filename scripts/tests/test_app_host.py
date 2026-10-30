@@ -1,3 +1,4 @@
+import io
 import sys
 import unittest
 from pathlib import Path
@@ -6,7 +7,7 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from deployment_config import Deployment, DeploymentMeta, Endpoint, Kit
 from device_targets import Port, connected_registered_kits, kit_nicknames
-from app_host import prompt_kit_choice, resolve_flash_kit
+from app_host import prompt_kit_choice, resolve_flash_kit, stream_serial_lines
 from project_config import ProjectConfigError
 
 
@@ -59,6 +60,40 @@ class AppHostKitTests(unittest.TestCase):
     def test_kit_nicknames_prefers_alias(self):
         deployment = roster()
         self.assertEqual(kit_nicknames(deployment, deployment.kits[0]), ["mazi"])
+
+
+class FakeSerial:
+    def __init__(self, chunks):
+        self.chunks = list(chunks)
+
+    def read(self, _size):
+        if not self.chunks:
+            raise KeyboardInterrupt
+        return self.chunks.pop(0)
+
+
+class AppSerialLogTests(unittest.TestCase):
+    def test_lines_split_across_reads_are_timestamped_once(self):
+        log, echo = io.StringIO(), io.StringIO()
+        connection = FakeSerial([b"I (1) app: bu", b"ild=abc\r\nI (2) prod", b"uct_ui_ready\r\n"])
+        with self.assertRaises(KeyboardInterrupt):
+            stream_serial_lines(connection, log, echo, now=lambda: "T")
+        self.assertEqual(log.getvalue(), "[T] I (1) app: build=abc\n[T] I (2) product_ui_ready\n")
+        self.assertEqual(echo.getvalue(), log.getvalue())
+
+    def test_duration_stops_and_keeps_partial_line(self):
+        ticks = iter([0.0, 0.0, 0.5, 2.0])
+        log, echo = io.StringIO(), io.StringIO()
+        connection = FakeSerial([b"", b"partial"])
+        written = stream_serial_lines(connection, log, echo, seconds=1.0, clock=lambda: next(ticks), now=lambda: "T")
+        self.assertEqual(written, 1)
+        self.assertEqual(log.getvalue(), "[T] partial\n")
+
+    def test_invalid_utf8_does_not_stop_the_log(self):
+        log, echo = io.StringIO(), io.StringIO()
+        with self.assertRaises(KeyboardInterrupt):
+            stream_serial_lines(FakeSerial([b"\xff\xfeok\n"]), log, echo, now=lambda: "T")
+        self.assertTrue(log.getvalue().endswith("ok\n"))
 
 
 class AppMakeAliasTests(unittest.TestCase):
@@ -145,6 +180,28 @@ class AppMakeAliasTests(unittest.TestCase):
         self.assertIn("scripts/app_host.py monitor", result.stdout)
         self.assertIn('--port "/dev/cu.usbmodem101"', result.stdout)
         self.assertIn('--print-filter "product_mute:I"', result.stdout)
+
+    def test_app_log_forwards_port_out_and_duration(self):
+        import os
+        import subprocess
+
+        root = Path(__file__).resolve().parents[2]
+        env = os.environ.copy()
+        for name in ("KIT", "PORT", "OUT", "DURATION"):
+            env.pop(name, None)
+        result = subprocess.run(
+            ["make", "--no-print-directory", "-n", "app:log", "PORT=COM7", "OUT=logs/x.log", "DURATION=30"],
+            cwd=root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("scripts/app_host.py log", result.stdout)
+        self.assertIn('--port "COM7"', result.stdout)
+        self.assertIn('--out "logs/x.log"', result.stdout)
+        self.assertIn('--seconds "30"', result.stdout)
 
 
 if __name__ == "__main__":

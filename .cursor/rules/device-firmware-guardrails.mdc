@@ -1,0 +1,23 @@
+---
+description: Device firmware guardrails when product firmware or shared client libraries are in context
+globs: client/device/**,client/shared/**
+alwaysApply: false
+---
+
+# Device firmware guardrails
+
+Before changing `client/device/` or `client/shared/`, read and follow
+[`.cursor/skills/device-firmware-guardrails/SKILL.md`](../skills/device-firmware-guardrails/SKILL.md).
+The short version:
+
+- Feature services do nothing before sign-in. The login `generation` is not a sign-in signal.
+- The LVGL tick never does SD, codec, hashing, blocking locks, or per-tick allocation.
+- Every buffer over 1 KiB names its region. Plain `malloc` of 16 KiB or less lands in internal SRAM, which Wi-Fi needs. No PSRAM → internal fallback, no large allocations at boot.
+- Reuse the existing login, inbox, send, and settings workers. No new tasks or second hardware handles without approval.
+- Never change Wi-Fi, lwIP, TLS, or `sdkconfig` to hide a symptom. Measure `V2_MEM` against the last good build first.
+- Never edit `docs/product/**` or plan `Status:` lines to match code.
+- No reformatting of untouched lines. One cause per fix. Never claim "fixed" above the claim class you reached.
+
+When the user reports a device bug or says a fix did not work, run the
+[`debug-device`](../skills/debug-device/SKILL.md) loop with them instead of
+guessing another fix.
