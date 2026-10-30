@@ -6,12 +6,14 @@ class TransitionCoordinator {
 public:
     TransitionCoordinator(RootViewController &owner, SnapshotAllocator allocator);
     ~TransitionCoordinator();
-    bool replace(std::unique_ptr<ViewController> next, bool animated);
+    bool replace(std::unique_ptr<ViewController> next, bool animated, CoverDirection direction);
     void finishNow();
+    void clear();
     bool busy() const { return busy_; }
     lv_obj_t *image() const { return image_; }
 private:
-    bool capture(lv_obj_t *root);
+    bool capture(lv_obj_t *root, bool attach);
+    bool attachImage();
     void releaseSnapshot();
     void complete();
     static void animateY(void *obj, int32_t y);
@@ -22,6 +24,7 @@ private:
     lv_draw_buf_t draw_buf_{};
     lv_image_dsc_t descriptor_{};
     lv_obj_t *image_ = nullptr;
+    lv_obj_t *animated_object_ = nullptr;
     bool busy_ = false;
     bool animating_ = false;
     bool clickable_ = false;

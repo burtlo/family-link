@@ -5,6 +5,10 @@
 namespace product_inbox_http
 {
 
+// Same GET endpoint as legacy kind 1, but parses only dynamically sized
+// metadata. Result.parsed is InboxMetadataHeader followed by message records.
+constexpr int kMetadataJob = 5;
+
 /* Copied by value onto the worker queue. bearer is the session credential, not a log field. */
 struct Job {
     int kind;

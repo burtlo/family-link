@@ -1,7 +1,4 @@
 #include "product_login_http_worker.hpp"
-#include "product_inbox.hpp"
-#include "product_send.hpp"
-
 #include "esp_crt_bundle.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
@@ -313,13 +310,6 @@ void handle_refresh_result(const HttpResult &result)
         fl_product_login::classify_refresh_http(result.exchange.perform_ok, result.exchange.http_status,
                                                 result.exchange.body, result.exchange.body_len);
     s_session->deliver_refresh_completion(refresh, s_session->now_ms());
-    if (refresh.perform_ok == 1 && refresh.http_status == 200 && refresh.parse_ok == 1) {
-        product_send::set_refresh_failed(false);
-        product_inbox::note_refresh(s_session->now_ms());
-    } else {
-        product_send::set_refresh_failed(true);
-        product_inbox::note_refresh_failure(s_session->now_ms());
-    }
 }
 
 void handle_invalidate_result(const HttpResult &result)

@@ -130,6 +130,50 @@ void LoginService::reconcileFocus()
     std::strncpy(focus_, session_.user_at(focus_index_), sizeof(focus_) - 1);
 }
 
+bool LoginService::beginPin(const char *userId)
+{
+    if (session_.pin_phase() != fl_product_login::kPinPhaseIdle || session_.signed_in() ||
+        !focusUser(userId)) return false;
+    session_.select_pin_user(userId, now_);
+    return session_.pin_phase() == fl_product_login::kPinPhaseEntry;
+}
+
+bool LoginService::enterPinDigit(char digit)
+{
+    if (pinSnapshot().place != PinSnapshot::Place::PinEntry) return false;
+    return session_.enter_pin_digit(digit, now_);
+}
+
+void LoginService::pinBoot()
+{
+    session_.press_boot(now_);
+}
+
+PinSnapshot LoginService::pinSnapshot() const
+{
+    PinSnapshot result;
+    const int phase = session_.pin_phase();
+    if (phase == fl_product_login::kPinPhaseCooldown) result.place = PinSnapshot::Place::Cooldown;
+    else if (session_.signed_in()) result.place = PinSnapshot::Place::Inbox;
+    else if (phase != fl_product_login::kPinPhaseIdle) result.place = PinSnapshot::Place::PinEntry;
+    std::strncpy(result.user, session_.focus_id(), sizeof(result.user) - 1);
+    for (int i = 0; i < session_.user_count(); ++i) {
+        if (std::strcmp(session_.user_at(i), result.user) == 0) {
+            std::strncpy(result.name, session_.user_display_name_at(i), sizeof(result.name) - 1);
+            break;
+        }
+    }
+    result.digits = session_.digit_len();
+    result.seconds = (session_.cooldown_remaining_ms() + 999) / 1000;
+    result.checking = phase == fl_product_login::kPinPhaseChecking;
+    result.wrong = phase == fl_product_login::kPinPhaseWrong;
+    result.keypadEnabled = result.place == PinSnapshot::Place::PinEntry && session_.keypad_open();
+    result.connectionStatus = session_.pin_lower_is_status();
+    result.wifi = wifi_up_;
+    result.dotPhase = static_cast<int>((now_ / 400) % 3);
+    return result;
+}
+
 LoginSnapshot LoginService::snapshot() const
 {
     LoginSnapshot result;

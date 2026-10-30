@@ -10,6 +10,7 @@ void probeController(const char *name, const char *phase, int32_t detail);
 
 class RootViewController;
 class TransitionCoordinator;
+enum class CoverDirection { Forward, Reverse };
 
 class ViewController {
 public:
@@ -19,6 +20,7 @@ public:
     lv_obj_t *view() const { return root_; }
     bool loaded() const { return loaded_; }
     bool appeared() const { return appeared_; }
+    bool transitioning() const { return appearance_ != Appearance::None; }
     virtual const char *name() const = 0;
     virtual void render() {}
     virtual bool handlesBoot() const { return false; }
@@ -63,7 +65,9 @@ class RootViewController {
 public:
     explicit RootViewController(lv_obj_t *contentRoot, SnapshotAllocator allocator = {});
     ~RootViewController();
-    bool replace(std::unique_ptr<ViewController> next, bool animated = true);
+    bool replace(std::unique_ptr<ViewController> next, bool animated = true,
+                 CoverDirection direction = CoverDirection::Forward);
+    void clear();
     void finishTransition();
     bool busy() const;
     ViewController *current() const { return current_.get(); }

@@ -45,7 +45,7 @@ TransitionCoordinator::TransitionCoordinator(RootViewController &owner, Snapshot
 }
 TransitionCoordinator::~TransitionCoordinator() { finishNow(); releaseSnapshot(); }
 
-bool TransitionCoordinator::capture(lv_obj_t *root)
+bool TransitionCoordinator::capture(lv_obj_t *root, bool attach)
 {
     allocation_ = allocator_.allocate(kPixels + LV_DRAW_BUF_ALIGN - 1);
     if(!allocation_) return false;
@@ -59,8 +59,14 @@ bool TransitionCoordinator::capture(lv_obj_t *root)
     descriptor_.header = draw_buf_.header;
     descriptor_.data_size = kPixels;
     descriptor_.data = static_cast<const uint8_t *>(pixels);
+    if(attach && !attachImage()) { releaseSnapshot(); return false; }
+    return true;
+}
+
+bool TransitionCoordinator::attachImage()
+{
     image_ = allocator_.createImage(owner_.content_root_);
-    if(!image_) { releaseSnapshot(); return false; }
+    if(!image_) return false;
     lv_image_set_src(image_, &descriptor_);
     lv_obj_set_pos(image_, 0, 0);
     lv_obj_set_clickable(image_, false);
@@ -76,7 +82,7 @@ void TransitionCoordinator::releaseSnapshot()
     draw_buf_ = {};
 }
 
-bool TransitionCoordinator::replace(std::unique_ptr<ViewController> next, bool animated)
+bool TransitionCoordinator::replace(std::unique_ptr<ViewController> next, bool animated, CoverDirection direction)
 {
     if(busy_ || !next || !owner_.content_root_) return false;
     // Lifecycle methods are user code and may synchronously request navigation.
@@ -89,7 +95,9 @@ bool TransitionCoordinator::replace(std::unique_ptr<ViewController> next, bool a
     if(has_outgoing) {
         owner_.beginAppearance(*owner_.current_, false, animated);
         if(animated) probeController("Transition", "snapshot_before", 0);
-        const bool captured = !animated || capture(owner_.current_->view());
+        // Reverse motion attaches its image after the incoming view loads so the
+        // outgoing pixels sit above it without reordering siblings.
+        const bool captured = !animated || capture(owner_.current_->view(), direction == CoverDirection::Forward);
         if(animated) {
 #ifdef ESP_PLATFORM
             const char *region = !allocation_ ? "none" : esp_ptr_external_ram(allocation_) ? "psram" : "internal";
@@ -118,16 +126,26 @@ bool TransitionCoordinator::replace(std::unique_ptr<ViewController> next, bool a
     owner_.beginAppearance(*owner_.current_, true, animated && has_outgoing);
     lv_obj_t *root = owner_.current_->view();
     clickable_ = lv_obj_is_clickable(root);
+    const bool reverse = direction == CoverDirection::Reverse;
+    // Without its image a reverse reveal has nothing to move; show the
+    // destination immediately rather than fail an already-committed swap.
+    if(animated && has_outgoing && reverse && !attachImage()) animated = false;
     if(animated && has_outgoing) {
         animating_ = true;
         started_at_ = lv_tick_get();
         lv_obj_set_clickable(root, false);
-        lv_obj_set_y(root, 240);
+        lv_obj_set_y(root, reverse ? 0 : 240);
+        // A reverse reveal moves the fixed outgoing pixels, never its deleted
+        // controller tree.
+        animated_object_ = reverse ? image_ : root;
+        // The product owns one touch input. Disable device dispatch for the
+        // whole subtree; changing only root CLICKABLE does not block children.
+        lv_indev_enable(nullptr, false);
         lv_anim_t animation;
         lv_anim_init(&animation);
-        lv_anim_set_var(&animation, root);
+        lv_anim_set_var(&animation, animated_object_);
         lv_anim_set_exec_cb(&animation, animateY);
-        lv_anim_set_values(&animation, 240, 0);
+        lv_anim_set_values(&animation, reverse ? 0 : 240, reverse ? 240 : 0);
         lv_anim_set_duration(&animation, 400);
         lv_anim_set_path_cb(&animation, easeInOutQuint);
         lv_anim_set_user_data(&animation, this);
@@ -152,12 +170,14 @@ void TransitionCoordinator::complete()
 {
     if(!animating_) return;
     animating_ = false;
+    animated_object_ = nullptr;
     if(owner_.current_) {
         lv_obj_set_y(owner_.current_->view(), 0);
         lv_obj_set_clickable(owner_.current_->view(), clickable_);
         owner_.endAppearance(*owner_.current_);
     }
     releaseSnapshot();
+    lv_indev_enable(nullptr, true);
     const uint32_t elapsed = lv_tick_get() - started_at_;
 #ifdef ESP_PLATFORM
     ESP_LOGI("app_main", "vc_transition_end to=%s ms=%u", owner_.current_ ? owner_.current_->name() : "None", static_cast<unsigned>(elapsed));
@@ -168,7 +188,19 @@ void TransitionCoordinator::complete()
 void TransitionCoordinator::finishNow()
 {
     if(!animating_) return;
-    if(owner_.current_) lv_anim_delete(owner_.current_->view(), animateY);
+    if(animated_object_) lv_anim_delete(animated_object_, animateY);
     complete();
+}
+void TransitionCoordinator::clear()
+{
+    finishNow();
+    if (busy_ || !owner_.current_) return;
+    busy_ = true;
+    owner_.beginAppearance(*owner_.current_, false, false);
+    owner_.current_->removeView();
+    owner_.endAppearance(*owner_.current_);
+    owner_.current_->unloadView();
+    owner_.current_.reset();
+    busy_ = false;
 }
 } // namespace product_ui

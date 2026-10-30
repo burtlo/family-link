@@ -16,5 +16,6 @@
 #define LV_USE_MEM_MONITOR 0
 #define LV_FONT_MONTSERRAT_14 0
 #define LV_FONT_MONTSERRAT_16 1
+#define LV_FONT_MONTSERRAT_24 1
 #define LV_FONT_MONTSERRAT_32 1
 #define LV_FONT_DEFAULT &lv_font_montserrat_16

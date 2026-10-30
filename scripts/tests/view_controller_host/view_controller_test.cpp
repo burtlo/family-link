@@ -12,6 +12,7 @@
 using namespace product_ui;
 static uint32_t ticks;
 static uint32_t clockTick() { return ticks; }
+void advancePinTestClock(uint32_t milliseconds) { ticks += milliseconds; }
 static int allocations;
 static size_t requested;
 static bool failAllocate;
@@ -397,6 +398,12 @@ static void testRuntimeButtons(lv_obj_t *content)
     assert(root.replace(std::unique_ptr<ViewController>(new NoDestinationViewController), false));
 }
 
+void testPinControllers(lv_obj_t *content);
+void testInboxControllers(lv_obj_t *content);
+void testSettingsControllers(lv_obj_t *content);
+void testMessageTargetControllers(lv_obj_t *content);
+void testRuntimeRoutes(lv_obj_t *content);
+
 int main()
 {
     lv_init();
@@ -412,6 +419,10 @@ int main()
     lv_obj_set_size(content, 320, 240);
     testSplitPane(content);
     testLogin(content);
+    testPinControllers(content);
+    testInboxControllers(content);
+    testSettingsControllers(content);
+    testMessageTargetControllers(content);
     {
         LoadCounter controller;
         assert(controller.loadView(content) && controller.loads == 1);
@@ -551,6 +562,7 @@ int main()
         assert(baseline.free_size - recovered.free_size < 2048);
     }
     testRuntimeButtons(content);
+    testRuntimeRoutes(content);
     lv_obj_delete(content);
     lv_display_delete(display);
     lv_deinit();

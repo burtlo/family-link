@@ -8,6 +8,15 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 class ViewControllerTests(unittest.TestCase):
+    def test_message_target_has_no_media_side_effects(self):
+        service = (ROOT / "client/device/main/product_message_target_service.cpp").read_text()
+        controller = (ROOT / "client/device/main/product_message_target_view_controller.cpp").read_text()
+        self.assertNotIn("lv_obj", service)
+        for token in ("heap_caps_malloc", "product_send", "product_record", "product_audio",
+                      "microphone", "esp_http_client", "lv_canvas", "timer_create"):
+            self.assertNotIn(token, service + controller)
+        self.assertIn("MessageTargetDestination::Recording", controller)
+
     def test_snapshot_capture_uses_caller_buffer(self):
         source = (ROOT / "client/device/main/product_transition_coordinator.cpp").read_text()
         self.assertIn("lv_snapshot_take_to_draw_buf", source)
@@ -19,7 +28,8 @@ class ViewControllerTests(unittest.TestCase):
         controller = (ROOT / "client/device/main/product_login_view_controller.cpp").read_text()
         self.assertNotIn("lvgl", service.lower())
         self.assertNotIn("lv_obj", service)
-        for token in ("select_pin_user", "product_inbox", "product_send", "product_volume", "product_record"):
+        self.assertNotIn("select_pin_user", controller)
+        for token in ("product_inbox", "product_send", "product_volume", "product_record"):
             self.assertNotIn(token, service + controller)
 
     def test_real_lvgl_lifecycle_capture_and_failures(self):

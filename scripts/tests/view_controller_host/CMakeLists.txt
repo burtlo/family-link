@@ -8,10 +8,24 @@ set(LV_BUILD_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory("${REPO}/client/device/managed_components/lvgl__lvgl" lvgl)
 add_executable(view_controller_test
     view_controller_test.cpp
+    pin_controller_test.cpp
+    inbox_controller_test.cpp
+    settings_controller_test.cpp
+    message_target_controller_test.cpp
+    runtime_routes_test.cpp
     "${REPO}/client/device/main/product_view_controller.cpp"
     "${REPO}/client/device/main/product_split_pane_view_controller.cpp"
     "${REPO}/client/device/main/product_login_service.cpp"
     "${REPO}/client/device/main/product_login_view_controller.cpp"
+    "${REPO}/client/device/main/product_pin_entry_view_controller.cpp"
+    "${REPO}/client/device/main/product_inbox_service.cpp"
+    "${REPO}/client/device/main/product_inbox_view_controller.cpp"
+    "${REPO}/client/device/main/product_settings_service.cpp"
+    "${REPO}/client/device/main/product_settings_view_controller.cpp"
+    "${REPO}/client/device/main/product_message_target_service.cpp"
+    "${REPO}/client/device/main/product_message_target_view_controller.cpp"
+    "${REPO}/client/shared/desk_volume/fl_product_volume/stops.cpp"
+    "${REPO}/client/shared/inbox_carousel/fl_product_inbox/p1_wire.cpp"
     "${REPO}/client/device/main/product_runtime.cpp"
     "${REPO}/client/shared/login_session/fl_product_login/session.cpp"
     "${REPO}/client/shared/login_session/fl_product_login/pin_session.cpp"
@@ -23,5 +37,7 @@ add_executable(view_controller_test
     "${REPO}/client/device/main/product_transition_coordinator.cpp")
 target_include_directories(view_controller_test PRIVATE "${REPO}/client/device/main")
 target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/login_session/fl_product_login/include")
+target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/inbox_carousel/fl_product_inbox/include")
+target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/desk_volume/fl_product_volume/include")
 target_compile_features(view_controller_test PRIVATE cxx_std_14)
 target_link_libraries(view_controller_test PRIVATE lvgl m)

@@ -153,10 +153,14 @@ void RootViewController::endAppearance(ViewController &vc)
     vc.endAppearanceTransition();
     if(vc.appeared()) probeController(vc.name(), "appeared", 0);
 }
-bool RootViewController::replace(std::unique_ptr<ViewController> next, bool animated)
+bool RootViewController::replace(std::unique_ptr<ViewController> next, bool animated, CoverDirection direction)
 {
     if(destroying_) return false;
-    return coordinator_->replace(std::move(next), animated);
+    return coordinator_->replace(std::move(next), animated, direction);
+}
+void RootViewController::clear()
+{
+    if (!destroying_) coordinator_->clear();
 }
 void RootViewController::finishTransition() { coordinator_->finishNow(); }
 bool RootViewController::busy() const { return coordinator_->busy(); }

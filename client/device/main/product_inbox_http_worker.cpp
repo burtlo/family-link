@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 
 namespace
 {
@@ -28,6 +29,7 @@ constexpr int kQueueDepth = 4;
 constexpr int kUrlCap = 256;
 constexpr int kAuthCap = 80;
 constexpr int kInboxCap = 262144;
+constexpr int kMetadataCap = 131072;
 constexpr int kMediaSlice = 16384;
 constexpr int kLastViewedCap = 1024;
 constexpr const char *kTag = "product_inbox_http";
@@ -136,8 +138,15 @@ extern "C" esp_err_t product_inbox_http_event(esp_http_client_event_t *event)
         out->discard_body = 1;
         return ESP_OK;
     }
-    if (out->data == nullptr || out->cap <= 0) {
+    if (out->cap <= 0) {
         return ESP_OK;
+    }
+    if (out->data == nullptr) {
+        out->data = static_cast<uint8_t *>(alloc_buf((size_t)out->cap + 1));
+        if (out->data == nullptr) {
+            return ESP_FAIL;
+        }
+        memset(out->data, 0, (size_t)out->cap + 1);
     }
     if (out->body_len >= out->cap) {
         out->slice_capped = 1;
@@ -186,18 +195,15 @@ void perform_exchange(const product_inbox_http::Job &job, HttpExchange *out)
     if (!join_url(job.path, url, (int)sizeof(url))) {
         return;
     }
-    if (job.kind == fl_product_inbox::kInboxWireInbox) {
+    if (job.kind == product_inbox_http::kMetadataJob) {
+        out->cap = kMetadataCap;
+    } else if (job.kind == fl_product_inbox::kInboxWireInbox) {
         out->cap = kInboxCap;
     } else if (job.kind == fl_product_inbox::kInboxWireLastViewed) {
         out->cap = kLastViewedCap;
     } else {
         out->cap = kMediaSlice;
     }
-    out->data = static_cast<uint8_t *>(alloc_buf((size_t)out->cap + 1));
-    if (out->data == nullptr) {
-        return;
-    }
-    memset(out->data, 0, (size_t)out->cap + 1);
     config.url = url;
     config.timeout_ms = job.timeout_ms > 0 ? job.timeout_ms : fl_product_login::kRequestTimeoutMs;
     config.method = method_of(job.method);
@@ -208,6 +214,9 @@ void perform_exchange(const product_inbox_http::Job &job, HttpExchange *out)
     }
     client = esp_http_client_init(&config);
     if (client == nullptr) {
+        ESP_LOGE(kTag, "http init failed cap=%d psram_big=%u int_big=%u", out->cap,
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
         return;
     }
     snprintf(auth, sizeof(auth), "Bearer %s", job.bearer);
@@ -234,6 +243,9 @@ void perform_exchange(const product_inbox_http::Job &job, HttpExchange *out)
         if (status > 0) {
             out->http_status = status;
         }
+        ESP_LOGE(kTag, "http perform failed cap=%d psram_big=%u int_big=%u", out->cap,
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM),
+                 (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     }
     esp_http_client_cleanup(client);
 }
@@ -314,6 +326,38 @@ void finish_inbox(const product_inbox_http::Job &job, HttpExchange *exchange, pr
         exchange->body_len <= 0) {
         return;
     }
+    if (job.kind == product_inbox_http::kMetadataJob) {
+        fl_product_inbox::InboxMetadataHeader header{};
+        const char *body = reinterpret_cast<const char *>(exchange->data);
+        if (!fl_product_inbox::parse_inbox_metadata(body, exchange->body_len, exchange->body_len, &header)) return;
+        const size_t bytes = sizeof(header) + sizeof(fl_product_inbox::InboxMessage) * header.message_count;
+        auto *block = static_cast<fl_product_inbox::InboxMetadataHeader *>(
+            heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+        if (!block) { result->perform_ok = 0; return; }
+        struct Fill { fl_product_inbox::InboxMessage *messages; int count; } fill{
+            reinterpret_cast<fl_product_inbox::InboxMessage *>(block + 1), 0};
+        auto append = [](void *context, const fl_product_inbox::InboxMessage &message) {
+            auto *target = static_cast<Fill *>(context);
+            target->messages[target->count++] = message;
+            return true;
+        };
+        if (!fl_product_inbox::parse_inbox_metadata(body, exchange->body_len, exchange->body_len,
+                                                    block, append, &fill)) { free(block); return; }
+        // Validate uniqueness on the worker. Presentation applies metadata in
+        // linear time and never builds a large automatic index/snapshot.
+        auto **ids = static_cast<const char **>(heap_caps_malloc(
+            sizeof(char *) * std::max(header.message_count, 1), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+        if (!ids) { free(block); result->perform_ok = 0; return; }
+        for (int i = 0; i < header.message_count; ++i) ids[i] = fill.messages[i].message_id;
+        std::sort(ids, ids + header.message_count,
+                  [](const char *a, const char *b) { return strcmp(a, b) < 0; });
+        bool duplicate = false;
+        for (int i = 1; i < header.message_count; ++i) duplicate |= strcmp(ids[i - 1], ids[i]) == 0;
+        free(ids);
+        if (duplicate) { free(block); return; }
+        result->parsed = block;
+        return;
+    }
     parsed = static_cast<fl_product_inbox::InboxParseResult *>(alloc_buf(sizeof(*parsed)));
     if (parsed == nullptr) {
         result->perform_ok = 0;
@@ -372,7 +416,7 @@ void perform_job(product_inbox_http::Job &job, product_inbox_http::Result *resul
     wipe(job.bearer, sizeof(job.bearer));
     result->perform_ok = exchange.perform_ok;
     result->http_status = exchange.http_status;
-    if (job.kind == fl_product_inbox::kInboxWireInbox) {
+    if (job.kind == fl_product_inbox::kInboxWireInbox || job.kind == product_inbox_http::kMetadataJob) {
         finish_inbox(job, &exchange, result);
     } else if (job.kind == fl_product_inbox::kInboxWireAudio || job.kind == fl_product_inbox::kInboxWireSketch) {
         finish_media(job, &exchange, result);
@@ -385,8 +429,8 @@ void perform_job(product_inbox_http::Job &job, product_inbox_http::Result *resul
         free(exchange.data);
         exchange.data = nullptr;
     }
-    ESP_LOGI(kTag, "kind=%d http=%d perform=%d bytes=%d", result->kind, result->http_status, result->perform_ok,
-             result->data_len);
+    ESP_LOGI(kTag, "kind=%d http=%d perform=%d bytes=%d parsed=%d", result->kind, result->http_status,
+             result->perform_ok, exchange.body_len, result->parsed != nullptr ? 1 : 0);
 }
 
 void worker_task(void *arg)

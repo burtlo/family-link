@@ -252,7 +252,7 @@ lv_obj_t *LoginViewController::cardAt(int index) const
 
 bool LoginViewController::selectUser(int index, const char *expectedId)
 {
-    if (!loaded() || !row_ || navigation_requested_ || !expectedId) return false;
+    if (!loaded() || transitioning() || !row_ || navigation_requested_ || !expectedId) return false;
     const auto snapshot = service_.snapshot();
     if (snapshot.muted || snapshot.updating || snapshot.body != LoginSnapshot::Body::Roster ||
         index < 0 || index >= snapshot.count || std::strcmp(snapshot.users[index].id, expectedId) != 0) return false;
@@ -290,7 +290,7 @@ void LoginViewController::onClicked(lv_event_t *event)
 void LoginViewController::onScroll(lv_event_t *event)
 {
     auto *self = static_cast<LoginViewController *>(lv_event_get_user_data(event));
-    if (!self || !self->row_ || self->programmatic_scroll_ || self->rendering_) return;
+    if (!self || !self->row_ || self->transitioning() || self->programmatic_scroll_ || self->rendering_) return;
     int scroll = lv_obj_get_scroll_x(self->row_);
     if (scroll < self->press_scroll_ - 4 || scroll > self->press_scroll_ + 4) {
         self->gesture_ = true;

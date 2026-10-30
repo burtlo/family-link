@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <initializer_list>
 
 namespace fl_product_inbox
 {
@@ -186,6 +187,222 @@ bool read_message_object(const char *body, int len, int obj_pos, InboxMessage *o
     return true;
 }
 
+int hex_value(char c)
+{
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+// Validate strings even when skipping. Decode JSON escapes for presentation;
+// never truncate an identity or split a UTF-8 code point while shortening names.
+bool metadata_string(const char *body, int len, int &pos, char *out = nullptr, int cap = 0,
+                      bool truncate = false)
+{
+    if (pos >= len || body[pos++] != '"') return false;
+    int written = 0;
+    bool overflow = false;
+    while (pos < len) {
+        unsigned code = static_cast<unsigned char>(body[pos++]);
+        if (code == '"') {
+            if (out && cap > 0) out[written] = 0;
+            return !overflow || truncate;
+        }
+        if (code < 32) return false;
+        if (code == '\\') {
+            if (pos >= len) return false;
+            code = static_cast<unsigned char>(body[pos++]);
+            switch (code) {
+                case '"': case '\\': case '/': break;
+                case 'b': code = 8; break;
+                case 'f': code = 12; break;
+                case 'n': code = 10; break;
+                case 'r': code = 13; break;
+                case 't': code = 9; break;
+                case 'u': {
+                    code = 0;
+                    for (int i = 0; i < 4; ++i) {
+                        if (pos >= len || hex_value(body[pos]) < 0) return false;
+                        code = code * 16 + hex_value(body[pos++]);
+                    }
+                    if (code >= 0xd800 && code <= 0xdbff) {
+                        if (pos + 6 > len || body[pos++] != '\\' || body[pos++] != 'u') return false;
+                        unsigned low = 0;
+                        for (int i = 0; i < 4; ++i) {
+                            if (hex_value(body[pos]) < 0) return false;
+                            low = low * 16 + hex_value(body[pos++]);
+                        }
+                        if (low < 0xdc00 || low > 0xdfff) return false;
+                        code = 0x10000 + ((code - 0xd800) << 10) + (low - 0xdc00);
+                    } else if (code >= 0xdc00 && code <= 0xdfff) return false;
+                    if (!code) return false; // C string fields cannot represent embedded NUL.
+                    break;
+                }
+                default: return false;
+            }
+            char encoded[4];
+            int bytes = 1;
+            if (code < 0x80) encoded[0] = static_cast<char>(code);
+            else if (code < 0x800) {
+                encoded[0] = static_cast<char>(0xc0 | (code >> 6));
+                encoded[1] = static_cast<char>(0x80 | (code & 63)); bytes = 2;
+            } else if (code < 0x10000) {
+                encoded[0] = static_cast<char>(0xe0 | (code >> 12));
+                encoded[1] = static_cast<char>(0x80 | ((code >> 6) & 63));
+                encoded[2] = static_cast<char>(0x80 | (code & 63)); bytes = 3;
+            } else {
+                encoded[0] = static_cast<char>(0xf0 | (code >> 18));
+                encoded[1] = static_cast<char>(0x80 | ((code >> 12) & 63));
+                encoded[2] = static_cast<char>(0x80 | ((code >> 6) & 63));
+                encoded[3] = static_cast<char>(0x80 | (code & 63)); bytes = 4;
+            }
+            if (out) {
+                if (!overflow && written + bytes < cap) {
+                    memcpy(out + written, encoded, bytes); written += bytes;
+                } else overflow = true;
+            }
+        } else if (out) {
+            if (!overflow && written + 1 < cap) out[written++] = static_cast<char>(code);
+            else overflow = true;
+        }
+    }
+    return false;
+}
+
+void metadata_ws(const char *body, int len, int &pos)
+{
+    while (pos < len && is_ws(body[pos])) ++pos;
+}
+
+bool metadata_skip(const char *body, int len, int &pos, int depth = 0)
+{
+    metadata_ws(body, len, pos);
+    if (pos >= len || depth > 16) return false;
+    if (body[pos] == '"') return metadata_string(body, len, pos);
+    if (body[pos] == '{' || body[pos] == '[') {
+        bool object = body[pos++] == '{';
+        const char end = object ? '}' : ']';
+        metadata_ws(body, len, pos);
+        if (pos < len && body[pos] == end) { ++pos; return true; }
+        for (;;) {
+            if (object) {
+                if (!metadata_string(body, len, pos)) return false;
+                metadata_ws(body, len, pos);
+                if (pos >= len || body[pos++] != ':') return false;
+            }
+            if (!metadata_skip(body, len, pos, depth + 1)) return false;
+            metadata_ws(body, len, pos);
+            if (pos >= len) return false;
+            if (body[pos] == end) { ++pos; return true; }
+            if (body[pos++] != ',') return false;
+            metadata_ws(body, len, pos);
+        }
+    }
+    for (const char *literal : {"true", "false", "null"}) {
+        int n = static_cast<int>(strlen(literal));
+        if (pos + n <= len && strncmp(body + pos, literal, n) == 0) { pos += n; return true; }
+    }
+    if (body[pos] == '-') ++pos;
+    if (pos >= len || body[pos] < '0' || body[pos] > '9') return false;
+    if (body[pos] == '0') ++pos;
+    else while (pos < len && body[pos] >= '0' && body[pos] <= '9') ++pos;
+    if (pos < len && body[pos] == '.') {
+        ++pos;
+        int start = pos;
+        while (pos < len && body[pos] >= '0' && body[pos] <= '9') ++pos;
+        if (pos == start) return false;
+    }
+    if (pos < len && (body[pos] == 'e' || body[pos] == 'E')) {
+        ++pos;
+        if (pos < len && (body[pos] == '-' || body[pos] == '+')) ++pos;
+        int start = pos;
+        while (pos < len && body[pos] >= '0' && body[pos] <= '9') ++pos;
+        if (pos == start) return false;
+    }
+    return true;
+}
+
+int metadata_field(const char *body, int len, const char *key)
+{
+    int pos = 0;
+    metadata_ws(body, len, pos);
+    if (pos >= len || body[pos++] != '{') return -1;
+    metadata_ws(body, len, pos);
+    while (pos < len && body[pos] != '}') {
+        char name[64];
+        if (!metadata_string(body, len, pos, name, sizeof(name))) return -1;
+        metadata_ws(body, len, pos);
+        if (pos >= len || body[pos++] != ':') return -1;
+        metadata_ws(body, len, pos);
+        if (strcmp(name, key) == 0) return pos;
+        if (!metadata_skip(body, len, pos)) return -1;
+        metadata_ws(body, len, pos);
+        if (pos >= len || body[pos++] != ',') break;
+        metadata_ws(body, len, pos);
+    }
+    return -1;
+}
+
+bool metadata_uint(const char *body, int len, const char *key, uint32_t &value)
+{
+    int pos = metadata_field(body, len, key);
+    if (pos < 0 || body[pos] < '0' || body[pos] > '9') return false;
+    value = 0;
+    do {
+        const unsigned digit = body[pos++] - '0';
+        if (value > (UINT32_MAX - digit) / 10) return false;
+        value = value * 10 + digit;
+    } while (pos < len && body[pos] >= '0' && body[pos] <= '9');
+    return pos == len || is_ws(body[pos]) || body[pos] == ',' || body[pos] == '}';
+}
+
+bool metadata_text(const char *body, int len, const char *key, char *text, int cap,
+                   bool optional = false, bool truncate = false)
+{
+    const int at = metadata_field(body, len, key);
+    if (at < 0) { text[0] = 0; return optional; }
+    int pos = at;
+    if (optional && pos + 4 <= len && strncmp(body + pos, "null", 4) == 0) { text[0] = 0; return true; }
+    return metadata_string(body, len, pos, text, cap, truncate);
+}
+
+bool metadata_media(const char *body, int len, const char *key, MediaDescriptor &out)
+{
+    const int pos = metadata_field(body, len, key);
+    if (pos < 0) return false;
+    body += pos; len -= pos;
+    if (!metadata_text(body, len, "format_id", out.format_id, sizeof(out.format_id)) ||
+        !metadata_uint(body, len, "byte_count", out.byte_count) ||
+        !metadata_text(body, len, "sha256", out.sha256, sizeof(out.sha256))) return false;
+    if (strlen(out.sha256) != 64) return false;
+    for (int i = 0; i < 64; ++i)
+        if (!((out.sha256[i] >= '0' && out.sha256[i] <= '9') ||
+              (out.sha256[i] >= 'a' && out.sha256[i] <= 'f'))) return false;
+    out.present = 1;
+    return true;
+}
+
+bool metadata_message(const char *body, int len, InboxMessage &out)
+{
+    memset(&out, 0, sizeof(out));
+    char kind[24];
+    if (!metadata_text(body, len, "message_id", out.message_id, sizeof(out.message_id)) || !*out.message_id ||
+        !metadata_text(body, len, "sender_user_id", out.sender_user_id, sizeof(out.sender_user_id)) ||
+        !metadata_text(body, len, "sender_name", out.sender_name, sizeof(out.sender_name), false, true) ||
+        !metadata_uint(body, len, "duration_ms", out.duration_ms) ||
+        !metadata_text(body, len, "kind", kind, sizeof(kind)) ||
+        (strcmp(kind, "audio") && strcmp(kind, "audio_sketch"))) return false;
+    if (!metadata_text(body, len, "sender_avatar_id", out.sender_avatar_id, sizeof(out.sender_avatar_id), true) ||
+        !metadata_text(body, len, "sender_card_background_id", out.sender_card_background_id,
+                       sizeof(out.sender_card_background_id), true)) return false;
+    const int pos = metadata_field(body, len, "media");
+    if (pos < 0 || !metadata_media(body + pos, len - pos, "audio", out.audio)) return false;
+    if (metadata_field(body + pos, len - pos, "sketch") >= 0 &&
+        !metadata_media(body + pos, len - pos, "sketch", out.sketch)) return false;
+    return strcmp(kind, "audio_sketch") != 0 || out.sketch.present;
+}
+
 } /* namespace */
 
 int classify_inbox_http(int perform_ok, int http_status, const char *body, int body_len)
@@ -304,6 +521,67 @@ int parse_inbox_snapshot(const char *body, int body_len, int body_cap, InboxPars
     out->message_count = count;
     out->parse_ok = 1;
     return 1;
+}
+
+int parse_inbox_metadata(const char *body, int body_len, int body_cap,
+                         InboxMetadataHeader *out, InboxMetadataVisitor visitor, void *context)
+{
+    if (!out) return 0;
+    memset(out, 0, sizeof(*out));
+    if (!body || body_len <= 0 || body_len > body_cap || body_cap > kInboxMaxBytes) return 0;
+    int pos = 0;
+    if (!metadata_skip(body, body_len, pos)) return 0;
+    metadata_ws(body, body_len, pos);
+    if (pos != body_len) return 0;
+    char schema[32];
+    if (!metadata_text(body, body_len, "schema", schema, sizeof(schema)) ||
+        strcmp(schema, "fl.inbox-page/2") != 0 ||
+        !metadata_uint(body, body_len, "inbox_revision", out->inbox_revision)) return 0;
+    uint32_t total = 0;
+    if (!metadata_uint(body, body_len, "total_count", total)) return 0;
+    pos = metadata_field(body, body_len, "has_more");
+    if (pos < 0 || strncmp(body + pos, "false", 5)) return 0;
+    pos = metadata_field(body, body_len, "next_cursor");
+    if (pos < 0 || strncmp(body + pos, "null", 4)) return 0;
+    pos = metadata_field(body, body_len, "last_viewed_message_id");
+    if (pos < 0) return 0;
+    if (strncmp(body + pos, "null", 4) &&
+        !metadata_string(body, body_len, pos, out->last_viewed_message_id,
+                          sizeof(out->last_viewed_message_id))) return 0;
+    pos = metadata_field(body, body_len, "items");
+    if (pos < 0 || body[pos++] != '[') return 0;
+    for (;;) {
+        while (pos < body_len && is_ws(body[pos])) ++pos;
+        if (pos >= body_len) return 0;
+        if (body[pos] == ']') return total == static_cast<uint32_t>(out->message_count);
+        if (body[pos] != '{') return 0;
+        const int start = pos;
+        int depth = 0;
+        bool string = false;
+        bool escaped = false;
+        do {
+            char c = body[pos++];
+            if (string) {
+                if (escaped) escaped = false;
+                else if (c == '\\') escaped = true;
+                else if (c == '"') string = false;
+            } else if (c == '"') string = true;
+            else if (c == '{') ++depth;
+            else if (c == '}') --depth;
+        } while (pos < body_len && (depth > 0 || string));
+        if (depth || string) return 0;
+        InboxMessage message;
+        if (!metadata_message(body + start, pos - start, message) ||
+            !message.audio.present || (visitor && !visitor(context, message))) return 0;
+        ++out->message_count;
+        while (pos < body_len && is_ws(body[pos])) ++pos;
+        if (pos >= body_len) return 0;
+        if (body[pos] == ']') return total == static_cast<uint32_t>(out->message_count);
+        if (body[pos++] != ',') return 0;
+        int next = pos;
+        while (next < body_len && is_ws(body[next])) ++next;
+        if (next >= body_len || body[next] != '{') return 0;
+    }
 }
 
 } /* namespace fl_product_inbox */

@@ -943,7 +943,8 @@ void SessionWriter::advance_to(int64_t target_ms)
             connecting_retry_armed_ = false;
             begin_roster(now_ms_, false, false);
         }
-        if (credential_at == next) {
+        // Another writer may already have moved the clock past this deadline.
+        if (credential_at <= next) {
             on_credential_clock();
         }
         note_pin_presented_time();

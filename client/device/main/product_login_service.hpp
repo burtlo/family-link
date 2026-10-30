@@ -23,6 +23,20 @@ struct LoginTransport {
     void (*mute)() = nullptr;
 };
 
+struct PinSnapshot {
+    enum class Place { Roster, PinEntry, Cooldown, Inbox } place = Place::Roster;
+    char user[fl_product_login::kMaxId]{};
+    char name[32]{};
+    int digits = 0;
+    int seconds = 0;
+    bool checking = false;
+    bool wrong = false;
+    bool keypadEnabled = false;
+    bool connectionStatus = false;
+    bool wifi = false;
+    int dotPhase = 0;
+};
+
 // Runtime/service lifetime. Contains no LVGL objects or rendering dependency.
 class LoginService
 {
@@ -38,6 +52,10 @@ class LoginService
     void noteActivity(int64_t now);
     void noteActivity();
     bool focusUser(const char *userId);
+    bool beginPin(const char *userId);
+    bool enterPinDigit(char digit);
+    void pinBoot();
+    PinSnapshot pinSnapshot() const;
     LoginSnapshot snapshot() const;
     const fl_product_login::SessionWriter &session() const;
     bool wifiUp() const;
