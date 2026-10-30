@@ -67,6 +67,7 @@ class Endpoint:
 class SecretsProfile:
     wifi_ssid: str = ""
     wifi_password: str = ""
+    p1_server: str = "detect"
 
 
 @dataclass(frozen=True)
@@ -172,6 +173,7 @@ def build_catalog(schema_path: Path | None = None) -> dict[str, object]:
             "endpoint peer, when set, must name another endpoint id in the same file",
             "every kit must set secrets_profile to a key in secrets_profiles",
             "secrets_profiles entry: wifi_password requires wifi_ssid",
+            "secrets_profiles entry: p1_server is detect or an http(s) product server base URL",
         ],
         "docs": str(ROOT / DOCS_RELATIVE),
     }
@@ -325,9 +327,11 @@ def _parse_secrets_profiles(raw: Any) -> dict[str, SecretsProfile]:
             raise DeploymentConfigError(f"duplicate secrets_profiles key {name!r}")
         if not isinstance(value, dict):
             raise DeploymentConfigError(f"secrets_profiles.{name} must be a mapping")
+        p1_server = _optional_str(value, "p1_server", "detect") or "detect"
         out[name] = SecretsProfile(
             wifi_ssid=_optional_str(value, "wifi_ssid"),
             wifi_password=_optional_str(value, "wifi_password"),
+            p1_server=p1_server,
         )
     return out
 
@@ -433,6 +437,18 @@ def validate_deployment(deployment: Deployment) -> None:
             raise DeploymentConfigError(
                 f"secrets_profiles.{name}: wifi_password requires wifi_ssid"
             )
+        mode = profile.p1_server.strip().lower()
+        if mode and mode != "detect":
+            text = profile.p1_server.strip()
+            if not (
+                text.startswith("http://")
+                or text.startswith("https://")
+                or "://" not in text
+            ):
+                raise DeploymentConfigError(
+                    f"secrets_profiles.{name}: p1_server must be detect or an http(s) URL "
+                    f"(got {profile.p1_server!r})"
+                )
 
 
 def load_active_deployment(
@@ -498,6 +514,12 @@ def dump_snapshot(deployment: Deployment) -> dict[str, object]:
             name: {
                 "wifi_ssid": "[redacted]" if profile.wifi_ssid else "",
                 "wifi_password": "[redacted]" if profile.wifi_password else "",
+                "p1_server": (
+                    "detect"
+                    if not profile.p1_server.strip()
+                    or profile.p1_server.strip().lower() == "detect"
+                    else "[redacted]"
+                ),
             }
             for name, profile in sorted(deployment.secrets_profiles.items())
         },

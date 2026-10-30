@@ -32,6 +32,7 @@ secrets_profiles:
   default:
     wifi_ssid: ""
     wifi_password: ""
+    # p1_server: detect  # default — desk LAN IP at build; or https://your-server.example/
 
 kits:
   - id: kit-alpha

@@ -9,7 +9,7 @@ import socket
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from deployment_config import Deployment, Kit, load_active_deployment
+from deployment_config import Deployment, Kit, SecretsProfile, load_active_deployment
 from device_targets import kit_for
 from lab02_workflow_config import choose_workstation_ipv4
 from lab_deployment_sdkconfig import deployment_kit_defaults_path, sdkconfig_quoted_value
@@ -46,13 +46,34 @@ def _normalize_p1_base_url(raw: str) -> str:
     return f"http://{host}:{P1_DEFAULT_PORT}"
 
 
-def p1_base_url_for_host() -> str:
+def _p1_base_url_env_override() -> str | None:
     for key in ("FAMILY_P1_HOST", "PRODUCT_P1_HOST", "P1_HOST"):
         override = os.environ.get(key, "").strip()
         if override:
             return _normalize_p1_base_url(override)
+    return None
+
+
+def _autodetect_p1_base_url() -> str:
     address = choose_workstation_ipv4(_lan_ipv4_addresses())
     return f"http://{address}:{P1_DEFAULT_PORT}"
+
+
+def p1_base_url_for_host() -> str:
+    override = _p1_base_url_env_override()
+    if override is not None:
+        return override
+    return _autodetect_p1_base_url()
+
+
+def p1_base_url_for_secrets_profile(profile: SecretsProfile) -> str:
+    override = _p1_base_url_env_override()
+    if override is not None:
+        return override
+    fixed = profile.p1_server.strip()
+    if fixed and fixed.lower() != "detect":
+        return _normalize_p1_base_url(fixed)
+    return _autodetect_p1_base_url()
 
 
 def load_p1_desk_token() -> str:
@@ -70,8 +91,9 @@ def product_kit_sdkconfig_lines(deployment: Deployment, kit: Kit) -> list[str]:
             f"Kit {kit.id} needs secrets_profile Wi-Fi in deployment local.yaml "
             "(wifi_ssid / wifi_password)"
         )
+    base_url = p1_base_url_for_secrets_profile(profile)
     lines = [
-        f"CONFIG_FAMILY_P1_BASE_URL={sdkconfig_quoted_value(p1_base_url_for_host())}",
+        f"CONFIG_FAMILY_P1_BASE_URL={sdkconfig_quoted_value(base_url)}",
         f"CONFIG_FAMILY_DESK_TOKEN={sdkconfig_quoted_value(load_p1_desk_token())}",
         f"CONFIG_FAMILY_WIFI_SSID={sdkconfig_quoted_value(profile.wifi_ssid)}",
         f"CONFIG_FAMILY_WIFI_PASSWORD={sdkconfig_quoted_value(profile.wifi_password)}",
@@ -116,7 +138,10 @@ def write_product_kit_sdkconfig(build_dir: Path, kit: Kit, deployment: Deploymen
     path.write_text(content, encoding="utf-8")
     meta.write_text(digest + "\n", encoding="utf-8")
     print(f"Product desk sdkconfig for kit {kit.id} -> {path}")
-    print(f"  P1 URL {p1_base_url_for_host()}")
+    for line in lines:
+        if line.startswith("CONFIG_FAMILY_P1_BASE_URL="):
+            print(f"  P1 URL {line.split('=', 1)[1]}")
+            break
     return path
 
 

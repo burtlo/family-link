@@ -142,7 +142,11 @@
       "additionalProperties": false,
       "properties": {
         "wifi_ssid": { "type": "string" },
-        "wifi_password": { "type": "string" }
+        "wifi_password": { "type": "string" },
+        "p1_server": {
+          "type": "string",
+          "description": "detect (desk LAN autodetect at product build) or https://… product server base URL"
+        }
       }
     }
   }

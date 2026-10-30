@@ -59,10 +59,11 @@ Named **secrets profiles** live in the gitignored roster beside kits (committed
 | Field | Location | Used by |
 |-------|----------|---------|
 | `wifi_ssid`, `wifi_password` | `secrets_profiles.<name>` | Resolved via each kit’s `secrets_profile` |
+| `p1_server` | `secrets_profiles.<name>` | Product P1 base URL baked at build: `detect` (default) uses desk LAN autodetect; or a fixed `https://…` URL |
 
 Every kit must set `secrets_profile` to a key under `secrets_profiles`.
-`make config.deployment` redacts Wi-Fi values. **Phase B firmware builds always
-require `KIT=<nickname>`** so the correct profile is compiled in; USB
+`make config.deployment` redacts Wi-Fi values and fixed `p1_server` URLs.
+**Phase B firmware builds always require `KIT=<nickname>`** so the correct profile is compiled in; USB
 auto-detection is only for flash/capture port selection, not for sdkconfig
 secrets. LAB-02 client endpoint configuration belongs in the host INI, while
 shared workflow defaults belong in the tracked labs registry.
