@@ -62,9 +62,9 @@ above; cross-screen rules are in
 | Aspect | Rule |
 |---|---|
 | Screen | `PRODUCT_SCREEN_INBOX`: signed in and shell stage `INBOX` (or any stage not owned by volume, record, or send). |
-| Owner | `product_inbox_bridge.cpp` → `render_inbox()`. Visibility comes only from `product_inbox_set_ui_visible`, called by `product_stage_present`. |
-| Visible surfaces | Upper: sender header and transport button. Lower: carousel row, or a status / empty body. |
-| Input | Card tap → `select_index`. Row scroll end → snap and `select_index`. Play button → `toggle_transport`. Callbacks repaint inbox widgets only. |
+| Owner | `InboxViewController` inside the product runtime. The header Play/Pause control and the selected-card sketch surface live there. |
+| Visible surfaces | Upper: sender header and transport button. Lower: three-card carousel, or a status / empty body. |
+| Input | Card tap or scroll end selects only. Header Play/Pause starts, pauses, resumes, or replays. Playback workers never touch widgets. |
 | Enters when | Sign-in edge (`note_sign_in_edge` → shell `INBOX`); BOOT back from volume; picker / receipt / couldn't-record exit. |
 | Leaves when | BOOT → volume. RED → picker (send stage). Mute → login screen, display blank. |
 | Background work | `product_inbox_service` queues due fetch jobs for the inbox worker and applies results. While signed out the tick discards results so the worker queue cannot fill. The worker is not stopped from the tick. `ui_visible == 0` pauses fetch and connecting retry inside the carousel model. |

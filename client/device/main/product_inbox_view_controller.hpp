@@ -1,11 +1,13 @@
 #pragma once
 
 #include "product_inbox_service.hpp"
+#include "product_playback_service.hpp"
 #include "product_split_pane_view_controller.hpp"
 
 namespace product_ui
 {
-enum class InboxDestination { Settings, MessageTarget };
+enum class InboxDestination { Settings,
+                              MessageTarget };
 struct InboxNavigation {
     void *context = nullptr;
     void (*request)(void *, InboxDestination) = nullptr;
@@ -14,23 +16,46 @@ struct InboxNavigation {
 class InboxViewController final : public SplitPaneViewController
 {
   public:
-    InboxViewController(InboxService &service, InboxNavigation navigation = {})
-        : service_(service), navigation_(navigation) {}
-    const char *name() const override { return "Inbox"; }
+    InboxViewController(InboxService &service, PlaybackService &playback, InboxNavigation navigation = {})
+        : service_(service), playback_(playback), navigation_(navigation) {}
+    const char *name() const override
+    {
+        return "Inbox";
+    }
     void render() override;
-    bool handlesBoot() const override { return true; }
-    bool handlesRed() const override { return true; }
+    bool handlesBoot() const override
+    {
+        return true;
+    }
+    bool handlesRed() const override
+    {
+        return true;
+    }
     void onBoot() override;
     void onRed() override;
     bool selectMessage(int index, const char *expectedId);
-    lv_obj_t *heading() const { return heading_; }
-    lv_obj_t *statusLabel() const { return status_; }
-    lv_obj_t *carouselRow() const { return row_; }
+    lv_obj_t *heading() const
+    {
+        return heading_;
+    }
+    lv_obj_t *transportButton() const
+    {
+        return transport_;
+    }
+    lv_obj_t *statusLabel() const
+    {
+        return status_;
+    }
+    lv_obj_t *carouselRow() const
+    {
+        return row_;
+    }
     lv_obj_t *cardForIndex(int index) const;
     static constexpr int kLiveCards = 3;
 
   protected:
     bool createView(lv_obj_t *parent) override;
+    void viewWillUnload() override;
     void viewWasRemoved() override;
 
   private:
@@ -41,6 +66,8 @@ class InboxViewController final : public SplitPaneViewController
         lv_obj_t *initials = nullptr;
         lv_obj_t *name = nullptr;
         lv_obj_t *duration = nullptr;
+        lv_obj_t *canvas = nullptr;
+        lv_obj_t *ink = nullptr;
         int index = -1;
         int pressed_index = -1;
         char id[fl_product_inbox::kMaxMessageId]{};
@@ -54,9 +81,18 @@ class InboxViewController final : public SplitPaneViewController
     void centerSelected();
     void displayBody(bool cards);
     void request(InboxDestination destination);
+    void presentTransport(const InboxSnapshot &snapshot);
+    void presentInk();
+    void detachLease();
+    static void onTransport(lv_event_t *event);
+    static void onInk(lv_event_t *event);
     InboxService &service_;
+    PlaybackService &playback_;
+    SurfaceLease lease_{};
     InboxNavigation navigation_;
     lv_obj_t *heading_ = nullptr;
+    lv_obj_t *transport_ = nullptr;
+    lv_obj_t *transport_label_ = nullptr;
     lv_obj_t *status_ = nullptr;
     lv_obj_t *row_ = nullptr;
     lv_obj_t *track_ = nullptr;

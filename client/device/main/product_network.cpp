@@ -40,12 +40,11 @@ extern "C" {
 static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     (void)arg;
-    if (base == WIFI_EVENT && id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
-    } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
+    if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
         const auto *disc = static_cast<const wifi_event_sta_disconnected_t *>(data);
         s_last_disconnect_reason = disc != NULL ? (int)disc->reason : -1;
-        ESP_LOGW(kTag, "disconnect reason=%d", s_last_disconnect_reason);
+        ESP_LOGW(kTag, "disconnect reason=%u rssi=%d", disc != NULL ? (unsigned)disc->reason : 0u,
+                 disc != NULL ? (int)disc->rssi : 0);
         xEventGroupClearBits(s_wifi_events, WIFI_CONNECTED_BIT);
         product_ui::loginService().scheduleWifi(false, s_last_disconnect_reason);
         esp_wifi_connect();
@@ -111,6 +110,8 @@ bool join_configured_wifi()
     }
     if (!s_wifi_init_attempted) {
         wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+        /* Default power save while disconnected drops the association response. */
+        cfg.sta_disconnected_pm = false;
         s_wifi_init_attempted = true;
         err = esp_wifi_init(&cfg);
         if (err != ESP_OK) {
@@ -139,8 +140,11 @@ bool join_configured_wifi()
         strncpy((char *)wcfg.sta.ssid, CONFIG_FAMILY_WIFI_SSID, sizeof(wcfg.sta.ssid) - 1);
         strncpy((char *)wcfg.sta.password, CONFIG_FAMILY_WIFI_PASSWORD, sizeof(wcfg.sta.password) - 1);
         wcfg.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-        wcfg.sta.pmf_cfg.capable = true;
-        wcfg.sta.pmf_cfg.required = false;
+        wcfg.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;
+        wcfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+        wcfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+        /* Leave PMF off. Advertising it makes some WPA2 access points accept
+         * authentication and then ignore the association request. */
         ESP_LOGI(kTag, "joining ssid=%s", CONFIG_FAMILY_WIFI_SSID);
         if (esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK || esp_wifi_set_config(WIFI_IF_STA, &wcfg) != ESP_OK ||
             esp_wifi_start() != ESP_OK) {
@@ -150,6 +154,9 @@ bool join_configured_wifi()
         memset(&wcfg, 0, sizeof(wcfg));
         (void)esp_wifi_set_ps(WIFI_PS_NONE);
         s_wifi_started = true;
+        if (esp_wifi_connect() != ESP_OK) {
+            return false;
+        }
         if (product_buttons::mute_latched() == 0) {
             (void)bsp_display_backlight_on();
         }

@@ -1,9 +1,13 @@
 #pragma once
 
+#include "product_delivery_service.hpp"
 #include "product_login_view_controller.hpp"
 #include "product_inbox_view_controller.hpp"
 #include "product_message_target_view_controller.hpp"
+#include "product_playback_service.hpp"
+#include "product_send_feedback_view_controller.hpp"
 #include "product_settings_view_controller.hpp"
+#include "product_sketch_view_controller.hpp"
 
 namespace product_ui
 {
@@ -19,9 +23,18 @@ struct RuntimePlatform {
 struct RuntimeServices {
     InboxTransport inbox;
     SettingsTransport settings;
+    const char *mediaPath = nullptr;
+    DeliveryTransport delivery;
 };
 
-enum class RuntimeDestination { Login, PinEntry, Cooldown, Inbox, Settings, MessageTarget, Recording };
+enum class RuntimeDestination { Login,
+                                PinEntry,
+                                Cooldown,
+                                Inbox,
+                                Settings,
+                                MessageTarget,
+                                Recording,
+                                SendFeedback };
 struct RuntimeNavigation {
     RuntimeDestination destination = RuntimeDestination::Login;
     uint32_t generation = 0;
@@ -40,18 +53,42 @@ class ProductRuntime
     bool start();
     void tick(int64_t now);
     LoginNavigation navigation();
-    bool muted() const { return muted_; }
-    InboxService &inboxService() { return inbox_; }
-    SettingsService &settingsService() { return settings_; }
-    MessageTargetService &targetService() { return targets_; }
-    const MessageRecipients &recordingRecipients() const { return recording_recipients_; }
-    RuntimeDestination shown() const { return shown_; }
+    bool muted() const
+    {
+        return muted_;
+    }
+    InboxService &inboxService()
+    {
+        return inbox_;
+    }
+    SettingsService &settingsService()
+    {
+        return settings_;
+    }
+    MessageTargetService &targetService()
+    {
+        return targets_;
+    }
+    const MessageRecipients &recordingRecipients() const
+    {
+        return recording_recipients_;
+    }
+    RuntimeDestination shown() const
+    {
+        return shown_;
+    }
 
   private:
     static void on_product_timer(lv_timer_t *timer);
     static void requestNavigation(void *context, LoginDestination destination, const char *user);
     static void requestInbox(void *context, InboxDestination destination);
     static void requestTarget(void *context, MessageTargetRequest request);
+    static void requestSketch(void *context, SketchIntent intent);
+    static void requestFeedback(void *context);
+    static void pauseForDelivery(void *context);
+    static const char *selectedForDelivery(void *context);
+    void followDelivery();
+    void restoreInboxSelection();
     bool enqueue(const RuntimeNavigation &intent, bool replacePending = false);
     RuntimeNavigation intent(RuntimeDestination destination, bool animated, CoverDirection direction) const;
     void reconcileSession();
@@ -62,9 +99,14 @@ class ProductRuntime
     RootViewController &root_;
     LoginService &service_;
     RuntimePlatform platform_;
+    MediaStore media_;
+    DisplaySurfaceBroker surfaces_;
+    PlaybackService playback_;
     InboxService inbox_;
     SettingsService settings_;
     MessageTargetService targets_;
+    CaptureService capture_;
+    DeliveryService delivery_;
     lv_timer_t *timer_ = nullptr;
     bool muted_ = false;
     bool input_known_ = false;
@@ -74,6 +116,7 @@ class ProductRuntime
     RuntimeDestination shown_ = RuntimeDestination::Login;
     int64_t now_ = 0;
     int64_t navigation_retry_due_ = 0;
+    bool restore_inbox_ = false;
 };
 
 } // namespace product_ui

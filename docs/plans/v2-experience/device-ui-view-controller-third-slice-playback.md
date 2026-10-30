@@ -1,7 +1,7 @@
 # Slice 3 — in-card audio and sketch playback
 
 Date: 2026-10-30
-Status: Defined for review; implementation planning against current sources required.
+Status: Implemented in the product runtime. Host LVGL verifier tests pass. Target build, flash, and monitor are still open.
 Prerequisite: owner-delivered Slice 2 (PIN, Inbox browsing, Volume, targets).
 
 ## Outcome

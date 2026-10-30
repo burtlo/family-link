@@ -1,7 +1,7 @@
 # Slice 4 — recording, sketching and durable send
 
 Date: 2026-10-30
-Status: Defined for review; delivery/storage interfaces require current-source planning.
+Status: Implemented in the product runtime. Host LVGL verifier tests pass and the product firmware builds. Flash and monitor are still open.
 Prerequisites: delivered Slice 2; Slice 3 for end-to-end recipient playback.
 
 ## Outcome

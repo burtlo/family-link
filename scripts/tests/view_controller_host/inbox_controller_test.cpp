@@ -1,4 +1,5 @@
 #include "product_inbox_view_controller.hpp"
+#include "product_playback_service.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
@@ -18,19 +19,24 @@ using namespace fl_product_inbox;
 std::vector<Job> jobs;
 std::deque<Result> completions;
 bool refuse;
-bool fakeStart() { return true; }
+bool fakeStart()
+{
+    return true;
+}
 bool fakeSubmit(const Job *job)
 {
     assert(job->kind == kMetadataJob || job->kind == 2);
     assert(std::strstr(job->path, "/media/") == nullptr);
-    if (refuse) return false;
+    if (refuse)
+        return false;
     jobs.push_back(*job);
     return true;
 }
 const Result *fakePoll()
 {
     static Result result;
-    if (completions.empty()) return nullptr;
+    if (completions.empty())
+        return nullptr;
     result = completions.front();
     completions.pop_front();
     return &result;
@@ -38,12 +44,16 @@ const Result *fakePoll()
 int countJobs(int kind)
 {
     int count = 0;
-    for (const auto &job : jobs) if (job.kind == kind) ++count;
+    for (const auto &job : jobs)
+        if (job.kind == kind)
+            ++count;
     return count;
 }
 Job latest(int kind)
 {
-    for (auto it = jobs.rbegin(); it != jobs.rend(); ++it) if (it->kind == kind) return *it;
+    for (auto it = jobs.rbegin(); it != jobs.rend(); ++it)
+        if (it->kind == kind)
+            return *it;
     assert(false);
     return {};
 }
@@ -82,7 +92,10 @@ void refresh(InboxService &service, InboxMetadataHeader *header, int64_t now)
     respond(latest(kMetadataJob), header);
     service.advance(now + 1);
 }
-struct Navigation { int count = 0; InboxDestination destination = InboxDestination::Settings; };
+struct Navigation {
+    int count = 0;
+    InboxDestination destination = InboxDestination::Settings;
+};
 void navigate(void *context, InboxDestination destination)
 {
     auto *nav = static_cast<Navigation *>(context);
@@ -91,7 +104,9 @@ void navigate(void *context, InboxDestination destination)
 }
 void serviceTests()
 {
-    jobs.clear(); completions.clear(); refuse = false;
+    jobs.clear();
+    completions.clear();
+    refuse = false;
     InboxService service({fakeStart, fakeSubmit, fakePoll});
     service.setSession("u0", "credential", 1, true, true, 0);
     service.advance(0);
@@ -194,9 +209,10 @@ void serviceTests()
 std::string json(int count)
 {
     std::string body = "{\"schema\":\"fl.inbox-page/2\",\"inbox_revision\":1,\"total_count\":" +
-        std::to_string(count) + ",\"last_viewed_message_id\":\"m0\",\"next_cursor\":null,\"has_more\":false,\"items\":[";
+                       std::to_string(count) + ",\"last_viewed_message_id\":\"m0\",\"next_cursor\":null,\"has_more\":false,\"items\":[";
     for (int i = 0; i < count; ++i) {
-        if (i) body += ',';
+        if (i)
+            body += ',';
         body += "{\"message_id\":\"m" + std::to_string(i) + "\",\"sender_user_id\":\"u0\",\"sender_name\":\"Person\",\"kind\":\"audio\",\"duration_ms\":1234,\"media\":{\"audio\":{\"format_id\":\"pcm_s16le\",\"byte_count\":32000,\"sha256\":\"" + std::string(64, 'a') + "\"}}}";
     }
     return body + "]}";
@@ -237,13 +253,19 @@ void parserTests()
     assert(parse_inbox_metadata(nullable.data(), nullable.size(), nullable.size(), &header) &&
            header.message_count == 1);
 }
-}
+} // namespace
 
 void testInboxControllers(lv_obj_t *content)
 {
     serviceTests();
     parserTests();
-    jobs.clear(); completions.clear(); refuse = false;
+    jobs.clear();
+    completions.clear();
+    refuse = false;
+    MediaStore media("playback-host-inbox");
+    media.discardSession();
+    DisplaySurfaceBroker broker;
+    PlaybackService playback(media, broker);
     InboxService service({fakeStart, fakeSubmit, fakePoll});
     service.setSession("u0", "credential", 1, true, true, 0);
     service.advance(0);
@@ -252,7 +274,7 @@ void testInboxControllers(lv_obj_t *content)
     Navigation nav;
     {
         RootViewController root(content);
-        auto *inbox = new InboxViewController(service, {&nav, navigate});
+        auto *inbox = new InboxViewController(service, playback, {&nav, navigate});
         assert(root.replace(std::unique_ptr<ViewController>(inbox), false));
         lv_obj_update_layout(content);
         assert(std::strcmp(lv_label_get_text(inbox->heading()), "From Sender 79") == 0);
@@ -279,11 +301,13 @@ void testInboxControllers(lv_obj_t *content)
         lv_obj_send_event(inbox->carouselRow(), LV_EVENT_SCROLL_END, nullptr);
         assert(service.snapshot().selectedIndex == 2);
         // A click at the end of a drag never undoes the scroll selection.
-        if (auto *card = inbox->cardForIndex(1)) lv_obj_send_event(card, LV_EVENT_CLICKED, nullptr);
+        if (auto *card = inbox->cardForIndex(1))
+            lv_obj_send_event(card, LV_EVENT_CLICKED, nullptr);
         assert(service.snapshot().selectedIndex == 2);
         const auto selected = service.selectedMessageId();
         const std::string selectedCopy = selected;
-        for (int i = 0; i < 20; ++i) root.render();
+        for (int i = 0; i < 20; ++i)
+            root.render();
         assert(std::strcmp(service.selectedMessageId(), selectedCopy.c_str()) == 0);
         root.dispatchBoot();
         assert(nav.count == 1 && nav.destination == InboxDestination::Settings);
@@ -292,7 +316,7 @@ void testInboxControllers(lv_obj_t *content)
         assert(root.replace(std::unique_ptr<ViewController>(new NoDestinationViewController), false));
         // Service applies updates after controller teardown.
         refresh(service, block(81, 2, "m80"), 500);
-        auto *returned = new InboxViewController(service, {&nav, navigate});
+        auto *returned = new InboxViewController(service, playback, {&nav, navigate});
         assert(root.replace(std::unique_ptr<ViewController>(returned), false));
         assert(service.snapshot().selectedIndex == 2);
         assert(lv_obj_get_scroll_x(returned->carouselRow()) == 2 * 144);
@@ -300,4 +324,5 @@ void testInboxControllers(lv_obj_t *content)
         assert(nav.destination == InboxDestination::MessageTarget);
     }
     service.signOut();
+    playback.signOut();
 }

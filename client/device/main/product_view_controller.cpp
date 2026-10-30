@@ -9,15 +9,17 @@
 #include <cstdio>
 #endif
 
-namespace product_ui {
+namespace product_ui
+{
 void probeController(const char *name, const char *phase, int32_t detail)
 {
 #ifdef ESP_PLATFORM
     // "NoDestination" + "load_before" -> "no_destination_load_before".
     char tag[48];
     size_t n = 0;
-    for(const char *c = name; *c && n + 2 < sizeof(tag); ++c) {
-        if(std::isupper(static_cast<unsigned char>(*c)) && n > 0) tag[n++] = '_';
+    for (const char *c = name; *c && n + 2 < sizeof(tag); ++c) {
+        if (std::isupper(static_cast<unsigned char>(*c)) && n > 0)
+            tag[n++] = '_';
         tag[n++] = static_cast<char>(std::tolower(static_cast<unsigned char>(*c)));
     }
     std::snprintf(tag + n, sizeof(tag) - n, "_%s", phase);
@@ -29,7 +31,8 @@ void probeController(const char *name, const char *phase, int32_t detail)
 #endif
 }
 
-namespace {
+namespace
+{
 int32_t nowMs()
 {
 #ifdef ESP_PLATFORM
@@ -38,17 +41,19 @@ int32_t nowMs()
     return static_cast<int32_t>(lv_tick_get());
 #endif
 }
-}
+} // namespace
 
 ViewController::~ViewController()
 {
-    if(root_) lv_obj_delete(root_);
+    if (root_)
+        lv_obj_delete(root_);
 }
 
 bool ViewController::createView(lv_obj_t *parent)
 {
     root_ = lv_obj_create(parent);
-    if(!root_) return false;
+    if (!root_)
+        return false;
     lv_obj_remove_style_all(root_);
     lv_obj_set_size(root_, 320, 240);
     lv_obj_set_pos(root_, 0, 0);
@@ -62,10 +67,11 @@ bool ViewController::createView(lv_obj_t *parent)
 
 bool ViewController::loadView(lv_obj_t *parent)
 {
-    if(root_) return true;
+    if (root_)
+        return true;
     probeController(name(), "load_before", 0);
     const int32_t started = nowMs();
-    if(!parent || !createView(parent)) {
+    if (!parent || !createView(parent)) {
         unloadView();
         return false;
     }
@@ -80,14 +86,16 @@ bool ViewController::loadView(lv_obj_t *parent)
 
 void ViewController::unloadView()
 {
-    if(!root_ && !loaded_) return;
+    if (!root_ && !loaded_)
+        return;
 #ifdef ESP_PLATFORM
     ESP_LOGI("app_main", "vc_unload name=%s", name());
 #endif
     probeController(name(), "will_unload", 0);
     const int32_t started = nowMs();
     viewWillUnload();
-    if(root_) lv_obj_delete(root_);
+    if (root_)
+        lv_obj_delete(root_);
     root_ = nullptr;
     viewWasRemoved();
     loaded_ = false;
@@ -98,7 +106,8 @@ void ViewController::unloadView()
 
 void ViewController::removeView()
 {
-    if(root_) lv_obj_delete(root_);
+    if (root_)
+        lv_obj_delete(root_);
     root_ = nullptr;
     viewWasRemoved();
 }
@@ -107,19 +116,20 @@ void ViewController::beginAppearanceTransition(bool appearing, bool animated)
 {
     (void)animated;
     appearance_ = appearing ? Appearance::Appearing : Appearance::Disappearing;
-    if(appearing) viewWillAppear();
-    else viewWillDisappear();
+    if (appearing)
+        viewWillAppear();
+    else
+        viewWillDisappear();
 }
 
 void ViewController::endAppearanceTransition()
 {
     const auto transition = appearance_;
     appearance_ = Appearance::None;
-    if(transition == Appearance::Appearing) {
+    if (transition == Appearance::Appearing) {
         appeared_ = true;
         viewDidAppear();
-    }
-    else if(transition == Appearance::Disappearing) {
+    } else if (transition == Appearance::Disappearing) {
         appeared_ = false;
         viewDidDisappear();
     }
@@ -135,7 +145,7 @@ RootViewController::~RootViewController()
 {
     destroying_ = true;
     finishTransition();
-    if(current_) {
+    if (current_) {
         beginAppearance(*current_, false, false);
         current_->removeView();
         endAppearance(*current_);
@@ -151,27 +161,45 @@ void RootViewController::beginAppearance(ViewController &vc, bool appearing, boo
 void RootViewController::endAppearance(ViewController &vc)
 {
     vc.endAppearanceTransition();
-    if(vc.appeared()) probeController(vc.name(), "appeared", 0);
+    if (vc.appeared())
+        probeController(vc.name(), "appeared", 0);
 }
 bool RootViewController::replace(std::unique_ptr<ViewController> next, bool animated, CoverDirection direction)
 {
-    if(destroying_) return false;
+    if (destroying_)
+        return false;
     return coordinator_->replace(std::move(next), animated, direction);
 }
 void RootViewController::clear()
 {
-    if (!destroying_) coordinator_->clear();
+    if (!destroying_)
+        coordinator_->clear();
 }
-void RootViewController::finishTransition() { coordinator_->finishNow(); }
-bool RootViewController::busy() const { return coordinator_->busy(); }
-lv_obj_t *RootViewController::snapshotImage() const { return coordinator_->image(); }
-void RootViewController::render() { if(current_ && !busy()) current_->render(); }
+void RootViewController::finishTransition()
+{
+    coordinator_->finishNow();
+}
+bool RootViewController::busy() const
+{
+    return coordinator_->busy();
+}
+lv_obj_t *RootViewController::snapshotImage() const
+{
+    return coordinator_->image();
+}
+void RootViewController::render()
+{
+    if (current_ && !busy())
+        current_->render();
+}
 void RootViewController::dispatchBoot()
 {
-    if(current_ && !busy() && current_->handlesBoot()) current_->onBoot();
+    if (current_ && !busy() && current_->handlesBoot())
+        current_->onBoot();
 }
 void RootViewController::dispatchRed()
 {
-    if(current_ && !busy() && current_->handlesRed()) current_->onRed();
+    if (current_ && !busy() && current_->handlesRed())
+        current_->onRed();
 }
 } // namespace product_ui

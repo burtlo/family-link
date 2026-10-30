@@ -54,6 +54,8 @@ AttachedStorage::AttachedStorage()
     memset(&in_progress_, 0, sizeof(in_progress_));
     memset(finished_, 0, sizeof(finished_));
     memset(window_, 0, sizeof(window_));
+    memset(&pending_identity_, 0, sizeof(pending_identity_));
+    memset(identities_, 0, sizeof(identities_));
 }
 
 void AttachedStorage::attach_media(MediaBackend *backend)
@@ -61,6 +63,8 @@ void AttachedStorage::attach_media(MediaBackend *backend)
     media_ = backend;
     memset(&in_progress_, 0, sizeof(in_progress_));
     memset(finished_, 0, sizeof(finished_));
+    memset(&pending_identity_, 0, sizeof(pending_identity_));
+    memset(identities_, 0, sizeof(identities_));
     in_progress_budget_ = 0;
     sketch_open_ = 0;
     next_offset_ = (uint64_t)kMediaDataOrigin;
@@ -213,6 +217,8 @@ bool AttachedStorage::load_directory()
         }
     }
     memcpy(finished_, slots, sizeof(finished_));
+    memset(identities_, 0, sizeof(identities_));
+    (void)read_identity_block();
     next_offset_ = loaded_next;
     if (next_offset_ < committed_end()) {
         next_offset_ = committed_end();
@@ -256,6 +262,9 @@ bool AttachedStorage::store_directory()
     if (!media_->write_at(0, raw, sizeof(raw))) {
         return false;
     }
+    if (!write_identity_block()) {
+        return false;
+    }
     return media_->flush();
 }
 
@@ -263,6 +272,8 @@ void AttachedStorage::format_empty_directory()
 {
     memset(finished_, 0, sizeof(finished_));
     memset(&in_progress_, 0, sizeof(in_progress_));
+    memset(&pending_identity_, 0, sizeof(pending_identity_));
+    memset(identities_, 0, sizeof(identities_));
     in_progress_budget_ = 0;
     sketch_open_ = 0;
     next_offset_ = (uint64_t)kMediaDataOrigin;
@@ -352,6 +363,7 @@ bool AttachedStorage::commit_in_progress_to_finished()
     size_t i;
     int slot = -1;
     StoredObject saved_in_progress;
+    SendIdentity saved_identity;
     uint32_t saved_budget;
     int saved_sketch;
     uint64_t saved_next;
@@ -369,18 +381,28 @@ bool AttachedStorage::commit_in_progress_to_finished()
     }
     /* Payload bytes are unsynced until the directory flush below makes them durable. */
     saved_in_progress = in_progress_;
+    saved_identity = pending_identity_;
     saved_budget = in_progress_budget_;
     saved_sketch = sketch_open_;
     saved_next = next_offset_;
     finished_[slot] = in_progress_;
     finished_[slot].uploading = 0;
     finished_[slot].valid = 1;
+    if (pending_identity_.valid != 0 &&
+        strcmp(pending_identity_.client_message_id, finished_[slot].client_message_id) == 0) {
+        identities_[slot] = pending_identity_;
+    } else {
+        memset(&identities_[slot], 0, sizeof(identities_[slot]));
+    }
+    memset(&pending_identity_, 0, sizeof(pending_identity_));
     memset(&in_progress_, 0, sizeof(in_progress_));
     in_progress_budget_ = 0;
     sketch_open_ = 0;
     next_offset_ = committed_end();
     if (!store_directory()) {
         memset(&finished_[slot], 0, sizeof(finished_[slot]));
+        memset(&identities_[slot], 0, sizeof(identities_[slot]));
+        pending_identity_ = saved_identity;
         in_progress_ = saved_in_progress;
         in_progress_budget_ = saved_budget;
         sketch_open_ = saved_sketch;
@@ -393,6 +415,7 @@ bool AttachedStorage::commit_in_progress_to_finished()
 void AttachedStorage::discard_in_progress()
 {
     memset(&in_progress_, 0, sizeof(in_progress_));
+    memset(&pending_identity_, 0, sizeof(pending_identity_));
     in_progress_budget_ = 0;
     sketch_open_ = 0;
     if (media_ != 0) {
@@ -500,21 +523,147 @@ void AttachedStorage::clear_finished_upload(const char *client_message_id)
 {
     int index;
     StoredObject previous;
+    SendIdentity previous_identity;
     uint64_t previous_next;
     index = find_finished(client_message_id);
     if (index < 0) {
         return;
     }
     previous = finished_[index];
+    previous_identity = identities_[index];
     previous_next = next_offset_;
     memset(&finished_[index], 0, sizeof(finished_[index]));
+    memset(&identities_[index], 0, sizeof(identities_[index]));
     if (!has_in_progress()) {
         next_offset_ = committed_end();
     }
     if (!store_directory()) {
         finished_[index] = previous;
+        identities_[index] = previous_identity;
         next_offset_ = previous_next;
     }
+}
+
+void AttachedStorage::set_in_progress_identity(const SendIdentity &identity)
+{
+    if (!has_in_progress() || identity.valid == 0 ||
+        strcmp(identity.client_message_id, in_progress_.client_message_id) != 0) {
+        return;
+    }
+    pending_identity_ = identity;
+    if (pending_identity_.recipient_count < 0) {
+        pending_identity_.recipient_count = 0;
+    }
+    if (pending_identity_.recipient_count > kIdentityRecipients) {
+        pending_identity_.recipient_count = kIdentityRecipients;
+    }
+}
+
+bool AttachedStorage::identity_for(const char *client_message_id, SendIdentity *out) const
+{
+    int index;
+    if (out == 0) {
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    index = find_finished(client_message_id);
+    if (index < 0 || identities_[index].valid == 0) {
+        return false;
+    }
+    *out = identities_[index];
+    return true;
+}
+
+bool AttachedStorage::write_identity_block()
+{
+    uint8_t raw[16 + kAttachedFinishedSlots * kIdentitySlotBytes];
+    size_t i;
+    static const uint8_t kIdentityMagic[8] = {'F', 'L', 'R', 'I', 'D', '0', '1', 0};
+    if (media_ == 0) {
+        return false;
+    }
+    static_assert(kIdentityOrigin + sizeof(raw) <= (size_t)kMediaDataOrigin, "identity overlaps media");
+    memset(raw, 0, sizeof(raw));
+    memcpy(raw, kIdentityMagic, sizeof(kIdentityMagic));
+    put_u32(raw + 8, 1u);
+    put_u32(raw + 12, (uint32_t)kAttachedFinishedSlots);
+    for (i = 0; i < kAttachedFinishedSlots; ++i) {
+        uint8_t *slot = raw + 16 + (i * (size_t)kIdentitySlotBytes);
+        const SendIdentity *id = &identities_[i];
+        int r;
+        size_t n;
+        for (n = 0; n < kMaxClientMessageId && id->client_message_id[n] != '\0'; ++n) {
+            slot[n] = (uint8_t)id->client_message_id[n];
+        }
+        for (n = 0; n < kIdentityUser && id->sender_user_id[n] != '\0'; ++n) {
+            slot[48 + n] = (uint8_t)id->sender_user_id[n];
+        }
+        slot[72] = (uint8_t)(id->recipient_count < 0 ? 0 : id->recipient_count);
+        slot[73] = (uint8_t)(id->valid ? 1 : 0);
+        for (r = 0; r < kIdentityRecipients; ++r) {
+            for (n = 0; n < kIdentityUser && id->recipient_ids[r][n] != '\0'; ++n) {
+                slot[80 + (r * kIdentityUser) + n] = (uint8_t)id->recipient_ids[r][n];
+            }
+            for (n = 0; n < kIdentityName && id->recipient_names[r][n] != '\0'; ++n) {
+                slot[80 + (kIdentityRecipients * kIdentityUser) + (r * kIdentityName) + n] =
+                    (uint8_t)id->recipient_names[r][n];
+            }
+        }
+    }
+    return media_->write_at((uint64_t)kIdentityOrigin, raw, sizeof(raw));
+}
+
+bool AttachedStorage::read_identity_block()
+{
+    uint8_t raw[16 + kAttachedFinishedSlots * kIdentitySlotBytes];
+    size_t i;
+    static const uint8_t kIdentityMagic[8] = {'F', 'L', 'R', 'I', 'D', '0', '1', 0};
+    if (media_ == 0) {
+        return false;
+    }
+    memset(raw, 0, sizeof(raw));
+    if (!media_->read_at((uint64_t)kIdentityOrigin, raw, sizeof(raw)) ||
+        memcmp(raw, kIdentityMagic, sizeof(kIdentityMagic)) != 0 || read_u32(raw + 8) != 1u) {
+        memset(identities_, 0, sizeof(identities_));
+        return false;
+    }
+    for (i = 0; i < kAttachedFinishedSlots; ++i) {
+        const uint8_t *slot = raw + 16 + (i * (size_t)kIdentitySlotBytes);
+        SendIdentity parsed;
+        int r;
+        size_t n;
+        memset(&parsed, 0, sizeof(parsed));
+        for (n = 0; n < kMaxClientMessageId && slot[n] != 0; ++n) {
+            parsed.client_message_id[n] = (char)slot[n];
+        }
+        for (n = 0; n < kIdentityUser && slot[48 + n] != 0; ++n) {
+            parsed.sender_user_id[n] = (char)slot[48 + n];
+        }
+        parsed.recipient_count = slot[72];
+        parsed.valid = slot[73] ? 1 : 0;
+        if (parsed.recipient_count > kIdentityRecipients) {
+            parsed.recipient_count = 0;
+            parsed.valid = 0;
+        }
+        for (r = 0; r < parsed.recipient_count; ++r) {
+            for (n = 0; n < kIdentityUser && slot[80 + (r * kIdentityUser) + n] != 0; ++n) {
+                parsed.recipient_ids[r][n] = (char)slot[80 + (r * kIdentityUser) + n];
+            }
+            for (n = 0; n < kIdentityName &&
+                        slot[80 + (kIdentityRecipients * kIdentityUser) + (r * kIdentityName) + n] != 0;
+                 ++n) {
+                parsed.recipient_names[r][n] =
+                    (char)slot[80 + (kIdentityRecipients * kIdentityUser) + (r * kIdentityName) + n];
+            }
+        }
+        if (parsed.valid == 0 || parsed.client_message_id[0] == '\0' ||
+            (finished_[i].valid != 0 && strcmp(parsed.client_message_id, finished_[i].client_message_id) != 0)) {
+            memset(&identities_[i], 0, sizeof(identities_[i]));
+            continue;
+        }
+        identities_[i] = parsed;
+    }
+    return true;
 }
 
 uint32_t AttachedStorage::in_progress_audio_budget() const

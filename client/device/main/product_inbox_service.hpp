@@ -14,7 +14,10 @@ struct InboxTransport {
 };
 
 struct InboxSnapshot {
-    enum class Body { Connecting, NoWifi, Empty, Cards } body = Body::Connecting;
+    enum class Body { Connecting,
+                      NoWifi,
+                      Empty,
+                      Cards } body = Body::Connecting;
     int count = 0;
     int selectedIndex = -1;
     uint32_t revision = 0;
@@ -32,14 +35,24 @@ class InboxService
     InboxService &operator=(const InboxService &) = delete;
     void setSession(const char *user, const char *bearer, uint32_t generation,
                     bool wifi, bool credentialReady, int64_t now);
+    // Recording holds a new inbox fetch. An in-flight fetch still completes.
+    void setFetchHeld(bool held)
+    {
+        fetch_held_ = held;
+    }
     void signOut();
+    void noteSessionUnready();
     void advance(int64_t now);
     void requestRefresh();
     bool selectIndex(int index, const char *expectedId = nullptr);
+    bool retainSelection(const char *messageId);
     InboxSnapshot snapshot() const;
     const fl_product_inbox::InboxMessage *messageAt(int index) const;
     const char *selectedMessageId() const;
-    uint32_t generation() const { return generation_; }
+    uint32_t generation() const
+    {
+        return generation_;
+    }
 
   private:
     bool applyMetadata(fl_product_inbox::InboxMetadataHeader *block);
@@ -71,6 +84,7 @@ class InboxService
     bool started_ = false;
     bool connecting_ = true;
     bool refresh_requested_ = true;
+    bool fetch_held_ = false;
     bool write_pending_ = false;
     bool selection_pending_ = false;
     char acknowledged_[fl_product_inbox::kMaxMessageId]{};

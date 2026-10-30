@@ -11,8 +11,14 @@
 
 using namespace product_ui;
 static uint32_t ticks;
-static uint32_t clockTick() { return ticks; }
-void advancePinTestClock(uint32_t milliseconds) { ticks += milliseconds; }
+static uint32_t clockTick()
+{
+    return ticks;
+}
+void advancePinTestClock(uint32_t milliseconds)
+{
+    ticks += milliseconds;
+}
 static int allocations;
 static size_t requested;
 static bool failAllocate;
@@ -20,97 +26,188 @@ static bool failImage;
 static void *allocate(size_t bytes)
 {
     requested = bytes;
-    if(failAllocate) return nullptr;
+    if (failAllocate)
+        return nullptr;
     ++allocations;
     return std::malloc(bytes);
 }
-static void release(void *p) { --allocations; std::free(p); }
+static void release(void *p)
+{
+    --allocations;
+    std::free(p);
+}
 static lv_obj_t *createImage(lv_obj_t *parent)
 {
     return failImage ? nullptr : lv_image_create(parent);
 }
-static void flush(lv_display_t *display, const lv_area_t *, uint8_t *) { lv_display_flush_ready(display); }
+static void flush(lv_display_t *display, const lv_area_t *, uint8_t *)
+{
+    lv_display_flush_ready(display);
+}
 static std::vector<std::string> events;
-class Recording : public ViewController {
-public:
+class Recording : public ViewController
+{
+  public:
     explicit Recording(const char *id, bool fail = false) : id_(id), fail_(fail) {}
-    const char *name() const override { return id_; }
-    void onBoot() override { assert(false && "undeclared BOOT handler called"); }
-    void onRed() override { assert(false && "undeclared RED handler called"); }
-protected:
+    const char *name() const override
+    {
+        return id_;
+    }
+    void onBoot() override
+    {
+        assert(false && "undeclared BOOT handler called");
+    }
+    void onRed() override
+    {
+        assert(false && "undeclared RED handler called");
+    }
+
+  protected:
     bool createView(lv_obj_t *parent) override
     {
         events.push_back(std::string(id_) + ":load");
         return !fail_ && ViewController::createView(parent);
     }
-    void viewDidLoad() override { record("didLoad"); }
-    void viewWillAppear() override { record("willAppear"); }
-    void viewDidAppear() override { record("didAppear"); }
-    void viewWillDisappear() override { assert(view()); record("willDisappear"); }
-    void viewDidDisappear() override { assert(!view()); record("didDisappear"); }
-    void viewWillUnload() override { record("unload"); }
-private:
-    void record(const char *s) { events.push_back(std::string(id_) + ":" + s); }
+    void viewDidLoad() override
+    {
+        record("didLoad");
+    }
+    void viewWillAppear() override
+    {
+        record("willAppear");
+    }
+    void viewDidAppear() override
+    {
+        record("didAppear");
+    }
+    void viewWillDisappear() override
+    {
+        assert(view());
+        record("willDisappear");
+    }
+    void viewDidDisappear() override
+    {
+        assert(!view());
+        record("didDisappear");
+    }
+    void viewWillUnload() override
+    {
+        record("unload");
+    }
+
+  private:
+    void record(const char *s)
+    {
+        events.push_back(std::string(id_) + ":" + s);
+    }
     const char *id_;
     bool fail_;
 };
 
-class Oversized : public ViewController {
-public:
-    const char *name() const override { return "oversized"; }
-protected:
+class Oversized : public ViewController
+{
+  public:
+    const char *name() const override
+    {
+        return "oversized";
+    }
+
+  protected:
     bool createView(lv_obj_t *parent) override
     {
-        if(!ViewController::createView(parent)) return false;
+        if (!ViewController::createView(parent))
+            return false;
         lv_obj_set_width(root_, 400); // Redraw cannot fit the fixed snapshot buffer.
         return true;
     }
 };
 
-class PartialFailure : public ViewController {
-public:
-    const char *name() const override { return "partial"; }
-protected:
+class PartialFailure : public ViewController
+{
+  public:
+    const char *name() const override
+    {
+        return "partial";
+    }
+
+  protected:
     bool createView(lv_obj_t *parent) override
     {
-        if(!ViewController::createView(parent)) return false;
+        if (!ViewController::createView(parent))
+            return false;
         child_ = lv_obj_create(root_);
         assert(child_);
         return false;
     }
-    void viewWasRemoved() override { child_ = nullptr; }
-private:
+    void viewWasRemoved() override
+    {
+        child_ = nullptr;
+    }
+
+  private:
     lv_obj_t *child_ = nullptr;
 };
 
-class Reentrant : public ViewController {
-public:
+class Reentrant : public ViewController
+{
+  public:
     explicit Reentrant(RootViewController &root) : owner_(root) {}
-    const char *name() const override { return "reentrant"; }
+    const char *name() const override
+    {
+        return "reentrant";
+    }
     int didLoads = 0;
     int rejected = 0;
     int bootCalls = 0;
-    bool handlesBoot() const override { return true; }
-    void onBoot() override { ++bootCalls; }
-protected:
+    bool handlesBoot() const override
+    {
+        return true;
+    }
+    void onBoot() override
+    {
+        ++bootCalls;
+    }
+
+  protected:
     bool createView(lv_obj_t *parent) override
     {
-        if(!ViewController::createView(parent)) return false;
+        if (!ViewController::createView(parent))
+            return false;
         child_ = lv_obj_create(root_);
         return child_ != nullptr;
     }
-    void viewDidLoad() override { ++didLoads; rejectNavigation(); }
-    void viewWillAppear() override { rejectNavigation(); }
-    void viewDidAppear() override { rejectNavigation(); }
-    void viewWillDisappear() override { rejectNavigation(); }
+    void viewDidLoad() override
+    {
+        ++didLoads;
+        rejectNavigation();
+    }
+    void viewWillAppear() override
+    {
+        rejectNavigation();
+    }
+    void viewDidAppear() override
+    {
+        rejectNavigation();
+    }
+    void viewWillDisappear() override
+    {
+        rejectNavigation();
+    }
     void viewDidDisappear() override
     {
         assert(!view() && !child_);
         rejectNavigation();
     }
-    void viewWillUnload() override { rejectNavigation(); }
-    void viewWasRemoved() override { child_ = nullptr; }
-private:
+    void viewWillUnload() override
+    {
+        rejectNavigation();
+    }
+    void viewWasRemoved() override
+    {
+        child_ = nullptr;
+    }
+
+  private:
     void rejectNavigation()
     {
         assert(owner_.busy());
@@ -122,23 +219,34 @@ private:
     lv_obj_t *child_ = nullptr;
 };
 
-class LoadCounter : public ViewController {
-public:
-    const char *name() const override { return "counter"; }
+class LoadCounter : public ViewController
+{
+  public:
+    const char *name() const override
+    {
+        return "counter";
+    }
     int loads = 0;
-protected:
-    void viewDidLoad() override { ++loads; }
+
+  protected:
+    void viewDidLoad() override
+    {
+        ++loads;
+    }
 };
 
-class SlotFailure : public SplitPaneViewController {
-public:
+class SlotFailure : public SplitPaneViewController
+{
+  public:
     explicit SlotFailure(int step) : failAt_(step) {}
-protected:
+
+  protected:
     lv_obj_t *createSlot(lv_obj_t *parent) override
     {
         return ++calls_ == failAt_ ? nullptr : SplitPaneViewController::createSlot(parent);
     }
-private:
+
+  private:
     int failAt_;
     int calls_ = 0;
 };
@@ -181,7 +289,7 @@ static void testSplitPane(lv_obj_t *content)
     pane.unloadView();
     assert(pane.loadView(content) && pane.upperSlot() && pane.lowerSlot());
     pane.unloadView();
-    for(int step : {1, 2}) {
+    for (int step : {1, 2}) {
         SlotFailure failing(step);
         assert(!failing.loadView(content));
         assert(!failing.loaded() && !failing.view() && !failing.upperSlot() && !failing.lowerSlot());
@@ -191,11 +299,13 @@ static void testSplitPane(lv_obj_t *content)
         failing.unloadView();
     }
     std::vector<void *> exhausted;
-    while(void *block = lv_malloc(64)) exhausted.push_back(block);
+    while (void *block = lv_malloc(64))
+        exhausted.push_back(block);
     SplitPaneViewController failingRoot;
     assert(!failingRoot.loadView(content));
     assert(!failingRoot.view() && !failingRoot.upperSlot() && !failingRoot.lowerSlot());
-    for(void *block : exhausted) lv_free(block);
+    for (void *block : exhausted)
+        lv_free(block);
     lv_mem_monitor(&after);
     assert(before.free_size == after.free_size);
     assert(lv_obj_get_child_count(content) == initialChildren);
@@ -205,11 +315,15 @@ static bool deliverRoster;
 static int rosterCount;
 static int transportTicks;
 static int muteCalls;
-static bool startLogin(fl_product_login::SessionWriter *) { return true; }
+static bool startLogin(fl_product_login::SessionWriter *)
+{
+    return true;
+}
 static void advanceLogin(fl_product_login::SessionWriter *session, int64_t now)
 {
     ++transportTicks;
-    if (!deliverRoster || !session->roster_inflight()) return;
+    if (!deliverRoster || !session->roster_inflight())
+        return;
     fl_product_login::RosterResult roster{};
     roster.operation_id = session->roster_operation_id();
     roster.http_status = 200;
@@ -223,7 +337,10 @@ static void advanceLogin(fl_product_login::SessionWriter *session, int64_t now)
     }
     session->deliver_roster_completion(roster, now);
 }
-static void muteLogin() { ++muteCalls; }
+static void muteLogin()
+{
+    ++muteCalls;
+}
 struct NavigationRecord {
     int count = 0;
     std::string user;
@@ -349,13 +466,15 @@ static void testLogin(lv_obj_t *content)
     service->advance(8);
     assert(login.loadView(content));
     login.render();
-    for (int i = 0; i < 8; ++i) assert(login.cardAt(i));
+    for (int i = 0; i < 8; ++i)
+        assert(login.cardAt(i));
     assert(!login.cardAt(8));
     assert(lv_obj_get_child_count(login.rosterRow()) == 8);
     const auto eightRevision = login.widgetRevision();
     login.render();
     assert(login.widgetRevision() == eightRevision);
-    for (int64_t now = 258; now <= 600258; now += 250) service->advance(now);
+    for (int64_t now = 258; now <= 600258; now += 250)
+        service->advance(now);
     assert(service->session().roster_period_ms() == fl_product_login::kIdleRosterPeriodMs);
     login.render();
     assert(service->session().roster_period_ms() == fl_product_login::kIdleRosterPeriodMs);
@@ -371,9 +490,22 @@ static void testLogin(lv_obj_t *content)
 
 static bool bootPressed;
 static bool redPressed;
-static int unlatched() { return 0; }
-static bool takeBoot() { const bool p = bootPressed; bootPressed = false; return p; }
-static bool takeRed() { const bool p = redPressed; redPressed = false; return p; }
+static int unlatched()
+{
+    return 0;
+}
+static bool takeBoot()
+{
+    const bool p = bootPressed;
+    bootPressed = false;
+    return p;
+}
+static bool takeRed()
+{
+    const bool p = redPressed;
+    redPressed = false;
+    return p;
+}
 
 static void testRuntimeButtons(lv_obj_t *content)
 {
@@ -400,9 +532,11 @@ static void testRuntimeButtons(lv_obj_t *content)
 
 void testPinControllers(lv_obj_t *content);
 void testInboxControllers(lv_obj_t *content);
+void testPlaybackService(lv_obj_t *content);
 void testSettingsControllers(lv_obj_t *content);
 void testMessageTargetControllers(lv_obj_t *content);
 void testRuntimeRoutes(lv_obj_t *content);
+void testRecordSend(lv_obj_t *content);
 
 int main()
 {
@@ -421,8 +555,10 @@ int main()
     testLogin(content);
     testPinControllers(content);
     testInboxControllers(content);
+    testPlaybackService(content);
     testSettingsControllers(content);
     testMessageTargetControllers(content);
+    testRecordSend(content);
     {
         LoadCounter controller;
         assert(controller.loadView(content) && controller.loads == 1);
@@ -474,11 +610,11 @@ int main()
         events.clear();
         assert(root.replace(std::unique_ptr<ViewController>(new Recording("new")), false));
         assert((events == std::vector<std::string>{"old:willDisappear", "old:didDisappear", "old:unload",
-            "new:load", "new:didLoad", "new:willAppear", "new:didAppear"}));
+                                                   "new:load", "new:didLoad", "new:willAppear", "new:didAppear"}));
         events.clear();
         assert(root.replace(std::unique_ptr<ViewController>(new Recording("finish"))));
         assert((events == std::vector<std::string>{"new:willDisappear", "new:didDisappear", "new:unload",
-            "finish:load", "finish:didLoad", "finish:willAppear"}));
+                                                   "finish:load", "finish:didLoad", "finish:willAppear"}));
         root.finishTransition();
         assert(events.back() == "finish:didAppear");
         assert(!root.snapshotImage() && allocations == 0 && !root.busy());
@@ -516,13 +652,16 @@ int main()
         assert(lv_obj_get_style_bg_opa(incoming, LV_PART_MAIN) == LV_OPA_COVER);
         assert(lv_color_eq(lv_obj_get_style_bg_color(incoming, LV_PART_MAIN), lv_color_hex(product_theme::Dark::kSurfaceRgb24)));
         assert(!root.current()->appeared());
-        for(int i=0; i<39; ++i) {
+        for (int i = 0; i < 39; ++i) {
             ticks += 10;
             lv_timer_handler();
             lv_obj_update_layout(incoming);
-            if(i == 9) assert(lv_obj_get_y(incoming) >= 235 && lv_obj_get_y(incoming) <= 238);
-            if(i == 19) assert(lv_obj_get_y(incoming) == 120);
-            if(i == 29) assert(lv_obj_get_y(incoming) >= 3 && lv_obj_get_y(incoming) <= 5);
+            if (i == 9)
+                assert(lv_obj_get_y(incoming) >= 235 && lv_obj_get_y(incoming) <= 238);
+            if (i == 19)
+                assert(lv_obj_get_y(incoming) == 120);
+            if (i == 29)
+                assert(lv_obj_get_y(incoming) >= 3 && lv_obj_get_y(incoming) <= 5);
         }
         assert(root.busy() && !root.current()->appeared());
         ticks += 10;
@@ -545,13 +684,15 @@ int main()
         assert(!root.replace(std::unique_ptr<ViewController>(new Recording("fail", true))));
         assert(!root.current() && allocations == 0);
         std::vector<void *> exhausted;
-        while(void *block = lv_malloc(64)) exhausted.push_back(block);
+        while (void *block = lv_malloc(64))
+            exhausted.push_back(block);
         assert(!root.replace(std::unique_ptr<ViewController>(new NoDestinationViewController), false));
         assert(!root.current());
-        for(void *block : exhausted) lv_free(block);
+        for (void *block : exhausted)
+            lv_free(block);
         lv_mem_monitor_t baseline{}, recovered{};
         lv_mem_monitor(&baseline);
-        for(int i=0; i<30; ++i) {
+        for (int i = 0; i < 30; ++i) {
             assert(root.replace(std::unique_ptr<ViewController>(new NoDestinationViewController), false));
             assert(root.replace(std::unique_ptr<ViewController>(new NoDestinationViewController)));
             root.finishTransition();

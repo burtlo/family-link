@@ -32,6 +32,8 @@ bool s_attached = false;
 bool s_media_ready = false;
 bool s_storage_mounted = false;
 int s_begin_failed = 0;
+int (*s_pcm_observer)(const uint8_t *, size_t, void *) = nullptr;
+void *s_pcm_observer_context = nullptr;
 int s_mount_warned = 0;
 constexpr size_t kCanvasWidth = 240;
 constexpr size_t kCanvasHeight = 240;
@@ -652,11 +654,20 @@ void clear_upload(const char *client_message_id)
 
 int push_pcm(const uint8_t *pcm, size_t len)
 {
+    if (s_pcm_observer != nullptr) {
+        return s_pcm_observer(pcm, len, s_pcm_observer_context);
+    }
     StoreLock lock;
     if (s_record == nullptr) {
         return 0;
     }
     return s_record->push_pcm(pcm, len) ? 1 : 0;
+}
+
+void set_pcm_observer(int (*push)(const uint8_t *pcm, size_t len, void *context), void *context)
+{
+    s_pcm_observer = push;
+    s_pcm_observer_context = context;
 }
 
 void notify_mic_failed(void)

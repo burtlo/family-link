@@ -13,6 +13,7 @@ struct MessageTargetSnapshot {
     fl_product_login::UserId users[fl_product_login::kMaxUsers]{};
     char focus[fl_product_login::kMaxId]{};
     MessageRecipients selected;
+    char notice[32]{};
 };
 
 // Endpoint lifetime; roster and selection survive view removal, never own UI.
@@ -27,7 +28,11 @@ class MessageTargetService
     bool isSelected(const char *id) const;
     bool freeze(MessageRecipients &recipients) const;
     void heading(char *out, unsigned capacity) const;
-    const MessageTargetSnapshot &snapshot() const { return snapshot_; }
+    void setNotice(const char *notice);
+    const MessageTargetSnapshot &snapshot() const
+    {
+        return snapshot_;
+    }
 
   private:
     int indexOf(const char *id) const;

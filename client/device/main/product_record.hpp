@@ -25,6 +25,7 @@ int finished_info(const char *client_message_id, uint32_t *audio_bytes, uint32_t
 int mark_uploading(const char *client_message_id);
 void clear_upload(const char *client_message_id);
 int push_pcm(const uint8_t *pcm, size_t len);
+void set_pcm_observer(int (*push)(const uint8_t *pcm, size_t len, void *context), void *context);
 void notify_mic_failed();
 void discard_in_progress();
 void cancel_recording();

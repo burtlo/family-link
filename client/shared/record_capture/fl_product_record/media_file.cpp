@@ -1,7 +1,11 @@
 #include "fl_product_record_media.hpp"
 
 #include <stdio.h>
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
 
 namespace fl_product_record
 {
@@ -110,7 +114,11 @@ bool FileMediaBackend::flush()
         return false;
     }
     /* fflush alone leaves the FAT directory entry at its old size until close. */
+#ifdef _WIN32
+    return fflush(file_) == 0 && _commit(_fileno(file_)) == 0;
+#else
     return fflush(file_) == 0 && fsync(fileno(file_)) == 0;
+#endif
 }
 
 } /* namespace fl_product_record */

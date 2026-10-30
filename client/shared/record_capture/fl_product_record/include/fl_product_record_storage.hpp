@@ -26,6 +26,21 @@ struct StoredObject {
     int valid;
 };
 
+/* Sender and frozen recipients for a committed take. Written in the same
+ * flush as the directory, in the reserved gap before media bytes. */
+enum { kIdentityRecipients = 7,
+       kIdentityUser = 24,
+       kIdentityName = 48 };
+
+struct SendIdentity {
+    char client_message_id[kMaxClientMessageId];
+    char sender_user_id[kIdentityUser];
+    char recipient_ids[kIdentityRecipients][kIdentityUser];
+    char recipient_names[kIdentityRecipients][kIdentityName];
+    int recipient_count;
+    int valid;
+};
+
 class AttachedStorage
 {
   public:
@@ -39,6 +54,9 @@ class AttachedStorage
     bool write_in_progress_sketch(const uint8_t *sketch, size_t sketch_len);
     bool commit_in_progress_to_finished();
     void discard_in_progress();
+    /* Copied onto the finished slot at commit. Ignored unless a take is open. */
+    void set_in_progress_identity(const SendIdentity &identity);
+    bool identity_for(const char *client_message_id, SendIdentity *out) const;
 
     /* Later send phase: stream one finished object in part-sized reads.
      * `offset` is within that object, not a media-file offset.
@@ -63,7 +81,9 @@ class AttachedStorage
         kMediaDataOrigin = 4096,
         kDirectoryBytes = 320,
         kDirectoryHeaderBytes = 64,
-        kSlotBytes = 128
+        kSlotBytes = 128,
+        kIdentityOrigin = 512,
+        kIdentitySlotBytes = 640
     };
 
     bool id_ok(const char *client_message_id) const;
@@ -73,6 +93,8 @@ class AttachedStorage
     bool load_directory();
     bool store_directory();
     void format_empty_directory();
+    bool write_identity_block();
+    bool read_identity_block();
 
     MediaBackend *media_;
     uint64_t next_offset_;
@@ -81,6 +103,8 @@ class AttachedStorage
     uint8_t window_[kWriteWindowBytes];
     StoredObject in_progress_;
     StoredObject finished_[kAttachedFinishedSlots];
+    SendIdentity pending_identity_;
+    SendIdentity identities_[kAttachedFinishedSlots];
 };
 
 } /* namespace fl_product_record */

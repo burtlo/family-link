@@ -1,43 +1,71 @@
 cmake_minimum_required(VERSION 3.16)
-project(view_controller_host C CXX)
-get_filename_component(REPO "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
-set(LV_BUILD_CONF_PATH "${CMAKE_CURRENT_LIST_DIR}/lv_conf.h" CACHE PATH "" FORCE)
-set(CONFIG_LV_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
-set(CONFIG_LV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(LV_BUILD_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory("${REPO}/client/device/managed_components/lvgl__lvgl" lvgl)
-add_executable(view_controller_test
-    view_controller_test.cpp
-    pin_controller_test.cpp
-    inbox_controller_test.cpp
-    settings_controller_test.cpp
-    message_target_controller_test.cpp
-    runtime_routes_test.cpp
-    "${REPO}/client/device/main/product_view_controller.cpp"
-    "${REPO}/client/device/main/product_split_pane_view_controller.cpp"
-    "${REPO}/client/device/main/product_login_service.cpp"
-    "${REPO}/client/device/main/product_login_view_controller.cpp"
-    "${REPO}/client/device/main/product_pin_entry_view_controller.cpp"
-    "${REPO}/client/device/main/product_inbox_service.cpp"
-    "${REPO}/client/device/main/product_inbox_view_controller.cpp"
-    "${REPO}/client/device/main/product_settings_service.cpp"
-    "${REPO}/client/device/main/product_settings_view_controller.cpp"
-    "${REPO}/client/device/main/product_message_target_service.cpp"
-    "${REPO}/client/device/main/product_message_target_view_controller.cpp"
-    "${REPO}/client/shared/desk_volume/fl_product_volume/stops.cpp"
-    "${REPO}/client/shared/inbox_carousel/fl_product_inbox/p1_wire.cpp"
-    "${REPO}/client/device/main/product_runtime.cpp"
-    "${REPO}/client/shared/login_session/fl_product_login/session.cpp"
-    "${REPO}/client/shared/login_session/fl_product_login/pin_session.cpp"
-    "${REPO}/client/shared/login_session/fl_product_login/scoped_session.cpp"
-    "${REPO}/client/shared/login_session/fl_product_login/credential_session.cpp"
-    "${REPO}/client/shared/login_session/fl_product_login/pollers.cpp"
-    "${REPO}/client/shared/login_session/fl_product_login/p1_wire.cpp"
-    "${REPO}/client/shared/login_session/fl_product_login/workers.cpp"
-    "${REPO}/client/device/main/product_transition_coordinator.cpp")
-target_include_directories(view_controller_test PRIVATE "${REPO}/client/device/main")
-target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/login_session/fl_product_login/include")
-target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/inbox_carousel/fl_product_inbox/include")
-target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/desk_volume/fl_product_volume/include")
-target_compile_features(view_controller_test PRIVATE cxx_std_14)
-target_link_libraries(view_controller_test PRIVATE lvgl m)
+    project(view_controller_host C CXX)
+        get_filename_component(REPO "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+            set(LV_BUILD_CONF_PATH "${CMAKE_CURRENT_LIST_DIR}/lv_conf.h" CACHE PATH "" FORCE)
+                set(CONFIG_LV_BUILD_DEMOS OFF CACHE BOOL "" FORCE)
+                    set(CONFIG_LV_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+                        set(LV_BUILD_INSTALL OFF CACHE BOOL "" FORCE)
+                            add_subdirectory("${REPO}/client/device/managed_components/lvgl__lvgl" lvgl)
+                                add_executable(view_controller_test
+                                                   view_controller_test.cpp
+                                                       pin_controller_test.cpp
+                                                           inbox_controller_test.cpp
+                                                               settings_controller_test.cpp
+                                                                   message_target_controller_test.cpp
+                                                                       runtime_routes_test.cpp
+                                               "${REPO}/client/device/main/product_view_controller.cpp"
+                                               "${REPO}/client/device/main/product_split_pane_view_controller.cpp"
+                                               "${REPO}/client/device/main/product_login_service.cpp"
+                                               "${REPO}/client/device/main/product_login_view_controller.cpp"
+                                               "${REPO}/client/device/main/product_pin_entry_view_controller.cpp"
+                                               "${REPO}/client/device/main/product_inbox_service.cpp"
+                                               "${REPO}/client/device/main/product_inbox_view_controller.cpp"
+                                               "${REPO}/client/device/main/product_display_surface.cpp"
+                                               "${REPO}/client/device/main/product_media_store.cpp"
+                                               "${REPO}/client/device/main/product_playback_service.cpp" playback_service_test.cpp
+                                               "${REPO}/client/device/main/product_settings_service.cpp"
+                                               "${REPO}/client/device/main/product_settings_view_controller.cpp"
+                                               "${REPO}/client/device/main/product_message_target_service.cpp"
+                                               "${REPO}/client/device/main/product_message_target_view_controller.cpp"
+                                               "${REPO}/client/shared/desk_volume/fl_product_volume/stops.cpp"
+                                               "${REPO}/client/shared/inbox_carousel/fl_product_inbox/p1_wire.cpp"
+                                               "${REPO}/client/shared/inbox_carousel/fl_product_inbox/flsk2.cpp"
+                                               "${REPO}/client/device/main/product_capture_service.cpp"
+                                               "${REPO}/client/device/main/product_delivery_service.cpp"
+                                               "${REPO}/client/device/main/product_sketch_view_controller.cpp"
+                                               "${REPO}/client/device/main/product_send_feedback_view_controller.cpp"
+                                               "${REPO}/client/shared/record_capture/fl_product_record/session.cpp"
+                                               "${REPO}/client/shared/record_capture/fl_product_record/storage.cpp"
+                                               "${REPO}/client/shared/record_capture/fl_product_record/media_file.cpp"
+                                               "${REPO}/client/shared/record_capture/fl_product_record/flsk2.cpp"
+                                               "${REPO}/client/shared/record_capture/promoted/lab10_ui/lab10_ui.c"
+                                               "${REPO}/client/shared/record_capture/promoted/lab10_capture/lab10_capture.c"
+                                               "${REPO}/client/shared/record_capture/promoted/lab10_render/lab10_render.c"
+                                               "${REPO}/client/shared/message_delivery/fl_product_send/classify.cpp"
+                                               "${REPO}/client/shared/message_delivery/fl_product_send/journey.cpp"
+                                               "${REPO}/client/shared/message_delivery/fl_product_send/outbox.cpp"
+                                               "${REPO}/client/shared/message_delivery/fl_product_send/p1_wire.cpp"
+                                               "${REPO}/client/shared/message_delivery/fl_product_send/picker.cpp"
+                                               "${REPO}/client/shared/message_delivery/fl_product_send/sha256.cpp"
+                                               "${REPO}/client/shared/message_delivery/fl_product_send/send_stage.cpp"
+                                               "${REPO}/client/device/main/product_runtime.cpp"
+                                               record_send_test.cpp
+                                               "${REPO}/client/shared/login_session/fl_product_login/session.cpp"
+                                               "${REPO}/client/shared/login_session/fl_product_login/pin_session.cpp"
+                                               "${REPO}/client/shared/login_session/fl_product_login/scoped_session.cpp"
+                                               "${REPO}/client/shared/login_session/fl_product_login/credential_session.cpp"
+                                               "${REPO}/client/shared/login_session/fl_product_login/pollers.cpp"
+                                               "${REPO}/client/shared/login_session/fl_product_login/p1_wire.cpp"
+                                               "${REPO}/client/shared/login_session/fl_product_login/workers.cpp"
+                                               "${REPO}/client/device/main/product_transition_coordinator.cpp")
+                                    target_include_directories(view_controller_test PRIVATE "${REPO}/client/device/main")
+                                        target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/login_session/fl_product_login/include")
+                                            target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/inbox_carousel/fl_product_inbox/include")
+                                                target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/desk_volume/fl_product_volume/include")
+                                                    target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/record_capture/fl_product_record/include")
+                                                        target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/record_capture/promoted/lab10_ui/include")
+                                                            target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/record_capture/promoted/lab10_capture/include")
+                                                                target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/record_capture/promoted/lab10_render/include")
+                                                                    target_include_directories(view_controller_test PRIVATE "${REPO}/client/shared/message_delivery/fl_product_send/include")
+                                                    target_compile_features(view_controller_test PRIVATE cxx_std_14)
+                                                        target_link_libraries(view_controller_test PRIVATE lvgl m)

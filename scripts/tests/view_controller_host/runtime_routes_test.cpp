@@ -16,10 +16,15 @@ int submittedSaves;
 bool settingsPending;
 SettingsResult settingsResult;
 
-bool startLogin(SessionWriter *session) { writer = session; return true; }
+bool startLogin(SessionWriter *session)
+{
+    writer = session;
+    return true;
+}
 void advanceLogin(SessionWriter *session, int64_t time)
 {
-    if (!session->roster_inflight()) return;
+    if (!session->roster_inflight())
+        return;
     RosterResult result{};
     result.operation_id = session->roster_operation_id();
     result.http_status = 200;
@@ -33,23 +38,50 @@ void advanceLogin(SessionWriter *session, int64_t time)
     session->deliver_roster_completion(result, time);
 }
 void muteLogin() {}
-int muteLatched() { return muteLevel; }
-bool takeBoot() { const bool p = bootPressed; bootPressed = false; return p; }
-bool takeRed() { const bool p = redPressed; redPressed = false; return p; }
-bool startInbox() { return true; }
-bool submitInbox(const product_inbox_http::Job *) { return true; }
-const product_inbox_http::Result *pollInbox() { return nullptr; }
-bool startSettings() { return true; }
+int muteLatched()
+{
+    return muteLevel;
+}
+bool takeBoot()
+{
+    const bool p = bootPressed;
+    bootPressed = false;
+    return p;
+}
+bool takeRed()
+{
+    const bool p = redPressed;
+    redPressed = false;
+    return p;
+}
+bool startInbox()
+{
+    return true;
+}
+bool submitInbox(const product_inbox_http::Job *)
+{
+    return true;
+}
+const product_inbox_http::Result *pollInbox()
+{
+    return nullptr;
+}
+bool startSettings()
+{
+    return true;
+}
 bool submitSettings(const SettingsJob &job)
 {
-    if (job.kind == SettingsJobKind::Save) ++submittedSaves;
+    if (job.kind == SettingsJobKind::Save)
+        ++submittedSaves;
     settingsResult = {job.operation, job.kind, job.stop, true};
     settingsPending = true;
     return true;
 }
 bool pollSettings(SettingsResult &result)
 {
-    if (!settingsPending) return false;
+    if (!settingsPending)
+        return false;
     settingsPending = false;
     result = settingsResult;
     return true;
@@ -71,7 +103,10 @@ void wait(ProductRuntime &runtime, RootViewController &root, int64_t millisecond
         root.finishTransition();
     }
 }
-const char *current(RootViewController &root) { return root.current() ? root.current()->name() : "None"; }
+const char *current(RootViewController &root)
+{
+    return root.current() ? root.current()->name() : "None";
+}
 void openPin(ProductRuntime &runtime, RootViewController &root)
 {
     auto *login = static_cast<LoginViewController *>(root.current());
@@ -82,7 +117,8 @@ void openPin(ProductRuntime &runtime, RootViewController &root)
 }
 PinResult submitPin(LoginService &service, int outcome)
 {
-    for (int i = 0; i < 4; ++i) assert(service.enterPinDigit('1' + i));
+    for (int i = 0; i < 4; ++i)
+        assert(service.enterPinDigit('1' + i));
     PinResult result{};
     result.operation_id = writer->pin_operation_id();
     result.generation = writer->pin_key_generation();
@@ -195,7 +231,8 @@ void testRuntimeRoutes(lv_obj_t *content)
     assert(std::strcmp(current(root), "MessageTarget") == 0);
     const auto &targets = runtime.targetService().snapshot();
     assert(targets.count == 2 && targets.selected.count == 0);
-    for (int i = 0; i < targets.count; ++i) assert(std::strcmp(targets.users[i].id, "u0") != 0);
+    for (int i = 0; i < targets.count; ++i)
+        assert(std::strcmp(targets.users[i].id, "u0") != 0);
 
     // BOOT returns to the same Inbox without creating a message.
     bootPressed = true;
@@ -214,7 +251,7 @@ void testRuntimeRoutes(lv_obj_t *content)
     std::strcpy(chosen, targets.users[1].id);
     redPressed = true;
     run(runtime, root, 2);
-    assert(runtime.shown() == RuntimeDestination::Recording && std::strcmp(current(root), "NoDestination") == 0);
+    assert(runtime.shown() == RuntimeDestination::Recording && std::strcmp(current(root), "Sketch") == 0);
     assert(runtime.recordingRecipients().count == 1);
     assert(std::strcmp(runtime.recordingRecipients().ids[0], chosen) == 0);
 
@@ -279,7 +316,7 @@ void testRuntimeRoutes(lv_obj_t *content)
     // BOOT and RED in one tick: the first intent wins; the second is rejected.
     bootPressed = true;
     run(runtime, root);
-    assert(std::strcmp(current(root), "Recording") != 0);
+    assert(std::strcmp(current(root), "Inbox") == 0);
     mute(runtime, root, true);
     mute(runtime, root, false);
     signIn(service, runtime, root);
@@ -321,7 +358,8 @@ void testRuntimeRoutes(lv_obj_t *content)
     for (int i = 0; i < kPinWrongLimit; ++i) {
         writer->deliver_pin_completion(submitPin(service, kPinOutcomeWrong), now);
         run(runtime, root);
-        if (i < kPinWrongLimit - 1) wait(runtime, root, kWrongPinCopyMs);
+        if (i < kPinWrongLimit - 1)
+            wait(runtime, root, kWrongPinCopyMs);
     }
     assert(runtime.shown() == RuntimeDestination::Cooldown && std::strcmp(current(root), "PinCooldown") == 0);
     const int before = service.pinSnapshot().seconds;

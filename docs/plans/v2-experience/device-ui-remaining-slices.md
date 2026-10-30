@@ -1,7 +1,7 @@
 # Remaining view-controller slices
 
 Date: 2026-10-30
-Status: Planning documents for review; no implementation started by this update.
+Status: Slices 3 and 4 are implemented and host-verified. The product firmware that includes them builds. Flash and monitor for both are still open.
 Baseline: owner reports Slice 2 delivered and verified.
 
 ## Delivery sequence
@@ -16,10 +16,10 @@ Slice 3 to verify that a newly sent message is playable by its recipients.
 Shared storage and surface abstractions introduced in Slice 3 should support
 Slice 4 without reserving a record canvas before recording needs it.
 
-The current runtime has typed recording navigation with copied recipients and
-resolves it to `NoDestinationViewController`. Inbox browsing has a metadata-only
-service and three reusable card widgets. These are the starting seams; do not
-restore the legacy global feature presenter or eager attach bundle.
+The live runtime installs `SketchViewController` for recording and
+`SendFeedbackViewController` for send progress. Inbox browsing has a metadata-only
+service and three reusable card widgets. Do not restore the legacy global feature
+presenter or eager attach bundle.
 
 ## Decisions carried forward
 
@@ -63,7 +63,7 @@ contracts, freeze its brief and tests, and record any unresolved wire or format
 decision that actually blocks it. Do not silently implement a proposed wire
 field or turn every remaining engineering measurement into a product interview.
 
-Slice 3 leaves the recording stand-in in place. Slice 4 removes it when the
-real capture and delivery path is ready. Final acceptance crosses both slices:
+Slice 4 replaces the recording stand-in with capture, durable send, and feedback.
+Final acceptance still crosses both slices on a target:
 select recipients → record audio/sketch → receive truthful `sent` → recipient
 plays the matching audio and drawing inside a card.
