@@ -5,6 +5,8 @@ namespace product_buttons
 
 bool init();
 void poll();
+bool take_boot_press();
+bool take_red_press();
 /* 1 when the ESP-BOX-3 mute latch (GPIO 1, active low) is on. */
 int mute_latched();
 /* Raw GPIO level (0/1), or -1 if GPIO was not configured. */

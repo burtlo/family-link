@@ -347,7 +347,7 @@ for the message-sending sequence. Mute still signs the user out.
   where it left off. If it was deleted during the outage, apply the usual
   deletion fallback and report the new identity (`DEC-031`).
 - While signed-in connecting is showing, reuse the login connecting request
-  timeout and waits: 3-second request timeout, then waits of 1, 2, 4, and
+  timeout and waits: 6-second request timeout, then waits of 1, 2, 4, and
   30 seconds (`DEC-032`, inherited from `EXP-LOGIN`).
 
 ### Message carousel and selection
@@ -695,7 +695,7 @@ wire names. Evidence level is not yet planned against a v2 runtime/device.
   autoplay. If the identity is still present, restore it paused where it
   left off. (Owner-decided)
 - **EXP-030:** While signed-in connecting is showing, reuse the login
-  connecting schedule: 3-second request timeout, then waits of 1, 2, 4, and
+  connecting schedule: 6-second request timeout, then waits of 1, 2, 4, and
   30 seconds. (Owner-decided; inherited cadence)
 - **EXP-031:** If Play cannot start because this message's audio cannot be
   fetched or opened, and the inbox is otherwise reachable, keep the
@@ -789,7 +789,7 @@ wire names. Evidence level is not yet planned against a v2 runtime/device.
 | DEC-029 | If audio is playing when the link drops, pause immediately. Keep position and partial sketch. Do not keep playing from a buffer. Do not autoplay on recovery | Mid-play outage | SRC-OWNER-005, 2026-10-21 | OWNER-DECIDED | EXP-027 |
 | DEC-030 | While the lower slot is status, keep `From [sender name]` and show disabled Play. Do not show Pause. Play is available again only after the carousel returns | Header during signed-in status | SRC-OWNER-005, 2026-10-21 | OWNER-DECIDED | EXP-028 |
 | DEC-031 | If the selected message disappeared during the outage, apply the usual deletion fallback on recovery. Report the new identity. Do not autoplay. If it is still there, restore it paused | Outage plus deletion | SRC-OWNER-005, 2026-10-21 | OWNER-DECIDED | EXP-029 |
-| DEC-032 | While signed-in connecting is showing, reuse the login 3-second request timeout and 1/2/4/30-second waits | Inherited connecting cadence | SRC-OWNER-002 / SRC-OWNER-005 / SRC-EXP-LOGIN-001, 2026-10-21 | OWNER-DECIDED as inherited connectivity convention | EXP-030 |
+| DEC-032 | While signed-in connecting is showing, reuse the login 6-second request timeout and 1/2/4/30-second waits | Inherited connecting cadence | SRC-OWNER-002 / SRC-OWNER-005 / SRC-EXP-LOGIN-001, 2026-10-21 | OWNER-DECIDED as inherited connectivity convention | EXP-030 |
 | DEC-033 | If Play cannot start and the inbox is reachable, stay on the selected message, keep the carousel, do not start the sketch, leave Play enabled, and show `can't play` for 2 seconds | Audio start failure | SRC-OWNER-006, 2026-10-21 | OWNER-DECIDED | EXP-031 |
 | DEC-034 | If audio fails mid-play, pause at the last good position, keep the partial sketch, show `can't play` for 2 seconds, and let Play resume from that position | Mid-play audio failure | SRC-OWNER-006, 2026-10-21 | OWNER-DECIDED | EXP-032 |
 | DEC-035 | If the sketch cannot draw but audio is fine, keep playing audio and leave the sketch as far as it got. Do not show `can't play` | Sketch-only fault | SRC-OWNER-006, 2026-10-21 | OWNER-DECIDED | EXP-033 |

@@ -122,6 +122,7 @@ void bind_models(fl_product_inbox::CarouselSession *inbox, fl_product_login::Ses
 
 bool attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
+    ESP_LOGE("app_main", "vc_construct name=Volume");
     if (upper_slot == nullptr || lower_slot == nullptr || s_attached) {
         return false;
     }

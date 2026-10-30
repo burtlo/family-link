@@ -1,7 +1,7 @@
 #include "product_network.hpp"
 
 #include "product_buttons.hpp"
-#include "product_login.hpp"
+#include "product_login_service.hpp"
 #include "product_mem.hpp"
 
 #include "bsp/esp-box-3.h"
@@ -47,13 +47,13 @@ static void on_wifi_event(void *arg, esp_event_base_t base, int32_t id, void *da
         s_last_disconnect_reason = disc != NULL ? (int)disc->reason : -1;
         ESP_LOGW(kTag, "disconnect reason=%d", s_last_disconnect_reason);
         xEventGroupClearBits(s_wifi_events, WIFI_CONNECTED_BIT);
-        product_login::schedule_wifi_link(false, s_last_disconnect_reason);
+        product_ui::loginService().scheduleWifi(false, s_last_disconnect_reason);
         esp_wifi_connect();
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
         xEventGroupSetBits(s_wifi_events, WIFI_CONNECTED_BIT);
         ESP_LOGI(kTag, "station got IP");
         product_mem::probe_heap("wifi_got_ip", 0);
-        product_login::schedule_wifi_link(true, 0);
+        product_ui::loginService().scheduleWifi(true, 0);
     }
 }
 
@@ -116,19 +116,19 @@ bool join_configured_wifi()
         if (err != ESP_OK) {
             ESP_LOGE(kTag, "esp_wifi_init: %s", esp_err_to_name(err));
             s_wifi_init_ok = false;
-            product_login::schedule_wifi_driver_failed();
+            product_ui::loginService().scheduleWifiDriverFailed();
             return false;
         }
         err = esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, on_wifi_event, NULL, NULL);
         if (err != ESP_OK) {
             s_wifi_init_ok = false;
-            product_login::schedule_wifi_driver_failed();
+            product_ui::loginService().scheduleWifiDriverFailed();
             return false;
         }
         err = esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, on_wifi_event, NULL, NULL);
         if (err != ESP_OK) {
             s_wifi_init_ok = false;
-            product_login::schedule_wifi_driver_failed();
+            product_ui::loginService().scheduleWifiDriverFailed();
             return false;
         }
         s_wifi_init_ok = true;
@@ -156,7 +156,7 @@ bool join_configured_wifi()
     }
     bits = xEventGroupWaitBits(s_wifi_events, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, pdMS_TO_TICKS(45000));
     if ((bits & WIFI_CONNECTED_BIT) == 0 && s_last_disconnect_reason != 0) {
-        product_login::schedule_wifi_link(false, s_last_disconnect_reason);
+        product_ui::loginService().scheduleWifi(false, s_last_disconnect_reason);
     }
     return (bits & WIFI_CONNECTED_BIT) != 0;
 }

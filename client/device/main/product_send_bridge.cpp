@@ -929,6 +929,7 @@ void service(int64_t now_ms)
 
 bool attach(lv_obj_t *upper_slot, lv_obj_t *lower_slot)
 {
+    ESP_LOGE("app_main", "vc_construct name=Send");
     if (upper_slot == nullptr || lower_slot == nullptr) {
         return false;
     }

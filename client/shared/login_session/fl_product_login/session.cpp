@@ -149,7 +149,7 @@ void SessionWriter::reset_runtime()
     connecting_retry_armed_ = false;
     connecting_backoff_index_ = 0;
     connecting_retry_due_ms_ = 0;
-    roster_timeout_ms_ = kRequestTimeoutMs;
+    roster_timeout_ms_ = kRosterPollTimeoutMs;
     server_unavailable_ = false;
     roster_updating_ = false;
     hangout_known_ = false;
@@ -273,7 +273,7 @@ void SessionWriter::begin_roster(int64_t now_ms, bool periodic, bool hold)
     roster_attempt_ = 1;
     roster_timeout_ms_ = (stage_ == kStageConnecting || (server_unavailable_ && pin_holds_input() && wifi_up_))
                              ? kConnectingRequestTimeoutMs
-                             : kRequestTimeoutMs;
+                             : kRosterPollTimeoutMs;
     roster_deadline_ms_ = now_ms + roster_timeout_ms_;
     stage_at_roster_start_ = stage_;
     roster_touch_ = 0;
@@ -537,8 +537,8 @@ void SessionWriter::note_transport_failure()
     }
     if (roster_periodic_ && roster_attempt_ == 1 && !roster_hold_ && !pin_holds_input()) {
         roster_attempt_ = 2;
-        roster_timeout_ms_ = kRequestTimeoutMs;
-        roster_deadline_ms_ = now_ms_ + kRequestTimeoutMs;
+        roster_timeout_ms_ = kRosterPollTimeoutMs;
+        roster_deadline_ms_ = now_ms_ + kRosterPollTimeoutMs;
         return;
     }
     operation_id = roster_operation_id_;
@@ -730,8 +730,8 @@ void SessionWriter::apply_roster_body(RosterResult &result)
         bool transportish = result.http_status != 200 || result.parse_ok == 0;
         if (roster_periodic_ && roster_attempt_ == 1 && !hold && transportish) {
             roster_attempt_ = 2;
-            roster_timeout_ms_ = kRequestTimeoutMs;
-            roster_deadline_ms_ = now_ms_ + kRequestTimeoutMs;
+            roster_timeout_ms_ = kRosterPollTimeoutMs;
+            roster_deadline_ms_ = now_ms_ + kRosterPollTimeoutMs;
             return;
         }
         clear_roster_inflight();
@@ -845,8 +845,8 @@ void SessionWriter::on_roster_timeout()
     }
     if (roster_periodic_ && roster_attempt_ == 1 && !roster_hold_ && !pin_holds_input()) {
         roster_attempt_ = 2;
-        roster_timeout_ms_ = kRequestTimeoutMs;
-        roster_deadline_ms_ = now_ms_ + kRequestTimeoutMs;
+        roster_timeout_ms_ = kRosterPollTimeoutMs;
+        roster_deadline_ms_ = now_ms_ + kRosterPollTimeoutMs;
         return;
     }
     operation_id = roster_operation_id_;
@@ -1089,7 +1089,7 @@ const char *SessionWriter::boot_id() const
 }
 int SessionWriter::roster_request_timeout_ms() const
 {
-    return roster_timeout_ms_ > 0 ? roster_timeout_ms_ : kRequestTimeoutMs;
+    return roster_timeout_ms_ > 0 ? roster_timeout_ms_ : kRosterPollTimeoutMs;
 }
 int SessionWriter::roster_updating() const
 {
@@ -1434,7 +1434,7 @@ void run_scripted_catalog(SessionWriter *session)
     session->begin_hold_probe(100);
     session->note_touch_during_wait();
     session->arm_scenario("R-timeout-ui");
-    session->advance_to(100 + kRequestTimeoutMs);
+    session->advance_to(100 + kRosterPollTimeoutMs);
 
     session->publish("R-wire", "success");
     session->annotate_last("run_id|fixture_version|fixture_sha256|server_version", 0, 0);
@@ -1582,7 +1582,7 @@ int64_t begin_manual_hold(SessionWriter *session)
     if (!session->roster_inflight()) {
         return -1;
     }
-    return now + kRequestTimeoutMs;
+    return now + kRosterPollTimeoutMs;
 }
 
 } /* namespace */

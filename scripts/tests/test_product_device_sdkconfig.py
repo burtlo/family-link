@@ -30,6 +30,14 @@ class ProductDeviceSdkconfigTests(unittest.TestCase):
             "http://192.168.8.236:8777",
             _normalize_p1_base_url("http://192.168.8.236"),
         )
+        self.assertEqual(
+            "https://desk.example.ts.net",
+            _normalize_p1_base_url("https://desk.example.ts.net"),
+        )
+        self.assertEqual(
+            "https://desk.example.ts.net:8443",
+            _normalize_p1_base_url("https://desk.example.ts.net:8443"),
+        )
 
     @patch("product_device_sdkconfig.p1_base_url_for_host", return_value="http://192.0.2.1:8777")
     @patch("product_device_sdkconfig.load_p1_desk_token", return_value="desk-bearer")

@@ -96,10 +96,10 @@ int test_timeout()
     session.begin_hold_probe(100);
     operation_id = session.roster_operation_id();
     session.note_touch_during_wait();
-    session.advance_to(100 + fl_product_login::kRequestTimeoutMs - 1);
+    session.advance_to(100 + fl_product_login::kRosterPollTimeoutMs - 1);
     CHECK(session.roster_inflight());
     CHECK(session.terminal_count_for(operation_id) == 0);
-    session.advance_to(100 + fl_product_login::kRequestTimeoutMs);
+    session.advance_to(100 + fl_product_login::kRosterPollTimeoutMs);
     CHECK(session.terminal_for(operation_id) != 0);
     CHECK(strcmp(session.terminal_for(operation_id), "timed_out") == 0);
     CHECK(session.terminal_count_for(operation_id) == 1);
@@ -445,7 +445,7 @@ int test_manual_traces()
     fl_product_login::apply_manual_control(&session, fl_product_login::kManualFailTwice);
     fl_product_login::apply_manual_control(&session, fl_product_login::kManualInvalid);
     deadline = fl_product_login::apply_manual_control(&session, fl_product_login::kManualHold);
-    CHECK(deadline == session.now_ms() + fl_product_login::kRequestTimeoutMs);
+    CHECK(deadline == session.now_ms() + fl_product_login::kRosterPollTimeoutMs);
     session.note_touch_during_wait();
     fl_product_login::complete_manual_hold(&session, deadline);
     fl_product_login::apply_manual_control(&session, fl_product_login::kManualMute);
@@ -702,7 +702,7 @@ int test_request_identity()
     timed.begin_hold_probe(100);
     hold_id = timed.roster_operation_id();
     timed.note_touch_during_wait();
-    timed.advance_to(100 + fl_product_login::kRequestTimeoutMs);
+    timed.advance_to(100 + fl_product_login::kRosterPollTimeoutMs);
     CHECK(strcmp(timed.terminal_for(hold_id), "timed_out") == 0);
     CHECK(timed.terminal_count_for(hold_id) == 1);
 
@@ -1413,7 +1413,18 @@ int test_cooldown_exit_roster()
         submit_wrong_pin(&session);
     }
     CHECK(session.pin_phase() == fl_product_login::kPinPhaseCooldown);
-    session.advance_to(session.now_ms() + session.cooldown_remaining_ms());
+    {
+        // A healthy server answers every roster sent during the cooldown.
+        const int64_t end = session.now_ms() + session.cooldown_remaining_ms();
+        for (int64_t t = session.now_ms(); t < end; t += 500) {
+            session.advance_to(t);
+            if (session.roster_inflight()) {
+                session.ack_health();
+                complete_current(&session, roster(kEight, 8, 1, 200, 1), t);
+            }
+        }
+        session.advance_to(end);
+    }
     CHECK(session.cooldown_remaining_ms() == 0);
     CHECK(session.pin_phase() == fl_product_login::kPinPhaseIdle);
     CHECK(session.stage() == fl_product_login::kStageRoster);

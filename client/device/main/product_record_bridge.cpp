@@ -398,6 +398,7 @@ bool mount_storage(void)
 
 bool attach(lv_obj_t *panel_root)
 {
+    ESP_LOGE("app_main", "vc_construct name=Record");
     unsigned index;
     if (panel_root == nullptr || s_attached) {
         return false;

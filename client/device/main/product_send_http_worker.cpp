@@ -2,6 +2,7 @@
 
 #include "product_mem.hpp"
 
+#include "esp_crt_bundle.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_log.h"
@@ -124,6 +125,9 @@ void perform_exchange(const HttpJob &job, HttpExchange *out)
     config.method = method_of(job.method);
     config.event_handler = product_send_http_event;
     config.user_data = out;
+    if (strncmp(url, "https://", 8) == 0) {
+        config.crt_bundle_attach = esp_crt_bundle_attach;
+    }
     client = esp_http_client_init(&config);
     if (client == nullptr) {
         return;

@@ -6,7 +6,6 @@
 #include "product_record.hpp"
 #include "product_send.hpp"
 #include "product_split_pane.hpp"
-#include "product_ui_window.hpp"
 #include "product_volume.hpp"
 
 #include "esp_log.h"
@@ -29,9 +28,6 @@ int apply_send_stage(const product_send::StageResult *result)
     }
     if (result->opened_volume) {
         return 0;
-    }
-    if (result->show_record_canvas) {
-        (void)product_ui::uiWindow().mountRecord();
     }
     stage_shell::splitPane().setStage((fl_shell_stage_t)result->shell_stage);
     ESP_LOGI(kTag, "place=%d shell=%d", result->place, result->shell_stage);
@@ -69,11 +65,6 @@ void present()
     if (active != s_shown) {
         ESP_LOGI(kTag, "screen=%d from=%d", static_cast<int>(active), static_cast<int>(s_shown));
         s_shown = active;
-    }
-    if (active == Screen::Record) {
-        (void)product_ui::uiWindow().mountRecord();
-    } else {
-        (void)product_ui::uiWindow().mountDesk();
     }
     product_login::present(active == Screen::Login);
     product_inbox::set_ui_visible(active == Screen::Inbox);

@@ -1,6 +1,6 @@
 # LAB-16 VARIANT `live-stream-failover-during-record` — memory results
 
-Generated: 2026-10-28 02:42 UTC by `render_memory_results.py`. Do not edit by hand; run `make lab.lab16.results`.
+Generated: 2026-10-30 09:36 UTC by `render_memory_results.py`. Do not edit by hand; run `make lab.lab16.results`.
 
 **Accepted repeatability pair:** [20261025-livestream-memory-03](../runs/20261025-livestream-memory-03/run-manifest.json) and [20261025-livestream-memory-04](../runs/20261025-livestream-memory-04/run-manifest.json).
 

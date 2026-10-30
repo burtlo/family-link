@@ -139,7 +139,7 @@ def scan_timer_path(source_root: Path | None = None) -> list[str]:
     """Violations reachable from on_login_timer under client/device/main."""
     root = source_root or DEVICE_MAIN
     index = _index_sources(_source_files(root))
-    return _scan_index(index, ("on_login_timer",))
+    return _scan_index(index, ("on_product_timer",))
 
 
 def scan_text_for_timer_violation(

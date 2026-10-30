@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEVICE_MAIN = ROOT / "client/device/main"
 
 LOGIN = "product_login_bridge.cpp"
+RUNTIME = "product_runtime.cpp"
 ROUTER = "product_stage_router.cpp"
 APP_MAIN = "app_main.cpp"
 
@@ -24,14 +25,7 @@ VISIBILITY_SETTERS = (
 )
 
 TICK_PHASES = (
-    "product_buttons::poll",
-    "flush_wifi_schedule",
-    "product_login_http::service",
-    "note_sign_in_edge",
-    "product_inbox::service",
-    "product_send::service",
-    "product_record::service",
-    "product_stage::present",
+    "pollInput", "service_.flushConnectivity", "service_.advance", "serviceFeatures", "present",
 )
 
 Z_ORDER_CALLS = ("lv_obj_move_foreground", "lv_obj_move_background", "lv_obj_swap")
@@ -122,19 +116,19 @@ def scan_single_timer(sources: dict[str, str]) -> list[str]:
         where = ", ".join(sorted({name for name, _ in sites})) or "none"
         return [f"PRES-TICK: expected exactly one lv_timer_create, found {len(sites)} ({where})"]
     name, callback = sites[0]
-    if name != LOGIN or callback != "on_login_timer":
-        return [f"PRES-TICK: the only lv_timer must be on_login_timer in {LOGIN} (found {callback} in {name})"]
+    if name != RUNTIME or callback != "on_product_timer":
+        return [f"PRES-TICK: the only lv_timer belongs to {RUNTIME} (found {callback} in {name})"]
     return []
 
 
 def scan_tick_phase_order(login: str) -> list[str]:
     """PRES-ORDER and PRES-NORETURN."""
-    body = function_body(login, "on_login_timer")
+    body = function_body(login, "tick")
     if not body:
-        return ["PRES-ORDER: on_login_timer missing"]
+        return ["PRES-ORDER: runtime tick missing"]
     errors: list[str] = []
     if re.search(r"\breturn\b", body):
-        errors.append("PRES-NORETURN: on_login_timer must not return early")
+        errors.append("PRES-NORETURN: the runtime tick must not return early")
     last_name, last_at = "", -1
     for phase in TICK_PHASES:
         calls = _calls(body, phase)
@@ -144,18 +138,9 @@ def scan_tick_phase_order(login: str) -> list[str]:
         if calls[0] < last_at:
             errors.append(f"PRES-ORDER: {phase} must run after {last_name}")
         last_name, last_at = phase, calls[0]
-    present = _calls(body, "product_stage::present")
-    if present and any(m.start() > present[-1] for m in re.finditer(r"\b(render_\w+|product_\w+_service)\s*\(", body)):
-        errors.append("PRES-ORDER: nothing may render or service after product_stage::present")
-    signed = body.find("if (s_session.signed_in() != 0)")
-    other = body.find("} else {", signed)
-    if signed < 0 or other < 0:
-        errors.append("PRES-ORDER: inbox service must be gated on signed_in with a signed-out branch")
-    else:
-        if "product_inbox::service" not in body[signed:other]:
-            errors.append("PRES-ORDER: product_inbox::service runs only while signed in")
-        if "product_inbox::discard_results" not in body[other:]:
-            errors.append("PRES-ORDER: signed-out ticks must call product_inbox::discard_results")
+    present = _calls(body, "present")
+    if present and body[present[-1]:].count(";") > 1:
+        errors.append("PRES-ORDER: nothing may run after present")
     return errors
 
 
@@ -189,7 +174,7 @@ def scan_no_z_order(sources: dict[str, str]) -> list[str]:
 def scan_single_pointer_reset(sources: dict[str, str]) -> list[str]:
     """PRES-POINTER: one lv_indev_reset, inside wake_login_display."""
     total = sum(len(_calls(text, "lv_indev_reset")) for text in sources.values())
-    wake = function_body(sources.get(LOGIN, ""), "wake_login_display")
+    wake = function_body(sources.get(RUNTIME, ""), "wake_login_display")
     if total != 1 or len(_calls(wake, "lv_indev_reset")) != 1:
         return [f"PRES-POINTER: expected one lv_indev_reset inside wake_login_display, found {total} in total"]
     return []
@@ -199,7 +184,7 @@ def scan_display_power(sources: dict[str, str]) -> list[str]:
     """PRES-POWER: brightness/backlight only at boot and blank/wake; never BSP sleep."""
     errors: list[str] = []
     allowed = {
-        LOGIN: ("wake_login_display", "blank_login_display"),
+        RUNTIME: ("wake_login_display", "blank_login_display"),
         APP_MAIN: ("app_main", "boot_backlight_after_display"),
         "product_app_run.cpp": ("run",),
         "product_display.cpp": ("backlight_on",),
@@ -222,30 +207,22 @@ def scan_display_power(sources: dict[str, str]) -> list[str]:
 def scan_mute_reconcile(login: str, hw: str) -> list[str]:
     """PRES-MUTE: level sampled every poll; reconcile never renders."""
     errors: list[str] = []
-    poll = function_body(hw, "poll")
-    if "product_login::on_mute_level(" not in poll or "mute_latched()" not in poll:
-        errors.append("PRES-MUTE: the button poll must pass the latch level every tick")
-    for fn in MUTE_FUNCTIONS:
-        body = function_body(login, fn)
-        if not body:
-            errors.append(f"PRES-MUTE: {fn} missing")
-            continue
-        for forbidden in MUTE_FORBIDDEN:
-            if re.search(rf"\b{re.escape(forbidden)}\w*\s*\(", body):
-                errors.append(f"PRES-MUTE: {fn} must not call {forbidden}")
-    level = function_body(login, "on_mute_level")
-    if "enter_muted(" not in level or "leave_muted(" not in level:
-        errors.append("PRES-MUTE: on_mute_level dispatches to enter_muted / leave_muted")
-    for fn in ("enter_muted", "leave_muted"):
-        if "product_login_http::on_mute()" not in function_body(login, fn):
-            errors.append(f"PRES-MUTE: {fn} must reset the login HTTP roster fence")
+    poll = function_body(login, "pollInput")
+    for token in ("platform_.muteLatched()", "root_.finishTransition()", "platform_.blankDisplay()",
+                  "service_.signOut(now)", "service_.refreshHangout(now)", "platform_.wakeDisplay()"):
+        if token not in poll:
+            errors.append(f"PRES-MUTE: runtime input missing {token}")
+    if "lv_indev_reset" in poll:
+        errors.append("PRES-MUTE: input reconcile must not reset pointer every tick")
+    if poll.find("service_.refreshHangout") > poll.find("platform_.wakeDisplay"):
+        errors.append("PRES-MUTE: refresh Login before wake")
     return errors
 
 
 def scan_render_is_pure(login: str) -> list[str]:
     """PRES-RENDER and PRES-EDGE."""
     errors: list[str] = []
-    for fn in RENDER_FUNCTIONS:
+    for fn in ("render",):
         body = function_body(login, fn)
         if not body:
             errors.append(f"PRES-RENDER: {fn} missing")
@@ -253,23 +230,31 @@ def scan_render_is_pure(login: str) -> list[str]:
         for forbidden in RENDER_FORBIDDEN:
             if re.search(rf"\b{re.escape(forbidden)}\w*\s*\(", body):
                 errors.append(f"PRES-RENDER: {fn} must not call {forbidden}")
-    tick = function_body(login, "on_login_timer")
-    if not _calls(tick, "note_sign_in_edge"):
-        errors.append("PRES-EDGE: sign-in side effects run from note_sign_in_edge in the tick")
+        for forbidden in ("replace", "focusUser", "noteActivity", "select_pin_user", "requestNavigation"):
+            if _calls(body, forbidden):
+                errors.append(f"PRES-RENDER: render must not call {forbidden}")
     return errors
 
 
 def scan_presentation_invariants(base: Path | None = None) -> list[str]:
     sources = load_sources(base)
-    login = sources.get(LOGIN, "")
+    login = sources.get("product_login_view_controller.cpp", "")
+    runtime = sources.get(RUNTIME, "")
     hw = sources.get("product_hardware_buttons.cpp", "")
     errors: list[str] = []
     errors.extend(scan_single_timer(sources))
-    errors.extend(scan_tick_phase_order(login))
+    errors.extend(scan_tick_phase_order(runtime))
     errors.extend(scan_single_visibility_owner(sources))
     errors.extend(scan_no_z_order(sources))
     errors.extend(scan_single_pointer_reset(sources))
     errors.extend(scan_display_power(sources))
-    errors.extend(scan_mute_reconcile(login, hw))
+    errors.extend(scan_mute_reconcile(runtime, hw))
     errors.extend(scan_render_is_pure(login))
+    active_files = ("product_app_run.cpp", RUNTIME, "product_login_service.cpp", "product_login_view_controller.cpp",
+                    "product_ui_window.cpp", "product_view_controller.cpp", "product_transition_coordinator.cpp")
+    for name in active_files:
+        text = sources.get(name, "")
+        for forbidden in ("product_stage::", "product_login::attach", "product_inbox::", "product_send::", "product_volume::", "product_record::"):
+            if forbidden in text:
+                errors.append(f"PRES-OWNER: active {name} reaches legacy {forbidden}")
     return errors

@@ -38,10 +38,12 @@ def _normalize_p1_base_url(raw: str) -> str:
     if not text.startswith("http://") and not text.startswith("https://"):
         text = f"http://{text}"
     parts = urlsplit(text)
-    if parts.port is None:
-        host = parts.hostname or ""
-        return f"{parts.scheme}://{host}:{P1_DEFAULT_PORT}"
-    return text
+    if parts.port is not None:
+        return text
+    host = parts.hostname or ""
+    if parts.scheme == "https":
+        return f"https://{host}"
+    return f"http://{host}:{P1_DEFAULT_PORT}"
 
 
 def p1_base_url_for_host() -> str:
@@ -114,7 +116,7 @@ def write_product_kit_sdkconfig(build_dir: Path, kit: Kit, deployment: Deploymen
     path.write_text(content, encoding="utf-8")
     meta.write_text(digest + "\n", encoding="utf-8")
     print(f"Product desk sdkconfig for kit {kit.id} -> {path}")
-    print(f"  P1 URL {p1_base_url_for_host()} (server on port {P1_DEFAULT_PORT})")
+    print(f"  P1 URL {p1_base_url_for_host()}")
     return path
 
 

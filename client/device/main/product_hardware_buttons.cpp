@@ -1,9 +1,5 @@
 #include "product_buttons.hpp"
 
-#include "product_inbox.hpp"
-#include "product_login.hpp"
-#include "product_stage_router.hpp"
-#include "product_volume.hpp"
 
 #include "bsp/esp-box-3.h"
 #include "driver/gpio.h"
@@ -23,7 +19,7 @@ button_handle_t s_buttons[BSP_BUTTON_NUM];
 std::atomic<bool> s_boot_pressed;
 std::atomic<bool> s_mute_pressed;
 std::atomic<bool> s_red_pressed;
-bool s_mute_gpio_ready;
+std::atomic<bool> s_mute_gpio_ready{false};
 
 } /* namespace */
 
@@ -124,6 +120,17 @@ int mute_button_level()
 
 int mute_latched()
 {
+    // The initial boot backlight decision occurs before iot_button creation.
+    // Read the physical latch then as well, so a muted boot never lights up.
+    if (!s_mute_gpio_ready) {
+        gpio_config_t config = {};
+        config.pin_bit_mask = 1ULL << BSP_BUTTON_MUTE_IO;
+        config.mode = GPIO_MODE_INPUT;
+        config.pull_up_en = GPIO_PULLUP_ENABLE;
+        config.pull_down_en = GPIO_PULLDOWN_DISABLE;
+        config.intr_type = GPIO_INTR_DISABLE;
+        s_mute_gpio_ready = gpio_config(&config) == ESP_OK;
+    }
     /* GPIO tracks the physical latch on BOX-3; iot_button is momentary-press oriented. */
     if (s_mute_gpio_ready) {
         return gpio_get_level(BSP_BUTTON_MUTE_IO) == 0 ? 1 : 0;
@@ -136,24 +143,10 @@ int mute_latched()
 
 void poll()
 {
-    if (s_boot_pressed.exchange(false, std::memory_order_acq_rel)) {
-        if (!product_login::is_signed_in()) {
-            product_login::on_boot_pressed();
-        } else if (product_volume::active()) {
-            (void)product_inbox::on_boot_pressed();
-        } else {
-            (void)product_stage::on_boot();
-        }
-    }
-    /* Mute is a latch. The press edge is not the level. */
-    (void)s_mute_pressed.exchange(false, std::memory_order_acq_rel);
-    product_login::on_mute_level(mute_latched());
-    if (s_red_pressed.exchange(false, std::memory_order_acq_rel)) {
-        /* Volume owns red while its screen is up. Signed-out red stays on login. */
-        if (product_login::is_signed_in() && product_volume::on_red_record() != 0) {
-            (void)product_stage::on_red_record();
-        }
-    }
+    // Legacy compatibility only. ProductRuntime owns polling and dispatch.
 }
+
+bool take_boot_press() { return s_boot_pressed.exchange(false, std::memory_order_acq_rel); }
+bool take_red_press() { return s_red_pressed.exchange(false, std::memory_order_acq_rel); }
 
 } /* namespace product_buttons */
