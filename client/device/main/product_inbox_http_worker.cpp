@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <algorithm>
 
 namespace
@@ -34,6 +35,14 @@ constexpr int kMediaSlice = 16384;
 constexpr int kLastViewedCap = 1024;
 constexpr const char *kTag = "product_inbox_http";
 
+struct HashRun {
+    int active;
+    uint32_t operation_id;
+    char message_id[48];
+    uint32_t filled;
+    mbedtls_sha256_context ctx;
+};
+
 struct HttpExchange {
     int perform_ok;
     int http_status;
@@ -42,15 +51,10 @@ struct HttpExchange {
     int slice_capped;
     int oversize;
     int discard_body;
+    int write_error;
     uint8_t *data;
-};
-
-struct HashRun {
-    int active;
-    uint32_t operation_id;
-    char message_id[48];
-    uint32_t filled;
-    mbedtls_sha256_context ctx;
+    FILE *file;
+    HashRun *hash;
 };
 
 QueueHandle_t s_jobs = nullptr;
@@ -138,6 +142,33 @@ extern "C" esp_err_t product_inbox_http_event(esp_http_client_event_t *event)
         out->discard_body = 1;
         return ESP_OK;
     }
+    if (out->file != nullptr) {
+        int room;
+        int count;
+        if (out->cap > 0 && out->body_len >= out->cap) {
+            out->slice_capped = 1;
+            return ESP_FAIL;
+        }
+        room = out->cap > 0 ? out->cap - out->body_len : event->data_len;
+        count = event->data_len < room ? event->data_len : room;
+        if (count > 0) {
+            if (fwrite(event->data, 1, (size_t)count, out->file) != (size_t)count) {
+                out->write_error = 1;
+                return ESP_FAIL;
+            }
+            if (out->hash != nullptr && out->hash->active &&
+                mbedtls_sha256_update(&out->hash->ctx, static_cast<const uint8_t *>(event->data), (size_t)count) != 0) {
+                out->write_error = 1;
+                return ESP_FAIL;
+            }
+            out->body_len += count;
+        }
+        if (event->data_len > count) {
+            out->slice_capped = 1;
+            return ESP_FAIL;
+        }
+        return ESP_OK;
+    }
     if (out->cap <= 0) {
         return ESP_OK;
     }
@@ -191,11 +222,23 @@ void perform_exchange(const product_inbox_http::Job &job, HttpExchange *out)
     esp_http_client_handle_t client;
     char url[kUrlCap];
     char auth[kAuthCap];
+    const int stream_file = out->file != nullptr;
+    FILE *saved_file = out->file;
+    HashRun *saved_hash = out->hash;
+    const int saved_cap = out->cap;
     memset(out, 0, sizeof(*out));
     if (!join_url(job.path, url, (int)sizeof(url))) {
+        if (stream_file) {
+            out->file = saved_file;
+            out->hash = saved_hash;
+        }
         return;
     }
-    if (job.kind == product_inbox_http::kMetadataJob) {
+    if (stream_file) {
+        out->file = saved_file;
+        out->hash = saved_hash;
+        out->cap = saved_cap;
+    } else if (job.kind == product_inbox_http::kMetadataJob) {
         out->cap = kMetadataCap;
     } else if (job.kind == fl_product_inbox::kInboxWireInbox) {
         out->cap = kInboxCap;
@@ -392,6 +435,122 @@ void finish_media(const product_inbox_http::Job &job, HttpExchange *exchange, pr
     exchange->data = nullptr;
 }
 
+void ensure_parent_dirs(const char *file_path)
+{
+    char copy[96];
+    char *slash;
+    if (file_path == nullptr || file_path[0] == '\0') {
+        return;
+    }
+    strncpy(copy, file_path, sizeof(copy) - 1);
+    copy[sizeof(copy) - 1] = '\0';
+    for (slash = copy + 1; *slash != '\0'; ++slash) {
+        if (*slash == '/') {
+            *slash = '\0';
+            mkdir(copy, 0755);
+            *slash = '/';
+        }
+    }
+}
+
+bool begin_playback_hash(const product_inbox_http::Job &job, HashRun **out)
+{
+    HashRun *run = job.asset == 1 ? &s_sketch_hash : &s_audio_hash;
+    *out = run;
+    if (!run->active || run->operation_id != job.operation_id || run->filled != job.range_start ||
+        strcmp(run->message_id, job.message_id) != 0) {
+        hash_clear(run);
+        if (job.range_start != 0) {
+            return false;
+        }
+        mbedtls_sha256_init(&run->ctx);
+        if (mbedtls_sha256_starts(&run->ctx, 0) != 0) {
+            mbedtls_sha256_free(&run->ctx);
+            return false;
+        }
+        run->active = 1;
+        run->operation_id = job.operation_id;
+        strncpy(run->message_id, job.message_id, sizeof(run->message_id) - 1);
+        run->filled = 0;
+    }
+    return true;
+}
+
+void perform_playback(product_inbox_http::Job &job, product_inbox_http::Result *result)
+{
+    HashRun *run = nullptr;
+    FILE *file;
+    HttpExchange exchange;
+    uint32_t remain;
+    int expected;
+    uint8_t digest[32];
+    char encoded[65];
+    result->hash_matches = 1;
+    if (job.file_path[0] == '\0' || job.asset_bytes == 0 || job.range_start >= job.asset_bytes) {
+        return;
+    }
+    if (!begin_playback_hash(job, &run)) {
+        return;
+    }
+    ensure_parent_dirs(job.file_path);
+    remain = job.asset_bytes - job.range_start;
+    expected = remain > (uint32_t)kMediaSlice ? kMediaSlice : (int)remain;
+    file = fopen(job.file_path, job.range_start == 0 ? "wb" : "r+b");
+    if (file == nullptr) {
+        hash_clear(run);
+        return;
+    }
+    if (job.range_start != 0 && fseek(file, (long)job.range_start, SEEK_SET) != 0) {
+        fclose(file);
+        hash_clear(run);
+        return;
+    }
+    memset(&exchange, 0, sizeof(exchange));
+    exchange.file = file;
+    exchange.hash = run;
+    exchange.cap = expected;
+    perform_exchange(job, &exchange);
+    fflush(file);
+    fclose(file);
+    result->perform_ok = exchange.perform_ok;
+    result->http_status = exchange.http_status;
+    result->bytes_written = exchange.body_len > 0 ? (uint32_t)exchange.body_len : 0;
+    if (exchange.write_error || !exchange.perform_ok || exchange.discard_body || exchange.http_status == 401 ||
+        exchange.http_status == 403 || exchange.body_len <= 0 ||
+        (exchange.http_status != 200 && exchange.http_status != 206)) {
+        hash_clear(run);
+        result->bytes_written = 0;
+        return;
+    }
+    run->filled += (uint32_t)exchange.body_len;
+    if (run->filled < job.asset_bytes) {
+        return;
+    }
+    result->full_asset = 1;
+    if (mbedtls_sha256_finish(&run->ctx, digest) != 0) {
+        hash_clear(run);
+        result->hash_matches = 0;
+        remove(job.file_path);
+        return;
+    }
+    hex_encode(digest, encoded);
+    hash_clear(run);
+    if (job.sha256[0] != '\0' && strcmp(encoded, job.sha256) != 0) {
+        result->hash_matches = 0;
+        remove(job.file_path);
+    }
+}
+
+void perform_maintenance(const product_inbox_http::Job &job, product_inbox_http::Result *result)
+{
+    if (job.file_path[0] != '\0') {
+        remove(job.file_path);
+    }
+    result->perform_ok = 1;
+    result->http_status = 200;
+    result->terminal = 1;
+}
+
 void perform_job(product_inbox_http::Job &job, product_inbox_http::Result *result)
 {
     memset(result, 0, sizeof(*result));
@@ -401,6 +560,19 @@ void perform_job(product_inbox_http::Job &job, product_inbox_http::Result *resul
     result->hash_matches = 1;
     result->terminal = 1;
     strncpy(result->message_id, job.message_id, sizeof(result->message_id) - 1);
+    if (job.kind == product_inbox_http::kPlaybackMediaMaintenanceJob) {
+        perform_maintenance(job, result);
+        wipe(job.bearer, sizeof(job.bearer));
+        ESP_LOGI(kTag, "kind=%d maintenance", result->kind);
+        return;
+    }
+    if (job.kind == product_inbox_http::kPlaybackMediaJob) {
+        perform_playback(job, result);
+        wipe(job.bearer, sizeof(job.bearer));
+        ESP_LOGI(kTag, "kind=%d http=%d perform=%d bytes=%u hash=%d full=%d", result->kind, result->http_status,
+                 result->perform_ok, (unsigned)result->bytes_written, result->hash_matches, result->full_asset);
+        return;
+    }
     if (job.kind == fl_product_inbox::kInboxWireAudio || job.kind == fl_product_inbox::kInboxWireSketch) {
         fl_product_inbox::CarouselSession *session = product_inbox::session();
         int cancel = session == nullptr ||

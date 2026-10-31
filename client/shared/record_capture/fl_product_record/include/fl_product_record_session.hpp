@@ -24,6 +24,9 @@ class RecordSession
     ~RecordSession();
 
     void boot(int64_t now_ms);
+    void set_allocator(void *(*alloc)(size_t, void *), void (*free_fn)(void *, void *), void *context);
+    bool ensure_capture();
+    void release_capture();
     void advance_to(int64_t now_ms);
     int consume_notice();
 
@@ -69,6 +72,9 @@ class RecordSession
     AttachedStorage storage_;
     void *capture_;
     void *renderer_;
+    void *(*alloc_)(size_t, void *);
+    void (*free_)(void *, void *);
+    void *alloc_context_;
     uint64_t session_id_;
     int64_t start_ms_;
     int64_t now_ms_;

@@ -45,29 +45,95 @@ void onInvalidation(const lab10_render_invalidation_t *invalidation, void *)
 }
 } // namespace
 
-CaptureService::Lock::Lock(CaptureService *owner) : owner_(owner)
+CaptureService::Lock::Lock(const CaptureService *owner, bool wait) : owner_(owner), held_(owner->lockEnter(wait))
 {
-    owner_->ensureLock();
-#ifdef ESP_PLATFORM
-    if (owner_->lock_)
-        (void)xSemaphoreTakeRecursive(static_cast<SemaphoreHandle_t>(owner_->lock_), portMAX_DELAY);
-#endif
 }
 
 CaptureService::Lock::~Lock()
 {
+    if (held_)
+        owner_->lockLeave();
+}
+
+bool CaptureService::lockEnter(bool wait) const
+{
 #ifdef ESP_PLATFORM
-    if (owner_->lock_)
-        (void)xSemaphoreGiveRecursive(static_cast<SemaphoreHandle_t>(owner_->lock_));
+    ensureLock();
+    if (!lock_)
+        return false;
+    const TickType_t ticks = wait ? portMAX_DELAY : 0;
+    return xSemaphoreTakeRecursive(static_cast<SemaphoreHandle_t>(lock_), ticks) == pdTRUE;
+#else
+    if (external_hold_) {
+        if (wait)
+            ++blocking_lock_attempts_;
+        return false;
+    }
+    ++lock_depth_;
+    return true;
 #endif
 }
 
-void CaptureService::ensureLock()
+void CaptureService::lockLeave() const
+{
+#ifdef ESP_PLATFORM
+    if (lock_)
+        (void)xSemaphoreGiveRecursive(static_cast<SemaphoreHandle_t>(lock_));
+#else
+    if (lock_depth_ > 0)
+        --lock_depth_;
+#endif
+}
+
+void CaptureService::ensureLock() const
 {
 #ifdef ESP_PLATFORM
     if (!lock_)
         lock_ = xSemaphoreCreateRecursiveMutex();
 #endif
+}
+
+void CaptureService::drainTouches()
+{
+    while (touch_count_ > 0) {
+        const QueuedTouch point = touch_queue_[touch_head_];
+        touch_head_ = (touch_head_ + 1) % 32;
+        --touch_count_;
+        (void)session_.route_touch(point.x, point.y, point.phase, 0);
+    }
+}
+
+void CaptureService::rememberFlags()
+{
+    cached_input_open_ = session_.capture_active() && !session_.wiping() && !session_.reversing();
+    cached_wiping_ = session_.wiping();
+    cached_recording_ = session_.capture_active();
+    cached_reversing_ = session_.reversing();
+    cached_blocks_ = cached_wiping_ || cached_recording_ || session_.storage().has_in_progress();
+}
+
+bool CaptureService::holdLockForTest()
+{
+#ifdef ESP_PLATFORM
+    return false;
+#else
+    if (lock_depth_ != 0)
+        return false;
+    external_hold_ = true;
+    return true;
+#endif
+}
+
+void CaptureService::releaseLockForTest()
+{
+#ifndef ESP_PLATFORM
+    external_hold_ = false;
+#endif
+}
+
+int CaptureService::blockingLockAttempts() const
+{
+    return blocking_lock_attempts_;
 }
 
 CaptureService::~CaptureService()
@@ -81,14 +147,19 @@ CaptureService::~CaptureService()
 bool CaptureService::open(const char *path)
 {
     Lock lock(this);
-    if (!path || !path[0])
+    if (!lock.held() || !path || !path[0])
         return false;
     if (!media_.open_path(path, false) && !media_.open_path(path, true))
         return false;
     session_.attach_media(&media_);
-    session_.boot(0);
+    // Directory (320 B) and identity block sit below the 4096-byte media origin.
     open_ = true;
     return true;
+}
+
+void CaptureService::setAllocator(void *(*alloc)(size_t, void *), void (*free_fn)(void *, void *), void *context)
+{
+    session_.set_allocator(alloc, free_fn, context);
 }
 
 void CaptureService::setHardware(Arm arm, Failed failed)
@@ -115,18 +186,27 @@ void CaptureService::stageIdentity(const fl_product_record::SendIdentity &identi
 bool CaptureService::begin(const char *clientMessageId, int64_t now)
 {
     Lock lock(this);
-    if (!canStart())
+    if (!lock.held() || !canStart())
+        return false;
+    if (!session_.ensure_capture())
         return false;
     session_.advance_to(now);
-    if (!session_.try_start(clientMessageId, fl_product_record::kMicReady))
+    if (!session_.try_start(clientMessageId, fl_product_record::kMicReady)) {
+        session_.release_capture();
         return false;
+    }
     session_.storage().set_in_progress_identity(staged_);
     return true;
 }
 
 void CaptureService::advance(int64_t now)
 {
-    Lock lock(this);
+    if (!open_)
+        return;
+    Lock lock(this, false);
+    if (!lock.held())
+        return;
+    drainTouches();
     session_.advance_to(now);
     if (failed_ && failed_())
         session_.notify_mic_failed();
@@ -135,84 +215,144 @@ void CaptureService::advance(int64_t now)
         arm_(live);
         armed_ = live;
     }
+    rememberFlags();
 }
 
 int CaptureService::consumeNotice()
 {
-    Lock lock(this);
-    return session_.consume_notice();
+    Lock lock(this, false);
+    if (!lock.held())
+        return 0;
+    const int notice = session_.consume_notice();
+    rememberFlags();
+    return notice;
 }
 
 bool CaptureService::pushPcm(const uint8_t *pcm, size_t length)
 {
+    // The microphone task still appends to SD while holding this lock. R8 moves that write off the lock.
     Lock lock(this);
+    if (!lock.held())
+        return false;
     return session_.push_pcm(pcm, length);
 }
 
 void CaptureService::notifyMicFailed()
 {
     Lock lock(this);
+    if (!lock.held())
+        return;
     session_.notify_mic_failed();
 }
 
 bool CaptureService::routeTouch(int16_t x, int16_t y, uint8_t phase)
 {
-    Lock lock(this);
-    return session_.route_touch(x, y, phase, 0);
+    Lock lock(this, false);
+    if (!lock.held()) {
+        if (touch_count_ >= 32)
+            return false;
+        const int tail = (touch_head_ + touch_count_) % 32;
+        touch_queue_[tail] = {x, y, phase};
+        ++touch_count_;
+        return true;
+    }
+    drainTouches();
+    const bool accepted = session_.route_touch(x, y, phase, 0);
+    rememberFlags();
+    return accepted;
 }
 
 void CaptureService::render()
 {
-    Lock lock(this);
+    Lock lock(this, false);
+    if (!lock.held())
+        return;
     session_.render_update();
+    rememberFlags();
 }
 
 bool CaptureService::finish()
 {
     Lock lock(this);
-    return session_.stop_recording();
+    if (!lock.held())
+        return false;
+    const bool stopped = session_.stop_recording();
+    if (stopped)
+        session_.release_capture();
+    rememberFlags();
+    return stopped;
 }
 
 void CaptureService::cancel()
 {
     Lock lock(this);
+    if (!lock.held())
+        return;
     session_.cancel_recording();
+    session_.release_capture();
+    rememberFlags();
 }
 
 void CaptureService::discard()
 {
     Lock lock(this);
+    if (!lock.held())
+        return;
     session_.storage().discard_in_progress();
+    session_.release_capture();
+    rememberFlags();
 }
 
 void CaptureService::beginReverse(int64_t now)
 {
     Lock lock(this);
+    if (!lock.held())
+        return;
     session_.begin_reverse(now);
+    rememberFlags();
 }
 
 void CaptureService::beginCollapse(int64_t now)
 {
     Lock lock(this);
+    if (!lock.held())
+        return;
     session_.begin_finish_collapse(now);
+    rememberFlags();
 }
 
 bool CaptureService::inputOpen() const
 {
-    return session_.capture_active() && !session_.wiping() && !session_.reversing();
+    Lock lock(this, false);
+    if (!lock.held())
+        return cached_input_open_;
+    const_cast<CaptureService *>(this)->rememberFlags();
+    return cached_input_open_;
 }
 
 bool CaptureService::wiping() const
 {
-    return session_.wiping();
+    Lock lock(this, false);
+    if (!lock.held())
+        return cached_wiping_;
+    const_cast<CaptureService *>(this)->rememberFlags();
+    return cached_wiping_;
 }
 bool CaptureService::recording() const
 {
-    return session_.capture_active();
+    Lock lock(this, false);
+    if (!lock.held())
+        return cached_recording_;
+    const_cast<CaptureService *>(this)->rememberFlags();
+    return cached_recording_;
 }
 bool CaptureService::reversing() const
 {
-    return session_.reversing();
+    Lock lock(this, false);
+    if (!lock.held())
+        return cached_reversing_;
+    const_cast<CaptureService *>(this)->rememberFlags();
+    return cached_reversing_;
 }
 int32_t CaptureService::ringRadius() const
 {
@@ -225,7 +365,11 @@ uint8_t CaptureService::selectedColor() const
 
 bool CaptureService::blocksInboxFetch()
 {
-    return session_.wiping() || session_.capture_active() || session_.storage().has_in_progress();
+    Lock lock(this, false);
+    if (!lock.held())
+        return cached_blocks_;
+    rememberFlags();
+    return cached_blocks_;
 }
 
 void CaptureService::attachSurface(uint16_t *pixels, lv_obj_t *canvas)
@@ -257,7 +401,7 @@ void CaptureService::detachSurface()
 bool CaptureService::finishedInfo(const char *clientMessageId, uint32_t *audioBytes, uint32_t *sketchBytes)
 {
     Lock lock(this);
-    if (!clientMessageId)
+    if (!lock.held() || !clientMessageId)
         return false;
     for (int i = 0; i < fl_product_record::kAttachedFinishedSlots; ++i) {
         const auto *slot = session_.storage().finished_slot(i);
@@ -276,7 +420,7 @@ bool CaptureService::readFinished(const char *clientMessageId, int kind, uint32_
                                   uint32_t length, uint32_t *read)
 {
     Lock lock(this);
-    if (!read)
+    if (!lock.held() || !read)
         return false;
     *read = 0;
     fl_product_record::MediaKind media;
@@ -296,18 +440,24 @@ bool CaptureService::readFinished(const char *clientMessageId, int kind, uint32_
 bool CaptureService::markUploading(const char *clientMessageId)
 {
     Lock lock(this);
+    if (!lock.held())
+        return false;
     return session_.storage().mark_finished_uploading(clientMessageId);
 }
 
 void CaptureService::clearUpload(const char *clientMessageId)
 {
     Lock lock(this);
+    if (!lock.held())
+        return;
     session_.storage().clear_finished_upload(clientMessageId);
 }
 
 bool CaptureService::identityFor(const char *clientMessageId, fl_product_record::SendIdentity *identity)
 {
     Lock lock(this);
+    if (!lock.held())
+        return false;
     return session_.storage().identity_for(clientMessageId, identity);
 }
 

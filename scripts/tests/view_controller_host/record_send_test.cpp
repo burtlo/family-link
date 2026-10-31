@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 
@@ -26,6 +27,52 @@ MessageTargetSnapshot jordan()
     return snapshot;
 }
 
+struct AllocCount {
+    int calls = 0;
+    int live = 0;
+    size_t liveBytes = 0;
+};
+
+void *countAlloc(size_t bytes, void *context)
+{
+    auto *count = static_cast<AllocCount *>(context);
+    auto *header = static_cast<size_t *>(std::malloc(sizeof(size_t) + bytes));
+    if (!header)
+        return nullptr;
+    *header = bytes;
+    ++count->calls;
+    ++count->live;
+    count->liveBytes += bytes;
+    return header + 1;
+}
+
+void countFree(void *block, void *context)
+{
+    if (!block)
+        return;
+    auto *count = static_cast<AllocCount *>(context);
+    auto *header = static_cast<size_t *>(block) - 1;
+    count->liveBytes -= *header;
+    --count->live;
+    std::free(header);
+}
+
+void captureLifecycle(const char *path, void (*end)(CaptureService &))
+{
+    std::remove(path);
+    AllocCount count;
+    CaptureService capture;
+    capture.setAllocator(countAlloc, countFree, &count);
+    assert(capture.open(path));
+    assert(count.calls == 0);
+    assert(capture.begin("take", 1000));
+    assert(count.live > 0 && count.liveBytes > 0);
+    capture.advance(1000 + 600);
+    end(capture);
+    assert(count.live == 0 && count.liveBytes == 0);
+    std::remove(path);
+}
+
 void beginWipe(DeliveryService &delivery, int64_t now)
 {
     delivery.setSession("ada", "token", true, false, 1, now);
@@ -41,6 +88,20 @@ void beginWipe(DeliveryService &delivery, int64_t now)
 
 void testRecordSend(lv_obj_t *content)
 {
+    captureLifecycle("record-alloc-finish.bin", [](CaptureService &capture) { assert(capture.finish()); });
+    captureLifecycle("record-alloc-discard.bin", [](CaptureService &capture) { capture.discard(); });
+    captureLifecycle("record-alloc-cancel.bin", [](CaptureService &capture) { capture.cancel(); });
+    std::remove(kPath);
+    {
+        CaptureService locked;
+        assert(locked.open(kPath));
+        assert(locked.holdLockForTest());
+        const int waits = locked.blockingLockAttempts();
+        locked.advance(1000);
+        assert(locked.blockingLockAttempts() == waits);
+        locked.releaseLockForTest();
+        locked.advance(1100);
+    }
     std::remove(kPath);
     DisplaySurfaceBroker broker;
     SurfaceLease record{};

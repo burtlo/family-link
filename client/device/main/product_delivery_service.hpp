@@ -55,6 +55,10 @@ class DeliveryService
     {
         return capture_;
     }
+    DeliveryHttpResult &polledSlot()
+    {
+        return polled_;
+    }
 
   private:
     void fillHooks();
@@ -94,6 +98,7 @@ class DeliveryService
     int dot_phase_ = 0;
     int64_t dot_due_ = 0;
     int64_t now_ = 0;
+    DeliveryHttpResult polled_{};
 };
 
 } // namespace product_ui

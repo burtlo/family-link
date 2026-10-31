@@ -1,6 +1,7 @@
 #pragma once
 
 #include "product_display_surface.hpp"
+#include "product_inbox_http_worker.hpp"
 #include "product_media_store.hpp"
 
 #include <cstdint>
@@ -78,6 +79,8 @@ struct PlaybackTransport {
     void (*release)(const PlaybackFetchResult *result) = nullptr;
     void (*request_quiesce)() = nullptr;
     bool (*quiescent)() = nullptr;
+    // Clears a previous session's quiesce so the next signed-in user can fetch.
+    void (*begin_session)() = nullptr;
 };
 
 // Session playback for one signed-in generation. Sketch pixels are not kept
@@ -105,8 +108,21 @@ class PlaybackService
     {
         audio_ = audio;
     }
+    void setMediaSubmit(bool (*submit)(const product_inbox_http::Job *, void *), void *context)
+    {
+        media_submit_ = submit;
+        media_submit_context_ = context;
+    }
+    void onMediaResult(const product_inbox_http::Result &result);
+    // Queues at most one file deletion. Safe on the presentation tick.
+    void drainMaintenance();
+    void setIoProbe(void (*probe)(void *), void *context)
+    {
+        media_.setIoProbe(probe, context);
+    }
     void setUnready(void (*notify)(void *), void *context);
-    void setSession(uint32_t generation, const char *bearer, bool media_allowed, int codec_volume, int64_t now);
+    void setSession(const char *user, uint32_t generation, const char *bearer, bool media_allowed, int codec_volume,
+                    int64_t now);
     void signOut();
     void bind(const PlaybackMedia *media, bool carousel_visible);
     void noteVisible(const char *const *message_ids, int count);
@@ -167,8 +183,6 @@ class PlaybackService
     void rememberClock();
     void failAudio();
     void stopOutput();
-    void releaseResult(const PlaybackFetchResult *result);
-    void apply(const PlaybackFetchResult &result);
     bool submit(int kind);
     bool ensureWorker();
     void pumpAudio();
@@ -180,6 +194,9 @@ class PlaybackService
     DisplaySurfaceBroker &surfaces_;
     PlaybackTransport transport_;
     AudioEndpoint audio_;
+    bool (*media_submit_)(const product_inbox_http::Job *, void *) = nullptr;
+    void *media_submit_context_ = nullptr;
+    bool maintenance_open_ = false;
     void (*unready_)(void *) = nullptr;
     void *unready_context_ = nullptr;
     Progress progress_[64]{};
@@ -187,10 +204,12 @@ class PlaybackService
     Inflight sketch_job_{};
     InkCache caches_[3]{};
     PlaybackMedia current_{};
+    char user_[24]{};
     char bearer_[48]{};
     char selected_[48]{};
     char framed_[48]{};
     uint32_t generation_ = 0;
+    int applied_volume_ = -1;
     uint32_t epoch_ = 1;
     uint32_t next_operation_ = 0;
     int codec_volume_ = 0;

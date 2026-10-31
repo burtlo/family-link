@@ -1,6 +1,8 @@
 #pragma once
 
 #include "product_delivery_service.hpp"
+
+#include <cstddef>
 #include "product_login_view_controller.hpp"
 #include "product_inbox_view_controller.hpp"
 #include "product_message_target_view_controller.hpp"
@@ -25,6 +27,11 @@ struct RuntimeServices {
     SettingsTransport settings;
     const char *mediaPath = nullptr;
     DeliveryTransport delivery;
+    PlaybackTransport playback;
+    AudioEndpoint audio;
+    void *(*captureAlloc)(size_t, void *) = nullptr;
+    void (*captureFree)(void *, void *) = nullptr;
+    void *captureAllocContext = nullptr;
 };
 
 enum class RuntimeDestination { Login,
@@ -60,6 +67,14 @@ class ProductRuntime
     InboxService &inboxService()
     {
         return inbox_;
+    }
+    PlaybackService &playbackService()
+    {
+        return playback_;
+    }
+    CaptureService &captureService()
+    {
+        return capture_;
     }
     SettingsService &settingsService()
     {
@@ -117,6 +132,9 @@ class ProductRuntime
     int64_t now_ = 0;
     int64_t navigation_retry_due_ = 0;
     bool restore_inbox_ = false;
+    bool was_signed_in_ = false;
+    bool delivery_seeded_ = false;
+    char media_path_[96]{};
 };
 
 } // namespace product_ui

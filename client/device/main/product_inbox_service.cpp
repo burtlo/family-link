@@ -172,6 +172,11 @@ bool InboxService::applyMetadata(fl_product_inbox::InboxMetadataHeader *block)
     return true;
 }
 
+bool InboxService::submitExternal(const product_inbox_http::Job *job)
+{
+    return job && transport_.submit && transport_.submit(job);
+}
+
 void InboxService::fetchFailure()
 {
     static const int waits[] = {1000, 2000, 4000, 30000};
@@ -182,6 +187,27 @@ void InboxService::fetchFailure()
 
 void InboxService::consume(const product_inbox_http::Result &result)
 {
+    auto release = [this](void *block) {
+        if (!block)
+            return;
+        if (release_)
+            release_(block);
+        else
+            std::free(block);
+    };
+    if (result.kind == product_inbox_http::kPlaybackMediaJob ||
+        result.kind == product_inbox_http::kPlaybackMediaMaintenanceJob) {
+        if (media_sink_)
+            media_sink_(media_context_, result);
+        release(result.data);
+        release(result.parsed);
+        return;
+    }
+    if (result.kind != product_inbox_http::kMetadataJob && result.kind != kLastViewed) {
+        release(result.data);
+        release(result.parsed);
+        return;
+    }
     auto *block = static_cast<fl_product_inbox::InboxMetadataHeader *>(result.parsed);
     if (result.generation == generation_ && user_[0]) {
         if (result.kind == product_inbox_http::kMetadataJob && result.operation_id == fetch_operation_ && fetch_operation_) {
@@ -206,8 +232,8 @@ void InboxService::consume(const product_inbox_http::Result &result)
                 write_due_ = now_ + 1000;
         }
     }
-    std::free(block);
-    std::free(result.data);
+    release(block);
+    release(result.data);
 }
 
 bool InboxService::submitMetadata()

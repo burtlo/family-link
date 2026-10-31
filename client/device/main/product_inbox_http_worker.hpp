@@ -9,6 +9,15 @@ namespace product_inbox_http
 // metadata. Result.parsed is InboxMetadataHeader followed by message records.
 constexpr int kMetadataJob = 5;
 
+// Playback media is written by this worker to Job::file_path. One operation_id
+// covers every slice of one asset, and range_start is the bytes already stored
+// so the worker can continue its SHA-256. A failed slice is not resumed in
+// place: the caller deletes the file, mints a new operation_id, and starts
+// again at offset 0. The worker does not rebuild a hash from a nonzero offset.
+constexpr int kPlaybackMediaJob = 6;
+// Deletes Job::file_path. No HTTP call.
+constexpr int kPlaybackMediaMaintenanceJob = 7;
+
 /* Copied by value onto the worker queue. bearer is the session credential, not a log field. */
 struct Job {
     int kind;
@@ -25,6 +34,9 @@ struct Job {
     uint32_t range_start;
     uint32_t asset_bytes;
     int timeout_ms;
+    // 0 = audio, 1 = sketch. Used by kPlaybackMediaJob.
+    int asset;
+    char file_path[96];
 };
 
 /* data and parsed are heap blocks. The UI tick frees both after it applies the result.
@@ -40,6 +52,7 @@ struct Result {
     int full_asset;
     int hash_matches;
     int data_len;
+    uint32_t bytes_written;
     uint8_t *data;
     void *parsed;
 };

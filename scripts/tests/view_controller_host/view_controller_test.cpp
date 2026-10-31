@@ -536,6 +536,7 @@ void testPlaybackService(lv_obj_t *content);
 void testSettingsControllers(lv_obj_t *content);
 void testMessageTargetControllers(lv_obj_t *content);
 void testRuntimeRoutes(lv_obj_t *content);
+void testRepairGates(lv_obj_t *content);
 void testRecordSend(lv_obj_t *content);
 
 int main()
@@ -704,6 +705,7 @@ int main()
     }
     testRuntimeButtons(content);
     testRuntimeRoutes(content);
+    testRepairGates(content);
     lv_obj_delete(content);
     lv_display_delete(display);
     lv_deinit();

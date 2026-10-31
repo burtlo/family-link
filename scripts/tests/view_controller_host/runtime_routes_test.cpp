@@ -1,7 +1,11 @@
 #include "product_runtime.hpp"
 #include <cassert>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <dirent.h>
 #include <memory>
+#include <sys/stat.h>
 
 namespace
 {
@@ -54,12 +58,26 @@ bool takeRed()
     redPressed = false;
     return p;
 }
+struct RepairCounts {
+    int playbackStarts = 0;
+    int playbackSubmits = 0;
+    int volumes = 0;
+    int deliveryStarts = 0;
+    int deliverySubmits = 0;
+    int quiesceCalls = 0;
+    int sessionBegins = 0;
+    bool quiesce = false;
+};
+RepairCounts repairCounts;
+
 bool startInbox()
 {
     return true;
 }
-bool submitInbox(const product_inbox_http::Job *)
+bool submitInbox(const product_inbox_http::Job *job)
 {
+    if (job && job->kind == product_inbox_http::kPlaybackMediaJob)
+        ++repairCounts.playbackSubmits;
     return true;
 }
 const product_inbox_http::Result *pollInbox()
@@ -168,6 +186,249 @@ void refreshWhileShown(LoginService &service, ProductRuntime &runtime, RootViewC
     assert(!service.session().refresh_inflight() && service.session().credential_active());
     assert(runtime.shown() == shown && root.current() == view);
     assert(service.session().generation() == generation && runtime.inboxService().generation() == inboxGeneration);
+}
+
+int cacheEntries(const char *path)
+{
+    DIR *dir = opendir(path);
+    if (!dir)
+        return 0;
+    int count = 0;
+    while (const dirent *entry = readdir(dir)) {
+        if (std::strcmp(entry->d_name, ".") != 0 && std::strcmp(entry->d_name, "..") != 0)
+            ++count;
+    }
+    closedir(dir);
+    return count;
+}
+
+bool repairPlaybackStart()
+{
+    ++repairCounts.playbackStarts;
+    return true;
+}
+bool repairPlaybackSubmit(const PlaybackFetchJob *)
+{
+    if (repairCounts.quiesce)
+        return false;
+    ++repairCounts.playbackSubmits;
+    return true;
+}
+void repairQuiesce()
+{
+    repairCounts.quiesce = true;
+    ++repairCounts.quiesceCalls;
+}
+void repairBeginSession()
+{
+    repairCounts.quiesce = false;
+    ++repairCounts.sessionBegins;
+}
+void repairVolume(void *, int, bool)
+{
+    ++repairCounts.volumes;
+}
+bool repairDeliveryStart()
+{
+    ++repairCounts.deliveryStarts;
+    return true;
+}
+bool repairDeliverySubmit(const char *, const char *, const uint8_t *, uint32_t, int, const char *, uint32_t, const char *)
+{
+    ++repairCounts.deliverySubmits;
+    return true;
+}
+
+PlaybackMedia repairClip()
+{
+    PlaybackMedia clip{};
+    std::snprintf(clip.message_id, sizeof(clip.message_id), "kept");
+    std::snprintf(clip.audio_format, sizeof(clip.audio_format), "pcm_s16le");
+    clip.duration_ms = 1000;
+    clip.audio_bytes = 64000;
+    clip.sketch = true;
+    clip.sketch_bytes = 16;
+    return clip;
+}
+
+void armRepair(RuntimeServices &services)
+{
+    services.inbox = {startInbox, submitInbox, pollInbox};
+    services.settings = {startSettings, submitSettings, pollSettings};
+    services.playback.start = repairPlaybackStart;
+    services.playback.submit = repairPlaybackSubmit;
+    services.playback.request_quiesce = repairQuiesce;
+    services.playback.begin_session = repairBeginSession;
+    services.audio.set_volume = repairVolume;
+    services.delivery.start = repairDeliveryStart;
+    services.delivery.submit = repairDeliverySubmit;
+}
+
+void testPreLoginTicks(lv_obj_t *content)
+{
+    repairCounts = {};
+    muteLevel = 0;
+    now = 1000;
+    const int cacheBefore = cacheEntries("playback-cache");
+    LoginService service({startLogin, advanceLogin, muteLogin});
+    service.boot(now, true);
+    RootViewController root(content);
+    RuntimePlatform platform;
+    platform.muteLatched = muteLatched;
+    platform.takeBoot = takeBoot;
+    platform.takeRed = takeRed;
+    RuntimeServices services;
+    armRepair(services);
+    ProductRuntime runtime(root, service, platform, services);
+    assert(root.replace(std::unique_ptr<ViewController>(new LoginViewController(service, runtime.navigation())), false));
+    run(runtime, root, 3);
+    assert(service.snapshot().body == LoginSnapshot::Body::Roster);
+    openPin(runtime, root);
+    run(runtime, root, 4);
+    assert(runtime.shown() == RuntimeDestination::PinEntry);
+    assert(!service.session().signed_in());
+    assert(repairCounts.playbackStarts == 0);
+    assert(repairCounts.playbackSubmits == 0);
+    assert(repairCounts.volumes == 0);
+    assert(repairCounts.deliveryStarts == 0);
+    assert(repairCounts.deliverySubmits == 0);
+    assert(cacheEntries("playback-cache") == cacheBefore);
+}
+
+void testGenerationKeepsPlayback(lv_obj_t *content)
+{
+    repairCounts = {};
+    muteLevel = 0;
+    now = 5000;
+    LoginService service({startLogin, advanceLogin, muteLogin});
+    service.boot(now, true);
+    RootViewController root(content);
+    RuntimePlatform platform;
+    platform.muteLatched = muteLatched;
+    platform.takeBoot = takeBoot;
+    platform.takeRed = takeRed;
+    RuntimeServices services;
+    armRepair(services);
+    ProductRuntime runtime(root, service, platform, services);
+    assert(root.replace(std::unique_ptr<ViewController>(new LoginViewController(service, runtime.navigation())), false));
+    run(runtime, root, 3);
+    signIn(service, runtime, root);
+    auto &playback = runtime.playbackService();
+    const auto clip = repairClip();
+    const uint32_t generation = service.session().generation();
+    playback.setSession(service.session().signed_user(), generation, "token", true, 40, now);
+    playback.bind(&clip, true);
+    playback.toggle();
+    assert(playback.snapshot().transport == PlaybackSnapshot::Transport::Pause);
+    assert(playback.needsFrame());
+    const int position = playback.snapshot().positionMs;
+    const int submits = repairCounts.playbackSubmits;
+    assert(submits > 0);
+    const int begins = repairCounts.sessionBegins;
+    playback.setSession(service.session().signed_user(), generation + 9, "token", true, 40, now + 50);
+    assert(playback.needsFrame());
+    assert(playback.snapshot().transport == PlaybackSnapshot::Transport::Pause);
+    assert(playback.snapshot().positionMs == position);
+    assert(playback.generation() == generation + 9);
+    assert(repairCounts.quiesceCalls == 0);
+    assert(repairCounts.sessionBegins == begins);
+    run(runtime, root, 2);
+    // The inbox view may rebind the empty carousel. The session itself stays.
+    assert(playback.generation() == service.session().generation());
+    assert(repairCounts.quiesceCalls == 0);
+    assert(repairCounts.sessionBegins == begins);
+    assert(std::strcmp(service.session().signed_user(), "u0") == 0);
+}
+
+void testPlaybackAfterSignOut(lv_obj_t *content)
+{
+    repairCounts = {};
+    muteLevel = 0;
+    now = 9000;
+    LoginService service({startLogin, advanceLogin, muteLogin});
+    service.boot(now, true);
+    RootViewController root(content);
+    RuntimePlatform platform;
+    platform.muteLatched = muteLatched;
+    platform.takeBoot = takeBoot;
+    platform.takeRed = takeRed;
+    RuntimeServices services;
+    armRepair(services);
+    ProductRuntime runtime(root, service, platform, services);
+    assert(root.replace(std::unique_ptr<ViewController>(new LoginViewController(service, runtime.navigation())), false));
+    run(runtime, root, 3);
+    signIn(service, runtime, root);
+    auto play = [&]() {
+        auto &playback = runtime.playbackService();
+        const auto clip = repairClip();
+        playback.setSession(service.session().signed_user(), service.session().generation(), "token", true, 40, now);
+        playback.bind(&clip, true);
+        playback.toggle();
+    };
+    play();
+    assert(repairCounts.playbackSubmits >= 1);
+    const int first = repairCounts.playbackSubmits;
+    mute(runtime, root, true);
+    mute(runtime, root, false);
+    assert(std::strcmp(current(root), "Login") == 0);
+    signIn(service, runtime, root);
+    play();
+    assert(repairCounts.playbackSubmits > first);
+}
+
+struct AllocCount {
+    int calls = 0;
+    int live = 0;
+};
+void *runtimeCountAlloc(size_t bytes, void *context)
+{
+    auto *count = static_cast<AllocCount *>(context);
+    void *block = std::malloc(bytes);
+    if (!block)
+        return nullptr;
+    ++count->calls;
+    ++count->live;
+    return block;
+}
+void runtimeCountFree(void *block, void *context)
+{
+    if (!block)
+        return;
+    --static_cast<AllocCount *>(context)->live;
+    std::free(block);
+}
+
+void testRuntimeCaptureIsLazy(lv_obj_t *content)
+{
+    assert(sizeof(ProductRuntime) > 16384);
+    AllocCount count;
+    muteLevel = 0;
+    now = 1000;
+    LoginService service({startLogin, advanceLogin, muteLogin});
+    service.boot(now, true);
+    RootViewController root(content);
+    RuntimePlatform platform;
+    platform.muteLatched = muteLatched;
+    platform.takeBoot = takeBoot;
+    platform.takeRed = takeRed;
+    RuntimeServices services;
+    armRepair(services);
+    services.mediaPath = "runtime-lazy.bin";
+    services.captureAlloc = runtimeCountAlloc;
+    services.captureFree = runtimeCountFree;
+    services.captureAllocContext = &count;
+    ProductRuntime runtime(root, service, platform, services);
+    assert(count.calls == 0);
+    assert(root.replace(std::unique_ptr<ViewController>(new LoginViewController(service, runtime.navigation())), false));
+    run(runtime, root, 3);
+    assert(service.snapshot().body == LoginSnapshot::Body::Roster && !service.snapshot().updating);
+    assert(count.calls == 0);
+    assert(service.beginPin("u0"));
+    writer->deliver_pin_completion(submitPin(service, fl_product_login::kPinOutcomeSuccess), now);
+    run(runtime, root, 4);
+    assert(service.session().signed_in());
+    assert(count.calls == 0);
+    std::remove("runtime-lazy.bin");
 }
 } // namespace
 
@@ -371,4 +632,46 @@ void testRuntimeRoutes(lv_obj_t *content)
     assert(service.pinSnapshot().seconds <= before - 9);
     wait(runtime, root, 60000);
     assert(runtime.shown() == RuntimeDestination::Login && std::strcmp(current(root), "Login") == 0);
+}
+
+int fileIoHits;
+void noteFileIo(void *)
+{
+    ++fileIoHits;
+}
+
+void testTickReachesNoFileIo(lv_obj_t *content)
+{
+    fileIoHits = 0;
+    repairCounts = {};
+    muteLevel = 0;
+    now = 1000;
+    LoginService service({startLogin, advanceLogin, muteLogin});
+    service.boot(now, true);
+    RootViewController root(content);
+    RuntimePlatform platform;
+    platform.muteLatched = muteLatched;
+    platform.takeBoot = takeBoot;
+    platform.takeRed = takeRed;
+    RuntimeServices services;
+    armRepair(services);
+    ProductRuntime runtime(root, service, platform, services);
+    runtime.playbackService().setIoProbe(noteFileIo, nullptr);
+    assert(root.replace(std::unique_ptr<ViewController>(new LoginViewController(service, runtime.navigation())), false));
+    run(runtime, root, 3);
+    signIn(service, runtime, root);
+    const auto clip = repairClip();
+    runtime.playbackService().bind(&clip, true);
+    runtime.playbackService().toggle();
+    run(runtime, root, 4);
+    assert(fileIoHits == 0);
+}
+
+void testRepairGates(lv_obj_t *content)
+{
+    testPreLoginTicks(content);
+    testGenerationKeepsPlayback(content);
+    testPlaybackAfterSignOut(content);
+    testRuntimeCaptureIsLazy(content);
+    testTickReachesNoFileIo(content);
 }

@@ -1,6 +1,6 @@
 # LAB-16 VARIANT `server-offline-during-record` — memory results
 
-Generated: 2026-10-30 09:36 UTC by `render_memory_results.py`. Do not edit by hand; run `make lab.lab16.results`.
+Generated: 2026-10-31 02:11 UTC by `render_memory_results.py`. Do not edit by hand; run `make lab.lab16.results`.
 
 **Accepted repeatability pair:** [20261025-server-offline-memory-03](../runs/20261025-server-offline-memory-03/run-manifest.json) and [20261025-server-offline-memory-04](../runs/20261025-server-offline-memory-04/run-manifest.json).
 

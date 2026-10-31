@@ -25,6 +25,16 @@ namespace product_ui
 
 namespace
 {
+bool submitPlaybackMedia(const product_inbox_http::Job *job, void *context)
+{
+    return static_cast<ProductRuntime *>(context)->inboxService().submitExternal(job);
+}
+
+void forwardPlaybackMedia(void *context, const product_inbox_http::Result &result)
+{
+    static_cast<PlaybackService *>(context)->onMediaResult(result);
+}
+
 #ifdef ESP_PLATFORM
 void blank_login_display()
 {
@@ -54,21 +64,25 @@ const char *playbackRoot()
 }
 
 #ifdef ESP_PLATFORM
+DeliveryHttpResult *delivery_http_slot = nullptr;
+
+void *psramAlloc(size_t bytes, void *)
+{
+    return heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+}
+
+void psramFree(void *block, void *)
+{
+    heap_caps_free(block);
+}
+
 void *allocateSurface(size_t bytes, SurfacePlace requested, SurfacePlace *placed, void *)
 {
     const uint32_t caps = requested == SurfacePlace::Internal ? (MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)
                                                               : (MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     void *block = heap_caps_malloc(bytes, caps);
-    if (block) {
-        if (placed)
-            *placed = requested == SurfacePlace::Internal ? SurfacePlace::Internal : SurfacePlace::Psram;
-        return block;
-    }
-    if (requested == SurfacePlace::Psram) {
-        block = heap_caps_malloc(bytes, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-        if (block && placed)
-            *placed = SurfacePlace::Internal;
-    }
+    if (block && placed)
+        *placed = requested == SurfacePlace::Internal ? SurfacePlace::Internal : SurfacePlace::Psram;
     return block;
 }
 void releaseSurface(void *block, void *)
@@ -93,6 +107,7 @@ ProductRuntime::ProductRuntime(RootViewController &root, LoginService &service, 
     const char *mediaPath = services.mediaPath;
 #ifdef ESP_PLATFORM
     mediaPath = BSP_SD_MOUNT_POINT "/flmsgs.bin";
+    capture_.setAllocator(psramAlloc, psramFree, nullptr);
     capture_.setHardware(product_mic::set_armed, product_mic::take_failure);
     product_record::set_pcm_observer(
         [](const uint8_t *pcm, size_t length, void *context) {
@@ -102,19 +117,22 @@ ProductRuntime::ProductRuntime(RootViewController &root, LoginService &service, 
 #else
     if (!mediaPath)
         mediaPath = "record-media.bin";
+    if (services.captureAlloc && services.captureFree)
+        capture_.setAllocator(services.captureAlloc, services.captureFree, services.captureAllocContext);
     delivery_.noteSeed(1);
 #endif
-    (void)capture_.open(mediaPath);
+    std::snprintf(media_path_, sizeof(media_path_), "%s", mediaPath ? mediaPath : "");
     DeliveryTransport transport = services.delivery;
 #ifdef ESP_PLATFORM
     if (!transport.start) {
         transport.start = product_send_http::worker_start;
         transport.submit = product_send_http::submit;
+        delivery_http_slot = &delivery_.polledSlot();
         transport.poll = []() -> const DeliveryHttpResult * {
             const auto *done = product_send_http::poll();
-            if (!done)
+            if (!done || !delivery_http_slot)
                 return nullptr;
-            static DeliveryHttpResult copy;
+            DeliveryHttpResult &copy = *delivery_http_slot;
             copy = {};
             copy.perform_ok = done->perform_ok;
             copy.http_status = done->http_status;
@@ -133,6 +151,12 @@ ProductRuntime::ProductRuntime(RootViewController &root, LoginService &service, 
 #endif
     delivery_.setTransport(transport);
     delivery_.setPlayback(pauseForDelivery, selectedForDelivery, this);
+    playback_.setMediaSubmit(submitPlaybackMedia, this);
+    inbox_.setMediaSink(forwardPlaybackMedia, &playback_);
+    if (services.playback.start || services.playback.submit || services.playback.begin_session)
+        playback_.setTransport(services.playback);
+    if (services.audio.start || services.audio.set_volume || services.audio.accept)
+        playback_.setAudio(services.audio);
 #ifdef ESP_PLATFORM
     surfaces_.setAllocator(allocateSurface, releaseSurface, nullptr);
     playback_.setTransport(playback_worker::transport());
@@ -364,21 +388,30 @@ void ProductRuntime::serviceFeatures()
                       session.generation(), service_.wifiUp(), credentialReady, now_);
     inbox_.setFetchHeld(capture_.blocksInboxFetch());
     inbox_.advance(now_);
-    const bool playback_allowed = signedIn && credentialReady && service_.wifiUp() &&
-                                  inbox_.snapshot().body == InboxSnapshot::Body::Cards;
-    playback_.setSession(session.generation(), signedIn ? session.credential_token() : "", playback_allowed,
-                         settings_.codecVolume(), now_);
-    playback_.advance(now_);
-    const bool refreshFailed = signedIn && session.credential_expired();
-    delivery_.setSession(signedIn ? session.signed_user() : nullptr,
-                         signedIn ? session.credential_token() : "", service_.wifiUp(), refreshFailed,
-                         session.generation(), now_);
+    playback_.drainMaintenance();
+    if (signedIn) {
+        if (!was_signed_in_ && media_path_[0])
+            (void)capture_.open(media_path_);
+        const bool playback_allowed = credentialReady && service_.wifiUp() &&
+                                      inbox_.snapshot().body == InboxSnapshot::Body::Cards;
+        playback_.setSession(session.signed_user(), session.generation(), session.credential_token(), playback_allowed,
+                             settings_.codecVolume(), now_);
+        playback_.advance(now_);
+        const bool refreshFailed = session.credential_expired();
+        delivery_.setSession(session.signed_user(), session.credential_token(), service_.wifiUp(), refreshFailed,
+                             session.generation(), now_);
+        delivery_.advance(now_);
+    } else if (was_signed_in_) {
+        playback_.signOut();
+        delivery_.setSession(nullptr, "", service_.wifiUp(), false, session.generation(), now_);
+    }
+    was_signed_in_ = signedIn;
 #ifdef ESP_PLATFORM
-    if (service_.wifiUp())
+    if (service_.wifiUp() && !delivery_seeded_) {
         delivery_.noteSeed(esp_random());
+        delivery_seeded_ = true;
+    }
 #endif
-    delivery_.advance(now_);
-    inbox_.setFetchHeld(capture_.blocksInboxFetch());
     settings_.advance(now_);
     followDelivery();
     restoreInboxSelection();

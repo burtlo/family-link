@@ -159,6 +159,7 @@ void PlaybackService::signOut()
     selected_[0] = 0;
     framed_[0] = 0;
     current_ = {};
+    user_[0] = 0;
     bearer_[0] = 0;
     cant_play_until_ = 0;
     stopping_ = false;
@@ -171,13 +172,17 @@ void PlaybackService::signOut()
     media_.setPlaybackAllowed(false);
 }
 
-void PlaybackService::setSession(uint32_t generation, const char *bearer, bool media_allowed, int codec_volume,
-                                 int64_t now)
+void PlaybackService::setSession(const char *user, uint32_t generation, const char *bearer, bool media_allowed,
+                                 int codec_volume, int64_t now)
 {
     now_ = now;
-    codec_volume_ = codec_volume;
-    if (generation_ != 0 && generation != generation_)
+    const bool have_user = user && user[0];
+    if (user_[0] && (!have_user || std::strcmp(user_, user) != 0))
         signOut();
+    const bool starting = have_user && !user_[0];
+    if (have_user)
+        copyText(user_, (int)sizeof(user_), user);
+    // generation_ tags submitted jobs. A mismatched result is dropped in apply().
     generation_ = generation;
     copyText(bearer_, (int)sizeof(bearer_), bearer);
     const bool lost = media_allowed_ && !media_allowed;
@@ -185,8 +190,14 @@ void PlaybackService::setSession(uint32_t generation, const char *bearer, bool m
     media_.setPlaybackAllowed(media_allowed);
     if (lost)
         pausePreserving();
-    if (audio_.set_volume)
-        audio_.set_volume(audio_.context, codec_volume_, codec_volume_ <= 0);
+    if (starting && transport_.begin_session)
+        transport_.begin_session();
+    codec_volume_ = codec_volume;
+    if (codec_volume != applied_volume_) {
+        applied_volume_ = codec_volume;
+        if (audio_.set_volume)
+            audio_.set_volume(audio_.context, codec_volume_, codec_volume_ <= 0);
+    }
 }
 
 void PlaybackService::bind(const PlaybackMedia *media, bool carousel_visible)
@@ -287,47 +298,74 @@ void PlaybackService::noteVisible(const char *const *message_ids, int count)
     }
 }
 
-void PlaybackService::releaseResult(const PlaybackFetchResult *result)
+void PlaybackService::drainMaintenance()
 {
-    if (transport_.release)
-        transport_.release(result);
+    if (maintenance_open_ || audio_job_.open || sketch_job_.open || !media_submit_)
+        return;
+    char path[96];
+    if (!media_.popDiscard(path))
+        return;
+    product_inbox_http::Job job{};
+    job.kind = product_inbox_http::kPlaybackMediaMaintenanceJob;
+    std::snprintf(job.file_path, sizeof(job.file_path), "%s", path);
+    if (!media_submit_(&job, media_submit_context_)) {
+        media_.restoreDiscard(path);
+        return;
+    }
+    maintenance_open_ = true;
 }
 
-void PlaybackService::apply(const PlaybackFetchResult &result)
+void PlaybackService::onMediaResult(const product_inbox_http::Result &result)
 {
-    Inflight *job = nullptr;
-    if (audio_job_.open && result.kind == kAudioKind && result.operation == audio_job_.operation)
-        job = &audio_job_;
-    if (sketch_job_.open && result.kind == kSketchKind && result.operation == sketch_job_.operation)
-        job = &sketch_job_;
-    const bool current = job && result.generation == generation_ && result.epoch == job->epoch &&
-                         std::strcmp(result.message_id, job->id) == 0;
-    if (job)
-        *job = {};
-    if (!current || stopping_ || !media_allowed_)
+    if (result.kind == product_inbox_http::kPlaybackMediaMaintenanceJob) {
+        maintenance_open_ = false;
         return;
+    }
+    if (result.kind != product_inbox_http::kPlaybackMediaJob)
+        return;
+    Inflight *job = nullptr;
+    if (audio_job_.open && result.operation_id == audio_job_.operation)
+        job = &audio_job_;
+    else if (sketch_job_.open && result.operation_id == sketch_job_.operation)
+        job = &sketch_job_;
+    if (!job)
+        return;
+    const bool audio = job->kind == kAudioKind;
+    const auto kind = audio ? MediaKind::Audio : MediaKind::Sketch;
+    const bool current = result.generation == generation_ && job->epoch == epoch_ &&
+                         std::strcmp(result.message_id, job->id) == 0;
+    char message[48];
+    copyText(message, (int)sizeof(message), job->id);
+    *job = {};
+    if (!current || stopping_ || !media_allowed_) {
+        media_.abandon(message, kind);
+        return;
+    }
     if (result.http_status == 401 || result.http_status == 403) {
+        media_.abandon(message, kind);
         pausePreserving();
         if (unready_)
             unready_(unready_context_);
         return;
     }
-    const bool audio = result.kind == kAudioKind;
-    if (!result.perform_ok || (result.http_status != 200 && result.http_status != 206) || !result.data ||
-        result.data_len <= 0) {
+    const bool http_ok = result.perform_ok && (result.http_status == 200 || result.http_status == 206) &&
+                         result.bytes_written > 0;
+    if (!http_ok || !result.hash_matches) {
+        if (result.hash_matches)
+            media_.abandon(message, kind);
+        else
+            (void)media_.noteWritten(message, kind, result.bytes_written > 0 ? result.bytes_written : 1, true, false);
         if (audio)
             failAudio();
-        else if (Progress *progress = find(result.message_id))
+        else if (Progress *progress = find(message))
             progress->sketch_fault = true;
         return;
     }
-    const uint32_t offset = media_.stored(result.message_id, audio ? MediaKind::Audio : MediaKind::Sketch);
-    const auto appended = media_.append(result.message_id, audio ? MediaKind::Audio : MediaKind::Sketch, offset,
-                                        result.data, result.data_len);
-    if (appended == MediaStore::Append::HashMismatch || appended == MediaStore::Append::Rejected) {
+    const auto noted = media_.noteWritten(message, kind, result.bytes_written, result.full_asset != 0, true);
+    if (noted == MediaStore::Note::Rejected || noted == MediaStore::Note::Failed) {
         if (audio)
             failAudio();
-        else if (Progress *progress = find(result.message_id))
+        else if (Progress *progress = find(message))
             progress->sketch_fault = true;
     }
 }
@@ -335,10 +373,12 @@ void PlaybackService::apply(const PlaybackFetchResult &result)
 bool PlaybackService::submit(int kind)
 {
     Inflight *job = kind == kAudioKind ? &audio_job_ : &sketch_job_;
-    if (job->open || stopping_ || !media_allowed_ || !selected_[0])
+    if (audio_job_.open || sketch_job_.open || stopping_ || !media_allowed_ || !selected_[0])
         return job->open;
     const bool audio = kind == kAudioKind;
     const uint32_t total = audio ? current_.audio_bytes : current_.sketch_bytes;
+    if (total == 0)
+        return false;
     if (!audio && !current_.sketch)
         return false;
     if (audio && current_.audio_bytes == 0)
@@ -349,26 +389,36 @@ bool PlaybackService::submit(int kind)
     const uint32_t stored = media_.stored(selected_, media_kind);
     if (total > 0 && stored >= total)
         return false;
-    if (!transport_.submit)
+    if (!media_submit_ || !media_.prepare(selected_, media_kind, total, audio ? current_.audio_sha : current_.sketch_sha))
         return false;
-    PlaybackFetchJob request{};
-    request.operation = nextOperation();
+    uint32_t operation = media_.operation(selected_, media_kind);
+    if (operation == 0) {
+        operation = nextOperation();
+        media_.setOperation(selected_, media_kind, operation);
+    }
+    product_inbox_http::Job request{};
+    request.kind = product_inbox_http::kPlaybackMediaJob;
+    request.operation_id = operation;
     request.generation = generation_;
-    request.epoch = epoch_;
-    request.kind = kind;
-    request.range_start = stored;
+    request.asset = audio ? 0 : 1;
+    request.range_start = media_.stored(selected_, media_kind);
     request.asset_bytes = total;
     request.timeout_ms = 6000;
+    copyText(request.method, (int)sizeof(request.method), "GET");
     copyText(request.message_id, (int)sizeof(request.message_id), selected_);
     copyText(request.bearer, (int)sizeof(request.bearer), bearer_);
     copyText(request.sha256, (int)sizeof(request.sha256), audio ? current_.audio_sha : current_.sketch_sha);
     std::snprintf(request.path, sizeof(request.path), "/v2/messages/%s/media/%s", selected_, audio ? "audio" : "sketch");
-    std::snprintf(request.range_header, sizeof(request.range_header), "bytes=%" PRIu32 "-", stored);
-    if (!transport_.submit(&request))
+    if (!media_.filePath(selected_, media_kind, request.file_path, (int)sizeof(request.file_path)))
+        return false;
+    const uint32_t slice_end = request.range_start + 16383u < total ? request.range_start + 16383u : total - 1u;
+    std::snprintf(request.range_header, sizeof(request.range_header), "bytes=%" PRIu32 "-%" PRIu32, request.range_start,
+                  slice_end);
+    if (!media_submit_(&request, media_submit_context_))
         return false;
     job->open = true;
-    job->operation = request.operation;
-    job->epoch = request.epoch;
+    job->operation = request.operation_id;
+    job->epoch = epoch_;
     copyText(job->id, (int)sizeof(job->id), selected_);
     job->kind = kind;
     return true;
@@ -376,10 +426,11 @@ bool PlaybackService::submit(int kind)
 
 bool PlaybackService::ensureWorker()
 {
-    if (started_worker_ || !transport_.start)
+    if (!started_worker_ && transport_.start)
+        started_worker_ = transport_.start();
+    if (media_submit_)
         return true;
-    started_worker_ = transport_.start();
-    return started_worker_;
+    return started_worker_ || !transport_.start;
 }
 
 void PlaybackService::pumpAudio()
@@ -461,7 +512,7 @@ void PlaybackService::toggle()
     const uint32_t have = media_.stored(selected_, MediaKind::Audio);
     const bool prefix = have >= current_.audio_bytes || have >= (uint32_t)kPrefixBytes;
     if (!prefix) {
-        if (!transport_.submit && have == 0) {
+        if (!media_submit_ && have == 0) {
             failAudio();
             return;
         }
@@ -488,16 +539,7 @@ void PlaybackService::toggle()
 void PlaybackService::advance(int64_t now)
 {
     now_ = now;
-    if (transport_.poll && started_worker_) {
-        for (int i = 0; i < 4; ++i) {
-            const PlaybackFetchResult *result = transport_.poll();
-            if (!result)
-                break;
-            if (result->terminal)
-                apply(*result);
-            releaseResult(result);
-        }
-    }
+    drainMaintenance();
     if (stopping_) {
         const bool idle = !transport_.quiescent || transport_.quiescent();
         if (idle) {

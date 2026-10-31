@@ -72,6 +72,9 @@ lab10_render_t *as_renderer(void *handle)
 RecordSession::RecordSession()
     : capture_(0),
       renderer_(0),
+      alloc_(0),
+      free_(0),
+      alloc_context_(0),
       session_id_(0),
       start_ms_(0),
       now_ms_(0),
@@ -119,25 +122,65 @@ void RecordSession::reset_runtime()
     session_id_ = 0;
     clock_us_ = 0;
     s_clock_adapter.session = this;
+}
+
+void RecordSession::set_allocator(void *(*alloc)(size_t, void *), void (*free_fn)(void *, void *), void *context)
+{
+    alloc_ = alloc;
+    free_ = free_fn;
+    alloc_context_ = context;
+}
+
+bool RecordSession::ensure_capture()
+{
+    if (capture_ != 0 && renderer_ != 0) {
+        return true;
+    }
+    s_clock_adapter.session = this;
     if (capture_ == 0) {
         lab10_capture_config_t cfg;
         memset(&cfg, 0, sizeof(cfg));
         cfg.clock_now_us = clock_now_us;
         cfg.clock_context = &s_clock_adapter;
         cfg.initial_color_index = LAB10_COLOR_WHITE;
+        cfg.alloc = alloc_;
+        cfg.free = free_;
+        cfg.allocator_context = alloc_context_;
         capture_ = lab10_capture_create(&cfg);
+        if (capture_ == 0) {
+            return false;
+        }
     }
-    if (renderer_ == 0 && capture_ != 0) {
+    if (renderer_ == 0) {
         lab10_render_config_t rcfg;
         memset(&rcfg, 0, sizeof(rcfg));
-        /* SEGMENT mode caps every update at one point regardless of the budget below. */
         rcfg.mode = LAB10_RENDER_MODE_BOUNDED_BATCH;
         rcfg.role = LAB10_RENDER_ROLE_CONTROL;
-        /* One update per 50 ms presentation tick; a fast finger crosses ~100 logical px. */
         rcfg.max_points_per_update = 16;
         rcfg.max_raster_ops_per_update = 128;
         rcfg.max_publication_ops_per_update = 128;
+        rcfg.alloc = alloc_;
+        rcfg.free = free_;
+        rcfg.allocator_context = alloc_context_;
         renderer_ = lab10_render_create(&rcfg);
+        if (renderer_ == 0) {
+            lab10_capture_destroy(as_capture(capture_));
+            capture_ = 0;
+            return false;
+        }
+    }
+    return true;
+}
+
+void RecordSession::release_capture()
+{
+    if (renderer_ != 0) {
+        lab10_render_destroy(as_renderer(renderer_));
+        renderer_ = 0;
+    }
+    if (capture_ != 0) {
+        lab10_capture_destroy(as_capture(capture_));
+        capture_ = 0;
     }
 }
 
@@ -259,7 +302,11 @@ bool RecordSession::try_start(const char *client_message_id, MicState mic_at_sta
     if (!storage_.can_start_second_recording()) {
         return false;
     }
+    if (!ensure_capture()) {
+        return false;
+    }
     if (!storage_.begin_in_progress(client_message_id, kAudioByteBudget)) {
+        release_capture();
         return false;
     }
     lab10_ui_model_init(&s_ui_model);

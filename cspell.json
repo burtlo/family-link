@@ -8,6 +8,7 @@
     "LOGV",
     "LOGW",
     "lvgl",
+    "navigations",
     "refr"
   ],
   "ignoreRegExpList": [

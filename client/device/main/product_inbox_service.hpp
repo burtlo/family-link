@@ -42,6 +42,17 @@ class InboxService
     }
     void signOut();
     void noteSessionUnready();
+    void setMediaSink(void (*sink)(void *, const product_inbox_http::Result &), void *context)
+    {
+        media_sink_ = sink;
+        media_context_ = context;
+    }
+    // Host tests replace std::free so an unknown result kind can be counted.
+    void setResultReleaser(void (*release)(void *))
+    {
+        release_ = release;
+    }
+    bool submitExternal(const product_inbox_http::Job *job);
     void advance(int64_t now);
     void requestRefresh();
     bool selectIndex(int index, const char *expectedId = nullptr);
@@ -87,6 +98,9 @@ class InboxService
     bool fetch_held_ = false;
     bool write_pending_ = false;
     bool selection_pending_ = false;
+    void (*media_sink_)(void *, const product_inbox_http::Result &) = nullptr;
+    void *media_context_ = nullptr;
+    void (*release_)(void *) = nullptr;
     char acknowledged_[fl_product_inbox::kMaxMessageId]{};
     char pending_message_[fl_product_inbox::kMaxMessageId]{};
     char operation_uuid_[40]{};

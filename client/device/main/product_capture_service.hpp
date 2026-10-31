@@ -23,6 +23,7 @@ class CaptureService
     CaptureService &operator=(const CaptureService &) = delete;
 
     bool open(const char *path);
+    void setAllocator(void *(*alloc)(size_t, void *), void (*free_fn)(void *, void *), void *context);
     bool ready() const
     {
         return open_;
@@ -54,6 +55,10 @@ class CaptureService
     int32_t ringRadius() const;
     uint8_t selectedColor() const;
     bool blocksInboxFetch();
+    // Host tests hold the microphone-side lock. advance() must return without waiting.
+    bool holdLockForTest();
+    void releaseLockForTest();
+    int blockingLockAttempts() const;
     void attachSurface(uint16_t *pixels, lv_obj_t *canvas);
     void detachSurface();
     bool finishedInfo(const char *clientMessageId, uint32_t *audioBytes, uint32_t *sketchBytes);
@@ -68,13 +73,27 @@ class CaptureService
     class Lock
     {
       public:
-        explicit Lock(CaptureService *owner);
+        explicit Lock(const CaptureService *owner, bool wait = true);
         ~Lock();
+        bool held() const
+        {
+            return held_;
+        }
 
       private:
-        CaptureService *owner_;
+        const CaptureService *owner_;
+        bool held_;
     };
-    void ensureLock();
+    struct QueuedTouch {
+        int16_t x = 0;
+        int16_t y = 0;
+        uint8_t phase = 0;
+    };
+    bool lockEnter(bool wait) const;
+    void lockLeave() const;
+    void ensureLock() const;
+    void drainTouches();
+    void rememberFlags();
     fl_product_record::FileMediaBackend media_;
     fl_product_record::RecordSession session_;
     fl_product_record::SendIdentity staged_{};
@@ -83,8 +102,19 @@ class CaptureService
     bool open_ = false;
     bool mic_available_ = true;
     bool armed_ = false;
+    QueuedTouch touch_queue_[32]{};
+    int touch_head_ = 0;
+    int touch_count_ = 0;
+    mutable bool cached_input_open_ = false;
+    mutable bool cached_wiping_ = false;
+    mutable bool cached_recording_ = false;
+    mutable bool cached_reversing_ = false;
+    mutable bool cached_blocks_ = false;
+    mutable int lock_depth_ = 0;
+    mutable bool external_hold_ = false;
+    mutable int blocking_lock_attempts_ = 0;
 #ifdef ESP_PLATFORM
-    void *lock_ = nullptr;
+    mutable void *lock_ = nullptr;
 #endif
 };
 
